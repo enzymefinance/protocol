@@ -167,6 +167,10 @@ contract Dispatcher is IDispatcher {
             _nextFundDeployer != address(0),
             "setCurrentFundDeployer: _nextFundDeployer cannot be empty"
         );
+        require(
+            __isContract(_nextFundDeployer),
+            "setCurrentFundDeployer: Non-contract _nextFundDeployer"
+        );
 
         address prevFundDeployer = currentFundDeployer;
         require(
@@ -201,6 +205,16 @@ contract Dispatcher is IDispatcher {
         emit NominatedOwnerSet(_nextNominatedOwner);
     }
 
+    /// @dev Helper to check whether an address is a deployed contract
+    function __isContract(address _who) private view returns (bool isContract_) {
+        uint256 size;
+        assembly {
+            size := extcodesize(_who)
+        }
+
+        return size > 0;
+    }
+
     ////////////////
     // DEPLOYMENT //
     ////////////////
@@ -217,6 +231,8 @@ contract Dispatcher is IDispatcher {
         address _vaultAccessor,
         string calldata _fundName
     ) external override onlyCurrentFundDeployer returns (address vaultProxy_) {
+        require(__isContract(_vaultAccessor), "deployVaultProxy: Non-contract _vaultAccessor");
+
         bytes memory constructData = abi.encodeWithSelector(
             IMigratableVault.init.selector,
             _owner,
@@ -389,6 +405,11 @@ contract Dispatcher is IDispatcher {
         address _nextVaultLib,
         bool _bypassFailure
     ) external override onlyCurrentFundDeployer {
+        require(
+            __isContract(_nextVaultAccessor),
+            "signalMigration: Non-contract _nextVaultAccessor"
+        );
+
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         require(prevFundDeployer != address(0), "signalMigration: _vaultProxy does not exist");
 

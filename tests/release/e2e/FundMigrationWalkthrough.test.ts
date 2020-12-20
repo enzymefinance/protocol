@@ -257,7 +257,7 @@ describe('Walkthrough a fund migration', () => {
       .connect(manager)
       .signalMigration(vaultProxy, newComptrollerProxy);
 
-    expect(migrationSignal).toCostLessThan(`67000`, gasAssertionTolerance);
+    expect(migrationSignal).toCostLessThan(`68000`, gasAssertionTolerance);
 
     const getPendingComptrollerProxyCreatorCall = await newRelease.fundDeployer.getPendingComptrollerProxyCreator(
       newComptrollerProxy,

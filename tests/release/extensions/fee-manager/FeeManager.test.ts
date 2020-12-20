@@ -1,5 +1,5 @@
 import { BigNumber, constants, utils } from 'ethers';
-import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
 import {
   IMigrationHookHandler,
   MockVaultLib,
@@ -151,6 +151,7 @@ describe('deactivateForFund', () => {
 
     // Setup a new mock release to migrate the fund
     const mockNextFundDeployer = await IMigrationHookHandler.mock(deployer);
+    const mockNextVaultAccessor = await IMigrationHookHandler.mock(deployer);
     const mockNextVaultLib = await MockVaultLib.deploy(deployer);
     await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
@@ -158,7 +159,7 @@ describe('deactivateForFund', () => {
     await mockNextFundDeployer.forward(
       dispatcher.signalMigration,
       vaultProxy,
-      randomAddress(),
+      mockNextVaultAccessor,
       mockNextVaultLib,
       false,
     );

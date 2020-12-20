@@ -15,6 +15,10 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const mockVaultLib1 = await MockVaultLib.deploy(config.deployer);
   const mockVaultLib2 = await MockVaultLib.deploy(config.deployer);
 
+  // It doesn't matter what interfaces these have, they are only needed for asserting non-contract
+  const dummyContract1 = await MockVaultLib.deploy(config.deployer);
+  const dummyContract2 = await MockVaultLib.deploy(config.deployer);
+
   // Create mock FundDeployer instances with hooks implemented.
   // We can unset hooks in individual tests to test failure behavior.
   const mockFundDeployer1 = await IMigrationHookHandler.mock(config.deployer);
@@ -27,6 +31,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
     accounts,
     config,
     deployment,
+    dummyContract1,
+    dummyContract2,
     mockFundDeployer1,
     mockFundDeployer2,
     mockVaultLib1,
@@ -48,16 +54,16 @@ async function ensureFundDeployer({ dispatcher, fundDeployer }: { dispatcher: Di
 async function deployVault({
   dispatcher,
   mockFundDeployer,
+  vaultAccessor,
   vaultLib,
   owner = randomAddress(),
-  vaultAccessor = randomAddress(),
   fundName = 'My Fund',
 }: {
   dispatcher: Dispatcher;
   mockFundDeployer: MockContract<IMigrationHookHandler>;
+  vaultAccessor: AddressLike;
   vaultLib: AddressLike;
   owner?: AddressLike;
-  vaultAccessor?: AddressLike;
   fundName?: string;
 }) {
   await ensureFundDeployer({ dispatcher, fundDeployer: mockFundDeployer });
@@ -289,36 +295,55 @@ describe('claimOwnership', () => {
 describe('deployVaultProxy', () => {
   it('does not allow a bad VaultLib', async () => {
     const {
-      config: { deployer },
       deployment: { dispatcher },
+      dummyContract1: vaultAccessor,
+      mockFundDeployer1,
     } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
-    const vaultAccessor = randomAddress();
     const fundName = 'Mock Fund';
 
     // Setting a bad vaultLib
-    const vaultLib = randomAddress();
+    const EOAVaultLib = randomAddress();
 
-    // Setting a fund deployer to call deployVaultProxy
-    await dispatcher.setCurrentFundDeployer(deployer);
+    // Set a fund deployer to call deployVaultProxy
+    await dispatcher.setCurrentFundDeployer(mockFundDeployer1);
 
     // Attempt to deployVaultProxy with bad vaultLib
-    const deployVaultProxyCall = dispatcher
-      .connect(deployer)
-      .deployVaultProxy(vaultLib, owner, vaultAccessor, fundName);
-    await expect(deployVaultProxyCall).rejects.toBeReverted();
+    await expect(
+      mockFundDeployer1.forward(dispatcher.deployVaultProxy, EOAVaultLib, owner, vaultAccessor, fundName),
+    ).rejects.toBeReverted();
+  });
+
+  it('does not allow a non-contract _vaultAccessor', async () => {
+    const {
+      deployment: { dispatcher },
+      mockFundDeployer1,
+      mockVaultLib1,
+    } = await provider.snapshot(snapshot);
+
+    const owner = randomAddress();
+    const EOAVaultAccessor = randomAddress();
+    const fundName = 'Mock Fund';
+
+    // Set a fund deployer to call deployVaultProxy
+    await dispatcher.setCurrentFundDeployer(mockFundDeployer1);
+
+    // Attempt to deployVaultProxy with bad vaultLib
+    await expect(
+      mockFundDeployer1.forward(dispatcher.deployVaultProxy, mockVaultLib1, owner, EOAVaultAccessor, fundName),
+    ).rejects.toBeRevertedWith('Non-contract _vaultAccessor');
   });
 
   it('correctly deploys a new VaultProxy', async () => {
     const {
       deployment: { dispatcher },
+      dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
     } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
-    const vaultAccessor = randomAddress();
     const fundName = 'Mock Fund';
 
     // Set current fund deployer
@@ -390,8 +415,10 @@ describe('signalMigration', () => {
     const {
       accounts: [randomAccount],
       deployment: { dispatcher },
-      config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
     } = await provider.snapshot(snapshot);
@@ -400,46 +427,71 @@ describe('signalMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
     });
-    const nextVaultAccessor = randomAddress();
 
     // Set current fund deployer
-    await dispatcher.setCurrentFundDeployer(deployer);
+    await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
     // Attempt to signal migration as random account
-    const signalMigrationCall = dispatcher
-      .connect(randomAccount)
-      .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
+    await expect(
+      dispatcher.connect(randomAccount).signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false),
+    ).rejects.toBeRevertedWith('Only the current FundDeployer can call this function');
+  });
 
-    await expect(signalMigrationCall).rejects.toBeRevertedWith('Only the current FundDeployer can call this function');
+  it('does not allow a non-contract _vaultAccessor', async () => {
+    const {
+      deployment: { dispatcher },
+      dummyContract1: prevVaultAccessor,
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+      mockVaultLib1: prevVaultLib,
+      mockVaultLib2: nextVaultLib,
+    } = await provider.snapshot(snapshot);
+
+    // Deploy VaultProxy on mockPrevFundDeployer
+    const vaultProxy = await deployVault({
+      dispatcher,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
+      vaultLib: prevVaultLib,
+    });
+
+    // Set new fund deployer
+    await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
+
+    // Attempt to deployVaultProxy with bad vaultLib
+    await expect(
+      mockNextFundDeployer.forward(dispatcher.signalMigration, vaultProxy, randomAddress(), nextVaultLib, false),
+    ).rejects.toBeRevertedWith('Non-contract _nextVaultAccessor');
   });
 
   it('does not allow non-existent VaultProxy', async () => {
     const {
       deployment: { dispatcher },
-      config: { deployer },
+      dummyContract2: nextVaultAccessor,
+      mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: nextVaultLib,
     } = await provider.snapshot(snapshot);
 
     // Set vaultProxy to a random address
     const vaultProxy = randomAddress();
-    const nextVaultAccessor = randomAddress();
 
     // Set current fund deployer
-    await dispatcher.setCurrentFundDeployer(deployer);
+    await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
-    // Attempt to signal migration as random account
-    const signalMigrationCall = dispatcher
-      .connect(deployer)
-      .signalMigration(vaultProxy, nextVaultAccessor, nextVaultLib, false);
-
-    await expect(signalMigrationCall).rejects.toBeRevertedWith('_vaultProxy does not exist');
+    // Attempt to signal migration for the random vaultProxy address
+    await expect(
+      mockNextFundDeployer.forward(dispatcher.signalMigration, vaultProxy, nextVaultAccessor, nextVaultLib, false),
+    ).rejects.toBeRevertedWith('_vaultProxy does not exist');
   });
 
   it('cannot be called if fund is already on the current FundDeployer', async () => {
     const {
       deployment: { dispatcher },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockVaultLib1: prevVaultLib,
       mockVaultLib2: nextVaultLib,
@@ -449,10 +501,9 @@ describe('signalMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
     });
-
-    const nextVaultAccessor = randomAddress();
 
     // Confirm that fundDeployer is mockPrevFundDeployer
     const currentFundDeployer = await dispatcher.getCurrentFundDeployer();
@@ -473,6 +524,8 @@ describe('signalMigration', () => {
   it('correctly handles MigrationOutHook.PreSignal failure', async () => {
     const {
       deployment: { dispatcher },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -483,10 +536,9 @@ describe('signalMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
     });
-
-    const nextVaultAccessor = randomAddress();
 
     // Make MigrationOutHook invoke fail
     const revertReason = 'test revert';
@@ -529,6 +581,8 @@ describe('signalMigration', () => {
   it('correctly handles postSignalMigrationOriginHook failure', async () => {
     const {
       deployment: { dispatcher },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -539,10 +593,9 @@ describe('signalMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
     });
-
-    const nextVaultAccessor = randomAddress();
 
     // Make MigrationOutHook invoke fail
     const revertReason = 'test revert';
@@ -585,6 +638,8 @@ describe('signalMigration', () => {
   it('correctly signals a migration', async () => {
     const {
       deployment: { dispatcher },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -595,11 +650,11 @@ describe('signalMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     const receipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -653,14 +708,16 @@ describe('cancelMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
-      mockFundDeployer1: mockFundDeployer,
+      dummyContract1: prevVaultAccessor,
+      mockFundDeployer1: mockPrevFundDeployer,
       mockVaultLib1: vaultLib,
     } = await provider.snapshot(snapshot);
 
     // Deploy a VaultProxy
     const vaultProxy = await deployVault({
       dispatcher,
-      mockFundDeployer,
+      mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib,
       owner: deployer,
     });
@@ -675,6 +732,8 @@ describe('cancelMigration', () => {
       accounts: [randomAccount],
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -685,12 +744,12 @@ describe('cancelMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -712,6 +771,8 @@ describe('cancelMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -722,12 +783,12 @@ describe('cancelMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -781,6 +842,8 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -790,6 +853,7 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
@@ -798,7 +862,6 @@ describe('executeMigration', () => {
     const nextVaultLib = randomAddress();
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -820,6 +883,7 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -829,6 +893,7 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
@@ -842,6 +907,8 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -852,12 +919,12 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -879,6 +946,8 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -889,12 +958,12 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -908,7 +977,7 @@ describe('executeMigration', () => {
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Set the currentFundDeployer to a new address
-    await dispatcher.setCurrentFundDeployer(randomAddress());
+    await dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
 
     // Attempt to execute migration from the previous fund deployer
     const executeMigrationCall = mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
@@ -921,6 +990,8 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -931,12 +1002,12 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -968,6 +1039,8 @@ describe('executeMigration', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -978,12 +1051,12 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1107,6 +1180,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
     } = await provider.snapshot(snapshot);
@@ -1115,6 +1189,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      vaultAccessor,
       vaultLib,
       owner: deployer,
     });
@@ -1128,6 +1203,8 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -1138,12 +1215,12 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1167,6 +1244,8 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -1177,12 +1256,12 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1225,6 +1304,7 @@ describe('hasExecutableMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
     } = await provider.snapshot(snapshot);
@@ -1233,6 +1313,7 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      vaultAccessor,
       vaultLib,
       owner: deployer,
     });
@@ -1241,10 +1322,13 @@ describe('hasExecutableMigrationRequest', () => {
     const hasExecutableMigrationRequestCall = await dispatcher.hasExecutableMigrationRequest(vaultProxy);
     expect(hasExecutableMigrationRequestCall).toBe(false);
   });
+
   it('returns false if elapsedTime < migrationTimelock', async () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -1255,12 +1339,12 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1284,6 +1368,8 @@ describe('hasExecutableMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -1294,12 +1380,12 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1335,6 +1421,7 @@ describe('hasMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
     } = await provider.snapshot(snapshot);
@@ -1343,6 +1430,7 @@ describe('hasMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      vaultAccessor,
       vaultLib,
       owner: deployer,
     });
@@ -1356,6 +1444,8 @@ describe('hasMigrationRequest', () => {
     const {
       deployment: { dispatcher },
       config: { deployer },
+      dummyContract1: prevVaultAccessor,
+      dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: prevVaultLib,
@@ -1366,12 +1456,12 @@ describe('hasMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
       owner: deployer,
     });
 
     // Signal migration
-    const nextVaultAccessor = randomAddress();
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
@@ -1411,15 +1501,15 @@ describe('setCurrentFundDeployer', () => {
 
   it("nextFundDeployer can't be the same as currentFundDeployer", async () => {
     const {
-      config: { deployer },
       deployment: { dispatcher },
+      mockFundDeployer1: mockPrevFundDeployer,
     } = await provider.snapshot(snapshot);
 
     // Setting the current fund deployer a first time
-    await dispatcher.setCurrentFundDeployer(deployer);
+    await dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
 
     const currentDeployer = await dispatcher.getCurrentFundDeployer();
-    expect(currentDeployer).toMatchAddress(deployer);
+    expect(currentDeployer).toMatchAddress(mockPrevFundDeployer);
 
     // Attempting to set it again with the same address
     const setCurrentFundDeployerCall = dispatcher.setCurrentFundDeployer(currentDeployer);
@@ -1428,29 +1518,43 @@ describe('setCurrentFundDeployer', () => {
     );
   });
 
-  it('correctly sets new current fund deployer and emits CurrentFundDeployerSet event', async () => {
+  it('does not allow _nextFundDeployer to be a non-contract', async () => {
     const {
-      accounts: [prevFundDeployer, nextFundDeployer],
       deployment: { dispatcher },
     } = await provider.snapshot(snapshot);
 
-    // Setting the initial fund deployer
-    await dispatcher.setCurrentFundDeployer(prevFundDeployer);
+    await expect(dispatcher.setCurrentFundDeployer(randomAddress())).rejects.toBeRevertedWith(
+      'Non-contract _nextFundDeployer',
+    );
+  });
+
+  it('correctly sets new current fund deployer and emits CurrentFundDeployerSet event', async () => {
+    const {
+      deployment: { dispatcher },
+      mockFundDeployer1: mockPrevFundDeployer,
+      mockFundDeployer2: mockNextFundDeployer,
+    } = await provider.snapshot(snapshot);
+
+    // Set the initial fund deployer
+    await dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
 
     // Checking that the fund deployer has been set
     const initialFundDeployer = await dispatcher.getCurrentFundDeployer();
-    expect(initialFundDeployer).toMatchAddress(prevFundDeployer);
+    expect(initialFundDeployer).toMatchAddress(mockPrevFundDeployer);
 
     // Setting the initial fund deployer
-    const receipt = await dispatcher.setCurrentFundDeployer(nextFundDeployer);
+    const receipt = await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
     // Checking that the fund deployer has been updated
     const updatedFundDeployer = await dispatcher.getCurrentFundDeployer();
-    expect(updatedFundDeployer).toMatchAddress(nextFundDeployer);
+    expect(updatedFundDeployer).toMatchAddress(mockNextFundDeployer);
 
     // Checking that the proper event has been emitted
     const currentFundDeployerSetEvent = dispatcher.abi.getEvent('CurrentFundDeployerSet');
-    assertEvent(receipt, currentFundDeployerSetEvent, { prevFundDeployer, nextFundDeployer });
+    assertEvent(receipt, currentFundDeployerSetEvent, {
+      prevFundDeployer: mockPrevFundDeployer,
+      nextFundDeployer: mockNextFundDeployer,
+    });
   });
 });
 

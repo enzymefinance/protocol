@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
-import { VaultLib } from '@melonproject/protocol';
+import { IMigrationHookHandler, VaultLib } from '@melonproject/protocol';
 import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -7,29 +7,37 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
 
   // Define the values to use in deploying the VaultProxy
-  const [fundDeployerSigner, fundOwner, vaultAccessor, ...remainingAccounts] = accounts;
+  const [fundOwner, ...remainingAccounts] = accounts;
   const fundName = 'VaultLib Test Fund';
 
-  // Set a fundDeployerSigner as the current FundDeployer to bypass the need to go via a real FundDeployer contract
-  await deployment.dispatcher.setCurrentFundDeployer(fundDeployerSigner);
+  // Mock a FundDeployer to set as the current fund deployer
+  const mockFundDeployer = await IMigrationHookHandler.mock(config.deployer);
+  await deployment.dispatcher.setCurrentFundDeployer(mockFundDeployer);
+
+  // Use a generic mock contract as the vault accessor
+  const mockVaultAccessor = await IMigrationHookHandler.mock(config.deployer);
 
   // Deploy the VaultProxy via the Dispatcher
-  const deployVaultProxyReceipt = await deployment.dispatcher
-    .connect(fundDeployerSigner)
-    .deployVaultProxy(deployment.vaultLib, fundOwner, vaultAccessor, fundName);
+  const deployVaultProxyReceipt = await mockFundDeployer.forward(
+    deployment.dispatcher.deployVaultProxy,
+    deployment.vaultLib,
+    fundOwner,
+    mockVaultAccessor,
+    fundName,
+  );
 
   // Create a VaultLib instance with the deployed VaultProxy address, parsed from the deployment event
   const vaultProxyDeployedEvent = extractEvent(deployVaultProxyReceipt, 'VaultProxyDeployed')[0];
-  const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, vaultAccessor);
+  const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, provider);
 
   return {
     accounts: remainingAccounts,
     config,
     deployment,
-    fundDeployerSigner,
     fundName,
     fundOwner,
-    vaultAccessor,
+    mockFundDeployer,
+    mockVaultAccessor,
     vaultProxy,
   };
 }
@@ -40,12 +48,12 @@ describe('init', () => {
       deployment: { dispatcher },
       fundName,
       fundOwner,
-      vaultAccessor,
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const accessorValue = await vaultProxy.getAccessor();
-    expect(accessorValue).toMatchAddress(vaultAccessor);
+    expect(accessorValue).toMatchAddress(mockVaultAccessor);
 
     const creatorValue = await vaultProxy.getCreator();
     expect(creatorValue).toMatchAddress(dispatcher);
@@ -90,12 +98,12 @@ describe('addTrackedAsset', () => {
       deployment: {
         tokens: { weth },
       },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
-    await vaultProxy.addTrackedAsset(weth);
-    await vaultProxy.addTrackedAsset(weth);
+    await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, weth);
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
     expect(trackedAssets).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
@@ -194,12 +202,13 @@ describe('addTrackedAsset', () => {
       deployment: {
         tokens: { weth },
       },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
 
-    const receipt = await vaultProxy.addTrackedAsset(weth);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, weth);
     assertEvent(receipt, 'TrackedAssetAdded', {
       asset: weth,
     });
@@ -228,10 +237,11 @@ describe('removeTrackedAsset', () => {
   it('skip if removing a non-tracked asset', async () => {
     const {
       config: { weth },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await vaultProxy.removeTrackedAsset(weth);
+    await mockVaultAccessor.forward(vaultProxy.removeTrackedAsset, weth);
 
     const trackedAssets = await vaultProxy.getTrackedAssets();
     expect(trackedAssets).toEqual([]);
@@ -242,39 +252,24 @@ describe('removeTrackedAsset', () => {
       deployment: {
         tokens: { weth, mln, knc },
       },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
     await mln.transfer(vaultProxy, utils.parseEther('1'));
     await knc.transfer(vaultProxy, utils.parseEther('1'));
-    await vaultProxy.addTrackedAsset(weth);
-    await vaultProxy.addTrackedAsset(mln);
-    await vaultProxy.addTrackedAsset(knc);
+    await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, weth);
+    await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, mln);
+    await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, knc);
 
-    const receipt1 = await vaultProxy.removeTrackedAsset(mln);
+    const receipt1 = await mockVaultAccessor.forward(vaultProxy.removeTrackedAsset, mln);
     assertEvent(receipt1, 'TrackedAssetRemoved', {
       asset: mln,
     });
 
     const trackedAssets1 = await vaultProxy.getTrackedAssets();
     expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth, knc]);
-
-    const receipt2 = await vaultProxy.removeTrackedAsset(weth);
-    assertEvent(receipt2, 'TrackedAssetRemoved', {
-      asset: weth,
-    });
-
-    const trackedAssets2 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets2).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [knc]);
-
-    const receipt3 = await vaultProxy.removeTrackedAsset(knc);
-    assertEvent(receipt3, 'TrackedAssetRemoved', {
-      asset: knc,
-    });
-
-    const trackedAssets3 = await vaultProxy.getTrackedAssets();
-    expect(trackedAssets3).toEqual([]);
   });
 });
 
@@ -297,6 +292,7 @@ describe('withdrawAssetTo', () => {
       deployment: {
         tokens: { weth },
       },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -306,11 +302,12 @@ describe('withdrawAssetTo', () => {
     const preTxVaultBalance = await weth.balanceOf(vaultProxy);
     const withdrawAmount = utils.parseEther('0.5');
 
-    await vaultProxy.addTrackedAsset(weth);
+    await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, weth);
+
     const trackedAssets1 = await vaultProxy.getTrackedAssets();
     expect(trackedAssets1).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [weth]);
 
-    const receipt = await vaultProxy.withdrawAssetTo(weth, investor, withdrawAmount);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.withdrawAssetTo, weth, investor, withdrawAmount);
     assertEvent(receipt, 'AssetWithdrawn', {
       asset: weth,
       target: investor,
@@ -347,12 +344,13 @@ describe('approveAssetSpender', () => {
       deployment: {
         tokens: { weth },
       },
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     const amount = utils.parseEther('1');
 
-    const receipt = await vaultProxy.approveAssetSpender(weth, investor, amount);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.approveAssetSpender, weth, investor, amount);
     assertEvent(receipt, 'Approval', {
       owner: vaultProxy,
       spender: investor,
@@ -377,16 +375,17 @@ describe('mintShares', () => {
   });
 
   it('does not allow mint to a zero address', async () => {
-    const { vaultProxy } = await provider.snapshot(snapshot);
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.mintShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
-      'mint to the zero address',
-    );
+    await expect(
+      mockVaultAccessor.forward(vaultProxy.mintShares, constants.AddressZero, utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('mint to the zero address');
   });
 
   it('works as expected', async () => {
     const {
       accounts: [investor],
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -395,7 +394,7 @@ describe('mintShares', () => {
 
     const amount = utils.parseEther('1');
 
-    const receipt = await vaultProxy.mintShares(investor, amount);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.mintShares, investor, amount);
     assertEvent(receipt, 'Transfer', {
       from: constants.AddressZero,
       to: investor,
@@ -423,16 +422,17 @@ describe('burnShares', () => {
   });
 
   it('does not allow burn from a zero address', async () => {
-    const { vaultProxy } = await provider.snapshot(snapshot);
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.burnShares(constants.AddressZero, utils.parseEther('1'))).rejects.toBeRevertedWith(
-      'burn from the zero address',
-    );
+    await expect(
+      mockVaultAccessor.forward(vaultProxy.burnShares, constants.AddressZero, utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('burn from the zero address');
   });
 
   it('does not allow burn amount exceeds balance', async () => {
     const {
       accounts: [investor],
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -443,7 +443,7 @@ describe('burnShares', () => {
       const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultProxy.mintShares(investor, amount);
+      await mockVaultAccessor.forward(vaultProxy.mintShares, investor, amount);
 
       const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
@@ -453,14 +453,15 @@ describe('burnShares', () => {
     }
 
     // burn shares
-    await expect(vaultProxy.burnShares(investor, amount.add(BigNumber.from(1)))).rejects.toBeRevertedWith(
-      'burn amount exceeds balance',
-    );
+    await expect(
+      mockVaultAccessor.forward(vaultProxy.burnShares, investor, amount.add(BigNumber.from(1))),
+    ).rejects.toBeRevertedWith('burn amount exceeds balance');
   });
 
   it('works as expected', async () => {
     const {
       accounts: [investor],
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -471,7 +472,7 @@ describe('burnShares', () => {
       const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultProxy.mintShares(investor, amount);
+      await mockVaultAccessor.forward(vaultProxy.mintShares, investor, amount);
 
       const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
@@ -481,7 +482,7 @@ describe('burnShares', () => {
     }
 
     // burn shares
-    const receipt = await vaultProxy.burnShares(investor, amount);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.burnShares, investor, amount);
     assertEvent(receipt, 'Transfer', {
       from: investor,
       to: constants.AddressZero,
@@ -509,24 +510,25 @@ describe('transferShares', () => {
   });
 
   it('does not allow sender is an zero address', async () => {
-    const { vaultProxy } = await provider.snapshot(snapshot);
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultProxy.transferShares(constants.AddressZero, randomAddress(), BigNumber.from(1)),
+      mockVaultAccessor.forward(vaultProxy.transferShares, constants.AddressZero, randomAddress(), BigNumber.from(1)),
     ).rejects.toBeRevertedWith('transfer from the zero address');
   });
 
   it('does not allow recipient is an zero address', async () => {
-    const { vaultProxy } = await provider.snapshot(snapshot);
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultProxy.transferShares(randomAddress(), constants.AddressZero, BigNumber.from(1)),
+      mockVaultAccessor.forward(vaultProxy.transferShares, randomAddress(), constants.AddressZero, BigNumber.from(1)),
     ).rejects.toBeRevertedWith('transfer to the zero address');
   });
 
   it('does not allow transfer amount to exceed balance', async () => {
     const {
       accounts: [investor1, investor2],
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -537,7 +539,7 @@ describe('transferShares', () => {
       const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultProxy.mintShares(investor1, amount);
+      await mockVaultAccessor.forward(vaultProxy.mintShares, investor1, amount);
 
       const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
@@ -548,13 +550,14 @@ describe('transferShares', () => {
 
     // transfer shares
     await expect(
-      vaultProxy.transferShares(investor1, investor2, amount.add(BigNumber.from(1))),
+      mockVaultAccessor.forward(vaultProxy.transferShares, investor1, investor2, amount.add(BigNumber.from(1))),
     ).rejects.toBeRevertedWith('transfer amount exceeds balance');
   });
 
   it('works as expected', async () => {
     const {
       accounts: [investor1, investor2],
+      mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
@@ -565,7 +568,7 @@ describe('transferShares', () => {
       const preTxTotalSupply = await vaultProxy.totalSupply();
       expect(preTxTotalSupply).toEqBigNumber(utils.parseEther('0'));
 
-      await vaultProxy.mintShares(investor1, amount);
+      await mockVaultAccessor.forward(vaultProxy.mintShares, investor1, amount);
 
       const postTxTotalSupply = await vaultProxy.totalSupply();
       expect(postTxTotalSupply).toEqBigNumber(amount);
@@ -575,7 +578,7 @@ describe('transferShares', () => {
     }
 
     // transfer shares
-    const receipt = await vaultProxy.transferShares(investor1, investor2, amount);
+    const receipt = await mockVaultAccessor.forward(vaultProxy.transferShares, investor1, investor2, amount);
     assertEvent(receipt, 'Transfer', {
       from: investor1,
       to: investor2,

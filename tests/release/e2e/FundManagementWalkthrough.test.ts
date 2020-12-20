@@ -35,7 +35,7 @@ export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T 
 // Note that due to the nature of `toCostLessThan()`,
 const expectedGasCosts = {
   'create fund': {
-    weth: 701000,
+    weth: 702000,
     usdc: 708000,
   },
   'buy shares: denomination asset only: first investment': {

@@ -1,5 +1,5 @@
 import { constants } from 'ethers';
-import { extractEvent, EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { extractEvent, EthereumTestnetProvider } from '@crestproject/crestproject';
 import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
 import {
   defaultTestDeployment,
@@ -23,12 +23,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await deployment.dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
 
   // Deploy a migratable VaultProxy using a mock VaultLib
+  const mockPrevVaultAccessor = await IMigrationHookHandler.mock(config.deployer);
   const mockPrevVaultLib = await MockVaultLib.deploy(config.deployer);
   const receipt = await mockPrevFundDeployer.forward(
     deployment.dispatcher.deployVaultProxy,
     mockPrevVaultLib,
     fundOwner,
-    randomAddress(),
+    mockPrevVaultAccessor,
     '',
   );
 

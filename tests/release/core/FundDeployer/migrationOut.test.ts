@@ -79,6 +79,7 @@ describe('implementMigrationOutHook', () => {
 
     it('correctly handles the PreMigrate hook', async () => {
       const {
+        config: { deployer },
         deployment: { dispatcher, fundDeployer },
         mockNextFundDeployer,
         mockNextVaultLib,
@@ -86,12 +87,14 @@ describe('implementMigrationOutHook', () => {
         vaultProxy,
       } = await provider.snapshot(snapshot);
 
+      // The accessor can be any contract
+      const mockNextAccessor = await IMigrationHookHandler.mock(deployer);
+
       // Signal migration via mockNextFundDeployer
-      const nextAccessorAddresss = randomAddress();
       await mockNextFundDeployer.forward(
         dispatcher.signalMigration,
         vaultProxy,
-        nextAccessorAddresss,
+        mockNextAccessor,
         mockNextVaultLib,
         false,
       );
@@ -108,7 +111,7 @@ describe('implementMigrationOutHook', () => {
         MigrationOutHook.PreMigrate,
         vaultProxy,
         mockNextFundDeployer,
-        nextAccessorAddresss,
+        mockNextAccessor,
         mockNextVaultLib,
       );
       expect(prevComptrollerProxy.destruct).toHaveBeenCalledOnContract();
