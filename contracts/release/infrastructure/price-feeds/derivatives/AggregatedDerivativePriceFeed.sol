@@ -2,13 +2,13 @@
 pragma solidity 0.6.12;
 
 import "../../utils/DispatcherOwnerMixin.sol";
-import "./IDerivativePriceFeed.sol";
+import "./IAggregatedDerivativePriceFeed.sol";
 
 /// @title AggregatedDerivativePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Aggregates multiple derivative price feeds (e.g., Compound, Chai) and dispatches
 /// rate requests to the appropriate feed
-contract AggregatedDerivativePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, DispatcherOwnerMixin {
     event DerivativeAdded(address indexed derivative, address priceFeed);
 
     event DerivativeRemoved(address indexed derivative);
@@ -159,6 +159,7 @@ contract AggregatedDerivativePriceFeed is IDerivativePriceFeed, DispatcherOwnerM
     function getPriceFeedForDerivative(address _derivative)
         external
         view
+        override
         returns (address priceFeed_)
     {
         return derivativeToPriceFeed[_derivative];

@@ -29,6 +29,7 @@ export { PolicyManager } from './codegen/PolicyManager';
 export { ChainlinkPriceFeed } from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
+export { IDerivativePriceFeed } from './codegen/IDerivativePriceFeed';
 export { AggregatedDerivativePriceFeed } from './codegen/AggregatedDerivativePriceFeed';
 export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
 export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';

@@ -3,6 +3,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../price-feeds/derivatives/IAggregatedDerivativePriceFeed.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "./IValueInterpreter.sol";
@@ -21,11 +22,11 @@ contract ValueInterpreter is IValueInterpreter {
 
     uint256 private constant RATE_PRECISION = 18;
 
-    address private immutable DERIVATIVE_PRICE_FEED;
+    address private immutable AGGREGATED_DERIVATIVE_PRICE_FEED;
     address private immutable PRIMITIVE_PRICE_FEED;
 
-    constructor(address _primitivePriceFeed, address _derivativePriceFeed) public {
-        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
+    constructor(address _primitivePriceFeed, address _aggregatedDerivativePriceFeed) public {
+        AGGREGATED_DERIVATIVE_PRICE_FEED = _aggregatedDerivativePriceFeed;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
     }
 
@@ -123,12 +124,20 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset
     ) private returns (uint256 value_, bool isValid_) {
+        // Handle case that asset is a primitive
         if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
             return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset);
         }
-        if (IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
-            return __calcDerivativeValue(_baseAsset, _amount, _quoteAsset);
+
+        // Handle case that asset is a derivative
+        address derivativePriceFeed = IAggregatedDerivativePriceFeed(
+            AGGREGATED_DERIVATIVE_PRICE_FEED
+        )
+            .getPriceFeedForDerivative(_baseAsset);
+        if (derivativePriceFeed != address(0)) {
+            return __calcDerivativeValue(derivativePriceFeed, _baseAsset, _amount, _quoteAsset);
         }
+
         revert("__calcAssetValue: Unsupported _baseAsset");
     }
 
@@ -150,12 +159,13 @@ contract ValueInterpreter is IValueInterpreter {
     /// Handles multiple underlying assets (e.g., Uniswap and Balancer pool tokens).
     /// Handles underlying assets that are also derivatives (e.g., a cDAI-ETH LP)
     function __calcDerivativeValue(
+        address _derivativePriceFeed,
         address _derivative,
         uint256 _amount,
         address _quoteAsset
     ) private returns (uint256 value_, bool isValid_) {
         (address[] memory underlyings, uint256[] memory rates) = IDerivativePriceFeed(
-            DERIVATIVE_PRICE_FEED
+            _derivativePriceFeed
         )
             .getRatesToUnderlyings(_derivative);
 
@@ -208,10 +218,14 @@ contract ValueInterpreter is IValueInterpreter {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
-    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
-    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
-        return DERIVATIVE_PRICE_FEED;
+    /// @notice Gets the `AGGREGATED_DERIVATIVE_PRICE_FEED` variable
+    /// @return aggregatedDerivativePriceFeed_ The `AGGREGATED_DERIVATIVE_PRICE_FEED` variable value
+    function getAggregatedDerivativePriceFeed()
+        external
+        view
+        returns (address aggregatedDerivativePriceFeed_)
+    {
+        return AGGREGATED_DERIVATIVE_PRICE_FEED;
     }
 
     /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable

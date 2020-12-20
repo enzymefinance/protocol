@@ -1,5 +1,11 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { MockDerivativePriceFeed, MockPrimitivePriceFeed, MockToken, ValueInterpreter } from '@melonproject/protocol';
+import {
+  AggregatedDerivativePriceFeed,
+  IDerivativePriceFeed,
+  MockPrimitivePriceFeed,
+  MockToken,
+  ValueInterpreter,
+} from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { constants, utils } from 'ethers';
 
@@ -15,16 +21,31 @@ async function snapshot(provider: EthereumTestnetProvider) {
     MockToken.deploy(config.deployer, 'Mock Primitive 2', 'MCKP002', 18),
   ]);
 
-  // Deploy primitive and derivative price feeds
-  const derivativePriceFeedMock = await MockDerivativePriceFeed.deploy(config.deployer, [derivativeMock]);
-  const primitivePriceFeedMock = await MockPrimitivePriceFeed.deploy(config.deployer, primitiveMocks, 18);
-
-  // Assign rates and primitives on primitivePriceFeed
+  // Define derivative rates relative to the primitiveMocks
   const derivativeToPrimitivesRates = [utils.parseEther('2'), utils.parseEther('4')];
-  await derivativePriceFeedMock.setRatesToUnderlyings(derivativeMock, derivativeToPrimitivesRates, [
-    primitiveMocks[0],
-    primitiveMocks[1],
-  ]);
+
+  // Create derivative price feed mock
+  const mockDerivativePriceFeed = await IDerivativePriceFeed.mock(config.deployer);
+  await mockDerivativePriceFeed.getRatesToUnderlyings.returns([], []);
+  await mockDerivativePriceFeed.getRatesToUnderlyings
+    .given(derivativeMock)
+    .returns(primitiveMocks, derivativeToPrimitivesRates);
+
+  // Create aggregated derivative price feed mock
+  const mockAggregatedDerivativePriceFeed = await AggregatedDerivativePriceFeed.mock(config.deployer);
+  await mockAggregatedDerivativePriceFeed.getRatesToUnderlyings.returns([], []);
+  await mockAggregatedDerivativePriceFeed.getRatesToUnderlyings
+    .given(derivativeMock)
+    .returns(primitiveMocks, derivativeToPrimitivesRates);
+  await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative.returns(constants.AddressZero);
+  await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative
+    .given(derivativeMock)
+    .returns(mockDerivativePriceFeed);
+
+  // TODO: refactor primitive price feed to use crestproject mocks
+
+  // Deploy mock primitive price feed
+  const primitivePriceFeedMock = await MockPrimitivePriceFeed.deploy(config.deployer, primitiveMocks, 18);
 
   // Initialize primitiveMock rates to a unit
   await primitivePriceFeedMock.setCanonicalRate(primitiveMocks[0], primitiveMocks[1], utils.parseEther('1'), true);
@@ -34,7 +55,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const valueInterpreterWithMocks = await ValueInterpreter.deploy(
     config.deployer,
     primitivePriceFeedMock,
-    derivativePriceFeedMock,
+    mockAggregatedDerivativePriceFeed,
   );
 
   return {
@@ -43,7 +64,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
       derivativeToPrimitivesRates,
       derivativeMock,
       primitiveMocks,
-      derivativePriceFeedMock,
+      mockAggregatedDerivativePriceFeed,
+      mockDerivativePriceFeed,
       primitivePriceFeedMock,
       valueInterpreterWithMocks,
     },
@@ -56,10 +78,10 @@ describe('constructor', () => {
     const {
       deployment: { valueInterpreter, aggregatedDerivativePriceFeed, chainlinkPriceFeed },
     } = await provider.snapshot(snapshot);
-    const derivativePriceFeedStored = await valueInterpreter.getDerivativePriceFeed();
+    const aggregatedDerivativePriceFeedStored = await valueInterpreter.getAggregatedDerivativePriceFeed();
     const primitivePriceFeedStored = await valueInterpreter.getPrimitivePriceFeed();
 
-    expect(derivativePriceFeedStored).toMatchAddress(aggregatedDerivativePriceFeed);
+    expect(aggregatedDerivativePriceFeedStored).toMatchAddress(aggregatedDerivativePriceFeed);
     expect(primitivePriceFeedStored).toMatchAddress(chainlinkPriceFeed);
   });
 });
@@ -182,22 +204,23 @@ describe('calcLiveAssetValue', () => {
 
   it('does not allow to call liveAssetValue with an unsupported underlying asset', async () => {
     const {
+      config: { deployer },
       mocks: {
-        derivativePriceFeedMock,
-        primitivePriceFeedMock,
+        mockDerivativePriceFeed,
         derivativeMock: baseDerivative,
         primitiveMocks: [quotePrimitive],
         valueInterpreterWithMocks,
       },
     } = await provider.snapshot(snapshot);
 
-    const rates = [utils.parseEther('1')];
-    await primitivePriceFeedMock.setIsSupportedAsset(quotePrimitive, false);
-    await derivativePriceFeedMock.setRatesToUnderlyings(baseDerivative.address, rates, [quotePrimitive]);
+    const badUnderlying = await MockToken.deploy(deployer, 'Bad Underlying', 'BAD', 18);
+    await mockDerivativePriceFeed.getRatesToUnderlyings
+      .given(baseDerivative)
+      .returns([badUnderlying], [utils.parseEther('1')]);
 
     await expect(
       valueInterpreterWithMocks.calcLiveAssetValue(baseDerivative, 1, quotePrimitive),
-    ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
+    ).rejects.toBeRevertedWith('Unsupported _baseAsset');
   });
 
   it('does not allow to get a rate from a non supported quote asset', async () => {

@@ -31,6 +31,7 @@ module.exports = {
     },
     include: [
       // Explicitly allow inclusion of core release interfaces.
+      'IDerivativePriceFeed',
       'IExtension',
       'IIntegrationAdapter',
       'IFee',
