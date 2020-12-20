@@ -1,4 +1,4 @@
-import { randomAddress, EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { constants } from 'ethers';
 
@@ -42,17 +42,5 @@ describe('constructor', () => {
 
     const decimalsValue = await vaultLib.decimals();
     expect(decimalsValue).toBe(18);
-  });
-});
-
-describe('init', () => {
-  it('can not be called directly (delegatecalled only)', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
-
-    await expect(vaultLib.init(randomAddress(), randomAddress(), 'Melon Fund')).rejects.toBeRevertedWith(
-      'Only delegate callable',
-    );
   });
 });

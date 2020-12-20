@@ -22,8 +22,6 @@ import "./IComptroller.sol";
 /// @title ComptrollerLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
-/// @dev All state-changing functions should be marked as onlyDelegateCall,
-/// unless called directly by the FundDeployer
 contract ComptrollerLib is
     IComptroller,
     ComptrollerEvents,
@@ -68,11 +66,6 @@ contract ComptrollerLib is
         _;
     }
 
-    modifier onlyDelegateCall() {
-        __assertIsDelegateCall();
-        _;
-    }
-
     modifier onlyNotPaused() {
         __assertNotPaused();
         _;
@@ -98,10 +91,6 @@ contract ComptrollerLib is
     /// we can check that var rather than storing additional state
     function __assertIsActive(address _vaultProxy) private pure {
         require(_vaultProxy != address(0), "Fund not active");
-    }
-
-    function __assertIsDelegateCall() private view {
-        require(!isLib, "Only delegate callable");
     }
 
     function __assertIsOwner(address _who) private view {
@@ -165,7 +154,6 @@ contract ComptrollerLib is
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
     /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
     /// during calls originating from this function.
-    /// Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function callOnExtension(
         address _extension,
         uint256 _actionId,
@@ -198,7 +186,6 @@ contract ComptrollerLib is
 
     /// @notice Sets or unsets an override on a release-wide pause
     /// @param _nextOverridePause True if the pause should be overrode
-    /// @dev Does not use onlyDelegateCall, as onlyOwner will only be valid in delegate calls
     function setOverridePause(bool _nextOverridePause) external onlyOwner {
         require(_nextOverridePause != overridePause, "setOverridePause: Value already set");
 
@@ -211,7 +198,6 @@ contract ComptrollerLib is
     /// @param _contract The contract to call
     /// @param _selector The selector to call
     /// @param _encodedArgs The encoded arguments for the call
-    /// @dev Does not use onlyDelegateCall, as onlyActive will only be valid in delegate calls.
     function vaultCallOnContract(
         address _contract,
         bytes4 _selector,
@@ -288,8 +274,6 @@ contract ComptrollerLib is
     /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return gav_ The fund GAV
     /// @return isValid_ True if the conversion rates used to derive the GAV are all valid
-    /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
-    /// are external to the protocol
     function calcGav(bool _requireFinality) public override returns (uint256 gav_, bool isValid_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
@@ -319,8 +303,7 @@ contract ComptrollerLib is
     /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @return isValid_ True if the conversion rates to derive the value are all valid
-    /// @dev onlyDelegateCall not necessary here, as the only potential state-changing actions
-    /// are external to the protocol. Does not account for any fees outstanding.
+    /// @dev Does not account for any fees outstanding.
     function calcGrossShareValue(bool _requireFinality)
         external
         override
@@ -366,7 +349,6 @@ contract ComptrollerLib is
     /// @return sharesReceivedAmounts_ The actual amounts of shares received
     /// by the corresponding _buyers
     /// @dev Param arrays have indexes corresponding to individual __buyShares() orders.
-    /// Does not use onlyDelegateCall, as __assertIsActive() will only be true in delegate calls.
     function buyShares(
         address[] calldata _buyers,
         uint256[] calldata _investmentAmounts,
@@ -660,7 +642,6 @@ contract ComptrollerLib is
         address[] memory _assetsToSkip
     )
         private
-        onlyDelegateCall
         locksReentrance
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
     {

@@ -1,6 +1,7 @@
-import { BigNumber, constants } from 'ethers';
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { constants } from 'ethers';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
+import { ComptrollerLib } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -59,24 +60,36 @@ describe('constructor', () => {
   });
 });
 
-describe('redeemShares', () => {
-  it('can not be called directly (delegatecalled only)', async () => {
+describe('destruct', () => {
+  it('cannot be non-delegatecalled on ComptrollerLib or FundLifecycleLib', async () => {
     const {
-      deployment: { comptrollerLib },
+      accounts: [fundDeployerSigner],
+      config: { deployer },
+      deployment: { fundLifecycleLib },
     } = await provider.snapshot(snapshot);
 
-    await expect(comptrollerLib.redeemShares()).rejects.toBeReverted();
-  });
-});
+    const comptrollerLib = await ComptrollerLib.deploy(
+      deployer,
+      randomAddress(),
+      fundDeployerSigner,
+      randomAddress(),
+      randomAddress(),
+      randomAddress(),
+      randomAddress(),
+      fundLifecycleLib,
+      randomAddress(),
+      randomAddress(),
+      randomAddress(),
+    );
 
-describe('redeemSharesDetailed', () => {
-  it('can not be called directly (delegatecalled only)', async () => {
-    const {
-      deployment: { comptrollerLib },
-    } = await provider.snapshot(snapshot);
+    // Calling the ComptrollerLib directly should fail
+    await expect(comptrollerLib.connect(fundDeployerSigner).destruct()).rejects.toBeRevertedWith(
+      'Only FundDeployer callable',
+    );
 
-    await expect(comptrollerLib.redeemSharesDetailed(BigNumber.from(0), [], [])).rejects.toBeRevertedWith(
-      'Only delegate callable',
+    // Calling the FundLifecycleLib directly should fail
+    await expect(fundLifecycleLib.connect(fundDeployerSigner).destruct()).rejects.toBeRevertedWith(
+      'Only FundDeployer callable',
     );
   });
 });

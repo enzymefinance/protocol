@@ -20,15 +20,10 @@ abstract contract VaultLibBaseCore is IMigratableVault, ProxiableVaultLib, Share
 
     event VaultLibSet(address prevVaultLib, address nextVaultLib);
 
-    bool internal isLib;
     address internal accessor;
     address internal creator;
     address internal migrator;
     address internal owner;
-
-    constructor() public {
-        isLib = true;
-    }
 
     // EXTERNAL FUNCTIONS
 
@@ -42,7 +37,6 @@ abstract contract VaultLibBaseCore is IMigratableVault, ProxiableVaultLib, Share
         address _accessor,
         string calldata _fundName
     ) external override {
-        require(!isLib, "init: Only delegate callable");
         require(creator == address(0), "init: Proxy already initialized");
         creator = msg.sender;
         sharesName = _fundName;

@@ -74,7 +74,6 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
     function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
-        require(!isLib, "init: Only delegate callable");
         require(denominationAsset == address(0), "init: Already initialized");
         require(
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
@@ -150,6 +149,9 @@ contract FundLifecycleLib is IFundLifecycleLib, ComptrollerStorage, ComptrollerE
         onlyNotPaused
         allowsPermissionedVaultAction
     {
+        // Failsafe to protect the libs against selfdestruct
+        require(!isLib, "destruct: Only delegate callable");
+
         // Deactivate the extensions
         IExtension(FEE_MANAGER).deactivateForFund();
         IExtension(INTEGRATION_MANAGER).deactivateForFund();

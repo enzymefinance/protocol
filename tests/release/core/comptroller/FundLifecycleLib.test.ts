@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -25,15 +25,5 @@ describe('constructor', () => {
       policyManager_: policyManager,
       primitivePriceFeed_: chainlinkPriceFeed,
     });
-  });
-});
-
-describe('init', () => {
-  it('cannot be called on library', async () => {
-    const {
-      deployment: { fundLifecycleLib },
-    } = await provider.snapshot(snapshot);
-
-    await expect(fundLifecycleLib.init(randomAddress(), 0)).rejects.toBeRevertedWith('Only delegate callable');
   });
 });

@@ -35,7 +35,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @notice Sets the account that is allowed to migrate a fund to new releases
     /// @param _nextMigrator The account to set as the allowed migrator
     /// @dev Set to address(0) to remove the migrator.
-    /// Asserting delegate call is not needed because of access control.
     function setMigrator(address _nextMigrator) external {
         require(msg.sender == owner, "setMigrator: Only the owner can call this function");
         address prevMigrator = migrator;
@@ -53,7 +52,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @notice Adds a tracked asset to the fund
     /// @param _asset The asset to add
     /// @dev Allows addition of already tracked assets to fail silently.
-    /// Asserting delegate call is not needed because of access control.
     function addTrackedAsset(address _asset) external override onlyAccessor {
         if (!isTrackedAsset(_asset)) {
             require(
@@ -83,7 +81,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @notice Makes an arbitrary call with this contract as the sender
     /// @param _contract The contract to call
     /// @param _callData The call data for the call
-    /// @dev Asserting delegate call is not needed because of access control
     function callOnContract(address _contract, bytes calldata _callData)
         external
         override
@@ -95,7 +92,6 @@ contract VaultLib is VaultLibBase1, IVault {
 
     /// @notice Removes a tracked asset from the fund
     /// @param _asset The asset to remove
-    /// @dev Asserting delegate call is not needed because of access control
     function removeTrackedAsset(address _asset) external override onlyAccessor {
         __removeTrackedAsset(_asset);
     }
@@ -104,7 +100,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @param _asset The asset to withdraw
     /// @param _target The account to which to withdraw the asset
     /// @param _amount The amount of asset to withdraw
-    /// @dev Asserting delegate call is not needed because of access control
     function withdrawAssetTo(
         address _asset,
         address _target,
@@ -148,7 +143,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @notice Burns fund shares from a particular account
     /// @param _target The account for which to burn shares
     /// @param _amount The amount of shares to burn
-    /// @dev Asserting delegate call is not needed because of access control
     function burnShares(address _target, uint256 _amount) external override onlyAccessor {
         __burn(_target, _amount);
     }
@@ -156,7 +150,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @notice Mints fund shares to a particular account
     /// @param _target The account for which to burn shares
     /// @param _amount The amount of shares to mint
-    /// @dev Asserting delegate call is not needed because of access control
     function mintShares(address _target, uint256 _amount) external override onlyAccessor {
         __mint(_target, _amount);
     }
@@ -165,7 +158,6 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @param _from The account from which to transfer shares
     /// @param _to The account to which to transfer shares
     /// @param _amount The amount of shares to transfer
-    /// @dev Asserting delegate call is not needed because of access control
     function transferShares(
         address _from,
         address _to,

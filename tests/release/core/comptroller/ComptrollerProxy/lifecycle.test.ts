@@ -282,6 +282,12 @@ describe('destruct', () => {
     await expect(comptrollerProxy.destruct()).rejects.toBeRevertedWith('Only FundDeployer callable');
   });
 
+  it('can only be delegate-called', async () => {
+    const { comptrollerProxy } = await provider.snapshot(snapshot);
+
+    await expect(comptrollerProxy.destruct()).rejects.toBeRevertedWith('Only FundDeployer callable');
+  });
+
   it('does not allow a paused release, unless overridePause is set', async () => {
     const { comptrollerProxy, mockFundDeployer, mockVaultProxy } = await provider.snapshot(snapshot);
 
