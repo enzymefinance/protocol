@@ -101,33 +101,6 @@ contract IntegrationManager is
         delete comptrollerProxyToVaultProxy[msg.sender];
     }
 
-    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
-    /// @param _caller The user who called for this action
-    /// @param _actionId An ID representing the desired action
-    /// @param _callArgs The encoded args for the action
-    function receiveCallFromComptroller(
-        address _caller,
-        uint256 _actionId,
-        bytes calldata _callArgs
-    ) external override {
-        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
-        // activateForFund(), this function does not require further validation of the
-        // sending ComptrollerProxy
-        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
-        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
-        require(
-            isAuthUserForFund(msg.sender, _caller),
-            "receiveCallFromComptroller: Not an authorized user"
-        );
-
-        // Dispatch the action
-        if (_actionId == 0) {
-            __callOnIntegration(_caller, vaultProxy, _callArgs);
-        } else {
-            revert("receiveCallFromComptroller: Invalid _actionId");
-        }
-    }
-
     /// @notice Removes an authorized user from the IntegrationManager for the given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _who The authorized user to remove
@@ -181,6 +154,74 @@ contract IntegrationManager is
                 comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who],
                 "__validateSetAuthUser: Account is not an authorized user"
             );
+        }
+    }
+
+    ///////////////////////////////
+    // CALL-ON-EXTENSION ACTIONS //
+    ///////////////////////////////
+
+    /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
+    /// @param _caller The user who called for this action
+    /// @param _actionId An ID representing the desired action
+    /// @param _callArgs The encoded args for the action
+    function receiveCallFromComptroller(
+        address _caller,
+        uint256 _actionId,
+        bytes calldata _callArgs
+    ) external override {
+        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
+        // activateForFund(), this function does not require further validation of the
+        // sending ComptrollerProxy
+        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
+        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
+        require(
+            isAuthUserForFund(msg.sender, _caller),
+            "receiveCallFromComptroller: Not an authorized user"
+        );
+
+        // Dispatch the action
+        if (_actionId == 0) {
+            __callOnIntegration(_caller, vaultProxy, _callArgs);
+        } else if (_actionId == 1) {
+            __addZeroBalanceTrackedAssets(vaultProxy, _callArgs);
+        } else if (_actionId == 2) {
+            __removeZeroBalanceTrackedAssets(vaultProxy, _callArgs);
+        } else {
+            revert("receiveCallFromComptroller: Invalid _actionId");
+        }
+    }
+
+    /// @dev Adds assets with a zero balance as tracked assets of the fund
+    function __addZeroBalanceTrackedAssets(address _vaultProxy, bytes memory _callArgs) private {
+        address[] memory assets = abi.decode(_callArgs, (address[]));
+        for (uint256 i; i < assets.length; i++) {
+            require(
+                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                "__addZeroBalanceTrackedAssets: Balance is not zero"
+            );
+
+            __addTrackedAsset(msg.sender, assets[i]);
+        }
+    }
+
+    /// @dev Removes assets with a zero balance from tracked assets of the fund
+    function __removeZeroBalanceTrackedAssets(address _vaultProxy, bytes memory _callArgs)
+        private
+    {
+        address[] memory assets = abi.decode(_callArgs, (address[]));
+        address denominationAsset = IComptroller(msg.sender).getDenominationAsset();
+        for (uint256 i; i < assets.length; i++) {
+            require(
+                assets[i] != denominationAsset,
+                "__removeZeroBalanceTrackedAssets: Cannot remove denomination asset"
+            );
+            require(
+                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                "__removeZeroBalanceTrackedAssets: Balance is not zero"
+            );
+
+            __removeTrackedAsset(msg.sender, assets[i]);
         }
     }
 

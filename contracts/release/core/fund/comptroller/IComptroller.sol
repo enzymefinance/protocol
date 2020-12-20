@@ -22,6 +22,8 @@ interface IComptroller {
 
     function destruct() external;
 
+    function getDenominationAsset() external view returns (address);
+
     function getVaultProxy() external view returns (address);
 
     function init(address, uint256) external;

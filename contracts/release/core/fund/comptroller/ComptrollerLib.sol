@@ -730,7 +730,7 @@ contract ComptrollerLib is
 
     /// @notice Gets the `denominationAsset` variable
     /// @return denominationAsset_ The `denominationAsset` variable value
-    function getDenominationAsset() external view returns (address denominationAsset_) {
+    function getDenominationAsset() external view override returns (address denominationAsset_) {
         return denominationAsset;
     }
 
