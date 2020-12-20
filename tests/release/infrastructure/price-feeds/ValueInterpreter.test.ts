@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
 import {
   AggregatedDerivativePriceFeed,
   IDerivativePriceFeed,
@@ -83,6 +83,40 @@ describe('constructor', () => {
 
     expect(aggregatedDerivativePriceFeedStored).toMatchAddress(aggregatedDerivativePriceFeed);
     expect(primitivePriceFeedStored).toMatchAddress(chainlinkPriceFeed);
+  });
+});
+
+describe('addCachedDecimalsForAssets', () => {
+  it('allows any caller, stores the correct decimals for the assets, and emits the correct event', async () => {
+    const {
+      config: { deployer },
+      deployment: { valueInterpreter },
+    } = await provider.snapshot(snapshot);
+
+    // Define dummy tokens to add
+    const dummyToken1Decimals = 18;
+    const dummyToken1 = await MockToken.deploy(deployer, 'Dummy Token 1', 'DMY1', dummyToken1Decimals);
+    const dummyToken2Decimals = 6;
+    const dummyToken2 = await MockToken.deploy(deployer, 'Dummy Token 2', 'DMY2', dummyToken2Decimals);
+
+    // Add the cached decimals of the dummy tokens
+    const receipt = await valueInterpreter.addCachedDecimalsForAssets([dummyToken1, dummyToken2]);
+
+    // Assert the correct decimals are stored
+    expect(await valueInterpreter.getCachedDecimalsForAsset(dummyToken1)).toEqBigNumber(dummyToken1Decimals);
+    expect(await valueInterpreter.getCachedDecimalsForAsset(dummyToken2)).toEqBigNumber(dummyToken2Decimals);
+
+    // Assert the correct event was emitted per dummy token
+    const events = extractEvent(receipt, 'CachedDecimalsForAssetAdded');
+    expect(events.length).toBe(2);
+    expect(events[0]).toMatchEventArgs({
+      asset: dummyToken1,
+      decimals: dummyToken1Decimals,
+    });
+    expect(events[1]).toMatchEventArgs({
+      asset: dummyToken2,
+      decimals: dummyToken2Decimals,
+    });
   });
 });
 
@@ -250,45 +284,6 @@ describe('calcLiveAssetValue', () => {
     await expect(
       valueInterpreterWithMocks.calcLiveAssetValue(randomAddress(), 1, quotePrimitive),
     ).rejects.toBeRevertedWith('Unsupported _baseAsset');
-  });
-
-  it('does not allow as an input an unsupported baseAsset', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [quotePrimitive],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(randomAddress(), 1, quotePrimitive),
-    ).rejects.toBeRevertedWith('Unsupported _baseAsset');
-  });
-
-  it('does not allow an quote asset as an input)', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [basePrimitive, ,],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(basePrimitive, utils.parseEther('1'), constants.AddressZero),
-    ).rejects.toBeRevertedWith('Empty _quoteAsset');
-  });
-
-  it('does not allow an empty base asset an an input', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [quotePrimitive, ,],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(constants.AddressZero, utils.parseEther('1'), quotePrimitive),
-    ).rejects.toBeRevertedWith('Empty _baseAsset');
   });
 });
 

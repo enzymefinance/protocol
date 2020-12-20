@@ -35,42 +35,42 @@ export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T 
 // Note that due to the nature of `toCostLessThan()`,
 const expectedGasCosts = {
   'create fund': {
-    weth: 702000,
-    usdc: 708000,
+    weth: 703000,
+    usdc: 710000,
   },
   'buy shares: denomination asset only: first investment': {
     weth: 418000,
-    usdc: 432000,
+    usdc: 437000,
   },
   'buy shares: denomination asset only: second investment': {
     weth: 446000,
     usdc: 454000,
   },
   'calc gav: denomination asset only': {
-    weth: 42000,
-    usdc: 45000,
+    weth: 44000,
+    usdc: 48000,
   },
   'calc gav: 20 assets': {
-    weth: 843000,
-    usdc: 1089000,
+    weth: 741000,
+    usdc: 875000,
   },
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
-    weth: 1729000,
-    usdc: 2532000,
+    weth: 1676000,
+    usdc: 2383000,
   },
   'redeem partial shares: max assets': {
-    weth: 2138000,
-    usdc: 2395000,
+    weth: 2035000,
+    usdc: 2180000,
   },
   'buy shares: max assets': {
-    weth: 1290000,
-    usdc: 1537000,
+    weth: 1182000,
+    usdc: 1343000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 1587000,
-    usdc: 1814000,
+    weth: 1484000,
+    usdc: 1598000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%
