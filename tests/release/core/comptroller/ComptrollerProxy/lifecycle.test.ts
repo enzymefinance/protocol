@@ -1,14 +1,7 @@
 import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { assertEvent, defaultTestDeployment, createComptrollerProxy } from '@melonproject/testutils';
-import {
-  IExtension,
-  ComptrollerLib,
-  FundDeployer,
-  FundLifecycleLib,
-  VaultLib,
-  ReleaseStatusTypes,
-} from '@melonproject/protocol';
+import { IExtension, ComptrollerLib, FundDeployer, VaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {
@@ -37,16 +30,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockPolicyManager.deactivateForFund.returns(undefined),
   ]);
 
-  // Re-deploy a ComptrollerLib that uses the mocks
-  const fundLifecycleLib = await FundLifecycleLib.deploy(
-    config.deployer,
-    mockFundDeployer,
-    deployment.chainlinkPriceFeed,
-    mockFeeManager,
-    mockIntegrationManager,
-    mockPolicyManager,
-  );
-
   const comptrollerLib = await ComptrollerLib.deploy(
     config.deployer,
     config.dispatcher,
@@ -55,7 +38,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,
-    fundLifecycleLib, // FundLifecycleLib
+    deployment.chainlinkPriceFeed,
     randomAddress(), // PermissionedVaultActionLib
     randomAddress(), // SynthetixPriceFeed
     randomAddress(), // SynthetixAddressResolver
@@ -85,7 +68,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     comptrollerLib,
     comptrollerProxy: comptrollerProxy.connect(mockVaultProxyOwner),
     feeManagerConfigData,
-    fundLifecycleLib,
     mockFeeManager,
     mockFundDeployer,
     mockIntegrationManager,
@@ -190,7 +172,6 @@ describe('activate', () => {
   it('correctly handles valid call (new fund)', async () => {
     const {
       comptrollerProxy,
-      fundLifecycleLib,
       mockFeeManager,
       mockFundDeployer,
       mockIntegrationManager,
@@ -202,7 +183,7 @@ describe('activate', () => {
     const receipt = await mockFundDeployer.forward(comptrollerProxy.activate, mockVaultProxy, false);
 
     // Assert events emitted
-    const VaultProxySetEvent = fundLifecycleLib.abi.getEvent('VaultProxySet');
+    const VaultProxySetEvent = comptrollerProxy.abi.getEvent('VaultProxySet');
     assertEvent(receipt, VaultProxySetEvent, {
       vaultProxy: mockVaultProxy,
     });
@@ -227,7 +208,6 @@ describe('activate', () => {
   it('correctly handles valid call (migrated fund)', async () => {
     const {
       comptrollerProxy,
-      fundLifecycleLib,
       mockFeeManager,
       mockFundDeployer,
       mockIntegrationManager,
@@ -244,12 +224,12 @@ describe('activate', () => {
     const receipt = await mockFundDeployer.forward(comptrollerProxy.activate, mockVaultProxy, true);
 
     // Assert events emitted
-    const VaultProxySetEvent = fundLifecycleLib.abi.getEvent('VaultProxySet');
+    const VaultProxySetEvent = comptrollerProxy.abi.getEvent('VaultProxySet');
     assertEvent(receipt, VaultProxySetEvent, {
       vaultProxy: mockVaultProxy,
     });
 
-    const MigratedSharesDuePaidEvent = fundLifecycleLib.abi.getEvent('MigratedSharesDuePaid');
+    const MigratedSharesDuePaidEvent = comptrollerProxy.abi.getEvent('MigratedSharesDuePaid');
     assertEvent(receipt, MigratedSharesDuePaidEvent, {
       sharesDue: BigNumber.from(sharesDue),
     });

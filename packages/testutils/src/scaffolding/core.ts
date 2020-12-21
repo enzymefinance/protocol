@@ -6,9 +6,7 @@ import {
   Dispatcher,
   FeeManager,
   FundDeployer,
-  FundLifecycleLib,
   IntegrationManager,
-  PermissionedVaultActionLib,
   PolicyManager,
   SynthetixPriceFeed,
   ValueInterpreter,
@@ -21,7 +19,6 @@ export async function createFundDeployer({
   dispatcher,
   feeManager,
   integrationManager,
-  permissionedVaultActionLib,
   policyManager,
   synthetixAddressResolverAddress,
   synthetixPriceFeed,
@@ -36,7 +33,6 @@ export async function createFundDeployer({
   dispatcher: Dispatcher;
   feeManager: FeeManager;
   integrationManager: IntegrationManager;
-  permissionedVaultActionLib: PermissionedVaultActionLib;
   policyManager: PolicyManager;
   synthetixAddressResolverAddress: AddressLike;
   synthetixPriceFeed: SynthetixPriceFeed;
@@ -53,14 +49,6 @@ export async function createFundDeployer({
     vaultCallContracts,
     vaultCallSelectors,
   );
-  const nextFundLifecycleLib = await FundLifecycleLib.deploy(
-    deployer,
-    nextFundDeployer,
-    chainlinkPriceFeed,
-    feeManager,
-    integrationManager,
-    policyManager,
-  );
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,
@@ -69,8 +57,7 @@ export async function createFundDeployer({
     feeManager,
     integrationManager,
     policyManager,
-    nextFundLifecycleLib,
-    permissionedVaultActionLib,
+    chainlinkPriceFeed,
     synthetixPriceFeed,
     synthetixAddressResolverAddress,
   );

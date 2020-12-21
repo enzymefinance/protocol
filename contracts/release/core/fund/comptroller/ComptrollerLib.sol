@@ -8,40 +8,77 @@ import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
+import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../../utils/AssetFinalityResolver.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
-import "./libs/IFundLifecycleLib.sol";
-import "./libs/IPermissionedVaultActionLib.sol";
-import "./utils/ComptrollerEvents.sol";
-import "./utils/ComptrollerStorage.sol";
 import "./IComptroller.sol";
 
 /// @title ComptrollerLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
-contract ComptrollerLib is
-    IComptroller,
-    ComptrollerEvents,
-    ComptrollerStorage,
-    AssetFinalityResolver
-{
+contract ComptrollerLib is IComptroller, AssetFinalityResolver {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
+
+    event MigratedSharesDuePaid(uint256 sharesDue);
+
+    event OverridePauseSet(bool indexed overridePause);
+
+    event PreRedeemSharesHookFailed(
+        bytes failureReturnData,
+        address redeemer,
+        uint256 sharesQuantity
+    );
+
+    event SharesBought(
+        address indexed caller,
+        address indexed buyer,
+        uint256 investmentAmount,
+        uint256 sharesIssued,
+        uint256 sharesReceived
+    );
+
+    event SharesRedeemed(
+        address indexed redeemer,
+        uint256 sharesQuantity,
+        address[] receivedAssets,
+        uint256[] receivedAssetQuantities
+    );
+
+    event VaultProxySet(address vaultProxy);
 
     // Constants and immutables - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable DISPATCHER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
-    address private immutable FUND_LIFECYCLE_LIB;
     address private immutable INTEGRATION_MANAGER;
-    address private immutable PERMISSIONED_VAULT_ACTION_LIB;
+    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable VALUE_INTERPRETER;
+
+    // Pseudo-constants (can only be set once)
+
+    address internal denominationAsset;
+    address internal vaultProxy;
+    // True only for the one non-proxy
+    bool internal isLib;
+
+    // Storage
+
+    // Allows a fund owner to override a release-level pause
+    bool internal overridePause;
+    // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
+    bool internal permissionedVaultActionAllowed;
+    // A mutex to protect against reentrancy
+    bool internal reentranceLocked;
+    // A timelock between any "shares actions" (i.e., buy and redeem shares), per-account
+    uint256 internal sharesActionTimelock;
+    mapping(address => uint256) internal acctToLastSharesAction;
 
     ///////////////
     // MODIFIERS //
@@ -71,6 +108,11 @@ contract ComptrollerLib is
         _;
     }
 
+    modifier onlyFundDeployer() {
+        __assertIsFundDeployer(msg.sender);
+        _;
+    }
+
     modifier onlyOwner() {
         __assertIsOwner(msg.sender);
         _;
@@ -91,6 +133,10 @@ contract ComptrollerLib is
     /// we can check that var rather than storing additional state
     function __assertIsActive(address _vaultProxy) private pure {
         require(_vaultProxy != address(0), "Fund not active");
+    }
+
+    function __assertIsFundDeployer(address _who) private view {
+        require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
     }
 
     function __assertIsOwner(address _who) private view {
@@ -127,17 +173,15 @@ contract ComptrollerLib is
         address _feeManager,
         address _integrationManager,
         address _policyManager,
-        address _fundLifecycleLib,
-        address _permissionedVaultActionLib,
+        address _primitivePriceFeed,
         address _synthetixPriceFeed,
         address _synthetixAddressResolver
     ) public AssetFinalityResolver(_synthetixPriceFeed, _synthetixAddressResolver) {
         DISPATCHER = _dispatcher;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
-        FUND_LIFECYCLE_LIB = _fundLifecycleLib;
         INTEGRATION_MANAGER = _integrationManager;
-        PERMISSIONED_VAULT_ACTION_LIB = _permissionedVaultActionLib;
+        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
         VALUE_INTERPRETER = _valueInterpreter;
         isLib = true;
@@ -165,23 +209,6 @@ contract ComptrollerLib is
         );
 
         IExtension(_extension).receiveCallFromComptroller(msg.sender, _actionId, _callArgs);
-    }
-
-    /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
-    /// @param _action The enum representing the VaultAction to perform on the VaultProxy
-    /// @param _actionData The call data for the action to perform
-    function permissionedVaultAction(
-        IPermissionedVaultActionLib.VaultAction _action,
-        bytes calldata _actionData
-    ) external override {
-        (bool success, bytes memory returnData) = PERMISSIONED_VAULT_ACTION_LIB.delegatecall(
-            abi.encodeWithSelector(
-                IPermissionedVaultActionLib.dispatchAction.selector,
-                _action,
-                _actionData
-            )
-        );
-        __assertLowLevelCall(success, returnData);
     }
 
     /// @notice Sets or unsets an override on a release-wide pause
@@ -219,51 +246,220 @@ contract ComptrollerLib is
             !overridePause;
     }
 
+    ////////////////////////////////
+    // PERMISSIONED VAULT ACTIONS //
+    ////////////////////////////////
+
+    /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
+    /// @param _action The enum representing the VaultAction to perform on the VaultProxy
+    /// @param _actionData The call data for the action to perform
+    function permissionedVaultAction(VaultAction _action, bytes calldata _actionData)
+        external
+        override
+        onlyNotPaused
+        onlyActive
+    {
+        __assertPermissionedVaultAction(msg.sender, _action);
+
+        if (_action == VaultAction.AddTrackedAsset) {
+            __vaultActionAddTrackedAsset(_actionData);
+        } else if (_action == VaultAction.ApproveAssetSpender) {
+            __vaultActionApproveAssetSpender(_actionData);
+        } else if (_action == VaultAction.BurnShares) {
+            __vaultActionBurnShares(_actionData);
+        } else if (_action == VaultAction.MintShares) {
+            __vaultActionMintShares(_actionData);
+        } else if (_action == VaultAction.RemoveTrackedAsset) {
+            __vaultActionRemoveTrackedAsset(_actionData);
+        } else if (_action == VaultAction.TransferShares) {
+            __vaultActionTransferShares(_actionData);
+        } else if (_action == VaultAction.WithdrawAssetTo) {
+            __vaultActionWithdrawAssetTo(_actionData);
+        }
+    }
+
+    /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction
+    function __assertPermissionedVaultAction(address _caller, VaultAction _action) private view {
+        require(
+            permissionedVaultActionAllowed,
+            "__assertPermissionedVaultAction: No action allowed"
+        );
+
+        if (_caller == INTEGRATION_MANAGER) {
+            require(
+                _action == VaultAction.ApproveAssetSpender ||
+                    _action == VaultAction.AddTrackedAsset ||
+                    _action == VaultAction.RemoveTrackedAsset ||
+                    _action == VaultAction.WithdrawAssetTo,
+                "__assertPermissionedVaultAction: Not valid for IntegrationManager"
+            );
+        } else if (_caller == FEE_MANAGER) {
+            require(
+                _action == VaultAction.BurnShares ||
+                    _action == VaultAction.MintShares ||
+                    _action == VaultAction.TransferShares,
+                "__assertPermissionedVaultAction: Not valid for FeeManager"
+            );
+        } else {
+            revert("__assertPermissionedVaultAction: Not a valid actor");
+        }
+    }
+
+    /// @dev Helper to add a tracked asset to the fund
+    function __vaultActionAddTrackedAsset(bytes memory _actionData) private {
+        address asset = abi.decode(_actionData, (address));
+        IVault(vaultProxy).addTrackedAsset(asset);
+    }
+
+    /// @dev Helper to grant a spender an allowance for a fund's asset
+    function __vaultActionApproveAssetSpender(bytes memory _actionData) private {
+        (address asset, address target, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+        IVault(vaultProxy).approveAssetSpender(asset, target, amount);
+    }
+
+    /// @dev Helper to burn fund shares for a particular account
+    function __vaultActionBurnShares(bytes memory _actionData) private {
+        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
+        IVault(vaultProxy).burnShares(target, amount);
+    }
+
+    /// @dev Helper to mint fund shares to a particular account
+    function __vaultActionMintShares(bytes memory _actionData) private {
+        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
+        IVault(vaultProxy).mintShares(target, amount);
+    }
+
+    /// @dev Helper to remove a tracked asset from the fund
+    function __vaultActionRemoveTrackedAsset(bytes memory _actionData) private {
+        address asset = abi.decode(_actionData, (address));
+
+        // Allowing this to fail silently makes it cheaper and simpler
+        // for Extensions to not query for the denomination asset
+        if (asset != denominationAsset) {
+            IVault(vaultProxy).removeTrackedAsset(asset);
+        }
+    }
+
+    /// @dev Helper to transfer fund shares from one account to another
+    function __vaultActionTransferShares(bytes memory _actionData) private {
+        (address from, address to, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+        IVault(vaultProxy).transferShares(from, to, amount);
+    }
+
+    /// @dev Helper to withdraw an asset from the VaultProxy to a given account
+    function __vaultActionWithdrawAssetTo(bytes memory _actionData) private {
+        (address asset, address target, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+        IVault(vaultProxy).withdrawAssetTo(asset, target, amount);
+    }
+
     ///////////////
     // LIFECYCLE //
     ///////////////
 
-    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
+    /// @notice Initializes a fund with its core config
+    /// @param _denominationAsset The asset in which the fund's value should be denominated
+    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
+    /// (buying or selling shares) by the same user
+    /// @dev Pseudo-constructor per proxy.
+    /// No need to assert access because this is called atomically on deployment,
+    /// and once it's called, it cannot be called again.
     function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
-        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
-            abi.encodeWithSelector(
-                IFundLifecycleLib.init.selector,
-                _denominationAsset,
-                _sharesActionTimelock
-            )
+        require(denominationAsset == address(0), "init: Already initialized");
+        require(
+            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
+            "init: Bad denomination asset"
         );
-        __assertLowLevelCall(success, returnData);
+
+        denominationAsset = _denominationAsset;
+        sharesActionTimelock = _sharesActionTimelock;
     }
 
-    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
+    /// @notice Configure the extensions of a fund
+    /// @param _feeManagerConfigData Encoded config for fees to enable
+    /// @param _policyManagerConfigData Encoded config for policies to enable
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Called atomically with init(), but after ComptrollerLib has been deployed,
+    /// giving access to its state and interface
     function configureExtensions(
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external override {
-        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
-            abi.encodeWithSelector(
-                IFundLifecycleLib.configureExtensions.selector,
-                _feeManagerConfigData,
-                _policyManagerConfigData
-            )
-        );
-        __assertLowLevelCall(success, returnData);
+    ) external override onlyFundDeployer {
+        if (_feeManagerConfigData.length > 0) {
+            IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);
+        }
+        if (_policyManagerConfigData.length > 0) {
+            IExtension(POLICY_MANAGER).setConfigForFund(_policyManagerConfigData);
+        }
     }
 
-    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
-    function activate(address _vaultProxy, bool _isMigration) external override {
-        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
-            abi.encodeWithSelector(IFundLifecycleLib.activate.selector, _vaultProxy, _isMigration)
-        );
-        __assertLowLevelCall(success, returnData);
+    /// @notice Activates the fund by attaching a VaultProxy and activating all Extensions
+    /// @param _vaultProxy The VaultProxy to attach to the fund
+    /// @param _isMigration True if a migrated fund is being activated
+    /// @dev No need to assert anything beyond FundDeployer access.
+    function activate(address _vaultProxy, bool _isMigration) external override onlyFundDeployer {
+        vaultProxy = _vaultProxy;
+
+        emit VaultProxySet(_vaultProxy);
+
+        if (_isMigration) {
+            // Distribute any shares in the VaultProxy to the fund owner.
+            // This is a mechanism to ensure that even in the edge case of a fund being unable
+            // to payout fee shares owed during migration, these shares are not lost.
+            uint256 sharesDue = ERC20(_vaultProxy).balanceOf(_vaultProxy);
+            if (sharesDue > 0) {
+                IVault(_vaultProxy).transferShares(
+                    _vaultProxy,
+                    IVault(_vaultProxy).getOwner(),
+                    sharesDue
+                );
+
+                emit MigratedSharesDuePaid(sharesDue);
+            }
+        }
+
+        // Note: a future release could consider forcing the adding of a tracked asset here,
+        // just in case a fund is migrating from an old configuration where they are not able
+        // to remove an asset to get under the tracked assets limit
+        IVault(_vaultProxy).addTrackedAsset(denominationAsset);
+
+        // Activate extensions
+        IExtension(FEE_MANAGER).activateForFund(_isMigration);
+        IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);
+        IExtension(POLICY_MANAGER).activateForFund(_isMigration);
     }
 
-    /// @dev Delegated to FundLifecycleLib. See library for Natspec.
-    function destruct() external override {
-        (bool success, bytes memory returnData) = FUND_LIFECYCLE_LIB.delegatecall(
-            abi.encodeWithSelector(IFundLifecycleLib.destruct.selector)
-        );
-        __assertLowLevelCall(success, returnData);
+    /// @notice Remove the config for a fund
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Calling onlyNotPaused here rather than in the FundDeployer allows
+    /// the owner to potentially override the pause and rescue unpaid fees.
+    function destruct()
+        external
+        override
+        onlyFundDeployer
+        onlyNotPaused
+        allowsPermissionedVaultAction
+    {
+        // Failsafe to protect the libs against selfdestruct
+        require(!isLib, "destruct: Only delegate callable");
+
+        // Deactivate the extensions
+        IExtension(FEE_MANAGER).deactivateForFund();
+        IExtension(INTEGRATION_MANAGER).deactivateForFund();
+        IExtension(POLICY_MANAGER).deactivateForFund();
+
+        // Delete storage of ComptrollerProxy
+        // There should never be ETH in the ComptrollerLib, so no need to waste gas
+        // to get the fund owner
+        selfdestruct(address(0));
     }
 
     ////////////////
@@ -738,10 +934,9 @@ contract ComptrollerLib is
     /// @return dispatcher_ The `DISPATCHER` variable value
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
-    /// @return fundLifecycleLib_ The `FUND_LIFECYCLE_LIB` variable value
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
-    /// @return permissionedVaultActionLib_ The `PERMISSIONED_VAULT_ACTION_LIB` variable value
     /// @return policyManager_ The `POLICY_MANAGER` variable value
+    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getLibRoutes()
         external
@@ -750,10 +945,9 @@ contract ComptrollerLib is
             address dispatcher_,
             address feeManager_,
             address fundDeployer_,
-            address fundLifecycleLib_,
             address integrationManager_,
-            address permissionedVaultActionLib_,
             address policyManager_,
+            address primitivePriceFeed_,
             address valueInterpreter_
         )
     {
@@ -761,10 +955,9 @@ contract ComptrollerLib is
             DISPATCHER,
             FEE_MANAGER,
             FUND_DEPLOYER,
-            FUND_LIFECYCLE_LIB,
             INTEGRATION_MANAGER,
-            PERMISSIONED_VAULT_ACTION_LIB,
             POLICY_MANAGER,
+            PRIMITIVE_PRICE_FEED,
             VALUE_INTERPRETER
         );
     }

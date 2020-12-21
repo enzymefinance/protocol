@@ -247,9 +247,9 @@ describe('Walkthrough a fund migration', () => {
       policyManagerConfigData: policyManagerConfig,
     });
 
-    expect(createMigratedFundTx.receipt).toCostLessThan(`333000`, gasAssertionTolerance);
-
     newComptrollerProxy = createMigratedFundTx.comptrollerProxy;
+
+    expect(createMigratedFundTx.receipt).toCostLessThan(`317000`, gasAssertionTolerance);
   });
 
   it('signals a fund migration', async () => {

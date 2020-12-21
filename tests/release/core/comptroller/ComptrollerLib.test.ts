@@ -1,7 +1,7 @@
 import { constants } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
-import { ComptrollerLib } from '@melonproject/protocol';
+import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@melonproject/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -20,13 +20,12 @@ describe('constructor', () => {
         integratees: { synthetix },
       },
       deployment: {
+        chainlinkPriceFeed,
         comptrollerLib,
         dispatcher,
         feeManager,
         fundDeployer,
-        fundLifecycleLib,
         integrationManager,
-        permissionedVaultActionLib,
         policyManager,
         synthetixPriceFeed,
         valueInterpreter,
@@ -38,10 +37,9 @@ describe('constructor', () => {
       dispatcher_: dispatcher,
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
-      fundLifecycleLib_: fundLifecycleLib,
       integrationManager_: integrationManager,
-      permissionedVaultActionLib_: permissionedVaultActionLib,
       policyManager_: policyManager,
+      primitivePriceFeed_: chainlinkPriceFeed,
       valueInterpreter_: valueInterpreter,
     });
 
@@ -61,35 +59,28 @@ describe('constructor', () => {
 });
 
 describe('destruct', () => {
-  it('cannot be non-delegatecalled on ComptrollerLib or FundLifecycleLib', async () => {
+  it('cannot be non-delegatecalled', async () => {
     const {
-      accounts: [fundDeployerSigner],
       config: { deployer },
-      deployment: { fundLifecycleLib },
     } = await provider.snapshot(snapshot);
+
+    const mockFundDeployer = await FundDeployer.mock(deployer);
+    await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
 
     const comptrollerLib = await ComptrollerLib.deploy(
       deployer,
       randomAddress(),
-      fundDeployerSigner,
+      mockFundDeployer,
       randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),
-      fundLifecycleLib,
       randomAddress(),
       randomAddress(),
       randomAddress(),
     );
 
     // Calling the ComptrollerLib directly should fail
-    await expect(comptrollerLib.connect(fundDeployerSigner).destruct()).rejects.toBeRevertedWith(
-      'Only FundDeployer callable',
-    );
-
-    // Calling the FundLifecycleLib directly should fail
-    await expect(fundLifecycleLib.connect(fundDeployerSigner).destruct()).rejects.toBeRevertedWith(
-      'Only FundDeployer callable',
-    );
+    await expect(mockFundDeployer.forward(comptrollerLib.destruct)).rejects.toBeRevertedWith('Only delegate callable');
   });
 });

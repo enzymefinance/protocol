@@ -12,9 +12,7 @@ export { IMigrationHookHandler } from './codegen/IMigrationHookHandler';
 export { FundDeployer } from './codegen/FundDeployer';
 export { ComptrollerLib } from './codegen/ComptrollerLib';
 export { ComptrollerProxy } from './codegen/ComptrollerProxy';
-export { PermissionedVaultActionLib } from './codegen/PermissionedVaultActionLib';
 export { VaultLib } from './codegen/VaultLib';
-export { FundLifecycleLib } from './codegen/FundLifecycleLib';
 
 // Infrastructure
 export { ValueInterpreter } from './codegen/ValueInterpreter';

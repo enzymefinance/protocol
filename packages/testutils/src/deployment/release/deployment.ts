@@ -19,7 +19,6 @@ import {
   FeeManager,
   FundActionsWrapper,
   FundDeployer,
-  FundLifecycleLib,
   GuaranteedRedemption,
   IntegrationManager,
   InvestorWhitelist,
@@ -29,7 +28,6 @@ import {
   MinMaxInvestment,
   ParaSwapAdapter,
   PerformanceFee,
-  PermissionedVaultActionLib,
   PolicyManager,
   SynthetixAdapter,
   SynthetixPriceFeed,
@@ -129,8 +127,6 @@ export interface ReleaseDeploymentOutput {
   // Core
   comptrollerLib: Promise<ComptrollerLib>;
   fundDeployer: Promise<FundDeployer>;
-  fundLifecycleLib: Promise<FundLifecycleLib>;
-  permissionedVaultActionLib: Promise<PermissionedVaultActionLib>;
   vaultLib: Promise<VaultLib>;
   // Shared Infrastructure
   valueInterpreter: Promise<ValueInterpreter>;
@@ -188,8 +184,7 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.feeManager,
       await deployment.integrationManager,
       await deployment.policyManager,
-      await deployment.fundLifecycleLib,
-      await deployment.permissionedVaultActionLib,
+      await deployment.chainlinkPriceFeed,
       await deployment.synthetixPriceFeed,
       config.integratees.synthetix.addressResolver,
     );
@@ -206,24 +201,6 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       await deployment.vaultLib,
       config.registeredVaultCalls.contracts,
       config.registeredVaultCalls.selectors,
-    );
-  },
-  async fundLifecycleLib(config, deployment) {
-    return FundLifecycleLib.deploy(
-      config.deployer,
-      await deployment.fundDeployer,
-      await deployment.chainlinkPriceFeed,
-      await deployment.feeManager,
-      await deployment.integrationManager,
-      await deployment.policyManager,
-    );
-  },
-  async permissionedVaultActionLib(config, deployment) {
-    return PermissionedVaultActionLib.deploy(
-      config.deployer,
-      await deployment.fundDeployer,
-      await deployment.feeManager,
-      await deployment.integrationManager,
     );
   },
   async vaultLib(config) {

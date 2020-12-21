@@ -2,7 +2,6 @@
 pragma solidity 0.6.12;
 
 import "../../core/fund/comptroller/IComptroller.sol";
-import "../../core/fund/comptroller/libs/IPermissionedVaultActionLib.sol";
 
 /// @title PermissionedVaultActionMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -13,7 +12,7 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _asset The asset to add
     function __addTrackedAsset(address _comptrollerProxy, address _asset) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.AddTrackedAsset,
+            IComptroller.VaultAction.AddTrackedAsset,
             abi.encode(_asset)
         );
     }
@@ -30,7 +29,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.ApproveAssetSpender,
+            IComptroller.VaultAction.ApproveAssetSpender,
             abi.encode(_asset, _target, _amount)
         );
     }
@@ -45,7 +44,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.BurnShares,
+            IComptroller.VaultAction.BurnShares,
             abi.encode(_target, _amount)
         );
     }
@@ -60,7 +59,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.MintShares,
+            IComptroller.VaultAction.MintShares,
             abi.encode(_target, _amount)
         );
     }
@@ -70,7 +69,7 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _asset The asset to remove
     function __removeTrackedAsset(address _comptrollerProxy, address _asset) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.RemoveTrackedAsset,
+            IComptroller.VaultAction.RemoveTrackedAsset,
             abi.encode(_asset)
         );
     }
@@ -87,7 +86,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.TransferShares,
+            IComptroller.VaultAction.TransferShares,
             abi.encode(_from, _to, _amount)
         );
     }
@@ -104,7 +103,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IPermissionedVaultActionLib.VaultAction.WithdrawAssetTo,
+            IComptroller.VaultAction.WithdrawAssetTo,
             abi.encode(_asset, _target, _amount)
         );
     }

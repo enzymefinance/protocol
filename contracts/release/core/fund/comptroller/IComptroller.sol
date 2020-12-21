@@ -1,11 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "./libs/IPermissionedVaultActionLib.sol";
-
 /// @title IComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IComptroller {
+    enum VaultAction {
+        None,
+        BurnShares,
+        MintShares,
+        TransferShares,
+        ApproveAssetSpender,
+        WithdrawAssetTo,
+        AddTrackedAsset,
+        RemoveTrackedAsset
+    }
+
     function activate(address, bool) external;
 
     function calcGav(bool) external returns (uint256, bool);
@@ -28,6 +37,5 @@ interface IComptroller {
 
     function init(address, uint256) external;
 
-    function permissionedVaultAction(IPermissionedVaultActionLib.VaultAction, bytes calldata)
-        external;
+    function permissionedVaultAction(VaultAction, bytes calldata) external;
 }
