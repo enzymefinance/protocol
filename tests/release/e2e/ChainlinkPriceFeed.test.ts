@@ -1,7 +1,7 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import { IChainlinkAggregator } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
-import { constants, utils } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
@@ -198,5 +198,206 @@ describe('removeStalePrimitives', () => {
     // Should succeed after warping beyond staleness threshold
     await provider.send('evm_increaseTime', [60 * 60 * 49]);
     await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).resolves.toBeReceipt();
+  });
+});
+
+describe('expected values', () => {
+  describe('similar rate asset (ETH)', () => {
+    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { dai, susd },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await dai.decimals();
+      const quoteDecimals = await susd.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      // susd/usd value should always be similar
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(dai, utils.parseUnits('1', baseDecimals), susd)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('1017353959404129420'),
+        isValid_: true,
+      });
+    });
+
+    it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { dai, usdc },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await dai.decimals();
+      const quoteDecimals = await usdc.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(6);
+
+      // dai/usd value should always be similar
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(dai, utils.parseUnits('1', baseDecimals), usdc)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('1005423'),
+        isValid_: true,
+      });
+    });
+  });
+
+  describe('similar rate asset (USD)', () => {
+    it.todo('returns the expected value from the valueInterpreter (non 18 decimals)');
+
+    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { bnb, ren },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await bnb.decimals();
+      const quoteDecimals = await ren.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      // bnb/usd on 11/12/2020 was rated at $28.02
+      // ren/usd on 11/12/2020 was rated at $0.34
+      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2020-11-11&end_date=2020-11-11#panel>
+      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2020-11-11&end_date=2020-11-11#panel>
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(bnb, utils.parseUnits('1', baseDecimals), ren)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('93029367491463738449'),
+        isValid_: true,
+      });
+    });
+  });
+
+  describe('different rate asset (ETH/USD)', () => {
+    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { weth, dai },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await weth.decimals();
+      const quoteDecimals = await dai.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      // weth/usd on 11/12/2020 was rated at $449.82.
+      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(weth, utils.parseUnits('1', baseDecimals), dai)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('451750839137004610586'),
+        isValid_: true,
+      });
+    });
+
+    it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { weth, usdc },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await weth.decimals();
+      const quoteDecimals = await usdc.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(6);
+
+      // weth/usd on 11/12/2020 was rated at $449.82.
+      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(weth, utils.parseUnits('1', baseDecimals), usdc)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('454200983'),
+        isValid_: true,
+      });
+    });
+  });
+
+  describe('different rate asset (USD/ETH)', () => {
+    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { weth, dai },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await weth.decimals();
+      const quoteDecimals = await dai.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      // weth/usd on 11/12/2020 was rated at $449.82. Inverse is Ξ0.00222
+      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(dai, utils.parseUnits('1', baseDecimals), weth)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('2213609612569475'),
+        isValid_: true,
+      });
+    });
+
+    it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
+      const {
+        deployment: { valueInterpreter },
+        config: {
+          tokens: { weth, usdc },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const baseDecimals = await weth.decimals();
+      const quoteDecimals = await usdc.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(6);
+
+      // weth/usd on 11/12/2020 was rated at $449.82.
+      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(weth, utils.parseUnits('1', baseDecimals), usdc)
+        .call();
+
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('454200983'),
+        isValid_: true,
+      });
+    });
   });
 });

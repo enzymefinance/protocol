@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IUniswapV2Pair } from '@melonproject/protocol';
+import { IUniswapV2Pair, StandardToken } from '@melonproject/protocol';
 import {
   addNewAssetsToFund,
   buyShares,
@@ -7,7 +7,7 @@ import {
   defaultForkDeployment,
   uniswapV2Lend,
 } from '@melonproject/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%
 
@@ -143,29 +143,70 @@ describe('getRatesToUnderlyings', () => {
       expect(canonicalUnderlyingsRateRatio).toEqBigNumber(poolRateRatio);
     }
   });
-
-  it('returns the expected value from the valueInterpreter', async () => {
-    const {
-      config: {
-        tokens: { usdc },
-        derivatives: {
-          uniswapV2: { usdcWeth },
+  describe('expected values', () => {
+    it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
+      const {
+        config: {
+          deployer,
+          tokens: { usdc },
+          derivatives: {
+            uniswapV2: { usdcWeth: usdcWethAddress },
+          },
         },
-      },
-      deployment: { valueInterpreter },
-    } = await provider.snapshot(snapshot);
+        deployment: { valueInterpreter },
+      } = await provider.snapshot(snapshot);
 
-    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-      .args(usdcWeth, utils.parseUnits('1', 18), usdc)
-      .call();
+      const usdcWeth = new StandardToken(usdcWethAddress, deployer);
+      const baseDecimals = await usdcWeth.decimals();
+      const quoteDecimals = await usdc.decimals();
 
-    // According to Zerion <https://app.zerion.io/> the cost per UNI-V2 USDC/WETH at 11-12-2020 was $53.8M
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: 53584578776468,
-      isValid_: true,
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(6);
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
+        .call();
+
+      // Usdc/weth on 11/12/2020 was rated at $53.8M
+      // Source:
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: 53584578776468,
+        isValid_: true,
+      });
     });
-  });
 
-  it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');
-  it.todo('[adjust the above tests to assert exact rate calcs]');
+    it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
+      const {
+        config: {
+          deployer,
+          tokens: { dai },
+          derivatives: {
+            uniswapV2: { kncWeth: kncWethAddress },
+          },
+        },
+        deployment: { valueInterpreter },
+      } = await provider.snapshot(snapshot);
+
+      const kncWeth = new StandardToken(kncWethAddress, deployer);
+      const baseDecimals = await kncWeth.decimals();
+      const quoteDecimals = await dai.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
+        .call();
+
+      // KNC/WETH on 11/12/2020 was rated at $46.85
+      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('45703766651138418084'),
+        isValid_: true,
+      });
+    });
+
+    it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');
+    it.todo('[adjust the above tests to assert exact rate calcs]');
+  });
 });
