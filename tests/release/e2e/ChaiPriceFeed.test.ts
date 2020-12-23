@@ -30,10 +30,10 @@ describe('getRatesToUnderlyings', () => {
     const pot = new IMakerDaoPot(potAddress, deployer);
     const chi = await pot.chi();
 
-    const chaiGetPriceFeedReceipt = await chaiPriceFeed.getRatesToUnderlyings.args(chai).call();
+    const chaiGetPriceFeedReceipt = await chaiPriceFeed.calcUnderlyingValues.args(chai, utils.parseEther('1')).call();
 
-    expect(chaiGetPriceFeedReceipt).toMatchFunctionOutput(chaiPriceFeed.getRatesToUnderlyings, {
-      rates_: [chi.div(10 ** 9)],
+    expect(chaiGetPriceFeedReceipt).toMatchFunctionOutput(chaiPriceFeed.calcUnderlyingValues, {
+      underlyingAmounts_: [chi.div(10 ** 9)],
       underlyings_: [dai],
     });
   });

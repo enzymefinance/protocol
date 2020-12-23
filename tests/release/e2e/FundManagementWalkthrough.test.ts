@@ -51,26 +51,26 @@ const expectedGasCosts = {
     usdc: 48000,
   },
   'calc gav: 20 assets': {
-    weth: 741000,
+    weth: 663000,
     usdc: 875000,
   },
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
-    weth: 1623000,
+    weth: 1541000,
     usdc: 2308000,
   },
   'redeem partial shares: max assets': {
-    weth: 2035000,
+    weth: 1953000,
     usdc: 2180000,
   },
   'buy shares: max assets': {
-    weth: 1182000,
+    weth: 1098000,
     usdc: 1343000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 1484000,
-    usdc: 1598000,
+    weth: 1912000,
+    usdc: 2112000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%

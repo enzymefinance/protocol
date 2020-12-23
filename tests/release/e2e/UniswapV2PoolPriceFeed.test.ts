@@ -86,7 +86,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(109000), gasAssertionTolerance);
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(92000), gasAssertionTolerance);
   });
 });
 
@@ -107,9 +107,13 @@ describe('getRatesToUnderlyings', () => {
     const token0RatioAmount = utils.parseEther('1');
     const token1Address = await pair.token1();
 
-    const getRatesToUnderlyingsRes = await uniswapV2PoolPriceFeed.getRatesToUnderlyings.args(mlnWeth).call();
-    expect(getRatesToUnderlyingsRes).toMatchFunctionOutput(uniswapV2PoolPriceFeed.getRatesToUnderlyings, {
-      rates_: [expect.any(String), expect.any(String)],
+    const poolTokenUnit = utils.parseEther('1');
+
+    const calcUnderlyingValuesRes = await uniswapV2PoolPriceFeed.calcUnderlyingValues
+      .args(mlnWeth, poolTokenUnit)
+      .call();
+    expect(calcUnderlyingValuesRes).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
+      underlyingAmounts_: [expect.any(String), expect.any(String)],
       underlyings_: [token0Address, token1Address],
     });
 
@@ -128,9 +132,9 @@ describe('getRatesToUnderlyings', () => {
       .div(calcCanonicalAssetValueRes.value_);
 
     // Get the final calculated canonical rate
-    const canonicalUnderlyingsRateRatio = getRatesToUnderlyingsRes.rates_[0]
+    const canonicalUnderlyingsRateRatio = calcUnderlyingValuesRes.underlyingAmounts_[0]
       .mul(utils.parseEther('1'))
-      .div(getRatesToUnderlyingsRes.rates_[1]);
+      .div(calcUnderlyingValuesRes.underlyingAmounts_[1]);
 
     // Final canonical rate should be pushed towards the trusted rate ratio
     if (poolRateRatio > trustedUnderlyingsRateRatio) {
@@ -143,6 +147,7 @@ describe('getRatesToUnderlyings', () => {
       expect(canonicalUnderlyingsRateRatio).toEqBigNumber(poolRateRatio);
     }
   });
+
   describe('expected values', () => {
     it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
       const {
@@ -201,7 +206,7 @@ describe('getRatesToUnderlyings', () => {
       // KNC/WETH on 11/12/2020 was rated at $46.85
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('45703766651138418084'),
+        value_: BigNumber.from('45703766651138418108'),
         isValid_: true,
       });
     });

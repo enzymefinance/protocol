@@ -36,6 +36,7 @@ module.exports = {
       'IIntegrationAdapter',
       'IFee',
       'IPolicy',
+      'IPrimitivePriceFeed',
 
       // TODO: Re-evaluate whether we should include these at all.
       'IMigrationHookHandler',

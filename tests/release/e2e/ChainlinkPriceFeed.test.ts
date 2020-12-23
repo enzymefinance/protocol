@@ -1,85 +1,114 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { IChainlinkAggregator } from '@melonproject/protocol';
+import { IChainlinkAggregator, MockToken } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultForkDeployment(provider);
 
-  const daiAggregatorAddress = await (
-    await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.dai)
-  ).aggregator;
-  const renAggregatorAddress = await (
-    await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.ren)
-  ).aggregator;
+  const renAggregatorAddress = (await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.ren))
+    .aggregator;
+  const usdcAggregatorAddress = (await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.usdc))
+    .aggregator;
   const ethUSDAggregatorAddress = await deployment.chainlinkPriceFeed.getEthUsdAggregator();
 
-  const daiAggregator = new IChainlinkAggregator(daiAggregatorAddress, config.deployer);
   const renAggregator = new IChainlinkAggregator(renAggregatorAddress, config.deployer);
+  const usdcAggregator = new IChainlinkAggregator(usdcAggregatorAddress, config.deployer);
   const ethUSDAggregator = new IChainlinkAggregator(ethUSDAggregatorAddress, config.deployer);
+
+  // Deregister DAI and re-add it to use the DAI/USD aggregator.
+  // This makes conversions simple by using stablecoins on both sides of the conversion,
+  // which should always be nearly 1:1
+  // See https://docs.chain.link/docs/using-chainlink-reference-contracts
+  await deployment.chainlinkPriceFeed.removePrimitives([config.tokens.dai]);
+  const daiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', config.deployer);
+  await deployment.chainlinkPriceFeed.addPrimitives([config.tokens.dai], [daiAggregator], [1]);
+
+  // Create a mock token and unused aggregator for additional aggregator CRUD tests
+  const unregisteredMockToken = await MockToken.deploy(config.deployer, 'Mock Token', 'MOCK', 6);
+  // Unused chf/usd aggregator, taken from
+  const unusedAggregator = new IChainlinkAggregator('0x449d117117838fFA61263B61dA6301AA2a88B13A', config.deployer);
 
   return {
     accounts,
     deployment,
-    aggregators: { daiAggregator, renAggregator, ethUSDAggregator },
+    aggregators: { daiAggregator, renAggregator, ethUSDAggregator, usdcAggregator },
     config,
+    unregisteredMockToken,
+    unusedAggregator,
   };
 }
 
 describe('getCanonicalRate', () => {
+  // USDC/ETH and WETH/ETH
   it('works as expected when calling getCanonicalRate (equal rate asset)', async () => {
     const {
       deployment: { chainlinkPriceFeed },
       config: {
-        tokens: { dai, weth },
+        tokens: { usdc, weth },
       },
-      aggregators: { daiAggregator },
+      aggregators: { usdcAggregator },
     } = await provider.snapshot(snapshot);
 
+    // Get asset units
+    const wethUnit = utils.parseEther('1');
+    const usdcUnit = utils.parseUnits('1', await usdc.decimals());
+
+    // Get rates
     const ethRate = utils.parseEther('1');
-    const daiRate = await daiAggregator.latestAnswer();
+    const usdcRate = await usdcAggregator.latestAnswer();
 
-    const expectedRate = ethRate.mul(utils.parseEther('1')).div(daiRate);
-
-    // Base: weth |  Quote: dai
-    const rate = await chainlinkPriceFeed.getCanonicalRate(weth, dai);
-    expect(rate).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
-      rate_: expectedRate,
+    // Base: weth |  Quote: usdc
+    const expectedRate = wethUnit.mul(ethRate).div(wethUnit).mul(usdcUnit).div(usdcRate);
+    const rate = await chainlinkPriceFeed.calcCanonicalValue(weth, wethUnit, usdc);
+    expect(rate).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
+      quoteAssetAmount_: expectedRate,
       isValid_: true,
     });
   });
 
+  // DAI/USD and USDC/ETH
   it('works as expected when calling getCanonicalRate (different rate assets)', async () => {
     const {
       deployment: { chainlinkPriceFeed },
       config: {
-        tokens: { dai, ren },
+        tokens: { dai, usdc },
       },
-      aggregators: { daiAggregator, renAggregator, ethUSDAggregator },
+      aggregators: { daiAggregator, usdcAggregator, ethUSDAggregator },
     } = await provider.snapshot(snapshot);
+
+    // Get asset units
+    const ethUnit = utils.parseEther('1');
+    const daiUnit = utils.parseUnits('1', await dai.decimals());
+    const usdcUnit = utils.parseUnits('1', await usdc.decimals());
 
     // Calculate Rates
     const ethRate = await ethUSDAggregator.latestAnswer();
-    const renRate = await renAggregator.latestAnswer();
+    const usdcRate = await usdcAggregator.latestAnswer();
     const daiRate = await daiAggregator.latestAnswer();
 
-    // Calculate rate to match (ren/dai) * precision
-    const expectedRateRenDai = renRate.mul(utils.parseEther('1')).mul(utils.parseEther('1')).div(ethRate).div(daiRate);
+    // USD rate to ETH rate
+    // Base: dai |  Quote: usdc
+    const expectedRateDaiUsdc = daiUnit.mul(daiRate).mul(usdcUnit).div(ethRate).mul(ethUnit).div(daiUnit).div(usdcRate);
+    const canonicalRateDaiUsdc = await chainlinkPriceFeed.calcCanonicalValue(dai, daiUnit, usdc);
 
-    // Base: ren |  Quote: dai
-    const canonicalRateRenDai = await chainlinkPriceFeed.getCanonicalRate(ren, dai);
-    expect(canonicalRateRenDai).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
-      rate_: expectedRateRenDai,
+    expect(canonicalRateDaiUsdc).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
+      quoteAssetAmount_: expectedRateDaiUsdc,
       isValid_: true,
     });
 
-    // Calculate rate to match (dai/ren) * precision
-    const expectedRateDaiRen = daiRate.mul(ethRate).div(renRate);
-
-    // Base: dai, quote: ren
-    const canonicalRateDaiRen = await chainlinkPriceFeed.getCanonicalRate(dai, ren);
-    expect(canonicalRateDaiRen).toMatchFunctionOutput(chainlinkPriceFeed.getCanonicalRate, {
-      rate_: expectedRateDaiRen,
+    // ETH rate to USD rate
+    // Base: usdc, quote: dai
+    const expectedRateUsdcDai = usdcUnit
+      .mul(usdcRate)
+      .mul(ethRate)
+      .div(ethUnit)
+      .mul(daiUnit)
+      .div(usdcUnit)
+      .div(daiRate);
+    const canonicalRateUsdcDai = await chainlinkPriceFeed.calcCanonicalValue(usdc, usdcUnit, dai);
+    expect(canonicalRateUsdcDai).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
+      quoteAssetAmount_: expectedRateUsdcDai,
       isValid_: true,
     });
   });
@@ -89,23 +118,21 @@ describe('addPrimitives', () => {
   it('works as expected when adding a primitive', async () => {
     const {
       deployment: { chainlinkPriceFeed },
-      config: {
-        deployer,
-        tokens: { usdc },
-      },
+      unregisteredMockToken,
+      unusedAggregator,
     } = await provider.snapshot(snapshot);
 
-    // Unadded usdc aggregator, taken from https://docs.chain.link/docs/using-chainlink-reference-contracts
-    const usdcAggregatorAddress = '0x986b5E1e1755e3C2440e960477f25201B0a8bbD4';
-    const usdcAggregator = new IChainlinkAggregator(usdcAggregatorAddress, deployer);
+    // Register the unregistered primitive with the unused aggregator
+    await chainlinkPriceFeed.addPrimitives([unregisteredMockToken], [unusedAggregator], [0]);
 
-    await chainlinkPriceFeed.addPrimitives([usdc], [usdcAggregator], [0]);
-
-    const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(usdc);
+    const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(unregisteredMockToken);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
-      aggregator: usdcAggregator,
+      aggregator: unusedAggregator,
       rateAsset: 0,
     });
+    expect(await chainlinkPriceFeed.getUnitForPrimitive(unregisteredMockToken)).toEqBigNumber(
+      utils.parseUnits('1', await unregisteredMockToken.decimals()),
+    );
   });
 
   it('works as expected when adding a wrong primitive', async () => {
@@ -128,36 +155,21 @@ describe('addPrimitives', () => {
 describe('updatePrimitives', () => {
   it('works as expected when updating a primitive', async () => {
     const {
+      config: {
+        tokens: { dai },
+      },
       deployment: { chainlinkPriceFeed },
-      aggregators: { daiAggregator, renAggregator },
+      unusedAggregator,
     } = await provider.snapshot(snapshot);
 
-    const newPrimitive = randomAddress();
-    await chainlinkPriceFeed.addPrimitives([newPrimitive], [daiAggregator], [0]);
+    // Update dai to use the unused aggregator
+    await chainlinkPriceFeed.updatePrimitives([dai], [unusedAggregator]);
 
-    await chainlinkPriceFeed.updatePrimitives([newPrimitive], [renAggregator]);
-
-    const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(newPrimitive);
+    const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(dai);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
-      aggregator: renAggregator,
+      aggregator: unusedAggregator,
       rateAsset: 0,
     });
-  });
-
-  it('works as expected when updating a wrong primitive', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      aggregators: { daiAggregator, renAggregator },
-    } = await provider.snapshot(snapshot);
-
-    // Update a non added primitive with a wrong rate asset
-    await expect(chainlinkPriceFeed.updatePrimitives([randomAddress()], [renAggregator])).rejects.toBeReverted();
-
-    const newPrimitive = randomAddress();
-
-    // Update primitive with a random aggregator (non aggregator contract)
-    await chainlinkPriceFeed.addPrimitives([newPrimitive], [daiAggregator], [0]);
-    expect(chainlinkPriceFeed.addPrimitives([newPrimitive], [randomAddress()], [1])).rejects.toBeReverted();
   });
 });
 
@@ -201,56 +213,54 @@ describe('removeStalePrimitives', () => {
   });
 });
 
-describe('expected values', () => {
+fdescribe('expected values', () => {
   describe('similar rate asset (ETH)', () => {
-    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+    // USDC/ETH and USDT/ETH
+    it('returns the expected value from the valueInterpreter (same decimals)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { dai, susd },
+          tokens: { usdc, usdt },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await dai.decimals();
-      const quoteDecimals = await susd.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(18);
-
-      // susd/usd value should always be similar
+      const baseDecimals = await usdc.decimals();
+      const quoteDecimals = await usdt.decimals();
+      expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(dai, utils.parseUnits('1', baseDecimals), susd)
+        .args(usdc, utils.parseUnits('1', baseDecimals), usdt)
         .call();
 
+      // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1017353959404129420'),
+        value_: BigNumber.from('1000303'),
         isValid_: true,
       });
     });
 
-    it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
+    // SUSD/ETH and USDC/ETH
+    it('returns the expected value from the valueInterpreter (different decimals)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { dai, usdc },
+          tokens: { susd, usdc },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await dai.decimals();
+      const baseDecimals = await susd.decimals();
       const quoteDecimals = await usdc.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(6);
+      expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       // dai/usd value should always be similar
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(dai, utils.parseUnits('1', baseDecimals), usdc)
+        .args(susd, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
+      // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1005423'),
+        value_: BigNumber.from('988273'),
         isValid_: true,
       });
     });
@@ -259,6 +269,7 @@ describe('expected values', () => {
   describe('similar rate asset (USD)', () => {
     it.todo('returns the expected value from the valueInterpreter (non 18 decimals)');
 
+    // BNB/USD and REN/USD
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
       const {
         deployment: { valueInterpreter },
@@ -269,9 +280,7 @@ describe('expected values', () => {
 
       const baseDecimals = await bnb.decimals();
       const quoteDecimals = await ren.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(18);
+      expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       // bnb/usd on 11/12/2020 was rated at $28.02
       // ren/usd on 11/12/2020 was rated at $0.34
@@ -289,113 +298,101 @@ describe('expected values', () => {
     });
   });
 
-  describe('different rate asset (ETH/USD)', () => {
-    it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+  describe('different rate asset (ETH rate -> USD rate)', () => {
+    // SUSD/ETH and DAI/USD
+    it('returns the expected value from the valueInterpreter (same decimals)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { weth, dai },
+          tokens: { susd, dai },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await weth.decimals();
+      const baseDecimals = await susd.decimals();
       const quoteDecimals = await dai.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(18);
-
-      // weth/usd on 11/12/2020 was rated at $449.82.
-      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+      expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(weth, utils.parseUnits('1', baseDecimals), dai)
+        .args(susd, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
+      // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('451750839137004610586'),
+        value_: BigNumber.from('983118108089340137'),
         isValid_: true,
       });
     });
 
+    // USDC/ETH and DAI/USD
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { weth, usdc },
+          tokens: { dai, usdc },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await weth.decimals();
-      const quoteDecimals = await usdc.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(6);
-
-      // weth/usd on 11/12/2020 was rated at $449.82.
-      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+      const baseDecimals = await usdc.decimals();
+      const quoteDecimals = await dai.decimals();
+      expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(weth, utils.parseUnits('1', baseDecimals), usdc)
+        .args(usdc, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
+      // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('454200983'),
+        value_: BigNumber.from('994783727403907996'),
         isValid_: true,
       });
     });
   });
 
-  describe('different rate asset (USD/ETH)', () => {
+  describe('different rate asset (USD rate -> ETH rate)', () => {
+    // DAI/USD and SUSD/ETH
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { weth, dai },
+          tokens: { dai, susd },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await weth.decimals();
-      const quoteDecimals = await dai.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(18);
-
-      // weth/usd on 11/12/2020 was rated at $449.82. Inverse is Ξ0.00222
-      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+      const baseDecimals = await dai.decimals();
+      const quoteDecimals = await susd.decimals();
+      expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(dai, utils.parseUnits('1', baseDecimals), weth)
+        .args(dai, utils.parseUnits('1', baseDecimals), susd)
         .call();
 
+      // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('2213609612569475'),
+        value_: BigNumber.from('1017171784113985349'),
         isValid_: true,
       });
     });
 
+    // DAI/USD and USDC/ETH
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
       const {
         deployment: { valueInterpreter },
         config: {
-          tokens: { weth, usdc },
+          tokens: { dai, usdc },
         },
       } = await provider.snapshot(snapshot);
 
-      const baseDecimals = await weth.decimals();
+      const baseDecimals = await dai.decimals();
       const quoteDecimals = await usdc.decimals();
-
-      expect(baseDecimals).toEqBigNumber(18);
-      expect(quoteDecimals).toEqBigNumber(6);
-
-      // weth/usd on 11/12/2020 was rated at $449.82.
-      // Source: <https://www.coingecko.com/en/coins/ethereum/historical_data/usd?start_date=2020-11-11&end_date=2020-11-12#panel>
+      expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(weth, utils.parseUnits('1', baseDecimals), usdc)
+        .args(dai, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
+      // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('454200983'),
+        value_: BigNumber.from('1005243'),
         isValid_: true,
       });
     });

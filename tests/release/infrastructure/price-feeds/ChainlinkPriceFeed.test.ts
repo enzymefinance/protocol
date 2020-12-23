@@ -1,7 +1,8 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress, resolveAddress } from '@crestproject/crestproject';
 import { MockChainlinkPriceSource, MockToken } from '@melonproject/protocol';
+import { ChainlinkRateAsset } from '@melonproject/protocol/src/utils/price-feeds/types';
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);
@@ -46,6 +47,10 @@ describe('constructor', () => {
     expect(storedWeth).toMatchAddress(weth);
     expect(storedEthUsdAggregator).toMatchAddress(ethUsdAggregator);
 
+    // Check static weth values
+    expect(await chainlinkPriceFeed.getRateAssetForPrimitive(weth)).toEqBigNumber(ChainlinkRateAsset.ETH);
+    expect(await chainlinkPriceFeed.getUnitForPrimitive(weth)).toEqBigNumber(utils.parseEther('1'));
+
     // Check primitives setup
     for (let i = 0; i < primitives.length; i++) {
       const storedPrimitive = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitives[i]);
@@ -78,11 +83,16 @@ describe('addPrimitives', () => {
         aggregator: aggregatorMocks[i],
         rateAsset: rateAssets[i],
       });
+      expect(await chainlinkPriceFeed.getRateAssetForPrimitive(primitiveMocks[i])).toEqBigNumber(rateAssets[i]);
+
+      const primitiveUnit = utils.parseUnits('1', await primitiveMocks[i].decimals());
+      expect(await chainlinkPriceFeed.getUnitForPrimitive(primitiveMocks[i])).toEqBigNumber(primitiveUnit);
 
       expect(events[i]).toMatchEventArgs({
         primitive: primitiveMocks[i],
         aggregator: aggregatorMocks[i],
         rateAsset: rateAssets[i],
+        unit: primitiveUnit,
       });
     }
   });
@@ -125,6 +135,21 @@ describe('addPrimitives', () => {
     await expect(
       chainlinkPriceFeed.addPrimitives([randomAddress()], [aggregatorMocks[0]], [0, 0]),
     ).rejects.toBeRevertedWith('Unequal _primitives and _rateAssets array lengths');
+  });
+
+  it('reverts when the primitive is already set', async () => {
+    const {
+      deployment: { chainlinkPriceFeed },
+      mocks: { aggregatorMocks, primitiveMocks, rateAssets },
+    } = await provider.snapshot(snapshot);
+
+    // Add the primitive mocks
+    await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets);
+
+    // Attempting to re-add the primitive mocks should fail
+    await expect(
+      chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets),
+    ).rejects.toBeRevertedWith('Value already set');
   });
 
   it('reverts when latest answer is zero', async () => {
@@ -242,6 +267,8 @@ describe('removePrimitives', () => {
         aggregator: constants.AddressZero,
         rateAsset: 0,
       });
+
+      expect(await chainlinkPriceFeed.getUnitForPrimitive(primitivesToRemove[i])).toEqBigNumber(0);
 
       expect(events[i]).toMatchEventArgs({ primitive: resolveAddress(primitivesToRemove[i]) });
     }

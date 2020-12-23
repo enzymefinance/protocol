@@ -479,18 +479,5 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
       [config.derivatives.chai, ...cTokens, ...synths, ...uniswapPoolTokens, config.derivatives.wdgld],
       [chaiPriceFeed, ...compoundPriceFeeds, ...synthetixPriceFeeds, ...uniswapPoolPriceFeeds, wdgldPriceFeed],
     );
-
-    // Cache decimals of entire asset universe
-    const valueInterpreter = await deployment.valueInterpreter;
-    // TODO: should have helper function to get the asset universe
-    // TODO: add wdgld (currently randomAddress)
-    const assetUniverse = [
-      ...config.chainlink.primitives,
-      config.derivatives.chai,
-      ...Object.values(config.derivatives.compound),
-      ...Object.values(config.derivatives.synthetix),
-      ...Object.values(config.derivatives.uniswapV2),
-    ];
-    await valueInterpreter.addCachedDecimalsForAssets(assetUniverse);
   },
 });

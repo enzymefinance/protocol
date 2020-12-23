@@ -34,11 +34,11 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
     /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
     /// @param _derivative The derivative for which to get the rates
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the underlyings_
-    function getRatesToUnderlyings(address _derivative)
+    /// @return underlyingAmounts_ The rates for the _derivative to the underlyings_
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
-        returns (address[] memory underlyings_, uint256[] memory rates_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
         address derivativePriceFeed = derivativeToPriceFeed[_derivative];
         require(
@@ -46,7 +46,11 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
             "getRatesToUnderlyings: _derivative is not supported"
         );
 
-        return IDerivativePriceFeed(derivativePriceFeed).getRatesToUnderlyings(_derivative);
+        return
+            IDerivativePriceFeed(derivativePriceFeed).calcUnderlyingValues(
+                _derivative,
+                _derivativeAmount
+            );
     }
 
     /// @notice Checks whether an asset is a supported derivative

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../interfaces/ISynthetix.sol";
 import "../../../../interfaces/ISynthetixAddressResolver.sol";
 import "../../../../interfaces/ISynthetixExchangeRates.sol";
@@ -13,6 +14,8 @@ import "../IDerivativePriceFeed.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Synthetix oracles as price sources
 contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+    using SafeMath for uint256;
+
     event SynthAdded(address indexed synth, bytes32 currencyKey);
 
     event SynthCurrencyKeyUpdated(
@@ -21,6 +24,7 @@ contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
         bytes32 nextCurrencyKey
     );
 
+    uint256 private constant SYNTH_UNIT = 10**18;
     address private immutable ADDRESS_RESOLVER;
     address private immutable SUSD;
 
@@ -42,35 +46,36 @@ contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
         __addSynths(_synths);
     }
 
-    /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
-    /// @param _derivative The derivative for which to get the rates
+    /// @notice Converts a given amount of a derivative to its underlying asset values
+    /// @param _derivative The derivative to convert
+    /// @param _derivativeAmount The amount of the derivative to convert
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the _underlyings
-    function getRatesToUnderlyings(address _derivative)
+    /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
-        returns (address[] memory underlyings_, uint256[] memory rates_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
         underlyings_ = new address[](1);
         underlyings_[0] = SUSD;
-        rates_ = new uint256[](1);
+        underlyingAmounts_ = new uint256[](1);
 
         bytes32 currencyKey = getCurrencyKeyForSynth(_derivative);
-        require(currencyKey != 0, "getRatesToUnderlyings: _derivative is not supported");
+        require(currencyKey != 0, "calcUnderlyingValues: _derivative is not supported");
 
         address exchangeRates = ISynthetixAddressResolver(ADDRESS_RESOLVER).requireAndGetAddress(
             "ExchangeRates",
-            "getRatesToUnderlyings: Missing ExchangeRates"
+            "calcUnderlyingValues: Missing ExchangeRates"
         );
 
         (uint256 rate, bool isInvalid) = ISynthetixExchangeRates(exchangeRates).rateAndInvalid(
             currencyKey
         );
-        require(!isInvalid, "getRatesToUnderlyings: _derivative rate is not valid");
+        require(!isInvalid, "calcUnderlyingValues: _derivative rate is not valid");
 
-        rates_[0] = rate;
+        underlyingAmounts_[0] = _derivativeAmount.mul(rate).div(SYNTH_UNIT);
 
-        return (underlyings_, rates_);
+        return (underlyings_, underlyingAmounts_);
     }
 
     /// @notice Checks whether an asset is a supported primitive of the price feed

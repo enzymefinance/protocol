@@ -29,7 +29,7 @@ contract UniswapV2PoolPriceFeed is
         uint8 token1Decimals;
     }
 
-    uint256 private constant POOL_TOKEN_DECIMALS = 18;
+    uint256 private constant POOL_TOKEN_UNIT = 10**18;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable FACTORY;
     address private immutable PRIMITIVE_PRICE_FEED;
@@ -53,14 +53,15 @@ contract UniswapV2PoolPriceFeed is
         __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
     }
 
-    /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
-    /// @param _derivative The derivative for which to get the rates
+    /// @notice Converts a given amount of a derivative to its underlying asset values
+    /// @param _derivative The derivative to convert
+    /// @param _derivativeAmount The amount of the derivative to convert
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the underlyings_
-    function getRatesToUnderlyings(address _derivative)
+    /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
-        returns (address[] memory underlyings_, uint256[] memory rates_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
         PoolTokenInfo memory poolTokenInfo = poolTokenToInfo[_derivative];
 
@@ -88,21 +89,11 @@ contract UniswapV2PoolPriceFeed is
         );
 
         // Define normalized rates for each underlying
-        rates_ = new uint256[](2);
-        rates_[0] = __calcNormalizedRate(
-            POOL_TOKEN_DECIMALS,
-            10**POOL_TOKEN_DECIMALS,
-            poolTokenInfo.token0Decimals,
-            token0DenormalizedRate
-        );
-        rates_[1] = __calcNormalizedRate(
-            POOL_TOKEN_DECIMALS,
-            10**POOL_TOKEN_DECIMALS,
-            poolTokenInfo.token1Decimals,
-            token1DenormalizedRate
-        );
+        underlyingAmounts_ = new uint256[](2);
+        underlyingAmounts_[0] = _derivativeAmount.mul(token0DenormalizedRate).div(POOL_TOKEN_UNIT);
+        underlyingAmounts_[1] = _derivativeAmount.mul(token1DenormalizedRate).div(POOL_TOKEN_UNIT);
 
-        return (underlyings_, rates_);
+        return (underlyings_, underlyingAmounts_);
     }
 
     /// @notice Checks if an asset is supported by the price feed

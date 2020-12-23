@@ -24,6 +24,7 @@ export { IntegrationManager } from './codegen/IntegrationManager';
 export { PolicyManager } from './codegen/PolicyManager';
 
 // Primitive price feeds
+export { IPrimitivePriceFeed } from './codegen/IPrimitivePriceFeed';
 export { ChainlinkPriceFeed } from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
@@ -75,8 +76,6 @@ export { MockVaultLib } from './codegen/MockVaultLib';
 export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
 export { CentralizedRateProvider } from './codegen/CentralizedRateProvider';
 export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
-export { MockDerivativePriceFeed } from './codegen/MockDerivativePriceFeed';
-export { MockPrimitivePriceFeed } from './codegen/MockPrimitivePriceFeed';
 export { MockCTokenIntegratee } from './codegen/MockCTokenIntegratee';
 export { MockGenericAdapter } from './codegen/MockGenericAdapter';
 export { MockGenericIntegratee } from './codegen/MockGenericIntegratee';

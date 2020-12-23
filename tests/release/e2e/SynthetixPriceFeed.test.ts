@@ -26,17 +26,19 @@ it('returns rate for underlying token', async () => {
     name: 'ExchangeRates',
   });
 
+  const synthUnit = utils.parseEther('1');
+
   const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, deployer);
-  await synthetixPriceFeed.getRatesToUnderlyings(sbtc);
+  await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
 
   // Synthetix rates
   const { '0': expectedRate } = await synthetixExchangeRate.rateAndInvalid(utils.formatBytes32String('sBTC'));
+  const expectedAmount = synthUnit.mul(expectedRate).div(synthUnit); // i.e., just expectedRate
 
   // Internal feed rates
-  const feedRate = await synthetixPriceFeed.getRatesToUnderlyings.args(sbtc).call();
-
-  expect(feedRate).toMatchFunctionOutput(synthetixPriceFeed.getRatesToUnderlyings.fragment, {
-    rates_: [expectedRate],
+  const feedRate = await synthetixPriceFeed.calcUnderlyingValues.args(sbtc, synthUnit).call();
+  expect(feedRate).toMatchFunctionOutput(synthetixPriceFeed.calcUnderlyingValues.fragment, {
+    underlyingAmounts_: [expectedAmount],
     underlyings_: [susd],
   });
 });

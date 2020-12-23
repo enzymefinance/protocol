@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../interfaces/ICERC20.sol";
 import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
@@ -9,7 +10,11 @@ import "../IDerivativePriceFeed.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Compound Tokens (cTokens)
 contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+    using SafeMath for uint256;
+
     event CTokenAdded(address indexed cToken, address indexed token);
+
+    uint256 private constant CTOKEN_RATE_DIVISOR = 10**18;
 
     mapping(address => address) private cTokenToToken;
 
@@ -29,24 +34,27 @@ contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
         }
     }
 
-    /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
-    /// @param _derivative The derivative for which to get the rates
+    /// @notice Converts a given amount of a derivative to its underlying asset values
+    /// @param _derivative The derivative to convert
+    /// @param _derivativeAmount The amount of the derivative to convert
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the underlyings_
-    function getRatesToUnderlyings(address _derivative)
+    /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
-        returns (address[] memory underlyings_, uint256[] memory rates_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
         underlyings_ = new address[](1);
         underlyings_[0] = cTokenToToken[_derivative];
-        require(underlyings_[0] != address(0), "getRatesToUnderlyings: Unsupported derivative");
+        require(underlyings_[0] != address(0), "calcUnderlyingValues: Unsupported derivative");
 
-        rates_ = new uint256[](1);
-        // Returns a value with 10^18 precision
-        rates_[0] = ICERC20(_derivative).exchangeRateStored();
+        underlyingAmounts_ = new uint256[](1);
+        // Returns a rate scaled to 10^18
+        underlyingAmounts_[0] = _derivativeAmount
+            .mul(ICERC20(_derivative).exchangeRateStored())
+            .div(CTOKEN_RATE_DIVISOR);
 
-        return (underlyings_, rates_);
+        return (underlyings_, underlyingAmounts_);
     }
 
     /// @notice Checks if an asset is supported by the price feed

@@ -2,7 +2,6 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../price-feeds/derivatives/IAggregatedDerivativePriceFeed.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../price-feeds/primitives/IPrimitivePriceFeed.sol";
@@ -11,23 +10,16 @@ import "./IValueInterpreter.sol";
 /// @title ValueInterpreter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interprets price feeds to provide covert value between asset pairs
-/// @dev All price feeds are expected to provide rates normalized to 18 decimals.
-/// This contract contains several "live" rate calculations, which for this release are simply
-/// aliases to their "canonical" rate counterparts since the only primitive price feed (Chainlink)
-/// is immutable in this contract and only has one type of rate. Including the "live" versions of
+/// @dev This contract contains several "live" value calculations, which for this release are simply
+/// aliases to their "canonical" value counterparts since the only primitive price feed (Chainlink)
+/// is immutable in this contract and only has one type of value. Including the "live" versions of
 /// functions only serves as a placeholder for infrastructural components and plugins (e.g., policies)
-/// to explicitly define the types of rates that they should (and will) be using in a future release.
+/// to explicitly define the types of values that they should (and will) be using in a future release.
 contract ValueInterpreter is IValueInterpreter {
     using SafeMath for uint256;
 
-    event CachedDecimalsForAssetAdded(address indexed asset, uint256 decimals);
-
-    uint256 private constant RATE_PRECISION = 18;
-
     address private immutable AGGREGATED_DERIVATIVE_PRICE_FEED;
     address private immutable PRIMITIVE_PRICE_FEED;
-
-    mapping(address => uint256) private assetToDecimals;
 
     constructor(address _primitivePriceFeed, address _aggregatedDerivativePriceFeed) public {
         AGGREGATED_DERIVATIVE_PRICE_FEED = _aggregatedDerivativePriceFeed;
@@ -35,18 +27,6 @@ contract ValueInterpreter is IValueInterpreter {
     }
 
     // EXTERNAL FUNCTIONS
-
-    /// @notice Caches asset decimals
-    /// @param _assets The assets for which to cache decimals
-    /// @dev Callable by anyone
-    function addCachedDecimalsForAssets(address[] calldata _assets) external {
-        for (uint256 i; i < _assets.length; i++) {
-            uint256 decimals = ERC20(_assets[i]).decimals();
-            assetToDecimals[_assets[i]] = decimals;
-
-            emit CachedDecimalsForAssetAdded(_assets[i], decimals);
-        }
-    }
 
     /// @notice An alias of calcCanonicalAssetsTotalValue
     function calcLiveAssetsTotalValue(
@@ -140,13 +120,18 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset
     ) private returns (uint256 value_, bool isValid_) {
-        // Handle case that asset is a primitive
         if (_baseAsset == _quoteAsset || _amount == 0) {
             return (_amount, true);
         }
 
+        // Handle case that asset is a primitive
         if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
-            return __calcPrimitiveValue(_baseAsset, _amount, _quoteAsset);
+            return
+                IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).calcCanonicalValue(
+                    _baseAsset,
+                    _amount,
+                    _quoteAsset
+                );
         }
 
         // Handle case that asset is a derivative
@@ -161,19 +146,6 @@ contract ValueInterpreter is IValueInterpreter {
         revert("__calcAssetValue: Unsupported _baseAsset");
     }
 
-    /// @dev Helper to covert from one asset to another via a normalized conversion rate
-    function __calcDenormalizedConversionAmount(
-        address _baseAsset,
-        uint256 _baseAssetAmount,
-        address _quoteAsset,
-        uint256 _normalizedRate
-    ) internal view returns (uint256) {
-        return
-            _normalizedRate.mul(_baseAssetAmount).mul(10**__getDecimalsForAsset(_quoteAsset)).div(
-                10**(RATE_PRECISION.add(__getDecimalsForAsset(_baseAsset)))
-            );
-    }
-
     /// @dev Helper to calculate the value of a derivative in an arbitrary asset.
     /// Handles multiple underlying assets (e.g., Uniswap and Balancer pool tokens).
     /// Handles underlying assets that are also derivatives (e.g., a cDAI-ETH LP)
@@ -183,64 +155,31 @@ contract ValueInterpreter is IValueInterpreter {
         uint256 _amount,
         address _quoteAsset
     ) private returns (uint256 value_, bool isValid_) {
-        (address[] memory underlyings, uint256[] memory rates) = IDerivativePriceFeed(
+        (address[] memory underlyings, uint256[] memory underlyingAmounts) = IDerivativePriceFeed(
             _derivativePriceFeed
         )
-            .getRatesToUnderlyings(_derivative);
+            .calcUnderlyingValues(_derivative, _amount);
 
         require(underlyings.length > 0, "__calcDerivativeValue: No underlyings");
         require(
-            underlyings.length == rates.length,
+            underlyings.length == underlyingAmounts.length,
             "__calcDerivativeValue: Arrays unequal lengths"
         );
 
         // Let validity be negated if any of the underlying value calculations are invalid
         isValid_ = true;
         for (uint256 i = 0; i < underlyings.length; i++) {
-            uint256 underlyingAmount = __calcDenormalizedConversionAmount(
-                _derivative,
-                _amount,
+            (uint256 underlyingValue, bool underlyingValueIsValid) = __calcAssetValue(
                 underlyings[i],
-                rates[i]
-            );
-            (uint256 underlyingValue, bool underlyingIsValid) = __calcAssetValue(
-                underlyings[i],
-                underlyingAmount,
+                underlyingAmounts[i],
                 _quoteAsset
             );
 
-            if (!underlyingIsValid) {
+            if (!underlyingValueIsValid) {
                 isValid_ = false;
             }
             value_ = value_.add(underlyingValue);
         }
-    }
-
-    /// @dev Helper to calculate the value of a primitive in an arbitrary asset
-    function __calcPrimitiveValue(
-        address _primitive,
-        uint256 _amount,
-        address _quoteAsset
-    ) private view returns (uint256 value_, bool isValid_) {
-        uint256 rate;
-        (rate, isValid_) = IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).getCanonicalRate(
-            _primitive,
-            _quoteAsset
-        );
-
-        value_ = __calcDenormalizedConversionAmount(_primitive, _amount, _quoteAsset, rate);
-
-        return (value_, isValid_);
-    }
-
-    /// @dev Helper to either get the cached decimals value or lookup an asset's decimals
-    function __getDecimalsForAsset(address _asset) private view returns (uint256 decimals_) {
-        decimals_ = getCachedDecimalsForAsset(_asset);
-        if (decimals_ == 0) {
-            decimals_ = ERC20(_asset).decimals();
-        }
-
-        return decimals_;
     }
 
     ///////////////////
@@ -255,10 +194,6 @@ contract ValueInterpreter is IValueInterpreter {
         returns (address aggregatedDerivativePriceFeed_)
     {
         return AGGREGATED_DERIVATIVE_PRICE_FEED;
-    }
-
-    function getCachedDecimalsForAsset(address _asset) public view returns (uint256 decimals_) {
-        return assetToDecimals[_asset];
     }
 
     /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable

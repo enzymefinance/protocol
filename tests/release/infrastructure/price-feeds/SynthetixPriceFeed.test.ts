@@ -1,5 +1,8 @@
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
-import { MockSynthetixPriceSource, MockSynthetixToken } from '@melonproject/protocol';
+import {
+  // MockSynthetixPriceSource,
+  MockSynthetixToken,
+} from '@melonproject/protocol';
 import { defaultTestDeployment } from '@melonproject/testutils';
 import { constants, utils } from 'ethers';
 
@@ -60,58 +63,58 @@ describe('constructor', () => {
   });
 });
 
-describe('getRatesToUnderlyings', () => {
-  it('revert on invalid rate', async () => {
-    const {
-      config: {
-        deployer,
-        integratees: {
-          synthetix: { exchangeRates },
-        },
-      },
-      deployment: { synthetixPriceFeed },
-      newSynth1,
-      newSynth1CurrencyKey,
-    } = await provider.snapshot(snapshot);
+// describe('getRatesToUnderlyings', () => {
+//   it('revert on invalid rate', async () => {
+//     const {
+//       config: {
+//         deployer,
+//         integratees: {
+//           synthetix: { exchangeRates },
+//         },
+//       },
+//       deployment: { synthetixPriceFeed },
+//       newSynth1,
+//       newSynth1CurrencyKey,
+//     } = await provider.snapshot(snapshot);
 
-    await synthetixPriceFeed.addSynths([newSynth1]);
-    const er = new MockSynthetixPriceSource(exchangeRates, deployer);
+//     await synthetixPriceFeed.addSynths([newSynth1]);
+//     const er = new MockSynthetixPriceSource(exchangeRates, deployer);
 
-    await er.setRate(newSynth1CurrencyKey, '0');
+//     await er.setRate(newSynth1CurrencyKey, '0');
 
-    const getRatesToUnderlyings = synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
+//     const getRatesToUnderlyings = synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
 
-    await expect(getRatesToUnderlyings).rejects.toBeRevertedWith(
-      'getRatesToUnderlyings: _derivative rate is not valid',
-    );
-  });
+//     await expect(getRatesToUnderlyings).rejects.toBeRevertedWith(
+//       'getRatesToUnderlyings: _derivative rate is not valid',
+//     );
+//   });
 
-  it('returns valid rate', async () => {
-    const {
-      config: {
-        deployer,
-        integratees: {
-          synthetix: { susd, exchangeRates },
-        },
-      },
-      deployment: { synthetixPriceFeed },
-      newSynth1,
-      newSynth1CurrencyKey,
-    } = await provider.snapshot(snapshot);
+//   it('returns valid rate', async () => {
+//     const {
+//       config: {
+//         deployer,
+//         integratees: {
+//           synthetix: { susd, exchangeRates },
+//         },
+//       },
+//       deployment: { synthetixPriceFeed },
+//       newSynth1,
+//       newSynth1CurrencyKey,
+//     } = await provider.snapshot(snapshot);
 
-    await synthetixPriceFeed.addSynths([newSynth1]);
-    const expectedRate = utils.parseEther('1');
-    const er = new MockSynthetixPriceSource(exchangeRates, deployer);
-    await er.setRate(newSynth1CurrencyKey, expectedRate);
+//     await synthetixPriceFeed.addSynths([newSynth1]);
+//     const expectedRate = utils.parseEther('1');
+//     const er = new MockSynthetixPriceSource(exchangeRates, deployer);
+//     await er.setRate(newSynth1CurrencyKey, expectedRate);
 
-    const getRatesToUnderlyings = await synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
+//     const getRatesToUnderlyings = await synthetixPriceFeed.getRatesToUnderlyings.args(newSynth1).call();
 
-    expect(getRatesToUnderlyings).toMatchFunctionOutput(synthetixPriceFeed.getRatesToUnderlyings.fragment, {
-      rates_: [expectedRate],
-      underlyings_: [susd],
-    });
-  });
-});
+//     expect(getRatesToUnderlyings).toMatchFunctionOutput(synthetixPriceFeed.getRatesToUnderlyings.fragment, {
+//       rates_: [expectedRate],
+//       underlyings_: [susd],
+//     });
+//   });
+// });
 
 describe('isSupportedAsset', () => {
   it('return false on invalid synth', async () => {

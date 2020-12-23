@@ -4,11 +4,18 @@ pragma solidity 0.6.12;
 /// @title IPrimitivePriceFeed Interface
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for primitive price feeds
-/// @dev IMPORTANT: all rates must be "normalized" to 18 decimals
 interface IPrimitivePriceFeed {
-    function getCanonicalRate(address, address) external view returns (uint256, bool);
+    function calcCanonicalValue(
+        address,
+        uint256,
+        address
+    ) external view returns (uint256, bool);
 
-    function getLiveRate(address, address) external view returns (uint256, bool);
+    function calcLiveValue(
+        address,
+        uint256,
+        address
+    ) external view returns (uint256, bool);
 
     function isSupportedAsset(address) external view returns (bool);
 }

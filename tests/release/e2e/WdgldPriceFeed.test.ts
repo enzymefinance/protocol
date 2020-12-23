@@ -36,13 +36,19 @@ describe('getRatesToUnderlyings', () => {
     const initialTimestamp = 1568700000;
 
     const wdgldToXauRate = await calcGtr({ currentTimestamp, initialTimestamp });
-    const xauToWethRate = xauToUsdRate.mul(utils.parseUnits('1', 18)).div(ethToUsdRate);
-    const rateToUnderlyings = await wdgldPriceFeed.getRatesToUnderlyings.args(wdgld).call();
 
-    const expectedRates = wdgldToXauRate.mul(xauToWethRate).div(utils.parseUnits('1', 27));
+    const wdgldUnit = utils.parseUnits('1', 8);
 
-    expect(rateToUnderlyings.rates_[0]).toEqBigNumber(expectedRates);
-    expect(rateToUnderlyings.underlyings_[0]).toMatchAddress(weth);
+    const underlyingValues = await wdgldPriceFeed.calcUnderlyingValues.args(wdgld, wdgldUnit).call();
+    // 10**17 is a combination of ETH_UNIT / WDGLD_UNIT * GTR_PRECISION
+    const expectedAmount = wdgldUnit
+      .mul(wdgldToXauRate)
+      .mul(xauToUsdRate)
+      .div(ethToUsdRate)
+      .div(utils.parseUnits('1', 17));
+
+    expect(underlyingValues.underlyings_[0]).toMatchAddress(weth);
+    expect(underlyingValues.underlyingAmounts_[0]).toEqBigNumber(expectedAmount);
   });
 
   it('returns the expected value from the valueInterpreter', async () => {

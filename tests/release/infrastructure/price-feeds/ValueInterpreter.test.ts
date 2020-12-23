@@ -1,8 +1,8 @@
-import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
 import {
   AggregatedDerivativePriceFeed,
   IDerivativePriceFeed,
-  MockPrimitivePriceFeed,
+  IPrimitivePriceFeed,
   MockToken,
   ValueInterpreter,
 } from '@melonproject/protocol';
@@ -12,63 +12,51 @@ import { constants, utils } from 'ethers';
 async function snapshot(provider: EthereumTestnetProvider) {
   const { deployment, config } = await defaultTestDeployment(provider);
 
-  // Set up one derivative mock
-  const derivativeMock = await MockToken.deploy(config.deployer, 'Mock Derivative 1', 'MCKD001', 18);
+  // Set up primitives
 
-  // Set up primitive mocks with different decimals
-  const primitiveMocks = await Promise.all([
-    MockToken.deploy(config.deployer, 'Mock Primitive 1', 'MCKP001', 6),
-    MockToken.deploy(config.deployer, 'Mock Primitive 2', 'MCKP002', 18),
-  ]);
+  // Create primitives with different decimals
+  const mockPrimitive1 = await MockToken.deploy(config.deployer, 'Mock Primitive 1', 'MCKP001', 18);
+  const mockPrimitive2 = await MockToken.deploy(config.deployer, 'Mock Primitive 2', 'MCKP002', 18);
 
-  // Define derivative rates relative to the primitiveMocks
-  const derivativeToPrimitivesRates = [utils.parseEther('2'), utils.parseEther('4')];
+  // Create mock primitive price feed
+  const mockPrimitivePriceFeed = await IPrimitivePriceFeed.mock(config.deployer);
+  await mockPrimitivePriceFeed.isSupportedAsset.returns(false);
+  await mockPrimitivePriceFeed.isSupportedAsset.given(mockPrimitive1).returns(true);
+  await mockPrimitivePriceFeed.isSupportedAsset.given(mockPrimitive2).returns(true);
+  await mockPrimitivePriceFeed.calcCanonicalValue.returns(0, false);
+
+  // Set up derivatives
+
+  // Create derivative mock
+  const mockDerivative = await MockToken.deploy(config.deployer, 'Mock Derivative 1', 'MCKD001', 18);
 
   // Create derivative price feed mock
   const mockDerivativePriceFeed = await IDerivativePriceFeed.mock(config.deployer);
-  await mockDerivativePriceFeed.getRatesToUnderlyings.returns([], []);
-  await mockDerivativePriceFeed.getRatesToUnderlyings
-    .given(derivativeMock)
-    .returns(primitiveMocks, derivativeToPrimitivesRates);
+  await mockDerivativePriceFeed.calcUnderlyingValues.returns([], []);
 
   // Create aggregated derivative price feed mock
   const mockAggregatedDerivativePriceFeed = await AggregatedDerivativePriceFeed.mock(config.deployer);
-  await mockAggregatedDerivativePriceFeed.getRatesToUnderlyings.returns([], []);
-  await mockAggregatedDerivativePriceFeed.getRatesToUnderlyings
-    .given(derivativeMock)
-    .returns(primitiveMocks, derivativeToPrimitivesRates);
   await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative.returns(constants.AddressZero);
   await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative
-    .given(derivativeMock)
+    .given(mockDerivative)
     .returns(mockDerivativePriceFeed);
-
-  // TODO: refactor primitive price feed to use crestproject mocks
-
-  // Deploy mock primitive price feed
-  const primitivePriceFeedMock = await MockPrimitivePriceFeed.deploy(config.deployer, primitiveMocks, 18);
-
-  // Initialize primitiveMock rates to a unit
-  await primitivePriceFeedMock.setCanonicalRate(primitiveMocks[0], primitiveMocks[1], utils.parseEther('1'), true);
-  await primitivePriceFeedMock.setCanonicalRate(primitiveMocks[1], primitiveMocks[0], utils.parseEther('1'), true);
 
   // Deploy a new value interpreter with mock price feeds
   const valueInterpreterWithMocks = await ValueInterpreter.deploy(
     config.deployer,
-    primitivePriceFeedMock,
+    mockPrimitivePriceFeed,
     mockAggregatedDerivativePriceFeed,
   );
 
   return {
     deployment,
-    mocks: {
-      derivativeToPrimitivesRates,
-      derivativeMock,
-      primitiveMocks,
-      mockAggregatedDerivativePriceFeed,
-      mockDerivativePriceFeed,
-      primitivePriceFeedMock,
-      valueInterpreterWithMocks,
-    },
+    mockAggregatedDerivativePriceFeed,
+    mockDerivative,
+    mockDerivativePriceFeed,
+    mockPrimitive1,
+    mockPrimitive2,
+    mockPrimitivePriceFeed,
+    valueInterpreterWithMocks,
     config,
   };
 }
@@ -86,248 +74,149 @@ describe('constructor', () => {
   });
 });
 
-describe('addCachedDecimalsForAssets', () => {
-  it('allows any caller, stores the correct decimals for the assets, and emits the correct event', async () => {
+describe('calcCanonicalAssetValue', () => {
+  it('returns the correct value for a primitive base asset', async () => {
     const {
-      config: { deployer },
-      deployment: { valueInterpreter },
+      mockPrimitive1,
+      mockPrimitive2,
+      mockPrimitivePriceFeed,
+      valueInterpreterWithMocks,
     } = await provider.snapshot(snapshot);
 
-    // Define dummy tokens to add
-    const dummyToken1Decimals = 18;
-    const dummyToken1 = await MockToken.deploy(deployer, 'Dummy Token 1', 'DMY1', dummyToken1Decimals);
-    const dummyToken2Decimals = 6;
-    const dummyToken2 = await MockToken.deploy(deployer, 'Dummy Token 2', 'DMY2', dummyToken2Decimals);
+    // Set Primitive Price feed to return 1 quote asset unit
+    await mockPrimitivePriceFeed.calcCanonicalValue
+      .given(mockPrimitive1, utils.parseEther('1'), mockPrimitive2)
+      .returns(utils.parseEther('1'), true);
 
-    // Add the cached decimals of the dummy tokens
-    const receipt = await valueInterpreter.addCachedDecimalsForAssets([dummyToken1, dummyToken2]);
-
-    // Assert the correct decimals are stored
-    expect(await valueInterpreter.getCachedDecimalsForAsset(dummyToken1)).toEqBigNumber(dummyToken1Decimals);
-    expect(await valueInterpreter.getCachedDecimalsForAsset(dummyToken2)).toEqBigNumber(dummyToken2Decimals);
-
-    // Assert the correct event was emitted per dummy token
-    const events = extractEvent(receipt, 'CachedDecimalsForAssetAdded');
-    expect(events.length).toBe(2);
-    expect(events[0]).toMatchEventArgs({
-      asset: dummyToken1,
-      decimals: dummyToken1Decimals,
-    });
-    expect(events[1]).toMatchEventArgs({
-      asset: dummyToken2,
-      decimals: dummyToken2Decimals,
-    });
-  });
-});
-
-describe('calcLiveAssetValue', () => {
-  it('returns the correct liveAssetValue for a primitive base asset (different decimals)', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [sixDecimalsBasePrimitive, eighteenDecimalsQuotePrimitive],
-        primitivePriceFeedMock,
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    // Use unit rate
-    const rate = utils.parseEther('1');
-    const isValid = true;
-    await primitivePriceFeedMock.setCanonicalRate(
-      sixDecimalsBasePrimitive,
-      eighteenDecimalsQuotePrimitive,
-      rate,
-      isValid,
-    );
-
-    // Calculate live asset value for a an amount of basePrimitive
-    const amount = 2;
-    const liveAssetValue = await valueInterpreterWithMocks.calcLiveAssetValue
-      .args(sixDecimalsBasePrimitive, amount, eighteenDecimalsQuotePrimitive)
+    // Calculate the canonical asset value
+    const canonicalAssetValue = await valueInterpreterWithMocks.calcCanonicalAssetValue
+      .args(mockPrimitive1, utils.parseEther('1'), mockPrimitive2)
       .call();
 
-    // Calculated from 1e18 /1e6
-    const expectedConversionRate = 1e12;
-    expect(liveAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcLiveAssetValue, {
-      value_: amount * expectedConversionRate,
-      isValid_: isValid,
-    });
-  });
-
-  it('returns the correct liveAssetValue for a primitive base asset (same decimals)', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [eighteenDecimalsPrimitive],
-        primitivePriceFeedMock,
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    // Calculate values with two eighteen decimals tokens, rate 1
-    const rate = utils.parseEther('1');
-    await primitivePriceFeedMock.setCanonicalRate(eighteenDecimalsPrimitive, eighteenDecimalsPrimitive, rate, true);
-
-    const amount = utils.parseEther('2');
-    const calculatedLiveAssetValue = await valueInterpreterWithMocks.calcLiveAssetValue
-      .args(eighteenDecimalsPrimitive, amount, eighteenDecimalsPrimitive)
-      .call();
-
-    expect(calculatedLiveAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcLiveAssetValue, {
-      value_: amount,
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
+      value_: utils.parseEther('1'),
       isValid_: true,
     });
   });
 
-  it('returns the correct liveAssetValue for a derivative base asset (different decimals)', async () => {
+  it('returns the correct value for a derivative base asset', async () => {
     const {
-      mocks: {
-        derivativeToPrimitivesRates: [sixDecimalsPrimitiveRate, eighteenDecimalsPrimitiveRate],
-        derivativeMock,
-        primitiveMocks: [sixDecimalsQuotePrimitive],
-        valueInterpreterWithMocks,
-      },
+      mockDerivative,
+      mockPrimitive1,
+      mockPrimitive2,
+      mockDerivativePriceFeed,
+      mockPrimitivePriceFeed,
+      valueInterpreterWithMocks,
     } = await provider.snapshot(snapshot);
 
+    // Set 1 unit of derivative to return amounts of mockPrimitive1 and mockPrimitive2
+    const mockPrimitive1Amount = utils.parseEther('2');
+    const mockPrimitive2Amount = utils.parseEther('4');
+    await mockDerivativePriceFeed.calcUnderlyingValues
+      .given(mockDerivative, utils.parseEther('1'))
+      .returns([mockPrimitive1, mockPrimitive2], [mockPrimitive1Amount, mockPrimitive2Amount]);
+
+    // Set primitive price feed to return the same amount of mockPrimitive1 given mockPrimitive2Amount
+    await mockPrimitivePriceFeed.calcCanonicalValue
+      .given(mockPrimitive2, mockPrimitive2Amount, mockPrimitive1)
+      .returns(mockPrimitive2Amount, true);
+
     // Calculate canonical asset value for an amount of tokens
-    const amount = utils.parseEther('2');
-    const calculatedLiveAssetValue = await valueInterpreterWithMocks.calcLiveAssetValue
-      .args(derivativeMock, amount, sixDecimalsQuotePrimitive)
+    const calculatedCanonicalAssetValue = await valueInterpreterWithMocks.calcCanonicalAssetValue
+      .args(mockDerivative, utils.parseEther('1'), mockPrimitive1)
       .call();
 
     // Calculate expected value
-    const expectedValue = amount
-      .mul(sixDecimalsPrimitiveRate)
-      .add(amount.mul(eighteenDecimalsPrimitiveRate))
-      .div(utils.parseEther('1'));
+    const expectedValue = mockPrimitive1Amount.add(mockPrimitive2Amount);
 
-    // Normalize to 10e6 and assert value
-    const normalizedValue = expectedValue.div(1e12);
-    expect(calculatedLiveAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcLiveAssetValue, {
-      value_: normalizedValue,
-      isValid_: true,
-    });
-  });
-
-  it('returns the correct liveAssetValue for a derivative base asset (same decimals)', async () => {
-    const {
-      mocks: {
-        derivativeToPrimitivesRates: [sixDecimalsPrimitiveRate, eighteenDecimalsPrimitiveRate],
-        derivativeMock,
-        primitiveMocks: [, eighteenDecimalsQuotePrimitive],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
-
-    // Calculate canonical asset value for an amount of tokens
-    const amount = utils.parseEther('2');
-    const calculatedLiveAssetValue = await valueInterpreterWithMocks.calcLiveAssetValue
-      .args(derivativeMock, amount, eighteenDecimalsQuotePrimitive)
-      .call();
-
-    // Calculate expected value
-    const expectedValue = amount
-      .mul(sixDecimalsPrimitiveRate)
-      .add(amount.mul(eighteenDecimalsPrimitiveRate))
-      .div(utils.parseEther('1'));
-
-    expect(calculatedLiveAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcLiveAssetValue, {
+    expect(calculatedCanonicalAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
       value_: expectedValue,
       isValid_: true,
     });
   });
 
-  it('does not allow to call liveAssetValue with an unsupported underlying asset', async () => {
+  it('does not allow a derivative with an unsupported underlying asset', async () => {
     const {
-      config: { deployer },
-      mocks: {
-        mockDerivativePriceFeed,
-        derivativeMock: baseDerivative,
-        primitiveMocks: [quotePrimitive],
-        valueInterpreterWithMocks,
-      },
+      mockDerivative,
+      mockPrimitive1,
+      mockDerivativePriceFeed,
+      valueInterpreterWithMocks,
     } = await provider.snapshot(snapshot);
 
-    const badUnderlying = await MockToken.deploy(deployer, 'Bad Underlying', 'BAD', 18);
-    await mockDerivativePriceFeed.getRatesToUnderlyings
-      .given(baseDerivative)
+    const badUnderlying = randomAddress();
+    await mockDerivativePriceFeed.calcUnderlyingValues
+      .given(mockDerivative, 1)
       .returns([badUnderlying], [utils.parseEther('1')]);
 
     await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(baseDerivative, 1, quotePrimitive),
+      valueInterpreterWithMocks.calcCanonicalAssetValue(mockDerivative, 1, mockPrimitive1),
     ).rejects.toBeRevertedWith('Unsupported _baseAsset');
   });
 
   it('does not allow to get a rate from a non supported quote asset', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [basePrimitive, quotePrimitive],
-        primitivePriceFeedMock,
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
+    const { mockPrimitive1, valueInterpreterWithMocks } = await provider.snapshot(snapshot);
 
-    // Set supportedAsset to false and calculateLiveAssetValue
-    await primitivePriceFeedMock.setIsSupportedAsset(quotePrimitive, false);
     await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(basePrimitive, 1, quotePrimitive),
+      valueInterpreterWithMocks.calcCanonicalAssetValue(mockPrimitive1, 1, randomAddress()),
     ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
   });
 
   it('does not allow as an input an unsupported baseAsset', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [quotePrimitive],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
+    const { mockPrimitive1, valueInterpreterWithMocks } = await provider.snapshot(snapshot);
 
     await expect(
-      valueInterpreterWithMocks.calcLiveAssetValue(randomAddress(), 1, quotePrimitive),
+      valueInterpreterWithMocks.calcCanonicalAssetValue(randomAddress(), 1, mockPrimitive1),
     ).rejects.toBeRevertedWith('Unsupported _baseAsset');
   });
 });
 
-describe('calcLiveAssetsTotalValue', () => {
+describe('calcCanonicalAssetsTotalValue', () => {
   it('calculates total canonical value for an array of assets', async () => {
     const {
-      mocks: {
-        primitiveMocks: [sixDecimalsPrimitive, eighteenDecimalsPrimitive],
-        primitivePriceFeedMock,
-        valueInterpreterWithMocks,
-      },
+      mockDerivative,
+      mockDerivativePriceFeed,
+      mockPrimitive1,
+      mockPrimitive2,
+      mockPrimitivePriceFeed,
+      valueInterpreterWithMocks,
     } = await provider.snapshot(snapshot);
 
-    // Calculate values with two eighteen decimals tokens, rate 1
-    const rate = utils.parseEther('1');
-    await primitivePriceFeedMock.setCanonicalRate(eighteenDecimalsPrimitive, eighteenDecimalsPrimitive, rate, true);
+    // Use 1 unit for all tokens
+    const amount = utils.parseEther('1');
 
-    // Add one units of assets in their respective decimals
-    const amounts = [utils.parseUnits('1', 6), utils.parseEther('1')];
-    const calcLiveAssetsTotalValue = await valueInterpreterWithMocks.calcLiveAssetsTotalValue
-      .args([sixDecimalsPrimitive, eighteenDecimalsPrimitive], amounts, eighteenDecimalsPrimitive)
+    // Set the primitive price feed conversion to mockPrimitive2
+    const mockPrimitive2Value = utils.parseEther('2');
+    await mockPrimitivePriceFeed.calcCanonicalValue
+      .given(mockPrimitive2, amount, mockPrimitive1)
+      .returns(mockPrimitive2Value, true);
+
+    // Set the derivative price feed conversion to mockPrimitive1
+    const mockDerivativeValue = utils.parseEther('3');
+    await mockDerivativePriceFeed.calcUnderlyingValues
+      .given(mockDerivative, amount)
+      .returns([mockPrimitive1], [mockDerivativeValue]);
+
+    // Calc total value of 1 unit of each token
+    const calcCanonicalAssetsTotalValue = await valueInterpreterWithMocks.calcCanonicalAssetsTotalValue
+      .args([mockPrimitive1, mockPrimitive2, mockDerivative], [amount, amount, amount], mockPrimitive1)
       .call();
 
     // Expect to have the sum of both units in base 18
-    const expectedValue = utils.parseEther('2');
-    expect(calcLiveAssetsTotalValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcLiveAssetValue, {
+    const expectedValue = amount.add(mockPrimitive2Value).add(mockDerivativeValue);
+    expect(calcCanonicalAssetsTotalValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
       value_: expectedValue,
       isValid_: true,
     });
   });
 
   it('does not allow to input unequal argument array lengths', async () => {
-    const {
-      mocks: {
-        primitiveMocks: [eighteenDecimalsPrimitive],
-        valueInterpreterWithMocks,
-      },
-    } = await provider.snapshot(snapshot);
+    const { mockPrimitive1, valueInterpreterWithMocks } = await provider.snapshot(snapshot);
 
     await expect(
-      valueInterpreterWithMocks.calcLiveAssetsTotalValue(
+      valueInterpreterWithMocks.calcCanonicalAssetsTotalValue(
         [randomAddress()],
         [randomAddress(), randomAddress()],
-        eighteenDecimalsPrimitive,
+        mockPrimitive1,
       ),
     ).rejects.toBeRevertedWith('Arrays unequal lengths');
   });

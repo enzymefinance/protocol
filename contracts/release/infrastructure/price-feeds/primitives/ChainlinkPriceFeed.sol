@@ -3,6 +3,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../interfaces/IChainlinkAggregator.sol";
 import "../../utils/DispatcherOwnerMixin.sol";
 import "./IPrimitivePriceFeed.sol";
@@ -15,7 +16,12 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
 
-    event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset);
+    event PrimitiveAdded(
+        address indexed primitive,
+        address aggregator,
+        RateAsset rateAsset,
+        uint256 unit
+    );
 
     event PrimitiveRemoved(address indexed primitive);
 
@@ -36,13 +42,13 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         RateAsset rateAsset;
     }
 
-    uint256 private constant ETH_PRECISION = 18;
-    uint256 private constant FEED_PRECISION = 18;
+    uint256 private constant ETH_UNIT = 10**18;
     address private immutable WETH_TOKEN;
 
     address private ethUsdAggregator;
     uint256 private staleRateThreshold;
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
+    mapping(address => uint256) private primitiveToUnit;
 
     constructor(
         address _dispatcher,
@@ -62,20 +68,18 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Gets the canonical conversion rate for a pair of assets
+    /// @notice Calculates the value of a base asset in terms of a quote asset (using a canonical rate)
     /// @param _baseAsset The base asset
+    /// @param _baseAssetAmount The base asset amount to convert
     /// @param _quoteAsset The quote asset
-    /// @return rate_ The conversion rate
-    /// @return isValid_ True if the rate is deemed valid
-    function getCanonicalRate(address _baseAsset, address _quoteAsset)
-        public
-        view
-        override
-        returns (uint256 rate_, bool isValid_)
-    {
-        if (_baseAsset == _quoteAsset) {
-            return (10**FEED_PRECISION, true);
-        }
+    /// @return quoteAssetAmount_ The equivalent quote asset amount
+    /// @return isValid_ True if the rates used in calculations are deemed valid
+    function calcCanonicalValue(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        address _quoteAsset
+    ) public view override returns (uint256 quoteAssetAmount_, bool isValid_) {
+        // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
         if (baseAssetRate <= 0) {
@@ -87,32 +91,30 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             return (0, false);
         }
 
-        rate_ = __calcConversionRate(
+        (quoteAssetAmount_, isValid_) = __calcConversionAmount(
             _baseAsset,
+            _baseAssetAmount,
             uint256(baseAssetRate),
             _quoteAsset,
             uint256(quoteAssetRate)
         );
-        if (rate_ > 0) {
-            isValid_ = true;
-        }
 
-        return (rate_, isValid_);
+        return (quoteAssetAmount_, isValid_);
     }
 
-    /// @notice Gets the live conversion rate for a pair of assets
+    /// @notice Calculates the value of a base asset in terms of a quote asset (using a live rate)
     /// @param _baseAsset The base asset
+    /// @param _baseAssetAmount The base asset amount to convert
     /// @param _quoteAsset The quote asset
-    /// @return rate_ The conversion rate
-    /// @return isValid_ True if the rate is deemed valid
-    /// @dev Live and canonical rates are the same for Chainlink
-    function getLiveRate(address _baseAsset, address _quoteAsset)
-        external
-        view
-        override
-        returns (uint256 rate_, bool isValid_)
-    {
-        return getCanonicalRate(_baseAsset, _quoteAsset);
+    /// @return quoteAssetAmount_ The equivalent quote asset amount
+    /// @return isValid_ True if the rates used in calculations are deemed valid
+    /// @dev Live and canonical values are the same for Chainlink
+    function calcLiveValue(
+        address _baseAsset,
+        uint256 _baseAssetAmount,
+        address _quoteAsset
+    ) external view override returns (uint256 quoteAssetAmount_, bool isValid_) {
+        return calcCanonicalValue(_baseAsset, _baseAssetAmount, _quoteAsset);
     }
 
     /// @notice Checks whether an asset is a supported primitive of the price feed
@@ -130,43 +132,122 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Helper to calculate the conversion rate from a _baseAsset to a _quoteAsset
-    function __calcConversionRate(
+    /// @dev Helper to convert an amount from a _baseAsset to a _quoteAsset
+    function __calcConversionAmount(
         address _baseAsset,
+        uint256 _baseAssetAmount,
         uint256 _baseAssetRate,
         address _quoteAsset,
         uint256 _quoteAssetRate
-    ) private view returns (uint256 rate_) {
-        RateAsset baseAssetRateAsset = primitiveToAggregatorInfo[_baseAsset].rateAsset;
-        RateAsset quoteAssetRateAsset = primitiveToAggregatorInfo[_quoteAsset].rateAsset;
+    ) private view returns (uint256 quoteAssetAmount_, bool isValid_) {
+        RateAsset baseAssetRateAsset = getRateAssetForPrimitive(_baseAsset);
+        RateAsset quoteAssetRateAsset = getRateAssetForPrimitive(_quoteAsset);
+        uint256 baseAssetUnit = getUnitForPrimitive(_baseAsset);
+        uint256 quoteAssetUnit = getUnitForPrimitive(_quoteAsset);
 
         // If rates are both in ETH or both in USD
         if (baseAssetRateAsset == quoteAssetRateAsset) {
-            return _baseAssetRate.mul(10**FEED_PRECISION).div(_quoteAssetRate);
+            return (
+                __calcConversionAmountSameRateAsset(
+                    _baseAssetAmount,
+                    baseAssetUnit,
+                    _baseAssetRate,
+                    quoteAssetUnit,
+                    _quoteAssetRate
+                ),
+                true
+            );
         }
 
         int256 ethPerUsdRate = IChainlinkAggregator(ethUsdAggregator).latestAnswer();
         if (ethPerUsdRate <= 0) {
-            return 0;
+            return (0, false);
         }
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
         if (baseAssetRateAsset == RateAsset.ETH) {
-            return _baseAssetRate.mul(uint256(ethPerUsdRate)).div(_quoteAssetRate);
+            return (
+                __calcConversionAmountEthRateAssetToUsdRateAsset(
+                    _baseAssetAmount,
+                    baseAssetUnit,
+                    _baseAssetRate,
+                    quoteAssetUnit,
+                    _quoteAssetRate,
+                    uint256(ethPerUsdRate)
+                ),
+                true
+            );
         }
 
         // If _baseAsset's rate is in USD and _quoteAsset's rate is in ETH
+        return (
+            __calcConversionAmountUsdRateAssetToEthRateAsset(
+                _baseAssetAmount,
+                baseAssetUnit,
+                _baseAssetRate,
+                quoteAssetUnit,
+                _quoteAssetRate,
+                uint256(ethPerUsdRate)
+            ),
+            true
+        );
+    }
+
+    /// @dev Helper to convert amounts where the base asset has an ETH rate and the quote asset has a USD rate
+    function __calcConversionAmountEthRateAssetToUsdRateAsset(
+        uint256 _baseAssetAmount,
+        uint256 _baseAssetUnit,
+        uint256 _baseAssetRate,
+        uint256 _quoteAssetUnit,
+        uint256 _quoteAssetRate,
+        uint256 _ethPerUsdRate
+    ) private pure returns (uint256 quoteAssetAmount_) {
+        // Only allows two consecutive multiplication operations to avoid potential overflow.
+        // Intermediate step needed to resolve stack-too-deep error.
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_ethPerUsdRate).div(
+            ETH_UNIT
+        );
+
+        return intermediateStep.mul(_quoteAssetUnit).div(_baseAssetUnit).div(_quoteAssetRate);
+    }
+
+    /// @dev Helper to convert amounts where base and quote assets both have ETH rates or both have USD rates
+    function __calcConversionAmountSameRateAsset(
+        uint256 _baseAssetAmount,
+        uint256 _baseAssetUnit,
+        uint256 _baseAssetRate,
+        uint256 _quoteAssetUnit,
+        uint256 _quoteAssetRate
+    ) private pure returns (uint256 quoteAssetAmount_) {
+        // Only allows two consecutive multiplication operations to avoid potential overflow
         return
-            _baseAssetRate
-                .mul(10**(FEED_PRECISION.add(ETH_PRECISION)))
-                .div(uint256(ethPerUsdRate))
-                .div(_quoteAssetRate);
+            _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(
+                _baseAssetUnit.mul(_quoteAssetRate)
+            );
+    }
+
+    /// @dev Helper to convert amounts where the base asset has a USD rate and the quote asset has an ETH rate
+    function __calcConversionAmountUsdRateAssetToEthRateAsset(
+        uint256 _baseAssetAmount,
+        uint256 _baseAssetUnit,
+        uint256 _baseAssetRate,
+        uint256 _quoteAssetUnit,
+        uint256 _quoteAssetRate,
+        uint256 _ethPerUsdRate
+    ) private pure returns (uint256 quoteAssetAmount_) {
+        // Only allows two consecutive multiplication operations to avoid potential overflow
+        // Intermediate step needed to resolve stack-too-deep error.
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(
+            _ethPerUsdRate
+        );
+
+        return intermediateStep.mul(ETH_UNIT).div(_baseAssetUnit).div(_quoteAssetRate);
     }
 
     /// @dev Helper to get the latest rate for a given primitive
     function __getLatestRateData(address _primitive) private view returns (int256 rate_) {
         if (_primitive == WETH_TOKEN) {
-            return int256(10**ETH_PRECISION);
+            return int256(ETH_UNIT);
         }
 
         address aggregator = primitiveToAggregatorInfo[_primitive].aggregator;
@@ -220,6 +301,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             );
 
             delete primitiveToAggregatorInfo[_primitives[i]];
+            delete primitiveToUnit[_primitives[i]];
 
             emit PrimitiveRemoved(_primitives[i]);
         }
@@ -237,6 +319,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
             require(rateIsStale(aggregatorAddress), "removeStalePrimitives: Rate is not stale");
 
             delete primitiveToAggregatorInfo[_primitives[i]];
+            delete primitiveToUnit[_primitives[i]];
 
             emit StalePrimitiveRemoved(_primitives[i]);
         }
@@ -307,6 +390,11 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         );
 
         for (uint256 i = 0; i < _primitives.length; i++) {
+            require(
+                primitiveToAggregatorInfo[_primitives[i]].aggregator == address(0),
+                "__addPrimitives: Value already set"
+            );
+
             __validateAggregator(_aggregators[i]);
 
             primitiveToAggregatorInfo[_primitives[i]] = AggregatorInfo({
@@ -314,7 +402,11 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
                 rateAsset: _rateAssets[i]
             });
 
-            emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i]);
+            // Store the amount that makes up 1 unit given the asset's decimals
+            uint256 unit = 10**uint256(ERC20(_primitives[i]).decimals());
+            primitiveToUnit[_primitives[i]] = unit;
+
+            emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i], unit);
         }
     }
 
@@ -360,5 +452,32 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     /// @return wethToken_ The `WETH_TOKEN` variable value
     function getWethToken() external view returns (address wethToken_) {
         return WETH_TOKEN;
+    }
+
+    /// @notice Gets the rateAsset variable value for a primitive
+    /// @return rateAsset_ The rateAsset variable value
+    /// @dev This isn't strictly necessary as WETH_TOKEN will be undefined and thus
+    /// the RateAsset will be the 0-position of the enum (i.e. ETH), but it makes the
+    /// behavior more explicit
+    function getRateAssetForPrimitive(address _primitive)
+        public
+        view
+        returns (RateAsset rateAsset_)
+    {
+        if (_primitive == WETH_TOKEN) {
+            return RateAsset.ETH;
+        }
+
+        return primitiveToAggregatorInfo[_primitive].rateAsset;
+    }
+
+    /// @notice Gets the unit variable value for a primitive
+    /// @return unit_ The unit variable value
+    function getUnitForPrimitive(address _primitive) public view returns (uint256 unit_) {
+        if (_primitive == WETH_TOKEN) {
+            return ETH_UNIT;
+        }
+
+        return primitiveToUnit[_primitive];
     }
 }

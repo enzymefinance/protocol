@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { defaultTestDeployment } from '@melonproject/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
@@ -28,41 +28,41 @@ describe('constructor', () => {
   });
 });
 
-describe('getRatesToUnderlyings', () => {
-  it('only supports chai', async () => {
-    const {
-      deployment: { chaiPriceFeed },
-      config: {
-        derivatives: { chai },
-      },
-    } = await provider.snapshot(snapshot);
-    const derivative = randomAddress();
+// describe('getRatesToUnderlyings', () => {
+//   it('only supports chai', async () => {
+//     const {
+//       deployment: { chaiPriceFeed },
+//       config: {
+//         derivatives: { chai },
+//       },
+//     } = await provider.snapshot(snapshot);
+//     const derivative = randomAddress();
 
-    await expect(chaiPriceFeed.getRatesToUnderlyings(derivative)).rejects.toBeRevertedWith('Only Chai is supported');
+//     await expect(chaiPriceFeed.getRatesToUnderlyings(derivative)).rejects.toBeRevertedWith('Only Chai is supported');
 
-    await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
-  });
+//     await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
+//   });
 
-  it('returns rate for underlying dai', async () => {
-    const {
-      deployment: { chaiPriceFeed, chaiPriceSource },
-      config: {
-        derivatives: { chai },
-        integratees: {
-          makerDao: { dai },
-        },
-      },
-    } = await provider.snapshot(snapshot);
+//   it('returns rate for underlying dai', async () => {
+//     const {
+//       deployment: { chaiPriceFeed, chaiPriceSource },
+//       config: {
+//         derivatives: { chai },
+//         integratees: {
+//           makerDao: { dai },
+//         },
+//       },
+//     } = await provider.snapshot(snapshot);
 
-    await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
+//     await expect(chaiPriceFeed.getRatesToUnderlyings(chai)).resolves.toBeReceipt();
 
-    const chi = await chaiPriceSource.chi();
-    await expect(chaiPriceFeed.getRatesToUnderlyings.args(chai).call()).resolves.toMatchFunctionOutput(
-      chaiPriceFeed.getRatesToUnderlyings,
-      {
-        rates_: [chi.div(10 ** 9)],
-        underlyings_: [dai],
-      },
-    );
-  });
-});
+//     const chi = await chaiPriceSource.chi();
+//     await expect(chaiPriceFeed.getRatesToUnderlyings.args(chai).call()).resolves.toMatchFunctionOutput(
+//       chaiPriceFeed.getRatesToUnderlyings,
+//       {
+//         rates_: [chi.div(10 ** 9)],
+//         underlyings_: [dai],
+//       },
+//     );
+//   });
+// });

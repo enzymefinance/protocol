@@ -11,6 +11,7 @@ import "../IDerivativePriceFeed.sol";
 contract ChaiPriceFeed is IDerivativePriceFeed {
     using SafeMath for uint256;
 
+    uint256 private constant CHI_DIVISOR = 10**27;
     address private immutable CHAI;
     address private immutable DAI;
     address private immutable DSR_POT;
@@ -25,21 +26,25 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
         DSR_POT = _dsrPot;
     }
 
-    /// @notice Gets the rates for 1 unit of the derivative to its underlying assets
-    /// @param _derivative The derivative for which to get the rates
+    /// @notice Converts a given amount of a derivative to its underlying asset values
+    /// @param _derivative The derivative to convert
+    /// @param _derivativeAmount The amount of the derivative to convert
     /// @return underlyings_ The underlying assets for the _derivative
-    /// @return rates_ The rates for the _derivative to the underlyings_
-    function getRatesToUnderlyings(address _derivative)
+    /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
+    /// @dev Calculation based on Chai source: https://github.com/dapphub/chai/blob/master/src/chai.sol
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
         external
         override
-        returns (address[] memory underlyings_, uint256[] memory rates_)
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        require(isSupportedAsset(_derivative), "getRatesToUnderlyings: Only Chai is supported");
+        require(isSupportedAsset(_derivative), "calcUnderlyingValues: Only Chai is supported");
 
         underlyings_ = new address[](1);
         underlyings_[0] = DAI;
-        rates_ = new uint256[](1);
-        rates_[0] = __calcChaiRate();
+        underlyingAmounts_ = new uint256[](1);
+        underlyingAmounts_[0] = _derivativeAmount.mul(IMakerDaoPot(DSR_POT).chi()).div(
+            CHI_DIVISOR
+        );
     }
 
     /// @notice Checks if an asset is supported by the price feed
@@ -47,11 +52,6 @@ contract ChaiPriceFeed is IDerivativePriceFeed {
     /// @return isSupported_ True if the asset is supported
     function isSupportedAsset(address _asset) public view override returns (bool isSupported_) {
         return _asset == CHAI;
-    }
-
-    /// @dev Calculation based on Chai source: https://github.com/dapphub/chai/blob/master/src/chai.sol
-    function __calcChaiRate() private view returns (uint256 chaiRate_) {
-        return IMakerDaoPot(DSR_POT).chi().div(10**9);
     }
 
     ///////////////////
