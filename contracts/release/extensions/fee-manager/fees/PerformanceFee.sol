@@ -67,8 +67,12 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
     function activateForFund(address _comptrollerProxy, address) external override onlyFeeManager {
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
 
+        // We must not force asset finality, otherwise funds that have Synths as tracked assets
+        // would be susceptible to a DoS attack when attempting to migrate to a release that uses
+        // this fee: an attacker trades a negligible amount of a tracked Synth with the VaultProxy
+        // as the recipient, thus causing `calcGrossShareValue(true)` to fail.
         (uint256 grossSharePrice, bool sharePriceIsValid) = ComptrollerLib(_comptrollerProxy)
-            .calcGrossShareValue(true);
+            .calcGrossShareValue(false);
         require(sharePriceIsValid, "activateForFund: Invalid share price");
 
         feeInfo.highWaterMark = grossSharePrice;
