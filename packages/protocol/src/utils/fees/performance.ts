@@ -1,7 +1,6 @@
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { max } from '../bignumber';
 import { encodeArgs } from '../encoding';
-import { sharesDueWithInflation } from './settlement';
 import { FeeHook } from './types';
 
 export function performanceFeeConfigArgs({ rate, period }: { rate: BigNumberish; period: BigNumberish }) {
@@ -61,12 +60,13 @@ export function performanceFeeSharesDue({
   const nextAggregateValueDue = max(0, valueDueSinceLastSettled.add(prevAggregateValueDue));
 
   // Shares due
-  const sharesDueForAggregateValueDue = sharesDueWithInflation({
-    rawSharesDue: nextAggregateValueDue.mul(netSharesSupply).div(gav),
-    sharesSupply: netSharesSupply,
-  });
-
-  const sharesDue = BigNumber.from(sharesDueForAggregateValueDue).sub(performanceFeeSharesOutstanding);
+  if (nextAggregateValueDue.gt(gav)) {
+    throw new Error('nextAggregateValueDue cannot be greater than gav');
+  }
+  const sharesDueForAggregateValueDue = nextAggregateValueDue
+    .mul(netSharesSupply)
+    .div(BigNumber.from(gav).sub(nextAggregateValueDue));
+  const sharesDue = sharesDueForAggregateValueDue.sub(performanceFeeSharesOutstanding);
 
   // Next share price
   let nextSharePrice = BigNumber.from(0);

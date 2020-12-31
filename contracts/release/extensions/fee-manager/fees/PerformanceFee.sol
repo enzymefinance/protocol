@@ -2,10 +2,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../utils/SharesInflationMixin.sol";
 import "../FeeManager.sol";
 import "./utils/FeeBase.sol";
 
@@ -16,7 +16,8 @@ import "./utils/FeeBase.sol";
 /// @dev This contract assumes that all shares in the VaultProxy are shares outstanding,
 /// which is fine for this release. Even if they are not, they are still shares that
 /// are only claimable by the fund owner.
-contract PerformanceFee is FeeBase, SharesInflationMixin {
+contract PerformanceFee is FeeBase {
+    using SafeMath for uint256;
     using SignedSafeMath for int256;
 
     event ActivatedForFund(address indexed comptrollerProxy, uint256 highWaterMark);
@@ -437,10 +438,13 @@ contract PerformanceFee is FeeBase, SharesInflationMixin {
         uint256 _gav,
         uint256 _nextAggregateValueDue
     ) private view returns (int256 sharesDue_) {
-        uint256 sharesDueForAggregateValueDue = __calcSharesDueWithInflation(
-            _nextAggregateValueDue.mul(_netSharesSupply).div(_gav),
-            _netSharesSupply
+        // If _nextAggregateValueDue > _gav, then no shares can be created.
+        // This is a known limitation of the model, which is only reached for unrealistically
+        // high performance fee rates (> 100%). A revert is allowed in such a case.
+        uint256 sharesDueForAggregateValueDue = _nextAggregateValueDue.mul(_netSharesSupply).div(
+            _gav.sub(_nextAggregateValueDue)
         );
+
         // Shares due is the +/- diff or the total shares outstanding already minted
         return
             int256(sharesDueForAggregateValueDue).sub(
