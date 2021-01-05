@@ -1,6 +1,5 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress, resolveAddress } from '@crestproject/crestproject';
-import { MockChainlinkPriceSource, MockToken } from '@melonproject/protocol';
-import { ChainlinkRateAsset } from '@melonproject/protocol/src/utils/price-feeds/types';
+import { MockChainlinkPriceSource, MockToken, ChainlinkRateAsset } from '@melonproject/protocol';
 import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
 import { constants, utils } from 'ethers';
 

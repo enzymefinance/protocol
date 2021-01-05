@@ -1,7 +1,26 @@
-require('@crestproject/hardhat/plugin');
-require('hardhat-contract-sizer');
+import 'dotenv/config';
+import 'hardhat-deploy';
+import 'hardhat-deploy-ethers';
+import 'hardhat-contract-sizer';
+import '@crestproject/hardhat/plugin';
 
-module.exports = {
+function node(networkName: string) {
+  const fallback = 'http://localhost:8545';
+  const uppercase = networkName.toUpperCase();
+  const uri = process.env[`ETHEREUM_NODE_${uppercase}`] || process.env.ETHEREUM_NODE || fallback;
+  return uri.replace('{{NETWORK}}', networkName);
+}
+
+function accounts(networkName: string) {
+  const uppercase = networkName.toUpperCase();
+  const accounts = process.env[`ETHEREUM_ACCOUNTS_${uppercase}`] || process.env.ETHEREUM_ACCOUNTS || '';
+  return accounts
+    .split(',')
+    .map((account) => account.trim())
+    .filter(Boolean);
+}
+
+export default {
   solidity: {
     version: '0.6.12',
     settings: {
@@ -13,6 +32,28 @@ module.exports = {
         },
       },
     },
+  },
+  networks: {
+    hardhat: {
+      accounts: {
+        mnemonic: 'test test test test test test test test test test test junk',
+      },
+    },
+    mainnet: {
+      url: node('mainnet'),
+      accounts: accounts('mainnet'),
+    },
+    rinkeby: {
+      url: node('rinkeby'),
+      accounts: accounts('rinkeby'),
+    },
+    kovan: {
+      url: node('kovan'),
+      accounts: accounts('kovan'),
+    },
+  },
+  namedAccounts: {
+    deployer: 0,
   },
   contractSizer: {
     disambiguatePaths: false,

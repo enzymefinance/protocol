@@ -1,4 +1,5 @@
-const ethers = require('ethers');
+import 'dotenv/config';
+import { utils } from 'ethers';
 
 if (!process.env.MAINNET_ARCHIVE_NODE) {
   console.warn('=====================================================');
@@ -10,7 +11,7 @@ if (!process.env.MAINNET_ARCHIVE_NODE) {
 
 const mnemonic = 'test test test test test test test test test test test junk';
 
-function common(name, roots) {
+function common(name: string, roots: string[]) {
   return {
     displayName: name,
     roots,
@@ -24,7 +25,7 @@ function common(name, roots) {
   };
 }
 
-function fork(name, roots) {
+function fork(name: string, roots: string[]) {
   return {
     ...common(name, roots),
     testEnvironmentOptions: {
@@ -34,7 +35,7 @@ function fork(name, roots) {
         accounts: {
           mnemonic,
           count: 5,
-          accountsBalance: ethers.utils.parseUnits('1', 36).toString(),
+          accountsBalance: utils.parseUnits('1', 36).toString(),
         },
         forking: {
           url: process.env.MAINNET_ARCHIVE_NODE,
@@ -54,7 +55,7 @@ function fork(name, roots) {
   };
 }
 
-function unit(name, roots) {
+function unit(name: string, roots: string[]) {
   return {
     ...common(name, roots),
     testEnvironmentOptions: {
@@ -64,7 +65,7 @@ function unit(name, roots) {
         accounts: {
           mnemonic,
           count: 10,
-          accountsBalance: ethers.utils.parseUnits('1', 36).toString(),
+          accountsBalance: utils.parseUnits('1', 36).toString(),
         },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,

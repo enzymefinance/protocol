@@ -2,110 +2,110 @@ import { BigNumber, BigNumberish } from 'ethers';
 import { contract, Call, Send, Contract, AddressLike } from '@crestproject/crestproject';
 
 // Persistent core
-export { Dispatcher } from './codegen/Dispatcher';
-export { VaultProxy } from './codegen/VaultProxy';
+export * from './codegen/Dispatcher';
+export * from './codegen/VaultProxy';
 
 // Persistent release interfaces
-export { IMigrationHookHandler } from './codegen/IMigrationHookHandler';
+export * from './codegen/IMigrationHookHandler';
 
 // Release core
-export { FundDeployer } from './codegen/FundDeployer';
-export { ComptrollerLib } from './codegen/ComptrollerLib';
-export { ComptrollerProxy } from './codegen/ComptrollerProxy';
-export { VaultLib } from './codegen/VaultLib';
+export * from './codegen/FundDeployer';
+export * from './codegen/ComptrollerLib';
+export * from './codegen/ComptrollerProxy';
+export * from './codegen/VaultLib';
 
 // Infrastructure
-export { ValueInterpreter } from './codegen/ValueInterpreter';
+export * from './codegen/ValueInterpreter';
 
 // Extensions
-export { IExtension } from './codegen/IExtension';
-export { FeeManager } from './codegen/FeeManager';
-export { IntegrationManager } from './codegen/IntegrationManager';
-export { PolicyManager } from './codegen/PolicyManager';
+export * from './codegen/IExtension';
+export * from './codegen/FeeManager';
+export * from './codegen/IntegrationManager';
+export * from './codegen/PolicyManager';
 
 // Primitive price feeds
-export { IPrimitivePriceFeed } from './codegen/IPrimitivePriceFeed';
-export { ChainlinkPriceFeed } from './codegen/ChainlinkPriceFeed';
+export * from './codegen/IPrimitivePriceFeed';
+export * from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
-export { IDerivativePriceFeed } from './codegen/IDerivativePriceFeed';
-export { AggregatedDerivativePriceFeed } from './codegen/AggregatedDerivativePriceFeed';
-export { ChaiPriceFeed } from './codegen/ChaiPriceFeed';
-export { CompoundPriceFeed } from './codegen/CompoundPriceFeed';
-export { UniswapV2PoolPriceFeed } from './codegen/UniswapV2PoolPriceFeed';
-export { WdgldPriceFeed } from './codegen/WdgldPriceFeed';
-export { SynthetixPriceFeed } from './codegen/SynthetixPriceFeed';
+export * from './codegen/IDerivativePriceFeed';
+export * from './codegen/AggregatedDerivativePriceFeed';
+export * from './codegen/ChaiPriceFeed';
+export * from './codegen/CompoundPriceFeed';
+export * from './codegen/UniswapV2PoolPriceFeed';
+export * from './codegen/WdgldPriceFeed';
+export * from './codegen/SynthetixPriceFeed';
 
 // Integration adapters
-export { ChaiAdapter } from './codegen/ChaiAdapter';
-export { CompoundAdapter } from './codegen/CompoundAdapter';
-export { KyberAdapter } from './codegen/KyberAdapter';
-export { ParaSwapAdapter } from './codegen/ParaSwapAdapter';
-export { SynthetixAdapter } from './codegen/SynthetixAdapter';
-export { TrackedAssetsAdapter } from './codegen/TrackedAssetsAdapter';
-export { UniswapV2Adapter } from './codegen/UniswapV2Adapter';
-export { ZeroExV2Adapter } from './codegen/ZeroExV2Adapter';
+export * from './codegen/ChaiAdapter';
+export * from './codegen/CompoundAdapter';
+export * from './codegen/KyberAdapter';
+export * from './codegen/ParaSwapAdapter';
+export * from './codegen/SynthetixAdapter';
+export * from './codegen/TrackedAssetsAdapter';
+export * from './codegen/UniswapV2Adapter';
+export * from './codegen/ZeroExV2Adapter';
 
 // Fees
-export { IFee } from './codegen/IFee';
-export { EntranceRateBurnFee } from './codegen/EntranceRateBurnFee';
-export { EntranceRateDirectFee } from './codegen/EntranceRateDirectFee';
-export { ManagementFee } from './codegen/ManagementFee';
-export { PerformanceFee } from './codegen/PerformanceFee';
+export * from './codegen/IFee';
+export * from './codegen/EntranceRateBurnFee';
+export * from './codegen/EntranceRateDirectFee';
+export * from './codegen/ManagementFee';
+export * from './codegen/PerformanceFee';
 
 // Policies
-export { IPolicy } from './codegen/IPolicy';
-export { AdapterBlacklist } from './codegen/AdapterBlacklist';
-export { AdapterWhitelist } from './codegen/AdapterWhitelist';
-export { AssetBlacklist } from './codegen/AssetBlacklist';
-export { AssetWhitelist } from './codegen/AssetWhitelist';
-export { BuySharesCallerWhitelist } from './codegen/BuySharesCallerWhitelist';
-export { GuaranteedRedemption } from './codegen/GuaranteedRedemption';
-export { MaxConcentration } from './codegen/MaxConcentration';
-export { MinMaxInvestment } from './codegen/MinMaxInvestment';
-export { InvestorWhitelist } from './codegen/InvestorWhitelist';
+export * from './codegen/IPolicy';
+export * from './codegen/AdapterBlacklist';
+export * from './codegen/AdapterWhitelist';
+export * from './codegen/AssetBlacklist';
+export * from './codegen/AssetWhitelist';
+export * from './codegen/BuySharesCallerWhitelist';
+export * from './codegen/GuaranteedRedemption';
+export * from './codegen/MaxConcentration';
+export * from './codegen/MinMaxInvestment';
+export * from './codegen/InvestorWhitelist';
 
 // Peripheral
-export { AuthUserExecutedSharesRequestorFactory } from './codegen/AuthUserExecutedSharesRequestorFactory';
-export { AuthUserExecutedSharesRequestorLib } from './codegen/AuthUserExecutedSharesRequestorLib';
-export { AuthUserExecutedSharesRequestorProxy } from './codegen/AuthUserExecutedSharesRequestorProxy';
-export { FundActionsWrapper } from './codegen/FundActionsWrapper';
+export * from './codegen/AuthUserExecutedSharesRequestorFactory';
+export * from './codegen/AuthUserExecutedSharesRequestorLib';
+export * from './codegen/AuthUserExecutedSharesRequestorProxy';
+export * from './codegen/FundActionsWrapper';
 
 // Mocks
-export { MockVaultLib } from './codegen/MockVaultLib';
-export { MockChaiIntegratee } from './codegen/MockChaiIntegratee';
-export { CentralizedRateProvider } from './codegen/CentralizedRateProvider';
-export { MockChaiPriceSource } from './codegen/MockChaiPriceSource';
-export { MockCTokenIntegratee } from './codegen/MockCTokenIntegratee';
-export { MockGenericAdapter } from './codegen/MockGenericAdapter';
-export { MockGenericIntegratee } from './codegen/MockGenericIntegratee';
-export { MockKyberIntegratee } from './codegen/MockKyberIntegratee';
-export { MockKyberPriceSource } from './codegen/MockKyberPriceSource';
-export { MockChainlinkPriceSource } from './codegen/MockChainlinkPriceSource';
-export { MockToken } from './codegen/MockToken';
-export { MockParaSwapIntegratee } from './codegen/MockParaSwapIntegratee';
-export { MockReentrancyToken } from './codegen/MockReentrancyToken';
-export { MockSynthetixToken } from './codegen/MockSynthetixToken';
-export { MockSynthetixIntegratee } from './codegen/MockSynthetixIntegratee';
-export { MockSynthetixPriceSource } from './codegen/MockSynthetixPriceSource';
-export { MockZeroExV2Integratee } from './codegen/MockZeroExV2Integratee';
-export { MockUniswapV2Integratee } from './codegen/MockUniswapV2Integratee';
-export { MockUniswapV2PriceSource } from './codegen/MockUniswapV2PriceSource';
-export { WETH } from './codegen/WETH';
+export * from './codegen/MockVaultLib';
+export * from './codegen/MockChaiIntegratee';
+export * from './codegen/CentralizedRateProvider';
+export * from './codegen/MockChaiPriceSource';
+export * from './codegen/MockCTokenIntegratee';
+export * from './codegen/MockGenericAdapter';
+export * from './codegen/MockGenericIntegratee';
+export * from './codegen/MockKyberIntegratee';
+export * from './codegen/MockKyberPriceSource';
+export * from './codegen/MockChainlinkPriceSource';
+export * from './codegen/MockToken';
+export * from './codegen/MockParaSwapIntegratee';
+export * from './codegen/MockReentrancyToken';
+export * from './codegen/MockSynthetixToken';
+export * from './codegen/MockSynthetixIntegratee';
+export * from './codegen/MockSynthetixPriceSource';
+export * from './codegen/MockZeroExV2Integratee';
+export * from './codegen/MockUniswapV2Integratee';
+export * from './codegen/MockUniswapV2PriceSource';
+export * from './codegen/WETH';
 
 // External interfaces
-export { IUniswapV2Factory } from './codegen/IUniswapV2Factory';
-export { IUniswapV2Pair } from './codegen/IUniswapV2Pair';
-export { IKyberNetworkProxy } from './codegen/IKyberNetworkProxy';
-export { IMakerDaoPot } from './codegen/IMakerDaoPot';
-export { IChainlinkAggregator } from './codegen/IChainlinkAggregator';
-export { ICERC20 } from './codegen/ICERC20';
-export { ICEther } from './codegen/ICEther';
-export { IChai } from './codegen/IChai';
-export { ISynthetixAddressResolver } from './codegen/ISynthetixAddressResolver';
-export { ISynthetixDelegateApprovals } from './codegen/ISynthetixDelegateApprovals';
-export { ISynthetixExchangeRates } from './codegen/ISynthetixExchangeRates';
-export { ISynthetixExchanger } from './codegen/ISynthetixExchanger';
+export * from './codegen/IUniswapV2Factory';
+export * from './codegen/IUniswapV2Pair';
+export * from './codegen/IKyberNetworkProxy';
+export * from './codegen/IMakerDaoPot';
+export * from './codegen/IChainlinkAggregator';
+export * from './codegen/ICERC20';
+export * from './codegen/ICEther';
+export * from './codegen/IChai';
+export * from './codegen/ISynthetixAddressResolver';
+export * from './codegen/ISynthetixDelegateApprovals';
+export * from './codegen/ISynthetixExchangeRates';
+export * from './codegen/ISynthetixExchanger';
 
 // prettier-ignore
 export interface StandardToken extends Contract<StandardToken> {

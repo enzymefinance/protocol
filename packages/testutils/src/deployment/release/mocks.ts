@@ -622,8 +622,6 @@ export async function configureMockRelease({
       synthetix: {
         addressResolver: mocks.synthetix.mockSynthetixIntegratee,
         delegateApprovals: mocks.synthetix.mockSynthetixIntegratee,
-        exchanger: mocks.synthetix.mockSynthetixPriceSource,
-        exchangeRates: mocks.synthetix.mockSynthetixPriceSource,
         snx: mocks.synthetix.mockSynthetixIntegratee,
         susd: mocks.synthetix.synths.susd,
         originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',

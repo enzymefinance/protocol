@@ -91,8 +91,6 @@ export interface ReleaseDeploymentConfig {
     synthetix: {
       addressResolver: AddressLike;
       delegateApprovals: AddressLike;
-      exchanger: AddressLike;
-      exchangeRates: AddressLike;
       snx: AddressLike;
       susd: AddressLike;
       originator: AddressLike;

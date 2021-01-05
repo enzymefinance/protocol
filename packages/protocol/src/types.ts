@@ -3,3 +3,8 @@ export enum ReleaseStatusTypes {
   Live,
   Paused,
 }
+
+export enum ChainlinkRateAsset {
+  ETH,
+  USD,
+}

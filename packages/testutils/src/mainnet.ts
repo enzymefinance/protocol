@@ -61,7 +61,6 @@ export const mainnet = {
   synthetix: {
     addressResolver: '0x61166014E3f04E40C953fe4EAb9D9E40863C83AE',
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
-    exchanger: '0xc4942df0d3c561c71417BBA09d2DEA7a3CC676Fb',
     snx: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
   },
   tokens: {

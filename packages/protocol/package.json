@@ -37,12 +37,12 @@
     "decimal.js": "^10.2.1"
   },
   "devDependencies": {
-    "@crestproject/crestproject": "^0.1.20",
+    "@crestproject/crestproject": "^0.1.21",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   },
   "peerDependencies": {
-    "@crestproject/crestproject": "^0.1.19",
+    "@crestproject/crestproject": "^0.1.21",
     "ethers": "^5.0.19",
     "ethers-eip712": "^0.2.0"
   }

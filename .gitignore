@@ -3,6 +3,7 @@
 
 # ignore all dotfiles except the whitelisted ones
 .*
+!.env.example
 !.changeset
 !.github
 !.gitignore
@@ -12,6 +13,7 @@
 !.babelrc
 !.solhint.json
 !.solhintignore
+!.chainId
 
 # ignore build output and dependencies
 codegen/
