@@ -73,7 +73,7 @@ describe('init', () => {
     expect(nameValue).toBe(fundName);
 
     const symbolValue = await vaultProxy.symbol();
-    expect(symbolValue).toBe('MLNF');
+    expect(symbolValue).toBe('ENZF');
 
     const decimalsValue = await vaultProxy.decimals();
     expect(decimalsValue).toBe(18);
