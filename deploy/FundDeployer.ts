@@ -1,19 +1,33 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import { FundDeployerArgs } from '@melonproject/protocol';
+import { Dispatcher, FundDeployerArgs } from '@melonproject/protocol';
+import { sameAddress } from '@crestproject/crestproject';
 
 const fn: DeployFunction = async function (hre) {
-  const { deploy, get } = hre.deployments;
+  const { deploy, get, log } = hre.deployments;
   const deployer = await hre.ethers.getNamedSigner('deployer');
 
   const dispatcher = await get('Dispatcher');
   const vaultLib = await get('VaultLib');
 
-  await deploy('FundDeployer', {
+  const fundDeployer = await deploy('FundDeployer', {
     from: deployer.address,
     log: true,
     // NOTE: Registration of vault contract calls is done in the adapter deployment phase.
     args: [dispatcher.address, vaultLib.address, [], []] as FundDeployerArgs,
   });
+
+  if (hre.network.name === 'kovan') {
+    // Set the current fund deployer on the dispatcher but only on Kovan. On mainnet, this
+    // is part of the hand over / release routine.
+    const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
+    const currentFundDeployer = await dispatcherInstance.getCurrentFundDeployer();
+    if (!sameAddress(currentFundDeployer, fundDeployer.address)) {
+      log('Setting the fund deployer on the dispatcher');
+      await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
+    } else {
+      log('The fund deployer has already been set');
+    }
+  }
 };
 
 fn.tags = ['Release', 'FundDeployer'];
