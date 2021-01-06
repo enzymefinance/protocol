@@ -72,6 +72,7 @@ export * from './codegen/AuthUserExecutedSharesRequestorProxy';
 export * from './codegen/FundActionsWrapper';
 
 // Mocks
+
 export * from './codegen/MockVaultLib';
 export * from './codegen/MockChaiIntegratee';
 export * from './codegen/CentralizedRateProvider';
@@ -80,7 +81,6 @@ export * from './codegen/MockCTokenIntegratee';
 export * from './codegen/MockGenericAdapter';
 export * from './codegen/MockGenericIntegratee';
 export * from './codegen/MockKyberIntegratee';
-export * from './codegen/MockKyberPriceSource';
 export * from './codegen/MockChainlinkPriceSource';
 export * from './codegen/MockToken';
 export * from './codegen/MockParaSwapIntegratee';
