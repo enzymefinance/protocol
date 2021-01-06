@@ -63,12 +63,11 @@ contract MockSynthetixIntegratee is Ownable {
         )
     {
         ISynthetixExchangeRates exchangeRates = ISynthetixExchangeRates(EXCHANGE_RATES);
-        // TODO: temporary removed to avoid stack too deep
-        // require(
-        //     currencyKeyToSynth[_srcCurrencyKey] != address(0) &&
-        //         currencyKeyToSynth[_destCurrencyKey] != address(0),
-        //     "getAmountsForExchange: Currency key doesn't have an associated synth"
-        // );
+        require(
+            currencyKeyToSynth[_srcCurrencyKey] != address(0) &&
+                currencyKeyToSynth[_destCurrencyKey] != address(0),
+            "getAmountsForExchange: Currency key doesn't have an associated synth"
+        );
 
         (uint256 srcRate, ) = exchangeRates.rateAndInvalid(_srcCurrencyKey);
         (uint256 destRate, ) = exchangeRates.rateAndInvalid(_destCurrencyKey);
@@ -85,11 +84,10 @@ contract MockSynthetixIntegratee is Ownable {
         external
         onlyOwner
     {
-        // TODO: temporary removed to avoid stack too deep
-        // require(
-        //     _currencyKeys.length == _synths.length,
-        //     "setSynthFromCurrencyKey: Unequal _currencyKeys and _synths lengths"
-        // );
+        require(
+            _currencyKeys.length == _synths.length,
+            "setSynthFromCurrencyKey: Unequal _currencyKeys and _synths lengths"
+        );
         for (uint256 i = 0; i < _currencyKeys.length; i++) {
             currencyKeyToSynth[_currencyKeys[i]] = _synths[i];
         }
