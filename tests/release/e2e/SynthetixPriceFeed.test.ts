@@ -1,7 +1,7 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ISynthetixExchangeRates } from '@melonproject/protocol';
+import { ISynthetixExchangeRates, StandardToken } from '@melonproject/protocol';
 import { defaultForkDeployment, synthetixResolveAddress } from '@melonproject/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   return await defaultForkDeployment(provider);
@@ -40,5 +40,71 @@ it('returns rate for underlying token', async () => {
   expect(feedRate).toMatchFunctionOutput(synthetixPriceFeed.calcUnderlyingValues.fragment, {
     underlyingAmounts_: [expectedAmount],
     underlyings_: [susd],
+  });
+});
+
+describe('expected values', () => {
+  it('returns the expected value from the valueInterpreter (18 decimals quote)', async () => {
+    const {
+      deployment: { valueInterpreter },
+      config: {
+        derivatives: {
+          synthetix: { sbtc: sbtcAddress },
+        },
+        deployer,
+        tokens: { dai },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const sbtc = new StandardToken(sbtcAddress, deployer);
+    const baseDecimals = await sbtc.decimals();
+    const quoteDecimals = await dai.decimals();
+
+    expect(baseDecimals).toEqBigNumber(18);
+    expect(quoteDecimals).toEqBigNumber(18);
+
+    // sbtc/usd price at 11/12/2020 had a price of $15,419.99
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2020-11-11&end_date=2020-11-11#panel>
+
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
+      .call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: BigNumber.from('15679164417213014813882'),
+      isValid_: true,
+    });
+  });
+
+  it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
+    const {
+      deployment: { valueInterpreter },
+      config: {
+        derivatives: {
+          synthetix: { sbtc: sbtcAddress },
+        },
+        deployer,
+        tokens: { usdc },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const sbtc = new StandardToken(sbtcAddress, deployer);
+    const baseDecimals = await sbtc.decimals();
+    const quoteDecimals = await usdc.decimals();
+
+    expect(baseDecimals).toEqBigNumber(18);
+    expect(quoteDecimals).toEqBigNumber(6);
+
+    // sbtc/usd price at 11/12/2020 had a price of $15,419.99
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2020-11-11&end_date=2020-11-11#panel>
+
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
+      .call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: BigNumber.from('15764202932'),
+      isValid_: true,
+    });
   });
 });
