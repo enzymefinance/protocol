@@ -1,10 +1,7 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-// import {
-//   calcGtr,
-//   calcGtrConstant,
-// } from '@melonproject/protocol/src/utils/price-feeds/wdgld';
+import { calcGtr } from '@melonproject/protocol/src/utils/price-feeds/wdgld';
 import { defaultTestDeployment } from '@melonproject/testutils';
-// import { utils } from 'ethers';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { deployment, config } = await defaultTestDeployment(provider);
@@ -40,33 +37,36 @@ describe('constructor', () => {
   });
 });
 
-// describe('getRatesToUnderlyings', () => {
-//   it('returns rate for underlying XAU', async () => {
-//     const {
-//       deployment: {
-//         wdgldPriceFeed,
-//         tokens: { weth },
-//       },
-//       config: {
-//         derivatives: { wdgld },
-//       },
-//     } = await provider.snapshot(snapshot);
+describe('calcUnderlyingValues', () => {
+  it('returns rate for underlying WETH', async () => {
+    const {
+      deployment: {
+        wdgldPriceFeed,
+        tokens: { weth },
+      },
+      config: {
+        derivatives: { wdgld: wdgldAddress },
+      },
+    } = await provider.snapshot(snapshot);
+    const wdgldDecimals = 8;
 
-//     const xauToUsdRate = utils.parseEther('1');
-//     const ethToUsdRate = utils.parseEther('1');
+    const xauToUsdRate = utils.parseEther('1');
+    const ethToUsdRate = utils.parseEther('1');
 
-//     const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-//     const initialTimestamp = 1568700000;
+    const currentTimestamp = (await provider.getBlock('latest')).timestamp;
+    const initialTimestamp = 1568700000;
 
-//     const wdgldToXauRate = await calcGtr({ currentTimestamp, initialTimestamp });
-//     const xauToWethRate = xauToUsdRate.mul(utils.parseUnits('1', 18)).div(ethToUsdRate);
-//     const rateToUnderlyings = await wdgldPriceFeed.getRatesToUnderlyings.args(wdgld).call();
+    const wdgldToXauRate = await calcGtr({ currentTimestamp, initialTimestamp });
+    const xauToWethRate = xauToUsdRate.mul(utils.parseUnits('1', 18)).div(ethToUsdRate);
+    const rateToUnderlyings = await wdgldPriceFeed.calcUnderlyingValues
+      .args(wdgldAddress, utils.parseUnits('1', wdgldDecimals))
+      .call();
 
-//     const expectedRates = wdgldToXauRate.mul(xauToWethRate).div(utils.parseUnits('1', 27));
+    const expectedAmount = wdgldToXauRate.mul(xauToWethRate).div(utils.parseUnits('1', 27));
 
-//     expect(rateToUnderlyings).toMatchFunctionOutput(wdgldPriceFeed.getRatesToUnderlyings, {
-//       rates_: [expectedRates],
-//       underlyings_: [weth],
-//     });
-//   });
-// });
+    expect(rateToUnderlyings).toMatchFunctionOutput(wdgldPriceFeed.calcUnderlyingValues, {
+      underlyings_: [weth],
+      underlyingAmounts_: [expectedAmount],
+    });
+  });
+});

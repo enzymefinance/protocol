@@ -10,7 +10,7 @@ import "../prices/MockChainlinkPriceSource.sol";
 /// @dev This price source offers two different options getting prices
 /// The first one is getting a fixed rate, which can be useful for tests
 /// The second approach calculates dinamically the rate making use of a chainlink price source
-/// Mocks the functionality of the folllowing Synthetix contracts: { Exchanger, ExchangeRates}
+/// Mocks the functionality of the folllowing Synthetix contracts: { Exchanger, ExchangeRates }
 contract MockSynthetixPriceSource is Ownable, ISynthetixExchangeRates {
     using SafeMath for uint256;
 

@@ -17,7 +17,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('getRatesToUnderlyings', () => {
+describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
     const {
       config: {

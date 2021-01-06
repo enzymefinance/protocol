@@ -90,7 +90,7 @@ describe('derivative gas costs', () => {
   });
 });
 
-describe('getRatesToUnderlyings', () => {
+describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
     const {
       config: {
