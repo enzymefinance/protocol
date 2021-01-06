@@ -13,7 +13,7 @@ import {
   PolicyManager,
 } from '@melonproject/protocol';
 import { sameAddress } from '@crestproject/crestproject';
-import { loadConfig } from './Config';
+import { loadConfig } from './config/Config';
 
 const fn: DeployFunction = async function (hre) {
   const { deploy, get, log } = hre.deployments;

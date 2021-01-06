@@ -26,15 +26,12 @@
     "format:eslint": "yarn lint:eslint --fix",
     "format:solhint": "yarn lint:solhint --fix",
     "test": "TS_JEST_DISABLE_VER_CHECKER=true jest",
-    "deploy:kovan": "hardhat --network kovan deploy",
-    "export:kovan": "hardhat --network kovan export --export deployments/kovan.json",
-    "verify:kovan": "hardhat --network kovan etherscan-verify",
-    "deploy:rinkeby": "hardhat --network rinkeby deploy",
-    "export:rinkeby": "hardhat --network rinkeby export --export deployments/rinkeby.json",
-    "verify:rinkeby": "hardhat --network rinkeby etherscan-verify",
-    "deploy:mainnet": "hardhat --network mainnet deploy",
-    "export:mainnet": "hardhat --network mainnet export --export deployments/mainnet.json",
-    "verify:mainnet": "hardhat --network mainnet etherscan-verify"
+    "deploy:kovan": "hardhat deploy --network kovan",
+    "export:kovan": "hardhat export --network kovan --export deployments/kovan.json",
+    "verify:kovan": "hardhat etherscan-verify --network kovan",
+    "deploy:mainnet": "hardhat deploy --network mainnet",
+    "export:mainnet": "hardhat export --network mainnet --export deployments/mainnet.json",
+    "verify:mainnet": "hardhat etherscan-verify --network mainnet"
   },
   "dependencies": {
     "@babel/core": "^7.12.3",

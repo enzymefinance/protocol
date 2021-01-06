@@ -1,6 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import { FundDeployer as FundDeployerContract, ComptrollerLibArgs } from '@melonproject/protocol';
-import { loadConfig } from './Config';
+import { loadConfig } from './config/Config';
 import { sameAddress } from '@crestproject/crestproject';
 
 const fn: DeployFunction = async function (hre) {

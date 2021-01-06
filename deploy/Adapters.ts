@@ -13,7 +13,7 @@ import {
   FundDeployer,
   sighash,
 } from '@melonproject/protocol';
-import { loadConfig } from './Config';
+import { loadConfig } from './config/Config';
 import { sameAddress } from '@crestproject/crestproject';
 
 const fn: DeployFunction = async function (hre) {

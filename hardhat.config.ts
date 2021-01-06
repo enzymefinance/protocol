@@ -43,10 +43,6 @@ export default {
       url: node('mainnet'),
       accounts: accounts('mainnet'),
     },
-    rinkeby: {
-      url: node('rinkeby'),
-      accounts: accounts('rinkeby'),
-    },
     kovan: {
       url: node('kovan'),
       accounts: accounts('kovan'),

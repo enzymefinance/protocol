@@ -1,6 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import type { IntegrationManagerArgs } from '@melonproject/protocol';
-import { loadConfig } from './Config';
+import { loadConfig } from './config/Config';
 
 const fn: DeployFunction = async function (hre) {
   const { deploy, get } = hre.deployments;

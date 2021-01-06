@@ -15,7 +15,7 @@ import {
   ValueInterpreterArgs,
   WdgldPriceFeedArgs,
 } from '@melonproject/protocol';
-import { loadConfig } from './Config';
+import { loadConfig } from './config/Config';
 
 function nonOptional<T>(array: (T | undefined)[]): T[] {
   return array.filter((item) => item !== undefined) as T[];
@@ -156,7 +156,6 @@ const fn: DeployFunction = async function (hre) {
   const derivativeAssets: [string, string][] = [
     [config.wdgld.wdgld, wdgldPriceFeed.address],
     [config.chai.chai, chaiPriceFeed.address],
-    [config.synthetix.susd, synthetixPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],
     ...config.synthetix.synths.map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
     ...config.compound.ctokens.map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),

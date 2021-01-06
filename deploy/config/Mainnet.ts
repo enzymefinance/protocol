@@ -1,60 +1,6 @@
 import { utils } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
 import { ChainlinkRateAsset } from '@melonproject/protocol';
-import { loadMockDeployment } from './Mocks';
-
-export interface DeploymentConfig {
-  weth: string;
-  chainlink: {
-    ethusd: string;
-    primitives: [string, string, ChainlinkRateAsset][];
-  };
-  wdgld: {
-    wdgld: string;
-    ethusd: string;
-    xauusd: string;
-  };
-  synthetix: {
-    snx: string;
-    susd: string;
-    synths: string[];
-    addressResolver: string;
-    delegateApprovals: string;
-    originator: string;
-    trackingCode: string;
-  };
-  compound: {
-    ceth: string;
-    ctokens: string[];
-  };
-  chai: {
-    dai: string;
-    chai: string;
-    pot: string;
-  };
-  kyber: {
-    networkProxy: string;
-  };
-  paraswap: {
-    augustusSwapper: string;
-    tokenTransferProxy: string;
-  };
-  uniswap: {
-    factory: string;
-    router: string;
-    pools: string[];
-  };
-  zeroex: {
-    exchange: string;
-    allowedMakers: string[];
-  };
-  policies: {
-    guaranteedRedemption: {
-      redemptionWindowBuffer: number;
-    };
-  };
-}
+import { DeploymentConfig } from './Config';
 
 const primitives = {
   bat: '0x0d8775f648430679a709e98d2b0cb6250d2887ef',
@@ -98,7 +44,7 @@ const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
 // prettier-ignore
-const config: DeploymentConfig = {
+export const mainnetConfig: DeploymentConfig = {
   weth: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
   chainlink: {
     ethusd: ethUsdAggregator,
@@ -183,19 +129,10 @@ const config: DeploymentConfig = {
   },
 }
 
-export async function loadConfig(hre: HardhatRuntimeEnvironment) {
-  if (hre.network.name === 'mainnet') {
-    return config;
-  } else {
-    return loadMockDeployment(hre);
-  }
-}
-
-const fn: DeployFunction = async function () {
+const fn = async () => {
   // Nothing to do here.
 };
 
 fn.tags = ['Config'];
-fn.dependencies = ['Mocks'];
 
 export default fn;
