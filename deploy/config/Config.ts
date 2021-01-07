@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ChainlinkRateAsset } from '@melonproject/protocol';
 import { mainnetConfig } from './Mainnet';
 import { loadMockDeployment } from './Mocks';
+import { DeployFunction } from 'hardhat-deploy/types';
 
 export interface DeploymentConfig {
   weth: string;
@@ -67,7 +68,7 @@ export async function loadConfig(hre: HardhatRuntimeEnvironment) {
   throw new Error('Failed to load config');
 }
 
-const fn = async () => {
+const fn: DeployFunction = async () => {
   // Nothing to do here.
 };
 

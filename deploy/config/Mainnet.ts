@@ -1,6 +1,7 @@
 import { utils } from 'ethers';
 import { ChainlinkRateAsset } from '@melonproject/protocol';
 import { DeploymentConfig } from './Config';
+import { DeployFunction } from 'hardhat-deploy/types';
 
 const primitives = {
   bat: '0x0d8775f648430679a709e98d2b0cb6250d2887ef',
@@ -129,7 +130,7 @@ export const mainnetConfig: DeploymentConfig = {
   },
 }
 
-const fn = async () => {
+const fn: DeployFunction = async () => {
   // Nothing to do here.
 };
 

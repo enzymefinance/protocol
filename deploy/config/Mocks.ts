@@ -3,13 +3,16 @@ import fs from 'fs-extra';
 import { utils, constants } from 'ethers';
 import { DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import {
+  FundDeployer,
   MockCTokenIntegrateeArgs,
   MockSynthetixTokenArgs,
   MockTokenArgs,
   MockUniswapV2PriceSourceArgs,
+  ReleaseStatusTypes,
 } from '@melonproject/protocol';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import type { DeploymentConfig } from './Config';
+import { DeployFunction } from 'hardhat-deploy/types';
 
 interface DeployMockOptions extends Omit<DeployOptions, 'from'> {
   name?: string;
@@ -101,10 +104,25 @@ export async function hasMockDeployment(hre: HardhatRuntimeEnvironment, name: st
   return !!(await hre.deployments.getOrNull(name));
 }
 
-const fn = async () => {
-  // Nothing to do here.
+// Finalize mock deployments (set release to live, etc.).
+const fn: DeployFunction = async (hre) => {
+  if (hre.network.name === 'kovan') {
+    const deployer = await hre.ethers.getNamedSigner('deployer');
+    const fundDeployer = await hre.deployments.get('FundDeployer');
+    const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
+
+    // NOTE: There is currently an error in the generated typescript code for enums that cause
+    // this to be typed as a BigNumber although it's returned as a number.
+    const currentReleaseStatus = ((await fundDeployerInstance.getReleaseStatus()) as any) as number;
+    if (currentReleaseStatus === ReleaseStatusTypes.PreLaunch) {
+      hre.deployments.log('Setting release status to live');
+      await fundDeployerInstance.setReleaseStatus(ReleaseStatusTypes.Live);
+    }
+  }
 };
 
-fn.tags = ['Config'];
+// This needs to run as the last step of the deployment.
+fn.runAtTheEnd = true;
+fn.dependencies = ['FundDeployer'];
 
 export default fn;

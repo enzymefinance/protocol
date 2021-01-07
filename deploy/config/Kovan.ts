@@ -13,6 +13,9 @@ import {
   MockUniswapV2IntegrateeArgs,
   ChainlinkRateAsset,
   MockSynthetixPriceSource,
+  CentralizedRateProvider,
+  MockKyberIntegratee,
+  MockUniswapV2Integratee,
 } from '@melonproject/protocol';
 import {
   deployMock,
@@ -23,6 +26,7 @@ import {
   saveMockDeployment,
 } from './Mocks';
 
+const weth = '0xd0a1e359811322d97991e03f863a0c30c2cf029c';
 const ethUsdAggregator = '0x9326BFA02ADD2366b30bacB125260Af641031331';
 const xauUsdAggregator = '0xc8fb5684f2707C82f28595dEaC017Bfdf44EE9c5';
 
@@ -37,7 +41,7 @@ const chainlinkAggregators = {
   knc: ['0xb8E8130d244CFd13a75D6B9Aee029B1C33c808A7', ChainlinkRateAsset.ETH],
   link: ['0x3Af8C569ab77af5230596Acf0E8c2F9351d24C38', ChainlinkRateAsset.ETH],
   mana: ['0x1b93D8E109cfeDcBb3Cc74eD761DE286d5771511', ChainlinkRateAsset.ETH],
-  // mkr: ['0x0B156192e04bAD92B6C1C13cf8739d14D78D5701', ChainlinkRateAsset.ETH],
+  mkr: ['0x0B156192e04bAD92B6C1C13cf8739d14D78D5701', ChainlinkRateAsset.ETH],
   // ren: ['0xF1939BECE7708382b5fb5e559f630CB8B39a10ee', ChainlinkRateAsset.ETH],
   rep: ['0x3A7e6117F2979EFf81855de32819FBba48a63e9e', ChainlinkRateAsset.ETH],
   // uni: ['0x17756515f112429471F86f98D5052aCB6C47f6ee', ChainlinkRateAsset.ETH],
@@ -57,13 +61,17 @@ const fn: DeployFunction = async function (hre) {
     args: [5] as CentralizedRateProviderArgs,
   });
 
+  const centralizedRateProviderInstance = new CentralizedRateProvider(centralizedRateProvider.address, deployer);
+  const currentMaxDeviation = await centralizedRateProviderInstance.getMaxDeviationPerSender();
+  const maxDeviation = 10;
+  if (!currentMaxDeviation.eq(maxDeviation)) {
+    await centralizedRateProviderInstance.setMaxDeviationPerSender(maxDeviation);
+  }
+
   const deployMockToken = createDeployMockToken(hre);
   const deployMockSynthetixToken = createDeployMockSynthetixToken(hre);
   const deployMockCompoundToken = createDeployMockCompoundToken(hre, centralizedRateProvider.address);
   const deployMockUniswapPair = createDeployMockUniswapPair(hre);
-
-  // WETH
-  const weth = await deployMockToken('WETH', 'Wrapped Ether', 18);
 
   // PRIMITIVES
   const bat = await deployMockToken('BAT', 'Basic Attention Token', 18);
@@ -76,7 +84,7 @@ const fn: DeployFunction = async function (hre) {
   const knc = await deployMockToken('KNC', 'Kyber Network Crystal', 18);
   const link = await deployMockToken('LINK', 'ChainLink Token', 18);
   const mana = await deployMockToken('MANA', 'Decentraland MANA', 18);
-  // const mkr = await deployMockToken('MKR', 'Maker', 18);
+  const mkr = await deployMockToken('MKR', 'Maker', 18);
   // const ren = await deployMockToken('REN', 'Republic Token', 18);
   const rep = await deployMockToken('REP', 'Reputation', 18);
   // const uni = await deployMockToken('UNI', 'Uniswap', 18);
@@ -95,7 +103,7 @@ const fn: DeployFunction = async function (hre) {
 
   // COMPOUND
   // TODO: cETH should be its own mock contract type (currently uses MockCTokenIntegratee).
-  const ceth = await deployMockCompoundToken('cETH', 'Compound Ether', 8, weth.address, 1);
+  const ceth = await deployMockCompoundToken('cETH', 'Compound Ether', 8, weth, 1);
   const cbat = await deployMockCompoundToken('cBAT', 'Compound Basic Attention Token', 18, bat.address, 1);
   const cdai = await deployMockCompoundToken('cDAI', 'Compound Dai', 8, dai.address, 1);
   const crep = await deployMockCompoundToken('cREP', 'Compound Augur', 8, rep.address, 1);
@@ -107,35 +115,35 @@ const fn: DeployFunction = async function (hre) {
 
   // UNISWAP PAIRS
   const uniswapPairs = [
-    [bat, weth, await deployMockUniswapPair('BAT-WETH', bat.address, weth.address)],
-    [busd, usdc, await deployMockUniswapPair('BUSD-USDC', busd.address, usdc.address)],
-    [bzrx, weth, await deployMockUniswapPair('BZRX-WETH', bzrx.address, weth.address)],
-    [dai, usdc, await deployMockUniswapPair('DAI-USDC', dai.address, usdc.address)],
-    [dai, usdt, await deployMockUniswapPair('DAI-USDT', dai.address, usdt.address)],
-    [dai, weth, await deployMockUniswapPair('DAI-WETH', dai.address, weth.address)],
-    [link, weth, await deployMockUniswapPair('LINK-WETH', link.address, weth.address)],
-    [mana, weth, await deployMockUniswapPair('MANA-WETH', mana.address, weth.address)],
-    // [mkr, weth, await deployMockUniswapPair('MKR-WETH', mkr.address, weth.address)],
-    // [ren, weth, await deployMockUniswapPair('REN-WETH', ren.address, weth.address)],
-    [snx, weth, await deployMockUniswapPair('SNX-WETH', snx.address, weth.address)],
-    // [uni, weth, await deployMockUniswapPair('UNI-WETH', uni.address, weth.address)],
-    [usdc, usdt, await deployMockUniswapPair('USDC-USDT', usdc.address, usdt.address)],
-    [usdc, weth, await deployMockUniswapPair('USDC-WETH', usdc.address, weth.address)],
-    [wbtc, usdc, await deployMockUniswapPair('WBTC-USDC', wbtc.address, usdc.address)],
-    [wbtc, usdt, await deployMockUniswapPair('WBTC-USDT', wbtc.address, usdt.address)],
-    [wbtc, weth, await deployMockUniswapPair('WBTC-WETH', wbtc.address, weth.address)],
-    [weth, enj, await deployMockUniswapPair('WETH-ENJ', weth.address, enj.address)],
-    [weth, knc, await deployMockUniswapPair('WETH-KNC', weth.address, knc.address)],
-    [weth, usdt, await deployMockUniswapPair('WETH-USDT', weth.address, usdt.address)],
-    [weth, zrx, await deployMockUniswapPair('WETH-ZRX', weth.address, zrx.address)],
-    // [yfi, weth, await deployMockUniswapPair('YFI-WETH', yfi.address, weth.address)],
-  ];
+    [bat.address, weth, await deployMockUniswapPair('BAT-WETH', bat.address, weth)],
+    [busd.address, usdc.address, await deployMockUniswapPair('BUSD-USDC', busd.address, usdc.address)],
+    [bzrx.address, weth, await deployMockUniswapPair('BZRX-WETH', bzrx.address, weth)],
+    [dai.address, usdc.address, await deployMockUniswapPair('DAI-USDC', dai.address, usdc.address)],
+    [dai.address, usdt.address, await deployMockUniswapPair('DAI-USDT', dai.address, usdt.address)],
+    [dai.address, weth, await deployMockUniswapPair('DAI-WETH', dai.address, weth)],
+    [link.address, weth, await deployMockUniswapPair('LINK-WETH', link.address, weth)],
+    [mana.address, weth, await deployMockUniswapPair('MANA-WETH', mana.address, weth)],
+    [mkr.address, weth, await deployMockUniswapPair('MKR-WETH', mkr.address, weth)],
+    // [ren.address, weth, await deployMockUniswapPair('REN-WETH', ren.address, weth)],
+    [snx.address, weth, await deployMockUniswapPair('SNX-WETH', snx.address, weth)],
+    // [uni.address, weth, await deployMockUniswapPair('UNI-WETH', uni.address, weth)],
+    [usdc.address, usdt.address, await deployMockUniswapPair('USDC-USDT', usdc.address, usdt.address)],
+    [usdc.address, weth, await deployMockUniswapPair('USDC-WETH', usdc.address, weth)],
+    [wbtc.address, usdc.address, await deployMockUniswapPair('WBTC-USDC', wbtc.address, usdc.address)],
+    [wbtc.address, usdt.address, await deployMockUniswapPair('WBTC-USDT', wbtc.address, usdt.address)],
+    [wbtc.address, weth, await deployMockUniswapPair('WBTC-WETH', wbtc.address, weth)],
+    [weth, enj.address, await deployMockUniswapPair('WETH-ENJ', weth, enj.address)],
+    [weth, knc.address, await deployMockUniswapPair('WETH-KNC', weth, knc.address)],
+    [weth, usdt.address, await deployMockUniswapPair('WETH-USDT', weth, usdt.address)],
+    [weth, zrx.address, await deployMockUniswapPair('WETH-ZRX', weth, zrx.address)],
+    // [yfi.address, weth, await deployMockUniswapPair('YFI-WETH', yfi.address, weth)],
+  ] as const;
 
   const uniswapIntegratee = await deployMock(hre, {
     contract: 'MockUniswapV2Integratee',
     args: [
-      uniswapPairs.map(([a]) => a.address),
-      uniswapPairs.map(([, b]) => b.address),
+      uniswapPairs.map(([a]) => a),
+      uniswapPairs.map(([, b]) => b),
       uniswapPairs.map(([, , pair]) => pair.address),
       centralizedRateProvider.address,
       0,
@@ -153,7 +161,7 @@ const fn: DeployFunction = async function (hre) {
 
   const kyberIntegratee = await deployMock(hre, {
     contract: 'MockKyberIntegratee',
-    args: [centralizedRateProvider.address, weth.address, 0] as MockKyberIntegrateeArgs,
+    args: [centralizedRateProvider.address, weth, 0] as MockKyberIntegrateeArgs,
   });
 
   const paraSwapIntegratee = await deployMock(hre, {
@@ -175,6 +183,20 @@ const fn: DeployFunction = async function (hre) {
     contract: 'MockSynthetixIntegratee',
     args: [5, synthetixPriceSource.address] as MockSynthetixIntegrateeArgs,
   });
+
+  const maxPerBlockDeviation = 3;
+
+  const kyberIntegrateeInstance = new MockKyberIntegratee(kyberIntegratee.address, deployer);
+  const currentMaxPerBlockDeviationKyber = await kyberIntegrateeInstance.getBlockNumberDeviation();
+  if (!currentMaxPerBlockDeviationKyber.eq(maxPerBlockDeviation)) {
+    await kyberIntegrateeInstance.setBlockNumberDeviation(maxPerBlockDeviation);
+  }
+
+  const uniswapIntegrateeInstance = new MockUniswapV2Integratee(uniswapIntegratee.address, deployer);
+  const currentMaxPerBlockDeviationUniswap = await uniswapIntegrateeInstance.getBlockNumberDeviation();
+  if (!currentMaxPerBlockDeviationUniswap.eq(maxPerBlockDeviation)) {
+    await uniswapIntegrateeInstance.setBlockNumberDeviation(maxPerBlockDeviation);
+  }
 
   const synthetixPriceSourceInstance = new MockSynthetixPriceSource(synthetixPriceSource.address, deployer);
   const synthetixIntegrateeInstance = new MockSynthetixIntegratee(synthetixIntegratee.address, deployer);
@@ -200,7 +222,7 @@ const fn: DeployFunction = async function (hre) {
   );
 
   await saveMockDeployment(hre, 'Kovan', {
-    weth: weth.address,
+    weth: weth,
     chainlink: {
       ethusd: ethUsdAggregator,
       primitives: [
@@ -214,7 +236,7 @@ const fn: DeployFunction = async function (hre) {
         [knc.address, ...chainlinkAggregators.knc],
         [link.address, ...chainlinkAggregators.link],
         [mana.address, ...chainlinkAggregators.mana],
-        // [mkr.address, ...chainlinkAggregators.mkr],
+        [mkr.address, ...chainlinkAggregators.mkr],
         // [ren.address, ...chainlinkAggregators.ren],
         [rep.address, ...chainlinkAggregators.rep],
         // [uni.address, ...chainlinkAggregators.uni],
