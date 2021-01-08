@@ -59,16 +59,16 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     mapping(address => mapping(bytes4 => bool)) private contractToSelectorToIsRegisteredVaultCall;
     mapping(address => address) private pendingComptrollerProxyToCreator;
 
+    modifier onlyLiveRelease() {
+        require(releaseStatus == ReleaseStatus.Live, "Release is not Live");
+        _;
+    }
+
     modifier onlyMigrator(address _vaultProxy) {
         require(
             IVault(_vaultProxy).canMigrate(msg.sender),
             "Only a permissioned migrator can call this function"
         );
-        _;
-    }
-
-    modifier onlyNotPaused() {
-        require(releaseStatus != ReleaseStatus.Paused, "Release is paused");
         _;
     }
 
@@ -171,7 +171,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external onlyNotPaused returns (address comptrollerProxy_) {
+    ) external onlyLiveRelease returns (address comptrollerProxy_) {
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
@@ -201,7 +201,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external onlyNotPaused returns (address comptrollerProxy_, address vaultProxy_) {
+    ) external onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
         return
             __createNewFund(
                 _fundOwner,
@@ -354,7 +354,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @dev Helper to cancel a migration
     function __cancelMigration(address _vaultProxy, bool _bypassFailure)
         private
-        onlyNotPaused
+        onlyLiveRelease
         onlyMigrator(_vaultProxy)
     {
         IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
@@ -363,7 +363,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @dev Helper to execute a migration
     function __executeMigration(address _vaultProxy, bool _bypassFailure)
         private
-        onlyNotPaused
+        onlyLiveRelease
         onlyMigrator(_vaultProxy)
     {
         IDispatcher dispatcherContract = IDispatcher(DISPATCHER);
@@ -385,7 +385,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bool _bypassFailure
     )
         private
-        onlyNotPaused
+        onlyLiveRelease
         onlyPendingComptrollerProxyCreator(_comptrollerProxy)
         onlyMigrator(_vaultProxy)
     {

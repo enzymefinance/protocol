@@ -128,7 +128,7 @@ describe('signalMigration', () => {
 
     await expect(
       fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy),
-    ).rejects.toBeRevertedWith('Release is paused');
+    ).rejects.toBeRevertedWith('Release is not Live');
   });
 
   it('correctly handles valid call', async () => {
@@ -194,7 +194,7 @@ describe('executeMigration', () => {
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
     await expect(fundDeployer.connect(fundOwner).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
-      'Release is paused',
+      'Release is not Live',
     );
   });
 
@@ -263,7 +263,7 @@ describe('cancelMigration', () => {
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
     await expect(fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
-      'Release is paused',
+      'Release is not Live',
     );
   });
 

@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
-import { Dispatcher } from '@melonproject/protocol';
+import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@melonproject/protocol';
 import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';
 import { configureForkRelease } from './fork';
@@ -32,8 +32,13 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
 
   await mocks.centralizedRateProvider.setValueInterpreter(release.valueInterpreter);
 
-  await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
+
+  // Keep this as the final step
+  await launchRelease({
+    dispatcher: persistent.dispatcher,
+    fundDeployer: release.fundDeployer,
+  });
 
   return {
     config,
@@ -62,9 +67,14 @@ export async function defaultTestRelease(
   });
 
   const release = await deployRelease(config);
-  await dispatcher.setCurrentFundDeployer(release.fundDeployer);
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
   await mocks.mockCentralizedRateProvider.setValueInterpreter(release.valueInterpreter);
+
+  // Keep this as the final step
+  await launchRelease({
+    dispatcher: dispatcher,
+    fundDeployer: release.fundDeployer,
+  });
 
   return {
     config,
@@ -99,7 +109,11 @@ export async function defaultForkDeployment(provider: EthereumTestnetProvider) {
 
   const release = await deployRelease(config);
 
-  await persistent.dispatcher.setCurrentFundDeployer(release.fundDeployer);
+  // Keep this as the final step
+  await launchRelease({
+    dispatcher: persistent.dispatcher,
+    fundDeployer: release.fundDeployer,
+  });
 
   return {
     config,
@@ -123,4 +137,9 @@ export async function randomizedTestDeployment(provider: EthereumTestnetProvider
     accounts,
     deployment,
   };
+}
+
+async function launchRelease({ dispatcher, fundDeployer }: { dispatcher: Dispatcher; fundDeployer: FundDeployer }) {
+  await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+  await dispatcher.setCurrentFundDeployer(fundDeployer);
 }

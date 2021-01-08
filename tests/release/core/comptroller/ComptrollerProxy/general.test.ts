@@ -194,8 +194,6 @@ describe('vaultCallOnContract', () => {
       denominationAsset,
     });
 
-    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
-
     await expect(
       comptrollerProxy.connect(randomUser).vaultCallOnContract(mockExternalContract, registeredVaultCallSelector, '0x'),
     ).rejects.toBeRevertedWith('Only fund owner callable');
@@ -216,8 +214,6 @@ describe('vaultCallOnContract', () => {
       fundDeployer,
       denominationAsset,
     });
-
-    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
 
     await expect(
       comptrollerProxy.vaultCallOnContract(randomAddress(), registeredVaultCallSelector, '0x'),

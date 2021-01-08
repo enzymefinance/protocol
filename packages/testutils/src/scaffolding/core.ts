@@ -8,6 +8,7 @@ import {
   FundDeployer,
   IntegrationManager,
   PolicyManager,
+  ReleaseStatusTypes,
   SynthetixPriceFeed,
   ValueInterpreter,
   VaultLib,
@@ -27,6 +28,7 @@ export async function createFundDeployer({
   vaultCallContracts = [],
   vaultCallSelectors = [],
   setOnDispatcher = true,
+  setReleaseStatusLive = true,
 }: {
   deployer: Signer;
   chainlinkPriceFeed: ChainlinkPriceFeed;
@@ -41,6 +43,7 @@ export async function createFundDeployer({
   vaultCallContracts?: AddressLike[];
   vaultCallSelectors?: BytesLike[];
   setOnDispatcher?: boolean;
+  setReleaseStatusLive?: boolean;
 }) {
   const nextFundDeployer = await FundDeployer.deploy(
     deployer,
@@ -63,6 +66,9 @@ export async function createFundDeployer({
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 
+  if (setReleaseStatusLive) {
+    await nextFundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+  }
   if (setOnDispatcher) {
     await dispatcher.setCurrentFundDeployer(nextFundDeployer);
   }

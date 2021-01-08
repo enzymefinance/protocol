@@ -29,7 +29,7 @@ describe('constructor', () => {
     expect(getOwnerCall).toMatchAddress(deployer);
 
     const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
-    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.PreLaunch);
+    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Live);
 
     const getVaultLibCall = await fundDeployer.getVaultLib();
     expect(getVaultLibCall).toMatchAddress(vaultLib);
@@ -75,17 +75,17 @@ describe('setReleaseStatus', () => {
       deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    const receipt = await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+    const receipt = await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     // ReleaseStatusSet event is emitted
     assertEvent(receipt, 'ReleaseStatusSet', {
-      prevStatus: ReleaseStatusTypes.PreLaunch,
-      nextStatus: ReleaseStatusTypes.Live,
+      prevStatus: ReleaseStatusTypes.Live,
+      nextStatus: ReleaseStatusTypes.Paused,
     });
 
-    // Release Status should be Live
+    // Release Status should be Paused
     const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
-    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Live);
+    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Paused);
   });
 });
 

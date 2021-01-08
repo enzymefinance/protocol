@@ -6,6 +6,7 @@ import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
+  createFundDeployer,
 } from '@melonproject/testutils';
 import { ReleaseStatusTypes } from '@melonproject/protocol';
 
@@ -23,12 +24,29 @@ async function snapshot(provider: EthereumTestnetProvider) {
     policyManager: deployment.policyManager,
   });
 
+  // TODO: use an alternative deployment that has not yet set the ReleaseStatus to Live?
+  const nonLiveFundDeployer = await createFundDeployer({
+    deployer: config.deployer,
+    chainlinkPriceFeed: deployment.chainlinkPriceFeed,
+    dispatcher: deployment.dispatcher,
+    feeManager: deployment.feeManager,
+    integrationManager: deployment.integrationManager,
+    policyManager: deployment.policyManager,
+    synthetixPriceFeed: deployment.synthetixPriceFeed,
+    synthetixAddressResolverAddress: config.integratees.synthetix.addressResolver,
+    valueInterpreter: deployment.valueInterpreter,
+    vaultLib: deployment.vaultLib,
+    setReleaseStatusLive: false,
+    setOnDispatcher: false,
+  });
+
   return {
     accounts,
     deployment,
     config,
     feeManagerConfigData,
     policyManagerConfigData,
+    nonLiveFundDeployer,
   };
 }
 
@@ -39,15 +57,7 @@ describe('createNewFund', () => {
     } = await provider.snapshot(snapshot);
 
     await expect(
-      fundDeployer.createNewFund(
-        constants.AddressZero,
-        '',
-        randomAddress(),
-        0,
-        [],
-        constants.HashZero,
-        constants.HashZero,
-      ),
+      fundDeployer.createNewFund(constants.AddressZero, '', randomAddress(), 0, constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith(' _owner cannot be empty');
   });
 
@@ -57,19 +67,11 @@ describe('createNewFund', () => {
     } = await provider.snapshot(snapshot);
 
     await expect(
-      fundDeployer.createNewFund(
-        randomAddress(),
-        '',
-        constants.AddressZero,
-        0,
-        [],
-        constants.HashZero,
-        constants.HashZero,
-      ),
+      fundDeployer.createNewFund(randomAddress(), '', constants.AddressZero, 0, constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith(' _denominationAsset cannot be empty');
   });
 
-  it('does not allow the release to be paused', async () => {
+  it('does not allow the release status to be Paused', async () => {
     const {
       deployment: {
         fundDeployer,
@@ -81,8 +83,32 @@ describe('createNewFund', () => {
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     await expect(
-      fundDeployer.createNewFund(randomAddress(), '', denominationAsset, 0, [], constants.HashZero, constants.HashZero),
-    ).rejects.toBeRevertedWith('Release is paused');
+      fundDeployer.createNewFund(randomAddress(), '', denominationAsset, 0, constants.HashZero, constants.HashZero),
+    ).rejects.toBeRevertedWith('Release is not Live');
+  });
+
+  it('does not allow the release status to be PreLaunch', async () => {
+    const {
+      deployment: {
+        dispatcher,
+        tokens: { weth: denominationAsset },
+      },
+      nonLiveFundDeployer,
+    } = await provider.snapshot(snapshot);
+
+    // Set the FundDeployer as the current release, but do not set release status to Live
+    await dispatcher.setCurrentFundDeployer(nonLiveFundDeployer);
+
+    await expect(
+      nonLiveFundDeployer.createNewFund(
+        randomAddress(),
+        '',
+        denominationAsset,
+        0,
+        constants.HashZero,
+        constants.HashZero,
+      ),
+    ).rejects.toBeRevertedWith('Release is not Live');
   });
 
   it('correctly handles valid call', async () => {
@@ -131,7 +157,7 @@ describe('createMigratedFundConfig', () => {
     } = await provider.snapshot(snapshot);
 
     await expect(
-      fundDeployer.createMigratedFundConfig(constants.AddressZero, 0, [], constants.HashZero, constants.HashZero),
+      fundDeployer.createMigratedFundConfig(constants.AddressZero, 0, constants.HashZero, constants.HashZero),
     ).rejects.toBeRevertedWith('_denominationAsset cannot be empty');
   });
 
@@ -147,8 +173,25 @@ describe('createMigratedFundConfig', () => {
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     await expect(
-      fundDeployer.createMigratedFundConfig(denominationAsset, 0, [], constants.HashZero, constants.HashZero),
-    ).rejects.toBeRevertedWith('Release is paused');
+      fundDeployer.createMigratedFundConfig(denominationAsset, 0, constants.HashZero, constants.HashZero),
+    ).rejects.toBeRevertedWith('Release is not Live');
+  });
+
+  it('does not allow the release status to be PreLaunch', async () => {
+    const {
+      deployment: {
+        dispatcher,
+        tokens: { weth: denominationAsset },
+      },
+      nonLiveFundDeployer,
+    } = await provider.snapshot(snapshot);
+
+    // Set the FundDeployer as the current release, but do not set release status to Live
+    await dispatcher.setCurrentFundDeployer(nonLiveFundDeployer);
+
+    await expect(
+      nonLiveFundDeployer.createMigratedFundConfig(denominationAsset, 0, constants.HashZero, constants.HashZero),
+    ).rejects.toBeRevertedWith('Release is not Live');
   });
 
   it('correctly handles valid call', async () => {

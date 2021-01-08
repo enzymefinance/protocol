@@ -11,6 +11,7 @@ import {
   maxConcentrationArgs,
   performanceFeeConfigArgs,
   policyManagerConfigArgs,
+  ReleaseStatusTypes,
   StandardToken,
   VaultLib,
 } from '@melonproject/protocol';
@@ -203,9 +204,10 @@ describe('Walkthrough a fund migration', () => {
     expect(preMigrationShareBalance).toEqBigNumber(balance.sub(redeemQuantity));
   });
 
-  it('deploys a new release', async () => {
+  it('deploys a new live release', async () => {
     newRelease = await deployRelease(config);
 
+    await newRelease.fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
     await deployment.dispatcher.setCurrentFundDeployer(newRelease.fundDeployer);
   });
 

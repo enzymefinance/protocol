@@ -39,7 +39,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockIntegrationManager,
     mockPolicyManager,
     deployment.chainlinkPriceFeed,
-    randomAddress(), // PermissionedVaultActionLib
     randomAddress(), // SynthetixPriceFeed
     randomAddress(), // SynthetixAddressResolver
   );
