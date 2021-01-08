@@ -1,20 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../release/infrastructure/value-interpreter/IValueInterpreter.sol";
+import "../../release/infrastructure/price-feeds/derivatives/IAggregatedDerivativePriceFeed.sol";
+import "../../release/infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 
 /// @dev This contract acts as a centralized rate provider for mocks.
 /// Suited for a dev environment, it doesn't take into account gas costs.
 contract CentralizedRateProvider is Ownable {
     using SafeMath for uint256;
 
+    address private immutable WETH;
     uint256 private maxDeviationPerSender;
-    address private valueInterpreter;
 
-    constructor(uint256 _maxDeviationPerSender) public {
+    // Addresses are not immutable to facilitate lazy load (they're are not accessible at the mock env).
+    address private valueInterpreter;
+    address private aggregateDerivativePriceFeed;
+    address private primitivePriceFeed;
+
+    constructor(address _weth, uint256 _maxDeviationPerSender) public {
         maxDeviationPerSender = _maxDeviationPerSender;
+        WETH = _weth;
     }
 
     /// @dev Calculates the value of a _baseAsset relative to a _quoteAsset.
@@ -24,12 +33,49 @@ contract CentralizedRateProvider is Ownable {
         uint256 _amount,
         address _quoteAsset
     ) public returns (uint256 value_) {
-        (value_, ) = IValueInterpreter(valueInterpreter).calcLiveAssetValue(
+        uint256 baseDecimalsRate = 10**uint256(ERC20(_baseAsset).decimals());
+        uint256 quoteDecimalsRate = 10**uint256(ERC20(_quoteAsset).decimals());
+
+        // 1. Check if quote asset is a primitive. If it is, use ValueInterpreter normally.
+        if (IPrimitivePriceFeed(primitivePriceFeed).isSupportedAsset(_quoteAsset)) {
+            (value_, ) = IValueInterpreter(valueInterpreter).calcLiveAssetValue(
+                _baseAsset,
+                _amount,
+                _quoteAsset
+            );
+            return value_;
+        }
+
+        // 2. Otherwise, check if base asset is a primitive, and use inverse rate from Value Interpreter.
+        if (IPrimitivePriceFeed(primitivePriceFeed).isSupportedAsset(_baseAsset)) {
+            (uint256 inverseRate, ) = IValueInterpreter(valueInterpreter).calcLiveAssetValue(
+                _quoteAsset,
+                10**uint256(ERC20(_quoteAsset).decimals()),
+                _baseAsset
+            );
+
+            uint256 rate = uint256(baseDecimalsRate).mul(quoteDecimalsRate).div(inverseRate);
+
+            value_ = _amount.mul(rate).div(baseDecimalsRate);
+            return value_;
+        }
+
+        // 3. If both assets are derivatives, calculate the rate against ETH.
+        (uint256 baseToWeth, ) = IValueInterpreter(valueInterpreter).calcLiveAssetValue(
             _baseAsset,
-            _amount,
-            _quoteAsset
+            baseDecimalsRate,
+            WETH
         );
 
+        (uint256 quoteToWeth, ) = IValueInterpreter(valueInterpreter).calcLiveAssetValue(
+            _quoteAsset,
+            quoteDecimalsRate,
+            WETH
+        );
+
+        value_ = _amount.mul(baseToWeth).mul(quoteDecimalsRate).div(quoteToWeth).div(
+            baseDecimalsRate
+        );
         return value_;
     }
 
@@ -87,12 +133,19 @@ contract CentralizedRateProvider is Ownable {
         return value_;
     }
 
-    function setValueInterpreter(address _valueInterpreter) external onlyOwner {
-        valueInterpreter = _valueInterpreter;
-    }
-
     function setMaxDeviationPerSender(uint256 _maxDeviationPerSender) external onlyOwner {
         maxDeviationPerSender = _maxDeviationPerSender;
+    }
+
+    /// @dev Connector from release environment, inject price variables into the provider.
+    function setReleasePriceAddresses(
+        address _valueInterpreter,
+        address _aggregateDerivativePriceFeed,
+        address _primitivePriceFeed
+    ) external onlyOwner {
+        valueInterpreter = _valueInterpreter;
+        aggregateDerivativePriceFeed = _aggregateDerivativePriceFeed;
+        primitivePriceFeed = _primitivePriceFeed;
     }
 
     // PRIVATE FUNCTIONS

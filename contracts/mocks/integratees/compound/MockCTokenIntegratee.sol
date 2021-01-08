@@ -17,7 +17,12 @@ contract MockCTokenIntegratee is MockCTokenBase {
     {}
 
     function mint(uint256 _amount) external returns (uint256) {
-        uint256 destAmount = __calcCTokenAmount(_amount);
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER).calcLiveAssetValue(
+            TOKEN,
+            _amount,
+            address(this)
+        );
+
         __swapAssets(msg.sender, TOKEN, _amount, address(this), destAmount);
         return _amount;
     }

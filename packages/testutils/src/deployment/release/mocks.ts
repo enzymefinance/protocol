@@ -323,8 +323,8 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   async paraswapIntegratee(config, deployment) {
     return MockParaSwapIntegratee.deploy(config.deployer, await deployment.centralizedRateProvider, 0);
   },
-  async centralizedRateProvider(config) {
-    return CentralizedRateProvider.deploy(config.deployer, 0);
+  async centralizedRateProvider(config, deployment) {
+    return CentralizedRateProvider.deploy(config.deployer, (await deployment.tokens).weth, 0);
   },
   async synthetix(config, deployment) {
     const synthSymbols = ['sAUD', 'sBNB', 'sBTC', 'sUSD'];

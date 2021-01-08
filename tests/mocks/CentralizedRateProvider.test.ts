@@ -1,4 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { StandardToken } from '@melonproject/protocol';
 import { randomizedTestDeployment } from '@melonproject/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -6,6 +7,51 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await randomizedTestDeployment(provider);
   return { accounts, deployment, config };
 }
+
+describe('calcLiveAssetValue', () => {
+  it('correctly calculates a value (derivative baseAsset and quoteAsset)', async () => {
+    const {
+      config: {
+        deployer,
+        derivatives: {
+          uniswapV2: { mlnWeth: mlnWethAddress },
+        },
+      },
+      deployment: {
+        centralizedRateProvider,
+        valueInterpreter,
+        tokens: { dai: refAsset },
+        compoundTokens: { cusdc },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const mlnWeth = new StandardToken(mlnWethAddress, deployer);
+
+    const cusdcAssetDecimals = await cusdc.decimals();
+    const mlnWethAssetDecimals = await mlnWeth.decimals();
+
+    const amountIn = utils.parseUnits('1', cusdcAssetDecimals);
+
+    const cusdcValue = (
+      await valueInterpreter.calcLiveAssetValue.args(cusdc, utils.parseUnits('1', cusdcAssetDecimals), refAsset).call()
+    ).value_;
+
+    const mlnWethValue = (
+      await valueInterpreter.calcLiveAssetValue
+        .args(mlnWeth, utils.parseUnits('1', mlnWethAssetDecimals), refAsset)
+        .call()
+    ).value_;
+
+    const expectedMlnWeth = cusdcValue
+      .mul(amountIn)
+      .mul(utils.parseUnits('1', mlnWethAssetDecimals))
+      .div(mlnWethValue)
+      .div(utils.parseUnits('1', cusdcAssetDecimals));
+
+    const calculateMlnWeth = await centralizedRateProvider.calcLiveAssetValue.args(cusdc, amountIn, mlnWeth).call();
+    expect(expectedMlnWeth).toEqBigNumber(calculateMlnWeth);
+  });
+});
 
 describe('calcLiveAssetValueRandomized', () => {
   it('correctly calculates a randomized asset value on sender', async () => {

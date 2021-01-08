@@ -30,7 +30,11 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
 
   const release = await deployRelease(config);
 
-  await mocks.centralizedRateProvider.setValueInterpreter(release.valueInterpreter);
+  await mocks.centralizedRateProvider.setReleasePriceAddresses(
+    release.valueInterpreter,
+    release.aggregatedDerivativePriceFeed,
+    release.chainlinkPriceFeed,
+  );
 
   await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
 

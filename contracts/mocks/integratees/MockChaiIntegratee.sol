@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../tokens/MockToken.sol";
 import "../prices/CentralizedRateProvider.sol";
+import "../tokens/MockToken.sol";
 import "../utils/SwapperBase.sol";
 
 contract MockChaiIntegratee is MockToken, SwapperBase {

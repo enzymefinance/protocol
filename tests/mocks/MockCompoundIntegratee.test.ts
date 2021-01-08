@@ -7,12 +7,6 @@ async function snapshot(provider: EthereumTestnetProvider) {
   return { accounts, deployment, config };
 }
 
-describe('todo', () => {
-  it('fix all tests placeholder', async () => {
-    await provider.snapshot(snapshot);
-  });
-});
-
 describe('mint', () => {
   it('correctly lends tokens and receives cTokens in exchange', async () => {
     const {
