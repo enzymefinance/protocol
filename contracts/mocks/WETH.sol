@@ -24,7 +24,7 @@ contract WETH {
     }
 
     function withdraw(uint256 wad) public {
-        require(balanceOf[msg.sender] >= wad);
+        require(balanceOf[msg.sender] >= wad, "withdraw: withdrawal amount exceeds balance");
         balanceOf[msg.sender] -= wad;
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
@@ -49,10 +49,10 @@ contract WETH {
         address dst,
         uint256 wad
     ) public returns (bool) {
-        require(balanceOf[src] >= wad);
+        require(balanceOf[src] >= wad, "transferFrom: transfer amount exceeds balance");
 
         if (src != msg.sender && allowance[src][msg.sender] != uint256(-1)) {
-            require(allowance[src][msg.sender] >= wad);
+            require(allowance[src][msg.sender] >= wad, "transferFrom: amount exceeds allowance");
             allowance[src][msg.sender] -= wad;
         }
 

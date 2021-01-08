@@ -77,6 +77,7 @@ export * from './codegen/MockVaultLib';
 export * from './codegen/MockChaiIntegratee';
 export * from './codegen/CentralizedRateProvider';
 export * from './codegen/MockChaiPriceSource';
+export * from './codegen/MockCEtherIntegratee';
 export * from './codegen/MockCTokenIntegratee';
 export * from './codegen/MockGenericAdapter';
 export * from './codegen/MockGenericIntegratee';

@@ -3,6 +3,7 @@ import {
   CentralizedRateProvider,
   Dispatcher,
   encodeZeroExV2AssetData,
+  MockCEtherIntegratee,
   MockChaiIntegratee,
   MockChainlinkPriceSource,
   MockChaiPriceSource,
@@ -65,7 +66,7 @@ export interface MockDeploymentOutput {
     cbat: MockCTokenIntegratee;
     ccomp: MockCTokenIntegratee;
     cdai: MockCTokenIntegratee;
-    ceth: MockCTokenIntegratee;
+    ceth: MockCEtherIntegratee;
     crep: MockCTokenIntegratee;
     cuni: MockCTokenIntegratee;
     cusdc: MockCTokenIntegratee;
@@ -161,14 +162,14 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   // NOTE: Every mock cToken is initialized with a rate 2 (18 decimals)
   async compoundTokens(config, deployment) {
     const tokens = await deployment.tokens;
-    const ceth = await MockCTokenIntegratee.deploy(
+    const ceth = await MockCEtherIntegratee.deploy(
       config.deployer,
       'Compound Ether',
       'cETH',
       8,
       tokens.weth,
       await deployment.centralizedRateProvider,
-      utils.parseEther('2'),
+      utils.parseUnits('2', 28),
     );
     const [cbat, ccomp, cdai, crep, cuni, cusdc, czrx] = await Promise.all([
       MockCTokenIntegratee.deploy(
@@ -176,9 +177,9 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         'Compound Basic Attention Token',
         'cBAT',
         8,
-        tokens.comp,
+        tokens.bat,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -187,7 +188,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.comp,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -196,7 +197,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.dai,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -205,7 +206,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.rep,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -214,7 +215,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.rep,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -223,7 +224,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.usdc,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 16),
       ),
       MockCTokenIntegratee.deploy(
         config.deployer,
@@ -232,7 +233,7 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
         8,
         tokens.zrx,
         await deployment.centralizedRateProvider,
-        utils.parseEther('2'),
+        utils.parseUnits('2', 28),
       ),
     ]);
     return { ceth, cbat, ccomp, cdai, crep, cuni, cusdc, czrx };
@@ -706,7 +707,7 @@ export async function seedCTokens(
   provider: SignerWithAddress,
   tokens: MockToken[],
   cTokens: MockCTokenIntegratee[],
-  ceth: MockCTokenIntegratee,
+  ceth: MockCTokenIntegratee | MockCEtherIntegratee,
   tokenAmount = utils.parseUnits('1', 27),
   cTokenAmount = utils.parseUnits('1', 27),
 ) {

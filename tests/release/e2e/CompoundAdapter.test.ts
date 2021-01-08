@@ -150,7 +150,7 @@ async function assertCompoundRedeem({
 
   const rateBefore = await cToken.exchangeRateStored();
   const redeemAmount = preTxOutgoingAssetBalance;
-  const minIncomingTokenAmount = redeemAmount.mul(utils.parseEther('1')).div(rateBefore);
+  const minIncomingTokenAmount = redeemAmount.mul(rateBefore).div(utils.parseEther('1'));
 
   const redeemReceipt = await compoundRedeem({
     comptrollerProxy,
