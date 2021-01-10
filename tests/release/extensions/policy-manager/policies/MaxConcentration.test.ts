@@ -13,7 +13,6 @@ import {
   callOnIntegrationArgs,
   addTrackedAssetsSelector,
   IntegrationManagerActionId,
-  Dispatcher,
   VaultLib,
 } from '@melonproject/protocol';
 import {
@@ -132,7 +131,7 @@ describe('constructor', () => {
 });
 
 describe('activateForFund', () => {
-  fit('does only allow a misc asset with balance <maxConcentration in the fund trackedAssets', async () => {
+  it('does only allow a misc asset with balance <maxConcentration in the fund trackedAssets', async () => {
     const {
       deployment: {
         tokens: { mln: incomingAsset },
@@ -505,12 +504,7 @@ describe('integration tests', () => {
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    const executeMigrationReceipt = await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    assertEvent(executeMigrationReceipt, Dispatcher.abi.getEvent('MigrationExecuted'), {
-      vaultProxy,
-      nextVaultAccessor: nextComptrollerProxy,
-    });
+    await signedNextFundDeployer.executeMigration(vaultProxy);
 
     const incomingAssetAmount = BigNumber.from(50);
     // Send incomingAsset to vault

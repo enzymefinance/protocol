@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { IChainlinkAggregator, MockToken } from '@melonproject/protocol';
+import { ChainlinkRateAsset, IChainlinkAggregator, MockToken } from '@melonproject/protocol';
 import { defaultForkDeployment } from '@melonproject/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -22,7 +22,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
   // See https://docs.chain.link/docs/using-chainlink-reference-contracts
   await deployment.chainlinkPriceFeed.removePrimitives([config.tokens.dai]);
   const daiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', config.deployer);
-  await deployment.chainlinkPriceFeed.addPrimitives([config.tokens.dai], [daiAggregator], [1]);
+  const daiRateAsset = ChainlinkRateAsset.USD;
+  await deployment.chainlinkPriceFeed.addPrimitives([config.tokens.dai], [daiAggregator], [daiRateAsset]);
 
   // Create a mock token and unused aggregator for additional aggregator CRUD tests
   const unregisteredMockToken = await MockToken.deploy(config.deployer, 'Mock Token', 'MOCK', 6);
@@ -31,6 +32,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   return {
     accounts,
+    daiRateAsset,
     deployment,
     aggregators: { daiAggregator, renAggregator, ethUSDAggregator, usdcAggregator },
     config,
@@ -123,12 +125,13 @@ describe('addPrimitives', () => {
     } = await provider.snapshot(snapshot);
 
     // Register the unregistered primitive with the unused aggregator
-    await chainlinkPriceFeed.addPrimitives([unregisteredMockToken], [unusedAggregator], [0]);
+    const rateAsset = ChainlinkRateAsset.ETH;
+    await chainlinkPriceFeed.addPrimitives([unregisteredMockToken], [unusedAggregator], [rateAsset]);
 
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(unregisteredMockToken);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
       aggregator: unusedAggregator,
-      rateAsset: 0,
+      rateAsset,
     });
     expect(await chainlinkPriceFeed.getUnitForPrimitive(unregisteredMockToken)).toEqBigNumber(
       utils.parseUnits('1', await unregisteredMockToken.decimals()),
@@ -158,6 +161,7 @@ describe('updatePrimitives', () => {
       config: {
         tokens: { dai },
       },
+      daiRateAsset,
       deployment: { chainlinkPriceFeed },
       unusedAggregator,
     } = await provider.snapshot(snapshot);
@@ -168,7 +172,7 @@ describe('updatePrimitives', () => {
     const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(dai);
     expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
       aggregator: unusedAggregator,
-      rateAsset: 0,
+      rateAsset: daiRateAsset,
     });
   });
 });
@@ -213,7 +217,7 @@ describe('removeStalePrimitives', () => {
   });
 });
 
-fdescribe('expected values', () => {
+describe('expected values', () => {
   describe('similar rate asset (ETH)', () => {
     // USDC/ETH and USDT/ETH
     it('returns the expected value from the valueInterpreter (same decimals)', async () => {
