@@ -37,8 +37,8 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(token);
 
-    // Rounding up from 42542
-    expect(getRatesReceipt).toCostLessThan('43000', gasAssertionTolerance);
+    // Rounding up from 38938
+    expect(getRatesReceipt).toCostLessThan('39000', gasAssertionTolerance);
   });
 
   it('returns rate for underlying token (cETH)', async () => {
@@ -85,13 +85,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // cDai/usd price at 11/12/2020 had a price of 0,020886 USD.
-    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2020-11-12&end_date=2020-12-21
+    // cDai/usd price on Jan 9, 2021 was about 0,021 USD.
+    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('20764289285628633'),
+      value_: BigNumber.from('20917454883850009'),
       isValid_: true,
     });
   });
@@ -115,13 +115,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // cusdc/usd price at 11/12/2020 had a price of $0.02138245
-    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2020-11-12&end_date=2020-11-12#panel
+    // cUsdc/usd price on Jan 9, 2021 was about 0,0213 USD.
+    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('21242'),
+      value_: BigNumber.from('21416'),
       isValid_: true,
     });
   });

@@ -172,10 +172,10 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // Usdc/weth on 11/12/2020 was rated at $53.8M
-      // Source:
+      // usdc/weth on Jan 9, 2021 was worth about $93M
+      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: 53584578776468,
+        value_: 93375626338592,
         isValid_: true,
       });
     });
@@ -203,10 +203,10 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // KNC/WETH on 11/12/2020 was rated at $46.85
+      // knc/weth on Jan 9, 2021 was worth about $90
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('45703766651138418108'),
+        value_: BigNumber.from('89819288695926648730'),
         isValid_: true,
       });
     });

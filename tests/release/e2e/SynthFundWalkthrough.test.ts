@@ -33,7 +33,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
 }
 
 async function warpBeyondWaitingPeriod() {
-  const waitingPeriod = 180;
+  // TODO: get waiting period dynamically
+  const waitingPeriod = 360; // As of Jan 9, 2021
   await provider.send('evm_increaseTime', [waitingPeriod]);
   await provider.send('evm_mine', []);
 }

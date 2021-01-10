@@ -60,13 +60,13 @@ describe('calcUnderlyingValues', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    // XAU/USD price at 11/12/2020 had a rate of 1863 USD. Given an approximate GTR of 0.0988xx gives a value around 185 USD
+    // XAU/USD price at Jan 6, 2021 had a rate of 1849 USD. Given an approximate GTR of 0.0988xx gives a value around 182 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(wdgld, utils.parseUnits('1', 8), usdc)
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: 185470188,
+      value_: 180904956,
       isValid_: true,
     });
   });

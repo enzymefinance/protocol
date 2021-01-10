@@ -59,7 +59,7 @@ export const mainnet = {
     tokenTransferProxy: '0x0A87c89B5007ff406Ab5280aBdD80fC495ec238e',
   },
   synthetix: {
-    addressResolver: '0x61166014E3f04E40C953fe4EAb9D9E40863C83AE',
+    addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2', // ReadProxyAddressResolver
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     snx: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F',
   },
@@ -101,12 +101,12 @@ export const mainnet = {
     zrx: '0x206376e8940e42538781cd94ef024df3c1e0fd43',
     cbat: '0x285306442cd985cab2c30515cfdab106fca7bc44',
     ccomp: '0xd74f186194ab9219fafac5c2fe4b3270169666db',
-    cdai: '0x554bd2947df1c8d8d38897bdc92b3b97692b2845',
-    ceth: '0x5cfd0cddf989959a6a6c3ad985ce324460d46dfd',
+    cdai: '0x2bddEd18E2CA464355091266B7616956944ee7eE',
+    ceth: '0xB1AdceddB2941033a090dD166a462fe1c2029484',
     crep: '0xc2386de1b7271a87b416f4605d500846e826a185',
-    cuni: '0xdf63be2e473ba04c26b1609e51d08cf0d78e0913',
-    cusdc: '0x84c35f982496982b916f15d21026bc8d1d3cbc59',
-    czrx: '0xe94543ffb8689cf04af9aad6c0e28099c384505f',
+    cuni: '0x161fac24d54698755dab0fcd65e2c883928ca724',
+    cusdc: '0x926e78b8df67e129011750dd7b975f8e50d3d7ad',
+    czrx: '0x767ecb395def19ab8d1b2fcc89b3ddfbed28fd6b',
     susd: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
   },
   uniswapV2: {

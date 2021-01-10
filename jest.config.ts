@@ -40,7 +40,7 @@ function fork(name: string, roots: string[]) {
         forking: {
           url: process.env.MAINNET_ARCHIVE_NODE,
           enabled: true,
-          blockNumber: 11244410,
+          blockNumber: 11621050, // Jan 9, 2021
         },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,
