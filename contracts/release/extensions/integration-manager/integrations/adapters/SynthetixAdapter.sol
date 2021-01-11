@@ -66,7 +66,7 @@ contract SynthetixAdapter is AdapterBase {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
 
         (
             address incomingAsset,

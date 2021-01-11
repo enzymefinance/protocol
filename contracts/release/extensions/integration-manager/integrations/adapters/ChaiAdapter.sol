@@ -82,7 +82,7 @@ contract ChaiAdapter is AdapterBase {
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minDaiAmount;
         } else {
-            revert("parseIncomingAssets: _selector invalid");
+            revert("parseAssetsForMethod: _selector invalid");
         }
 
         return (

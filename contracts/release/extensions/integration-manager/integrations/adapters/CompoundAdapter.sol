@@ -96,7 +96,7 @@ contract CompoundAdapter is AdapterBase {
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minTokenAmount;
         } else {
-            revert("parseIncomingAssets: _selector invalid");
+            revert("parseAssetsForMethod: _selector invalid");
         }
 
         return (
@@ -171,9 +171,9 @@ contract CompoundAdapter is AdapterBase {
         private
         pure
         returns (
-            address cToken,
-            uint256 outgoingAssetAmount,
-            uint256 minIncomingAssetAmount
+            address cToken_,
+            uint256 outgoingAssetAmount_,
+            uint256 minIncomingAssetAmount_
         )
     {
         return abi.decode(_encodedCallArgs, (address, uint256, uint256));

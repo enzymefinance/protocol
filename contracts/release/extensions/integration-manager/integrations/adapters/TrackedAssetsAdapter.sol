@@ -57,7 +57,7 @@ contract TrackedAssetsAdapter is AdapterBase {
     {
         require(
             _selector == ADD_TRACKED_ASSETS_SELECTOR,
-            "parseIncomingAssets: _selector invalid"
+            "parseAssetsForMethod: _selector invalid"
         );
 
         incomingAssets_ = __decodeCallArgs(_encodedCallArgs);

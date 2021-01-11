@@ -76,7 +76,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
 
         (
             bytes memory encodedZeroExOrderArgs,
@@ -86,11 +86,11 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
 
         require(
             isAllowedMaker(order.makerAddress),
-            "parseIncomingAssets: Order maker is not allowed"
+            "parseAssetsForMethod: Order maker is not allowed"
         );
         require(
             takerAssetFillAmount <= order.takerAssetAmount,
-            "parseIncomingAssets: Taker asset fill amount greater than available"
+            "parseAssetsForMethod: Taker asset fill amount greater than available"
         );
 
         address makerAsset = __getAssetAddress(order.makerAssetData);

@@ -119,7 +119,7 @@ contract UniswapV2Adapter is AdapterBase {
                 uint256 minIncomingAssetAmount
             ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
 
-            require(path.length >= 2, "parseIncomingAssets: _path must be >= 2");
+            require(path.length >= 2, "parseAssetsForMethod: _path must be >= 2");
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = path[0];
@@ -131,7 +131,7 @@ contract UniswapV2Adapter is AdapterBase {
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
         } else {
-            revert("parseIncomingAssets: _selector invalid");
+            revert("parseAssetsForMethod: _selector invalid");
         }
 
         return (

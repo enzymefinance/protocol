@@ -65,7 +65,7 @@ contract KyberAdapter is AdapterBase, MathHelpers {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseIncomingAssets: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
 
         (
             address incomingAsset,
@@ -76,9 +76,9 @@ contract KyberAdapter is AdapterBase, MathHelpers {
 
         require(
             incomingAsset != outgoingAsset,
-            "parseIncomingAssets: incomingAsset and outgoingAsset asset cannot be the same"
+            "parseAssetsForMethod: incomingAsset and outgoingAsset asset cannot be the same"
         );
-        require(outgoingAssetAmount > 0, "parseIncomingAssets: outgoingAssetAmount must be >0");
+        require(outgoingAssetAmount > 0, "parseAssetsForMethod: outgoingAssetAmount must be >0");
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingAsset;

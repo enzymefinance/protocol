@@ -25,7 +25,7 @@ import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 contract MaxConcentration is PostCallOnIntegrationValidatePolicyBase {
     using SafeMath for uint256;
 
-    event MaxConcentrationSet(address comptrollerProxy, uint256 value);
+    event MaxConcentrationSet(address indexed comptrollerProxy, uint256 value);
 
     uint256 private constant ONE_HUNDRED_PERCENT = 10**18; // 100%
 
