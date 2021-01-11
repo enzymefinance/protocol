@@ -29,7 +29,7 @@ contract WdgldPriceFeed is IDerivativePriceFeed, MakerDaoMath {
     address private immutable WETH;
 
     // GTR_CONSTANT aggregates all the invariants in the GTR formula to save gas
-    uint256 private constant GTR_CONSTANT = 999990821653213974934379777;
+    uint256 private constant GTR_CONSTANT = 999990821653213975346065101;
     uint256 private constant GTR_PRECISION = 10**27;
     uint256 private constant WDGLD_GENESIS_TIMESTAMP = 1568700000;
 

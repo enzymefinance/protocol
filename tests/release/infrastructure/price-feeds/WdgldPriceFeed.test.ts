@@ -1,7 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { calcGtr } from '@enzymefinance/protocol/src/utils/price-feeds/wdgld';
 import { defaultTestDeployment } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { deployment, config } = await defaultTestDeployment(provider);
@@ -53,10 +52,8 @@ describe('calcUnderlyingValues', () => {
     const xauToUsdRate = utils.parseEther('1');
     const ethToUsdRate = utils.parseEther('1');
 
-    const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-    const initialTimestamp = 1568700000;
+    const wdgldToXauRate = await wdgldPriceFeed.calcWdgldToXauRate();
 
-    const wdgldToXauRate = await calcGtr({ currentTimestamp, initialTimestamp });
     const xauToWethRate = xauToUsdRate.mul(utils.parseUnits('1', 18)).div(ethToUsdRate);
     const rateToUnderlyings = await wdgldPriceFeed.calcUnderlyingValues
       .args(wdgldAddress, utils.parseUnits('1', wdgldDecimals))
@@ -68,5 +65,22 @@ describe('calcUnderlyingValues', () => {
       underlyings_: [weth],
       underlyingAmounts_: [expectedAmount],
     });
+  });
+
+  it('returns correct rate for ETH after ten years', async () => {
+    const {
+      deployment: { wdgldPriceFeed },
+    } = await provider.snapshot(snapshot);
+    const initialTimestamp = 1568700000;
+
+    const tenYears = 315360000;
+
+    await provider.send('evm_setNextBlockTimestamp', [initialTimestamp + tenYears]);
+    await provider.send('evm_mine', []);
+
+    const finalRate = await wdgldPriceFeed.calcWdgldToXauRate.call();
+
+    // Should be around 0.0904382075 (0.99)^10 with 27 decimals
+    expect(finalRate).toEqBigNumber(BigNumber.from('90438207500880449001000121'));
   });
 });

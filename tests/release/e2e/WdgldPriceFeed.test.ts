@@ -1,6 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import { IChainlinkAggregator } from '@enzymefinance/protocol';
-import { calcGtr } from '@enzymefinance/protocol/src/utils/price-feeds/wdgld';
 import { defaultForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -32,10 +31,7 @@ describe('calcUnderlyingValues', () => {
     const xauToUsdRate = await xauAggregator.latestAnswer();
     const ethToUsdRate = await ethUSDAggregator.latestAnswer();
 
-    const currentTimestamp = (await provider.getBlock('latest')).timestamp;
-    const initialTimestamp = 1568700000;
-
-    const wdgldToXauRate = await calcGtr({ currentTimestamp, initialTimestamp });
+    const wdgldToXauRate = await wdgldPriceFeed.calcWdgldToXauRate();
 
     const wdgldUnit = utils.parseUnits('1', 8);
 
