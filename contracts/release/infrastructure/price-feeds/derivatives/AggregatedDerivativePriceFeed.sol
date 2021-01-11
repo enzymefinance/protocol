@@ -53,7 +53,7 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
         address derivativePriceFeed = derivativeToPriceFeed[_derivative];
         require(
             derivativePriceFeed != address(0),
-            "getRatesToUnderlyings: _derivative is not supported"
+            "calcUnderlyingValues: _derivative is not supported"
         );
 
         return
