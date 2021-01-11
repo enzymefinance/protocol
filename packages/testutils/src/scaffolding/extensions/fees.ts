@@ -1,6 +1,6 @@
 import { constants, utils } from 'ethers';
 import { SignerWithAddress } from '@crestproject/crestproject';
-import { IFee, FeeManager, feeManagerConfigArgs, FeeSettlementType, FeeHook } from '@melonproject/protocol';
+import { IFee, FeeManager, feeManagerConfigArgs, FeeSettlementType, FeeHook } from '@enzymefinance/protocol';
 
 export async function generateFeeManagerConfigWithMockFees({
   deployer,

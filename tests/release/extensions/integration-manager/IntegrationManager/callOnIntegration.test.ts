@@ -10,7 +10,7 @@ import {
   mockGenericSwapArgs,
   mockGenericSwapASelector,
   mockGenericSwapDirectFromVaultSelector,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import {
   callOnIntegrationArgs,
   ComptrollerLib,
@@ -24,7 +24,7 @@ import {
   validateRulePostCoIArgs,
   validateRulePreCoIArgs,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

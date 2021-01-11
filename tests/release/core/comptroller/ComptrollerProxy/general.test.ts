@@ -7,8 +7,8 @@ import {
   randomAddress,
 } from '@crestproject/crestproject';
 import { utils, BigNumber, BigNumberish } from 'ethers';
-import { assertEvent, callOnExtension, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
-import { encodeArgs, ReleaseStatusTypes, sighash } from '@melonproject/protocol';
+import { assertEvent, callOnExtension, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { encodeArgs, ReleaseStatusTypes, sighash } from '@enzymefinance/protocol';
 
 // prettier-ignore
 interface MockExternalContract extends Contract<MockExternalContract> {

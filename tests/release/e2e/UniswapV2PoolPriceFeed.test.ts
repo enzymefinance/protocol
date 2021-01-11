@@ -1,12 +1,12 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IUniswapV2Pair, StandardToken } from '@melonproject/protocol';
+import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
   buyShares,
   createNewFund,
   defaultForkDeployment,
   uniswapV2Lend,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%

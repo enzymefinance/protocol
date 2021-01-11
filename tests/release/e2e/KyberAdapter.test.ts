@@ -1,13 +1,13 @@
 import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
 import { BigNumber, BigNumberish, utils } from 'ethers';
-import { StandardToken, ComptrollerLib, IntegrationManager, KyberAdapter, VaultLib } from '@melonproject/protocol';
+import { StandardToken, ComptrollerLib, IntegrationManager, KyberAdapter, VaultLib } from '@enzymefinance/protocol';
 import {
   defaultForkDeployment,
   createNewFund,
   getAssetBalances,
   KyberNetworkProxy,
   kyberTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function assertKyberTakeOrder({
   comptrollerProxy,

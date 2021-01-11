@@ -1,4 +1,4 @@
-# Melon Contribution Guidelines
+# Enzyme Protocol Contribution Guidelines
 
 As an open source project, we will consider changes to the code base from the community via pull requests. This document contains the guidelines for submission.
 

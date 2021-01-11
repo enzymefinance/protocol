@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { StandardToken } from '@melonproject/protocol';
-import { randomizedTestDeployment } from '@melonproject/testutils';
+import { StandardToken } from '@enzymefinance/protocol';
+import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

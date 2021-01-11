@@ -1,6 +1,6 @@
 import { constants } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ChainlinkRateAsset } from '@melonproject/protocol';
+import { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 export async function saveConfig(hre: HardhatRuntimeEnvironment, data: DeploymentConfig) {

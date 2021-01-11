@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
-import { IUniswapV2Pair, MockToken, MockUniswapV2PriceSource, StandardToken } from '@melonproject/protocol';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { IUniswapV2Pair, MockToken, MockUniswapV2PriceSource, StandardToken } from '@enzymefinance/protocol';
+import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

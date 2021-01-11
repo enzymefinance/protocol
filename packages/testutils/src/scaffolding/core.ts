@@ -12,7 +12,7 @@ import {
   SynthetixPriceFeed,
   ValueInterpreter,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 export async function createFundDeployer({
   deployer,

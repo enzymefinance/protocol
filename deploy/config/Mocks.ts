@@ -4,13 +4,13 @@ import { utils } from 'ethers';
 import { DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import {
   FundDeployer,
+  MockCEtherIntegrateeArgs,
   MockCTokenIntegrateeArgs,
   MockSynthetixTokenArgs,
   MockTokenArgs,
   MockUniswapV2PriceSourceArgs,
   ReleaseStatusTypes,
-  MockCEtherIntegrateeArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
 

@@ -10,7 +10,7 @@ import {
   callOnIntegrationArgs,
   encodeArgs,
   IntegrationManagerActionId,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 export const mockGenericRemoveOnlySelector = sighash(
   utils.FunctionFragment.fromString('removeOnly(address,bytes,bytes)'),

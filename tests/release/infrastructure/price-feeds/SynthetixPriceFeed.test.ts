@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
-import { MockSynthetixIntegratee, MockSynthetixPriceSource, MockSynthetixToken } from '@melonproject/protocol';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { MockSynthetixIntegratee, MockSynthetixPriceSource, MockSynthetixToken } from '@enzymefinance/protocol';
+import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

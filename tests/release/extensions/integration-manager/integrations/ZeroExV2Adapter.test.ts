@@ -7,8 +7,8 @@ import {
   SpendAssetsHandleType,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
-} from '@melonproject/protocol';
-import { defaultTestDeployment, createNewFund } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { defaultTestDeployment, createNewFund } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

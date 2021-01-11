@@ -6,8 +6,8 @@ import {
   guaranteedRedemptionArgs,
   PolicyHook,
   validateRulePreCoIArgs,
-} from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

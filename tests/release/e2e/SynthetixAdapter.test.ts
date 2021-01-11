@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ISynthetixExchanger, StandardToken } from '@melonproject/protocol';
+import { ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
   defaultForkDeployment,
@@ -7,7 +7,7 @@ import {
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

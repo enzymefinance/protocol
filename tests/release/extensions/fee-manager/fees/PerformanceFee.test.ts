@@ -12,7 +12,7 @@ import {
   performanceFeeSharesDue,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   addTrackedAssets,
   assertEvent,
@@ -25,7 +25,7 @@ import {
   defaultTestDeployment,
   transactionTimestamp,
   updateChainlinkAggregator,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

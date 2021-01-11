@@ -14,7 +14,7 @@ import {
   UniswapV2PoolPriceFeedArgs,
   ValueInterpreterArgs,
   WdgldPriceFeedArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { loadConfig } from './config/Config';
 
 function nonOptional<T>(array: (T | undefined)[]): T[] {

@@ -11,7 +11,7 @@ import {
   redeemSelector,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish, utils } from 'ethers';
 
 export async function chaiLend({

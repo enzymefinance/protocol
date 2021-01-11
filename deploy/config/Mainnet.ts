@@ -1,4 +1,4 @@
-import { ChainlinkRateAsset } from '@melonproject/protocol';
+import { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import { DeploymentConfig, saveConfig } from './Config';
 import { DeployFunction } from 'hardhat-deploy/types';
 

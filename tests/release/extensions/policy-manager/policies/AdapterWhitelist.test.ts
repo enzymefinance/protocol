@@ -10,14 +10,14 @@ import {
   takeOrderSelector,
   uniswapV2TakeOrderArgs,
   validateRulePreCoIArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
   defaultTestDeployment,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

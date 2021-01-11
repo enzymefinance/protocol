@@ -1,7 +1,7 @@
 import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { defaultTestDeployment, assertEvent, addTrackedAssets, createNewFund } from '@melonproject/testutils';
-import { addTrackedAssetsArgs, addTrackedAssetsSelector, SpendAssetsHandleType } from '@melonproject/protocol';
+import { defaultTestDeployment, assertEvent, addTrackedAssets, createNewFund } from '@enzymefinance/testutils';
+import { addTrackedAssetsArgs, addTrackedAssetsSelector, SpendAssetsHandleType } from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

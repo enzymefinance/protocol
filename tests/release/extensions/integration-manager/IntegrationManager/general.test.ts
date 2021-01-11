@@ -6,8 +6,8 @@ import {
   IntegrationManagerActionId,
   removeZeroBalanceTrackedAssetsArgs,
   VaultLib,
-} from '@melonproject/protocol';
-import { addNewAssetsToFund, defaultTestDeployment, assertEvent, createNewFund } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { addNewAssetsToFund, defaultTestDeployment, assertEvent, createNewFund } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

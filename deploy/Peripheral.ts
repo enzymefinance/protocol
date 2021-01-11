@@ -1,5 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import type { FundActionsWrapperArgs, AuthUserExecutedSharesRequestorFactoryArgs } from '@melonproject/protocol';
+import type { FundActionsWrapperArgs, AuthUserExecutedSharesRequestorFactoryArgs } from '@enzymefinance/protocol';
 
 const fn: DeployFunction = async function (hre) {
   const { deploy, get } = hre.deployments;

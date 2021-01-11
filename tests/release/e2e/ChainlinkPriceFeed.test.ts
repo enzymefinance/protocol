@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { ChainlinkRateAsset, IChainlinkAggregator, MockToken } from '@melonproject/protocol';
-import { defaultForkDeployment } from '@melonproject/testutils';
+import { ChainlinkRateAsset, IChainlinkAggregator, MockToken } from '@enzymefinance/protocol';
+import { defaultForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

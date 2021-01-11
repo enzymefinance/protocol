@@ -1,5 +1,5 @@
 {
-  "name": "@melonproject/root",
+  "name": "@enzymeprotocol/root",
   "private": true,
   "workspaces": [
     "packages/*"

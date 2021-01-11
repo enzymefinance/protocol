@@ -7,14 +7,14 @@ import {
   StandardToken,
   synthetixTakeOrderArgs,
   takeOrderSelector,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
   synthetixAssignExchangeDelegate,
   synthetixTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

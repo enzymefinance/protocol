@@ -11,7 +11,7 @@ import {
   InvestorWhitelistArgs,
   GuaranteedRedemption,
   PolicyManager,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { sameAddress } from '@crestproject/crestproject';
 import { loadConfig } from './config/Config';
 

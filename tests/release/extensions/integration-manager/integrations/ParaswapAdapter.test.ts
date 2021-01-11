@@ -4,7 +4,7 @@ import {
   paraswapTakeOrderArgs,
   SpendAssetsHandleType,
   takeOrderSelector,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
@@ -12,7 +12,7 @@ import {
   getAssetBalances,
   paraswapGenerateMockPaths,
   paraswapTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

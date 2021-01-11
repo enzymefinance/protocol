@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
-import { IDerivativePriceFeed, MockToken } from '@melonproject/protocol';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { IDerivativePriceFeed, MockToken } from '@enzymefinance/protocol';
+import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

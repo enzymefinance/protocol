@@ -6,7 +6,7 @@ import {
   policyManagerConfigArgs,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   buyShares,
   createNewFund,
@@ -17,7 +17,7 @@ import {
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T : never;

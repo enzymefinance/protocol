@@ -9,7 +9,7 @@ import {
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
@@ -18,7 +18,7 @@ import {
   uniswapV2Lend,
   uniswapV2Redeem,
   uniswapV2TakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

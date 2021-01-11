@@ -1,5 +1,5 @@
 import { AddressLike, EthereumTestnetProvider, resolveAddress, SignerWithAddress } from '@crestproject/crestproject';
-import { Dispatcher, sighash, StandardToken } from '@melonproject/protocol';
+import { Dispatcher, sighash, StandardToken } from '@enzymefinance/protocol';
 import { constants, utils } from 'ethers';
 import { mainnet, MainnetConfig } from '../../mainnet';
 import { ReleaseDeploymentConfig } from './deployment';
@@ -25,13 +25,11 @@ export interface ForkReleaseDeploymentConfig extends ReleaseDeploymentConfig {
 export async function configureForkRelease({
   provider,
   deployer,
-  mgm,
   dispatcher,
   accounts,
 }: {
   provider: EthereumTestnetProvider;
   deployer: SignerWithAddress;
-  mgm: AddressLike;
   dispatcher: Dispatcher;
   accounts: SignerWithAddress[];
 }): Promise<ForkReleaseDeploymentConfig> {
@@ -75,7 +73,7 @@ export async function configureForkRelease({
 
   // Distribute tokens (from the each whale) to all accounts.
   await Promise.all(
-    [...accounts, deployer, mgm].map(async (account) => {
+    [...accounts, deployer].map(async (account) => {
       await Promise.all(
         Object.entries(whales).map(async ([symbol, whale]) => {
           if (Object.keys(tokens).includes(symbol)) {
@@ -92,7 +90,6 @@ export async function configureForkRelease({
 
   return {
     deployer,
-    mgm,
     mainnet,
     tokens,
     whales,

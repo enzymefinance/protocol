@@ -4,8 +4,8 @@ import {
   MockSynthetixIntegratee,
   MockSynthetixToken,
   StandardToken,
-} from '@melonproject/protocol';
-import { randomizedTestDeployment } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

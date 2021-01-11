@@ -12,7 +12,7 @@ import {
   IntegrationManager,
   FundDeployer,
   sighash,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { loadConfig } from './config/Config';
 import { sameAddress } from '@crestproject/crestproject';
 

@@ -7,7 +7,7 @@ import {
   IntegrationManager,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   compoundLend,
   compoundRedeem,
@@ -15,7 +15,7 @@ import {
   defaultForkDeployment,
   getAssetBalances,
   ICompoundComptroller,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%

@@ -1,7 +1,7 @@
 import { utils } from 'ethers';
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { MockChainlinkPriceSource } from '@melonproject/protocol';
-import { assertEvent } from '@melonproject/testutils';
+import { MockChainlinkPriceSource } from '@enzymefinance/protocol';
+import { assertEvent } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const signer = await provider.getSignerWithAddress(1);

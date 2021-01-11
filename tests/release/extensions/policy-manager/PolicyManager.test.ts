@@ -8,7 +8,7 @@ import {
   validateRulePostCoIArgs,
   validateRulePreBuySharesArgs,
   validateRulePreCoIArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   defaultTestDeployment,
   buyShares,
@@ -19,7 +19,7 @@ import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

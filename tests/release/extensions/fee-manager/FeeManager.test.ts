@@ -10,7 +10,7 @@ import {
   FeeHook,
   FeeManagerActionId,
   payoutSharesOutstandingForFeesArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   defaultTestDeployment,
@@ -19,7 +19,7 @@ import {
   createNewFund,
   generateRegisteredMockFees,
   assertNoEvent,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

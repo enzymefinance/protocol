@@ -16,7 +16,7 @@ import {
   CentralizedRateProvider,
   MockKyberIntegratee,
   MockUniswapV2Integratee,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   deployMock,
   createDeployMockToken,

@@ -1,7 +1,7 @@
 import { BigNumber, utils } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { assertEvent, defaultTestDeployment, createComptrollerProxy } from '@melonproject/testutils';
-import { IExtension, ComptrollerLib, FundDeployer, VaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
+import { assertEvent, defaultTestDeployment, createComptrollerProxy } from '@enzymefinance/testutils';
+import { IExtension, ComptrollerLib, FundDeployer, VaultLib, ReleaseStatusTypes } from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

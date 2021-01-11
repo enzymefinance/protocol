@@ -9,14 +9,14 @@ import {
   StandardToken,
   takeOrderSelector,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
   kyberTakeOrder,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

@@ -1,6 +1,6 @@
 import { AddressLike, SignerWithAddress } from '@crestproject/crestproject';
 import { BigNumberish, BytesLike } from 'ethers';
-import { ComptrollerLib } from '@melonproject/protocol';
+import { ComptrollerLib } from '@enzymefinance/protocol';
 
 export async function callOnExtension({
   comptrollerProxy,

@@ -38,14 +38,13 @@ import {
   VaultLib,
   WdgldPriceFeed,
   ZeroExV2Adapter,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish, BytesLike } from 'ethers';
 import { describeDeployment } from '../deployment';
 
 export interface ReleaseDeploymentConfig {
   deployer: SignerWithAddress;
   dispatcher: AddressLike;
-  mgm: AddressLike;
   weth: AddressLike;
   mln: AddressLike;
   registeredVaultCalls: {

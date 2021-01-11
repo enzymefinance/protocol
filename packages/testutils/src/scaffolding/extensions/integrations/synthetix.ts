@@ -12,7 +12,7 @@ import {
   synthetixTakeOrderArgs,
   takeOrderSelector,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { utils, Signer, BigNumberish } from 'ethers';
 
 export async function synthetixAssignExchangeDelegate({

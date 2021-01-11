@@ -6,7 +6,7 @@ import {
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   chaiLend,
@@ -14,7 +14,7 @@ import {
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

@@ -1,7 +1,7 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IChainlinkAggregator } from '@melonproject/protocol';
-import { calcGtr } from '@melonproject/protocol/src/utils/price-feeds/wdgld';
-import { defaultForkDeployment } from '@melonproject/testutils';
+import { IChainlinkAggregator } from '@enzymefinance/protocol';
+import { calcGtr } from '@enzymefinance/protocol/src/utils/price-feeds/wdgld';
+import { defaultForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

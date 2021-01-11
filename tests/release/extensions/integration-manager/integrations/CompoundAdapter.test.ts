@@ -13,14 +13,14 @@ import {
   SpendAssetsHandleType,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   compoundLend,
   compoundRedeem,
   createNewFund,
   defaultTestDeployment,
   getAssetBalances,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

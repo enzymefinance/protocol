@@ -4,8 +4,8 @@ import {
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
-} from '@melonproject/protocol';
-import { createNewFund, defaultTestDeployment } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

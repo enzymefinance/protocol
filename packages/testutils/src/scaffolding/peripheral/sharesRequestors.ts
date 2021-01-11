@@ -3,7 +3,7 @@ import {
   AuthUserExecutedSharesRequestorFactory,
   AuthUserExecutedSharesRequestorLib,
   StandardToken,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish, utils } from 'ethers';
 import { assertEvent } from '../../assertions';
 

@@ -7,7 +7,7 @@ import {
   IntegrationManager,
   IntegrationManagerActionId,
   TrackedAssetsAdapter,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 export async function addTrackedAssets({
   comptrollerProxy,

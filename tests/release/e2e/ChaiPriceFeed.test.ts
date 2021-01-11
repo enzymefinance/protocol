@@ -1,5 +1,5 @@
-import { IMakerDaoPot } from '@melonproject/protocol';
-import { ForkDeployment, loadForkDeployment } from '@melonproject/testutils';
+import { IMakerDaoPot } from '@enzymefinance/protocol';
+import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ForkDeployment;

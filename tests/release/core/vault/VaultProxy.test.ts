@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
-import { IMigrationHookHandler, VaultLib } from '@melonproject/protocol';
-import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
+import { IMigrationHookHandler, VaultLib } from '@enzymefinance/protocol';
+import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

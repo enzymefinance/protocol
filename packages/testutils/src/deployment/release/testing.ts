@@ -1,21 +1,19 @@
 import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
-import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@melonproject/protocol';
+import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';
 import { configureForkRelease } from './fork';
 import { configureMockRelease, deployMocks } from './mocks';
 
 export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
-  const [deployer, mgm, ...accounts] = await Promise.all([
+  const [deployer, ...accounts] = await Promise.all([
     provider.getSignerWithAddress(0),
     provider.getSignerWithAddress(1),
+    provider.getSignerWithAddress(2),
     provider.getSignerWithAddress(3),
     provider.getSignerWithAddress(4),
     provider.getSignerWithAddress(5),
     provider.getSignerWithAddress(6),
-    provider.getSignerWithAddress(7),
-    provider.getSignerWithAddress(8),
-    provider.getSignerWithAddress(9),
   ]);
 
   const persistent = await deployPersistent({ deployer });
@@ -23,7 +21,6 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
   const config = await configureMockRelease({
     dispatcher: persistent.dispatcher,
     deployer,
-    mgm,
     mocks,
     accounts,
   });
@@ -57,7 +54,6 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
 
 export async function defaultTestRelease(
   deployer: SignerWithAddress,
-  mgm: SignerWithAddress,
   accounts: SignerWithAddress[],
   dispatcher: Dispatcher,
 ) {
@@ -65,7 +61,6 @@ export async function defaultTestRelease(
   const config = await configureMockRelease({
     dispatcher,
     deployer,
-    mgm,
     mocks,
     accounts,
   });
@@ -94,7 +89,7 @@ export async function defaultTestRelease(
 }
 
 export async function defaultForkDeployment(provider: EthereumTestnetProvider) {
-  const [deployer, mgm, ...accounts] = await Promise.all([
+  const [deployer, ...accounts] = await Promise.all([
     provider.getSignerWithAddress(0),
     provider.getSignerWithAddress(1),
     provider.getSignerWithAddress(2),
@@ -107,7 +102,6 @@ export async function defaultForkDeployment(provider: EthereumTestnetProvider) {
     provider,
     dispatcher: persistent.dispatcher,
     deployer,
-    mgm,
     accounts,
   });
 

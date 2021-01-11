@@ -10,7 +10,7 @@ import {
   paraswapTakeOrderArgs,
   StandardToken,
   takeOrderSelector,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 // ParaswapPath
 export function paraswapGenerateMockPaths(totalNetworkFees: BigNumberish[] = [0]) {

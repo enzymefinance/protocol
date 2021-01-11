@@ -13,7 +13,7 @@ import {
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
 
 export async function uniswapV2Lend({

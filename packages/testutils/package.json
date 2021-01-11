@@ -1,10 +1,10 @@
 {
-  "name": "@melonproject/testutils",
+  "name": "@enzymefinance/testutils",
   "version": "2.0.0",
   "description": "Technology Regulated and Operated Investment Funds",
-  "author": "Melon Council DAO <team@meloncouncil.io>",
+  "author": "Enzyme Council DAO <council@enzyme.finance>",
   "license": "GPL-3.0",
-  "homepage": "https://melonprotocol.com",
+  "homepage": "https://enzyme.finance",
   "main": "dist/testutils.cjs.js",
   "module": "dist/testutils.esm.js",
   "browser": {
@@ -19,21 +19,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/melonproject/protocol.git"
+    "url": "git+https://github.com/enzymefinance/protocol.git"
   },
   "bugs": {
-    "url": "https://github.com/melonproject/protocol/issues"
+    "url": "https://github.com/enzymefinance/protocol/issues"
   },
   "keywords": [
-    "Defi",
+    "DeFi",
     "Ethereum",
-    "Melon",
+    "Enzyme",
+    "Enzyme Finance",
     "Smart Contracts",
     "Solidity"
   ],
   "dependencies": {
     "@babel/runtime": "^7.12.5",
-    "@melonproject/protocol": "^2.0.0"
+    "@enzymefinance/protocol": "^2.0.0"
   },
   "devDependencies": {
     "@crestproject/crestproject": "^0.1.21",

@@ -1,6 +1,6 @@
-# Melon v2 Audit Scope
+# Audit scope
 
-The doc defines the scope of the v2 audit by listing all contracts that are in-scope, paired with their latest commit hash
+The doc defines the scope of the audit by listing all contracts that are in-scope, paired with their latest commit hash
 
 ## Ready for audit
 

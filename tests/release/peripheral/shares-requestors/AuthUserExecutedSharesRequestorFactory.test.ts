@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { assertEvent, createNewFund, defaultTestDeployment } from '@melonproject/testutils';
+import { assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

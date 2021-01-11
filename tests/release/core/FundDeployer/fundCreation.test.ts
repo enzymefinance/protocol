@@ -7,8 +7,8 @@ import {
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
   createFundDeployer,
-} from '@melonproject/testutils';
-import { ReleaseStatusTypes } from '@melonproject/protocol';
+} from '@enzymefinance/testutils';
+import { ReleaseStatusTypes } from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

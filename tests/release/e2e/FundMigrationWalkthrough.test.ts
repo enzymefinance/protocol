@@ -14,7 +14,7 @@ import {
   ReleaseStatusTypes,
   StandardToken,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   addTrackedAssets,
   buyShares,
@@ -28,7 +28,7 @@ import {
   redeemShares,
   ReleaseDeploymentConfig,
   ReleaseDeploymentOutput,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T : never;

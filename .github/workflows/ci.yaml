@@ -25,7 +25,7 @@ jobs:
           node-version: 12
           always-auth: true
           registry-url: https://npm.fury.io/melonproject/
-          scope: '@melonproject'
+          scope: '@enzymefinance'
 
       - name: Retrieve dependency cache
         uses: actions/cache@v2
@@ -66,7 +66,7 @@ jobs:
           node-version: 12
           always-auth: true
           registry-url: https://npm.fury.io/melonproject/
-          scope: '@melonproject'
+          scope: '@enzymefinance'
 
       - name: Retrieve dependency cache
         uses: actions/cache@v2
@@ -101,7 +101,7 @@ jobs:
   #         node-version: 12
   #         always-auth: true
   #         registry-url: https://npm.fury.io/melonproject/
-  #         scope: '@melonproject'
+  #         scope: '@enzymefinance'
 
   #     - name: Retrieve dependency cache
   #       uses: actions/cache@v2

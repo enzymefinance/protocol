@@ -5,7 +5,7 @@ import {
   StandardToken,
   TrackedAssetsAdapter,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
 import { addTrackedAssets } from './extensions/integrations/trackedAssets';
 

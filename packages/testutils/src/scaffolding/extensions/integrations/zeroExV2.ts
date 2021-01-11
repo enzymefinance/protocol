@@ -10,7 +10,7 @@ import {
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
   IntegrationManagerActionId,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 export async function zeroExV2TakeOrder({
   comptrollerProxy,

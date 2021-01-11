@@ -5,14 +5,14 @@ import {
   PolicyHook,
   policyManagerConfigArgs,
   validateRulePreBuySharesArgs,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   defaultTestDeployment,
   assertEvent,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

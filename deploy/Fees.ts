@@ -1,5 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import { FeeManager, FeeManagerArgs } from '@melonproject/protocol';
+import { FeeManager, FeeManagerArgs } from '@enzymefinance/protocol';
 import { sameAddress } from '@crestproject/crestproject';
 
 const fn: DeployFunction = async function (hre) {

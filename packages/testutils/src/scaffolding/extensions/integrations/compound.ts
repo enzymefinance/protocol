@@ -10,7 +10,7 @@ import {
   lendSelector,
   redeemSelector,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumberish, utils } from 'ethers';
 
 // prettier-ignore

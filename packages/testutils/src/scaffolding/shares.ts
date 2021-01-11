@@ -1,5 +1,5 @@
 import { AddressLike, Contract, Send, SignerWithAddress } from '@crestproject/crestproject';
-import { ComptrollerLib } from '@melonproject/protocol';
+import { ComptrollerLib } from '@enzymefinance/protocol';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
 // prettier-ignore

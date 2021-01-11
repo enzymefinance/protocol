@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IChai } from '@melonproject/protocol';
-import { randomizedTestDeployment } from '@melonproject/testutils';
+import { IChai } from '@enzymefinance/protocol';
+import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

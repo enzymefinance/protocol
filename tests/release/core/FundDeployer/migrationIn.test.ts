@@ -1,12 +1,12 @@
 import { constants } from 'ethers';
 import { extractEvent, EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, ReleaseStatusTypes } from '@melonproject/protocol';
+import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import {
   defaultTestDeployment,
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

@@ -1,5 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import type { IntegrationManagerArgs } from '@melonproject/protocol';
+import type { IntegrationManagerArgs } from '@enzymefinance/protocol';
 import { loadConfig } from './config/Config';
 
 const fn: DeployFunction = async function (hre) {

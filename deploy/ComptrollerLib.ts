@@ -1,5 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import { FundDeployer as FundDeployerContract, ComptrollerLibArgs } from '@melonproject/protocol';
+import { FundDeployer as FundDeployerContract, ComptrollerLibArgs } from '@enzymefinance/protocol';
 import { loadConfig } from './config/Config';
 import { sameAddress } from '@crestproject/crestproject';
 

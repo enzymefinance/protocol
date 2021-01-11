@@ -3,14 +3,14 @@ import {
   AuthUserExecutedSharesRequestorLib,
   AuthUserExecutedSharesRequestorProxy,
   encodeFunctionData,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createAuthUserExecutedSharesRequest,
   createAuthUserExecutedSharesRequestorProxy,
   createNewFund,
   defaultTestDeployment,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

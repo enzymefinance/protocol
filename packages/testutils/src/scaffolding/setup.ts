@@ -1,5 +1,5 @@
 import { AddressLike, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
-import { ComptrollerLib, ComptrollerProxy, FundDeployer, VaultLib, encodeFunctionData } from '@melonproject/protocol';
+import { ComptrollerLib, ComptrollerProxy, FundDeployer, VaultLib, encodeFunctionData } from '@enzymefinance/protocol';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { assertEvent } from '../assertions';
 import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';

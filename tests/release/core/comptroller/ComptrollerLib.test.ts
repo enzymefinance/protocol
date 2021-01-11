@@ -1,7 +1,7 @@
 import { constants } from 'ethers';
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { defaultTestDeployment } from '@melonproject/testutils';
-import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@melonproject/protocol';
+import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

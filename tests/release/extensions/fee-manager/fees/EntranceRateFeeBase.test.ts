@@ -10,8 +10,8 @@ import {
   entranceRateFeeConfigArgs,
   FeeHook,
   settlePostBuySharesArgs,
-} from '@melonproject/protocol';
-import { assertEvent, defaultTestDeployment } from '@melonproject/testutils';
+} from '@enzymefinance/protocol';
+import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

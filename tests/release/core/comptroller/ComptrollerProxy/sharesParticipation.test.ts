@@ -1,5 +1,5 @@
 import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
-import { feeManagerConfigArgs, ReleaseStatusTypes, StandardToken } from '@melonproject/protocol';
+import { feeManagerConfigArgs, ReleaseStatusTypes, StandardToken } from '@enzymefinance/protocol';
 import {
   assertEvent,
   buyShares,
@@ -10,7 +10,7 @@ import {
   generateRegisteredMockFees,
   getAssetBalances,
   redeemShares,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

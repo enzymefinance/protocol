@@ -10,7 +10,7 @@ import {
   takeOrderSelector,
   kyberTakeOrderArgs,
   IntegrationManagerActionId,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 
 // prettier-ignore
 export interface KyberNetworkProxy extends Contract<KyberNetworkProxy> {

@@ -22,7 +22,7 @@ import {
   MockZeroExV2Integratee,
   sighash,
   WETH,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { BigNumber, utils } from 'ethers';
 import { Deployment, DeploymentHandlers, describeDeployment } from '../deployment';
 import { ReleaseDeploymentConfig } from './deployment';
@@ -397,13 +397,11 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
 
 export async function configureMockRelease({
   deployer,
-  mgm,
   dispatcher,
   mocks,
   accounts,
 }: {
   deployer: SignerWithAddress;
-  mgm: SignerWithAddress;
   dispatcher: Dispatcher;
   mocks: MockDeployment;
   accounts: SignerWithAddress[];
@@ -600,7 +598,6 @@ export async function configureMockRelease({
       },
       wdgld: randomAddress(),
     },
-    mgm,
     dispatcher: dispatcher,
     mln: mocks.tokens.mln,
     weth: mocks.tokens.weth,

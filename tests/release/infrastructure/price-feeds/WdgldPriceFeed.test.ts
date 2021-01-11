@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { calcGtr } from '@melonproject/protocol/src/utils/price-feeds/wdgld';
-import { defaultTestDeployment } from '@melonproject/testutils';
+import { calcGtr } from '@enzymefinance/protocol/src/utils/price-feeds/wdgld';
+import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

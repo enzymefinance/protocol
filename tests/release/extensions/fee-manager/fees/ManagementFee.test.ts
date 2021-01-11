@@ -11,7 +11,7 @@ import {
   managementFeeConfigArgs,
   managementFeeSharesDue,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   buyShares,
@@ -22,7 +22,7 @@ import {
   defaultTestDeployment,
   redeemShares,
   transactionTimestamp,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

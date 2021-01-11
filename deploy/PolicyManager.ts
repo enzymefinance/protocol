@@ -1,5 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
-import type { PolicyManagerArgs } from '@melonproject/protocol';
+import type { PolicyManagerArgs } from '@enzymefinance/protocol';
 
 const fn: DeployFunction = async function (hre) {
   const { deploy, get } = hre.deployments;

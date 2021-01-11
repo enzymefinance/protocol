@@ -6,8 +6,8 @@ import {
   AddressLike,
   MockContract,
 } from '@crestproject/crestproject';
-import { assertEvent, defaultPersistentTestDeployment, transactionTimestamp } from '@melonproject/testutils';
-import { Dispatcher, IMigrationHookHandler, MockVaultLib, MigrationOutHook } from '@melonproject/protocol';
+import { assertEvent, defaultPersistentTestDeployment, transactionTimestamp } from '@enzymefinance/testutils';
+import { Dispatcher, IMigrationHookHandler, MockVaultLib, MigrationOutHook } from '@enzymefinance/protocol';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, config, deployment } = await defaultPersistentTestDeployment(provider);

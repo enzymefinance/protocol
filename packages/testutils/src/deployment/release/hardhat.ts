@@ -39,7 +39,7 @@ import {
   MinMaxInvestment,
   InvestorWhitelist,
   GuaranteedRedemption,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import { DeploymentConfig } from '../../../../../deploy/config/Config';
 
 export type ForkDeployment = ReturnType<typeof loadForkDeployment> extends Promise<infer T> ? T : never;

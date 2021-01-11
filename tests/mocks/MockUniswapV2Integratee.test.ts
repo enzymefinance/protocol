@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { MockUniswapV2PriceSource } from '@melonproject/protocol';
-import { randomizedTestDeployment } from '@melonproject/testutils';
+import { MockUniswapV2PriceSource } from '@enzymefinance/protocol';
+import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {

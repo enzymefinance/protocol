@@ -1,6 +1,6 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ICERC20 } from '@melonproject/protocol';
-import { defaultForkDeployment } from '@melonproject/testutils';
+import { ICERC20 } from '@enzymefinance/protocol';
+import { defaultForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%

@@ -1,4 +1,4 @@
-import { Dispatcher } from '@melonproject/protocol';
+import { Dispatcher } from '@enzymefinance/protocol';
 import { SignerWithAddress } from '@crestproject/crestproject';
 import { describeDeployment } from '../deployment';
 

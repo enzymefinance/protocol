@@ -11,14 +11,14 @@ import {
   policyManagerConfigArgs,
   validateRulePostCoIArgs,
   VaultLib,
-} from '@melonproject/protocol';
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
   defaultTestDeployment,
-} from '@melonproject/testutils';
+} from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
