@@ -154,8 +154,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @notice Gets the current owner of the contract
     /// @return owner_ The contract owner address
     /// @dev Dynamically gets the owner based on the Protocol status. The owner is initially the
-    /// contract's deployer, for convenience in setting up configuration. Ownership is claimed
-    /// when the owner of the Dispatcher contract (the MTC) sets the releaseStatus to `Live`.
+    /// contract's deployer, for convenience in setting up configuration.
+    /// Ownership is claimed when the owner of the Dispatcher contract (the Enzyme Council)
+    /// sets the releaseStatus to `Live`.
     function getOwner() public view override returns (address owner_) {
         if (releaseStatus == ReleaseStatus.PreLaunch) {
             return CREATOR;
