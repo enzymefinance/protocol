@@ -16,9 +16,9 @@ const fn: DeployFunction = async function (hre) {
     args: [dispatcher.address, vaultLib.address, [], []] as FundDeployerArgs,
   });
 
-  if (hre.network.name === 'kovan') {
-    // Set the current fund deployer on the dispatcher but only on Kovan. On mainnet, this
-    // is part of the hand over / release routine.
+  if (!hre.network.live || hre.network.name === 'kovan') {
+    // Set the current fund deployer on the dispatcher but only for test deployments. On
+    // mainnet, this is part of the hand over / release routine.
     const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
     const currentFundDeployer = await dispatcherInstance.getCurrentFundDeployer();
     if (!sameAddress(currentFundDeployer, fundDeployer.address)) {

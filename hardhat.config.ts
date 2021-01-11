@@ -3,6 +3,7 @@ import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-contract-sizer';
 import '@crestproject/hardhat/plugin';
+import { HardhatUserConfig } from 'hardhat/types';
 
 function node(networkName: string) {
   const fallback = 'http://localhost:8545';
@@ -20,7 +21,9 @@ function accounts(networkName: string) {
     .filter(Boolean);
 }
 
-export default {
+const mnemonic = 'test test test test test test test test test test test junk';
+
+const config: HardhatUserConfig = {
   solidity: {
     version: '0.6.12',
     settings: {
@@ -36,7 +39,11 @@ export default {
   networks: {
     hardhat: {
       accounts: {
-        mnemonic: 'test test test test test test test test test test test junk',
+        mnemonic,
+      },
+      forking: {
+        url: node('mainnet'),
+        blockNumber: 11621050, // Jan 9, 2021
       },
     },
     mainnet: {
@@ -104,3 +111,5 @@ export default {
     exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
   },
 };
+
+export default config;

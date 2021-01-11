@@ -74,13 +74,6 @@ const fn: DeployFunction = async function (hre) {
     args: [chainlinkPriceFeed.address, derivativePriceFeed.address] as ValueInterpreterArgs,
   });
 
-  // If this is a mock deployment, set the ValueInterpreter on the CentralizedRateProvider.
-  const centralizedRateProvider = await getOrNull('mocks/CentralizedRateProvider');
-  if (!!centralizedRateProvider) {
-    const centralizedRateProviderInstance = new CentralizedRateProvider(centralizedRateProvider.address, deployer);
-    await centralizedRateProviderInstance.setValueInterpreter(valueInterpreter.address);
-  }
-
   // NOTE: Pool tokens are registered after the contract deployment.
   const uniswapPriceFeed = await deploy('UniswapV2PoolPriceFeed', {
     from: deployer.address,
@@ -99,12 +92,28 @@ const fn: DeployFunction = async function (hre) {
   const chainlinkPriceFeedInstance = new ChainlinkPriceFeed(chainlinkPriceFeed.address, deployer);
   const chainlinkAssetsNeedingRegistration = nonOptional(
     await Promise.all(
-      config.chainlink.primitives.map(async (asset) => {
-        const [primitive] = asset;
-        return (await chainlinkPriceFeedInstance.isSupportedAsset(primitive)) ? undefined : asset;
+      Object.entries(config.primitives).map(async ([key, address]) => {
+        return (await chainlinkPriceFeedInstance.isSupportedAsset(address)) ? undefined : key;
       }),
     ),
-  );
+  ).map((key) => {
+    if (!config.chainlink.aggregators[key]) {
+      throw new Error(`Missing aggregator for ${key}`);
+    }
+
+    const aggregator = config.chainlink.aggregators[key];
+    const primitive = config.primitives[key];
+    return [primitive, ...aggregator] as const;
+  });
+
+  if (!hre.network.live || hre.network.name === 'kovan') {
+    const oneYear = 60 * 60 * 24 * 365;
+    const currentStaleRateThreshold = await chainlinkPriceFeedInstance.getStaleRateThreshold();
+    if (!currentStaleRateThreshold.eq(oneYear)) {
+      log('Setting stale rate threshold to one year for testing');
+      await chainlinkPriceFeedInstance.setStaleRateThreshold(oneYear);
+    }
+  }
 
   // NOTE: This does not account for primitives that would need to be updated (changed aggregator or rate asset).
   if (!!chainlinkAssetsNeedingRegistration.length) {
@@ -121,7 +130,7 @@ const fn: DeployFunction = async function (hre) {
   const compoundPriceFeedInstance = new CompoundPriceFeed(compoundPriceFeed.address, deployer);
   const compoundAssetsNeedingRegistration = nonOptional(
     await Promise.all(
-      config.compound.ctokens.map(async (ctoken) => {
+      Object.values(config.compound.ctokens).map(async (ctoken) => {
         return (await compoundPriceFeedInstance.isSupportedAsset(ctoken)) ? undefined : ctoken;
       }),
     ),
@@ -138,7 +147,7 @@ const fn: DeployFunction = async function (hre) {
   const synthetixPriceFeedInstance = new SynthetixPriceFeed(synthetixPriceFeed.address, deployer);
   const synthetixAssetsNeedingRegistration = nonOptional(
     await Promise.all(
-      config.synthetix.synths.map(async (synth) => {
+      Object.values(config.synthetix.synths).map(async (synth) => {
         return (await synthetixPriceFeedInstance.isSupportedAsset(synth)) ? undefined : synth;
       }),
     ),
@@ -157,8 +166,8 @@ const fn: DeployFunction = async function (hre) {
     [config.wdgld.wdgld, wdgldPriceFeed.address],
     [config.chai.chai, chaiPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],
-    ...config.synthetix.synths.map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
-    ...config.compound.ctokens.map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),
+    ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
+    ...Object.values(config.compound.ctokens).map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),
   ];
 
   const derivativeAssetsNeedingRegistration = nonOptional(
@@ -183,7 +192,7 @@ const fn: DeployFunction = async function (hre) {
   const uniswapPriceFeedInstance = new UniswapV2PoolPriceFeed(uniswapPriceFeed.address, deployer);
   const uniswapPoolsNeedingRegistration = nonOptional(
     await Promise.all(
-      config.uniswap.pools.map(async (pool) => {
+      Object.values(config.uniswap.pools).map(async (pool) => {
         return (await uniswapPriceFeedInstance.isSupportedAsset(pool)) ? undefined : pool;
       }),
     ),
@@ -199,7 +208,7 @@ const fn: DeployFunction = async function (hre) {
   // Register all uniswap pool tokens with the derivative price feed.
   const uniswapPoolsNeedingDerivativeRegistration = nonOptional(
     await Promise.all(
-      config.uniswap.pools.map(async (pool) => {
+      Object.values(config.uniswap.pools).map(async (pool) => {
         return (await derivativePriceFeedInstance.isSupportedAsset(pool)) ? undefined : pool;
       }),
     ),
@@ -212,6 +221,16 @@ const fn: DeployFunction = async function (hre) {
     await derivativePriceFeedInstance.addDerivatives(derivatives, feeds);
   } else {
     log('All uniswap pool derivatives already registered');
+  }
+
+  const centralizedRateProvider = await getOrNull('mocks/CentralizedRateProvider');
+  if (!!centralizedRateProvider) {
+    const centralizedRateProviderInstance = new CentralizedRateProvider(centralizedRateProvider.address, deployer);
+    await centralizedRateProviderInstance.setReleasePriceAddresses(
+      valueInterpreter.address,
+      derivativePriceFeed.address,
+      chainlinkPriceFeed.address,
+    );
   }
 };
 

@@ -1,14 +1,31 @@
+import { constants } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ChainlinkRateAsset } from '@melonproject/protocol';
-import { mainnetConfig } from './Mainnet';
-import { loadMockDeployment } from './Mocks';
 import { DeployFunction } from 'hardhat-deploy/types';
+
+export async function saveConfig(hre: HardhatRuntimeEnvironment, data: DeploymentConfig) {
+  await hre.deployments.save('Config', {
+    abi: [],
+    address: constants.AddressZero,
+    linkedData: data,
+  });
+}
+
+export async function loadConfig(hre: HardhatRuntimeEnvironment) {
+  const deployment = await hre.deployments.get('Config');
+  return deployment.linkedData as DeploymentConfig;
+}
+
+export async function hasConfig(hre: HardhatRuntimeEnvironment): Promise<boolean> {
+  return !!(await hre.deployments.getOrNull('Config'));
+}
 
 export interface DeploymentConfig {
   weth: string;
+  primitives: Record<string, string>;
   chainlink: {
     ethusd: string;
-    primitives: [string, string, ChainlinkRateAsset][];
+    aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
   };
   wdgld: {
     wdgld: string;
@@ -18,7 +35,7 @@ export interface DeploymentConfig {
   synthetix: {
     snx: string;
     susd: string;
-    synths: string[];
+    synths: Record<string, string>;
     addressResolver: string;
     delegateApprovals: string;
     originator: string;
@@ -26,7 +43,7 @@ export interface DeploymentConfig {
   };
   compound: {
     ceth: string;
-    ctokens: string[];
+    ctokens: Record<string, string>;
   };
   chai: {
     dai: string;
@@ -43,7 +60,7 @@ export interface DeploymentConfig {
   uniswap: {
     factory: string;
     router: string;
-    pools: string[];
+    pools: Record<string, string>;
   };
   zeroex: {
     exchange: string;
@@ -54,18 +71,6 @@ export interface DeploymentConfig {
       redemptionWindowBuffer: number;
     };
   };
-}
-
-export async function loadConfig(hre: HardhatRuntimeEnvironment) {
-  if (hre.network.name === 'mainnet') {
-    return mainnetConfig;
-  }
-
-  if (hre.network.name === 'kovan') {
-    return loadMockDeployment(hre, 'Kovan');
-  }
-
-  throw new Error('Failed to load config');
 }
 
 const fn: DeployFunction = async () => {

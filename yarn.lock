@@ -2146,7 +2146,7 @@
 
 "@solidity-parser/parser@^0.7.1":
   version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.7.1.tgz#660210130e4237476cb55e2882064809f80f861e"
+  resolved "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.7.1.tgz#660210130e4237476cb55e2882064809f80f861e"
   integrity sha512-5ma2uuwPAEX1TPl2rAPAAuGlBkKnn2oUKQvnhTFlDIB8U/KDWX77FpHtL6Rcz+OwqSCWx9IClxACgyIEJ/GhIw==
 
 "@solidity-parser/parser@^0.8.1", "@solidity-parser/parser@^0.8.2":
@@ -2740,12 +2740,12 @@ aws4@^1.8.0:
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.10.1.tgz#e1e82e4f3e999e2cfd61b161280d16a111f86428"
   integrity sha512-zg7Hz2k5lI8kb7U32998pRRFin7zJlkfezGJjUc2heaD4Pw2wObakCDVzkKztTm/Ln7eiVvYsjqak0Ed4LkMDA==
 
-axios@^0.19.2:
-  version "0.19.2"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27"
-  integrity sha512-fjgm5MvRHLhx+osE2xoekY70AhARk3a6hkN+3Io1jc00jtquGvxYlKlsFUhmUET0V5te6CcZI7lcv2Ym61mjHA==
+axios@^0.21.1:
+  version "0.21.1"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.1.tgz#22563481962f4d6bde9a76d516ef0e5d3c09b2b8"
+  integrity sha512-dKQiRHxGD9PPRIUNIWvZhPTPpl1rf/OxTYKsqKUDjBwYylTvV7SjSHJb9ratfyzM6wCdLCOYLzs73qpg5c4iGA==
   dependencies:
-    follow-redirects "1.5.10"
+    follow-redirects "^1.10.0"
 
 babel-jest@^26.6.3:
   version "26.6.3"
@@ -3621,13 +3621,6 @@ debug@4, debug@^4.0.1, debug@^4.1.0, debug@^4.1.1, debug@^4.2.0:
   integrity sha512-IX2ncY78vDTjZMFUdmsvIRFY2Cf4FnD0wRs+nQwJU8Lu99/tPFdb0VybiiMTPe3I6rQmwsqQqRBvxU+bZ/I8sg==
   dependencies:
     ms "2.1.2"
-
-debug@=3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/debug/-/debug-3.1.0.tgz#5bb5a0672628b64149566ba16819e61518c67261"
-  integrity sha512-OX8XqP7/1a9cqkxYw2yXss15f26NKWBpDXQd0/uK/KPqdQhxbPa994hnzjcE2VqQpDslf55723cKPUOGSmMY3g==
-  dependencies:
-    ms "2.0.0"
 
 debug@^2.2.0, debug@^2.3.3:
   version "2.6.9"
@@ -4751,12 +4744,10 @@ fmix@^0.1.0:
   dependencies:
     imul "^1.0.0"
 
-follow-redirects@1.5.10:
-  version "1.5.10"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.5.10.tgz#7b7a9f9aea2fdff36786a94ff643ed07f4ff5e2a"
-  integrity sha512-0V5l4Cizzvqt5D44aTXbFZz+FtyXV1vrDN6qrelxtfYQKW0KO0W2T/hkE8xvGa/540LkZlkaUjO4ailYTFtHVQ==
-  dependencies:
-    debug "=3.1.0"
+follow-redirects@^1.10.0:
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.13.1.tgz#5f69b813376cee4fd0474a3aba835df04ab763b7"
+  integrity sha512-SSG5xmZh1mkPGyKzjZP8zLjltIfpW32Y5QpdNJyjcfGxK3qo3NDDkZOZSFiGn1A6SclQxY9GzEwAHQ3dmYRWpg==
 
 follow-redirects@^1.12.1:
   version "1.13.0"
@@ -5103,10 +5094,10 @@ hardhat-deploy-ethers@^0.3.0-beta.7:
   resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.7.tgz#860d86b84ed3c4fdef64283ccf1e8d5623454d02"
   integrity sha512-JKMNte6vudu9LSNqgmBtNxc1gfxp3NUcPKVAf/FANHfl9pa/mBGg6hpQO7tD8CLkAbe6f4K5BjyYIPWX3p7MKw==
 
-hardhat-deploy@^0.7.0-beta.39:
-  version "0.7.0-beta.39"
-  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.0-beta.39.tgz#3aeab46164b0cefc990dedbeb611236080fdd122"
-  integrity sha512-CBsvWkp16n6FGQxXw4A9rC9ug6P26ophUTRyWiim/sMITO7NAlxWTVNWCu+rgk7amDtkEfJ8PSMKmNl/naRNAw==
+hardhat-deploy@^0.7.0-beta.43:
+  version "0.7.0-beta.43"
+  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.7.0-beta.43.tgz#466243bfe558a298d595ba9a76e8f01019fad056"
+  integrity sha512-nDaBYyfNeaAbuDx2q7DUwO9Z1+A1luPbgoEcygVoPR9TNMVyV1fKh4Kgvlw3gcR5anRvo8VJHRbpiQzponD4JA==
   dependencies:
     "@ethersproject/abi" "^5.0.2"
     "@ethersproject/abstract-signer" "^5.0.2"
@@ -5119,7 +5110,7 @@ hardhat-deploy@^0.7.0-beta.39:
     "@ethersproject/transactions" "^5.0.2"
     "@ethersproject/wallet" "^5.0.2"
     "@types/qs" "^6.9.4"
-    axios "^0.19.2"
+    axios "^0.21.1"
     chalk "^4.1.0"
     chokidar "^3.4.0"
     debug "^4.1.1"
@@ -5129,10 +5120,10 @@ hardhat-deploy@^0.7.0-beta.39:
     murmur-128 "^0.2.1"
     qs "^6.9.4"
 
-hardhat@^2.0.5:
-  version "2.0.5"
-  resolved "https://npm-proxy.fury.io/melonproject/~/up/ver_3yG7F/hardhat-2.0.5.tgz#21aa0769bb62f43d498d46fd7b4b943226a17e1b"
-  integrity sha1-IaoHabti9D1JjUb9e0uUMiahfhs=
+hardhat@^2.0.6:
+  version "2.0.6"
+  resolved "https://npm-proxy.fury.io/melonproject/~/up/ver_1AL3m5/hardhat-2.0.6.tgz#4edf35c2213346ce7ee3aa529143d789b079d1db"
+  integrity sha1-Tt81wiEzRs5+46pSkUPXibB50ds=
   dependencies:
     "@nomiclabs/ethereumjs-vm" "^4.1.1"
     "@sentry/node" "^5.18.1"

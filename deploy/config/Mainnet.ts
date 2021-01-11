@@ -1,5 +1,5 @@
 import { ChainlinkRateAsset } from '@melonproject/protocol';
-import { DeploymentConfig } from './Config';
+import { DeploymentConfig, saveConfig } from './Config';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 // Note that some addresses in this file are checksummed and others are not. This shouldn't be an issue.
@@ -36,7 +36,7 @@ const primitives = {
   susd: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
   sxp: '0x8ce9137d39326ad0cd6491fb5cc0cba0e089b6a9',
   tusd: '0x0000000000085d4780B73119b644AE5ecd22b376',
-  uma: '0x04fa0d235c4abf4bcf4787af4cf447de572ef828',
+  // uma: '0x04fa0d235c4abf4bcf4787af4cf447de572ef828',
   uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
   usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   usdt: '0xdac17f958d2ee523a2206206994597c13d831ec7',
@@ -46,7 +46,7 @@ const primitives = {
   zrx: '0xE41d2489571d322189246DaFA5ebDe1F4699F498',
 } as const;
 
-const chainlinkAggregators = {
+const aggregators = {
   aave: ['0x6Df09E975c830ECae5bd4eD9d90f3A95a4f88012', ChainlinkRateAsset.ETH],
   adx: ['0x231e764B44b2C1b7Ca171fa8021A24ed520Cde10', ChainlinkRateAsset.USD],
   ant: ['0x8f83670260f8f7708143b836a2a6f11ef0abac01', ChainlinkRateAsset.ETH],
@@ -77,7 +77,7 @@ const chainlinkAggregators = {
   susd: ['0x8e0b7e6062272B5eF4524250bFFF8e5Bd3497757', ChainlinkRateAsset.ETH],
   sxp: ['0xFb0CfD6c19e25DB4a08D8a204a387cEa48Cc138f', ChainlinkRateAsset.USD],
   tusd: ['0x3886BA987236181D98F2401c507Fb8BeA7871dF2', ChainlinkRateAsset.ETH],
-  uma: ['0xf817b69ea583caff291e287cae00ea329d22765c', ChainlinkRateAsset.ETH],
+  // uma: ['0xf817b69ea583caff291e287cae00ea329d22765c', ChainlinkRateAsset.ETH],
   uni: ['0xd6aa3d25116d8da79ea0246c4826eb951872e02e', ChainlinkRateAsset.ETH],
   usdc: ['0x986b5e1e1755e3c2440e960477f25201b0a8bbd4', ChainlinkRateAsset.ETH],
   usdt: ['0xee9f2375b4bdf6387aa8265dd4fb8f16512a1d46', ChainlinkRateAsset.ETH],
@@ -87,54 +87,119 @@ const chainlinkAggregators = {
   zrx: ['0x2da4983a622a8498bb1a21fae9d8f6c664939962', ChainlinkRateAsset.ETH],
 } as const;
 
+const synths = {
+  saud: '0xF48e200EAF9906362BB1442fca31e0835773b8B4', // sAUD
+  sbnb: '0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848', // sBNB
+  sbtc: '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6', // sBTC
+  sbch: '0x36a2422a863d5b950882190ff5433e513413343a', // sBCH
+  sada: '0xe36e2d3c7c34281fa3bc737950a68571736880a1', // sADA
+  scex: '0xeabacd844a196d7faf3ce596edebf9900341b420', // sCEX
+  slink: '0xbbc455cb4f1b9e4bfc4b73970d360c8f032efee6', // sLINK
+  sdash: '0xfe33ae95a9f0da8a845af33516edc240dcd711d6', // sDASH
+  sdefi: '0xe1afe1fd76fd88f78cbf599ea1846231b8ba3b6b', // sDEFI
+  seos: '0x88c8cf3a212c0369698d13fe98fcb76620389841', // sEOS
+  seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb', // sETH
+  setc: '0x22602469d704bffb0936c7a7cfcd18f7aa269375', // sETC
+  seur: '0xd71ecff9342a5ced620049e616c5035f1db98620', // sEUR
+  sftse: '0x23348160d7f5aca21195df2b70f28fce2b0be9fc', // sFTSE
+  sxau: '0x261efcdd24cea98652b9700800a13dfbca4103ff', // sXAU
+  ibnb: '0xafd870f32ce54efdbf677466b612bf8ad164454b', // iBNB
+  ibtc: '0xd6014ea05bde904448b743833ddf07c3c7837481', // iBTC
+  ibch: '0xf6e9b246319ea30e8c2fa2d1540aaebf6f9e1b89', // iBCH
+  iada: '0x8a8079c7149b8a1611e5c5d978dca3be16545f83', // iADA
+  icex: '0x336213e1ddfc69f4701fc3f86f4ef4a160c1159d', // iCEX
+  ilink: '0x2d7ac061fc3db53c39fe1607fb8cec1b2c162b01', // iLINK
+  idash: '0xcb98f42221b2c251a4e74a1609722ee09f0cc08e', // iDASH
+  idefi: '0x14d10003807ac60d07bb0ba82caeac8d2087c157', // iDEFI
+  ieos: '0xf4eebdd0704021ef2a6bbe993fdf93030cd784b4', // iEOS
+  ieth: '0xa9859874e1743a32409f75bb11549892138bba1e', // iETH
+  ietc: '0xd50c1746d835d2770dda3703b69187bffeb14126', // iETC
+  iltc: '0x79da1431150c9b82d2e5dfc1c68b33216846851e', // iLTC
+  ixmr: '0x4adf728e2df4945082cdd6053869f51278fae196', // iXMR
+  ioil: '0xa5a5df41883cdc00c4ccc6e8097130535399d9a3', // iOIL
+  ixrp: '0x27269b3e45a4d3e79a3d6bfee0c8fb13d0d711a6', // iXRP
+  itrx: '0xc5807183a9661a533cb08cbc297594a0b864dc12', // iTRX
+  ixtz: '0x8deef89058090ac5655a99eeb451a4f9183d1678', // iXTZ
+  sjpy: '0xf6b1c627e95bfc3c1b4c9b825a032ff0fbf3e07d', // sJPY
+  sltc: '0xc14103c2141e842e228fbac594579e798616ce7a', // sLTC
+  sxmr: '0x5299d6f7472dcc137d7f3c4bcfbbb514babf341a', // sXMR
+  snikkei: '0x757de3ac6b830a931ef178c6634c5c551773155c', // sNIKKEI
+  soil: '0x6d16cf3ec5f763d4d99cb0b0b110eefd93b11b56', // sOIL
+  sgbp: '0x97fe22e7341a0cd8db6f6c021a24dc8f4dad855f', // sGBP
+  sxrp: '0xa2b0fde6d710e201d0d608e924a484d1a5fed57c', // sXRP
+  sxag: '0x6a22e5e94388464181578aa7a6b869e00fe27846', // sXAG
+  schf: '0x0f83287ff768d1c1e17a42f44d644d7f22e8ee1d', // sCHF
+  strx: '0xf2e08356588ec5cd9e437552da87c0076b4970b0', // sTRX
+  sxtz: '0x2e59005c5c0f0a4d77cca82653d48b46322ee5cd', // sXTZ
+} as const;
+
+const ctokens = {
+  cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e', // cBAT
+  ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4', // cCOMP
+  cdai: '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643', // cDAI
+  crep: '0x158079ee67fce2f58472a96584a73c7ab9ac95c1', // cREP
+  cuni: '0x35A18000230DA775CAc24873d00Ff85BccdeD550', // cUNI
+  cusdc: '0x39aa39c021dfbae8fac545936693ac917d5e7563', // cUSDC
+  cusdt: '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9', // cUSDT
+  cwbtc: '0xc11b1268c1a384e55c48c2391d8d480264a3a7f4', // cWBTC
+  czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407', // cZRX
+} as const;
+
+const pools = {
+  aaveWeth: '0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f', // AAVE-WETH
+  adxWeth: '0xd3772a963790fede65646cfdae08734a17cd0f47', // ADX-WETH
+  antWeth: '0x9def9511fec79f83afcbffe4776b1d817dc775ae', // ANT-WETH
+  balWeth: '0xa70d458a4d9bc0e6571565faee18a48da5c0d593', // BAL-WETH
+  batWeth: '0xb6909b960dbbe7392d405429eb2b3649752b4838', // BAT-WETH
+  bntWeth: '0x3fd4cf9303c4bc9e13772618828712c8eac7dd2f', // BNT-WETH
+  busdUsdc: '0x524847c615639e76fe7d0fe0b16be8c4eac9cf3c', // BUSD-USDC
+  busdUsdt: '0xa0abda1f980e03d7eadb78aed8fc1f2dd0fe83dd', // BUSD-USDT
+  bzrxWeth: '0xb9b752f7f4a4680eeb327ffe728f46666763a796', // BZRX-WETH
+  compWeth: '0xcffdded873554f362ac02f8fb1f02e5ada10516f', // COMP-WETH
+  croWeth: '0x90704ac59e7e54632b0cc9d22573aecd7eb094ad', // CRO-WETH
+  crvWeth: '0x3da1313ae46132a397d90d95b1424a9a7e3e0fce', // CRV-WETH
+  daiUsdc: '0xae461ca67b15dc8dc81ce7615e0320da1a9ab8d5', // DAI-USDC
+  daiUsdt: '0xb20bd5d04be54f870d5c0d3ca85d82b34b836405', // DAI-USDT
+  daiWeth: '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', // DAI-WETH
+  dmgWeth: '0x8175362afbeee32afb22d05adc0bbd08de32f5ae', // DMG-WETH
+  enjWeth: '0xe56c60b5f9f7b5fc70de0eb79c6ee7d00efa2625', // ENJ-WETH
+  kncWeth: '0xf49c43ae0faf37217bdcb00df478cf793edd6687', // KNC-WETH
+  linkWeth: '0xa2107fa5b38d9bbd2c461d6edf11b11a50f6b974', // LINK-WETH
+  lrcWeth: '0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70', // LRC-WETH
+  manaWeth: '0x11b1f53204d03e5529f09eb3091939e4fd8c9cf3', // MANA-WETH
+  mkrWeth: '0xc2adda861f89bbb333c90c492cb837741916a225', // MKR-WETH
+  mlnWeth: '0x15ab0333985FD1E289adF4fBBe19261454776642', // MLN-WETH
+  nmrWeth: '0xb784ced6994c928170b417bbd052a096c6fb17e2', // NMR-WETH
+  oxtWeth: '0x9b533f1ceaa5ceb7e5b8994ef16499e47a66312d', // OXT-WETH
+  renWeth: '0x8bd1661da98ebdd3bd080f0be4e6d9be8ce9858c', // REN-WETH
+  repv2Weth: '0x8979a3ef9d540480342ac0f56e9d4c88807b1cba', // REPv2-WETH
+  rlcWeth: '0x6d57a53a45343187905aad6ad8ed532d105697c1', // RLC-WETH
+  snxWeth: '0x43ae24960e5534731fc831386c07755a2dc33d47', // SNX-WETH
+  susdWeth: '0xf80758ab42c3b07da84053fd88804bcb6baa4b5c', // SUSD-WETH
+  sxpWeth: '0xac317d14738a454ff20b191ba3504aa97173045b', // SXP-WETH
+  tusdWeth: '0xb4d0d9df2738abe81b87b66c80851292492d1404', // TUSD-WETH
+  // umaWeth: '0x88d97d199b9ed37c29d846d00d443de980832a22', // UMA-WETH
+  uniWeth: '0xd3d2e2692501a5c9ca623199d38826e513033a17', // UNI-WETH
+  usdcUsdt: '0x3041cbd36888becc7bbcbc0045e3b1f144466f5f', // USDC-USDT
+  usdcWeth: '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', // USDC-WETH
+  usdtWeth: '0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852', // USDT-WETH
+  wbtcUsdc: '0x004375dff511095cc5a197a54140a24efef3a416', // WBTC-USDC
+  wbtcWeth: '0xbb2b8038a1640196fbe3e38816f3e67cba72d940', // WBTC-WETH
+  wnxmWeth: '0x23bff8ca20aac06efdf23cee3b8ae296a30dfd27', // wNXM-WETH
+  yfiWeth: '0x2fdbadf3c4d5a8666bc06645b8358ab803996e28', // YFI-WETH
+  zrxWeth: '0xc6f348dd3b91a56d117ec0071c1e9b83c0996de4', // ZRX-WETH
+} as const;
+
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
 // prettier-ignore
-export const mainnetConfig: DeploymentConfig = {
+const mainnetConfig: DeploymentConfig = {
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  primitives,
   chainlink: {
     ethusd: ethUsdAggregator,
-    primitives: [
-      [primitives.aave, ...chainlinkAggregators.aave], // AAVE
-      [primitives.adx, ...chainlinkAggregators.adx], // ADX
-      [primitives.ant, ...chainlinkAggregators.ant], // ANT
-      [primitives.bal, ...chainlinkAggregators.bal], // BAL
-      [primitives.bat, ...chainlinkAggregators.bat], // BAT
-      [primitives.bnb, ...chainlinkAggregators.bnb], // BNB
-      [primitives.bnt, ...chainlinkAggregators.bnt], // BNT
-      [primitives.busd, ...chainlinkAggregators.busd], // BUSD
-      [primitives.bzrx, ...chainlinkAggregators.bzrx], // BZRX≈
-      [primitives.comp, ...chainlinkAggregators.comp], // COMP
-      [primitives.cro, ...chainlinkAggregators.cro], // CRO
-      [primitives.crv, ...chainlinkAggregators.crv], // CRV
-      [primitives.dai, ...chainlinkAggregators.dai], // DAI
-      [primitives.dmg, ...chainlinkAggregators.dmg], // DMG
-      [primitives.enj, ...chainlinkAggregators.enj], // ENJ
-      [primitives.knc, ...chainlinkAggregators.knc], // KNC
-      [primitives.link, ...chainlinkAggregators.link], // LINK
-      [primitives.lrc, ...chainlinkAggregators.lrc], // LRC
-      [primitives.mana, ...chainlinkAggregators.mana], // MANA
-      [primitives.mkr, ...chainlinkAggregators.mkr], // MKR
-      [primitives.mln, ...chainlinkAggregators.mln], // MLN
-      [primitives.nmr, ...chainlinkAggregators.nmr], // NMR
-      [primitives.oxt, ...chainlinkAggregators.oxt], // OXT
-      [primitives.ren, ...chainlinkAggregators.ren], // REN
-      [primitives.rep, ...chainlinkAggregators.rep], // REP
-      [primitives.rlc, ...chainlinkAggregators.rlc], // RLC
-      [primitives.snx, ...chainlinkAggregators.snx], // SNX
-      [primitives.susd, ...chainlinkAggregators.susd], // sUSD
-      [primitives.sxp, ...chainlinkAggregators.sxp], // SXP
-      [primitives.tusd, ...chainlinkAggregators.tusd], // TUSD
-      [primitives.uma, ...chainlinkAggregators.uma], // UMA
-      [primitives.uni, ...chainlinkAggregators.uni], // UNI
-      [primitives.usdc, ...chainlinkAggregators.usdc], // USDC
-      [primitives.usdt, ...chainlinkAggregators.usdt], // USDT
-      [primitives.wbtc, ...chainlinkAggregators.wbtc], // WBTC
-      [primitives.wnxm, ...chainlinkAggregators.wnxm], // WNXM
-      [primitives.yfi, ...chainlinkAggregators.yfi], // YFI
-      [primitives.zrx, ...chainlinkAggregators.zrx], // ZRX
-    ],
+    aggregators,
   },
   wdgld: {
     wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',
@@ -144,51 +209,7 @@ export const mainnetConfig: DeploymentConfig = {
   synthetix: {
     snx: primitives.snx,
     susd: primitives.susd,
-    synths: [
-      '0xF48e200EAF9906362BB1442fca31e0835773b8B4', // sAUD
-      '0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848', // sBNB
-      '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6', // sBTC
-      '0x36a2422a863d5b950882190ff5433e513413343a', // sBCH
-      '0xe36e2d3c7c34281fa3bc737950a68571736880a1', // sADA
-      '0xeabacd844a196d7faf3ce596edebf9900341b420', // sCEX
-      '0xbbc455cb4f1b9e4bfc4b73970d360c8f032efee6', // sLINK
-      '0xfe33ae95a9f0da8a845af33516edc240dcd711d6', // sDASH
-      '0xe1afe1fd76fd88f78cbf599ea1846231b8ba3b6b', // sDEFI
-      '0x88c8cf3a212c0369698d13fe98fcb76620389841', // sEOS
-      '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb', // sETH
-      '0x22602469d704bffb0936c7a7cfcd18f7aa269375', // sETC
-      '0xd71ecff9342a5ced620049e616c5035f1db98620', // sEUR
-      '0x23348160d7f5aca21195df2b70f28fce2b0be9fc', // sFTSE
-      '0x261efcdd24cea98652b9700800a13dfbca4103ff', // sXAU
-      '0xafd870f32ce54efdbf677466b612bf8ad164454b', // iBNB
-      '0xd6014ea05bde904448b743833ddf07c3c7837481', // iBTC
-      '0xf6e9b246319ea30e8c2fa2d1540aaebf6f9e1b89', // iBCH
-      '0x8a8079c7149b8a1611e5c5d978dca3be16545f83', // iADA
-      '0x336213e1ddfc69f4701fc3f86f4ef4a160c1159d', // iCEX
-      '0x2d7ac061fc3db53c39fe1607fb8cec1b2c162b01', // iLINK
-      '0xcb98f42221b2c251a4e74a1609722ee09f0cc08e', // iDASH
-      '0x14d10003807ac60d07bb0ba82caeac8d2087c157', // iDEFI
-      '0xf4eebdd0704021ef2a6bbe993fdf93030cd784b4', // iEOS
-      '0xa9859874e1743a32409f75bb11549892138bba1e', // iETH
-      '0xd50c1746d835d2770dda3703b69187bffeb14126', // iETC
-      '0x79da1431150c9b82d2e5dfc1c68b33216846851e', // iLTC
-      '0x4adf728e2df4945082cdd6053869f51278fae196', // iXMR
-      '0xa5a5df41883cdc00c4ccc6e8097130535399d9a3', // iOIL
-      '0x27269b3e45a4d3e79a3d6bfee0c8fb13d0d711a6', // iXRP
-      '0xc5807183a9661a533cb08cbc297594a0b864dc12', // iTRX
-      '0x8deef89058090ac5655a99eeb451a4f9183d1678', // iXTZ
-      '0xf6b1c627e95bfc3c1b4c9b825a032ff0fbf3e07d', // sJPY
-      '0xc14103c2141e842e228fbac594579e798616ce7a', // sLTC
-      '0x5299d6f7472dcc137d7f3c4bcfbbb514babf341a', // sXMR
-      '0x757de3ac6b830a931ef178c6634c5c551773155c', // sNIKKEI
-      '0x6d16cf3ec5f763d4d99cb0b0b110eefd93b11b56', // sOIL
-      '0x97fe22e7341a0cd8db6f6c021a24dc8f4dad855f', // sGBP
-      '0xa2b0fde6d710e201d0d608e924a484d1a5fed57c', // sXRP
-      '0x6a22e5e94388464181578aa7a6b869e00fe27846', // sXAG
-      '0x0f83287ff768d1c1e17a42f44d644d7f22e8ee1d', // sCHF
-      '0xf2e08356588ec5cd9e437552da87c0076b4970b0', // sTRX
-      '0x2e59005c5c0f0a4d77cca82653d48b46322ee5cd' // sXTZ
-    ],
+    synths,
     addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2',
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
@@ -196,17 +217,7 @@ export const mainnetConfig: DeploymentConfig = {
   },
   compound: {
     ceth: '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
-    ctokens: [
-      '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e', // cBAT
-      '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4', // cCOMP
-      '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643', // cDAI
-      '0x158079ee67fce2f58472a96584a73c7ab9ac95c1', // cREP
-      '0x35A18000230DA775CAc24873d00Ff85BccdeD550', // cUNI
-      '0x39aa39c021dfbae8fac545936693ac917d5e7563', // cUSDC
-      '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9', // cUSDT
-      '0xc11b1268c1a384e55c48c2391d8d480264a3a7f4', // cWBTC
-      '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407', // cZRX
-    ],
+    ctokens,
   },
   chai: {
     dai: primitives.dai,
@@ -223,50 +234,7 @@ export const mainnetConfig: DeploymentConfig = {
   uniswap: {
     factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-    pools: [
-      '0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f', // AAVE-WETH
-      '0xd3772a963790fede65646cfdae08734a17cd0f47', // ADX-WETH
-      '0x9def9511fec79f83afcbffe4776b1d817dc775ae', // ANT-WETH
-      '0xa70d458a4d9bc0e6571565faee18a48da5c0d593', // BAL-WETH
-      '0xb6909b960dbbe7392d405429eb2b3649752b4838', // BAT-WETH
-      '0x3fd4cf9303c4bc9e13772618828712c8eac7dd2f', // BNT-WETH
-      '0x524847c615639e76fe7d0fe0b16be8c4eac9cf3c', // BUSD-USDC
-      '0xa0abda1f980e03d7eadb78aed8fc1f2dd0fe83dd', // BUSD-USDT
-      '0xb9b752f7f4a4680eeb327ffe728f46666763a796', // BZRX-WETH
-      '0xcffdded873554f362ac02f8fb1f02e5ada10516f', // COMP-WETH
-      '0x90704ac59e7e54632b0cc9d22573aecd7eb094ad', // CRO-WETH
-      '0x3da1313ae46132a397d90d95b1424a9a7e3e0fce', // CRV-WETH
-      '0xae461ca67b15dc8dc81ce7615e0320da1a9ab8d5', // DAI-USDC
-      '0xb20bd5d04be54f870d5c0d3ca85d82b34b836405', // DAI-USDT
-      '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11', // DAI-WETH
-      '0x8175362afbeee32afb22d05adc0bbd08de32f5ae', // DMG-WETH
-      '0xe56c60b5f9f7b5fc70de0eb79c6ee7d00efa2625', // ENJ-WETH
-      '0xf49c43ae0faf37217bdcb00df478cf793edd6687', // KNC-WETH
-      '0xa2107fa5b38d9bbd2c461d6edf11b11a50f6b974', // LINK-WETH
-      '0x8878df9e1a7c87dcbf6d3999d997f262c05d8c70', // LRC-WETH
-      '0x11b1f53204d03e5529f09eb3091939e4fd8c9cf3', // MANA-WETH
-      '0xc2adda861f89bbb333c90c492cb837741916a225', // MKR-WETH
-      '0x15ab0333985FD1E289adF4fBBe19261454776642', // MLN-WETH
-      '0xb784ced6994c928170b417bbd052a096c6fb17e2', // NMR-WETH
-      '0x9b533f1ceaa5ceb7e5b8994ef16499e47a66312d', // OXT-WETH
-      '0x8bd1661da98ebdd3bd080f0be4e6d9be8ce9858c', // REN-WETH
-      '0x8979a3ef9d540480342ac0f56e9d4c88807b1cba', // REPv2-WETH
-      '0x6d57a53a45343187905aad6ad8ed532d105697c1', // RLC-WETH
-      '0x43ae24960e5534731fc831386c07755a2dc33d47', // SNX-WETH
-      '0xf80758ab42c3b07da84053fd88804bcb6baa4b5c', // SUSD-WETH
-      '0xac317d14738a454ff20b191ba3504aa97173045b', // SXP-WETH
-      '0xb4d0d9df2738abe81b87b66c80851292492d1404', // TUSD-WETH
-      '0x88d97d199b9ed37c29d846d00d443de980832a22', // UMA-WETH
-      '0xd3d2e2692501a5c9ca623199d38826e513033a17', // UNI-WETH
-      '0x3041cbd36888becc7bbcbc0045e3b1f144466f5f', // USDC-USDT
-      '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc', // USDC-WETH
-      '0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852', // USDT-WETH
-      '0x004375dff511095cc5a197a54140a24efef3a416', // WBTC-USDC
-      '0xbb2b8038a1640196fbe3e38816f3e67cba72d940', // WBTC-WETH
-      '0x23bff8ca20aac06efdf23cee3b8ae296a30dfd27', // wNXM-WETH
-      '0x2fdbadf3c4d5a8666bc06645b8358ab803996e28', // YFI-WETH
-      '0xc6f348dd3b91a56d117ec0071c1e9b83c0996de4', // ZRX-WETH
-    ],
+    pools,
   },
   zeroex: {
     exchange: '0x080bf510fcbf18b91105470639e9561022937712',
@@ -282,10 +250,13 @@ export const mainnetConfig: DeploymentConfig = {
   },
 }
 
-const fn: DeployFunction = async () => {
-  // Nothing to do here.
+const fn: DeployFunction = async (hre) => {
+  await saveConfig(hre, mainnetConfig);
 };
 
 fn.tags = ['Config'];
+
+// Run this deployment step on all networks except kovan.
+fn.skip = async (hre) => hre.network.name === 'kovan';
 
 export default fn;

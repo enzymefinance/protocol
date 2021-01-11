@@ -1,14 +1,6 @@
 import 'dotenv/config';
 import { utils } from 'ethers';
 
-if (!process.env.MAINNET_ARCHIVE_NODE) {
-  console.warn('=====================================================');
-  console.warn('WARNING: Skipping end-to-end tests.');
-  console.warn('');
-  console.warn('You must specify a mainnet archive node endpoint (MAINNET_ARCHIVE_NODE) to run the end-to-end tests.');
-  console.warn('=====================================================');
-}
-
 const mnemonic = 'test test test test test test test test test test test junk';
 
 function common(name: string, roots: string[]) {
@@ -37,11 +29,6 @@ function fork(name: string, roots: string[]) {
           count: 5,
           accountsBalance: utils.parseUnits('1', 36).toString(),
         },
-        forking: {
-          url: process.env.MAINNET_ARCHIVE_NODE,
-          enabled: true,
-          blockNumber: 11621050, // Jan 9, 2021
-        },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,
         }),
@@ -67,6 +54,9 @@ function unit(name: string, roots: string[]) {
           count: 10,
           accountsBalance: utils.parseUnits('1', 36).toString(),
         },
+        forking: {
+          enabled: false,
+        },
         ...(process.env.COVERAGE && {
           allowUnlimitedContractSize: true,
         }),
@@ -87,7 +77,7 @@ const projects = [
   unit('integration', ['tests/release/extensions/integration-manager']),
   unit('fee', ['tests/release/extensions/fee-manager']),
   unit('peripheral', ['tests/release/peripheral']),
-  process.env.MAINNET_ARCHIVE_NODE && fork('e2e', ['tests/release/e2e']),
+  fork('e2e', ['tests/release/e2e']),
 ].filter((project) => !!project);
 
 module.exports = {

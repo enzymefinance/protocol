@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs-extra';
-import { utils, constants } from 'ethers';
+import { utils } from 'ethers';
 import { DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import {
   FundDeployer,
@@ -9,9 +9,9 @@ import {
   MockTokenArgs,
   MockUniswapV2PriceSourceArgs,
   ReleaseStatusTypes,
+  MockCEtherIntegrateeArgs,
 } from '@melonproject/protocol';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import type { DeploymentConfig } from './Config';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 interface DeployMockOptions extends Omit<DeployOptions, 'from'> {
@@ -66,13 +66,25 @@ export function createDeployMockSynthetixToken(hre: HardhatRuntimeEnvironment) {
 }
 
 export function createDeployMockCompoundToken(hre: HardhatRuntimeEnvironment, centralizedRateProvider: string) {
-  return async function (symbol: string, name: string, decimals: number, primitive: string, rate: number) {
-    const normalizedRate = utils.parseEther(`${rate}`);
-
+  return async function (symbol: string, name: string, underlying: string, rate: number) {
     return await deployMock(hre, {
       name: symbol,
       contract: 'MockCTokenIntegratee',
-      args: [name, symbol, decimals, primitive, centralizedRateProvider, normalizedRate] as MockCTokenIntegrateeArgs,
+      args: [name, symbol, 8, underlying, centralizedRateProvider, rate] as MockCTokenIntegrateeArgs,
+    });
+  };
+}
+
+export function createDeployMockCompoundEther(
+  hre: HardhatRuntimeEnvironment,
+  centralizedRateProvider: string,
+  weth: string,
+) {
+  return async function (symbol: string, name: string, rate: number) {
+    return await deployMock(hre, {
+      name: symbol,
+      contract: 'MockCEtherIntegratee',
+      args: [name, symbol, 8, weth, centralizedRateProvider, rate] as MockCEtherIntegrateeArgs,
     });
   };
 }
@@ -87,26 +99,9 @@ export function createDeployMockUniswapPair(hre: HardhatRuntimeEnvironment) {
   };
 }
 
-export async function saveMockDeployment(hre: HardhatRuntimeEnvironment, name: string, data: DeploymentConfig) {
-  await hre.deployments.save(name, {
-    abi: [],
-    address: constants.AddressZero,
-    linkedData: data,
-  });
-}
-
-export async function loadMockDeployment(hre: HardhatRuntimeEnvironment, name: string): Promise<DeploymentConfig> {
-  const deployment = await hre.deployments.get(name);
-  return deployment.linkedData;
-}
-
-export async function hasMockDeployment(hre: HardhatRuntimeEnvironment, name: string): Promise<boolean> {
-  return !!(await hre.deployments.getOrNull(name));
-}
-
-// Finalize mock deployments (set release to live, etc.).
+// Finalize kovan and test deployments (set release to live, etc.).
 const fn: DeployFunction = async (hre) => {
-  if (hre.network.name === 'kovan') {
+  if (!hre.network.live || hre.network.name === 'kovan') {
     const deployer = await hre.ethers.getNamedSigner('deployer');
     const fundDeployer = await hre.deployments.get('FundDeployer');
     const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
