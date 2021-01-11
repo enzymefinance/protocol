@@ -13,7 +13,7 @@ import {
   takeOrderSelector,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { utils, Signer, BigNumberish } from 'ethers';
+import { BigNumberish, Signer, utils } from 'ethers';
 
 export async function synthetixAssignExchangeDelegate({
   comptrollerProxy,

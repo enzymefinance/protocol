@@ -45,7 +45,7 @@ contract MockSynthetixIntegratee is Ownable {
         bytes32
     ) external returns (uint256 amountReceived_) {
         require(
-            canExchangeFor(msg.sender, _exchangeForAddress),
+            canExchangeFor(_exchangeForAddress, msg.sender),
             "exchangeOnBehalfWithTracking: Not approved to act on behalf"
         );
 
@@ -92,7 +92,6 @@ contract MockSynthetixIntegratee is Ownable {
 
     function setSynthFromCurrencyKeys(bytes32[] calldata _currencyKeys, address[] calldata _synths)
         external
-        onlyOwner
     {
         require(
             _currencyKeys.length == _synths.length,
@@ -165,8 +164,12 @@ contract MockSynthetixIntegratee is Ownable {
     // STATE GETTERS //
     ///////////////////
 
-    function canExchangeFor(address, address) public pure returns (bool canExchange_) {
-        return true;
+    function canExchangeFor(address _authorizer, address _delegate)
+        public
+        view
+        returns (bool canExchange_)
+    {
+        return authorizerToDelegateToApproval[_authorizer][_delegate];
     }
 
     function getExchangeRates() public view returns (address exchangeRates_) {

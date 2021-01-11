@@ -2,7 +2,6 @@ import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
   ISynthetixExchanger,
-  MockSynthetixIntegratee,
   SpendAssetsHandleType,
   StandardToken,
   synthetixTakeOrderArgs,
@@ -180,7 +179,7 @@ describe('takeOrder', () => {
       config: {
         deployer,
         integratees: {
-          synthetix: { addressResolver, snx },
+          synthetix: { addressResolver },
         },
         derivatives: {
           synthetix: { sbtc, susd },
@@ -216,9 +215,6 @@ describe('takeOrder', () => {
       account: vaultProxy,
       assets: [incomingAsset],
     });
-
-    const synthetixIntegratee = new MockSynthetixIntegratee(snx, deployer);
-    await synthetixIntegratee.approveExchangeOnBehalf(vaultProxy);
 
     // Execute Synthetix order
     await synthetixTakeOrder({

@@ -194,7 +194,7 @@ it('correctly retrieves getAmountsForExchange from an integratee (different aggr
 describe('exchangeOnBehalfWithTracking', () => {
   it('correctly performs an exchange between two assets', async () => {
     const {
-      accounts: [, account],
+      accounts: [delegate, authorizer],
       deployment: {
         synthetix: { mockSynthetixIntegratee },
       },
@@ -206,7 +206,8 @@ describe('exchangeOnBehalfWithTracking', () => {
 
     const outgoingAssetAmount = utils.parseEther('1');
     await synthA.approve(mockSynthetixIntegratee, outgoingAssetAmount);
-    await mockSynthetixIntegratee.approveExchangeOnBehalf(account);
+
+    await mockSynthetixIntegratee.connect(authorizer).approveExchangeOnBehalf(delegate);
 
     const amountsForExchange = await mockSynthetixIntegratee.getAmountsForExchange(
       outgoingAssetAmount,
@@ -215,22 +216,24 @@ describe('exchangeOnBehalfWithTracking', () => {
     );
 
     const [preMockABalance, preMockBBalance] = await Promise.all([
-      synthA.balanceOf(account),
-      synthB.balanceOf(account),
+      synthA.balanceOf(authorizer),
+      synthB.balanceOf(authorizer),
     ]);
 
-    await mockSynthetixIntegratee.exchangeOnBehalfWithTracking(
-      account,
-      currencyKeyA,
-      outgoingAssetAmount,
-      currencyKeyB,
-      randomAddress(),
-      utils.formatBytes32String('0'),
-    );
+    await mockSynthetixIntegratee
+      .connect(delegate)
+      .exchangeOnBehalfWithTracking(
+        authorizer,
+        currencyKeyA,
+        outgoingAssetAmount,
+        currencyKeyB,
+        randomAddress(),
+        utils.formatBytes32String('0'),
+      );
 
     const [postMockABalance, postMockBBalance] = await Promise.all([
-      synthA.balanceOf(account),
-      synthB.balanceOf(account),
+      synthA.balanceOf(authorizer),
+      synthB.balanceOf(authorizer),
     ]);
 
     const spentAssetAmount = preMockABalance.sub(postMockABalance);
