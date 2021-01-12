@@ -62,8 +62,7 @@ contract MockSynthetixPriceSource is Ownable, ISynthetixExchangeRates {
         fixedRate[_currencyKey] = _rate;
     }
 
-    /// @dev Calculates the rate from a currencty key against its RateAsset
-    /// TODO: Use CentralizedRateProvider to randomize and make consistent with the rest
+    /// @dev Calculates the rate from a currency key against USD
     function rateAndInvalid(bytes32 _currencyKey)
         external
         view
@@ -76,23 +75,25 @@ contract MockSynthetixPriceSource is Ownable, ISynthetixExchangeRates {
         } else {
             AggregatorInfo memory aggregatorInfo = getAggregatorFromCurrencyKey(_currencyKey);
             address aggregator = aggregatorInfo.aggregator;
+            if (aggregator == address(0)) {
+                rate_ = 0;
+                isInvalid_ = true;
+                return (rate_, isInvalid_);
+            }
+            uint256 decimals = MockChainlinkPriceSource(aggregator).decimals();
+            rate_ = uint256(MockChainlinkPriceSource(aggregator).latestAnswer()).mul(
+                10**(uint256(18).sub(decimals))
+            );
 
-            if (aggregator != address(0)) {
-                uint256 decimals = MockChainlinkPriceSource(aggregator).decimals();
-                rate_ = uint256(MockChainlinkPriceSource(aggregator).latestAnswer()).mul(
-                    10**(uint256(18).sub(decimals))
+            if (aggregatorInfo.rateAsset == RateAsset.ETH) {
+                uint256 ethToUsd = uint256(
+                    MockChainlinkPriceSource(
+                        getAggregatorFromCurrencyKey(bytes32("ETH"))
+                            .aggregator
+                    )
+                        .latestAnswer()
                 );
-
-                if (aggregatorInfo.rateAsset == RateAsset.ETH) {
-                    uint256 ethToUsd = uint256(
-                        MockChainlinkPriceSource(
-                            getAggregatorFromCurrencyKey(bytes32("ETH"))
-                                .aggregator
-                        )
-                            .latestAnswer()
-                    );
-                    rate_ = rate_.mul(ethToUsd).div(10**8);
-                }
+                rate_ = rate_.mul(ethToUsd).div(10**8);
             }
         }
 

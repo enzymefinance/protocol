@@ -13,25 +13,35 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./../../release/interfaces/ISynthetixExchangeRates.sol";
-import "./../tokens/MockSynthetixToken.sol";
+import "../prices/CentralizedRateProvider.sol";
+import "../tokens/MockSynthetixToken.sol";
 
 /// @dev Synthetix Integratee. Mocks functionalities from the folllowing synthetix contracts
 /// Synthetix, SynthetixAddressResolver, SynthetixDelegateApprovals
 /// Link to contracts: <https://github.com/Synthetixio/synthetix/tree/develop/contracts>
-contract MockSynthetixIntegratee is Ownable {
+contract MockSynthetixIntegratee is Ownable, MockToken {
     using SafeMath for uint256;
 
     mapping(address => mapping(address => bool)) private authorizerToDelegateToApproval;
     mapping(bytes32 => address) private currencyKeyToSynth;
 
+    address private immutable CENTRALIZED_RATE_PROVIDER;
     address private immutable EXCHANGE_RATES;
     uint256 private immutable FEE;
 
     uint256 private constant UNIT_FEE = 1000;
 
-    constructor(uint256 _fee, address _exchangeRates) public {
-        FEE = _fee;
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        address _centralizedRateProvider,
+        address _exchangeRates,
+        uint256 _fee
+    ) public MockToken(_name, _symbol, _decimals) {
+        CENTRALIZED_RATE_PROVIDER = _centralizedRateProvider;
         EXCHANGE_RATES = address(_exchangeRates);
+        FEE = _fee;
     }
 
     receive() external payable {}
@@ -65,23 +75,23 @@ contract MockSynthetixIntegratee is Ownable {
         bytes32 _destCurrencyKey
     )
         public
-        view
         returns (
             uint256 amountReceived_,
             uint256 fee_,
             uint256 exchangeFeeRate_
         )
     {
-        ISynthetixExchangeRates exchangeRates = ISynthetixExchangeRates(EXCHANGE_RATES);
+        address srcToken = currencyKeyToSynth[_srcCurrencyKey];
+        address destToken = currencyKeyToSynth[_destCurrencyKey];
+
         require(
             currencyKeyToSynth[_srcCurrencyKey] != address(0) &&
                 currencyKeyToSynth[_destCurrencyKey] != address(0),
             "getAmountsForExchange: Currency key doesn't have an associated synth"
         );
 
-        (uint256 srcRate, ) = exchangeRates.rateAndInvalid(_srcCurrencyKey);
-        (uint256 destRate, ) = exchangeRates.rateAndInvalid(_destCurrencyKey);
-        uint256 destAmount = _srcAmount.mul(srcRate).div(destRate);
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
+            .calcLiveAssetValueRandomizedBySender(srcToken, _srcAmount, destToken);
 
         exchangeFeeRate_ = FEE;
         amountReceived_ = destAmount.mul(UNIT_FEE.sub(exchangeFeeRate_)).div(UNIT_FEE);
@@ -156,9 +166,7 @@ contract MockSynthetixIntegratee is Ownable {
             uint256,
             uint256
         )
-    {
-        // TODO
-    }
+    {}
 
     ///////////////////
     // STATE GETTERS //

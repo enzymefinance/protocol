@@ -185,7 +185,11 @@ describe('takeOrder', () => {
           synthetix: { sbtc, susd },
         },
       },
-      deployment: { integrationManager, synthetixAdapter },
+      deployment: {
+        integrationManager,
+        synthetixAdapter,
+        synthetix: { mockSynthetixPriceSource },
+      },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
       sbtcCurrencyKey,
       susdCurrencyKey,
@@ -194,6 +198,11 @@ describe('takeOrder', () => {
 
     const incomingAsset = new StandardToken(sbtc, deployer);
     const outgoingAsset = new StandardToken(susd, deployer);
+
+    // Necessary to set rates to avoid using chainlink price sources.
+    // TODO: Remove when aggregators are disabled
+    await mockSynthetixPriceSource.setRate(sbtcCurrencyKey, utils.parseEther('1'));
+    await mockSynthetixPriceSource.setRate(susdCurrencyKey, utils.parseEther('1'));
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({

@@ -20,7 +20,7 @@ import "../utils/SwapperBase.sol";
 contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
     using SafeMath for uint256;
 
-    address private immutable MOCK_CENTRALIZED_RATE_PROVIDER;
+    address private immutable CENTRALIZED_RATE_PROVIDER;
     address private immutable WETH;
 
     uint256 private constant PRECISION = 18;
@@ -29,17 +29,17 @@ contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
     uint256 private blockNumberDeviation;
 
     constructor(
-        address _mockCentralizedRateProvider,
+        address _centralizedRateProvider,
         address _weth,
         uint256 _blockNumberDeviation
     ) public {
-        MOCK_CENTRALIZED_RATE_PROVIDER = _mockCentralizedRateProvider;
+        CENTRALIZED_RATE_PROVIDER = _centralizedRateProvider;
         WETH = _weth;
         blockNumberDeviation = _blockNumberDeviation;
     }
 
     function swapEtherToToken(address _destToken, uint256) external payable returns (uint256) {
-        uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
             .calcLiveAssetValueRandomized(WETH, msg.value, _destToken, blockNumberDeviation);
 
         __swapAssets(msg.sender, ETH_ADDRESS, msg.value, _destToken, destAmount);
@@ -51,7 +51,7 @@ contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
         uint256 _srcAmount,
         uint256
     ) external returns (uint256) {
-        uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
             .calcLiveAssetValueRandomized(_srcToken, _srcAmount, WETH, blockNumberDeviation);
 
         __swapAssets(msg.sender, _srcToken, _srcAmount, ETH_ADDRESS, destAmount);
@@ -64,7 +64,7 @@ contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
         address _destToken,
         uint256
     ) external returns (uint256) {
-        uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
             .calcLiveAssetValueRandomized(_srcToken, _srcAmount, _destToken, blockNumberDeviation);
 
         __swapAssets(msg.sender, _srcToken, _srcAmount, _destToken, destAmount);
@@ -87,7 +87,7 @@ contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
             _destToken = WETH;
         }
 
-        uint256 destAmount = CentralizedRateProvider(MOCK_CENTRALIZED_RATE_PROVIDER)
+        uint256 destAmount = CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER)
             .calcLiveAssetValueRandomizedBySender(_srcToken, _amount, _destToken);
         rate_ = __calcNormalizedRate(
             ERC20(_srcToken).decimals(),
@@ -103,7 +103,7 @@ contract MockKyberIntegratee is SwapperBase, Ownable, MathHelpers {
     ///////////////////
 
     function getCentralizedRateProvider() public view returns (address) {
-        return MOCK_CENTRALIZED_RATE_PROVIDER;
+        return CENTRALIZED_RATE_PROVIDER;
     }
 
     function getWeth() public view returns (address) {

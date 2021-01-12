@@ -15,6 +15,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
 it('it cannot transfer after an exchange', async () => {
   const {
     accounts: [sender, recipient],
+    deployment: {
+      synthetix: { mockSynthetixPriceSource },
+    },
     config: {
       deployer,
       derivatives: {
@@ -25,6 +28,14 @@ it('it cannot transfer after an exchange', async () => {
       },
     },
   } = await provider.snapshot(snapshot);
+
+  const sbtcCurrenctyKey = utils.formatBytes32String('sBTC');
+  const susdCurrencyKey = utils.formatBytes32String('sUSD');
+
+  // Necessary to set rates to avoid using chainlink price sources.
+  // TODO: Remove when aggregators are disabled
+  await mockSynthetixPriceSource.setRate(sbtcCurrenctyKey, utils.parseEther('1'));
+  await mockSynthetixPriceSource.setRate(susdCurrencyKey, utils.parseEther('1'));
 
   const susdToken = new StandardToken(susd, deployer);
 

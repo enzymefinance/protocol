@@ -378,8 +378,12 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
 
     const mockSynthetixIntegratee = await MockSynthetixIntegratee.deploy(
       config.deployer,
-      5,
+      'Synthetix Network Token',
+      'SNX',
+      18,
+      await deployment.centralizedRateProvider,
       mockSynthetixPriceSource.address,
+      5,
     );
 
     return {
@@ -547,12 +551,6 @@ export async function configureMockRelease({
 
   const synthTokens = Object.values(mocks.synthetix.synths).map(
     (tokenAddress) => new MockSynthetixToken(tokenAddress, deployer),
-  );
-
-  await mocks.synthetix.mockSynthetixPriceSource.setPriceSourcesForCurrencyKeys(
-    Object.values(mocks.synthetix.currencyKeys),
-    Object.values(mocks.synthetix.aggregators),
-    mocks.synthetix.rateAssets,
   );
 
   await mocks.synthetix.mockSynthetixIntegratee.setSynthFromCurrencyKeys(
