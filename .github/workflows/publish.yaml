@@ -1,0 +1,44 @@
+name: Publish
+on:
+  workflow_dispatch:
+    inputs:
+      canary:
+        description: 'canary release number'
+        required: true
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+          always-auth: true
+          registry-url: https://npm.fury.io/melonproject/
+          scope: '@enzymefinance'
+
+      - name: Retrieve dependency cache
+        uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Compile contracts
+        run: yarn compile
+
+      - name: Publish development packages
+        run: |
+          yarn manypkg exec -- yarn version --non-interactive --no-git-tag-version --new-version=1.0.0-dev.${{ github.event.inputs.canary }}+${GITHUB_SHA::8}
+          yarn manypkg fix && yarn build
+          yarn manypkg exec -- yarn publish --non-interactive --tag=dev --registry https://npm.fury.io/melonproject/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GEMFURY_TOKEN }}
