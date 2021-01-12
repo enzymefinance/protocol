@@ -14,15 +14,24 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../release/interfaces/IUniswapV2Pair.sol";
+import "../prices/CentralizedRateProvider.sol";
 import "../tokens/MockToken.sol";
 
 /// @dev This price source mocks the integration with Uniswap Pair
 /// Docs of Uniswap Pair implementation: <https://uniswap.org/docs/v2/smart-contracts/pair/>
 contract MockUniswapV2PriceSource is MockToken("Uniswap V2", "UNI-V2", 18) {
+    using SafeMath for uint256;
+
     address private immutable TOKEN_0;
     address private immutable TOKEN_1;
+    address private immutable CENTRALIZED_RATE_PROVIDER;
 
-    constructor(address _token0, address _token1) public {
+    constructor(
+        address _centralizedRateProvider,
+        address _token0,
+        address _token1
+    ) public {
+        CENTRALIZED_RATE_PROVIDER = _centralizedRateProvider;
         TOKEN_0 = _token0;
         TOKEN_1 = _token1;
     }
@@ -32,16 +41,23 @@ contract MockUniswapV2PriceSource is MockToken("Uniswap V2", "UNI-V2", 18) {
     /// Inherited from IUniswapV2Pair
     function getReserves()
         external
-        view
         returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
+            uint112 reserve0_,
+            uint112 reserve1_,
+            uint32 blockTimestampLast_
         )
     {
-        reserve0 = uint112(ERC20(token0()).balanceOf(address(this)));
-        reserve1 = uint112(ERC20(token1()).balanceOf(address(this)));
-        return (reserve0, reserve1, uint32(block.timestamp));
+        uint256 baseAmount = ERC20(TOKEN_0).balanceOf(address(this));
+        reserve0_ = uint112(baseAmount);
+        reserve1_ = uint112(
+            CentralizedRateProvider(CENTRALIZED_RATE_PROVIDER).calcLiveAssetValue(
+                TOKEN_0,
+                baseAmount,
+                TOKEN_1
+            )
+        );
+
+        return (reserve0_, reserve1_, blockTimestampLast_);
     }
 
     ///////////////////

@@ -241,9 +241,24 @@ export const deployMocks = describeDeployment<MockDeploymentConfig, MockDeployme
   async uniswapV2Derivatives(config, deployment) {
     const tokens = await deployment.tokens;
     const [mlnWeth, kncWeth, usdcWeth] = await Promise.all([
-      MockUniswapV2PriceSource.deploy(config.deployer, tokens.mln, tokens.weth),
-      MockUniswapV2PriceSource.deploy(config.deployer, tokens.knc, tokens.weth),
-      MockUniswapV2PriceSource.deploy(config.deployer, tokens.usdc, tokens.weth),
+      MockUniswapV2PriceSource.deploy(
+        config.deployer,
+        await deployment.centralizedRateProvider,
+        tokens.mln,
+        tokens.weth,
+      ),
+      MockUniswapV2PriceSource.deploy(
+        config.deployer,
+        await deployment.centralizedRateProvider,
+        tokens.knc,
+        tokens.weth,
+      ),
+      MockUniswapV2PriceSource.deploy(
+        config.deployer,
+        await deployment.centralizedRateProvider,
+        tokens.usdc,
+        tokens.weth,
+      ),
     ]);
 
     return { mlnWeth, kncWeth, usdcWeth };

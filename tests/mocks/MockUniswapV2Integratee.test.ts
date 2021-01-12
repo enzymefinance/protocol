@@ -10,8 +10,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const token1 = deployment.tokens.knc;
 
   // Create a pair that hasn't been deployed before
-  const mockPair = await MockUniswapV2PriceSource.deploy(config.deployer, token0, token1);
-  await mockPair.mintFor(deployment.uniswapV2Integratee, utils.parseEther('100000'));
+  const mockPair = await MockUniswapV2PriceSource.deploy(
+    config.deployer,
+    deployment.centralizedRateProvider,
+    token0,
+    token1,
+  );
+  await mockPair.mintFor(deployment.uniswapV2Integratee, utils.parseUnits('1', 27));
 
   await token0.transfer(mockPair, utils.parseEther('10000'));
   await token1.transfer(mockPair, utils.parseEther('10000'));
@@ -246,5 +251,32 @@ describe('removeLiquidity', () => {
     ).value_;
 
     expect(valueOfPairRemoved).toEqBigNumber(valueOfToken0Received.add(valueOfToken1LiquidityReceived));
+  });
+});
+
+describe('getReserves', () => {
+  it('correctly returns proportional reserves', async () => {
+    const {
+      deployment: {
+        uniswapV2Derivatives: { kncWeth },
+        chainlinkEthUsdAggregator,
+        chainlinkAggregators: { knc: aggregatorKnc },
+      },
+    } = await provider.snapshot(snapshot);
+
+    // Set token0 price 500x higher than token1
+    const answerKnc = utils.parseEther('500');
+    const answerWeth = utils.parseEther('1');
+
+    await aggregatorKnc.setLatestAnswer(answerKnc, BigNumber.from('1'));
+    await chainlinkEthUsdAggregator.setLatestAnswer(answerWeth, BigNumber.from('1'));
+
+    const reserves = await kncWeth.getReserves.call();
+
+    const reserveKnc = reserves.reserve0_;
+    const reserveWeth = reserves.reserve1_;
+
+    // reserve amount of token 1 should be 500x token0 to have the same val
+    expect(reserveWeth).toEqBigNumber(reserveKnc.mul(answerKnc.div(answerWeth)));
   });
 });

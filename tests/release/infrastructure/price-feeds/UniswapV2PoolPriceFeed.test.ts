@@ -14,7 +14,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const defaultSeedAmount = '100';
 
   // Create a pair formed by different decimal tokens (usdc/weth)
-  const wethUsdcPair = await MockUniswapV2PriceSource.deploy(config.deployer, usdc, weth);
+  const wethUsdcPair = await MockUniswapV2PriceSource.deploy(
+    config.deployer,
+    deployment.centralizedRateProvider,
+    usdc,
+    weth,
+  );
   await deployment.uniswapV2PoolPriceFeed.addPoolTokens([wethUsdcPair]);
   await deployment.aggregatedDerivativePriceFeed.addDerivatives([wethUsdcPair], [deployment.uniswapV2PoolPriceFeed]);
 
@@ -22,7 +27,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await weth.transfer(wethUsdcPair, utils.parseEther(defaultSeedAmount));
 
   // Create a pair formed by same decimal tokens (mln/weth)
-  const mlnWethPair = await MockUniswapV2PriceSource.deploy(config.deployer, mln, weth);
+  const mlnWethPair = await MockUniswapV2PriceSource.deploy(
+    config.deployer,
+    deployment.centralizedRateProvider,
+    mln,
+    weth,
+  );
   await deployment.uniswapV2PoolPriceFeed.addPoolTokens([mlnWethPair]);
   await deployment.aggregatedDerivativePriceFeed.addDerivatives([mlnWethPair], [deployment.uniswapV2PoolPriceFeed]);
 
@@ -168,6 +178,7 @@ describe('addPoolTokens', () => {
     const {
       config: { deployer },
       deployment: {
+        centralizedRateProvider,
         compoundTokens: { cdai, ccomp },
         uniswapV2PoolPriceFeed,
         tokens: { weth },
@@ -177,17 +188,32 @@ describe('addPoolTokens', () => {
     const unsupportedToken = await MockToken.deploy(deployer, 'Unsupported Token', 'UN', 18);
     const revertReason = 'Unsupported pool token';
 
-    const derivative0Derivative1Pair = await MockUniswapV2PriceSource.deploy(deployer, cdai, ccomp);
+    const derivative0Derivative1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      cdai,
+      ccomp,
+    );
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([derivative0Derivative1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const primitive0Unsupported1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, unsupportedToken);
+    const primitive0Unsupported1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      weth,
+      unsupportedToken,
+    );
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([primitive0Unsupported1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const Unsupported0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, unsupportedToken, weth);
+    const Unsupported0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      unsupportedToken,
+      weth,
+    );
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([Unsupported0Primitive1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
@@ -197,6 +223,7 @@ describe('addPoolTokens', () => {
     const {
       config: { deployer },
       deployment: {
+        centralizedRateProvider,
         compoundTokens: { cdai },
         uniswapV2PoolPriceFeed,
         tokens: { weth, mln },
@@ -204,9 +231,24 @@ describe('addPoolTokens', () => {
     } = await provider.snapshot(snapshot);
 
     // Create valid pool tokens (all possible valid types)
-    const primitive0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, mln);
-    const primitive0Derivative1Pair = await MockUniswapV2PriceSource.deploy(deployer, weth, cdai);
-    const derivative0Primitive1Pair = await MockUniswapV2PriceSource.deploy(deployer, cdai, weth);
+    const primitive0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      weth,
+      mln,
+    );
+    const primitive0Derivative1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      weth,
+      cdai,
+    );
+    const derivative0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
+      deployer,
+      centralizedRateProvider,
+      cdai,
+      weth,
+    );
 
     // The pool tokens should not be supported assets initially
     expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Primitive1Pair)).toBe(false);

@@ -1,7 +1,3 @@
-import path from 'path';
-import fs from 'fs-extra';
-import { utils } from 'ethers';
-import { DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import {
   FundDeployer,
   MockCEtherIntegrateeArgs,
@@ -11,8 +7,11 @@ import {
   MockUniswapV2PriceSourceArgs,
   ReleaseStatusTypes,
 } from '@enzymefinance/protocol';
+import { utils } from 'ethers';
+import fs from 'fs-extra';
+import { DeployFunction, DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import path from 'path';
 
 interface DeployMockOptions extends Omit<DeployOptions, 'from'> {
   name?: string;
@@ -89,12 +88,12 @@ export function createDeployMockCompoundEther(
   };
 }
 
-export function createDeployMockUniswapPair(hre: HardhatRuntimeEnvironment) {
+export function createDeployMockUniswapPair(hre: HardhatRuntimeEnvironment, centralizedRateProvider: string) {
   return async function (name: string, a: string, b: string) {
     return await deployMock(hre, {
       name,
       contract: 'MockUniswapV2PriceSource',
-      args: [a, b] as MockUniswapV2PriceSourceArgs,
+      args: [centralizedRateProvider, a, b] as MockUniswapV2PriceSourceArgs,
     });
   };
 }

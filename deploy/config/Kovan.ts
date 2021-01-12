@@ -75,7 +75,7 @@ const fn: DeployFunction = async function (hre) {
   const deployMockSynthetixToken = createDeployMockSynthetixToken(hre);
   const deployMockCompoundToken = createDeployMockCompoundToken(hre, centralizedRateProvider);
   const deployMockCompoundEther = createDeployMockCompoundEther(hre, centralizedRateProvider, weth);
-  const deployMockUniswapPair = createDeployMockUniswapPair(hre);
+  const deployMockUniswapPair = createDeployMockUniswapPair(hre, centralizedRateProvider);
 
   // PRIMITIVES
   const primitives = {
