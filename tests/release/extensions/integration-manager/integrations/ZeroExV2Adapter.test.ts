@@ -83,7 +83,6 @@ describe('parseAssetsForMethod', () => {
     const takerAssetFillAmount = BigNumber.from(11);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      provider,
       exchange: zeroExV2.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -92,6 +91,7 @@ describe('parseAssetsForMethod', () => {
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -130,7 +130,6 @@ describe('parseAssetsForMethod', () => {
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      provider,
       exchange: zeroExV2.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -139,6 +138,7 @@ describe('parseAssetsForMethod', () => {
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
 
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
@@ -188,7 +188,6 @@ describe('parseAssetsForMethod', () => {
       .sub(expectedTakerFee);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      provider,
       exchange: zeroExV2.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -197,6 +196,7 @@ describe('parseAssetsForMethod', () => {
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -242,7 +242,6 @@ describe('parseAssetsForMethod', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      provider,
       exchange: zeroExV2.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -251,6 +250,7 @@ describe('parseAssetsForMethod', () => {
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -296,7 +296,6 @@ describe('parseAssetsForMethod', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      provider,
       exchange: zeroExV2.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -305,6 +304,7 @@ describe('parseAssetsForMethod', () => {
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
 
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);

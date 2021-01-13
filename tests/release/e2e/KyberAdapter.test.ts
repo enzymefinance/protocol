@@ -1,13 +1,17 @@
-import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@crestproject/crestproject';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 import { StandardToken, ComptrollerLib, IntegrationManager, KyberAdapter, VaultLib } from '@enzymefinance/protocol';
 import {
-  defaultForkDeployment,
   createNewFund,
+  ForkDeployment,
   getAssetBalances,
+  loadForkDeployment,
   KyberNetworkProxy,
   kyberTakeOrder,
+  mainnetWhales,
+  unlockWhales,
 } from '@enzymefinance/testutils';
+import hre from 'hardhat';
 
 async function assertKyberTakeOrder({
   comptrollerProxy,
@@ -64,46 +68,38 @@ async function assertKyberTakeOrder({
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployment,
-    config,
-  } = await provider.snapshot(defaultForkDeployment);
+let fork: ForkDeployment;
+const whales: Record<string, SignerWithAddress> = {};
 
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: config.tokens.weth,
+beforeAll(async () => {
+  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
+  whales.usdc = ((await hre.ethers.getSigner(mainnetWhales.usdc)) as any) as SignerWithAddress;
+  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
+
+  await unlockWhales({
+    provider: hre.ethers.provider,
+    whales: Object.values(whales),
   });
+});
 
-  const kyberNetworkProxy = new KyberNetworkProxy(config.integratees.kyber, provider);
-
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    kyberNetworkProxy,
-    fund: {
-      comptrollerProxy,
-      fundOwner,
-      vaultProxy,
-    },
-  };
-}
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 // HAPPY PATHS
 
 it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
-  const {
-    config: {
-      tokens: { dai: outgoingAsset, knc: incomingAsset },
-    },
-    kyberNetworkProxy,
-    deployment: { kyberAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
 
@@ -112,9 +108,9 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    kyberAdapter,
+    kyberAdapter: fork.deployment.KyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -124,14 +120,17 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
 });
 
 it('works as expected when called by a fund (ETH to ERC20)', async () => {
-  const {
-    config: {
-      tokens: { weth: outgoingAsset, dai: incomingAsset },
-    },
-    kyberNetworkProxy,
-    deployment: { kyberAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
 
@@ -140,9 +139,9 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    kyberAdapter,
+    kyberAdapter: fork.deployment.KyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -152,14 +151,17 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
 });
 
 it('works as expected when called by a fund (ERC20 to ETH)', async () => {
-  const {
-    config: {
-      tokens: { dai: outgoingAsset, weth: incomingAsset },
-    },
-    kyberNetworkProxy,
-    deployment: { kyberAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+  const incomingAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
 
@@ -168,9 +170,9 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    kyberAdapter,
+    kyberAdapter: fork.deployment.KyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -182,29 +184,31 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
 // UNHAPPY PATHS
 
 it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
-  const {
-    config: {
-      tokens: { dai: outgoingAsset, knc: incomingAsset },
-    },
-    kyberNetworkProxy,
-    deployment: { kyberAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
 
   const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
-  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
-
   // Make an order with more than the minIncominAssetAmount
+  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
   await expect(
     kyberTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
-      kyberAdapter,
+      kyberAdapter: fork.deployment.KyberAdapter,
       outgoingAsset: outgoingAsset,
       outgoingAssetAmount,
       incomingAsset: incomingAsset,
@@ -214,45 +218,33 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   ).rejects.toBeReverted();
 });
 
-xit('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal token)', async () => {
-  const {
-    config: {
-      tokens: { usdc: outgoingAsset, knc: incomingAsset },
-    },
-    kyberNetworkProxy,
-    deployment: { kyberAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal token)', async () => {
+  const outgoingAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   // 1 USDC (6 decimals)
   const outgoingAssetAmount = BigNumber.from('1000000');
 
   const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
-  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
-
-  // Transaction works using the expected rate
-  await assertKyberTakeOrder({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    kyberAdapter,
-    outgoingAsset: outgoingAsset,
-    outgoingAssetAmount,
-    incomingAsset: incomingAsset,
-    minIncomingAssetAmount: expectedRate,
-    expectedRate,
-  });
-
   // Transaction reverts having a minIncomingAmount > expectedRate
+  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
   await expect(
     kyberTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
-      kyberAdapter,
+      kyberAdapter: fork.deployment.KyberAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,

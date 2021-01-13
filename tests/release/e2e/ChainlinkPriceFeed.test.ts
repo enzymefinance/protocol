@@ -1,56 +1,65 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { ChainlinkRateAsset, IChainlinkAggregator, MockToken } from '@enzymefinance/protocol';
-import { defaultForkDeployment } from '@enzymefinance/testutils';
-import { BigNumber, constants, utils } from 'ethers';
+import { AddressLike, randomAddress } from '@crestproject/crestproject';
+import {
+  ChainlinkPriceFeed,
+  ChainlinkRateAsset,
+  IChainlinkAggregator,
+  MockToken,
+  StandardToken,
+} from '@enzymefinance/protocol';
+import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { BigNumber, constants, Signer, utils } from 'ethers';
+import hre from 'hardhat';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
+// Unused chf/usd aggregator
+const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
+let fork: ForkDeployment;
 
-  const renAggregatorAddress = (await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.ren))
-    .aggregator;
-  const usdcAggregatorAddress = (await deployment.chainlinkPriceFeed.getAggregatorInfoForPrimitive(config.tokens.usdc))
-    .aggregator;
-  const ethUSDAggregatorAddress = await deployment.chainlinkPriceFeed.getEthUsdAggregator();
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
-  const renAggregator = new IChainlinkAggregator(renAggregatorAddress, config.deployer);
-  const usdcAggregator = new IChainlinkAggregator(usdcAggregatorAddress, config.deployer);
-  const ethUSDAggregator = new IChainlinkAggregator(ethUSDAggregatorAddress, config.deployer);
+async function loadPrimitiveAggregator({
+  chainlinkPriceFeed,
+  primitive,
+}: {
+  chainlinkPriceFeed: ChainlinkPriceFeed;
+  primitive: AddressLike;
+}) {
+  return new IChainlinkAggregator(
+    (await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitive)).aggregator,
+    hre.ethers.provider,
+  );
+}
 
+async function swapDaiAggregatorForUsd({
+  chainlinkPriceFeed,
+  dai,
+}: {
+  signer: Signer;
+  chainlinkPriceFeed: ChainlinkPriceFeed;
+  dai: AddressLike;
+}) {
   // Deregister DAI and re-add it to use the DAI/USD aggregator.
   // This makes conversions simple by using stablecoins on both sides of the conversion,
   // which should always be nearly 1:1
   // See https://docs.chain.link/docs/using-chainlink-reference-contracts
-  await deployment.chainlinkPriceFeed.removePrimitives([config.tokens.dai]);
-  const daiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', config.deployer);
-  const daiRateAsset = ChainlinkRateAsset.USD;
-  await deployment.chainlinkPriceFeed.addPrimitives([config.tokens.dai], [daiAggregator], [daiRateAsset]);
+  await chainlinkPriceFeed.removePrimitives([dai]);
+  const nextDaiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', hre.ethers.provider);
+  await chainlinkPriceFeed.addPrimitives([dai], [nextDaiAggregator], [ChainlinkRateAsset.USD]);
 
-  // Create a mock token and unused aggregator for additional aggregator CRUD tests
-  const unregisteredMockToken = await MockToken.deploy(config.deployer, 'Mock Token', 'MOCK', 6);
-  // Unused chf/usd aggregator, taken from
-  const unusedAggregator = new IChainlinkAggregator('0x449d117117838fFA61263B61dA6301AA2a88B13A', config.deployer);
-
-  return {
-    accounts,
-    daiRateAsset,
-    deployment,
-    aggregators: { daiAggregator, renAggregator, ethUSDAggregator, usdcAggregator },
-    config,
-    unregisteredMockToken,
-    unusedAggregator,
-  };
+  return nextDaiAggregator;
 }
 
 describe('getCanonicalRate', () => {
   // USDC/ETH and WETH/ETH
   it('works as expected when calling getCanonicalRate (equal rate asset)', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        tokens: { usdc, weth },
-      },
-      aggregators: { usdcAggregator },
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new StandardToken(fork.config.weth, fork.deployer);
+    const usdcAggregator = await loadPrimitiveAggregator({
+      chainlinkPriceFeed,
+      primitive: usdc,
+    });
 
     // Get asset units
     const wethUnit = utils.parseEther('1');
@@ -71,13 +80,22 @@ describe('getCanonicalRate', () => {
 
   // DAI/USD and USDC/ETH
   it('works as expected when calling getCanonicalRate (different rate assets)', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        tokens: { dai, usdc },
-      },
-      aggregators: { daiAggregator, usdcAggregator, ethUSDAggregator },
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const daiAggregator = await swapDaiAggregatorForUsd({
+      signer: fork.deployer,
+      chainlinkPriceFeed,
+      dai,
+    });
+    const ethUSDAggregator = new IChainlinkAggregator(
+      await chainlinkPriceFeed.getEthUsdAggregator(),
+      hre.ethers.provider,
+    );
+    const usdcAggregator = await loadPrimitiveAggregator({
+      chainlinkPriceFeed,
+      primitive: usdc,
+    });
 
     // Get asset units
     const ethUnit = utils.parseEther('1');
@@ -118,11 +136,9 @@ describe('getCanonicalRate', () => {
 
 describe('addPrimitives', () => {
   it('works as expected when adding a primitive', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      unregisteredMockToken,
-      unusedAggregator,
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const unregisteredMockToken = await MockToken.deploy(fork.deployer, 'Mock Token', 'MOCK', 6);
+    const unusedAggregator = new IChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
 
     // Register the unregistered primitive with the unused aggregator
     const rateAsset = ChainlinkRateAsset.ETH;
@@ -139,13 +155,12 @@ describe('addPrimitives', () => {
   });
 
   it('works as expected when adding a wrong primitive', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        tokens: { usdc },
-      },
-      aggregators: { renAggregator },
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const renAggregator = await loadPrimitiveAggregator({
+      chainlinkPriceFeed,
+      primitive: fork.config.primitives.ren,
+    });
 
     // Adds a primitive with an invalid rate asset
     await expect(chainlinkPriceFeed.addPrimitives([usdc], [renAggregator], [2])).rejects.toBeReverted();
@@ -157,14 +172,11 @@ describe('addPrimitives', () => {
 
 describe('updatePrimitives', () => {
   it('works as expected when updating a primitive', async () => {
-    const {
-      config: {
-        tokens: { dai },
-      },
-      daiRateAsset,
-      deployment: { chainlinkPriceFeed },
-      unusedAggregator,
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+    const unusedAggregator = new IChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
+
+    const daiRateAsset = await chainlinkPriceFeed.getRateAssetForPrimitive(dai);
 
     // Update dai to use the unused aggregator
     await chainlinkPriceFeed.updatePrimitives([dai], [unusedAggregator]);
@@ -179,12 +191,8 @@ describe('updatePrimitives', () => {
 
 describe('removePrimitives', () => {
   it('works as expected when removing a primitive', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        tokens: { dai },
-      },
-    } = await provider.snapshot(snapshot);
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
 
     await chainlinkPriceFeed.removePrimitives([dai]);
 
@@ -198,13 +206,9 @@ describe('removePrimitives', () => {
 
 describe('removeStalePrimitives', () => {
   it('allows removing a stale primitive based on the timestamp', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: { chainlinkPriceFeed },
-      config: {
-        tokens: { dai },
-      },
-    } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
+    const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
 
     // Should fail initially because the rate is not stale
     await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).rejects.toBeRevertedWith(
@@ -212,7 +216,8 @@ describe('removeStalePrimitives', () => {
     );
 
     // Should succeed after warping beyond staleness threshold
-    await provider.send('evm_increaseTime', [60 * 60 * 49]);
+    const stalenessThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
+    await hre.ethers.provider.send('evm_increaseTime', [stalenessThreshold.toNumber()]);
     await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).resolves.toBeReceipt();
   });
 });
@@ -221,12 +226,9 @@ describe('expected values', () => {
   describe('similar rate asset (ETH)', () => {
     // USDC/ETH and USDT/ETH
     it('returns the expected value from the valueInterpreter (same decimals)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { usdc, usdt },
-        },
-      } = await provider.snapshot(snapshot);
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+      const usdt = new StandardToken(fork.config.primitives.usdt, fork.deployer);
 
       const baseDecimals = await usdc.decimals();
       const quoteDecimals = await usdt.decimals();
@@ -245,18 +247,13 @@ describe('expected values', () => {
 
     // SUSD/ETH and USDC/ETH
     it('returns the expected value from the valueInterpreter (different decimals)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { susd, usdc },
-        },
-      } = await provider.snapshot(snapshot);
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
 
       const baseDecimals = await susd.decimals();
       const quoteDecimals = await usdc.decimals();
       expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
-
-      // dai/usd value should always be similar
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(susd, utils.parseUnits('1', baseDecimals), usdc)
@@ -275,12 +272,9 @@ describe('expected values', () => {
 
     // BNB/USD and REN/USD
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { bnb, ren },
-        },
-      } = await provider.snapshot(snapshot);
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const bnb = new StandardToken(fork.config.primitives.bnb, fork.deployer);
+      const ren = new StandardToken(fork.config.primitives.ren, fork.deployer);
 
       const baseDecimals = await bnb.decimals();
       const quoteDecimals = await ren.decimals();
@@ -297,7 +291,7 @@ describe('expected values', () => {
         .call();
 
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('99151115443056596491'),
+        value_: BigNumber.from('99673789509357534312'),
         isValid_: true,
       });
     });
@@ -306,12 +300,16 @@ describe('expected values', () => {
   describe('different rate asset (ETH rate -> USD rate)', () => {
     // SUSD/ETH and DAI/USD
     it('returns the expected value from the valueInterpreter (same decimals)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { susd, dai },
-        },
-      } = await provider.snapshot(snapshot);
+      const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
+
+      await swapDaiAggregatorForUsd({
+        signer: fork.deployer,
+        chainlinkPriceFeed,
+        dai,
+      });
 
       const baseDecimals = await susd.decimals();
       const quoteDecimals = await dai.decimals();
@@ -330,12 +328,16 @@ describe('expected values', () => {
 
     // USDC/ETH and DAI/USD
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { dai, usdc },
-        },
-      } = await provider.snapshot(snapshot);
+      const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+
+      await swapDaiAggregatorForUsd({
+        signer: fork.deployer,
+        chainlinkPriceFeed,
+        dai,
+      });
 
       const baseDecimals = await usdc.decimals();
       const quoteDecimals = await dai.decimals();
@@ -356,12 +358,16 @@ describe('expected values', () => {
   describe('different rate asset (USD rate -> ETH rate)', () => {
     // DAI/USD and SUSD/ETH
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { dai, susd },
-        },
-      } = await provider.snapshot(snapshot);
+      const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
+
+      await swapDaiAggregatorForUsd({
+        signer: fork.deployer,
+        chainlinkPriceFeed,
+        dai,
+      });
 
       const baseDecimals = await dai.decimals();
       const quoteDecimals = await susd.decimals();
@@ -380,12 +386,16 @@ describe('expected values', () => {
 
     // DAI/USD and USDC/ETH
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
-      const {
-        deployment: { valueInterpreter },
-        config: {
-          tokens: { dai, usdc },
-        },
-      } = await provider.snapshot(snapshot);
+      const chainlinkPriceFeed = fork.deployment.ChainlinkPriceFeed;
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+
+      await swapDaiAggregatorForUsd({
+        signer: fork.deployer,
+        chainlinkPriceFeed,
+        dai,
+      });
 
       const baseDecimals = await dai.decimals();
       const quoteDecimals = await usdc.decimals();

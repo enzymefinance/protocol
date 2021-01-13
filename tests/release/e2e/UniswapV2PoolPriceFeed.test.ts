@@ -1,78 +1,72 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@crestproject/crestproject';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import {
-  addNewAssetsToFund,
   buyShares,
   createNewFund,
-  defaultForkDeployment,
+  ForkDeployment,
+  loadForkDeployment,
+  mainnetWhales,
   uniswapV2Lend,
+  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
+import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
+const whales: Record<string, SignerWithAddress> = {};
+let fork: ForkDeployment;
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
+beforeAll(async () => {
+  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
+  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
+  await unlockWhales({
+    provider: hre.ethers.provider,
+    whales: Object.values(whales),
+  });
+});
+
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
-    const {
-      accounts: [fundOwner],
-      config: {
-        deployer,
-        tokens: { mln, weth },
-      },
-      deployment: { integrationManager, fundDeployer, trackedAssetsAdapter, uniswapV2Adapter },
-    } = await provider.snapshot(snapshot);
-
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
     const denominationAsset = weth;
+    const [fundOwner, investor] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
+      signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer,
-      denominationAsset,
+      fundDeployer: fork.deployment.FundDeployer,
+      denominationAsset: weth,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
-    // Buy shares to add denomination asset
+    // Seed fund and buy shares to add denomination asset
+    await weth.transfer(investor, initialTokenAmount);
     await buyShares({
       comptrollerProxy,
-      signer: deployer,
-      buyers: [deployer],
+      signer: investor,
+      buyers: [investor],
       denominationAsset,
       investmentAmounts: [initialTokenAmount],
-    });
-
-    // Add mln to be able to buy pool tokens
-    await addNewAssetsToFund({
-      fundOwner,
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      trackedAssetsAdapter,
-      assets: [mln],
-      amounts: [initialTokenAmount],
     });
 
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Use max of half the asset balances to get MLN-WETH pool tokens
+    // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
+    await mln.transfer(vaultProxy, initialTokenAmount);
     await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
-      integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
-      uniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
       tokenA: weth,
       tokenB: mln,
       amountADesired: initialTokenAmount.div(2),
@@ -92,25 +86,18 @@ describe('derivative gas costs', () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
-    const {
-      config: {
-        deployer,
-        derivatives: {
-          uniswapV2: { mlnWeth },
-        },
-      },
-      deployment: { uniswapV2PoolPriceFeed, valueInterpreter },
-    } = await provider.snapshot(snapshot);
+    const uniswapV2PoolPriceFeed = fork.deployment.UniswapV2PoolPriceFeed;
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, hre.ethers.provider);
 
-    const pair = new IUniswapV2Pair(mlnWeth, deployer);
-    const token0Address = await pair.token0();
+    const token0Address = await uniswapPair.token0();
     const token0RatioAmount = utils.parseEther('1');
-    const token1Address = await pair.token1();
+    const token1Address = await uniswapPair.token1();
 
     const poolTokenUnit = utils.parseEther('1');
 
     const calcUnderlyingValuesRes = await uniswapV2PoolPriceFeed.calcUnderlyingValues
-      .args(mlnWeth, poolTokenUnit)
+      .args(uniswapPair, poolTokenUnit)
       .call();
     expect(calcUnderlyingValuesRes).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
       underlyingAmounts_: [expect.any(String), expect.any(String)],
@@ -120,7 +107,7 @@ describe('calcUnderlyingValues', () => {
     // Confirms arb has moved the price in the correct direction
 
     // Get the rate ratio of the Uniswap pool
-    const getReservesRes = await pair.getReserves();
+    const getReservesRes = await uniswapPair.getReserves();
     const poolRateRatio = getReservesRes[0].mul(utils.parseEther('1')).div(getReservesRes[1]);
 
     // Get the trusted rate ratio based on trusted prices
@@ -150,18 +137,10 @@ describe('calcUnderlyingValues', () => {
 
   describe('expected values', () => {
     it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
-      const {
-        config: {
-          deployer,
-          tokens: { usdc },
-          derivatives: {
-            uniswapV2: { usdcWeth: usdcWethAddress },
-          },
-        },
-        deployment: { valueInterpreter },
-      } = await provider.snapshot(snapshot);
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+      const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, hre.ethers.provider);
 
-      const usdcWeth = new StandardToken(usdcWethAddress, deployer);
       const baseDecimals = await usdcWeth.decimals();
       const quoteDecimals = await usdc.decimals();
 
@@ -181,18 +160,10 @@ describe('calcUnderlyingValues', () => {
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
-      const {
-        config: {
-          deployer,
-          tokens: { dai },
-          derivatives: {
-            uniswapV2: { kncWeth: kncWethAddress },
-          },
-        },
-        deployment: { valueInterpreter },
-      } = await provider.snapshot(snapshot);
+      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, hre.ethers.provider);
 
-      const kncWeth = new StandardToken(kncWethAddress, deployer);
       const baseDecimals = await kncWeth.decimals();
       const quoteDecimals = await dai.decimals();
 

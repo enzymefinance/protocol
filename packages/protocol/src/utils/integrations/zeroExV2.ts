@@ -1,6 +1,6 @@
-import { BigNumber, BigNumberish, Signer, constants, utils } from 'ethers';
+import { AddressLike, resolveAddress } from '@crestproject/crestproject';
+import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
 import { buildTypedData, encodeTypedDataDigest } from 'ethers-eip712';
-import { AddressLike, EthereumTestnetProvider, resolveAddress } from '@crestproject/crestproject';
 import { encodeArgs, encodeFunctionData } from '../encoding';
 
 export interface UnsignedZeroExV2Order {
@@ -39,18 +39,16 @@ export function encodeZeroExV2AssetData(token: AddressLike) {
 }
 
 export async function createUnsignedZeroExV2Order({
-  provider,
   exchange,
   maker,
   feeRecipientAddress,
   makerAssetAmount,
   takerAssetAmount,
   takerFee,
-  duration = 24 * 60 * 60,
   makerAsset,
   takerAsset,
+  expirationTimeSeconds,
 }: {
-  provider: EthereumTestnetProvider;
   exchange: AddressLike;
   maker: AddressLike;
   feeRecipientAddress: AddressLike;
@@ -60,6 +58,7 @@ export async function createUnsignedZeroExV2Order({
   duration?: number;
   makerAsset: AddressLike;
   takerAsset: AddressLike;
+  expirationTimeSeconds: BigNumberish;
 }): Promise<UnsignedZeroExV2Order> {
   const makerAddress = resolveAddress(maker).toLowerCase();
   const exchangeAddress = resolveAddress(exchange).toLowerCase();
@@ -69,8 +68,6 @@ export async function createUnsignedZeroExV2Order({
   const makerAssetData = encodeZeroExV2AssetData(makerAssetAddress);
   const takerAssetData = encodeZeroExV2AssetData(takerAssetAddress);
   const salt = generatePseudoRandomZeroExV2Salt();
-  const latestBlock = await provider.getBlock('latest');
-  const expirationTimeSeconds = BigNumber.from(latestBlock.timestamp + duration);
 
   return {
     exchangeAddress,

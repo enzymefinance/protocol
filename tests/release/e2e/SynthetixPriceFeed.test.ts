@@ -1,34 +1,27 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ISynthetixExchangeRates, StandardToken } from '@enzymefinance/protocol';
-import { defaultForkDeployment, synthetixResolveAddress } from '@enzymefinance/testutils';
+import { ISynthetixAddressResolver, ISynthetixExchangeRates, StandardToken } from '@enzymefinance/protocol';
+import { ForkDeployment, loadForkDeployment, synthetixResolveAddress } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
+import hre from 'hardhat';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  return await defaultForkDeployment(provider);
-}
+let fork: ForkDeployment;
+
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 it('returns rate for underlying token', async () => {
-  const {
-    config: {
-      deployer,
-      derivatives: {
-        synthetix: { sbtc },
-      },
-      integratees: {
-        synthetix: { addressResolver, susd },
-      },
-    },
-    deployment: { synthetixPriceFeed },
-  } = await provider.snapshot(snapshot);
+  const synthetixPriceFeed = fork.deployment.SynthetixPriceFeed;
+  const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+  const susd = new StandardToken(fork.config.primitives.susd, hre.ethers.provider);
 
   const exchangeRates = await synthetixResolveAddress({
-    addressResolver,
+    addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
     name: 'ExchangeRates',
   });
 
   const synthUnit = utils.parseEther('1');
 
-  const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, deployer);
+  const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, hre.ethers.provider);
   await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
 
   // Synthetix rates
@@ -45,18 +38,10 @@ it('returns rate for underlying token', async () => {
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals quote)', async () => {
-    const {
-      deployment: { valueInterpreter },
-      config: {
-        derivatives: {
-          synthetix: { sbtc: sbtcAddress },
-        },
-        deployer,
-        tokens: { dai },
-      },
-    } = await provider.snapshot(snapshot);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
 
-    const sbtc = new StandardToken(sbtcAddress, deployer);
     const baseDecimals = await sbtc.decimals();
     const quoteDecimals = await dai.decimals();
 
@@ -77,18 +62,10 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
-    const {
-      deployment: { valueInterpreter },
-      config: {
-        derivatives: {
-          synthetix: { sbtc: sbtcAddress },
-        },
-        deployer,
-        tokens: { usdc },
-      },
-    } = await provider.snapshot(snapshot);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
 
-    const sbtc = new StandardToken(sbtcAddress, deployer);
     const baseDecimals = await sbtc.decimals();
     const quoteDecimals = await usdc.decimals();
 

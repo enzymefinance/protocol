@@ -1,7 +1,8 @@
-import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
   guaranteedRedemptionArgs,
+  ISynthetixAddressResolver,
   ISynthetixExchanger,
   policyManagerConfigArgs,
   StandardToken,
@@ -10,41 +11,32 @@ import {
 import {
   buyShares,
   createNewFund,
-  defaultForkDeployment,
-  ForkReleaseDeploymentConfig,
+  ForkDeployment,
   getAssetBalances,
+  loadForkDeployment,
+  mainnetWhales,
   redeemShares,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
+  unlockWhales,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-
-export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T : never;
-
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
-
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
+import hre from 'hardhat';
 
 async function warpBeyondWaitingPeriod() {
   // TODO: get waiting period dynamically
   const waitingPeriod = 360; // As of Jan 9, 2021
-  await provider.send('evm_increaseTime', [waitingPeriod]);
-  await provider.send('evm_mine', []);
+  await hre.ethers.provider.send('evm_increaseTime', [waitingPeriod]);
+  await hre.ethers.provider.send('evm_mine', []);
 }
 
 describe("Walkthrough a synth-based fund's lifecycle", () => {
   const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
   const susdCurrencyKey = utils.formatBytes32String('sUSD');
+  const whales: Record<string, SignerWithAddress> = {};
 
-  let config: ForkReleaseDeploymentConfig;
-  let deployment: Snapshot['deployment'];
+  let fork: ForkDeployment;
 
   let manager: SignerWithAddress;
   let investor: SignerWithAddress;
@@ -57,34 +49,43 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   let synthetixExchanger: ISynthetixExchanger;
 
   beforeAll(async () => {
-    const forkSnapshot = await provider.snapshot(snapshot);
+    // Unlock whale accounts
+    whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
 
-    manager = forkSnapshot.accounts[0];
-    investor = forkSnapshot.accounts[1];
-    deployment = forkSnapshot.deployment;
-    config = forkSnapshot.config;
+    await unlockWhales({
+      provider: hre.ethers.provider,
+      whales: Object.values(whales),
+    });
 
-    susd = config.tokens.susd;
-    sbtc = new StandardToken(config.derivatives.synthetix.sbtc, provider);
+    fork = await loadForkDeployment();
+
+    manager = fork.accounts[0];
+    investor = fork.accounts[1];
+
+    susd = new StandardToken(fork.config.primitives.susd, whales.susd);
+    sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+    denominationAsset = susd;
 
     const exchangerAddress = await synthetixResolveAddress({
-      addressResolver: config.integratees.synthetix.addressResolver,
+      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
       name: 'Exchanger',
     });
-    synthetixExchanger = new ISynthetixExchanger(exchangerAddress, provider);
+    synthetixExchanger = new ISynthetixExchanger(exchangerAddress, hre.ethers.provider);
+
+    // Seed investor with denomination asset
+    const denominationAssetSeedAmount = utils.parseUnits('1000', await denominationAsset.decimals());
+    await denominationAsset.transfer(investor, denominationAssetSeedAmount);
   });
 
   it('creates a new fund with sUSD as its denomination asset', async () => {
-    denominationAsset = susd;
-
     // TODO: add fees?
 
     // Set GuaranteedRedemption policy with redemption window starting immediately
     const policyManagerConfig = policyManagerConfigArgs({
-      policies: [deployment.guaranteedRedemption],
+      policies: [fork.deployment.GuaranteedRedemption],
       settings: [
         guaranteedRedemptionArgs({
-          startTimestamp: (await provider.getBlock('latest')).timestamp,
+          startTimestamp: (await hre.ethers.provider.getBlock('latest')).timestamp,
           duration: [100],
         }),
       ],
@@ -92,7 +93,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     const createFundRes = await createNewFund({
       signer: manager,
-      fundDeployer: deployment.fundDeployer,
+      fundDeployer: fork.deployment.FundDeployer,
       fundOwner: manager,
       denominationAsset,
       policyManagerConfig,
@@ -118,9 +119,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        synthetixAdapter: deployment.synthetixAdapter,
+        synthetixAdapter: fork.deployment.SynthetixAdapter,
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
         incomingAsset: sbtc,
@@ -130,9 +131,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   });
 
   it('warps beyond the redemption window', async () => {
-    const duration = (await deployment.guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
-    await provider.send('evm_increaseTime', [duration.toNumber()]);
-    await provider.send('evm_mine', []);
+    const duration = (await fork.deployment.GuaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
+    await hre.ethers.provider.send('evm_increaseTime', [duration.toNumber()]);
+    await hre.ethers.provider.send('evm_mine', []);
   });
 
   it('attempts to trade on Synthetix without delegating the SynthetixAdapter to exchangeOnBehalf of VaultProxy', async () => {
@@ -140,9 +141,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        synthetixAdapter: deployment.synthetixAdapter,
+        synthetixAdapter: fork.deployment.SynthetixAdapter,
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
         incomingAsset: sbtc,
@@ -154,9 +155,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('designates the SynthetixAdapter to exchangeOnBehalf of VaultProxy', async () => {
     await synthetixAssignExchangeDelegate({
       comptrollerProxy,
-      addressResolver: config.integratees.synthetix.addressResolver,
+      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
       fundOwner: manager,
-      delegate: deployment.synthetixAdapter,
+      delegate: fork.deployment.SynthetixAdapter,
     });
   });
 
@@ -178,9 +179,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: deployment.integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner: manager,
-      synthetixAdapter: deployment.synthetixAdapter,
+      synthetixAdapter: fork.deployment.SynthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -214,9 +215,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: deployment.integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner: manager,
-      synthetixAdapter: deployment.synthetixAdapter,
+      synthetixAdapter: fork.deployment.SynthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -247,9 +248,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        synthetixAdapter: deployment.synthetixAdapter,
+        synthetixAdapter: fork.deployment.SynthetixAdapter,
         outgoingAsset,
         outgoingAssetAmount,
         incomingAsset,
@@ -279,9 +280,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: deployment.integrationManager,
+      integrationManager: fork.deployment.IntegrationManager,
       fundOwner: manager,
-      synthetixAdapter: deployment.synthetixAdapter,
+      synthetixAdapter: fork.deployment.SynthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,

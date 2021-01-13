@@ -1,82 +1,73 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
+import { SignerWithAddress } from '@crestproject/crestproject';
+import { ISynthetixAddressResolver, ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  defaultForkDeployment,
+  ForkDeployment,
   getAssetBalances,
+  loadForkDeployment,
+  mainnetWhales,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
+  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
+import hre from 'hardhat';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployment,
-    config,
-  } = await provider.snapshot(defaultForkDeployment);
+const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
+const susdCurrencyKey = utils.formatBytes32String('sUSD');
+const whales: Record<string, SignerWithAddress> = {};
+let fork: ForkDeployment;
 
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: config.tokens.susd,
+beforeAll(async () => {
+  whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
+
+  await unlockWhales({
+    provider: hre.ethers.provider,
+    whales: Object.values(whales),
   });
+});
 
-  const exchangerAddress = await synthetixResolveAddress({
-    addressResolver: config.integratees.synthetix.addressResolver,
-    name: 'Exchanger',
-  });
-
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    fund: {
-      comptrollerProxy,
-      fundOwner,
-      vaultProxy,
-    },
-    sbtcCurrencyKey: utils.formatBytes32String('sBTC'),
-    susdCurrencyKey: utils.formatBytes32String('sUSD'),
-    synthetixExchanger: new ISynthetixExchanger(exchangerAddress, provider),
-  };
-}
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 // HAPPY PATHS
 
 it('works as expected when called by a fund (synth to synth)', async () => {
-  const {
-    config: {
-      deployer,
-      derivatives: {
-        synthetix: { sbtc },
-      },
-      integratees: {
-        synthetix: { addressResolver, susd },
-      },
-    },
-    deployment: { synthetixAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-    sbtcCurrencyKey,
-    susdCurrencyKey,
-    synthetixExchanger,
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.primitives.susd, whales.susd);
+  const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+  const synthetixAddressResolver = new ISynthetixAddressResolver(
+    fork.config.synthetix.addressResolver,
+    hre.ethers.provider,
+  );
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.primitives.susd, hre.ethers.provider),
+  });
+
+  // Load the SynthetixExchange contract
+  const exchangerAddress = await synthetixResolveAddress({
+    addressResolver: synthetixAddressResolver,
+    name: 'Exchanger',
+  });
+  const synthetixExchanger = new ISynthetixExchanger(exchangerAddress, hre.ethers.provider);
 
   // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
   await synthetixAssignExchangeDelegate({
     comptrollerProxy,
-    addressResolver,
+    addressResolver: synthetixAddressResolver,
     fundOwner,
-    delegate: synthetixAdapter.address,
+    delegate: fork.deployment.SynthetixAdapter,
   });
 
   // Define order params
-  const incomingAsset = new StandardToken(sbtc, deployer);
-  const outgoingAsset = new StandardToken(susd, deployer);
   const outgoingAssetAmount = utils.parseEther('100');
-  const { 0: minIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+  const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
     outgoingAssetAmount,
     susdCurrencyKey,
     sbtcCurrencyKey,
@@ -88,18 +79,18 @@ it('works as expected when called by a fund (synth to synth)', async () => {
     assets: [incomingAsset],
   });
 
-  // Execute Synthetix order
+  // Seed fund and execute Synthetix order
+  await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
   await synthetixTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    synthetixAdapter,
+    synthetixAdapter: fork.deployment.SynthetixAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,
-    minIncomingAssetAmount,
-    seedFund: true,
+    minIncomingAssetAmount: expectedIncomingAssetAmount,
   });
 
   // Get incoming and outgoing asset balances after the tx
@@ -110,6 +101,6 @@ it('works as expected when called by a fund (synth to synth)', async () => {
 
   // Assert the expected final token balances of the VaultProxy
   const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
-  expect(incomingAssetAmount).toEqBigNumber(minIncomingAssetAmount);
+  expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
   expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
 });

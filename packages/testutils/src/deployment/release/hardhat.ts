@@ -1,4 +1,4 @@
-import hre from 'hardhat';
+import { SignerWithAddress } from '@crestproject/crestproject';
 import {
   Dispatcher,
   VaultLib,
@@ -40,6 +40,7 @@ import {
   InvestorWhitelist,
   GuaranteedRedemption,
 } from '@enzymefinance/protocol';
+import hre from 'hardhat';
 import { DeploymentConfig } from '../../../../../deploy/config/Config';
 
 export type ForkDeployment = ReturnType<typeof loadForkDeployment> extends Promise<infer T> ? T : never;
@@ -47,7 +48,7 @@ export type ForkDeployment = ReturnType<typeof loadForkDeployment> extends Promi
 export async function loadForkDeployment() {
   const output = await hre.deployments.fixture();
   const deployer = await hre.ethers.getNamedSigner('deployer');
-  const accounts = await hre.ethers.getUnnamedSigners();
+  const accounts = ((await hre.ethers.getUnnamedSigners()) as any) as SignerWithAddress[];
   const config = output['Config'].linkedData as DeploymentConfig;
 
   // prettier-ignore

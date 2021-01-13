@@ -22,7 +22,7 @@ export async function synthetixAssignExchangeDelegate({
   delegate,
 }: {
   comptrollerProxy: ComptrollerLib;
-  addressResolver: AddressLike;
+  addressResolver: ISynthetixAddressResolver;
   fundOwner: Signer;
   delegate: AddressLike;
 }) {
@@ -44,11 +44,10 @@ export async function synthetixResolveAddress({
   addressResolver,
   name,
 }: {
-  addressResolver: AddressLike;
+  addressResolver: ISynthetixAddressResolver;
   name: string;
 }) {
-  const synthetixAddressResolver: ISynthetixAddressResolver = new ISynthetixAddressResolver(addressResolver, provider);
-  return synthetixAddressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
+  return addressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
 }
 
 export async function synthetixTakeOrder({

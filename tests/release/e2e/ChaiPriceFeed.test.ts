@@ -1,6 +1,6 @@
-import { IMakerDaoPot } from '@enzymefinance/protocol';
+import { IMakerDaoPot, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 let fork: ForkDeployment;
 
@@ -25,33 +25,28 @@ describe('calcUnderlyingValues', () => {
   });
 });
 
-// describe('expected values', () => {
-//   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
-//     const {
-//       deployment: { valueInterpreter },
-//       config: {
-//         deployer,
-//         derivatives: { chai: chaiAddress },
-//         tokens: { dai },
-//       },
-//     } = await provider.snapshot(snapshot);
-//     const chai = new StandardToken(chaiAddress, deployer);
-//     const baseDecimals = await chai.decimals();
-//     const quoteDecimals = await dai.decimals();
+describe('expected values', () => {
+  it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
+    const chai = new StandardToken(fork.config.chai.chai, fork.deployer);
+    const dai = new StandardToken(fork.config.chai.dai, fork.deployer);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
 
-//     expect(baseDecimals).toEqBigNumber(18);
-//     expect(quoteDecimals).toEqBigNumber(18);
+    const baseDecimals = await chai.decimals();
+    const quoteDecimals = await dai.decimals();
 
-//     // chai/usd price on 11/12/2020 was rated at $1.08.
-//     // Source: <https://www.coingecko.com/en/coins/chai/historical_data/usd?start_date=2020-11-12&end_date=2020-11-13#panel>
+    expect(baseDecimals).toEqBigNumber(18);
+    expect(quoteDecimals).toEqBigNumber(18);
 
-//     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-//       .args(chai, utils.parseUnits('1', baseDecimals), dai)
-//       .call();
+    // chai/usd price on 11/12/2020 was rated at $1.08.
+    // Source: <https://www.coingecko.com/en/coins/chai/historical_data/usd?start_date=2020-11-12&end_date=2020-11-13#panel>
 
-//     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-//       value_: BigNumber.from('1018008449363110619'),
-//       isValid_: true,
-//     });
-//   });
-// });
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(chai, utils.parseUnits('1', baseDecimals), dai)
+      .call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: BigNumber.from('1018008449363110619'),
+      isValid_: true,
+    });
+  });
+});

@@ -1,43 +1,46 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { defaultForkDeployment, createNewFund, getAssetBalances, paraswapTakeOrder } from '@enzymefinance/testutils';
+import { SignerWithAddress } from '@crestproject/crestproject';
+import { StandardToken } from '@enzymefinance/protocol';
+import {
+  createNewFund,
+  ForkDeployment,
+  getAssetBalances,
+  loadForkDeployment,
+  mainnetWhales,
+  paraswapTakeOrder,
+  unlockWhales,
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
+import hre from 'hardhat';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployment,
-    config,
-  } = await provider.snapshot(defaultForkDeployment);
+let fork: ForkDeployment;
+const whales: Record<string, SignerWithAddress> = {};
 
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: config.tokens.weth,
+beforeAll(async () => {
+  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
+
+  await unlockWhales({
+    provider: hre.ethers.provider,
+    whales: Object.values(whales),
   });
+});
 
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    fund: {
-      comptrollerProxy,
-      fundOwner,
-      vaultProxy,
-    },
-  };
-}
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 // HAPPY PATHS
 
 it('works as expected when called by a fund (no network fees)', async () => {
-  const {
-    config: {
-      tokens: { dai: incomingAsset, weth: outgoingAsset },
-    },
-    deployment: { paraswapAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
   const minIncomingAssetAmount = '1';
@@ -79,9 +82,9 @@ it('works as expected when called by a fund (no network fees)', async () => {
   // Execute the take order
   await paraswapTakeOrder({
     comptrollerProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    paraswapAdapter,
+    paraswapAdapter: fork.deployment.ParaSwapAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,
@@ -99,13 +102,16 @@ it('works as expected when called by a fund (no network fees)', async () => {
 });
 
 it('refunds unused network fees', async () => {
-  const {
-    config: {
-      tokens: { dai: incomingAsset, weth: outgoingAsset },
-    },
-    deployment: { paraswapAdapter, integrationManager },
-    fund: { comptrollerProxy, fundOwner, vaultProxy },
-  } = await provider.snapshot(snapshot);
+  const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+  const [fundOwner] = fork.accounts;
+
+  const { comptrollerProxy, vaultProxy } = await createNewFund({
+    signer: fundOwner as SignerWithAddress,
+    fundOwner,
+    fundDeployer: fork.deployment.FundDeployer,
+    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+  });
 
   const outgoingAssetAmount = utils.parseEther('1');
   const minIncomingAssetAmount = '1';
@@ -140,9 +146,9 @@ it('refunds unused network fees', async () => {
   // Execute the take order
   await paraswapTakeOrder({
     comptrollerProxy,
-    integrationManager,
+    integrationManager: fork.deployment.IntegrationManager,
     fundOwner,
-    paraswapAdapter,
+    paraswapAdapter: fork.deployment.ParaSwapAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,

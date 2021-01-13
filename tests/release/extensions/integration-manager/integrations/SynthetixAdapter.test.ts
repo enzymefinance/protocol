@@ -1,6 +1,7 @@
 import { EthereumTestnetProvider } from '@crestproject/crestproject';
 import {
   assetTransferArgs,
+  ISynthetixAddressResolver,
   ISynthetixExchanger,
   SpendAssetsHandleType,
   StandardToken,
@@ -207,7 +208,7 @@ describe('takeOrder', () => {
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
       comptrollerProxy,
-      addressResolver,
+      addressResolver: new ISynthetixAddressResolver(addressResolver, provider),
       fundOwner,
       delegate: synthetixAdapter.address,
     });

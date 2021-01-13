@@ -1,32 +1,21 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { IChainlinkAggregator } from '@enzymefinance/protocol';
-import { defaultForkDeployment } from '@enzymefinance/testutils';
+import { IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
+import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
+import hre from 'hardhat';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
+let fork: ForkDeployment;
 
-  const xauAggregator = new IChainlinkAggregator(config.chainlink.xauUsdAggregator, config.deployer);
-  const ethUSDAggregator = new IChainlinkAggregator(config.chainlink.ethUsdAggregator, config.deployer);
-
-  return {
-    accounts,
-    deployment,
-    aggregators: { xauAggregator, ethUSDAggregator },
-    config,
-  };
-}
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token weth', async () => {
-    const {
-      config: {
-        tokens: { weth },
-        derivatives: { wdgld },
-      },
-      deployment: { wdgldPriceFeed },
-      aggregators: { xauAggregator, ethUSDAggregator },
-    } = await provider.snapshot(snapshot);
+    const wdgldPriceFeed = fork.deployment.WdgldPriceFeed;
+    const wdgld = new StandardToken(fork.config.wdgld.wdgld, hre.ethers.provider);
+    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const xauAggregator = new IChainlinkAggregator(fork.config.wdgld.xauusd, hre.ethers.provider);
+    const ethUSDAggregator = new IChainlinkAggregator(fork.config.wdgld.ethusd, hre.ethers.provider);
 
     const xauToUsdRate = await xauAggregator.latestAnswer();
     const ethToUsdRate = await ethUSDAggregator.latestAnswer();
@@ -48,13 +37,9 @@ describe('calcUnderlyingValues', () => {
   });
 
   it('returns the expected value from the valueInterpreter', async () => {
-    const {
-      deployment: { valueInterpreter },
-      config: {
-        tokens: { usdc },
-        derivatives: { wdgld },
-      },
-    } = await provider.snapshot(snapshot);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const wdgld = new StandardToken(fork.config.wdgld.wdgld, hre.ethers.provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
 
     // XAU/USD price at Jan 6, 2021 had a rate of 1849 USD. Given an approximate GTR of 0.0988xx gives a value around 182 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue

@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { randomAddress, SignerWithAddress } from '@crestproject/crestproject';
 import {
   adapterBlacklistArgs,
   adapterWhitelistArgs,
@@ -21,15 +21,16 @@ import {
   chaiLend,
   chaiRedeem,
   createNewFund,
-  defaultForkDeployment,
-  ForkReleaseDeploymentConfig,
+  ForkDeployment,
   KyberNetworkProxy,
   kyberTakeOrder,
+  loadForkDeployment,
+  mainnetWhales,
+  unlockWhales,
   redeemShares,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
-
-export type Snapshot = ReturnType<typeof snapshot> extends Promise<infer T> ? T : never;
+import hre from 'hardhat';
 
 // All values are rounded up to nearest 1000
 // Note that due to the nature of `toCostLessThan()`,
@@ -51,46 +52,69 @@ const expectedGasCosts = {
     usdc: 48000,
   },
   'calc gav: 20 assets': {
-    weth: 663000,
-    usdc: 875000,
+    weth: 784000,
+    usdc: 977000,
   },
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
-    weth: 1541000,
-    usdc: 2308000,
+    weth: 1656000,
+    usdc: 2434100,
   },
   'redeem partial shares: max assets': {
-    weth: 1953000,
-    usdc: 2180000,
+    weth: 2268000,
+    usdc: 2472000,
   },
   'buy shares: max assets': {
-    weth: 1098000,
-    usdc: 1343000,
+    weth: 1218000,
+    usdc: 1439000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 1912000,
-    usdc: 2029000,
+    weth: 2222000,
+    usdc: 2348000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%
+let fork: ForkDeployment;
+const whales: Record<string, SignerWithAddress> = {};
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
+beforeAll(async () => {
+  // Denomination assets
+  whales.usdc = ((await hre.ethers.getSigner(mainnetWhales.usdc)) as any) as SignerWithAddress;
+  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
 
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
+  // Primitives
+  whales.bat = ((await hre.ethers.getSigner(mainnetWhales.bat)) as any) as SignerWithAddress;
+  whales.bnb = ((await hre.ethers.getSigner(mainnetWhales.bnb)) as any) as SignerWithAddress;
+  whales.bnt = ((await hre.ethers.getSigner(mainnetWhales.bnt)) as any) as SignerWithAddress;
+  whales.comp = ((await hre.ethers.getSigner(mainnetWhales.comp)) as any) as SignerWithAddress;
+  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
+  whales.link = ((await hre.ethers.getSigner(mainnetWhales.link)) as any) as SignerWithAddress;
+  whales.mana = ((await hre.ethers.getSigner(mainnetWhales.mana)) as any) as SignerWithAddress;
+  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
+  whales.ren = ((await hre.ethers.getSigner(mainnetWhales.ren)) as any) as SignerWithAddress;
+  whales.rep = ((await hre.ethers.getSigner(mainnetWhales.rep)) as any) as SignerWithAddress;
+  whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
+  whales.uni = ((await hre.ethers.getSigner(mainnetWhales.uni)) as any) as SignerWithAddress;
+  whales.usdt = ((await hre.ethers.getSigner(mainnetWhales.usdt)) as any) as SignerWithAddress;
+  whales.zrx = ((await hre.ethers.getSigner(mainnetWhales.zrx)) as any) as SignerWithAddress;
+
+  // Compound tokens
+  whales.ccomp = ((await hre.ethers.getSigner(mainnetWhales.ccomp)) as any) as SignerWithAddress;
+  whales.cdai = ((await hre.ethers.getSigner(mainnetWhales.cdai)) as any) as SignerWithAddress;
+  whales.ceth = ((await hre.ethers.getSigner(mainnetWhales.ceth)) as any) as SignerWithAddress;
+  whales.cusdc = ((await hre.ethers.getSigner(mainnetWhales.cusdc)) as any) as SignerWithAddress;
+  whales.cuni = ((await hre.ethers.getSigner(mainnetWhales.cuni)) as any) as SignerWithAddress;
+
+  await unlockWhales({
+    provider: hre.ethers.provider,
+    whales: Object.values(whales),
+  });
+});
 
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',
   (denominationAssetId) => {
-    let config: ForkReleaseDeploymentConfig;
-    let deployment: Snapshot['deployment'];
-
     let manager: SignerWithAddress;
     let investor: SignerWithAddress;
     let anotherInvestor: SignerWithAddress;
@@ -101,16 +125,22 @@ describe.each([['weth' as const], ['usdc' as const]])(
     let denominationAssetDecimals: BigNumberish;
 
     beforeAll(async () => {
-      const forkSnapshot = await provider.snapshot(snapshot);
+      fork = await loadForkDeployment();
 
-      manager = forkSnapshot.accounts[0];
-      investor = forkSnapshot.accounts[1];
-      anotherInvestor = forkSnapshot.accounts[2];
-      deployment = forkSnapshot.deployment;
-      config = forkSnapshot.config;
+      manager = fork.accounts[1];
+      investor = fork.accounts[2];
+      anotherInvestor = fork.accounts[3];
 
-      denominationAsset = forkSnapshot.config.tokens[denominationAssetId];
+      denominationAsset =
+        denominationAssetId === 'weth'
+          ? new StandardToken(fork.config.weth, whales.weth)
+          : new StandardToken(fork.config.primitives[denominationAssetId], whales[denominationAssetId]);
       denominationAssetDecimals = await denominationAsset.decimals();
+
+      // Seed investors with denomination asset
+      const denominationAssetSeedAmount = utils.parseUnits('100', await denominationAsset.decimals());
+      await denominationAsset.transfer(investor, denominationAssetSeedAmount);
+      await denominationAsset.transfer(anotherInvestor, denominationAssetSeedAmount);
     });
 
     it('creates a new fund', async () => {
@@ -126,27 +156,27 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
 
       const feeManagerConfig = feeManagerConfigArgs({
-        fees: [deployment.managementFee, deployment.performanceFee, deployment.entranceRateBurnFee],
+        fees: [fork.deployment.ManagementFee, fork.deployment.PerformanceFee, fork.deployment.EntranceRateBurnFee],
         settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
       });
 
       // policies
       const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-      const adapterBlacklistSettings = adapterBlacklistArgs([deployment.compoundAdapter]);
+      const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.CompoundAdapter]);
       const adapterWhitelistSettings = adapterWhitelistArgs([
-        deployment.kyberAdapter,
-        deployment.uniswapV2Adapter,
-        deployment.trackedAssetsAdapter,
-        deployment.chaiAdapter,
+        fork.deployment.KyberAdapter,
+        fork.deployment.UniswapV2Adapter,
+        fork.deployment.TrackedAssetsAdapter,
+        fork.deployment.ChaiAdapter,
       ]);
-      const assetBlacklistSettings = assetBlacklistArgs([config.tokens.knc]);
+      const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
       const policyManagerConfig = policyManagerConfigArgs({
         policies: [
-          deployment.maxConcentration,
-          deployment.adapterBlacklist,
-          deployment.adapterWhitelist,
-          deployment.assetBlacklist,
+          fork.deployment.MaxConcentration,
+          fork.deployment.AdapterBlacklist,
+          fork.deployment.AdapterWhitelist,
+          fork.deployment.AssetBlacklist,
         ],
         settings: [
           maxConcentrationSettings,
@@ -158,7 +188,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const createFundTx = await createNewFund({
         signer: manager,
-        fundDeployer: deployment.fundDeployer,
+        fundDeployer: fork.deployment.FundDeployer,
         fundOwner: manager,
         denominationAsset,
         feeManagerConfig,
@@ -175,11 +205,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('enables the InvestorWhitelist policy for the fund', async () => {
-      const enabled = await deployment.policyManager
-        .connect(manager)
+      const enabled = await fork.deployment.PolicyManager.connect(manager)
         .enablePolicyForFund.args(
           comptrollerProxy.address,
-          deployment.investorWhitelist,
+          fork.deployment.InvestorWhitelist,
           investorWhitelistArgs({
             investorsToAdd: [randomAddress(), randomAddress(), investor.address],
           }),
@@ -244,10 +273,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('trades on Kyber', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(config.integratees.kyber, provider);
+      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
 
       const outgoingAsset = denominationAsset;
-      const incomingAsset = config.tokens.dai;
+      const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
       const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
 
       const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
@@ -264,9 +293,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
       await kyberTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        kyberAdapter: deployment.kyberAdapter,
+        kyberAdapter: fork.deployment.KyberAdapter,
         incomingAsset,
         minIncomingAssetAmount,
         outgoingAsset,
@@ -277,18 +306,18 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
     });
 
-    it('lends and redeems Chai', async () => {
-      const dai = new StandardToken(config.tokens.dai, provider);
-      const chai = new StandardToken(config.derivatives.chai, provider);
+    xit('lends and redeems Chai', async () => {
+      const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+      const chai = new StandardToken(fork.config.chai.chai, hre.ethers.provider);
       const daiAmount = await dai.balanceOf(vaultProxy);
 
       await chaiLend({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        chaiAdapter: deployment.chaiAdapter,
-        dai: config.tokens.dai,
+        chaiAdapter: fork.deployment.ChaiAdapter,
+        dai: new StandardToken(fork.config.primitives.dai, hre.ethers.provider),
         daiAmount,
         minChaiAmount: daiAmount.mul(90).div(100),
       });
@@ -298,10 +327,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       await chaiRedeem({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
         chai,
-        chaiAdapter: deployment.chaiAdapter,
+        chaiAdapter: fork.deployment.ChaiAdapter,
         chaiAmount,
         minDaiAmount: chaiAmount.mul(90).div(100),
       });
@@ -309,24 +338,25 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('seeds the fund with all more assets', async () => {
       const assets = [
-        config.tokens.bat,
-        config.tokens.bnb,
-        config.tokens.bnt,
-        config.tokens.comp,
-        config.tokens.link,
-        config.tokens.mana,
-        config.tokens.ren,
-        config.tokens.rep,
-        config.tokens.uni,
-        config.tokens.usdt,
-        config.tokens.zrx,
+        new StandardToken(fork.config.primitives.bat, whales.bat),
+        new StandardToken(fork.config.primitives.bnb, whales.bnb),
+        new StandardToken(fork.config.primitives.bnt, whales.bnt),
+        new StandardToken(fork.config.primitives.comp, whales.comp),
+        new StandardToken(fork.config.primitives.link, whales.link),
+        new StandardToken(fork.config.primitives.mana, whales.mana),
+        new StandardToken(fork.config.primitives.mln, whales.mln),
+        new StandardToken(fork.config.primitives.ren, whales.ren),
+        new StandardToken(fork.config.primitives.rep, whales.rep),
+        new StandardToken(fork.config.primitives.susd, whales.susd),
+        new StandardToken(fork.config.primitives.uni, whales.uni),
+        new StandardToken(fork.config.primitives.usdt, whales.usdt),
+        new StandardToken(fork.config.primitives.zrx, whales.zrx),
       ];
 
-      for (const asset of assets) {
+      for (const asset of Object.values(assets)) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
-
-        await asset.connect(manager).transfer.args(vaultProxy, transferAmount).send();
+        await asset.transfer.args(vaultProxy, transferAmount).send();
 
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);
@@ -334,27 +364,27 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await addTrackedAssets({
         comptrollerProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        trackedAssetsAdapter: deployment.trackedAssetsAdapter,
-        incomingAssets: assets,
+        trackedAssetsAdapter: fork.deployment.TrackedAssetsAdapter,
+        incomingAssets: Object.values(assets),
       });
     });
 
     it('seeds the fund with cTokens', async () => {
       const compoundAssets = [
-        new StandardToken(config.derivatives.compound.ccomp, provider),
-        new StandardToken(config.derivatives.compound.cdai, provider),
-        new StandardToken(config.derivatives.compound.ceth, provider),
-        new StandardToken(config.derivatives.compound.crep, provider),
-        new StandardToken(config.derivatives.compound.cuni, provider),
+        new StandardToken(fork.config.compound.ctokens.ccomp, whales.ccomp),
+        new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai),
+        new StandardToken(fork.config.compound.ceth, whales.ceth),
+        new StandardToken(fork.config.compound.ctokens.cusdc, whales.cusdc),
+        new StandardToken(fork.config.compound.ctokens.cuni, whales.cuni),
       ];
 
-      for (const asset of compoundAssets) {
+      for (const asset of Object.values(compoundAssets)) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
 
-        await asset.connect(manager).transfer.args(vaultProxy, transferAmount).send();
+        await asset.transfer.args(vaultProxy, transferAmount).send();
 
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);
@@ -362,14 +392,16 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await addTrackedAssets({
         comptrollerProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        trackedAssetsAdapter: deployment.trackedAssetsAdapter,
-        incomingAssets: compoundAssets,
+        trackedAssetsAdapter: fork.deployment.TrackedAssetsAdapter,
+        incomingAssets: Object.values(compoundAssets),
       });
     });
 
     it('calculates the GAV of the fund with 20 assets', async () => {
+      expect((await vaultProxy.getTrackedAssets()).length).toBe(20);
+
       const calcGavTx = await comptrollerProxy.calcGav(true);
 
       expect(calcGavTx).toCostLessThan(
@@ -379,10 +411,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('trades on Kyber again', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(config.integratees.kyber, provider);
+      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
 
       const outgoingAsset = denominationAsset;
-      const incomingAsset = config.tokens.dai;
+      const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
       const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
 
       const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
@@ -399,9 +431,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const receipt = await kyberTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: deployment.integrationManager,
+        integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
-        kyberAdapter: deployment.kyberAdapter,
+        kyberAdapter: fork.deployment.KyberAdapter,
         incomingAsset,
         minIncomingAssetAmount,
         outgoingAsset,
@@ -421,10 +453,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const asset = config.tokens.dai;
+      const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
       const amount = utils.parseEther('1');
 
-      await asset.connect(manager).transfer(vaultProxy, amount);
+      await dai.transfer(vaultProxy, amount);
 
       const gavAfter = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
@@ -455,10 +487,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const asset = config.tokens.zrx;
+      const zrx = new StandardToken(fork.config.primitives.zrx, whales.zrx);
       const amount = utils.parseEther('1');
 
-      await asset.connect(manager).transfer(vaultProxy, amount);
+      await zrx.transfer(vaultProxy, amount);
 
       const gavAfter = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
@@ -468,11 +500,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('changes the InvestorWhitelist', async () => {
-      await deployment.policyManager
-        .connect(manager)
+      await fork.deployment.PolicyManager.connect(manager)
         .updatePolicySettingsForFund.args(
           comptrollerProxy.address,
-          deployment.investorWhitelist,
+          fork.deployment.InvestorWhitelist,
           investorWhitelistArgs({
             investorsToAdd: [anotherInvestor],
             investorsToRemove: [investor],

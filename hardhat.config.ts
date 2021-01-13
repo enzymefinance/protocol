@@ -3,6 +3,7 @@ import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
 import 'hardhat-contract-sizer';
 import '@crestproject/hardhat/plugin';
+import { utils } from 'ethers';
 import { HardhatUserConfig } from 'hardhat/types';
 
 function node(networkName: string) {
@@ -40,6 +41,8 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: {
         mnemonic,
+        count: 10,
+        accountsBalance: utils.parseUnits('1', 36).toString(),
       },
       forking: {
         url: node('mainnet'),

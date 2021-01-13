@@ -7,7 +7,6 @@ function common(name: string, roots: string[]) {
   return {
     displayName: name,
     roots,
-    preset: '@crestproject/hardhat',
     globals: {
       'ts-jest': {
         babelConfig: true,
@@ -20,6 +19,7 @@ function common(name: string, roots: string[]) {
 function fork(name: string, roots: string[]) {
   return {
     ...common(name, roots),
+    preset: '@crestproject/jest',
     testEnvironmentOptions: {
       hardhatNetworkOptions: {
         // loggingEnabled: true,
@@ -45,6 +45,7 @@ function fork(name: string, roots: string[]) {
 function unit(name: string, roots: string[]) {
   return {
     ...common(name, roots),
+    preset: '@crestproject/hardhat',
     testEnvironmentOptions: {
       hardhatNetworkOptions: {
         // loggingEnabled: true,

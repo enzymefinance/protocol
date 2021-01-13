@@ -1,64 +1,49 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
-import { ICERC20 } from '@enzymefinance/protocol';
-import { defaultForkDeployment } from '@enzymefinance/testutils';
+import { ICERC20, StandardToken } from '@enzymefinance/protocol';
+import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
+import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
+let fork: ForkDeployment;
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultForkDeployment(provider);
-
-  return {
-    accounts,
-    deployment,
-    config,
-    cDai: new ICERC20(config.derivatives.compound.cdai, provider),
-    cEth: new ICERC20(config.derivatives.compound.ceth, provider),
-  };
-}
+beforeEach(async () => {
+  fork = await loadForkDeployment();
+});
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
-    const {
-      config: {
-        tokens: { dai: token },
-      },
-      deployment: { compoundPriceFeed },
-      cDai: cERC20,
-    } = await provider.snapshot(snapshot);
+    const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
+    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider);
+    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
-    const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(cERC20, cTokenUnit);
+    const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(cdai, cTokenUnit);
 
     // cToken amount * stored rate / 10**18
-    const expectedRate = cTokenUnit.mul(await cERC20.exchangeRateStored()).div(utils.parseEther('1'));
+    const expectedRate = cTokenUnit.mul(await cdai.exchangeRateStored()).div(utils.parseEther('1'));
 
-    const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(cERC20, cTokenUnit).call();
+    const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(cdai, cTokenUnit).call();
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
-    expect(feedRate.underlyings_[0]).toMatchAddress(token);
+    expect(feedRate.underlyings_[0]).toMatchAddress(dai);
 
     // Rounding up from 38938
     expect(getRatesReceipt).toCostLessThan('39000', gasAssertionTolerance);
   });
 
   it('returns rate for underlying token (cETH)', async () => {
-    const {
-      config: {
-        tokens: { weth: token },
-      },
-      deployment: { compoundPriceFeed },
-      cEth,
-    } = await provider.snapshot(snapshot);
+    const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
+    const ceth = new ICERC20(fork.config.compound.ceth, hre.ethers.provider);
+    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
-    const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(cEth, cTokenUnit);
+    const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(ceth, cTokenUnit);
 
     // cToken amount * stored rate / 10**18
-    const expectedRate = cTokenUnit.mul(await cEth.exchangeRateStored()).div(utils.parseEther('1'));
+    const expectedRate = cTokenUnit.mul(await ceth.exchangeRateStored()).div(utils.parseEther('1'));
 
-    const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(cEth, cTokenUnit).call();
+    const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(ceth, cTokenUnit).call();
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
-    expect(feedRate.underlyings_[0]).toMatchAddress(token);
+    expect(feedRate.underlyings_[0]).toMatchAddress(weth);
 
     // Rounding up from 30991
     expect(getRatesReceipt).toCostLessThan('32000', gasAssertionTolerance);
@@ -67,18 +52,9 @@ describe('calcUnderlyingValues', () => {
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
-    const {
-      deployment: { valueInterpreter },
-      config: {
-        deployer,
-        tokens: { dai },
-        derivatives: {
-          compound: { cdai: cdaiAddress },
-        },
-      },
-    } = await provider.snapshot(snapshot);
-
-    const cdai = new ICERC20(cdaiAddress, deployer);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider);
+    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
 
     const baseDecimals = await cdai.decimals();
     const quoteDecimals = await dai.decimals();
@@ -97,18 +73,9 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
-    const {
-      deployment: { valueInterpreter },
-      config: {
-        deployer,
-        tokens: { usdc },
-        derivatives: {
-          compound: { cusdc: cusdcAddresses },
-        },
-      },
-    } = await provider.snapshot(snapshot);
-
-    const cusdc = new ICERC20(cusdcAddresses, deployer);
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const cusdc = new ICERC20(fork.config.compound.ctokens.cusdc, hre.ethers.provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
 
     const baseDecimals = await cusdc.decimals();
     const quoteDecimals = await usdc.decimals();
