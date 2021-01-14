@@ -110,17 +110,17 @@ const fn: DeployFunction = async function (hre) {
   };
 
   // COMPOUND
-  const ceth = (await deployMockCompoundEther('cETH', 'Compound Ether', 200307431347120815233900023)).address;
+  const ceth = (await deployMockCompoundEther('cETH', 'Compound Ether', '200307431347120815233900023')).address;
   // prettier-ignore
   const ctokens = {
-    cbat: (await deployMockCompoundToken('cBAT', 'Compound Basic Attention Token', primitives.bat, 204650501822922293956687133)).address,
-    cdai: (await deployMockCompoundToken('cDAI', 'Compound Dai', primitives.dai, 209151253095207634720267576)).address,
-    crep: (await deployMockCompoundToken('cREP', 'Compound Augur', primitives.rep, 200406592366310639162223313)).address,
-    cuni: (await deployMockCompoundToken('cUNI', 'Compound Uniswap', primitives.uni, 201461772858910776917356020)).address,
-    cusdc: (await deployMockCompoundToken('cUSDC', 'Compound USD Coin', primitives.usdc, 214132051581680)).address,
-    cusdt: (await deployMockCompoundToken('cUSDT', 'Compound USDT', primitives.usdt, 205438026383237)).address,
-    cwbtc: (await deployMockCompoundToken('cWBTC', 'Compound Wrapped BTC', primitives.wbtc, 20192119227582185)).address,
-    czrx: (await deployMockCompoundToken('cZRX', 'Compound 0x', primitives.zrx, 203715368697685663551483532)).address,
+    cbat: (await deployMockCompoundToken('cBAT', 'Compound Basic Attention Token', primitives.bat, '204650501822922293956687133')).address,
+    cdai: (await deployMockCompoundToken('cDAI', 'Compound Dai', primitives.dai, '209151253095207634720267576')).address,
+    crep: (await deployMockCompoundToken('cREP', 'Compound Augur', primitives.rep, '200406592366310639162223313')).address,
+    cuni: (await deployMockCompoundToken('cUNI', 'Compound Uniswap', primitives.uni, '201461772858910776917356020')).address,
+    cusdc: (await deployMockCompoundToken('cUSDC', 'Compound USD Coin', primitives.usdc, '214132051581680')).address,
+    cusdt: (await deployMockCompoundToken('cUSDT', 'Compound USDT', primitives.usdt, '205438026383237')).address,
+    cwbtc: (await deployMockCompoundToken('cWBTC', 'Compound Wrapped BTC', primitives.wbtc, '20192119227582185')).address,
+    czrx: (await deployMockCompoundToken('cZRX', 'Compound 0x', primitives.zrx, '203715368697685663551483532')).address,
   };
 
   // UNISWAP PAIRS

@@ -7,7 +7,7 @@ import {
   MockUniswapV2PriceSourceArgs,
   ReleaseStatusTypes,
 } from '@enzymefinance/protocol';
-import { utils } from 'ethers';
+import { utils, BigNumberish } from 'ethers';
 import fs from 'fs-extra';
 import { DeployFunction, DeployOptions, DeployResult } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
@@ -65,7 +65,7 @@ export function createDeployMockSynthetixToken(hre: HardhatRuntimeEnvironment) {
 }
 
 export function createDeployMockCompoundToken(hre: HardhatRuntimeEnvironment, centralizedRateProvider: string) {
-  return async function (symbol: string, name: string, underlying: string, rate: number) {
+  return async function (symbol: string, name: string, underlying: string, rate: BigNumberish) {
     return await deployMock(hre, {
       name: symbol,
       contract: 'MockCTokenIntegratee',
@@ -79,7 +79,7 @@ export function createDeployMockCompoundEther(
   centralizedRateProvider: string,
   weth: string,
 ) {
-  return async function (symbol: string, name: string, rate: number) {
+  return async function (symbol: string, name: string, rate: BigNumberish) {
     return await deployMock(hre, {
       name: symbol,
       contract: 'MockCEtherIntegratee',
