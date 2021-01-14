@@ -558,6 +558,11 @@ export async function configureMockRelease({
     synthTokens,
   );
 
+  for (const synth of Object.values(mocks.synthetix.synths)) {
+    const mockToken = new MockToken(synth, deployer);
+    mockToken.addMinters([mocks.synthetix.mockSynthetixIntegratee]);
+  }
+
   // SEED EOAs
   const allCTokens = [
     new MockToken(mocks.compoundTokens.ceth, deployer),

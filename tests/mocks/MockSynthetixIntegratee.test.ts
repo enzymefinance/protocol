@@ -1,5 +1,5 @@
 import { AddressLike, EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
-import { MockSynthetixToken } from '@enzymefinance/protocol';
+import { MockSynthetixToken, MockToken } from '@enzymefinance/protocol';
 import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -33,6 +33,11 @@ async function snapshot(provider: EthereumTestnetProvider) {
     MockSynthetixToken.deploy(config.deployer, 'SynthMockC', 'sMockC', 18, currencyKeys[2]),
     MockSynthetixToken.deploy(config.deployer, 'SynthMockD', 'sMockD', 18, currencyKeys[3]),
   ]);
+
+  for (const synth of Object.values(synths)) {
+    const mockToken = new MockToken(synth, config.deployer);
+    mockToken.addMinters([deployment.synthetix.mockSynthetixIntegratee]);
+  }
 
   const synthAddresses = synths.map((synth) => synth.address);
 

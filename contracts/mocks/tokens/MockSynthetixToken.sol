@@ -11,13 +11,12 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./../../release/interfaces/ISynthetixProxyERC20.sol";
 import "./../../release/interfaces/ISynthetixSynth.sol";
 import "./MockToken.sol";
 
-contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken, Ownable {
+contract MockSynthetixToken is ISynthetixProxyERC20, ISynthetixSynth, MockToken {
     using SafeMath for uint256;
 
     bytes32 public override currencyKey;
