@@ -93,8 +93,8 @@ const fn: DeployFunction = async function (hre) {
     ren: (await deployMockToken('REN', 'Republic Token', 18)).address,
     rep: (await deployMockToken('REP', 'Reputation', 18)).address,
     uni: (await deployMockToken('UNI', 'Uniswap', 18)).address,
-    usdc: (await deployMockToken('USDC', 'USD Coin', 18)).address,
-    usdt: (await deployMockToken('USDT', 'Tether USD', 18)).address,
+    usdc: (await deployMockToken('USDC', 'USD Coin', 6)).address,
+    usdt: (await deployMockToken('USDT', 'Tether USD', 6)).address,
     wbtc: (await deployMockToken('WBTC', 'Wrapped BTC', 8)).address,
     yfi: (await deployMockToken('YFI', 'yearn.finance', 18)).address,
     zrx: (await deployMockToken('ZRX', '0x Protocol Token', 18)).address,
@@ -106,7 +106,7 @@ const fn: DeployFunction = async function (hre) {
 
   // SYNTHS
   const synths = {
-    sdefi: (await deployMockSynthetixToken('sDEFI', 'Synth sDEFI', 8)).address,
+    sdefi: (await deployMockSynthetixToken('sDEFI', 'Synth sDEFI', 18)).address,
   };
 
   // COMPOUND
