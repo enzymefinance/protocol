@@ -2,36 +2,56 @@
 
 As an open source project, we will consider changes to the code base from the community via pull requests. This document contains the guidelines for submission.
 
-## Pull requests and reviews
+## Requesting permission to contribute
 
-The main branch that development work occurs on is the `develop` branch. It is usually encouraged to branch from there, and make pull requests back to `develop` when the change is made.
+Currently, all active development happens in a private development repo, which is then pushed to the public repo as releases and extended functionality are brought into production.
 
-When making a pull request, please:
+We are working on a structure for general community contributions.
+
+In the meantime, those who wish to contribute to Enzyme should reach out to the Enzyme Council with a proposal for how they would like to contribute: [council@enzyme.finance](mailto:council@enzyme.finance)
+
+All pull requests must be made against the private development repo.
+
+## Git Branching Model
+
+We essentially follow the principles of this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/), where `master` is replaced by `current` and `develop` is replaced by `next`.
+
+`current` is the branch with the smart contracts that represent the full current release active on Ethereum mainnet.
+
+`next` is the branch under active development, which will become the next release on Ethereum mainnet.
+
+Because releases are dependent on deployed smart contracts, the only kinds of code that can be merged directly into `current` are new contracts that do not depend on changes to already-deployed production code (e.g., a new DeFi adapter or a new derivative price feed), or changes to non-production code (e.g., docs or additional test coverage necessary to accompany new contracts).
+
+Any breaking changes to production contracts should be introduced by branching off of `next`.
+
+Each branch name should be prefixed with either `feat/`, `fix/`, `refactor/`, `chore/`, `test/`, or `docs/` depending on the type of work that is being done:
+
+- `feat/my-branch` (for code that adds new contract functionality, production contracts only)
+- `fix/my-branch` (for fixing existing contracts, production contracts only)
+- `refactor/my-branch` (for refactoring contracts, production contracts only)
+- `chore/my-branch` (for any work on non-production contracts, linters, deployment utils, etc)
+- `test/my-branch` (for adding, fixing, or updating tests and test helpers)
+- `docs/my-branch` (for documentation additions or changes)
+
+## Issues, pull requests and reviews
+
+Anybody can open a new issue, which will be reviewed by a maintainer.
+
+Before creating a pull request (PR), please first open a new issue describing the problem to be resolved and await a response from a maintainer.
+
+Pull requests should either be made into `current` or `next`, depending on if the PR is extending the current release or the next release, respectively. If you do not know which branch to base the PR against, please consult a maintainer.
+
+When making a pull request (PR), please:
 
 - Follow the "Git Branching Model" outlined in this document
 - Follow the "Style Guide" outlined in this document
 - Add tests that cover newly introduced code
 - Format your code (using prettier) by running `yarn format`
 - Lint your code (using solhint) by running `yarn lint`
-- Make a comment in the pull request that includes any breaking changes to solidity code
-- Make the pull request against the `develop` branch
+- Write a thorough description about the purpose and implementation of the PR
+- Make a comment in the PR that includes any breaking changes to solidity code
 
 When a pull request is created, one of the maintainers will review the code, and incorporate it into the relevant branch.
-
-## Git Branching Model
-
-Please always make PRs into the `develop` branch.
-
-We follow this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/).
-
-Each branch name should be prefixed with either `feature/`, `fix/`, `refactor/`, `chore/`, `test/`, or `docs/` depending on the type of work that is being done:
-
-- `feature/my-branch` (for code that adds production functionality, solidity only)
-- `fix/my-branch` (for fixing existing production code, solidity only)
-- `refactor/my-branch` (for refactoring production code, solidity only)
-- `chore/my-branch` (for updating linters, deployment utils, etc)
-- `test/my-branch` (for adding, fixing, or updating tests and test helpers)
-- `docs/my-branch` (for documentation additions or changes)
 
 ## Style Guide
 

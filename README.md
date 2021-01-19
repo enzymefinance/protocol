@@ -1,7 +1,6 @@
 # Enzyme Protocol
 
-![Build Status](https://github.com/avantgardefinance/protocol/workflows/CI/badge.svg)
-![Coverage Status](https://coveralls.io/repos/github/avantgardefinance/protocol/badge.svg?branch=develop&t=5QSBFe)
+![Build Status](../../workflows/CI/badge.svg)
 
 Enzyme is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. Enzyme empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
 
@@ -13,7 +12,7 @@ Enzyme is an Ethereum-based protocol for decentralized on-chain asset management
 - [yarn](https://www.yarnpkg.com)
 
 ```sh
-git clone git@github.com:avantgardefinance/protocol.git
+git clone [GIT_REPOSITORY_URL]
 cd protocol
 yarn install
 ```
