@@ -148,7 +148,7 @@ contract AuthUserExecutedSharesRequestorLib is IAuthUserExecutedSharesRequestor 
             denominationAssetContract.allowance(address(this), comptrollerProxyCopy) <
             totalInvestmentAmount
         ) {
-            denominationAssetContract.approve(comptrollerProxyCopy, type(uint256).max);
+            denominationAssetContract.safeApprove(comptrollerProxyCopy, type(uint256).max);
         }
 
         ComptrollerLib(comptrollerProxyCopy).buyShares(

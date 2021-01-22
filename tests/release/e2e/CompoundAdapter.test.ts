@@ -184,8 +184,8 @@ describe('lend', () => {
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
     });
 
-    // Rounding up from 394699
-    expect(lendReceipt).toCostLessThan('395000', gasAssertionTolerance);
+    // Rounding up from 398734
+    expect(lendReceipt).toCostLessThan('399000', gasAssertionTolerance);
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {

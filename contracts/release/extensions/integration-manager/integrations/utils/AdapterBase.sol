@@ -81,7 +81,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors {
         uint256 _neededAmount
     ) internal {
         if (ERC20(_asset).allowance(address(this), _target) < _neededAmount) {
-            ERC20(_asset).approve(_target, type(uint256).max);
+            ERC20(_asset).safeApprove(_target, type(uint256).max);
         }
     }
 
