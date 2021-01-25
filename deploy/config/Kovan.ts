@@ -26,6 +26,7 @@ import {
   createDeployMockCompoundEther,
 } from './Mocks';
 import { saveConfig } from './Config';
+import { randomAddress } from '@crestproject/crestproject';
 
 const weth = '0xd0a1e359811322d97991e03f863a0c30c2cf029c';
 const ethUsdAggregator = '0x9326BFA02ADD2366b30bacB125260Af641031331';
@@ -292,6 +293,9 @@ const fn: DeployFunction = async function (hre) {
     paraswap: {
       augustusSwapper: paraSwapIntegratee,
       tokenTransferProxy: paraSwapIntegratee,
+    },
+    stakehound: {
+      steth: randomAddress(), // TODO
     },
     uniswap: {
       factory: uniswapIntegratee,

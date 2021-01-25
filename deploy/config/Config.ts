@@ -57,6 +57,9 @@ export interface DeploymentConfig {
     augustusSwapper: string;
     tokenTransferProxy: string;
   };
+  stakehound: {
+    steth: string;
+  };
   uniswap: {
     factory: string;
     router: string;

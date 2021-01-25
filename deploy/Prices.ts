@@ -8,6 +8,7 @@ import {
   ChaiPriceFeedArgs,
   CompoundPriceFeed,
   CompoundPriceFeedArgs,
+  StakehoundEthPriceFeedArgs,
   SynthetixPriceFeed,
   SynthetixPriceFeedArgs,
   UniswapV2PoolPriceFeed,
@@ -52,6 +53,12 @@ const fn: DeployFunction = async function (hre) {
     from: deployer.address,
     log: true,
     args: [dispatcher.address, config.weth, config.compound.ceth, []] as CompoundPriceFeedArgs,
+  });
+
+  const stakehoundEthPriceFeed = await deploy('StakehoundEthPriceFeed', {
+    from: deployer.address,
+    log: true,
+    args: [config.stakehound.steth, config.weth] as StakehoundEthPriceFeedArgs,
   });
 
   // NOTE: Synths are registered after the contract deployment.
@@ -166,6 +173,7 @@ const fn: DeployFunction = async function (hre) {
     [config.wdgld.wdgld, wdgldPriceFeed.address],
     [config.chai.chai, chaiPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],
+    [config.stakehound.steth, stakehoundEthPriceFeed.address],
     ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
     ...Object.values(config.compound.ctokens).map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),
   ];

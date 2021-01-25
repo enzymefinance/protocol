@@ -231,6 +231,9 @@ const mainnetConfig: DeploymentConfig = {
     augustusSwapper: '0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989',
     tokenTransferProxy: '0x0A87c89B5007ff406Ab5280aBdD80fC495ec238e',
   },
+  stakehound: {
+    steth: '0xdfe66b14d37c77f4e9b180ceb433d1b164f0281d'
+  },
   uniswap: {
     factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',

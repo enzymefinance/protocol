@@ -34,6 +34,7 @@ export * from './codegen/ChaiPriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';
 export * from './codegen/WdgldPriceFeed';
+export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
 
 // Integration adapters
