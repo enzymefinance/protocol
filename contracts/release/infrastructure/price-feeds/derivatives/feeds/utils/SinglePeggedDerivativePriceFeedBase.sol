@@ -11,16 +11,22 @@
 
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../IDerivativePriceFeed.sol";
 
-/// @title OneToOnePriceFeedBase Contract
+/// @title SinglePeggedDerivativePriceFeedBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Price source oracle base for any derivative that maps 1:1 with its underlying
-abstract contract OneToOnePriceFeedBase is IDerivativePriceFeed {
+/// @notice Price feed base for any single derivative that is pegged 1:1 to its underlying
+abstract contract SinglePeggedDerivativePriceFeedBase is IDerivativePriceFeed {
     address private immutable DERIVATIVE;
     address private immutable UNDERLYING;
 
     constructor(address _derivative, address _underlying) public {
+        require(
+            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(),
+            "constructor: Unequal decimals"
+        );
+
         DERIVATIVE = _derivative;
         UNDERLYING = _underlying;
     }

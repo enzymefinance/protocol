@@ -71,7 +71,7 @@ const expectedGasCosts = {
   },
   'redeem all shares: max assets: all remaining': {
     weth: 2222000,
-    usdc: 2348000,
+    usdc: 2349000,
   },
 };
 const gasAssertionTolerance = 0.03; // 3%
