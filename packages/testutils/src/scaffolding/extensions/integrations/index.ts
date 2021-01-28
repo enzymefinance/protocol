@@ -1,3 +1,4 @@
+export * from './alpha';
 export * from './chai';
 export * from './compound';
 export * from './kyber';

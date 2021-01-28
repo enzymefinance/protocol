@@ -1,6 +1,7 @@
 import { utils } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import {
+  AlphaHomoraV1AdapterArgs,
   ChaiAdapterArgs,
   CompoundAdapterArgs,
   KyberAdapterArgs,
@@ -96,6 +97,12 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, config.kyber.networkProxy, config.weth] as KyberAdapterArgs,
   });
 
+  const alphaHomoraV1Adapter = await deploy('AlphaHomoraV1Adapter', {
+    from: deployer.address,
+    log: true,
+    args: [integrationManager.address, config.alphaHomoraV1.ibeth, config.weth] as AlphaHomoraV1AdapterArgs,
+  });
+
   // Register adapters.
   const integrationManagerInstance = new IntegrationManager(integrationManager.address, deployer);
   const registeredAdapters = await integrationManagerInstance.getRegisteredAdapters();
@@ -108,6 +115,7 @@ const fn: DeployFunction = async function (hre) {
     trackedAssetsAdapter.address,
     chaiAdapter.address,
     kyberAdapter.address,
+    alphaHomoraV1Adapter.address,
   ].filter((adapter) => !registeredAdapters.some((address) => sameAddress(adapter, address)));
 
   if (!!adaptersNeedingRegistration.length) {

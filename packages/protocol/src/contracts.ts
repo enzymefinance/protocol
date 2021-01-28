@@ -28,6 +28,7 @@ export * from './codegen/IPrimitivePriceFeed';
 export * from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
+export * from './codegen/AlphaHomoraV1PriceFeed';
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AggregatedDerivativePriceFeed';
 export * from './codegen/ChaiPriceFeed';
@@ -38,6 +39,7 @@ export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
 
 // Integration adapters
+export * from './codegen/AlphaHomoraV1Adapter';
 export * from './codegen/ChaiAdapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/KyberAdapter';
@@ -99,6 +101,7 @@ export * from './codegen/MockUniswapV2PriceSource';
 export * from './codegen/WETH';
 
 // External interfaces
+export * from './codegen/IAlphaHomoraV1Bank';
 export * from './codegen/IUniswapV2Factory';
 export * from './codegen/IUniswapV2Pair';
 export * from './codegen/IKyberNetworkProxy';

@@ -215,6 +215,9 @@ const mainnetConfig: DeploymentConfig = {
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
   },
+  alphaHomoraV1: {
+    ibeth: '0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A'
+  },
   compound: {
     ceth: '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
     ctokens,

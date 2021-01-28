@@ -1,5 +1,6 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import {
+  AlphaHomoraV1PriceFeedArgs,
   AggregatedDerivativePriceFeed,
   AggregatedDerivativePriceFeedArgs,
   CentralizedRateProvider,
@@ -28,6 +29,12 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
 
   const dispatcher = await get('Dispatcher');
+
+  const alphaHomoraV1PriceFeed = await deploy('AlphaHomoraV1PriceFeed', {
+    from: deployer.address,
+    log: true,
+    args: [config.alphaHomoraV1.ibeth, config.weth] as AlphaHomoraV1PriceFeedArgs,
+  });
 
   const chaiPriceFeed = await deploy('ChaiPriceFeed', {
     from: deployer.address,
@@ -170,6 +177,7 @@ const fn: DeployFunction = async function (hre) {
   // Register all derivatives except pool tokens.
   const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(derivativePriceFeed.address, deployer);
   const derivativeAssets: [string, string][] = [
+    [config.alphaHomoraV1.ibeth, alphaHomoraV1PriceFeed.address],
     [config.wdgld.wdgld, wdgldPriceFeed.address],
     [config.chai.chai, chaiPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],

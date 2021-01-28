@@ -88,6 +88,7 @@ const config: HardhatUserConfig = {
       // TODO: Re-evaluate whether we should include these at all.
       'IMigrationHookHandler',
       'IMigratableVault',
+      'IAlphaHomoraV1Bank',
       'IChainlinkAggregator',
       'IMakerDaoPot',
       'IUniswapV2Factory',

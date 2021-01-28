@@ -278,6 +278,9 @@ const fn: DeployFunction = async function (hre) {
       originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
       trackingCode: utils.formatBytes32String('ENZYME'),
     },
+    alphaHomoraV1: {
+      ibeth: randomAddress(), // TODO
+    },
     compound: {
       ceth: ceth,
       ctokens,

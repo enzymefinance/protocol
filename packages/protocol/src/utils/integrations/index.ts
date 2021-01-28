@@ -1,4 +1,5 @@
 export * from './actions';
+export * from './alpha';
 export * from './chai';
 export * from './common';
 export * from './compound';

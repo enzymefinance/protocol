@@ -41,6 +41,9 @@ export interface DeploymentConfig {
     originator: string;
     trackingCode: string;
   };
+  alphaHomoraV1: {
+    ibeth: string;
+  };
   compound: {
     ceth: string;
     ctokens: Record<string, string>;
