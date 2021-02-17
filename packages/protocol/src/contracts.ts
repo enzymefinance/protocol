@@ -75,7 +75,9 @@ export * from './codegen/AuthUserExecutedSharesRequestorProxy';
 export * from './codegen/FundActionsWrapper';
 
 // Test contracts
+export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
+export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
 
 // Mocks
 
