@@ -1,6 +1,7 @@
 import { utils } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import {
+  AaveAdapterArgs,
   AlphaHomoraV1AdapterArgs,
   ChaiAdapterArgs,
   CompoundAdapterArgs,
@@ -67,6 +68,12 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, config.zeroex.exchange, fundDeployer.address, []] as ZeroExV2AdapterArgs,
   });
 
+  const aaveAdapter = await deploy('AaveAdapter', {
+    from: deployer.address,
+    log: true,
+    args: [integrationManager.address, config.aave.lendingPoolAddressProvider] as AaveAdapterArgs,
+  });
+
   const compoundAdapter = await deploy('CompoundAdapter', {
     from: deployer.address,
     log: true,
@@ -107,6 +114,7 @@ const fn: DeployFunction = async function (hre) {
   const integrationManagerInstance = new IntegrationManager(integrationManager.address, deployer);
   const registeredAdapters = await integrationManagerInstance.getRegisteredAdapters();
   const adaptersNeedingRegistration = [
+    aaveAdapter.address,
     paraSwapAdapter.address,
     synthetixAdapter.address,
     zeroExAdapter.address,

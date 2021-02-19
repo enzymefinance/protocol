@@ -1,7 +1,7 @@
-import { constants } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import { constants } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 export async function saveConfig(hre: HardhatRuntimeEnvironment, data: DeploymentConfig) {
   await hre.deployments.save('Config', {
@@ -40,6 +40,11 @@ export interface DeploymentConfig {
     delegateApprovals: string;
     originator: string;
     trackingCode: string;
+  };
+  aave: {
+    lendingPoolAddressProvider: string;
+    protocolDataProvider: string;
+    aTokens: Record<string, [string, string]>;
   };
   alphaHomoraV1: {
     ibeth: string;

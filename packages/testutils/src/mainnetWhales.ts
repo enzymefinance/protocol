@@ -3,6 +3,8 @@ import { BigNumber, BigNumberish, providers, utils } from 'ethers';
 import hre from 'hardhat';
 
 export const mainnetWhales = {
+  adai: '0x62e41b1185023bcc14a465d350e1dde341557925',
+  ausdc: '0x034a5f8678455ea078021e7a5b34ab7ef210674e',
   bat: '0x312da0eae223b2062ecd4d3f3a1100eb7d4414b1',
   bnb: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
   bnt: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',

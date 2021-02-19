@@ -1,8 +1,9 @@
-import { DeployFunction } from 'hardhat-deploy/types';
 import {
-  AlphaHomoraV1PriceFeedArgs,
+  AavePriceFeed,
+  AavePriceFeedArgs,
   AggregatedDerivativePriceFeed,
   AggregatedDerivativePriceFeedArgs,
+  AlphaHomoraV1PriceFeedArgs,
   CentralizedRateProvider,
   ChainlinkPriceFeed,
   ChainlinkPriceFeedArgs,
@@ -17,6 +18,7 @@ import {
   ValueInterpreterArgs,
   WdgldPriceFeedArgs,
 } from '@enzymefinance/protocol';
+import { DeployFunction } from 'hardhat-deploy/types';
 import { loadConfig } from './config/Config';
 
 function nonOptional<T>(array: (T | undefined)[]): T[] {
@@ -53,6 +55,13 @@ const fn: DeployFunction = async function (hre) {
     from: deployer.address,
     log: true,
     args: [dispatcher.address, config.weth, config.chainlink.ethusd, [], [], []] as ChainlinkPriceFeedArgs,
+  });
+
+  // NOTE: Aave tokens are registered after the contract deployment.
+  const aavePriceFeed = await deploy('AavePriceFeed', {
+    from: deployer.address,
+    log: true,
+    args: [dispatcher.address, config.aave.protocolDataProvider] as AavePriceFeedArgs,
   });
 
   // NOTE: Compound tokens are registered after the contract deployment.
@@ -129,6 +138,26 @@ const fn: DeployFunction = async function (hre) {
     }
   }
 
+  // Register all aTokens with the aave price feed.
+  const aavePriceFeedInstance = new AavePriceFeed(aavePriceFeed.address, deployer);
+  const aTokensNeedingRegistration = nonOptional(
+    await Promise.all(
+      Object.values(config.aave.aTokens).map(async (aToken) => {
+        return (await aavePriceFeedInstance.isSupportedAsset(aToken[0])) ? undefined : [aToken[0], aToken[1]];
+      }),
+    ),
+  );
+
+  const aTokenDerivatives = aTokensNeedingRegistration.map(([derivative]) => derivative);
+  const aTokenUnderlyings = aTokensNeedingRegistration.map(([, underlying]) => underlying);
+
+  if (!!aTokensNeedingRegistration.length) {
+    log('Registering new Aave tokens', aTokensNeedingRegistration);
+    await aavePriceFeedInstance.addDerivatives(aTokenDerivatives, aTokenUnderlyings);
+  } else {
+    log('All compound tokens already registered');
+  }
+
   // NOTE: This does not account for primitives that would need to be updated (changed aggregator or rate asset).
   if (!!chainlinkAssetsNeedingRegistration.length) {
     log('Registering new primitives', chainlinkAssetsNeedingRegistration);
@@ -184,6 +213,7 @@ const fn: DeployFunction = async function (hre) {
     [config.stakehound.steth, stakehoundEthPriceFeed.address],
     ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
     ...Object.values(config.compound.ctokens).map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),
+    ...Object.values(config.aave.aTokens).map(([aToken]) => [aToken, aavePriceFeed.address] as [string, string]),
   ];
 
   const derivativeAssetsNeedingRegistration = nonOptional(

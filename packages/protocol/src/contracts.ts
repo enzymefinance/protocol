@@ -28,6 +28,7 @@ export * from './codegen/IPrimitivePriceFeed';
 export * from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
+export * from './codegen/AavePriceFeed';
 export * from './codegen/AlphaHomoraV1PriceFeed';
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AggregatedDerivativePriceFeed';
@@ -39,6 +40,7 @@ export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
 
 // Integration adapters
+export * from './codegen/AaveAdapter';
 export * from './codegen/AlphaHomoraV1Adapter';
 export * from './codegen/ChaiAdapter';
 export * from './codegen/CompoundAdapter';

@@ -1,6 +1,6 @@
 import { ChainlinkRateAsset } from '@enzymefinance/protocol';
-import { DeploymentConfig, saveConfig } from './Config';
 import { DeployFunction } from 'hardhat-deploy/types';
+import { DeploymentConfig, saveConfig } from './Config';
 
 // Note that some addresses in this file are checksummed and others are not. This shouldn't be an issue.
 
@@ -45,6 +45,8 @@ const primitives = {
   yfi: '0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e',
   zrx: '0xE41d2489571d322189246DaFA5ebDe1F4699F498',
 } as const;
+
+const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
 const aggregators = {
   aave: ['0x6Df09E975c830ECae5bd4eD9d90f3A95a4f88012', ChainlinkRateAsset.ETH],
@@ -145,6 +147,29 @@ const ctokens = {
   czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407', // cZRX
 } as const;
 
+const aTokens = {
+  aaave: ['0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B', primitives.aave] as [string, string],
+  // abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
+  abusd: ['0xA361718326c15715591c299427c62086F69923D9', primitives.busd] as [string, string],
+  acrv: ['0x8dAE6Cb04688C62d939ed9B68d32Bc62e49970b1', primitives.crv] as [string, string],
+  adai: ['0x028171bCA77440897B824Ca71D1c56caC55b68A3', primitives.dai] as [string, string],
+  aenj: ['0xaC6Df26a590F08dcC95D5a4705ae8abbc88509Ef', primitives.enj] as [string, string],
+  aknc: ['0x39C6b3e42d6A679d7D776778Fe880BC9487C2EDA', primitives.knc] as [string, string],
+  alink: ['0xa06bC25B5805d5F8d82847D191Cb4Af5A3e873E0', primitives.link] as [string, string],
+  amana: ['0xa685a61171bb30d4072B338c80Cb7b2c865c873E', primitives.mana] as [string, string],
+  amkr: ['0xc713e5E149D5D0715DcD1c156a020976e7E56B88', primitives.mkr] as [string, string],
+  aren: ['0xCC12AbE4ff81c9378D670De1b57F8e0Dd228D77a', primitives.ren] as [string, string],
+  asnx: ['0x35f6B052C598d933D69A4EEC4D04c73A191fE6c2', primitives.snx] as [string, string],
+  asusd: ['0x6C5024Cd4F8A59110119C56f8933403A539555EB', primitives.susd] as [string, string],
+  auni: ['0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1', primitives.uni] as [string, string],
+  ausdc: ['0xBcca60bB61934080951369a648Fb03DF4F96263C', primitives.usdc] as [string, string],
+  ausdt: ['0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811', primitives.usdt] as [string, string],
+  awbtc: ['0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656', primitives.wbtc] as [string, string],
+  aweth: ['0x030bA81f1c18d280636F32af80b9AAd02Cf0854e', weth] as [string, string],
+  ayfi: ['0x5165d24277cD063F5ac44Efd447B27025e888f37', primitives.yfi] as [string, string],
+  azrx: ['0xDf7FF54aAcAcbFf42dfe29DD6144A69b629f8C9e', primitives.zrx] as [string, string],
+};
+
 const pools = {
   aaveWeth: '0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f', // AAVE-WETH
   adxWeth: '0xd3772a963790fede65646cfdae08734a17cd0f47', // ADX-WETH
@@ -214,6 +239,11 @@ const mainnetConfig: DeploymentConfig = {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
+  },
+  aave: {
+    lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
+    protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d',
+    aTokens,
   },
   alphaHomoraV1: {
     ibeth: '0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A'

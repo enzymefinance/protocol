@@ -1,9 +1,9 @@
+import '@crestproject/hardhat/plugin';
 import 'dotenv/config';
+import { utils } from 'ethers';
+import 'hardhat-contract-sizer';
 import 'hardhat-deploy';
 import 'hardhat-deploy-ethers';
-import 'hardhat-contract-sizer';
-import '@crestproject/hardhat/plugin';
-import { utils } from 'ethers';
 import { HardhatUserConfig } from 'hardhat/types';
 
 function node(networkName: string) {

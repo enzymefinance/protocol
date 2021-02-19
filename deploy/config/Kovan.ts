@@ -1,32 +1,32 @@
-import { utils } from 'ethers';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { randomAddress } from '@crestproject/crestproject';
 import {
-  encodeZeroExV2AssetData,
+  CentralizedRateProvider,
   CentralizedRateProviderArgs,
+  ChainlinkRateAsset,
+  encodeZeroExV2AssetData,
   MockChaiIntegrateeArgs,
+  MockKyberIntegratee,
   MockKyberIntegrateeArgs,
   MockParaSwapIntegrateeArgs,
-  MockZeroExV2IntegrateeArgs,
-  MockSynthetixPriceSourceArgs,
-  MockSynthetixIntegrateeArgs,
   MockSynthetixIntegratee,
-  MockUniswapV2IntegrateeArgs,
-  ChainlinkRateAsset,
+  MockSynthetixIntegrateeArgs,
   MockSynthetixPriceSource,
-  CentralizedRateProvider,
-  MockKyberIntegratee,
+  MockSynthetixPriceSourceArgs,
   MockUniswapV2Integratee,
+  MockUniswapV2IntegrateeArgs,
+  MockZeroExV2IntegrateeArgs,
 } from '@enzymefinance/protocol';
-import {
-  deployMock,
-  createDeployMockToken,
-  createDeployMockSynthetixToken,
-  createDeployMockCompoundToken,
-  createDeployMockUniswapPair,
-  createDeployMockCompoundEther,
-} from './Mocks';
+import { utils } from 'ethers';
+import { DeployFunction } from 'hardhat-deploy/types';
 import { saveConfig } from './Config';
-import { randomAddress } from '@crestproject/crestproject';
+import {
+  createDeployMockCompoundEther,
+  createDeployMockCompoundToken,
+  createDeployMockSynthetixToken,
+  createDeployMockToken,
+  createDeployMockUniswapPair,
+  deployMock,
+} from './Mocks';
 
 const weth = '0xd0a1e359811322d97991e03f863a0c30c2cf029c';
 const ethUsdAggregator = '0x9326BFA02ADD2366b30bacB125260Af641031331';
@@ -108,6 +108,12 @@ const fn: DeployFunction = async function (hre) {
   // SYNTHS
   const synths = {
     sdefi: (await deployMockSynthetixToken('sDEFI', 'Synth sDEFI', 18)).address,
+  };
+
+  // AAVE
+
+  const aTokens = {
+    ausdc: [randomAddress(), randomAddress()] as [string, string], // TODO
   };
 
   // COMPOUND
@@ -277,6 +283,11 @@ const fn: DeployFunction = async function (hre) {
       delegateApprovals: synthetixIntegratee,
       originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
       trackingCode: utils.formatBytes32String('ENZYME'),
+    },
+    aave: {
+      lendingPoolAddressProvider: randomAddress(),
+      protocolDataProvider: randomAddress(),
+      aTokens: aTokens,
     },
     alphaHomoraV1: {
       ibeth: randomAddress(), // TODO
