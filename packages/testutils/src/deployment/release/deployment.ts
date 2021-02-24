@@ -409,7 +409,8 @@ export const deployRelease = describeDeployment<ReleaseDeploymentConfig, Release
     return AuthUserExecutedSharesRequestorLib.deploy(config.deployer);
   },
   async fundActionsWrapper(config, deployment) {
-    return FundActionsWrapper.deploy(config.deployer, await deployment.feeManager);
+    // TODO: this deployment script will be removed, but if not need to use real address
+    return FundActionsWrapper.deploy(config.deployer, await deployment.feeManager, config.weth);
   },
   // Post-deployment config
   async postDeployment(config, deployment) {

@@ -1,9 +1,11 @@
 import { DeployFunction } from 'hardhat-deploy/types';
 import type { FundActionsWrapperArgs, AuthUserExecutedSharesRequestorFactoryArgs } from '@enzymefinance/protocol';
+import { loadConfig } from './config/Config';
 
 const fn: DeployFunction = async function (hre) {
   const { deploy, get } = hre.deployments;
   const deployer = await hre.ethers.getNamedSigner('deployer');
+  const config = await loadConfig(hre);
 
   const dispatcher = await get('Dispatcher');
   const feeManager = await get('FeeManager');
@@ -25,11 +27,11 @@ const fn: DeployFunction = async function (hre) {
   await deploy('FundActionsWrapper', {
     from: deployer.address,
     log: true,
-    args: [feeManager.address] as FundActionsWrapperArgs,
+    args: [feeManager.address, config.weth] as FundActionsWrapperArgs,
   });
 };
 
 fn.tags = ['Peripheral'];
-fn.dependencies = ['Dispatcher', 'FeeManager'];
+fn.dependencies = ['Config', 'Dispatcher', 'FeeManager'];
 
 export default fn;

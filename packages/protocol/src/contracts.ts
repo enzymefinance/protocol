@@ -118,6 +118,7 @@ export * from './codegen/ISynthetixAddressResolver';
 export * from './codegen/ISynthetixDelegateApprovals';
 export * from './codegen/ISynthetixExchangeRates';
 export * from './codegen/ISynthetixExchanger';
+export * from './codegen/IUniswapV2Router2';
 
 // prettier-ignore
 export interface StandardToken extends Contract<StandardToken> {
@@ -147,9 +148,20 @@ export const StandardToken = contract<StandardToken>()`
 export interface UniswapV2Router extends Contract<UniswapV2Router> {
   getAmountsOut: Call<(amountIn: BigNumberish, path: AddressLike[]) => BigNumber[], Contract<any>>;
   quote: Call<(amountA: BigNumberish, reserveA: BigNumberish, reserveB: BigNumberish) => BigNumber, Contract<any>>;
+  swapExactTokensForTokens: Send<
+    (
+      amountIn: BigNumberish,
+      amountOutMin: BigNumberish,
+      path: AddressLike[],
+      to: AddressLike,
+      deadline: BigNumberish,
+    ) => BigNumber[],
+    Contract<any>
+  >;
 }
 
 export const UniswapV2Router = contract<UniswapV2Router>()`
   function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[])
   function quote(uint256 amountA, uint256 reserveA, uint256 reserveB) pure returns (uint256)
+  function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline) returns (uint256[])
 `;
