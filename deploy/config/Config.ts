@@ -61,6 +61,9 @@ export interface DeploymentConfig {
   kyber: {
     networkProxy: string;
   };
+  lido: {
+    steth: string;
+  };
   paraswap: {
     augustusSwapper: string;
     tokenTransferProxy: string;

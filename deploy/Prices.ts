@@ -10,6 +10,7 @@ import {
   ChaiPriceFeedArgs,
   CompoundPriceFeed,
   CompoundPriceFeedArgs,
+  LidoStethPriceFeedArgs,
   StakehoundEthPriceFeedArgs,
   SynthetixPriceFeed,
   SynthetixPriceFeedArgs,
@@ -69,6 +70,12 @@ const fn: DeployFunction = async function (hre) {
     from: deployer.address,
     log: true,
     args: [dispatcher.address, config.weth, config.compound.ceth, []] as CompoundPriceFeedArgs,
+  });
+
+  const lidoStethPriceFeed = await deploy('LidoStethPriceFeed', {
+    from: deployer.address,
+    log: true,
+    args: [config.lido.steth, config.weth] as LidoStethPriceFeedArgs,
   });
 
   const stakehoundEthPriceFeed = await deploy('StakehoundEthPriceFeed', {
@@ -210,6 +217,7 @@ const fn: DeployFunction = async function (hre) {
     [config.wdgld.wdgld, wdgldPriceFeed.address],
     [config.chai.chai, chaiPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],
+    [config.lido.steth, lidoStethPriceFeed.address],
     [config.stakehound.steth, stakehoundEthPriceFeed.address],
     ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
     ...Object.values(config.compound.ctokens).map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),

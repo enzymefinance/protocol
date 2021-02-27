@@ -304,6 +304,9 @@ const fn: DeployFunction = async function (hre) {
     kyber: {
       networkProxy: kyberIntegratee,
     },
+    lido: {
+      steth: randomAddress(), // TODO
+    },
     paraswap: {
       augustusSwapper: paraSwapIntegratee,
       tokenTransferProxy: paraSwapIntegratee,

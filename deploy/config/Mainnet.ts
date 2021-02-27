@@ -260,6 +260,9 @@ const mainnetConfig: DeploymentConfig = {
   kyber: {
     networkProxy: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   },
+  lido: {
+    steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
+  },
   paraswap: {
     augustusSwapper: '0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989',
     tokenTransferProxy: '0x0A87c89B5007ff406Ab5280aBdD80fC495ec238e',
