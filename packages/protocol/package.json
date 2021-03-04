@@ -5,11 +5,11 @@
   "author": "Enzyme Council DAO <council@enzyme.finance>",
   "license": "GPL-3.0",
   "homepage": "https://enzyme.finance",
-  "main": "dist/protocol.cjs.js",
-  "module": "dist/protocol.esm.js",
+  "main": "dist/enzymefinance-protocol.cjs.js",
+  "module": "dist/enzymefinance-protocol.esm.js",
   "browser": {
-    "./dist/protocol.cjs.js": "./dist/protocol.browser.cjs.js",
-    "./dist/protocol.esm.js": "./dist/protocol.browser.esm.js"
+    "./dist/enzymefinance-protocol.cjs.js": "./dist/enzymefinance-protocol.browser.cjs.js",
+    "./dist/enzymefinance-protocol.esm.js": "./dist/enzymefinance-protocol.browser.esm.js"
   },
   "files": [
     "dist",
@@ -34,7 +34,7 @@
     "Solidity"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.12.5",
+    "@babel/runtime": "^7.13.9",
     "decimal.js": "^10.2.1"
   },
   "devDependencies": {

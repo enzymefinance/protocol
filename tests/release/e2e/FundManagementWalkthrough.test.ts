@@ -36,16 +36,16 @@ import hre from 'hardhat';
 // Note that due to the nature of `toCostLessThan()`,
 const expectedGasCosts = {
   'create fund': {
-    weth: 703000,
-    usdc: 710000,
+    weth: 1501000,
+    usdc: 1508000,
   },
   'buy shares: denomination asset only: first investment': {
-    weth: 418000,
-    usdc: 437000,
+    weth: 475000,
+    usdc: 494000,
   },
   'buy shares: denomination asset only: second investment': {
-    weth: 446000,
-    usdc: 454000,
+    weth: 450000,
+    usdc: 459000,
   },
   'calc gav: denomination asset only': {
     weth: 44000,
@@ -59,21 +59,22 @@ const expectedGasCosts = {
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
     weth: 1656000,
-    usdc: 2434100,
+    usdc: 2435000,
   },
   'redeem partial shares: max assets': {
-    weth: 2268000,
-    usdc: 2472000,
+    weth: 2664000,
+    usdc: 2868000,
   },
   'buy shares: max assets': {
-    weth: 1218000,
-    usdc: 1439000,
+    weth: 1244000,
+    usdc: 1495000,
   },
   'redeem all shares: max assets: all remaining': {
-    weth: 2222000,
-    usdc: 2349000,
+    weth: 2588000,
+    usdc: 2715000,
   },
-};
+} as const;
+
 const gasAssertionTolerance = 0.03; // 3%
 let fork: ForkDeployment;
 const whales: Record<string, SignerWithAddress> = {};
