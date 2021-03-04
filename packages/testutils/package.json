@@ -1,50 +1,19 @@
 {
   "name": "@enzymefinance/testutils",
   "version": "2.0.0",
-  "description": "Technology Regulated and Operated Investment Funds",
-  "author": "Enzyme Council DAO <council@enzyme.finance>",
-  "license": "GPL-3.0",
-  "homepage": "https://enzyme.finance",
+  "private": true,
   "main": "dist/enzymefinance-testutils.cjs.js",
   "module": "dist/enzymefinance-testutils.esm.js",
   "browser": {
     "./dist/enzymefinance-testutils.cjs.js": "./dist/enzymefinance-testutils.browser.cjs.js",
     "./dist/enzymefinance-testutils.esm.js": "./dist/enzymefinance-testutils.browser.esm.js"
   },
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/enzymefinance/protocol.git"
-  },
-  "bugs": {
-    "url": "https://github.com/enzymefinance/protocol/issues"
-  },
-  "keywords": [
-    "DeFi",
-    "Ethereum",
-    "Enzyme",
-    "Enzyme Finance",
-    "Smart Contracts",
-    "Solidity"
-  ],
   "dependencies": {
     "@babel/runtime": "^7.13.9",
+    "@crestproject/crestproject": "^0.1.21",
     "@enzymefinance/protocol": "^2.0.0",
+    "ethers": "^5.0.31",
+    "ethers-eip712": "^0.2.0",
     "hardhat": "^2.0.11"
-  },
-  "devDependencies": {
-    "@crestproject/crestproject": "^0.1.21",
-    "ethers": "^5.0.19",
-    "ethers-eip712": "^0.2.0"
-  },
-  "peerDependencies": {
-    "@crestproject/crestproject": "^0.1.21",
-    "ethers": "^5.0.19",
-    "ethers-eip712": "^0.2.0"
   }
 }
