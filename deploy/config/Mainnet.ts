@@ -240,6 +240,18 @@ const mainnetConfig: DeploymentConfig = {
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
   },
+  curve: {
+    addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
+    minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',
+    pools: {
+      steth: {
+        pool: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022',
+        lpToken: '0x06325440D014e39736583c165C2963BA99fAf14E',
+        liquidityGaugeToken: '0x182B723a58739a9c974cFDB385ceaDb237453c28',
+        invariantProxyAsset: weth
+      },
+    },
+  },
   aave: {
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d',

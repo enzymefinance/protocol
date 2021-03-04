@@ -4,6 +4,7 @@ export * from './alpha';
 export * from './chai';
 export * from './common';
 export * from './compound';
+export * from './curve';
 export * from './kyber';
 export * from './paraswap';
 export * from './synthetix';

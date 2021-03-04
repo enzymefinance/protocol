@@ -48,15 +48,15 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // sbtc/usd price at Jan 9, 2020 had a price of $41,000
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09#panel>
+    // sbtc/usd price at Jan 17, 2020 had a price of $36,500
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-01-17&end_date=2021-01-17#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('41202889991809591335281'),
+      value_: BigNumber.from('36520318115419358123009'),
       isValid_: true,
     });
   });
@@ -72,15 +72,15 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // sbtc/usd price at Jan 9, 2020 had a price of $41,000
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09#panel>
+    // sbtc/usd price at Jan 17, 2020 had a price of $36,500
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-01-17&end_date=2021-01-17#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('41292277629'),
+      value_: BigNumber.from('36777302447'),
       isValid_: true,
     });
   });

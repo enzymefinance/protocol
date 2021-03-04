@@ -28,4 +28,16 @@ abstract contract IntegrationSelectors {
     // Lending
     bytes4 public constant LEND_SELECTOR = bytes4(keccak256("lend(address,bytes,bytes)"));
     bytes4 public constant REDEEM_SELECTOR = bytes4(keccak256("redeem(address,bytes,bytes)"));
+
+    // Staking
+    bytes4 public constant STAKE_SELECTOR = bytes4(keccak256("stake(address,bytes,bytes)"));
+    bytes4 public constant UNSTAKE_SELECTOR = bytes4(keccak256("unstake(address,bytes,bytes)"));
+
+    // Combined
+    bytes4 public constant LEND_AND_STAKE_SELECTOR = bytes4(
+        keccak256("lendAndStake(address,bytes,bytes)")
+    );
+    bytes4 public constant UNSTAKE_AND_REDEEM_SELECTOR = bytes4(
+        keccak256("unstakeAndRedeem(address,bytes,bytes)")
+    );
 }

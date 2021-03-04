@@ -1,6 +1,7 @@
 export * from './alpha';
 export * from './chai';
 export * from './compound';
+export * from './curve';
 export * from './kyber';
 export * from './mock';
 export * from './paraswap';

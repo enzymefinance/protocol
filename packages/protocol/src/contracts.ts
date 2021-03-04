@@ -28,23 +28,25 @@ export * from './codegen/IPrimitivePriceFeed';
 export * from './codegen/ChainlinkPriceFeed';
 
 // Derivative price feeds
-export * from './codegen/AavePriceFeed';
-export * from './codegen/AlphaHomoraV1PriceFeed';
 export * from './codegen/IDerivativePriceFeed';
+export * from './codegen/AavePriceFeed';
 export * from './codegen/AggregatedDerivativePriceFeed';
+export * from './codegen/AlphaHomoraV1PriceFeed';
 export * from './codegen/ChaiPriceFeed';
 export * from './codegen/CompoundPriceFeed';
-export * from './codegen/UniswapV2PoolPriceFeed';
-export * from './codegen/WdgldPriceFeed';
+export * from './codegen/CurvePriceFeed';
 export * from './codegen/LidoStethPriceFeed';
 export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
+export * from './codegen/UniswapV2PoolPriceFeed';
+export * from './codegen/WdgldPriceFeed';
 
 // Integration adapters
 export * from './codegen/AaveAdapter';
 export * from './codegen/AlphaHomoraV1Adapter';
 export * from './codegen/ChaiAdapter';
 export * from './codegen/CompoundAdapter';
+export * from './codegen/CurveLiquidityStethAdapter';
 export * from './codegen/KyberAdapter';
 export * from './codegen/ParaSwapAdapter';
 export * from './codegen/SynthetixAdapter';
@@ -107,18 +109,22 @@ export * from './codegen/WETH';
 
 // External interfaces
 export * from './codegen/IAlphaHomoraV1Bank';
-export * from './codegen/IUniswapV2Factory';
-export * from './codegen/IUniswapV2Pair';
-export * from './codegen/IKyberNetworkProxy';
-export * from './codegen/IMakerDaoPot';
-export * from './codegen/IChainlinkAggregator';
 export * from './codegen/ICERC20';
 export * from './codegen/ICEther';
 export * from './codegen/IChai';
+export * from './codegen/IChainlinkAggregator';
+export * from './codegen/ICurveAddressProvider';
+export * from './codegen/ICurveLiquidityGaugeV2';
+export * from './codegen/ICurveLiquidityPool';
+export * from './codegen/ICurveRegistry';
+export * from './codegen/ICurveStableSwapSteth';
+export * from './codegen/IKyberNetworkProxy';
+export * from './codegen/IMakerDaoPot';
 export * from './codegen/ISynthetixAddressResolver';
 export * from './codegen/ISynthetixDelegateApprovals';
 export * from './codegen/ISynthetixExchangeRates';
 export * from './codegen/ISynthetixExchanger';
+export * from './codegen/IUniswapV2Pair';
 export * from './codegen/IUniswapV2Router2';
 
 // prettier-ignore

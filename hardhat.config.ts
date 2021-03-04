@@ -46,7 +46,7 @@ const config: HardhatUserConfig = {
       },
       forking: {
         url: node('mainnet'),
-        blockNumber: 11621050, // Jan 9, 2021
+        blockNumber: 11662542, // Jan 15, 2021
       },
     },
     mainnet: {
@@ -105,6 +105,11 @@ const config: HardhatUserConfig = {
       'ISynthetixExchanger',
       'ISynthetixProxyERC20',
       'ISynthetixSynth',
+      'ICurveAddressProvider',
+      'ICurveLiquidityGaugeV2',
+      'ICurveLiquidityPool',
+      'ICurveRegistry',
+      'ICurveStableSwapSteth',
     ],
     options: {
       ignoreContractsWithoutAbi: true,

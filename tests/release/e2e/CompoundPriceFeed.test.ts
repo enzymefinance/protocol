@@ -61,13 +61,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // cDai/usd price on Jan 9, 2021 was about 0,021 USD.
-    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09>
+    // cDai/usd price on Jan 17, 2021 was about 0,021 USD.
+    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-01-17&end_date=2021-01-17>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('20917454883850009'),
+      value_: BigNumber.from('20943626144403632'),
       isValid_: true,
     });
   });
@@ -82,13 +82,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // cUsdc/usd price on Jan 9, 2021 was about 0,0213 USD.
-    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-01-09&end_date=2021-01-09>
+    // cUsdc/usd price on Jan 17, 2021 was about 0,0213 USD.
+    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-01-17&end_date=2021-01-17>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('21416'),
+      value_: BigNumber.from('21447'),
       isValid_: true,
     });
   });

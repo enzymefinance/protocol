@@ -41,6 +41,11 @@ export interface DeploymentConfig {
     originator: string;
     trackingCode: string;
   };
+  curve: {
+    addressProvider: string;
+    minter: string;
+    pools: Record<string, { pool: string; lpToken: string; liquidityGaugeToken: string; invariantProxyAsset: string }>;
+  };
   aave: {
     lendingPoolAddressProvider: string;
     protocolDataProvider: string;

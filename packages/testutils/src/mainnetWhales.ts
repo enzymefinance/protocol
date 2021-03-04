@@ -4,7 +4,7 @@ import hre from 'hardhat';
 
 export const mainnetWhales = {
   adai: '0x62e41b1185023bcc14a465d350e1dde341557925',
-  ausdc: '0x034a5f8678455ea078021e7a5b34ab7ef210674e',
+  ausdc: '0x98fa411ab5f0bd2655f2499e35666e83835996bc',
   bat: '0x312da0eae223b2062ecd4d3f3a1100eb7d4414b1',
   bnb: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
   bnt: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
@@ -17,7 +17,7 @@ export const mainnetWhales = {
   rep: '0x409c5ab44f99e778b8f82a3311a05149e5af3c8c',
   ren: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
   uni: '0x9f41cecc435101045ea9f41d4ee8c5353f77e5d5',
-  usdc: '0x8cee3eeab46774c1cde4f6368e3ae68bccd760bf',
+  usdc: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
   usdt: '0x5041ed759dd4afc3a72b8192c143f72f4724081a',
   weth: '0xe08A8b19e5722a201EaF20A6BC595eF655397bd5',
   zrx: '0x206376e8940e42538781cd94ef024df3c1e0fd43',
@@ -26,10 +26,11 @@ export const mainnetWhales = {
   cdai: '0x2bddEd18E2CA464355091266B7616956944ee7eE',
   ceth: '0xB1AdceddB2941033a090dD166a462fe1c2029484',
   crep: '0xc2386de1b7271a87b416f4605d500846e826a185',
-  cuni: '0x161fac24d54698755dab0fcd65e2c883928ca724',
+  cuni: '0x78e96be52e38b3fc3445a2ed34a6e586ffab9631',
   cusdc: '0x926e78b8df67e129011750dd7b975f8e50d3d7ad',
   czrx: '0x767ecb395def19ab8d1b2fcc89b3ddfbed28fd6b',
   susd: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
+  lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
 };
 
 export async function unlockWhales({

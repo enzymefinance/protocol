@@ -10,6 +10,8 @@ import {
   ChaiPriceFeedArgs,
   CompoundPriceFeed,
   CompoundPriceFeedArgs,
+  CurvePriceFeed,
+  CurvePriceFeedArgs,
   LidoStethPriceFeedArgs,
   StakehoundEthPriceFeedArgs,
   SynthetixPriceFeed,
@@ -43,6 +45,12 @@ const fn: DeployFunction = async function (hre) {
     from: deployer.address,
     log: true,
     args: [config.chai.chai, config.chai.dai, config.chai.pot] as ChaiPriceFeedArgs,
+  });
+
+  const curvePriceFeed = await deploy('CurvePriceFeed', {
+    from: deployer.address,
+    log: true,
+    args: [dispatcher.address, config.curve.addressProvider] as CurvePriceFeedArgs,
   });
 
   const wdgldPriceFeed = await deploy('WdgldPriceFeed', {
@@ -193,6 +201,42 @@ const fn: DeployFunction = async function (hre) {
     log('All compound tokens already registered');
   }
 
+  // Register all Curve derivatives with the Curve price feed
+  // TODO: cleaner way to bundle these together
+  const curveLPTokensNeedingRegistration = nonOptional(
+    await Promise.all(
+      Object.values(config.curve.pools).map(async (pool) => {
+        return (await compoundPriceFeedInstance.isSupportedAsset(pool.lpToken))
+          ? undefined
+          : { token: pool.lpToken, invariantProxyAsset: pool.invariantProxyAsset };
+      }),
+    ),
+  );
+  const curveLiquidityGaugeTokensNeedingRegistration = nonOptional(
+    await Promise.all(
+      Object.values(config.curve.pools).map(async (pool) => {
+        return (await compoundPriceFeedInstance.isSupportedAsset(pool.liquidityGaugeToken))
+          ? undefined
+          : { token: pool.liquidityGaugeToken, invariantProxyAsset: pool.invariantProxyAsset };
+      }),
+    ),
+  );
+  const curveAssetsNeedingRegistration = [
+    ...curveLPTokensNeedingRegistration,
+    ...curveLiquidityGaugeTokensNeedingRegistration,
+  ];
+
+  if (!!curveAssetsNeedingRegistration.length) {
+    log('Registering new curve tokens', curveAssetsNeedingRegistration);
+    const curvePriceFeedInstance = new CurvePriceFeed(curvePriceFeed.address, deployer);
+    await curvePriceFeedInstance.addDerivatives(
+      curveAssetsNeedingRegistration.map((item) => item.token),
+      curveAssetsNeedingRegistration.map((item) => item.invariantProxyAsset),
+    );
+  } else {
+    log('All curve tokens already registered');
+  }
+
   // Register all synths with the synthetix price feed.
   const synthetixPriceFeedInstance = new SynthetixPriceFeed(synthetixPriceFeed.address, deployer);
   const synthetixAssetsNeedingRegistration = nonOptional(
@@ -210,7 +254,7 @@ const fn: DeployFunction = async function (hre) {
     log('All synths already registered');
   }
 
-  // Register all derivatives except pool tokens.
+  // Register all derivatives except uniswap pool tokens.
   const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(derivativePriceFeed.address, deployer);
   const derivativeAssets: [string, string][] = [
     [config.alphaHomoraV1.ibeth, alphaHomoraV1PriceFeed.address],
@@ -222,6 +266,10 @@ const fn: DeployFunction = async function (hre) {
     ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
     ...Object.values(config.compound.ctokens).map((ctoken) => [ctoken, compoundPriceFeed.address] as [string, string]),
     ...Object.values(config.aave.aTokens).map(([aToken]) => [aToken, aavePriceFeed.address] as [string, string]),
+    ...Object.values(config.curve.pools).map((pool) => [pool.lpToken, curvePriceFeed.address] as [string, string]),
+    ...Object.values(config.curve.pools).map(
+      (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
+    ),
   ];
 
   const derivativeAssetsNeedingRegistration = nonOptional(

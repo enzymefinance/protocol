@@ -78,7 +78,7 @@ describe('expected values', () => {
       .args(ibeth, utils.parseUnits('1', await ibeth.decimals()), weth)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1024492999222326814'),
+      value_: BigNumber.from('1026718063439690534'),
       isValid_: true,
     });
   });
