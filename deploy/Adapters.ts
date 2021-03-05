@@ -6,14 +6,15 @@ import {
   AlphaHomoraV1AdapterArgs,
   ChaiAdapterArgs,
   CompoundAdapterArgs,
+  CurveExchangeAdapterArgs,
+  FundDeployer,
+  IntegrationManager,
   KyberAdapterArgs,
   ParaSwapAdapterArgs,
   SynthetixAdapterArgs,
   TrackedAssetsAdapterArgs,
   UniswapV2AdapterArgs,
   ZeroExV2AdapterArgs,
-  IntegrationManager,
-  FundDeployer,
   sighash,
 } from '@enzymefinance/protocol';
 import { loadConfig } from './config/Config';
@@ -88,6 +89,12 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, compoundPriceFeed.address, config.weth] as CompoundAdapterArgs,
   });
 
+  const curveExchangeAdapter = await deploy('CurveExchangeAdapter', {
+    from: deployer.address,
+    log: true,
+    args: [integrationManager.address, config.curve.addressProvider, config.weth] as CurveExchangeAdapterArgs,
+  });
+
   const uniswapV2Adapter = await deploy('UniswapV2Adapter', {
     from: deployer.address,
     log: true,
@@ -128,6 +135,7 @@ const fn: DeployFunction = async function (hre) {
     synthetixAdapter.address,
     zeroExAdapter.address,
     compoundAdapter.address,
+    curveExchangeAdapter.address,
     uniswapV2Adapter.address,
     trackedAssetsAdapter.address,
     chaiAdapter.address,

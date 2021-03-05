@@ -11,10 +11,15 @@
 
 pragma solidity 0.6.12;
 
-/// @title ICurveAddressProvider interface
+/// @title ICurveSwapsEther Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface ICurveAddressProvider {
-    function get_address(uint256) external view returns (address);
-
-    function get_registry() external view returns (address);
+interface ICurveSwapsEther {
+    function exchange(
+        address,
+        address,
+        address,
+        uint256,
+        uint256,
+        address
+    ) external payable returns (uint256);
 }

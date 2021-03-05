@@ -1,28 +1,32 @@
 import { AddressLike, Call, Contract, contract, Send, SignerWithAddress } from '@crestproject/crestproject';
 import {
   ComptrollerLib,
+  CurveExchangeAdapter,
   CurveLiquidityStethAdapter,
   IntegrationManager,
   IntegrationManagerActionId,
+  StandardToken,
   callOnIntegrationArgs,
-  curveMinterMintSelector,
   curveMinterMintManySelector,
+  curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
-  curveStethLendArgs,
   curveStethLendAndStakeArgs,
+  curveStethLendArgs,
   curveStethRedeemArgs,
   curveStethStakeArgs,
-  curveStethUnstakeArgs,
   curveStethUnstakeAndRedeemArgs,
+  curveStethUnstakeArgs,
+  curveTakeOrderArgs,
   encodeArgs,
-  lendSelector,
   lendAndStakeSelector,
+  lendSelector,
   redeemSelector,
   stakeSelector,
-  unstakeSelector,
+  takeOrderSelector,
   unstakeAndRedeemSelector,
+  unstakeSelector,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish, constants } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
 export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
   claim_rewards: Send<(_addr: AddressLike) => void>;
@@ -32,6 +36,15 @@ export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
 export const CurveLiquidityGaugeV2 = contract<CurveLiquidityGaugeV2>()`
   function claim_rewards(address)
   function integrate_fraction(address) view returns (uint256)
+`;
+
+// prettier-ignore
+export interface CurveSwaps extends Contract<CurveSwaps> {
+  get_best_rate: Call<(_from: AddressLike, to: AddressLike, amount: BigNumberish) => { bestPool: AddressLike, amountReceived: BigNumber }, CurveSwaps>
+}
+
+export const CurveSwaps = contract<CurveSwaps>()`
+  function get_best_rate(address _from, address to, uint256 amount) view returns (address bestPool, uint256 amountReceived)
 `;
 
 export interface CurveMinter extends Contract<CurveMinter> {
@@ -270,6 +283,46 @@ export function curveStethUnstake({
     encodedCallArgs: curveStethUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveTakeOrder({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveExchangeAdapter,
+  pool,
+  outgoingAsset,
+  outgoingAssetAmount = utils.parseEther('1'),
+  incomingAsset,
+  minIncomingAssetAmount = utils.parseEther('1'),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveExchangeAdapter: CurveExchangeAdapter;
+  pool: AddressLike;
+  outgoingAsset: StandardToken;
+  outgoingAssetAmount?: BigNumberish;
+  incomingAsset: StandardToken;
+  minIncomingAssetAmount?: BigNumberish;
+}) {
+  const takeOrderArgs = curveTakeOrderArgs({
+    pool,
+    outgoingAsset: outgoingAsset,
+    outgoingAssetAmount: outgoingAssetAmount,
+    incomingAsset: incomingAsset,
+    minIncomingAssetAmount: minIncomingAssetAmount,
+  });
+
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveExchangeAdapter,
+    selector: takeOrderSelector,
+    encodedCallArgs: takeOrderArgs,
   });
 
   return comptrollerProxy

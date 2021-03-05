@@ -1,3 +1,4 @@
+import { AddressLike } from '@crestproject/crestproject';
 import { BigNumberish, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';
@@ -84,4 +85,23 @@ export function curveStethUnstakeArgs({
   outgoingLiquidityGaugeTokenAmount: BigNumberish;
 }) {
   return encodeArgs(['uint256'], [outgoingLiquidityGaugeTokenAmount]);
+}
+
+export function curveTakeOrderArgs({
+  pool,
+  outgoingAsset,
+  outgoingAssetAmount,
+  incomingAsset,
+  minIncomingAssetAmount,
+}: {
+  pool: AddressLike;
+  outgoingAsset: AddressLike;
+  outgoingAssetAmount: BigNumberish;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(
+    ['address', 'address', 'uint256', 'address', 'uint256'],
+    [pool, outgoingAsset, outgoingAssetAmount, incomingAsset, minIncomingAssetAmount],
+  );
 }
