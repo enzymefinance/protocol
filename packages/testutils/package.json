@@ -11,7 +11,7 @@
   "dependencies": {
     "@babel/runtime": "^7.13.9",
     "@crestproject/crestproject": "^0.1.21",
-    "@enzymefinance/protocol": "^2.0.0",
+    "@enzymefinance/protocol": "^2.0.1",
     "ethers": "^5.0.31",
     "ethers-eip712": "^0.2.0",
     "hardhat": "^2.0.11"
