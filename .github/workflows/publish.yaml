@@ -20,8 +20,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 12
-          always-auth: true
-          token: ${{ secrets.NPM_TOKEN }}
 
       - name: Retrieve dependency cache
         uses: actions/cache@v2
@@ -38,5 +36,7 @@ jobs:
         with:
           publish: yarn release
           title: 'chore: publish private packages'
+          commit: 'chore: publish private packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
