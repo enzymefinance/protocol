@@ -4,6 +4,7 @@ import {
   aaveLendArgs,
   aaveRedeemArgs,
   lendSelector,
+  redeemSelector,
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -51,15 +52,15 @@ describe('lend', () => {
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
     });
 
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const incomingAToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const amount = utils.parseUnits('1', await token.decimals());
+    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
 
-    await outgoingToken.transfer(vaultProxy, amount);
+    await token.transfer(vaultProxy, amount);
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
-      assets: [incomingAToken, outgoingToken],
+      assets: [aToken, token],
     });
 
     const lendReceipt = await aaveLend({
@@ -67,20 +68,20 @@ describe('lend', () => {
       integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
       aaveAdapter: fork.deployment.AaveAdapter,
-      outgoingToken,
+      aToken,
       amount,
-      incomingAToken,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
-      assets: [incomingAToken, outgoingToken],
+      assets: [aToken, token],
     });
 
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(lendReceipt).toCostLessThan('499000', gasAssertionTolerance);
+    // Rounding up from 482677
+    expect(lendReceipt).toCostLessThan('483000', gasAssertionTolerance);
   });
 });
 
@@ -95,15 +96,15 @@ describe('redeem', () => {
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
     });
 
-    const outgoingAToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
-    const amount = utils.parseUnits('1', await outgoingAToken.decimals());
-    const incomingToken = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const amount = utils.parseUnits('1', await aToken.decimals());
+    const token = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
 
-    await outgoingAToken.transfer(vaultProxy, amount);
+    await aToken.transfer(vaultProxy, amount);
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
-      assets: [incomingToken, outgoingAToken],
+      assets: [token, aToken],
     });
 
     const redeemReceipt = await aaveRedeem({
@@ -111,20 +112,20 @@ describe('redeem', () => {
       integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
       aaveAdapter: fork.deployment.AaveAdapter,
-      outgoingAToken,
+      aToken,
       amount,
-      incomingToken,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
-      assets: [incomingToken, outgoingAToken],
+      assets: [token, aToken],
     });
 
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(redeemReceipt).toCostLessThan(550000, gasAssertionTolerance);
+    // Rounding up from 534330
+    expect(redeemReceipt).toCostLessThan('535000', gasAssertionTolerance);
   });
 });
 
@@ -145,12 +146,11 @@ describe('parseAssetsForMethod', () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const incomingAToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
 
     const args = aaveLendArgs({
-      outgoingToken,
+      aToken,
       amount,
-      incomingAToken,
     });
 
     await expect(aaveAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
@@ -164,12 +164,11 @@ describe('parseAssetsForMethod', () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const incomingAToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
 
     const args = aaveLendArgs({
-      outgoingToken,
+      aToken,
       amount,
-      incomingAToken,
     });
 
     await expect(aaveAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
@@ -180,7 +179,7 @@ describe('parseAssetsForMethod', () => {
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-      incomingAssets_: [incomingAToken.address],
+      incomingAssets_: [aToken.address],
       spendAssets_: [outgoingToken],
       spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount],
@@ -189,22 +188,21 @@ describe('parseAssetsForMethod', () => {
 
   it('generates expected output for redeeming', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
-    const outgoingAToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
-    const amount = utils.parseUnits('1', await outgoingAToken.decimals());
-    const incomingToken = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const amount = utils.parseUnits('1', await aToken.decimals());
+    const token = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
 
     const args = aaveRedeemArgs({
-      outgoingAToken,
+      aToken,
       amount,
-      incomingToken,
     });
 
-    const result = await aaveAdapter.parseAssetsForMethod(lendSelector, args);
+    const result = await aaveAdapter.parseAssetsForMethod(redeemSelector, args);
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-      incomingAssets_: [incomingToken.address],
-      spendAssets_: [outgoingAToken],
+      incomingAssets_: [token],
+      spendAssets_: [aToken],
       spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount],
     });

@@ -12,26 +12,25 @@
 pragma solidity 0.6.12;
 
 import "../../../../interfaces/IAaveProtocolDataProvider.sol";
-import "../IDerivativePriceFeed.sol";
 import "./utils/PeggedDerivativesPriceFeedBase.sol";
 
 /// @title AavePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Aave
-contract AavePriceFeed is IDerivativePriceFeed, PeggedDerivativesPriceFeedBase {
-    address private immutable AAVE_PROTOCOL_DATA_PROVIDER;
+contract AavePriceFeed is PeggedDerivativesPriceFeedBase {
+    address private immutable PROTOCOL_DATA_PROVIDER;
 
-    constructor(address _dispatcher, address _aaveProtocolDataProvider)
+    constructor(address _dispatcher, address _protocolDataProvider)
         public
         PeggedDerivativesPriceFeedBase(_dispatcher)
     {
-        AAVE_PROTOCOL_DATA_PROVIDER = _aaveProtocolDataProvider;
+        PROTOCOL_DATA_PROVIDER = _protocolDataProvider;
     }
 
     function __validateDerivative(address _derivative, address _underlying) internal override {
         super.__validateDerivative(_derivative, _underlying);
 
-        (address aTokenAddress, , ) = IAaveProtocolDataProvider(AAVE_PROTOCOL_DATA_PROVIDER)
+        (address aTokenAddress, , ) = IAaveProtocolDataProvider(PROTOCOL_DATA_PROVIDER)
             .getReserveTokensAddresses(_underlying);
 
         require(
@@ -44,13 +43,9 @@ contract AavePriceFeed is IDerivativePriceFeed, PeggedDerivativesPriceFeedBase {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `AAVE_PROTOCOL_DATA_PROVIDER` variable value
-    /// @return aaveProtocolDataProvider_ The `AAVE_PROTOCOL_DATA_PROVIDER` variable value
-    function getAaveProtocolDataProvider()
-        external
-        view
-        returns (address aaveProtocolDataProvider_)
-    {
-        return AAVE_PROTOCOL_DATA_PROVIDER;
+    /// @notice Gets the `PROTOCOL_DATA_PROVIDER` variable value
+    /// @return protocolDataProvider_ The `PROTOCOL_DATA_PROVIDER` variable value
+    function getProtocolDataProvider() external view returns (address protocolDataProvider_) {
+        return PROTOCOL_DATA_PROVIDER;
     }
 }

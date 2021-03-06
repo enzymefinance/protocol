@@ -18,22 +18,19 @@ export async function aaveLend({
   integrationManager,
   fundOwner,
   aaveAdapter,
-  outgoingToken,
+  aToken,
   amount = utils.parseEther('1'),
-  incomingAToken,
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   aaveAdapter: AaveAdapter;
-  outgoingToken: StandardToken;
+  aToken: StandardToken;
   amount?: BigNumberish;
-  incomingAToken: StandardToken;
 }) {
   const lendArgs = aaveLendArgs({
-    outgoingToken,
+    aToken,
     amount,
-    incomingAToken,
   });
 
   const callArgs = callOnIntegrationArgs({
@@ -54,22 +51,19 @@ export async function aaveRedeem({
   integrationManager,
   fundOwner,
   aaveAdapter,
-  outgoingAToken,
+  aToken,
   amount = utils.parseEther('1'),
-  incomingToken,
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   aaveAdapter: AaveAdapter;
-  outgoingAToken: StandardToken;
+  aToken: StandardToken;
   amount?: BigNumberish;
-  incomingToken: StandardToken;
 }) {
   const redeemArgs = aaveRedeemArgs({
-    outgoingAToken,
+    aToken,
     amount,
-    incomingToken,
   });
 
   const callArgs = callOnIntegrationArgs({

@@ -1,24 +1,24 @@
-import { utils } from 'ethers';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { sameAddress } from '@crestproject/crestproject';
 import {
-  CurveLiquidityStethAdapterArgs,
   AaveAdapterArgs,
   AlphaHomoraV1AdapterArgs,
   ChaiAdapterArgs,
   CompoundAdapterArgs,
   CurveExchangeAdapterArgs,
+  CurveLiquidityStethAdapterArgs,
   FundDeployer,
   IntegrationManager,
   KyberAdapterArgs,
   ParaSwapAdapterArgs,
+  sighash,
   SynthetixAdapterArgs,
   TrackedAssetsAdapterArgs,
   UniswapV2AdapterArgs,
   ZeroExV2AdapterArgs,
-  sighash,
 } from '@enzymefinance/protocol';
+import { utils } from 'ethers';
+import { DeployFunction } from 'hardhat-deploy/types';
 import { loadConfig } from './config/Config';
-import { sameAddress } from '@crestproject/crestproject';
 
 function nonOptional<T>(array: (T | undefined)[]): T[] {
   return array.filter((item) => item !== undefined) as T[];
@@ -31,6 +31,7 @@ const fn: DeployFunction = async function (hre) {
 
   const integrationManager = await get('IntegrationManager');
   const synthetixPriceFeed = await get('SynthetixPriceFeed');
+  const aavePriceFeed = await get('AavePriceFeed');
   const compoundPriceFeed = await get('CompoundPriceFeed');
   const fundDeployer = await get('FundDeployer');
 
@@ -80,7 +81,11 @@ const fn: DeployFunction = async function (hre) {
   const aaveAdapter = await deploy('AaveAdapter', {
     from: deployer.address,
     log: true,
-    args: [integrationManager.address, config.aave.lendingPoolAddressProvider] as AaveAdapterArgs,
+    args: [
+      integrationManager.address,
+      config.aave.lendingPoolAddressProvider,
+      aavePriceFeed.address,
+    ] as AaveAdapterArgs,
   });
 
   const compoundAdapter = await deploy('CompoundAdapter', {
