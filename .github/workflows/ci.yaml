@@ -33,7 +33,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-modules-
 
       # Stores a cache for fork requests for the e2e jest project.
       - name: Retrieve fork cache
@@ -41,7 +42,8 @@ jobs:
         if: ${{ matrix.project == 'e2e' }}
         with:
           path: 'cache/hardhat-network-fork'
-          key: static
+          key: fork-${{ github.sha }}
+          restore-keys: fork-
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
