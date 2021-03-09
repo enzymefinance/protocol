@@ -1,4 +1,4 @@
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike } from '@enzymefinance/ethers';
 import {
   callOnIntegrationArgs,
   ComptrollerLib,

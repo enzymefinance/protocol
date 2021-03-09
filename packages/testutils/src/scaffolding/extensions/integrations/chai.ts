@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
   ChaiAdapter,

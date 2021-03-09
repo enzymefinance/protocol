@@ -1,5 +1,4 @@
-import { BigNumberish, constants, utils } from 'ethers';
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
   ComptrollerLib,
@@ -11,6 +10,7 @@ import {
   StandardToken,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
+import { BigNumberish, constants, utils } from 'ethers';
 
 // ParaswapPath
 export function paraswapGenerateMockPaths(totalNetworkFees: BigNumberish[] = [0]) {

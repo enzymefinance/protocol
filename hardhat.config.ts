@@ -1,9 +1,7 @@
-import '@crestproject/hardhat/plugin';
 import 'dotenv/config';
+import '@enzymefinance/hardhat/plugin';
+
 import { utils } from 'ethers';
-import 'hardhat-contract-sizer';
-import 'hardhat-deploy';
-import 'hardhat-deploy-ethers';
 import { HardhatUserConfig } from 'hardhat/types';
 
 function node(networkName: string) {
@@ -25,57 +23,18 @@ function accounts(networkName: string) {
 const mnemonic = 'test test test test test test test test test test test junk';
 
 const config: HardhatUserConfig = {
-  solidity: {
-    version: '0.6.12',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-        details: {
-          yul: false,
-        },
-      },
-    },
-  },
-  networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-        count: 10,
-        accountsBalance: utils.parseUnits('1', 36).toString(),
-      },
-      forking: {
-        url: node('mainnet'),
-        blockNumber: 11662542, // Jan 15, 2021
-      },
-    },
-    mainnet: {
-      url: node('mainnet'),
-      accounts: accounts('mainnet'),
-    },
-    kovan: {
-      url: node('kovan'),
-      accounts: accounts('kovan'),
-    },
-  },
-  namedAccounts: {
-    deployer: 0,
-  },
-  contractSizer: {
-    disambiguatePaths: false,
+  codeCoverage: {
+    exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
   },
   codeGenerator: {
-    enabled: true,
-    clear: true,
-    bytecode: {
-      path: './packages/protocol/artifacts',
-    },
     abi: {
       path: './packages/protocol/artifacts',
     },
-    typescript: {
-      path: './packages/protocol/src/codegen',
+    bytecode: {
+      path: './packages/protocol/artifacts',
     },
+    clear: true,
+    enabled: true,
     include: [
       // Explicitly allow inclusion of core release interfaces.
       'IDerivativePriceFeed',
@@ -115,9 +74,56 @@ const config: HardhatUserConfig = {
       ignoreContractsWithoutAbi: true,
       ignoreContractsWithoutBytecode: true,
     },
+    typescript: {
+      path: './packages/protocol/src/codegen',
+    },
   },
-  codeCoverage: {
-    exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
+  contractSizer: {
+    disambiguatePaths: false,
+  },
+  namedAccounts: {
+    deployer: 0,
+  },
+  networks: {
+    hardhat: {
+      accounts: {
+        accountsBalance: utils.parseUnits('1', 36).toString(),
+        count: 10,
+        mnemonic,
+      },
+      forking: {
+        blockNumber: 11662542,
+        url: node('mainnet'), // Jan 15, 2021
+      },
+      gas: 9500000,
+      gasPrice: 0, // TODO: Consider removing this again.
+      ...(process.env.COVERAGE && {
+        allowUnlimitedContractSize: true,
+      }),
+    },
+    kovan: {
+      accounts: accounts('kovan'),
+      url: node('kovan'),
+    },
+    mainnet: {
+      accounts: accounts('mainnet'),
+      url: node('mainnet'),
+    },
+  },
+  paths: {
+    deploy: 'deploy/scripts',
+  },
+  solidity: {
+    settings: {
+      optimizer: {
+        details: {
+          yul: false,
+        },
+        enabled: true,
+        runs: 200,
+      },
+    },
+    version: '0.6.12',
   },
 };
 

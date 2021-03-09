@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   curveStethLendArgs,
   curveStethLendAndStakeArgs,
@@ -31,26 +31,16 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-import hre from 'hardhat';
 
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  // Assign signers for whale accounts any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-  whales.steth = ((await hre.ethers.getSigner(mainnetWhales.lidoSteth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth', 'lidoSteth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -432,7 +422,7 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -471,14 +461,14 @@ describe('lend', () => {
   it('works as expected (with only steth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, whales.steth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const outgoingStethAmount = utils.parseEther('2');
@@ -515,8 +505,8 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const steth = new StandardToken(fork.config.lido.steth, whales.steth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -565,10 +555,7 @@ describe('lendAndStake', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -607,17 +594,14 @@ describe('lendAndStake', () => {
   it('works as expected (with only steth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, whales.steth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     // Seed fund with a surplus of steth
@@ -654,12 +638,9 @@ describe('lendAndStake', () => {
   it('works as expected (with an imbalance of weth and steth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, whales.steth);
+    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -708,9 +689,9 @@ describe('redeem', () => {
   it('works as expected (standard)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -765,9 +746,9 @@ describe('redeem', () => {
   it('works as expected (single-asset: weth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -823,9 +804,9 @@ describe('redeem', () => {
   it('works as expected (single-asset: steth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -883,12 +864,9 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (standard)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -945,12 +923,9 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (single-asset: weth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -1006,12 +981,9 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (single-asset: steth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const steth = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const steth = new StandardToken(fork.config.lido.steth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -1070,11 +1042,8 @@ describe('stake and unstake', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const liquidityGaugeToken = new StandardToken(
-      fork.config.curve.pools.steth.liquidityGaugeToken,
-      hre.ethers.provider,
-    );
-    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
+    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+    const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -1145,10 +1114,10 @@ describe('claim rewards', () => {
   it('should accrue CRV to the VaultProxy after lending and staking, and should be able to claim CRV and LDO via available methods', async () => {
     const [fundOwner, approvedMintForCaller, randomUser] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.CurveLiquidityStethAdapter;
-    const crv = new StandardToken(fork.config.primitives.crv, hre.ethers.provider);
+    const crv = new StandardToken(fork.config.primitives.crv, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const gauge = new CurveLiquidityGaugeV2(fork.config.curve.pools.steth.liquidityGaugeToken, hre.ethers.provider);
-    const minter = new CurveMinter(fork.config.curve.minter, hre.ethers.provider);
+    const gauge = new CurveLiquidityGaugeV2(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+    const minter = new CurveMinter(fork.config.curve.minter, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
@@ -1171,7 +1140,7 @@ describe('claim rewards', () => {
     });
 
     // Warp ahead in time to accrue rewards
-    await hre.ethers.provider.send('evm_increaseTime', [86400]);
+    await provider.send('evm_increaseTime', [86400]);
 
     // Claim accrued CRV from the Minter directly via mint() and assert CRV balance increase
     await curveMinterMint({
@@ -1183,7 +1152,7 @@ describe('claim rewards', () => {
     expect(postMintTxCrvBalance).toBeGtBigNumber(0);
 
     // Warp ahead in time to accrue rewards
-    await hre.ethers.provider.send('evm_increaseTime', [86400]);
+    await provider.send('evm_increaseTime', [86400]);
 
     // Claim accrued CRV from the Minter directly via mint_many()
     await curveMinterMintMany({
@@ -1205,7 +1174,7 @@ describe('claim rewards', () => {
     expect(await crv.balanceOf(vaultProxy)).toBeGtBigNumber(postMintManyTxCrvBalance);
 
     // Claim accrued LDO rewards by a random user
-    const ldo = new StandardToken('0x5a98fcbea516cf06857215779fd812ca3bef1b32', hre.ethers.provider);
+    const ldo = new StandardToken('0x5a98fcbea516cf06857215779fd812ca3bef1b32', provider);
     await gauge.connect(randomUser).claim_rewards(vaultProxy);
     expect(await ldo.balanceOf(vaultProxy)).toBeGtBigNumber(0);
   });

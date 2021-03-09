@@ -10,9 +10,8 @@
 !.gitattributes
 !.prettierignore
 !.prettierrc
-!.babelrc
+!.eslintignore
 !.solhint.json
-!.solhintignore
 !.chainId
 
 # ignore build output and dependencies

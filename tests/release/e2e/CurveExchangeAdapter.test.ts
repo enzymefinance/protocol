@@ -1,49 +1,41 @@
-import { AddressLike, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
-import { BigNumber, constants, utils } from 'ethers';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
+  curveTakeOrderArgs,
   ICurveAddressProvider,
   SpendAssetsHandleType,
   StandardToken,
-  curveTakeOrderArgs,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
-  loadForkDeployment,
   CurveSwaps,
   curveTakeOrder,
-  mainnetWhales,
+  ForkDeployment,
+  loadForkDeployment,
   unlockWhales,
 } from '@enzymefinance/testutils';
-import hre from 'hardhat';
+import { BigNumber, constants, utils } from 'ethers';
 
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
 const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // There is variable small discrepancy between get_best_rate().maxAmountReceived and the actual amount received,
 // likely due to rounding somewhere
 const curveRoundingBuffer = 5;
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.lidoSteth = ((await hre.ethers.getSigner(mainnetWhales.lidoSteth)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth', 'dai', 'lidoSteth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
 
 async function getCurveSwapsContract(addressProvider: AddressLike) {
-  const curveAddressProvider = new ICurveAddressProvider(addressProvider, hre.ethers.provider);
+  const curveAddressProvider = new ICurveAddressProvider(addressProvider, provider);
   const addr = await curveAddressProvider.get_address(2);
-  return new CurveSwaps(addr, hre.ethers.provider);
+  return new CurveSwaps(addr, provider);
 }
 
 describe('constructor', () => {
@@ -124,15 +116,15 @@ describe('parseAssetsForMethod', () => {
 describe('takeOrder', () => {
   it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
     const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const incomingAsset = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const incomingAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -167,15 +159,15 @@ describe('takeOrder', () => {
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {
     const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
-    const incomingAsset = new StandardToken(fork.config.lido.steth, hre.ethers.provider);
+    const incomingAsset = new StandardToken(fork.config.lido.steth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -210,15 +202,15 @@ describe('takeOrder', () => {
 
   it('works as expected when called by a fund (ERC20 to ETH)', async () => {
     const outgoingAsset = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
-    const incomingAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const incomingAsset = new StandardToken(fork.config.weth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const outgoingAssetAmount = utils.parseEther('1');

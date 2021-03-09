@@ -1,29 +1,21 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   paraswapTakeOrder,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-import hre from 'hardhat';
 
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -32,14 +24,14 @@ beforeEach(async () => {
 
 it('works as expected when called by a fund (no network fees)', async () => {
   const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
-  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -103,14 +95,14 @@ it('works as expected when called by a fund (no network fees)', async () => {
 
 it('refunds unused network fees', async () => {
   const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
-  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');

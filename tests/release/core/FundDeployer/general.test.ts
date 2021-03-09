@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { ReleaseStatusTypes } from '@enzymefinance/protocol';
 import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
 

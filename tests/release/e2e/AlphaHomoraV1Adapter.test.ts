@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   alphaHomoraV1LendArgs,
   alphaHomoraV1RedeemArgs,
@@ -16,25 +16,18 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -42,16 +35,16 @@ beforeEach(async () => {
 // HAPPY PATHS
 describe('lend', () => {
   it('works as expected when called by fund', async () => {
-    const alphaHomoraBank = new AlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
-    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
+    const alphaHomoraBank = new AlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, provider);
+    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     // Seed fund with some WETH to spend
@@ -67,7 +60,7 @@ describe('lend', () => {
     const wethToLend = preTxWethBalance.div(2);
     const approxIncomingIbethAmount = wethToLend.mul(await ibeth.totalSupply()).div(
       await calcAlphaBankLiveTotalEth({
-        provider: hre.ethers.provider as any,
+        provider: provider,
         alphaHomoraBank,
       }),
     );
@@ -104,8 +97,8 @@ describe('lend', () => {
 
 describe('redeem', () => {
   it('works as expected when called by fund', async () => {
-    const alphaHomoraBank = new AlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
-    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
+    const alphaHomoraBank = new AlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, provider);
+    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const [fundOwner] = fork.accounts;
 
@@ -113,7 +106,7 @@ describe('redeem', () => {
       signer: fundOwner as SignerWithAddress,
       fundOwner,
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      denominationAsset: new StandardToken(fork.config.weth, provider),
     });
 
     // Seed fund with some WETH to spend and lend WETH for ibETH
@@ -138,8 +131,8 @@ describe('redeem', () => {
     const approxIncomingWethAmount = ibethToRedeem
       .mul(
         await calcAlphaBankLiveTotalEth({
-          provider: hre.ethers.provider as any,
           alphaHomoraBank,
+          provider: provider as any,
         }),
       )
       .div(await ibeth.totalSupply());

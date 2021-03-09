@@ -1,7 +1,6 @@
 import { ICERC20, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
 let fork: ForkDeployment;
@@ -13,8 +12,8 @@ beforeEach(async () => {
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
     const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
-    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider);
-    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
     const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(cdai, cTokenUnit);
@@ -32,8 +31,8 @@ describe('calcUnderlyingValues', () => {
 
   it('returns rate for underlying token (cETH)', async () => {
     const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
-    const ceth = new ICERC20(fork.config.compound.ceth, hre.ethers.provider);
-    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const ceth = new ICERC20(fork.config.compound.ceth, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
     const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(ceth, cTokenUnit);
@@ -53,8 +52,8 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider);
-    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await cdai.decimals();
     const quoteDecimals = await dai.decimals();
@@ -67,15 +66,15 @@ describe('expected values', () => {
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('20943626144403632'),
       isValid_: true,
+      value_: BigNumber.from('20943626144403632'),
     });
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const cusdc = new ICERC20(fork.config.compound.ctokens.cusdc, hre.ethers.provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const cusdc = new ICERC20(fork.config.compound.ctokens.cusdc, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await cusdc.decimals();
     const quoteDecimals = await usdc.decimals();

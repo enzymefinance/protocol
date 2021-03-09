@@ -1,27 +1,14 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
-import {
-  createNewFund,
-  ForkDeployment,
-  loadForkDeployment,
-  mainnetWhales,
-  unlockWhales,
-} from '@enzymefinance/testutils';
+import { createNewFund, ForkDeployment, loadForkDeployment, unlockWhales } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-import hre from 'hardhat';
 
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -38,7 +25,7 @@ describe('constructor', () => {
 describe('exchangeAndBuyShares', () => {
   it('handles a WETH denominationAsset', async () => {
     const fundActionsWrapper = fork.deployment.FundActionsWrapper;
-    const denominationAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const denominationAsset = new StandardToken(fork.config.weth, provider);
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -72,10 +59,10 @@ describe('exchangeAndBuyShares', () => {
   it('handles a mon-WETH, non-18 decimal denominationAsset', async () => {
     const fundActionsWrapper = fork.deployment.FundActionsWrapper;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, hre.ethers.provider);
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner, buyer] = fork.accounts;
 
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -101,7 +88,7 @@ describe('exchangeAndBuyShares', () => {
       1,
       uniswapPath,
       fundActionsWrapper,
-      BigNumber.from((await hre.ethers.provider.getBlock('latest')).timestamp).add(300),
+      BigNumber.from((await provider.getBlock('latest')).timestamp).add(300),
     ]);
 
     // Attempting to execute the exchange and buy shares with a too-high minInvestmentAmount should fail
@@ -122,7 +109,7 @@ describe('exchangeAndBuyShares', () => {
     ).rejects.toBeRevertedWith('_minInvestmentAmount not met');
 
     // Execute the exchange and buy shares action with the exact expected investmentAmount
-    const preTxBuyerEthBalance = await hre.ethers.provider.getBalance(buyer.address);
+    const preTxBuyerEthBalance = await provider.getBalance(buyer.address);
     await fundActionsWrapper.exchangeAndBuyShares
       .args(
         comptrollerProxy,
@@ -144,9 +131,7 @@ describe('exchangeAndBuyShares', () => {
     expect(await vaultProxy.balanceOf(buyer)).toEqBigNumber(expectedSharesReceived);
 
     // The buyer should have received an eth refund
-    expect(await hre.ethers.provider.getBalance(buyer.address)).toBeGtBigNumber(
-      preTxBuyerEthBalance.sub(investmentEth),
-    );
+    expect(await provider.getBalance(buyer.address)).toBeGtBigNumber(preTxBuyerEthBalance.sub(investmentEth));
 
     // The weth allowance of the UniswapV2Router2 should now be cached
     expect(await fundActionsWrapper.accountHasMaxWethAllowance(uniswapRouter)).toBe(true);

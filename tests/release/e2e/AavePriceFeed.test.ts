@@ -1,8 +1,7 @@
-import { randomAddress } from '@crestproject/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-import hre from 'hardhat';
 
 let fork: ForkDeployment;
 
@@ -31,7 +30,7 @@ describe('addDerivatives', () => {
   it('reverts when adding an invalid aToken to the derivativeRegistry', async () => {
     const aavePriceFeed = fork.deployment.AavePriceFeed;
     const derivatives = [randomAddress()];
-    const underlyings = [fork.config.aave.aTokens.ausdc[0]];
+    const underlyings = [fork.config.aave.atokens.ausdc[0]];
     await expect(aavePriceFeed.addDerivatives(derivatives, underlyings)).rejects.toBeRevertedWith(
       'function call to a non-contract account',
     );
@@ -40,7 +39,7 @@ describe('addDerivatives', () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token USDC', async () => {
-    const ausdc = new StandardToken(fork.config.aave.aTokens.ausdc[0], fork.deployer);
+    const ausdc = new StandardToken(fork.config.aave.atokens.ausdc[0], fork.deployer);
     const oneUnit = utils.parseUnits('1', await ausdc.decimals());
 
     const aavePriceFeed = fork.deployment.AavePriceFeed;
@@ -53,7 +52,7 @@ describe('calcUnderlyingValues', () => {
   });
 
   // TODO: Move this assertion to unit tests
-  it('only supports aTokens', async () => {
+  it('only supports atokens', async () => {
     const invalidAddress = randomAddress();
     const aavePriceFeed = fork.deployment.AavePriceFeed;
 
@@ -66,8 +65,8 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const adai = new StandardToken(fork.config.aave.aTokens.adai[0], hre.ethers.provider);
-    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+    const adai = new StandardToken(fork.config.aave.atokens.adai[0], provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await adai.decimals();
     const quoteDecimals = await dai.decimals();
@@ -79,15 +78,15 @@ describe('expected values', () => {
       .args(adai, utils.parseUnits('1', baseDecimals), dai)
       .call();
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: utils.parseUnits('1', quoteDecimals),
       isValid_: true,
+      value_: utils.parseUnits('1', quoteDecimals),
     });
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const ausdc = new StandardToken(fork.config.aave.aTokens.ausdc[0], hre.ethers.provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const ausdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await ausdc.decimals();
     const quoteDecimals = await usdc.decimals();

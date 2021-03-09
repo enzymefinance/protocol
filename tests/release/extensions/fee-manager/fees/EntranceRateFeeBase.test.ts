@@ -3,8 +3,8 @@
  * that does not rely on settlement type
  */
 
-import { utils } from 'ethers';
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   EntranceRateDirectFee,
   entranceRateFeeConfigArgs,
@@ -12,6 +12,7 @@ import {
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

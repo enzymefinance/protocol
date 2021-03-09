@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider, extractEvent } from '@crestproject/crestproject';
+import { extractEvent } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { MockSynthetixIntegratee, MockSynthetixPriceSource, MockSynthetixToken } from '@enzymefinance/protocol';
 import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';

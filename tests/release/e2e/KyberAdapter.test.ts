@@ -1,6 +1,5 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
-import { BigNumber, BigNumberish, utils } from 'ethers';
-import { StandardToken, ComptrollerLib, IntegrationManager, KyberAdapter, VaultLib } from '@enzymefinance/protocol';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
+import { ComptrollerLib, IntegrationManager, KyberAdapter, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
@@ -8,10 +7,10 @@ import {
   loadForkDeployment,
   KyberNetworkProxy,
   kyberTakeOrder,
-  mainnetWhales,
+  loadForkDeployment,
   unlockWhales,
 } from '@enzymefinance/testutils';
-import hre from 'hardhat';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 
 async function assertKyberTakeOrder({
   comptrollerProxy,
@@ -68,20 +67,12 @@ async function assertKyberTakeOrder({
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.usdc = ((await hre.ethers.getSigner(mainnetWhales.usdc)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth', 'dai', 'usdc');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -90,15 +81,15 @@ beforeEach(async () => {
 
 it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
-  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -121,15 +112,15 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
 
 it('works as expected when called by a fund (ETH to ERC20)', async () => {
   const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
-  const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
-  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -152,15 +143,15 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
 
 it('works as expected when called by a fund (ERC20 to ETH)', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-  const incomingAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
-  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.weth, provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -185,15 +176,15 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
 
 it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
-  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -220,15 +211,15 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
 
 it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal token)', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-  const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
-  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.knc, provider);
+  const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
   // 1 USDC (6 decimals)

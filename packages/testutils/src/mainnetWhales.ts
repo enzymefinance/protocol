@@ -1,6 +1,5 @@
-import { AddressLike, resolveAddress } from '@crestproject/crestproject';
-import { BigNumber, BigNumberish, providers, utils } from 'ethers';
-import hre from 'hardhat';
+import { resolveAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 
 export const mainnetWhales = {
   adai: '0x62e41b1185023bcc14a465d350e1dde341557925',
@@ -33,29 +32,20 @@ export const mainnetWhales = {
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
 };
 
-export async function unlockWhales({
-  provider,
-  whales,
-  minEthBalance = utils.parseEther('10'),
-}: {
-  provider: providers.JsonRpcProvider;
-  whales: AddressLike[];
-  minEthBalance?: BigNumberish;
-}) {
-  const deployer = await hre.ethers.getNamedSigner('deployer');
+export async function unlockWhales<T extends keyof typeof mainnetWhales>(
+  ...whales: T[]
+): Promise<Record<T, SignerWithAddress>> {
+  const signers = await Promise.all(
+    whales.map(async (whale) => {
+      const address = resolveAddress(mainnetWhales[whale]);
+      await provider.send('hardhat_impersonateAccount', [address]);
+      return provider.getSignerWithAddress(address);
+    }),
+  );
 
-  for (const whale of whales) {
-    const whaleAddress = resolveAddress(whale);
-    // Unlock the whale account
-    await provider.send('hardhat_impersonateAccount', [whaleAddress]);
+  const output: Record<T, SignerWithAddress> = whales.reduce((carry, key, index) => {
+    return { ...carry, [key]: signers[index] };
+  }, {} as Record<T, SignerWithAddress>);
 
-    // Send the whale some ETH for gas
-    const initialWhaleBalance = await provider.getBalance(whaleAddress);
-    if (initialWhaleBalance.lt(minEthBalance)) {
-      await deployer.sendTransaction({
-        to: whaleAddress,
-        value: BigNumber.from(minEthBalance).sub(initialWhaleBalance),
-      });
-    }
-  }
+  return output;
 }

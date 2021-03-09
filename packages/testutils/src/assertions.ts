@@ -1,5 +1,5 @@
+import { ContractReceipt, extractEvent } from '@enzymefinance/ethers';
 import { utils } from 'ethers';
-import { extractEvent, ContractReceipt } from '@crestproject/crestproject';
 
 export function assertEvent<TResult = any>(
   receipt: ContractReceipt<any>,

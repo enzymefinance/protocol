@@ -1,37 +1,27 @@
 import 'dotenv/config';
-import { utils } from 'ethers';
-
-const mnemonic = 'test test test test test test test test test test test junk';
 
 function common(name: string, roots: string[]) {
   return {
     displayName: name,
-    roots,
     globals: {
       'ts-jest': {
         babelConfig: true,
         diagnostics: false,
       },
     },
+    preset: '@enzymefinance/hardhat',
+    roots,
   };
 }
 
 function fork(name: string, roots: string[]) {
   return {
     ...common(name, roots),
-    preset: '@crestproject/jest',
     testEnvironmentOptions: {
       hardhatNetworkOptions: {
-        // loggingEnabled: true,
-        gas: 9500000,
         accounts: {
-          mnemonic,
           count: 5,
-          accountsBalance: utils.parseUnits('1', 36).toString(),
         },
-        ...(process.env.COVERAGE && {
-          allowUnlimitedContractSize: true,
-        }),
       },
       hardhatTestOptions: {
         ...(process.env.COVERAGE && {
@@ -45,22 +35,11 @@ function fork(name: string, roots: string[]) {
 function unit(name: string, roots: string[]) {
   return {
     ...common(name, roots),
-    preset: '@crestproject/hardhat',
     testEnvironmentOptions: {
       hardhatNetworkOptions: {
-        // loggingEnabled: true,
-        gas: 9500000,
-        accounts: {
-          mnemonic,
-          count: 10,
-          accountsBalance: utils.parseUnits('1', 36).toString(),
-        },
         forking: {
           enabled: false,
         },
-        ...(process.env.COVERAGE && {
-          allowUnlimitedContractSize: true,
-        }),
       },
       hardhatTestOptions: {
         ...(process.env.COVERAGE && {
@@ -82,6 +61,6 @@ const projects = [
 ].filter((project) => !!project);
 
 module.exports = {
-  testTimeout: 240000,
   projects,
+  testTimeout: 240000,
 };

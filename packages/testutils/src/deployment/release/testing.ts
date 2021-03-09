@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider, SignerWithAddress } from '@crestproject/crestproject';
+import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';

@@ -1,4 +1,4 @@
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 
 export async function getAssetBalances({ account, assets }: { account: AddressLike; assets: StandardToken[] }) {

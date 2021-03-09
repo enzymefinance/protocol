@@ -1,7 +1,6 @@
 import { IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-import hre from 'hardhat';
 
 let fork: ForkDeployment;
 
@@ -12,10 +11,10 @@ beforeEach(async () => {
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token weth', async () => {
     const wdgldPriceFeed = fork.deployment.WdgldPriceFeed;
-    const wdgld = new StandardToken(fork.config.wdgld.wdgld, hre.ethers.provider);
-    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
-    const xauAggregator = new IChainlinkAggregator(fork.config.wdgld.xauusd, hre.ethers.provider);
-    const ethUSDAggregator = new IChainlinkAggregator(fork.config.wdgld.ethusd, hre.ethers.provider);
+    const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const xauAggregator = new IChainlinkAggregator(fork.config.wdgld.xauusd, provider);
+    const ethUSDAggregator = new IChainlinkAggregator(fork.config.wdgld.ethusd, provider);
 
     const xauToUsdRate = await xauAggregator.latestAnswer();
     const ethToUsdRate = await ethUSDAggregator.latestAnswer();
@@ -38,8 +37,8 @@ describe('calcUnderlyingValues', () => {
 
   it('returns the expected value from the valueInterpreter', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const wdgld = new StandardToken(fork.config.wdgld.wdgld, hre.ethers.provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 
     // XAU/USD price at Jan 17, 2021 had a rate of 1849 USD. Given an approximate GTR of 0.0988xx gives a value around 182 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue

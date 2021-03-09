@@ -1,5 +1,5 @@
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { Dispatcher } from '@enzymefinance/protocol';
-import { SignerWithAddress } from '@crestproject/crestproject';
 import { describeDeployment } from '../deployment';
 
 export interface PersistentDeploymentConfig {

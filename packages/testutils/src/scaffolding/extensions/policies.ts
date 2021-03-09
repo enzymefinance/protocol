@@ -1,5 +1,5 @@
-import { constants, Signer, utils } from 'ethers';
 import { IPolicy, PolicyHook, PolicyManager, policyManagerConfigArgs } from '@enzymefinance/protocol';
+import { constants, Signer, utils } from 'ethers';
 
 // Policy Manager
 

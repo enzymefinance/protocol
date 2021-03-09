@@ -1,4 +1,4 @@
-import { AddressLike, resolveAddress } from '@crestproject/crestproject';
+import { AddressLike, resolveAddress } from '@enzymefinance/ethers';
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
 import { buildTypedData, encodeTypedDataDigest } from 'ethers-eip712';
 import { encodeArgs, encodeFunctionData } from '../encoding';

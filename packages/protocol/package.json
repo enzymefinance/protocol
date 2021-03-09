@@ -35,8 +35,7 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.13.9",
-    "@crestproject/crestproject": "^0.1.21",
-    "@crestproject/ethers": "^0.1.21",
+    "@enzymefinance/ethers": "^0.0.3",
     "decimal.js": "^10.2.1",
     "ethers": "^5.0.31",
     "ethers-eip712": "^0.2.0"

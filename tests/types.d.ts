@@ -1,3 +1,1 @@
-import '@crestproject/jest/types';
-
-export {};
+import '@enzymefinance/hardhat/types';

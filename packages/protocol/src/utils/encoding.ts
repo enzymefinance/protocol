@@ -1,4 +1,4 @@
-import { resolveArguments } from '@crestproject/crestproject';
+import { resolveArguments } from '@enzymefinance/ethers';
 import { utils } from 'ethers';
 import { sighash } from './sighash';
 

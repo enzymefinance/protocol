@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   adapterBlacklistArgs,
   adapterWhitelistArgs,
@@ -25,50 +25,39 @@ import {
   // deployRelease,
   ForkDeployment,
   loadForkDeployment,
-  mainnetWhales,
   redeemShares,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
-// const gasAssertionTolerance = 0.03; // 3%
 let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  // Denomination asset
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  // Primitives
-  whales.bat = ((await hre.ethers.getSigner(mainnetWhales.bat)) as any) as SignerWithAddress;
-  whales.bnb = ((await hre.ethers.getSigner(mainnetWhales.bnb)) as any) as SignerWithAddress;
-  whales.bnt = ((await hre.ethers.getSigner(mainnetWhales.bnt)) as any) as SignerWithAddress;
-  whales.comp = ((await hre.ethers.getSigner(mainnetWhales.comp)) as any) as SignerWithAddress;
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.link = ((await hre.ethers.getSigner(mainnetWhales.link)) as any) as SignerWithAddress;
-  whales.mana = ((await hre.ethers.getSigner(mainnetWhales.mana)) as any) as SignerWithAddress;
-  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
-  whales.ren = ((await hre.ethers.getSigner(mainnetWhales.ren)) as any) as SignerWithAddress;
-  whales.rep = ((await hre.ethers.getSigner(mainnetWhales.rep)) as any) as SignerWithAddress;
-  whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
-  whales.uni = ((await hre.ethers.getSigner(mainnetWhales.uni)) as any) as SignerWithAddress;
-  whales.usdt = ((await hre.ethers.getSigner(mainnetWhales.usdt)) as any) as SignerWithAddress;
-  whales.zrx = ((await hre.ethers.getSigner(mainnetWhales.zrx)) as any) as SignerWithAddress;
-
-  // Compound tokens
-  whales.ccomp = ((await hre.ethers.getSigner(mainnetWhales.ccomp)) as any) as SignerWithAddress;
-  whales.cdai = ((await hre.ethers.getSigner(mainnetWhales.cdai)) as any) as SignerWithAddress;
-  whales.ceth = ((await hre.ethers.getSigner(mainnetWhales.ceth)) as any) as SignerWithAddress;
-  whales.cusdc = ((await hre.ethers.getSigner(mainnetWhales.cusdc)) as any) as SignerWithAddress;
-  whales.cuni = ((await hre.ethers.getSigner(mainnetWhales.cuni)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  fork = await loadForkDeployment();
+  whales = await unlockWhales(
+    'weth',
+    'bat',
+    'bnb',
+    'bnt',
+    'comp',
+    'dai',
+    'link',
+    'mana',
+    'mln',
+    'ren',
+    'rep',
+    'susd',
+    'uni',
+    'usdt',
+    'zrx',
+    'ccomp',
+    'cdai',
+    'ceth',
+    'cusdc',
+    'cuni',
+  );
 });
 
 describe('Walkthrough a fund migration', () => {
@@ -84,8 +73,6 @@ describe('Walkthrough a fund migration', () => {
   // let newRelease: Deployment<DeploymentHandlers<ReleaseDeploymentConfig, ReleaseDeploymentOutput>>;
 
   beforeAll(async () => {
-    fork = await loadForkDeployment();
-
     manager = fork.accounts[1];
     investor = fork.accounts[2];
 

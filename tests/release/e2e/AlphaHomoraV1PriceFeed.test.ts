@@ -1,4 +1,5 @@
-import { randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IAlphaHomoraV1Bank, StandardToken } from '@enzymefinance/protocol';
 import {
   alphaHomoraV1Lend,
@@ -6,25 +7,18 @@ import {
   createNewFund,
   ForkDeployment,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -39,9 +33,9 @@ describe('calcUnderlyingValues', () => {
 
   it('returns rate for underlying token', async () => {
     const alphaHomoraPriceFeed = fork.deployment.AlphaHomoraV1PriceFeed;
-    const alphaHomoraBank = new IAlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
-    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
-    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const alphaHomoraBank = new IAlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, provider);
+    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
 
     // Calc expected rate for 1 unit of ibETH
     const ibethUnit = utils.parseUnits('1', await ibeth.decimals());
@@ -69,8 +63,8 @@ describe('isSupportedAsset', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, hre.ethers.provider);
-    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
 
     // ibeth/weth price should generally be just above 10^18 to account for accrued interest
     // TODO: find better live price reference

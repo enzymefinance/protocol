@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   CompoundAdapter,
   CompoundPriceFeed,
@@ -16,11 +16,9 @@ import {
   getAssetBalances,
   ICompoundComptroller,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 async function assertCompoundLend({
   tokenWhale,
@@ -103,7 +101,7 @@ async function assertCompoundRedeem({
   const cTokenAmount = utils.parseUnits('1', await cToken.decimals());
   await cToken.transfer(vaultProxy, cTokenAmount);
 
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), hre.ethers.provider);
+  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [token, cToken as any],
@@ -140,22 +138,13 @@ async function assertCompoundRedeem({
 
 const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 const gasAssertionTolerance = 0.03; // 3%
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  // Assign signers for whale accounts
-  whales.cdai = ((await hre.ethers.getSigner(mainnetWhales.cdai)) as any) as SignerWithAddress;
-  whales.ceth = ((await hre.ethers.getSigner(mainnetWhales.ceth)) as any) as SignerWithAddress;
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('weth', 'dai', 'cdai', 'ceth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -168,20 +157,20 @@ describe('lend', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const lendReceipt = await assertCompoundLend({
-      tokenWhale: whales.dai,
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
-      fundOwner,
+      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter: fork.deployment.CompoundAdapter,
-      tokenAmount: utils.parseEther('1'),
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider),
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.IntegrationManager,
+      tokenAmount: utils.parseEther('1'),
+      tokenWhale: whales.dai,
+      vaultProxy,
     });
 
     expect(lendReceipt).toCostLessThan('528000', gasAssertionTolerance);
@@ -191,22 +180,22 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      fundOwner,
+      signer: fundOwner,
     });
 
     const lendReceipt = await assertCompoundLend({
-      tokenWhale: whales.weth,
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
-      fundOwner,
+      cToken: new ICERC20(fork.config.compound.ceth, provider),
       compoundAdapter: fork.deployment.CompoundAdapter,
-      tokenAmount: utils.parseEther('1'),
-      cToken: new ICERC20(fork.config.compound.ceth, hre.ethers.provider),
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.IntegrationManager,
+      tokenAmount: utils.parseEther('1'),
+      tokenWhale: whales.weth,
+      vaultProxy,
     });
 
     expect(lendReceipt).toCostLessThan('448000', gasAssertionTolerance);
@@ -220,8 +209,8 @@ describe('redeem', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const redeemReceipt = await assertCompoundRedeem({
@@ -243,8 +232,8 @@ describe('redeem', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     const redeemReceipt = await assertCompoundRedeem({
@@ -266,30 +255,30 @@ describe('claimComp', () => {
     const [fundOwner] = fork.accounts;
     const compoundAdapter = fork.deployment.CompoundAdapter;
     const compoundComptroller = new ICompoundComptroller(compoundComptrollerAddress, fork.deployer);
-    const comp = new StandardToken(fork.config.primitives.comp, hre.ethers.provider);
+    const comp = new StandardToken(fork.config.primitives.comp, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.FundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
     });
 
     await assertCompoundLend({
       tokenWhale: whales.dai,
+      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
       comptrollerProxy,
       vaultProxy,
       integrationManager: fork.deployment.IntegrationManager,
       fundOwner,
       compoundAdapter,
       tokenAmount: utils.parseEther('1'),
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, hre.ethers.provider),
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
     });
 
     const secondsToWarp = 100000000;
-    await hre.ethers.provider.send('evm_increaseTime', [secondsToWarp]);
-    await hre.ethers.provider.send('evm_mine', []);
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
 
     await compoundComptroller.claimComp(vaultProxy.address);
     await compoundComptroller.claimComp(compoundAdapter.address);

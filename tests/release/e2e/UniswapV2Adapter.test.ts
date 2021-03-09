@@ -1,33 +1,23 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, min, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   uniswapV2Lend,
   uniswapV2Redeem,
   uniswapV2TakeOrder,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.knc = ((await hre.ethers.getSigner(mainnetWhales.knc)) as any) as SignerWithAddress;
-  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('knc', 'mln', 'weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -37,9 +27,9 @@ describe('lend', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, hre.ethers.provider);
-    const uniswapPair = new IUniswapV2Pair(poolToken.address, hre.ethers.provider);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, hre.ethers.provider);
+    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
+    const uniswapPair = new IUniswapV2Pair(poolToken.address, provider);
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -106,7 +96,7 @@ describe('redeem', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, hre.ethers.provider);
+    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -185,7 +175,7 @@ describe('takeOrder', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const incomingAsset = weth;
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, hre.ethers.provider);
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -230,8 +220,8 @@ describe('takeOrder', () => {
   it('can swap assets via an intermediary', async () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
-    const incomingAsset = new StandardToken(fork.config.primitives.knc, hre.ethers.provider);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, hre.ethers.provider);
+    const incomingAsset = new StandardToken(fork.config.primitives.knc, provider);
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

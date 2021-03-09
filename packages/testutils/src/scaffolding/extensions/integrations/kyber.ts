@@ -1,5 +1,5 @@
-import { BigNumber, BigNumberish, utils } from 'ethers';
-import { contract, AddressLike, Call, Contract, SignerWithAddress } from '@crestproject/crestproject';
+import { AddressLike, Call, Contract, contract } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   StandardToken,
   ComptrollerLib,
@@ -11,6 +11,7 @@ import {
   kyberTakeOrderArgs,
   IntegrationManagerActionId,
 } from '@enzymefinance/protocol';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 
 // prettier-ignore
 export interface KyberNetworkProxy extends Contract<KyberNetworkProxy> {

@@ -1,34 +1,24 @@
-import { randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
+import { createUnsignedZeroExV2Order, signZeroExV2Order, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
   zeroExV2TakeOrder,
 } from '@enzymefinance/testutils';
-import { createUnsignedZeroExV2Order, signZeroExV2Order, StandardToken } from '@enzymefinance/protocol';
 import { BigNumber, constants, utils } from 'ethers';
-import hre from 'hardhat';
 
-// TODO: hardcoded from mainnet value; should lookup dynamically if tests stop working
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.knc = ((await hre.ethers.getSigner(mainnetWhales.knc)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-  whales.zrx = ((await hre.ethers.getSigner(mainnetWhales.zrx)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('dai', 'knc', 'weth', 'zrx');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -62,13 +52,13 @@ describe('takeOrder', () => {
     const unsignedOrder = await createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: constants.AddressZero,
       makerAssetAmount,
       takerAssetAmount,
       takerFee: BigNumber.from(0),
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await hre.ethers.provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
@@ -104,7 +94,7 @@ describe('takeOrder', () => {
 
   it('works as expected with takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.ZeroExV2Adapter;
-    const denominationAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const denominationAsset = new StandardToken(fork.config.weth, provider);
     const outgoingAsset = new StandardToken(fork.config.primitives.zrx, whales.zrx);
     const incomingAsset = new StandardToken(fork.config.primitives.knc, whales.knc);
     const [fundOwner, maker] = fork.accounts;
@@ -131,13 +121,13 @@ describe('takeOrder', () => {
     const unsignedOrder = await createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: randomAddress(),
       makerAssetAmount,
       takerAssetAmount,
       takerFee,
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await hre.ethers.provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
@@ -199,13 +189,13 @@ describe('takeOrder', () => {
     const unsignedOrder = await createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: constants.AddressZero,
       makerAssetAmount,
       takerAssetAmount,
       takerFee: BigNumber.from(0),
       makerAsset: incomingAsset,
       takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await hre.ethers.provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 

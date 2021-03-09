@@ -1,5 +1,4 @@
-import { BytesLike, Signer } from 'ethers';
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike } from '@enzymefinance/ethers';
 import {
   ChainlinkPriceFeed,
   ComptrollerLib,
@@ -13,6 +12,7 @@ import {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
+import { BytesLike, Signer } from 'ethers';
 
 export async function createFundDeployer({
   deployer,

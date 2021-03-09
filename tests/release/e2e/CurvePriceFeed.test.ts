@@ -1,8 +1,7 @@
-import { extractEvent, randomAddress } from '@crestproject/crestproject';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
-import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
 let fork: ForkDeployment;
@@ -29,12 +28,9 @@ describe('calcUnderlyingValues', () => {
 
   it('returns correct values (18-decimal invariant asset proxy)', async () => {
     const curvePriceFeed = fork.deployment.CurvePriceFeed;
-    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, hre.ethers.provider);
-    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
-    const invariantProxyAsset = new StandardToken(
-      fork.config.curve.pools.steth.invariantProxyAsset,
-      hre.ethers.provider,
-    );
+    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
+    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
     const lpTokenUnit = utils.parseUnits('1', await curveLPToken.decimals());
@@ -53,11 +49,11 @@ describe('calcUnderlyingValues', () => {
     const curvePriceFeed = fork.deployment.CurvePriceFeed;
 
     // Curve pool: 3pool
-    const curvePool = new ICurveLiquidityPool('0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7', hre.ethers.provider);
-    const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', hre.ethers.provider);
+    const curvePool = new ICurveLiquidityPool('0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7', provider);
+    const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
 
     // USDC as invariant asset proxy
-    const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
 
     await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
@@ -135,7 +131,7 @@ describe('derivatives registry', () => {
       const curveLiquidityGaugeToken = '0xd662908ADA2Ea1916B3318327A97eB18aD588b5d';
 
       const newDerivatives = [curveLPToken, curveLiquidityGaugeToken];
-      const invariantProxyAsset = new StandardToken(fork.config.weth, hre.ethers.provider);
+      const invariantProxyAsset = new StandardToken(fork.config.weth, provider);
       const invariantProxyAssetDecimals = await invariantProxyAsset.decimals();
 
       // The derivatives should not be supported assets initially
@@ -209,11 +205,8 @@ describe('derivatives registry', () => {
 
     it('removes multiple derivatives from registry and emits an event for each', async () => {
       const curvePriceFeed = fork.deployment.CurvePriceFeed;
-      const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, hre.ethers.provider);
-      const curveLiquidityGaugeToken = new StandardToken(
-        fork.config.curve.pools.steth.liquidityGaugeToken,
-        hre.ethers.provider,
-      );
+      const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+      const curveLiquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
       const derivativesToRemove = [curveLPToken, curveLiquidityGaugeToken];
 

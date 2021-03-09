@@ -1,29 +1,21 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   uniswapV2TakeOrder,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
-
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.usdt = ((await hre.ethers.getSigner(mainnetWhales.usdt)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('usdt');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -31,10 +23,10 @@ beforeEach(async () => {
 describe('adapters', () => {
   // Confirms that approvals from adapters to external protocols work as expected
   it('can swap USDT for WETH via Uniswap', async () => {
-    const weth = new StandardToken(fork.config.weth, hre.ethers.provider);
+    const weth = new StandardToken(fork.config.weth, provider);
     const outgoingAsset = new StandardToken(fork.config.primitives.usdt, whales.usdt);
     const incomingAsset = weth;
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, hre.ethers.provider);
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

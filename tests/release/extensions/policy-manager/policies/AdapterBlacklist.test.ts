@@ -1,5 +1,5 @@
-import { utils } from 'ethers';
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   AdapterBlacklist,
   adapterBlacklistArgs,
@@ -18,6 +18,7 @@ import {
   createFundDeployer,
   createMigratedFundConfig,
 } from '@enzymefinance/testutils';
+import { utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const { accounts, deployment, config } = await defaultTestDeployment(provider);

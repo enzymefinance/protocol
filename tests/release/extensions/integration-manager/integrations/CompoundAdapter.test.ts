@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider, randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   CompoundAdapter,
   compoundArgs,

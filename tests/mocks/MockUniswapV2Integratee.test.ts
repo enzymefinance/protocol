@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { MockUniswapV2PriceSource } from '@enzymefinance/protocol';
 import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';

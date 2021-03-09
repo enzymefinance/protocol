@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { StandardToken } from '@enzymefinance/protocol';
 import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';

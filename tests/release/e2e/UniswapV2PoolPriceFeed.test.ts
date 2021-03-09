@@ -1,31 +1,23 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import {
   buyShares,
   createNewFund,
   ForkDeployment,
   loadForkDeployment,
-  mainnetWhales,
   uniswapV2Lend,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 const gasAssertionTolerance = 0.03; // 3%
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('mln', 'weth');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -88,7 +80,7 @@ describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
     const uniswapV2PoolPriceFeed = fork.deployment.UniswapV2PoolPriceFeed;
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, hre.ethers.provider);
+    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
 
     const token0Address = await uniswapPair.token0();
     const token0RatioAmount = utils.parseEther('1');
@@ -138,8 +130,8 @@ describe('calcUnderlyingValues', () => {
   describe('expected values', () => {
     it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
       const valueInterpreter = fork.deployment.ValueInterpreter;
-      const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
-      const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, hre.ethers.provider);
+      const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+      const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, provider);
 
       const baseDecimals = await usdcWeth.decimals();
       const quoteDecimals = await usdc.decimals();
@@ -154,15 +146,15 @@ describe('calcUnderlyingValues', () => {
       // usdc/weth on Jan 17, 2021 was worth about $93M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: 92446608602898,
         isValid_: true,
+        value_: 92446608602898,
       });
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
       const valueInterpreter = fork.deployment.ValueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
-      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, hre.ethers.provider);
+      const dai = new StandardToken(fork.config.primitives.dai, provider);
+      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, provider);
 
       const baseDecimals = await kncWeth.decimals();
       const quoteDecimals = await dai.decimals();

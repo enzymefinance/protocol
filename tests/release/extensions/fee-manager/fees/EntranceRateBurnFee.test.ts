@@ -3,8 +3,8 @@
  * the EntranceRateFeeBase tests, i.e., the use of settlement type
  */
 
-import { BigNumber, utils } from 'ethers';
-import { EthereumTestnetProvider, randomAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   EntranceRateBurnFee,
   FeeHook,
@@ -22,6 +22,7 @@ import {
   createNewFund,
   defaultTestDeployment,
 } from '@enzymefinance/testutils';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot(provider: EthereumTestnetProvider) {
   const {

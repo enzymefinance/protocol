@@ -1,4 +1,5 @@
-import { Call, Contract, contract, SignerWithAddress } from '@crestproject/crestproject';
+import { Call, Contract, contract } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
   AlphaHomoraV1Adapter,
@@ -102,7 +103,7 @@ export async function calcAlphaBankLiveTotalEth({
   provider,
   alphaHomoraBank,
 }: {
-  provider: providers.JsonRpcSigner;
+  provider: providers.Provider;
   alphaHomoraBank: AlphaHomoraV1Bank;
 }) {
   const pendingInterest = await alphaHomoraBank.pendingInterest(0);

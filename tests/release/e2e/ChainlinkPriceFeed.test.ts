@@ -1,4 +1,4 @@
-import { AddressLike, randomAddress } from '@crestproject/crestproject';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import {
   ChainlinkPriceFeed,
   ChainlinkRateAsset,
@@ -8,7 +8,6 @@ import {
 } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, constants, Signer, utils } from 'ethers';
-import hre from 'hardhat';
 
 // Unused chf/usd aggregator
 const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
@@ -27,7 +26,7 @@ async function loadPrimitiveAggregator({
 }) {
   return new IChainlinkAggregator(
     (await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitive)).aggregator,
-    hre.ethers.provider,
+    provider,
   );
 }
 
@@ -44,7 +43,7 @@ async function swapDaiAggregatorForUsd({
   // which should always be nearly 1:1
   // See https://docs.chain.link/docs/using-chainlink-reference-contracts
   await chainlinkPriceFeed.removePrimitives([dai]);
-  const nextDaiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', hre.ethers.provider);
+  const nextDaiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', provider);
   await chainlinkPriceFeed.addPrimitives([dai], [nextDaiAggregator], [ChainlinkRateAsset.USD]);
 
   return nextDaiAggregator;
@@ -88,10 +87,7 @@ describe('getCanonicalRate', () => {
       chainlinkPriceFeed,
       dai,
     });
-    const ethUSDAggregator = new IChainlinkAggregator(
-      await chainlinkPriceFeed.getEthUsdAggregator(),
-      hre.ethers.provider,
-    );
+    const ethUSDAggregator = new IChainlinkAggregator(await chainlinkPriceFeed.getEthUsdAggregator(), provider);
     const usdcAggregator = await loadPrimitiveAggregator({
       chainlinkPriceFeed,
       primitive: usdc,
@@ -217,7 +213,7 @@ describe('removeStalePrimitives', () => {
 
     // Should succeed after warping beyond staleness threshold
     const stalenessThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
-    await hre.ethers.provider.send('evm_increaseTime', [stalenessThreshold.toNumber()]);
+    await provider.send('evm_increaseTime', [stalenessThreshold.toNumber()]);
     await expect(chainlinkPriceFeed.connect(randomUser).removeStalePrimitives([dai])).resolves.toBeReceipt();
   });
 });

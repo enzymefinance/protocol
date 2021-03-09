@@ -1,4 +1,5 @@
-import { randomAddress, SignerWithAddress } from '@crestproject/crestproject';
+import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   adapterBlacklistArgs,
   adapterWhitelistArgs,
@@ -25,97 +26,88 @@ import {
   KyberNetworkProxy,
   kyberTakeOrder,
   loadForkDeployment,
-  mainnetWhales,
-  unlockWhales,
   redeemShares,
+  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
-import hre from 'hardhat';
 
-// All values are rounded up to nearest 1000
-// Note that due to the nature of `toCostLessThan()`,
 const expectedGasCosts = {
-  'create fund': {
-    weth: 1501000,
-    usdc: 1508000,
-  },
   'buy shares: denomination asset only: first investment': {
-    weth: 475000,
     usdc: 494000,
+    weth: 475000,
   },
   'buy shares: denomination asset only: second investment': {
-    weth: 450000,
     usdc: 459000,
+    weth: 450000,
   },
-  'calc gav: denomination asset only': {
-    weth: 44000,
-    usdc: 48000,
+  'buy shares: max assets': {
+    usdc: 1495000,
+    weth: 1244000,
   },
   'calc gav: 20 assets': {
-    weth: 784000,
     usdc: 977000,
+    weth: 784000,
+  },
+  'calc gav: denomination asset only': {
+    usdc: 48000,
+    weth: 44000,
+  },
+
+  'create fund': {
+    usdc: 1508000,
+    weth: 1501000,
+  },
+
+  'redeem all shares: max assets: all remaining': {
+    usdc: 2715000,
+    weth: 2588000,
+  },
+
+  'redeem partial shares: max assets': {
+    usdc: 2868000,
+    weth: 2664000,
   },
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
-    weth: 1656000,
     usdc: 2435000,
-  },
-  'redeem partial shares: max assets': {
-    weth: 2664000,
-    usdc: 2868000,
-  },
-  'buy shares: max assets': {
-    weth: 1244000,
-    usdc: 1495000,
-  },
-  'redeem all shares: max assets: all remaining': {
-    weth: 2588000,
-    usdc: 2715000,
+    weth: 1656000,
   },
 } as const;
 
 const gasAssertionTolerance = 0.03; // 3%
-let fork: ForkDeployment;
-const whales: Record<string, SignerWithAddress> = {};
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  // Denomination assets
-  whales.usdc = ((await hre.ethers.getSigner(mainnetWhales.usdc)) as any) as SignerWithAddress;
-  whales.weth = ((await hre.ethers.getSigner(mainnetWhales.weth)) as any) as SignerWithAddress;
-
-  // Primitives
-  whales.bat = ((await hre.ethers.getSigner(mainnetWhales.bat)) as any) as SignerWithAddress;
-  whales.bnb = ((await hre.ethers.getSigner(mainnetWhales.bnb)) as any) as SignerWithAddress;
-  whales.bnt = ((await hre.ethers.getSigner(mainnetWhales.bnt)) as any) as SignerWithAddress;
-  whales.comp = ((await hre.ethers.getSigner(mainnetWhales.comp)) as any) as SignerWithAddress;
-  whales.dai = ((await hre.ethers.getSigner(mainnetWhales.dai)) as any) as SignerWithAddress;
-  whales.link = ((await hre.ethers.getSigner(mainnetWhales.link)) as any) as SignerWithAddress;
-  whales.mana = ((await hre.ethers.getSigner(mainnetWhales.mana)) as any) as SignerWithAddress;
-  whales.mln = ((await hre.ethers.getSigner(mainnetWhales.mln)) as any) as SignerWithAddress;
-  whales.ren = ((await hre.ethers.getSigner(mainnetWhales.ren)) as any) as SignerWithAddress;
-  whales.rep = ((await hre.ethers.getSigner(mainnetWhales.rep)) as any) as SignerWithAddress;
-  whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
-  whales.uni = ((await hre.ethers.getSigner(mainnetWhales.uni)) as any) as SignerWithAddress;
-  whales.usdt = ((await hre.ethers.getSigner(mainnetWhales.usdt)) as any) as SignerWithAddress;
-  whales.zrx = ((await hre.ethers.getSigner(mainnetWhales.zrx)) as any) as SignerWithAddress;
-
-  // Compound tokens
-  whales.ccomp = ((await hre.ethers.getSigner(mainnetWhales.ccomp)) as any) as SignerWithAddress;
-  whales.cdai = ((await hre.ethers.getSigner(mainnetWhales.cdai)) as any) as SignerWithAddress;
-  whales.ceth = ((await hre.ethers.getSigner(mainnetWhales.ceth)) as any) as SignerWithAddress;
-  whales.cusdc = ((await hre.ethers.getSigner(mainnetWhales.cusdc)) as any) as SignerWithAddress;
-  whales.cuni = ((await hre.ethers.getSigner(mainnetWhales.cuni)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales(
+    'usdc',
+    'weth',
+    'bat',
+    'bnb',
+    'bnt',
+    'comp',
+    'dai',
+    'link',
+    'mana',
+    'mln',
+    'ren',
+    'rep',
+    'susd',
+    'uni',
+    'usdt',
+    'zrx',
+    'ccomp',
+    'cdai',
+    'ceth',
+    'cusdc',
+    'cuni',
+  );
 });
 
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',
   (denominationAssetId) => {
+    let fork: ForkDeployment;
     let manager: SignerWithAddress;
     let investor: SignerWithAddress;
     let anotherInvestor: SignerWithAddress;
@@ -274,10 +266,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('trades on Kyber', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
 
       const outgoingAsset = denominationAsset;
-      const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+      const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
       const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
 
       const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
@@ -308,8 +300,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     xit('lends and redeems Chai', async () => {
-      const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
-      const chai = new StandardToken(fork.config.chai.chai, hre.ethers.provider);
+      const dai = new StandardToken(fork.config.primitives.dai, provider);
+      const chai = new StandardToken(fork.config.chai.chai, provider);
       const daiAmount = await dai.balanceOf(vaultProxy);
 
       await chaiLend({
@@ -318,7 +310,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         integrationManager: fork.deployment.IntegrationManager,
         fundOwner: manager,
         chaiAdapter: fork.deployment.ChaiAdapter,
-        dai: new StandardToken(fork.config.primitives.dai, hre.ethers.provider),
+        dai: new StandardToken(fork.config.primitives.dai, provider),
         daiAmount,
         minChaiAmount: daiAmount.mul(90).div(100),
       });
@@ -412,10 +404,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('trades on Kyber again', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, hre.ethers.provider);
+      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
 
       const outgoingAsset = denominationAsset;
-      const incomingAsset = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+      const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
       const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
 
       const { expectedRate } = await kyberNetworkProxy.getExpectedRate(

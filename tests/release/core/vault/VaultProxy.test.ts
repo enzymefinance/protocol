@@ -1,4 +1,5 @@
-import { EthereumTestnetProvider, extractEvent, randomAddress } from '@crestproject/crestproject';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { IMigrationHookHandler, VaultLib } from '@enzymefinance/protocol';
 import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';

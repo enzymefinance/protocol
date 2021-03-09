@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { randomizedTestDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 

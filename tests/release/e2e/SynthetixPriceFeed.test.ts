@@ -1,7 +1,6 @@
 import { ISynthetixAddressResolver, ISynthetixExchangeRates, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment, synthetixResolveAddress } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 let fork: ForkDeployment;
 
@@ -11,17 +10,17 @@ beforeEach(async () => {
 
 it('returns rate for underlying token', async () => {
   const synthetixPriceFeed = fork.deployment.SynthetixPriceFeed;
-  const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
-  const susd = new StandardToken(fork.config.primitives.susd, hre.ethers.provider);
+  const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+  const susd = new StandardToken(fork.config.primitives.susd, provider);
 
   const exchangeRates = await synthetixResolveAddress({
-    addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
+    addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
     name: 'ExchangeRates',
   });
 
   const synthUnit = utils.parseEther('1');
 
-  const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, hre.ethers.provider);
+  const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, provider);
   await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
 
   // Synthetix rates
@@ -39,8 +38,8 @@ it('returns rate for underlying token', async () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals quote)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
-    const dai = new StandardToken(fork.config.primitives.dai, hre.ethers.provider);
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await sbtc.decimals();
     const quoteDecimals = await dai.decimals();
@@ -56,15 +55,15 @@ describe('expected values', () => {
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('36520318115419358123009'),
       isValid_: true,
+      value_: BigNumber.from('36520318115419358123009'),
     });
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
     const valueInterpreter = fork.deployment.ValueInterpreter;
-    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await sbtc.decimals();
     const quoteDecimals = await usdc.decimals();

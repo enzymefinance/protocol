@@ -1,4 +1,4 @@
-import { EthereumTestnetProvider } from '@crestproject/crestproject';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { deployPersistent } from './deployment';
 
 export async function defaultPersistentTestDeployment(provider: EthereumTestnetProvider) {

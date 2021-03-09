@@ -1,7 +1,7 @@
+import { Call } from '@enzymefinance/ethers';
 import { BytesLike, utils } from 'ethers';
-import { sighash } from '../sighash';
 import { encodeArgs } from '../encoding';
-import { Call } from '@crestproject/crestproject';
+import { sighash } from '../sighash';
 
 export enum SpendAssetsHandleType {
   None,

@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   guaranteedRedemptionArgs,
@@ -14,7 +14,6 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   redeemShares,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
@@ -22,21 +21,24 @@ import {
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
-import hre from 'hardhat';
 
 async function warpBeyondWaitingPeriod() {
   // TODO: get waiting period dynamically
   const waitingPeriod = 360; // As of Jan 9, 2021
-  await hre.ethers.provider.send('evm_increaseTime', [waitingPeriod]);
-  await hre.ethers.provider.send('evm_mine', []);
+  await provider.send('evm_increaseTime', [waitingPeriod]);
+  await provider.send('evm_mine', []);
 }
+
+let whales: Record<string, SignerWithAddress>;
+let fork: ForkDeployment;
+beforeAll(async () => {
+  whales = await unlockWhales('susd');
+  fork = await loadForkDeployment();
+});
 
 describe("Walkthrough a synth-based fund's lifecycle", () => {
   const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
   const susdCurrencyKey = utils.formatBytes32String('sUSD');
-  const whales: Record<string, SignerWithAddress> = {};
-
-  let fork: ForkDeployment;
 
   let manager: SignerWithAddress;
   let investor: SignerWithAddress;
@@ -49,28 +51,18 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   let synthetixExchanger: ISynthetixExchanger;
 
   beforeAll(async () => {
-    // Unlock whale accounts
-    whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
-
-    await unlockWhales({
-      provider: hre.ethers.provider,
-      whales: Object.values(whales),
-    });
-
-    fork = await loadForkDeployment();
-
     manager = fork.accounts[0];
     investor = fork.accounts[1];
 
     susd = new StandardToken(fork.config.primitives.susd, whales.susd);
-    sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+    sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
     denominationAsset = susd;
 
     const exchangerAddress = await synthetixResolveAddress({
-      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
+      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
       name: 'Exchanger',
     });
-    synthetixExchanger = new ISynthetixExchanger(exchangerAddress, hre.ethers.provider);
+    synthetixExchanger = new ISynthetixExchanger(exchangerAddress, provider);
 
     // Seed investor with denomination asset
     const denominationAssetSeedAmount = utils.parseUnits('1000', await denominationAsset.decimals());
@@ -85,8 +77,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       policies: [fork.deployment.GuaranteedRedemption],
       settings: [
         guaranteedRedemptionArgs({
-          startTimestamp: (await hre.ethers.provider.getBlock('latest')).timestamp,
           duration: [100],
+          startTimestamp: (await provider.getBlock('latest')).timestamp,
         }),
       ],
     });
@@ -132,8 +124,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
   it('warps beyond the redemption window', async () => {
     const duration = (await fork.deployment.GuaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
-    await hre.ethers.provider.send('evm_increaseTime', [duration.toNumber()]);
-    await hre.ethers.provider.send('evm_mine', []);
+    await provider.send('evm_increaseTime', [duration.toNumber()]);
+    await provider.send('evm_mine', []);
   });
 
   it('attempts to trade on Synthetix without delegating the SynthetixAdapter to exchangeOnBehalf of VaultProxy', async () => {
@@ -154,8 +146,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
   it('designates the SynthetixAdapter to exchangeOnBehalf of VaultProxy', async () => {
     await synthetixAssignExchangeDelegate({
+      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
       comptrollerProxy,
-      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, hre.ethers.provider),
       fundOwner: manager,
       delegate: fork.deployment.SynthetixAdapter,
     });

@@ -1,33 +1,26 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ISynthetixAddressResolver, ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
 
 const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
 const susdCurrencyKey = utils.formatBytes32String('sUSD');
-const whales: Record<string, SignerWithAddress> = {};
-let fork: ForkDeployment;
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  whales.susd = ((await hre.ethers.getSigner(mainnetWhales.susd)) as any) as SignerWithAddress;
-
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+  whales = await unlockWhales('susd');
 });
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });
@@ -36,18 +29,15 @@ beforeEach(async () => {
 
 it('works as expected when called by a fund (synth to synth)', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.susd, whales.susd);
-  const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, hre.ethers.provider);
+  const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
   const [fundOwner] = fork.accounts;
-  const synthetixAddressResolver = new ISynthetixAddressResolver(
-    fork.config.synthetix.addressResolver,
-    hre.ethers.provider,
-  );
+  const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner as SignerWithAddress,
     fundOwner,
+    denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
     fundDeployer: fork.deployment.FundDeployer,
-    denominationAsset: new StandardToken(fork.config.primitives.susd, hre.ethers.provider),
   });
 
   // Load the SynthetixExchange contract
@@ -55,7 +45,7 @@ it('works as expected when called by a fund (synth to synth)', async () => {
     addressResolver: synthetixAddressResolver,
     name: 'Exchanger',
   });
-  const synthetixExchanger = new ISynthetixExchanger(exchangerAddress, hre.ethers.provider);
+  const synthetixExchanger = new ISynthetixExchanger(exchangerAddress, provider);
 
   // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
   await synthetixAssignExchangeDelegate({

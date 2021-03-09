@@ -1,4 +1,4 @@
-import { AddressLike } from '@crestproject/crestproject';
+import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';

@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@crestproject/crestproject';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   AaveAdapter,
   aaveLendArgs,
@@ -13,31 +13,21 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  mainnetWhales,
   unlockWhales,
 } from '@enzymefinance/testutils';
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
-import hre from 'hardhat';
-
-let fork: ForkDeployment;
-
-beforeEach(async () => {
-  fork = await loadForkDeployment();
-});
 
 const gasAssertionTolerance = 0.03; // 3%
-const whales: Record<string, SignerWithAddress> = {};
 
+let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
-  // Assign signers for whale accounts
-  whales.usdc = ((await hre.ethers.getSigner(mainnetWhales.usdc)) as any) as SignerWithAddress;
-  whales.ausdc = ((await hre.ethers.getSigner(mainnetWhales.ausdc)) as any) as SignerWithAddress;
+  whales = await unlockWhales('usdc', 'ausdc');
+});
 
-  await unlockWhales({
-    provider: hre.ethers.provider,
-    whales: Object.values(whales),
-  });
+let fork: ForkDeployment;
+beforeEach(async () => {
+  fork = await loadForkDeployment();
 });
 
 // HAPPY PATHS
@@ -54,7 +44,7 @@ describe('lend', () => {
 
     const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await token.decimals());
-    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
 
     await token.transfer(vaultProxy, amount);
 
@@ -96,9 +86,9 @@ describe('redeem', () => {
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
     });
 
-    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
     const amount = utils.parseUnits('1', await aToken.decimals());
-    const token = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     await aToken.transfer(vaultProxy, amount);
 
@@ -132,7 +122,7 @@ describe('redeem', () => {
 // TODO: Move this assertions to unit tests
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
     const lendingPoolAddressProvider = await aaveAdapter.getLendingPoolAddressProvider();
     expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
 
@@ -143,10 +133,10 @@ describe('constructor', () => {
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
 
     const args = aaveLendArgs({
       aToken,
@@ -161,10 +151,10 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for lending', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
 
     const args = aaveLendArgs({
       aToken,
@@ -187,10 +177,10 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, hre.ethers.provider);
-    const aToken = new StandardToken(fork.config.aave.aTokens.ausdc[0], whales.ausdc);
+    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
     const amount = utils.parseUnits('1', await aToken.decimals());
-    const token = new StandardToken(fork.config.primitives.usdc, hre.ethers.provider);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     const args = aaveRedeemArgs({
       aToken,
