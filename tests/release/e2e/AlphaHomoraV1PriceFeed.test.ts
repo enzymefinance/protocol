@@ -10,8 +10,6 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-const gasAssertionTolerance = 0.03; // 3%
-
 let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
@@ -113,6 +111,6 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(25000), gasAssertionTolerance);
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(25000));
   });
 });

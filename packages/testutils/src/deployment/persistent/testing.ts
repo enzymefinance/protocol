@@ -8,11 +8,6 @@ export async function defaultPersistentTestDeployment(provider: EthereumTestnetP
     provider.getSignerWithAddress(2),
     provider.getSignerWithAddress(3),
     provider.getSignerWithAddress(4),
-    provider.getSignerWithAddress(5),
-    provider.getSignerWithAddress(6),
-    provider.getSignerWithAddress(7),
-    provider.getSignerWithAddress(8),
-    provider.getSignerWithAddress(9),
   ]);
 
   const config = {

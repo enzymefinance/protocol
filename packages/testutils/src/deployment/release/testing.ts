@@ -11,8 +11,6 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
     provider.getSignerWithAddress(2),
     provider.getSignerWithAddress(3),
     provider.getSignerWithAddress(4),
-    provider.getSignerWithAddress(5),
-    provider.getSignerWithAddress(6),
   ]);
 
   const persistent = await deployPersistent({ deployer });

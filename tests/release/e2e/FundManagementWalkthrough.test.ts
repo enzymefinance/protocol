@@ -74,8 +74,6 @@ const expectedGasCosts = {
   },
 } as const;
 
-const gasAssertionTolerance = 0.03; // 3%
-
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',
   (denominationAssetId) => {
@@ -163,10 +161,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       comptrollerProxy = createFundTx.comptrollerProxy;
       vaultProxy = createFundTx.vaultProxy;
 
-      expect(createFundTx.receipt).toCostLessThan(
-        expectedGasCosts['create fund'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(createFundTx.receipt).toCostLessThan(expectedGasCosts['create fund'][denominationAssetId]);
     });
 
     it('enables the InvestorWhitelist policy for the fund', async () => {
@@ -203,7 +198,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(buySharesTx).toCostLessThan(
         expectedGasCosts['buy shares: denomination asset only: first investment'][denominationAssetId],
-        gasAssertionTolerance,
       );
     });
 
@@ -224,17 +218,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(buySharesTx).toCostLessThan(
         expectedGasCosts['buy shares: denomination asset only: second investment'][denominationAssetId],
-        gasAssertionTolerance,
       );
     });
 
     it('calculates the GAV of the fund with only the denomination asset', async () => {
       const calcGavTx = await comptrollerProxy.calcGav(true);
 
-      expect(calcGavTx).toCostLessThan(
-        expectedGasCosts['calc gav: denomination asset only'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: denomination asset only'][denominationAssetId]);
     });
 
     it('trades on Kyber', async () => {
@@ -369,10 +359,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const calcGavTx = await comptrollerProxy.calcGav(true);
 
-      expect(calcGavTx).toCostLessThan(
-        expectedGasCosts['calc gav: 20 assets'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: 20 assets'][denominationAssetId]);
     });
 
     it('trades on Kyber again', async () => {
@@ -408,10 +395,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const balance = await incomingAsset.balanceOf(vaultProxy);
       expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
 
-      expect(receipt).toCostLessThan(
-        expectedGasCosts['trade on Kyber: max assets'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(receipt).toCostLessThan(expectedGasCosts['trade on Kyber: max assets'][denominationAssetId]);
     });
 
     it("sends an asset amount to the fund's vault", async () => {
@@ -442,10 +426,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
 
-      expect(redeemed).toCostLessThan(
-        expectedGasCosts['redeem partial shares: max assets'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(redeemed).toCostLessThan(expectedGasCosts['redeem partial shares: max assets'][denominationAssetId]);
     });
 
     it("sends an asset amount to the fund's vault again", async () => {
@@ -498,10 +479,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
 
-      expect(buySharesTx).toCostLessThan(
-        expectedGasCosts['buy shares: max assets'][denominationAssetId],
-        gasAssertionTolerance,
-      );
+      expect(buySharesTx).toCostLessThan(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
     });
 
     it('redeems all remaining shares of the first investor', async () => {
@@ -523,7 +501,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(redeemed).toCostLessThan(
         expectedGasCosts['redeem all shares: max assets: all remaining'][denominationAssetId],
-        gasAssertionTolerance,
       );
     });
   },

@@ -2,8 +2,6 @@ import { ICERC20, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-const gasAssertionTolerance = 0.03; // 3%
-
 let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
@@ -26,7 +24,7 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyings_[0]).toMatchAddress(dai);
 
     // Rounding up from 38938
-    expect(getRatesReceipt).toCostLessThan('39000', gasAssertionTolerance);
+    expect(getRatesReceipt).toCostLessThan('39000');
   });
 
   it('returns rate for underlying token (cETH)', async () => {
@@ -45,7 +43,7 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyings_[0]).toMatchAddress(weth);
 
     // Rounding up from 30991
-    expect(getRatesReceipt).toCostLessThan('32000', gasAssertionTolerance);
+    expect(getRatesReceipt).toCostLessThan('32000');
   });
 });
 

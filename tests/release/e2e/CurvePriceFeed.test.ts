@@ -3,8 +3,6 @@ import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-const gasAssertionTolerance = 0.03; // 3%
-
 let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
@@ -42,7 +40,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
     // Rounding up from 61325
-    expect(calcUnderlyingValuesTx).toCostLessThan('62000', gasAssertionTolerance);
+    expect(calcUnderlyingValuesTx).toCostLessThan('62000');
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -71,7 +69,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
     // Rounding up from 48432
-    expect(calcUnderlyingValuesTx).toCostLessThan('49000', gasAssertionTolerance);
+    expect(calcUnderlyingValuesTx).toCostLessThan('49000');
   });
 });
 

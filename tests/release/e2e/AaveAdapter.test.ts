@@ -12,8 +12,6 @@ import { createNewFund, ForkDeployment, getAssetBalances, loadForkDeployment } f
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
 
-const gasAssertionTolerance = 0.03; // 3%
-
 let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
@@ -60,7 +58,7 @@ describe('lend', () => {
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
     // Rounding up from 482677
-    expect(lendReceipt).toCostLessThan('483000', gasAssertionTolerance);
+    expect(lendReceipt).toCostLessThan('483000');
   });
 });
 
@@ -104,7 +102,7 @@ describe('redeem', () => {
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
     // Rounding up from 534330
-    expect(redeemReceipt).toCostLessThan('535000', gasAssertionTolerance);
+    expect(redeemReceipt).toCostLessThan('535000');
   });
 });
 

@@ -88,7 +88,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: {
         accountsBalance: utils.parseUnits('1', 36).toString(),
-        count: 10,
+        count: 5,
         mnemonic,
       },
       forking: {

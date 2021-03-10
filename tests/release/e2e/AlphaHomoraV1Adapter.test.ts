@@ -19,8 +19,6 @@ import {
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-const gasAssertionTolerance = 0.03; // 3%
-
 let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
@@ -85,7 +83,7 @@ describe('lend', () => {
     );
 
     // Assert gas cost of lend tx
-    expect(lendReceipt).toCostLessThan(317000, gasAssertionTolerance);
+    expect(lendReceipt).toCostLessThan(317000);
   });
 });
 
@@ -155,7 +153,7 @@ describe('redeem', () => {
 
     // Assert gas cost of redeem tx
     // Rounding up from 253489
-    expect(redeemReceipt).toCostLessThan(254000, gasAssertionTolerance);
+    expect(redeemReceipt).toCostLessThan(254000);
   });
 });
 

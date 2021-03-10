@@ -136,7 +136,6 @@ async function assertCompoundRedeem({
 }
 
 const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
-const gasAssertionTolerance = 0.03; // 3%
 
 let fork: ForkDeployment;
 beforeEach(async () => {
@@ -167,7 +166,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostLessThan('528000', gasAssertionTolerance);
+    expect(lendReceipt).toCostLessThan('528000');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -192,7 +191,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostLessThan('448000', gasAssertionTolerance);
+    expect(lendReceipt).toCostLessThan('448000');
   });
 });
 
@@ -217,7 +216,7 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
     });
 
-    expect(redeemReceipt).toCostLessThan('503000', gasAssertionTolerance);
+    expect(redeemReceipt).toCostLessThan('503000');
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -240,7 +239,7 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.CompoundPriceFeed,
     });
 
-    expect(redeemReceipt).toCostLessThan('418000', gasAssertionTolerance);
+    expect(redeemReceipt).toCostLessThan('418000');
   });
 });
 
