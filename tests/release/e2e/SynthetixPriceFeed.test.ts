@@ -3,7 +3,6 @@ import { ForkDeployment, loadForkDeployment, synthetixResolveAddress } from '@en
 import { BigNumber, utils } from 'ethers';
 
 let fork: ForkDeployment;
-
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });

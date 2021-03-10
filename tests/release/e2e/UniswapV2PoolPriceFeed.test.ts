@@ -1,21 +1,9 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
-import {
-  buyShares,
-  createNewFund,
-  ForkDeployment,
-  loadForkDeployment,
-  uniswapV2Lend,
-  unlockWhales,
-} from '@enzymefinance/testutils';
+import { buyShares, createNewFund, ForkDeployment, loadForkDeployment, uniswapV2Lend } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('mln', 'weth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

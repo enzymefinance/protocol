@@ -27,7 +27,6 @@ import {
   kyberTakeOrder,
   loadForkDeployment,
   redeemShares,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
 
@@ -76,33 +75,6 @@ const expectedGasCosts = {
 } as const;
 
 const gasAssertionTolerance = 0.03; // 3%
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales(
-    'usdc',
-    'weth',
-    'bat',
-    'bnb',
-    'bnt',
-    'comp',
-    'dai',
-    'link',
-    'mana',
-    'mln',
-    'ren',
-    'rep',
-    'susd',
-    'uni',
-    'usdt',
-    'zrx',
-    'ccomp',
-    'cdai',
-    'ceth',
-    'cusdc',
-    'cuni',
-  );
-});
 
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',

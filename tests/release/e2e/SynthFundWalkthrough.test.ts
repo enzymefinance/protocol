@@ -18,7 +18,6 @@ import {
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -29,10 +28,8 @@ async function warpBeyondWaitingPeriod() {
   await provider.send('evm_mine', []);
 }
 
-let whales: Record<string, SignerWithAddress>;
 let fork: ForkDeployment;
 beforeAll(async () => {
-  whales = await unlockWhales('susd');
   fork = await loadForkDeployment();
 });
 

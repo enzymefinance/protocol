@@ -1,7 +1,6 @@
 import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 
 let fork: ForkDeployment;
-
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });

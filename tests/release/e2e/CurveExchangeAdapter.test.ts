@@ -13,7 +13,6 @@ import {
   curveTakeOrder,
   ForkDeployment,
   loadForkDeployment,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -21,11 +20,6 @@ const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // There is variable small discrepancy between get_best_rate().maxAmountReceived and the actual amount received,
 // likely due to rounding somewhere
 const curveRoundingBuffer = 5;
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('weth', 'dai', 'lidoSteth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

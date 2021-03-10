@@ -1,7 +1,7 @@
 import { resolveAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 
-export const mainnetWhales = {
+const whales = {
   adai: '0x62e41b1185023bcc14a465d350e1dde341557925',
   ausdc: '0x98fa411ab5f0bd2655f2499e35666e83835996bc',
   bat: '0x312da0eae223b2062ecd4d3f3a1100eb7d4414b1',
@@ -30,22 +30,28 @@ export const mainnetWhales = {
   czrx: '0x767ecb395def19ab8d1b2fcc89b3ddfbed28fd6b',
   susd: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
-};
+} as const;
 
-export async function unlockWhales<T extends keyof typeof mainnetWhales>(
-  ...whales: T[]
-): Promise<Record<T, SignerWithAddress>> {
-  const signers = await Promise.all(
-    whales.map(async (whale) => {
-      const address = resolveAddress(mainnetWhales[whale]);
-      await provider.send('hardhat_impersonateAccount', [address]);
-      return provider.getSignerWithAddress(address);
-    }),
-  );
+export type Whale = keyof typeof whales;
+export type WhaleSigners<T extends Partial<Whale> = Whale> = Record<T, SignerWithAddress>;
 
-  const output: Record<T, SignerWithAddress> = whales.reduce((carry, key, index) => {
+export async function unlockWhale(token: Whale) {
+  const address = resolveAddress(whales[token]);
+  await provider.send('hardhat_impersonateAccount', [address]);
+  return provider.getSignerWithAddress(address);
+}
+
+export async function unlockAllWhales() {
+  const keys = Object.keys(whales) as Whale[];
+  const signers = await Promise.all(keys.map(async (token) => unlockWhale(token)));
+  return keys.reduce((carry, key, index) => {
     return { ...carry, [key]: signers[index] };
-  }, {} as Record<T, SignerWithAddress>);
+  }, {} as WhaleSigners);
+}
 
-  return output;
+export async function unlockWhales<T extends Whale>(...tokens: T[]) {
+  const signers = await Promise.all(tokens.map(async (token) => unlockWhale(token)));
+  return tokens.reduce((carry, key, index) => {
+    return { ...carry, [key]: signers[index] };
+  }, {} as WhaleSigners<T>);
 }

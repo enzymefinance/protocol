@@ -7,16 +7,10 @@ import {
   createNewFund,
   ForkDeployment,
   loadForkDeployment,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('weth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

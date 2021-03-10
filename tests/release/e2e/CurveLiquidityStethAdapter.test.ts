@@ -31,14 +31,8 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('weth', 'lidoSteth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

@@ -6,17 +6,11 @@ import {
   ForkDeployment,
   getAssetBalances,
   loadForkDeployment,
-  unlockWhales,
   zeroExV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('dai', 'knc', 'weth', 'zrx');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

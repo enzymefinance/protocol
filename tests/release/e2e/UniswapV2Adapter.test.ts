@@ -8,14 +8,8 @@ import {
   uniswapV2Lend,
   uniswapV2Redeem,
   uniswapV2TakeOrder,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('knc', 'mln', 'weth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

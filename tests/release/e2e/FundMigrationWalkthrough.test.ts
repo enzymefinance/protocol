@@ -28,36 +28,12 @@ import {
   redeemShares,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ForkDeployment;
-let whales: Record<string, SignerWithAddress>;
 beforeAll(async () => {
   fork = await loadForkDeployment();
-  whales = await unlockWhales(
-    'weth',
-    'bat',
-    'bnb',
-    'bnt',
-    'comp',
-    'dai',
-    'link',
-    'mana',
-    'mln',
-    'ren',
-    'rep',
-    'susd',
-    'uni',
-    'usdt',
-    'zrx',
-    'ccomp',
-    'cdai',
-    'ceth',
-    'cusdc',
-    'cuni',
-  );
 });
 
 describe('Walkthrough a fund migration', () => {

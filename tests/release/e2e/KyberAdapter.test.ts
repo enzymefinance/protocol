@@ -4,11 +4,9 @@ import {
   createNewFund,
   ForkDeployment,
   getAssetBalances,
-  loadForkDeployment,
   KyberNetworkProxy,
   kyberTakeOrder,
   loadForkDeployment,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 
@@ -66,11 +64,6 @@ async function assertKyberTakeOrder({
   expect(incomingAssetAmount).toBeGteBigNumber(minIncomingAssetAmount);
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('weth', 'dai', 'usdc');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

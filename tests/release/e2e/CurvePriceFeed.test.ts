@@ -4,8 +4,8 @@ import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%
-let fork: ForkDeployment;
 
+let fork: ForkDeployment;
 beforeEach(async () => {
   fork = await loadForkDeployment();
 });

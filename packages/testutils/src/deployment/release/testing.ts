@@ -1,8 +1,7 @@
-import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
+import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';
-import { configureForkRelease } from './fork';
 import { configureMockRelease, deployMocks } from './mocks';
 
 export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
@@ -46,77 +45,6 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
     accounts,
     deployment: {
       ...mocks,
-      ...persistent,
-      ...release,
-    },
-  };
-}
-
-export async function defaultTestRelease(
-  deployer: SignerWithAddress,
-  accounts: SignerWithAddress[],
-  dispatcher: Dispatcher,
-) {
-  const mocks = await deployMocks({ deployer, accounts });
-  const config = await configureMockRelease({
-    dispatcher,
-    deployer,
-    mocks,
-    accounts,
-  });
-
-  const release = await deployRelease(config);
-  await release.integrationManager.registerAdapters([mocks.mockGenericAdapter]);
-  await mocks.mockCentralizedRateProvider.setValueInterpreter(release.valueInterpreter);
-
-  // Keep this as the final step
-  await launchRelease({
-    dispatcher: dispatcher,
-    fundDeployer: release.fundDeployer,
-  });
-
-  return {
-    config,
-    accounts,
-    deployment: {
-      ...mocks,
-      ...release,
-      persistent: {
-        dispatcher,
-      },
-    },
-  };
-}
-
-export async function defaultForkDeployment(provider: EthereumTestnetProvider) {
-  const [deployer, ...accounts] = await Promise.all([
-    provider.getSignerWithAddress(0),
-    provider.getSignerWithAddress(1),
-    provider.getSignerWithAddress(2),
-    provider.getSignerWithAddress(3),
-    provider.getSignerWithAddress(4),
-  ]);
-
-  const persistent = await deployPersistent({ deployer });
-  const config = await configureForkRelease({
-    provider,
-    dispatcher: persistent.dispatcher,
-    deployer,
-    accounts,
-  });
-
-  const release = await deployRelease(config);
-
-  // Keep this as the final step
-  await launchRelease({
-    dispatcher: persistent.dispatcher,
-    fundDeployer: release.fundDeployer,
-  });
-
-  return {
-    config,
-    accounts,
-    deployment: {
       ...persistent,
       ...release,
     },

@@ -1,12 +1,7 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
-import { createNewFund, ForkDeployment, loadForkDeployment, unlockWhales } from '@enzymefinance/testutils';
+import { createNewFund, ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('weth');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

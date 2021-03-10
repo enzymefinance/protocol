@@ -8,22 +8,11 @@ import {
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
-import {
-  createNewFund,
-  ForkDeployment,
-  getAssetBalances,
-  loadForkDeployment,
-  unlockWhales,
-} from '@enzymefinance/testutils';
+import { createNewFund, ForkDeployment, getAssetBalances, loadForkDeployment } from '@enzymefinance/testutils';
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
 
 const gasAssertionTolerance = 0.03; // 3%
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('usdc', 'ausdc');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

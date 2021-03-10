@@ -6,14 +6,8 @@ import {
   getAssetBalances,
   loadForkDeployment,
   uniswapV2TakeOrder,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('usdt');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {

@@ -17,6 +17,7 @@ function common(name: string, roots: string[]) {
 function fork(name: string, roots: string[]) {
   return {
     ...common(name, roots),
+    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
     testEnvironmentOptions: {
       hardhatNetworkOptions: {
         accounts: {

@@ -11,6 +11,7 @@
   },
   "scripts": {
     "postinstall": "preconstruct dev && manypkg check",
+    "clean": "yarn manypkg exec yarn rimraf **/dist **/artifacts **/codegen",
     "compile": "hardhat compile",
     "coverage": "hardhat coverage && COVERAGE=true yarn test",
     "dev": "preconstruct dev",
@@ -54,6 +55,7 @@
     "lint-staged": "^10.5.4",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
+    "rimraf": "^3.0.2",
     "solhint": "^3.3.3",
     "typescript": "^4.2.3"
   },

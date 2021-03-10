@@ -8,17 +8,11 @@ import {
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
-  unlockWhales,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
 const susdCurrencyKey = utils.formatBytes32String('sUSD');
-
-let whales: Record<string, SignerWithAddress>;
-beforeAll(async () => {
-  whales = await unlockWhales('susd');
-});
 
 let fork: ForkDeployment;
 beforeEach(async () => {
