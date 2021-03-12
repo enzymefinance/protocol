@@ -61,7 +61,8 @@ describe('calcUnderlyingValues', () => {
     const expectedRate = lpTokenUnit
       .mul(await curvePool.get_virtual_price())
       .mul(invariantProxyAssetUnit)
-      .div(utils.parseEther('1').mul(2));
+      .div(utils.parseEther('1'))
+      .div(utils.parseEther('1'));
 
     const calcUnderlyingValuesRes = await curvePriceFeed.calcUnderlyingValues.args(curveLPToken, lpTokenUnit).call();
     expect(calcUnderlyingValuesRes.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
@@ -74,9 +75,49 @@ describe('calcUnderlyingValues', () => {
 });
 
 describe('expected values', () => {
-  it.todo('returns the expected value from the valueInterpreter (18-decimal invariant asset proxy)');
+  it('returns the expected value from the valueInterpreter (18-decimal invariant asset proxy)', async () => {
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
+    expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
-  it.todo('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)');
+    // Get value in terms of invariant proxy asset (WETH) for easy comparison
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(curveLPToken, utils.parseEther('1'), invariantProxyAsset)
+      .call();
+
+    // Should be slightly more than 1 unit of WETH (10^18)
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      isValid_: true,
+      value_: '1000503621316749605',
+    });
+  });
+
+  it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
+    const aggregatedDerivativePriceFeed = fork.deployment.AggregatedDerivativePriceFeed;
+    const curvePriceFeed = fork.deployment.CurvePriceFeed;
+    const valueInterpreter = fork.deployment.ValueInterpreter;
+
+    // Curve pool: 3pool
+    const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
+    const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
+
+    // Add curveLPToken to price feed
+    await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
+    await aggregatedDerivativePriceFeed.addDerivatives([curveLPToken], [curvePriceFeed]);
+
+    // Get value in terms of invariant proxy asset for easy comparison
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(curveLPToken, utils.parseEther('1'), invariantProxyAsset)
+      .call();
+
+    // Should be slightly more than 1 unit of USDC (10^6)
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      isValid_: true,
+      value_: '1007359',
+    });
+  });
 });
 
 describe('derivatives registry', () => {

@@ -85,7 +85,8 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
             underlyingAmounts_[0] = _derivativeAmount
                 .mul(ICurveLiquidityPool(derivativeInfo.pool).get_virtual_price())
                 .mul(10**derivativeInfo.invariantProxyAssetDecimals)
-                .div(VIRTUAL_PRICE_UNIT.mul(2));
+                .div(VIRTUAL_PRICE_UNIT)
+                .div(VIRTUAL_PRICE_UNIT);
         }
 
         return (underlyings_, underlyingAmounts_);
@@ -116,6 +117,10 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
             "addDerivatives: Unequal arrays"
         );
 
+        ICurveRegistry curveRegistryContract = ICurveRegistry(
+            ICurveAddressProvider(ADDRESS_PROVIDER).get_registry()
+        );
+
         for (uint256 i; i < _derivatives.length; i++) {
             require(_derivatives[i] != address(0), "addDerivatives: Empty derivative");
             require(
@@ -125,9 +130,6 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
             require(!isSupportedAsset(_derivatives[i]), "addDerivatives: Value already set");
 
             // First, try assuming that the derivative is an LP token
-            ICurveRegistry curveRegistryContract = ICurveRegistry(
-                ICurveAddressProvider(ADDRESS_PROVIDER).get_registry()
-            );
             address pool = curveRegistryContract.get_pool_from_lp_token(_derivatives[i]);
 
             // If the derivative is not a valid LP token, try to treat it as a liquidity gauge token
