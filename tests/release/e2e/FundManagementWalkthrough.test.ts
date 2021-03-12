@@ -22,10 +22,10 @@ import {
   chaiLend,
   chaiRedeem,
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   KyberNetworkProxy,
   kyberTakeOrder,
-  loadForkDeployment,
+  deployProtocolFixture,
   redeemShares,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
@@ -77,7 +77,7 @@ const expectedGasCosts = {
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',
   (denominationAssetId) => {
-    let fork: ForkDeployment;
+    let fork: ProtocolDeployment;
     let manager: SignerWithAddress;
     let investor: SignerWithAddress;
     let anotherInvestor: SignerWithAddress;
@@ -88,7 +88,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     let denominationAssetDecimals: BigNumberish;
 
     beforeAll(async () => {
-      fork = await loadForkDeployment();
+      fork = await deployProtocolFixture();
 
       manager = fork.accounts[1];
       investor = fork.accounts[2];

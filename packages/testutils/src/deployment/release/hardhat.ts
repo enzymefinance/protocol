@@ -1,3 +1,5 @@
+import { Contract } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   Dispatcher,
   VaultLib,
@@ -51,73 +53,97 @@ import {
 
 import { DeploymentConfig } from '../../../../../deploy/utils/config';
 
-export type ForkDeployment = ReturnType<typeof loadForkDeployment> extends Promise<infer T> ? T : never;
+export async function getNamedSigner(name: string) {
+  const accounts = await hre.getNamedAccounts();
+  if (!accounts[name]) {
+    throw new Error(`Missing account with name ${name}`);
+  }
 
-export async function loadForkDeployment() {
-  const output = await hre.deployments.fixture();
-  const named = await hre.getNamedAccounts();
-  const unnamed = await hre.getUnnamedAccounts();
+  return provider.getSignerWithAddress(accounts[name]);
+}
 
-  const deployer = await provider.getSignerWithAddress(named.deployer);
-  const accounts = await Promise.all(unnamed.map((account) => provider.getSignerWithAddress(account)));
-  const config = output['Config'].linkedData as DeploymentConfig;
+export async function getUnnamedSigners() {
+  const accounts = await hre.getUnnamedAccounts();
+  return Promise.all(accounts.map((account) => provider.getSignerWithAddress(account)));
+}
+
+export async function deployProtocolFixture() {
+  const fixture = await hre.deployments.fixture();
+  const deployer = await getNamedSigner('deployer');
+  const accounts = await getUnnamedSigners();
+  const config = fixture['Config'].linkedData as DeploymentConfig;
 
   // prettier-ignore
   const deployment = {
-    Dispatcher: new Dispatcher(output['Dispatcher'].address, deployer),
-    VaultLib: new VaultLib(output['VaultLib'].address, deployer),
-    FundDeployer: new FundDeployer(output['FundDeployer'].address, deployer),
-    PolicyManager: new PolicyManager(output['PolicyManager'].address, deployer),
-    AavePriceFeed: new AavePriceFeed(output['AavePriceFeed'].address, deployer),
-    AlphaHomoraV1PriceFeed: new AlphaHomoraV1PriceFeed(output['AlphaHomoraV1PriceFeed'].address, deployer),
-    ChaiPriceFeed: new ChaiPriceFeed(output['ChaiPriceFeed'].address, deployer),
-    ChainlinkPriceFeed: new ChainlinkPriceFeed(output['ChainlinkPriceFeed'].address, deployer),
-    CompoundPriceFeed: new CompoundPriceFeed(output['CompoundPriceFeed'].address, deployer),
-    CurvePriceFeed: new CurvePriceFeed(output['CurvePriceFeed'].address, deployer),
-    LidoStethPriceFeed: new LidoStethPriceFeed(output['LidoStethPriceFeed'].address, deployer),
-    SynthetixPriceFeed: new SynthetixPriceFeed(output['SynthetixPriceFeed'].address, deployer),
-    StakehoundEthPriceFeed: new StakehoundEthPriceFeed(output['StakehoundEthPriceFeed'].address, deployer),
-    WdgldPriceFeed: new WdgldPriceFeed(output['WdgldPriceFeed'].address, deployer),
-    AggregatedDerivativePriceFeed: new AggregatedDerivativePriceFeed(output['AggregatedDerivativePriceFeed'].address, deployer),
-    ValueInterpreter: new ValueInterpreter(output['ValueInterpreter'].address, deployer),
-    UniswapV2PoolPriceFeed: new UniswapV2PoolPriceFeed(output['UniswapV2PoolPriceFeed'].address, deployer),
-    IntegrationManager: new IntegrationManager(output['IntegrationManager'].address, deployer),
-    CurveLiquidityStethAdapter: new CurveLiquidityStethAdapter(output['CurveLiquidityStethAdapter'].address, deployer),
-    AaveAdapter: new AaveAdapter(output['AaveAdapter'].address, deployer),
-    AlphaHomoraV1Adapter: new AlphaHomoraV1Adapter(output['AlphaHomoraV1Adapter'].address, deployer),
-    ParaSwapAdapter: new ParaSwapAdapter(output['ParaSwapAdapter'].address, deployer),
-    SynthetixAdapter: new SynthetixAdapter(output['SynthetixAdapter'].address, deployer),
-    ZeroExV2Adapter: new ZeroExV2Adapter(output['ZeroExV2Adapter'].address, deployer),
-    CompoundAdapter: new CompoundAdapter(output['CompoundAdapter'].address, deployer),
-    UniswapV2Adapter: new UniswapV2Adapter(output['UniswapV2Adapter'].address, deployer),
-    TrackedAssetsAdapter: new TrackedAssetsAdapter(output['TrackedAssetsAdapter'].address, deployer),
-    ChaiAdapter: new ChaiAdapter(output['ChaiAdapter'].address, deployer),
-    CurveExchangeAdapter: new CurveExchangeAdapter(output['CurveExchangeAdapter'].address, deployer),
-    KyberAdapter: new KyberAdapter(output['KyberAdapter'].address, deployer),
-    FeeManager: new FeeManager(output['FeeManager'].address, deployer),
-    ComptrollerLib: new ComptrollerLib(output['ComptrollerLib'].address, deployer),
-    EntranceRateBurnFee: new EntranceRateBurnFee(output['EntranceRateBurnFee'].address, deployer),
-    EntranceRateDirectFee: new EntranceRateDirectFee(output['EntranceRateDirectFee'].address, deployer),
-    ManagementFee: new ManagementFee(output['ManagementFee'].address, deployer),
-    PerformanceFee: new PerformanceFee(output['PerformanceFee'].address, deployer),
-    AuthUserExecutedSharesRequestorLib: new AuthUserExecutedSharesRequestorLib(output['AuthUserExecutedSharesRequestorLib'].address, deployer),
-    AuthUserExecutedSharesRequestorFactory: new AuthUserExecutedSharesRequestorFactory(output['AuthUserExecutedSharesRequestorFactory'].address, deployer),
-    FundActionsWrapper: new FundActionsWrapper(output['FundActionsWrapper'].address, deployer),
-    AdapterBlacklist: new AdapterBlacklist(output['AdapterBlacklist'].address, deployer),
-    AdapterWhitelist: new AdapterWhitelist(output['AdapterWhitelist'].address, deployer),
-    AssetBlacklist: new AssetBlacklist(output['AssetBlacklist'].address, deployer),
-    AssetWhitelist: new AssetWhitelist(output['AssetWhitelist'].address, deployer),
-    BuySharesCallerWhitelist: new BuySharesCallerWhitelist(output['BuySharesCallerWhitelist'].address, deployer),
-    MaxConcentration: new MaxConcentration(output['MaxConcentration'].address, deployer),
-    MinMaxInvestment: new MinMaxInvestment(output['MinMaxInvestment'].address, deployer),
-    InvestorWhitelist: new InvestorWhitelist(output['InvestorWhitelist'].address, deployer),
-    GuaranteedRedemption: new GuaranteedRedemption(output['GuaranteedRedemption'].address, deployer),
+    Dispatcher: new Dispatcher(fixture['Dispatcher'].address, deployer),
+    VaultLib: new VaultLib(fixture['VaultLib'].address, deployer),
+    FundDeployer: new FundDeployer(fixture['FundDeployer'].address, deployer),
+    PolicyManager: new PolicyManager(fixture['PolicyManager'].address, deployer),
+    AavePriceFeed: new AavePriceFeed(fixture['AavePriceFeed'].address, deployer),
+    AlphaHomoraV1PriceFeed: new AlphaHomoraV1PriceFeed(fixture['AlphaHomoraV1PriceFeed'].address, deployer),
+    ChaiPriceFeed: new ChaiPriceFeed(fixture['ChaiPriceFeed'].address, deployer),
+    ChainlinkPriceFeed: new ChainlinkPriceFeed(fixture['ChainlinkPriceFeed'].address, deployer),
+    CompoundPriceFeed: new CompoundPriceFeed(fixture['CompoundPriceFeed'].address, deployer),
+    CurvePriceFeed: new CurvePriceFeed(fixture['CurvePriceFeed'].address, deployer),
+    LidoStethPriceFeed: new LidoStethPriceFeed(fixture['LidoStethPriceFeed'].address, deployer),
+    SynthetixPriceFeed: new SynthetixPriceFeed(fixture['SynthetixPriceFeed'].address, deployer),
+    StakehoundEthPriceFeed: new StakehoundEthPriceFeed(fixture['StakehoundEthPriceFeed'].address, deployer),
+    WdgldPriceFeed: new WdgldPriceFeed(fixture['WdgldPriceFeed'].address, deployer),
+    AggregatedDerivativePriceFeed: new AggregatedDerivativePriceFeed(fixture['AggregatedDerivativePriceFeed'].address, deployer),
+    ValueInterpreter: new ValueInterpreter(fixture['ValueInterpreter'].address, deployer),
+    UniswapV2PoolPriceFeed: new UniswapV2PoolPriceFeed(fixture['UniswapV2PoolPriceFeed'].address, deployer),
+    IntegrationManager: new IntegrationManager(fixture['IntegrationManager'].address, deployer),
+    CurveLiquidityStethAdapter: new CurveLiquidityStethAdapter(fixture['CurveLiquidityStethAdapter'].address, deployer),
+    AaveAdapter: new AaveAdapter(fixture['AaveAdapter'].address, deployer),
+    AlphaHomoraV1Adapter: new AlphaHomoraV1Adapter(fixture['AlphaHomoraV1Adapter'].address, deployer),
+    ParaSwapAdapter: new ParaSwapAdapter(fixture['ParaSwapAdapter'].address, deployer),
+    SynthetixAdapter: new SynthetixAdapter(fixture['SynthetixAdapter'].address, deployer),
+    ZeroExV2Adapter: new ZeroExV2Adapter(fixture['ZeroExV2Adapter'].address, deployer),
+    CompoundAdapter: new CompoundAdapter(fixture['CompoundAdapter'].address, deployer),
+    UniswapV2Adapter: new UniswapV2Adapter(fixture['UniswapV2Adapter'].address, deployer),
+    TrackedAssetsAdapter: new TrackedAssetsAdapter(fixture['TrackedAssetsAdapter'].address, deployer),
+    ChaiAdapter: new ChaiAdapter(fixture['ChaiAdapter'].address, deployer),
+    CurveExchangeAdapter: new CurveExchangeAdapter(fixture['CurveExchangeAdapter'].address, deployer),
+    KyberAdapter: new KyberAdapter(fixture['KyberAdapter'].address, deployer),
+    FeeManager: new FeeManager(fixture['FeeManager'].address, deployer),
+    ComptrollerLib: new ComptrollerLib(fixture['ComptrollerLib'].address, deployer),
+    EntranceRateBurnFee: new EntranceRateBurnFee(fixture['EntranceRateBurnFee'].address, deployer),
+    EntranceRateDirectFee: new EntranceRateDirectFee(fixture['EntranceRateDirectFee'].address, deployer),
+    ManagementFee: new ManagementFee(fixture['ManagementFee'].address, deployer),
+    PerformanceFee: new PerformanceFee(fixture['PerformanceFee'].address, deployer),
+    AuthUserExecutedSharesRequestorLib: new AuthUserExecutedSharesRequestorLib(fixture['AuthUserExecutedSharesRequestorLib'].address, deployer),
+    AuthUserExecutedSharesRequestorFactory: new AuthUserExecutedSharesRequestorFactory(fixture['AuthUserExecutedSharesRequestorFactory'].address, deployer),
+    FundActionsWrapper: new FundActionsWrapper(fixture['FundActionsWrapper'].address, deployer),
+    AdapterBlacklist: new AdapterBlacklist(fixture['AdapterBlacklist'].address, deployer),
+    AdapterWhitelist: new AdapterWhitelist(fixture['AdapterWhitelist'].address, deployer),
+    AssetBlacklist: new AssetBlacklist(fixture['AssetBlacklist'].address, deployer),
+    AssetWhitelist: new AssetWhitelist(fixture['AssetWhitelist'].address, deployer),
+    BuySharesCallerWhitelist: new BuySharesCallerWhitelist(fixture['BuySharesCallerWhitelist'].address, deployer),
+    MaxConcentration: new MaxConcentration(fixture['MaxConcentration'].address, deployer),
+    MinMaxInvestment: new MinMaxInvestment(fixture['MinMaxInvestment'].address, deployer),
+    InvestorWhitelist: new InvestorWhitelist(fixture['InvestorWhitelist'].address, deployer),
+    GuaranteedRedemption: new GuaranteedRedemption(fixture['GuaranteedRedemption'].address, deployer),
   } as const;
 
   return {
     deployer,
     deployment,
-    config,
     accounts,
+    config,
   } as const;
 }
+
+type Resolve<T extends () => any> = ReturnType<T> extends Promise<infer U> ? U : ReturnType<T>;
+type ContractMap = Record<string, Contract>;
+
+export interface DeploymentFixtureWithoutConfig<T extends ContractMap> {
+  deployer: SignerWithAddress;
+  deployment: T;
+  accounts: SignerWithAddress[];
+}
+
+export interface DeploymentFixtureWithConfig<T extends ContractMap> extends DeploymentFixtureWithoutConfig<T> {
+  config: DeploymentConfig;
+}
+
+export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;

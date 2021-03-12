@@ -23,18 +23,11 @@ import {
   // Deployment,
   // DeploymentHandlers,
   // deployRelease,
-  ForkDeployment,
-  loadForkDeployment,
   redeemShares,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
-
-let fork: ForkDeployment;
-beforeAll(async () => {
-  fork = await loadForkDeployment();
-});
 
 describe('Walkthrough a fund migration', () => {
   let manager: SignerWithAddress;

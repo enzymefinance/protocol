@@ -2,18 +2,18 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, min, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
-  loadForkDeployment,
+  deployProtocolFixture,
   uniswapV2Lend,
   uniswapV2Redeem,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('lend', () => {

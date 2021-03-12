@@ -12,10 +12,10 @@ import {
   compoundLend,
   compoundRedeem,
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
   ICompoundComptroller,
-  loadForkDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -137,9 +137,9 @@ async function assertCompoundRedeem({
 
 const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

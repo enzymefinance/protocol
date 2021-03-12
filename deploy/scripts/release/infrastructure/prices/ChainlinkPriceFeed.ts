@@ -41,7 +41,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (!hre.network.live) {
+  if (!hre.network.live && chainlinkPriceFeed.newlyDeployed) {
     const oneYear = 60 * 60 * 24 * 365;
     const chainlinkPriceFeedInstance = new ChainlinkPriceFeed(chainlinkPriceFeed.address, deployer);
     log('Setting stale rate threshold to one year for testing');

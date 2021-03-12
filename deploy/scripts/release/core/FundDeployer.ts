@@ -39,6 +39,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'FundDeployer'];
-fn.dependencies = ['Dispatcher', 'VaultLib'];
+fn.dependencies = ['Config', 'Dispatcher', 'VaultLib'];
 
 export default fn;

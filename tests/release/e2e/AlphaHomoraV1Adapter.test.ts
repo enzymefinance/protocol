@@ -13,15 +13,15 @@ import {
   alphaHomoraV1Redeem,
   calcAlphaBankLiveTotalEth,
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
-  loadForkDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

@@ -1,10 +1,10 @@
 import { IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
-import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('calcUnderlyingValues', () => {

@@ -2,16 +2,16 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
-  loadForkDeployment,
+  deployProtocolFixture,
   paraswapTakeOrder,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

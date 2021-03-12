@@ -6,15 +6,15 @@ import {
   MockToken,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, Signer, utils } from 'ethers';
 
 // Unused chf/usd aggregator
 const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 async function loadPrimitiveAggregator({

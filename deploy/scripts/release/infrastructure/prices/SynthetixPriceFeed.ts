@@ -27,6 +27,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'SynthetixPriceFeed'];
-fn.dependencies = ['Config'];
+fn.dependencies = ['Config', 'Dispatcher'];
 
 export default fn;

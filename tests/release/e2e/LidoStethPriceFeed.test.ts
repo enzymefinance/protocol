@@ -1,8 +1,8 @@
-import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('constructor', () => {

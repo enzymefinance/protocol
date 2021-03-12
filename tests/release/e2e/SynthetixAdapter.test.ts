@@ -2,9 +2,9 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ISynthetixAddressResolver, ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
-  loadForkDeployment,
+  deployProtocolFixture,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
@@ -14,9 +14,9 @@ import { BigNumber, utils } from 'ethers';
 const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
 const susdCurrencyKey = utils.formatBytes32String('sUSD');
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

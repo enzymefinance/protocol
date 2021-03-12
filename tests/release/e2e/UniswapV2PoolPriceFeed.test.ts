@@ -1,11 +1,17 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
-import { buyShares, createNewFund, ForkDeployment, loadForkDeployment, uniswapV2Lend } from '@enzymefinance/testutils';
+import {
+  buyShares,
+  createNewFund,
+  ProtocolDeployment,
+  deployProtocolFixture,
+  uniswapV2Lend,
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('derivative gas costs', () => {

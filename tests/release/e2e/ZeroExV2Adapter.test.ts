@@ -3,18 +3,18 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { createUnsignedZeroExV2Order, signZeroExV2Order, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
-  loadForkDeployment,
+  deployProtocolFixture,
   zeroExV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('takeOrder', () => {

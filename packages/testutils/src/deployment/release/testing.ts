@@ -1,6 +1,5 @@
 import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
-import { deployPersistent } from '../persistent';
 import { deployRelease } from './deployment';
 import { configureMockRelease, deployMocks } from './mocks';
 
@@ -13,10 +12,10 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
     provider.getSignerWithAddress(4),
   ]);
 
-  const persistent = await deployPersistent({ deployer });
+  const dispatcher = await Dispatcher.deploy(deployer);
   const mocks = await deployMocks({ deployer, accounts });
   const config = await configureMockRelease({
-    dispatcher: persistent.dispatcher,
+    dispatcher,
     deployer,
     mocks,
     accounts,
@@ -34,7 +33,7 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
 
   // Keep this as the final step
   await launchRelease({
-    dispatcher: persistent.dispatcher,
+    dispatcher,
     fundDeployer: release.fundDeployer,
   });
 
@@ -42,8 +41,8 @@ export async function defaultTestDeployment(provider: EthereumTestnetProvider) {
     config,
     accounts,
     deployment: {
+      dispatcher,
       ...mocks,
-      ...persistent,
       ...release,
     },
   };

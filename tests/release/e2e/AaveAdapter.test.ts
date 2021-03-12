@@ -8,13 +8,13 @@ import {
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { createNewFund, ForkDeployment, getAssetBalances, loadForkDeployment } from '@enzymefinance/testutils';
+import { createNewFund, ProtocolDeployment, getAssetBalances, deployProtocolFixture } from '@enzymefinance/testutils';
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

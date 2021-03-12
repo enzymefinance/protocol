@@ -1,31 +1,34 @@
 import { AddressLike, MockContract, randomAddress, sameAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { Dispatcher, IMigrationHookHandler, MigrationOutHook, MockVaultLib } from '@enzymefinance/protocol';
-import { assertEvent, defaultPersistentTestDeployment, transactionTimestamp } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, config, deployment } = await defaultPersistentTestDeployment(provider);
+async function snapshot() {
+  const {
+    accounts,
+    deployer,
+    deployment: { Dispatcher: dispatcher },
+  } = await deployProtocolFixture();
 
-  const mockVaultLib1 = await MockVaultLib.deploy(config.deployer);
-  const mockVaultLib2 = await MockVaultLib.deploy(config.deployer);
+  const mockVaultLib1 = await MockVaultLib.deploy(deployer);
+  const mockVaultLib2 = await MockVaultLib.deploy(deployer);
 
   // It doesn't matter what interfaces these have, they are only needed for asserting non-contract
-  const dummyContract1 = await MockVaultLib.deploy(config.deployer);
-  const dummyContract2 = await MockVaultLib.deploy(config.deployer);
+  const dummyContract1 = await MockVaultLib.deploy(deployer);
+  const dummyContract2 = await MockVaultLib.deploy(deployer);
 
   // Create mock FundDeployer instances with hooks implemented.
   // We can unset hooks in individual tests to test failure behavior.
-  const mockFundDeployer1 = await IMigrationHookHandler.mock(config.deployer);
+  const mockFundDeployer1 = await IMigrationHookHandler.mock(deployer);
   await mockFundDeployer1.invokeMigrationOutHook.returns(undefined);
 
-  const mockFundDeployer2 = await IMigrationHookHandler.mock(config.deployer);
+  const mockFundDeployer2 = await IMigrationHookHandler.mock(deployer);
   await mockFundDeployer2.invokeMigrationInCancelHook.returns(undefined);
 
   return {
     accounts,
-    config,
-    deployment,
+    deployer,
+    dispatcher,
     dummyContract1,
     dummyContract2,
     mockFundDeployer1,
@@ -109,10 +112,7 @@ async function signalMigration({
 
 describe('constructor', () => {
   it('sets initial state', async () => {
-    const {
-      deployment: { dispatcher },
-      config: { deployer },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, deployer } = await provider.snapshot(snapshot);
 
     const getOwnerCall = await dispatcher.getOwner();
     expect(getOwnerCall).toMatchAddress(deployer);
@@ -120,8 +120,8 @@ describe('constructor', () => {
     const getNominatedOwnerCall = await dispatcher.getNominatedOwner();
     expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
 
-    const getCurrentFundDeployerCall = await dispatcher.getCurrentFundDeployer();
-    expect(getCurrentFundDeployerCall).toMatchAddress(constants.AddressZero);
+    // const getCurrentFundDeployerCall = await dispatcher.getCurrentFundDeployer();
+    // expect(getCurrentFundDeployerCall).toMatchAddress(constants.AddressZero);
   });
 });
 
@@ -129,7 +129,7 @@ describe('setNominatedOwner', () => {
   it('can only be called by the contract owner', async () => {
     const {
       accounts: [randomUser],
-      deployment: { dispatcher },
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     await expect(dispatcher.connect(randomUser).setNominatedOwner(randomAddress())).rejects.toBeRevertedWith(
@@ -138,9 +138,7 @@ describe('setNominatedOwner', () => {
   });
 
   it('does not allow an empty next owner address', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     await expect(dispatcher.setNominatedOwner(constants.AddressZero)).rejects.toBeRevertedWith(
       '_nextNominatedOwner cannot be empty',
@@ -148,10 +146,7 @@ describe('setNominatedOwner', () => {
   });
 
   it('does not allow the next owner to be the current owner', async () => {
-    const {
-      deployment: { dispatcher },
-      config: { deployer: currentOwner },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, deployer: currentOwner } = await provider.snapshot(snapshot);
 
     await expect(dispatcher.setNominatedOwner(currentOwner)).rejects.toBeRevertedWith(
       '_nextNominatedOwner is already the owner',
@@ -159,9 +154,7 @@ describe('setNominatedOwner', () => {
   });
 
   it('does not allow the next owner to already be nominated', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Nominate the nextOwner a first time
     const nextOwner = randomAddress();
@@ -174,10 +167,7 @@ describe('setNominatedOwner', () => {
   });
 
   it('correctly handles nominating a new owner', async () => {
-    const {
-      config: { deployer },
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { deployer, dispatcher } = await provider.snapshot(snapshot);
 
     // Nominate the nextOwner a first time
     const nextOwnerAddress = randomAddress();
@@ -202,7 +192,7 @@ describe('removeNominatedOwner', () => {
   it('can only be called by the contract owner', async () => {
     const {
       accounts: [randomUser],
-      deployment: { dispatcher },
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
@@ -215,10 +205,7 @@ describe('removeNominatedOwner', () => {
   });
 
   it('correctly handles removing the nomination', async () => {
-    const {
-      config: { deployer },
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { deployer, dispatcher } = await provider.snapshot(snapshot);
 
     // Set nominated owner
     const nextOwnerAddress = randomAddress();
@@ -246,7 +233,7 @@ describe('claimOwnership', () => {
   it('can only be called by the nominatedOwner', async () => {
     const {
       accounts: [randomUser],
-      deployment: { dispatcher },
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
@@ -261,8 +248,8 @@ describe('claimOwnership', () => {
   it('correctly handles transferring ownership', async () => {
     const {
       accounts: [nominatedOwner],
-      config: { deployer },
-      deployment: { dispatcher },
+      deployer,
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     // Set nominated owner
@@ -289,11 +276,7 @@ describe('claimOwnership', () => {
 
 describe('deployVaultProxy', () => {
   it('does not allow a bad VaultLib', async () => {
-    const {
-      deployment: { dispatcher },
-      dummyContract1: vaultAccessor,
-      mockFundDeployer1,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, dummyContract1: vaultAccessor, mockFundDeployer1 } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
     const fundName = 'Mock Fund';
@@ -311,11 +294,7 @@ describe('deployVaultProxy', () => {
   });
 
   it('does not allow a non-contract _vaultAccessor', async () => {
-    const {
-      deployment: { dispatcher },
-      mockFundDeployer1,
-      mockVaultLib1,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, mockFundDeployer1, mockVaultLib1 } = await provider.snapshot(snapshot);
 
     const owner = randomAddress();
     const EOAVaultAccessor = randomAddress();
@@ -332,7 +311,7 @@ describe('deployVaultProxy', () => {
 
   it('correctly deploys a new VaultProxy', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
@@ -409,7 +388,7 @@ describe('signalMigration', () => {
   it('can only be called by the current fund deployer', async () => {
     const {
       accounts: [randomAccount],
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -437,7 +416,7 @@ describe('signalMigration', () => {
 
   it('does not allow a non-contract _vaultAccessor', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
@@ -464,7 +443,7 @@ describe('signalMigration', () => {
 
   it('does not allow non-existent VaultProxy', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer2: mockNextFundDeployer,
       mockVaultLib1: nextVaultLib,
@@ -484,7 +463,7 @@ describe('signalMigration', () => {
 
   it('cannot be called if fund is already on the current FundDeployer', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -518,7 +497,7 @@ describe('signalMigration', () => {
 
   it('correctly handles MigrationOutHook.PreSignal failure', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -575,7 +554,7 @@ describe('signalMigration', () => {
 
   it('correctly handles postSignalMigrationOriginHook failure', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -632,7 +611,7 @@ describe('signalMigration', () => {
 
   it('correctly signals a migration', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -701,8 +680,8 @@ describe('signalMigration', () => {
 describe('cancelMigration', () => {
   it('does not allow non-existent migration request', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockVaultLib1: vaultLib,
@@ -725,8 +704,8 @@ describe('cancelMigration', () => {
   it('can not be called by an account other the vaultProxy owner or migrator, or the FundDeployer in the migration request', async () => {
     const {
       accounts: [randomAccount],
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -764,8 +743,8 @@ describe('cancelMigration', () => {
 
   it('correctly cancels a migration request', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -835,8 +814,8 @@ describe('cancelMigration', () => {
 describe('executeMigration', () => {
   it('does not allow a bad vaultLib', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -876,8 +855,8 @@ describe('executeMigration', () => {
 
   it('does not allow non-existent migration request', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
@@ -900,8 +879,8 @@ describe('executeMigration', () => {
 
   it('can only be called by the target FundDeployer in the migration request', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -939,8 +918,8 @@ describe('executeMigration', () => {
 
   it('cannot be called when the target FundDeployer in the migration request is no longer the current FundDeployer', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -983,8 +962,8 @@ describe('executeMigration', () => {
 
   it('cannot be called when the migration timelock has not yet been met', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1032,8 +1011,8 @@ describe('executeMigration', () => {
 
   it('correctly executes a migration request', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1118,7 +1097,7 @@ describe('setMigrationTimelock', () => {
   it('can only be called by the contract owner', async () => {
     const {
       accounts: [randomUser],
-      deployment: { dispatcher },
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     await expect(dispatcher.connect(randomUser).setMigrationTimelock(randomAddress())).rejects.toBeRevertedWith(
@@ -1127,9 +1106,7 @@ describe('setMigrationTimelock', () => {
   });
 
   it('does not allow the current migrationTimelock value', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
 
@@ -1139,9 +1116,7 @@ describe('setMigrationTimelock', () => {
   });
 
   it('correctly handles setting a new migration timelock', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Set a new timelock
     const prevTimelock = await dispatcher.getMigrationTimelock();
@@ -1162,9 +1137,7 @@ describe('setMigrationTimelock', () => {
 
 describe('getTimelockRemainingForMigrationRequest', () => {
   it('returns 0 if vaultProxy is not valid', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Call getTimelockRemainingForMigrationRequest for a random address (not a vaultProxy)
     const getMigrationTimelockCall = await dispatcher.getTimelockRemainingForMigrationRequest(randomAddress());
@@ -1173,8 +1146,8 @@ describe('getTimelockRemainingForMigrationRequest', () => {
 
   it('returns 0 if vaultProxy does not have a signaled migration', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
@@ -1196,8 +1169,8 @@ describe('getTimelockRemainingForMigrationRequest', () => {
 
   it('returns 0 if block timestamp >= executableTimestamp', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1237,8 +1210,8 @@ describe('getTimelockRemainingForMigrationRequest', () => {
 
   it('returns the remaining time if block timestamp < executableTimestamp', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1287,9 +1260,7 @@ describe('getTimelockRemainingForMigrationRequest', () => {
 
 describe('hasExecutableMigrationRequest', () => {
   it('returns false if vaultProxy is not valid', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Call hasExecutableMigrationRequest for a random address (not a vaultProxy)
     const getMigrationTimelockCall = await dispatcher.hasExecutableMigrationRequest(randomAddress());
@@ -1297,8 +1268,8 @@ describe('hasExecutableMigrationRequest', () => {
   });
   it('returns false if no migration has been signaled', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
@@ -1320,8 +1291,8 @@ describe('hasExecutableMigrationRequest', () => {
 
   it('returns false if elapsedTime < migrationTimelock', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1361,8 +1332,8 @@ describe('hasExecutableMigrationRequest', () => {
 
   it('returns true if elapsedTime >= migrationTimelock', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1403,9 +1374,7 @@ describe('hasExecutableMigrationRequest', () => {
 
 describe('hasMigrationRequest', () => {
   it('returns false if vaultProxy is not valid', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Call hasMigrationRequest for a random address (not a vaultProxy)
     const hasMigrationRequestCall = await dispatcher.hasMigrationRequest(randomAddress());
@@ -1414,8 +1383,8 @@ describe('hasMigrationRequest', () => {
 
   it('returns false if no migration has been signaled', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: vaultAccessor,
       mockFundDeployer1: mockFundDeployer,
       mockVaultLib1: vaultLib,
@@ -1437,8 +1406,8 @@ describe('hasMigrationRequest', () => {
 
   it('returns true if a migration has been signaled', async () => {
     const {
-      deployment: { dispatcher },
-      config: { deployer },
+      dispatcher,
+      deployer,
       dummyContract1: prevVaultAccessor,
       dummyContract2: nextVaultAccessor,
       mockFundDeployer1: mockPrevFundDeployer,
@@ -1475,8 +1444,8 @@ describe('setCurrentFundDeployer', () => {
   it('disallows calling with account other than owner', async () => {
     const {
       accounts: [randomAccount],
-      config: { deployer },
-      deployment: { dispatcher },
+      deployer,
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     // Attempt to set a fund deployer with a non-owner account
@@ -1485,9 +1454,7 @@ describe('setCurrentFundDeployer', () => {
   });
 
   it('disallows empty address as nextFundDeployer', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Attempt to set a fund deployer with a non-owner account
     const setCurrentFundDeployerCall = dispatcher.setCurrentFundDeployer(constants.AddressZero);
@@ -1495,10 +1462,7 @@ describe('setCurrentFundDeployer', () => {
   });
 
   it("nextFundDeployer can't be the same as currentFundDeployer", async () => {
-    const {
-      deployment: { dispatcher },
-      mockFundDeployer1: mockPrevFundDeployer,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, mockFundDeployer1: mockPrevFundDeployer } = await provider.snapshot(snapshot);
 
     // Setting the current fund deployer a first time
     await dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
@@ -1514,9 +1478,7 @@ describe('setCurrentFundDeployer', () => {
   });
 
   it('does not allow _nextFundDeployer to be a non-contract', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     await expect(dispatcher.setCurrentFundDeployer(randomAddress())).rejects.toBeRevertedWith(
       'Non-contract _nextFundDeployer',
@@ -1525,7 +1487,7 @@ describe('setCurrentFundDeployer', () => {
 
   it('correctly sets new current fund deployer and emits CurrentFundDeployerSet event', async () => {
     const {
-      deployment: { dispatcher },
+      dispatcher,
       mockFundDeployer1: mockPrevFundDeployer,
       mockFundDeployer2: mockNextFundDeployer,
     } = await provider.snapshot(snapshot);
@@ -1557,7 +1519,7 @@ describe('setSharesTokenSymbol', () => {
   it('disallows a call by a random user', async () => {
     const {
       accounts: [randomAccount],
-      deployment: { dispatcher },
+      dispatcher,
     } = await provider.snapshot(snapshot);
 
     // Attempt to setSharesTokenSymbol with random account
@@ -1566,9 +1528,7 @@ describe('setSharesTokenSymbol', () => {
   });
 
   it('correctly updates the SharesTokenSymbol and emits event', async () => {
-    const {
-      deployment: { dispatcher },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher } = await provider.snapshot(snapshot);
 
     // Call setSharesTokenSymbol
     const receipt = await dispatcher.setSharesTokenSymbol('TEST');

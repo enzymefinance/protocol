@@ -1,11 +1,11 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
-import { createNewFund, ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { createNewFund, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('constructor', () => {

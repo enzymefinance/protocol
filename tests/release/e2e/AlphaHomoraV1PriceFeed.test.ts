@@ -5,14 +5,14 @@ import {
   alphaHomoraV1Lend,
   buyShares,
   createNewFund,
-  ForkDeployment,
-  loadForkDeployment,
+  ProtocolDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('calcUnderlyingValues', () => {

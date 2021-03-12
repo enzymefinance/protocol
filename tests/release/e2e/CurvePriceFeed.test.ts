@@ -1,11 +1,11 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
-import { ForkDeployment, loadForkDeployment } from '@enzymefinance/testutils';
+import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 describe('constructor', () => {

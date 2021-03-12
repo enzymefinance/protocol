@@ -2,11 +2,11 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ComptrollerLib, IntegrationManager, KyberAdapter, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  ForkDeployment,
+  ProtocolDeployment,
   getAssetBalances,
   KyberNetworkProxy,
   kyberTakeOrder,
-  loadForkDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 
@@ -65,9 +65,9 @@ async function assertKyberTakeOrder({
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 // HAPPY PATHS

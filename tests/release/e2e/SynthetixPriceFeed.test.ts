@@ -1,10 +1,10 @@
 import { ISynthetixAddressResolver, ISynthetixExchangeRates, StandardToken } from '@enzymefinance/protocol';
-import { ForkDeployment, loadForkDeployment, synthetixResolveAddress } from '@enzymefinance/testutils';
+import { ProtocolDeployment, deployProtocolFixture, synthetixResolveAddress } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 it('returns rate for underlying token', async () => {

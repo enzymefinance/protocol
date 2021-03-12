@@ -11,9 +11,7 @@ import {
 import {
   buyShares,
   createNewFund,
-  ForkDeployment,
   getAssetBalances,
-  loadForkDeployment,
   redeemShares,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
@@ -27,11 +25,6 @@ async function warpBeyondWaitingPeriod() {
   await provider.send('evm_increaseTime', [waitingPeriod]);
   await provider.send('evm_mine', []);
 }
-
-let fork: ForkDeployment;
-beforeAll(async () => {
-  fork = await loadForkDeployment();
-});
 
 describe("Walkthrough a synth-based fund's lifecycle", () => {
   const sbtcCurrencyKey = utils.formatBytes32String('sBTC');

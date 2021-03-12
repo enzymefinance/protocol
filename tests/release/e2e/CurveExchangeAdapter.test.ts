@@ -11,8 +11,8 @@ import {
   createNewFund,
   CurveSwaps,
   curveTakeOrder,
-  ForkDeployment,
-  loadForkDeployment,
+  ProtocolDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -21,9 +21,9 @@ const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // likely due to rounding somewhere
 const curveRoundingBuffer = 5;
 
-let fork: ForkDeployment;
+let fork: ProtocolDeployment;
 beforeEach(async () => {
-  fork = await loadForkDeployment();
+  fork = await deployProtocolFixture();
 });
 
 async function getCurveSwapsContract(addressProvider: AddressLike) {
