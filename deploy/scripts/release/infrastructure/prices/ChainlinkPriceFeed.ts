@@ -1,11 +1,11 @@
-import { ChainlinkPriceFeed, ChainlinkPriceFeedArgs } from '@enzymefinance/protocol';
+import { ChainlinkPriceFeedArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, log },
+    deployments: { deploy, get },
     ethers: { getSigners },
   } = hre;
 
@@ -27,7 +27,7 @@ const fn: DeployFunction = async function (hre) {
   const aggregators = assets.map(([, aggregator]) => aggregator);
   const rateAssets = assets.map(([, , rateAsset]) => rateAsset);
 
-  const chainlinkPriceFeed = await deploy('ChainlinkPriceFeed', {
+  await deploy('ChainlinkPriceFeed', {
     args: [
       dispatcher.address,
       config.weth,
@@ -40,13 +40,6 @@ const fn: DeployFunction = async function (hre) {
     log: true,
     skipIfAlreadyDeployed: true,
   });
-
-  if (!hre.network.live && chainlinkPriceFeed.newlyDeployed) {
-    const oneYear = 60 * 60 * 24 * 365;
-    const chainlinkPriceFeedInstance = new ChainlinkPriceFeed(chainlinkPriceFeed.address, deployer);
-    log('Setting stale rate threshold to one year for testing');
-    await chainlinkPriceFeedInstance.setStaleRateThreshold(oneYear);
-  }
 };
 
 fn.tags = ['Release', 'ChainlinkPriceFeed'];

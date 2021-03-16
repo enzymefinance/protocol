@@ -36,7 +36,7 @@ describe('lend', () => {
       signer: fundOwner as SignerWithAddress,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
     });
 
     // Seed fund with some WETH to spend
@@ -60,9 +60,9 @@ describe('lend', () => {
     // Lend WETH for ibETH
     const lendReceipt = await alphaHomoraV1Lend({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      alphaHomoraV1Adapter: fork.deployment.AlphaHomoraV1Adapter,
+      alphaHomoraV1Adapter: fork.deployment.alphaHomoraV1Adapter,
       wethAmount: wethToLend,
     });
 
@@ -97,7 +97,7 @@ describe('redeem', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
     });
 
@@ -106,9 +106,9 @@ describe('redeem', () => {
     await weth.transfer(vaultProxy, initialWethAmount);
     await alphaHomoraV1Lend({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      alphaHomoraV1Adapter: fork.deployment.AlphaHomoraV1Adapter,
+      alphaHomoraV1Adapter: fork.deployment.alphaHomoraV1Adapter,
       wethAmount: initialWethAmount.div(2),
     });
 
@@ -132,9 +132,9 @@ describe('redeem', () => {
     // Redeem arbitrary amount of ibETH for WETH
     const redeemReceipt = await alphaHomoraV1Redeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      alphaHomoraV1Adapter: fork.deployment.AlphaHomoraV1Adapter,
+      alphaHomoraV1Adapter: fork.deployment.alphaHomoraV1Adapter,
       ibethAmount: ibethToRedeem,
     });
 
@@ -161,7 +161,7 @@ describe('redeem', () => {
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const alphaHomoraAdapter = fork.deployment.AlphaHomoraV1Adapter;
+    const alphaHomoraAdapter = fork.deployment.alphaHomoraV1Adapter;
 
     const lendArgs = alphaHomoraV1LendArgs({
       outgoingWethAmount: 1,
@@ -176,7 +176,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for lending', async () => {
-    const alphaHomoraAdapter = fork.deployment.AlphaHomoraV1Adapter;
+    const alphaHomoraAdapter = fork.deployment.alphaHomoraV1Adapter;
 
     const outgoingWethAmount = utils.parseEther('1');
     const minIncomingIbethAmount = utils.parseEther('2');
@@ -197,7 +197,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    const alphaHomoraAdapter = fork.deployment.AlphaHomoraV1Adapter;
+    const alphaHomoraAdapter = fork.deployment.alphaHomoraV1Adapter;
 
     const outgoingIbethAmount = utils.parseEther('1');
     const minIncomingWethAmount = utils.parseEther('2');

@@ -9,7 +9,7 @@ beforeEach(async () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
-    const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
+    const compoundPriceFeed = fork.deployment.compoundPriceFeed;
     const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
     const dai = new StandardToken(fork.config.primitives.dai, provider);
 
@@ -28,7 +28,7 @@ describe('calcUnderlyingValues', () => {
   });
 
   it('returns rate for underlying token (cETH)', async () => {
-    const compoundPriceFeed = fork.deployment.CompoundPriceFeed;
+    const compoundPriceFeed = fork.deployment.compoundPriceFeed;
     const ceth = new ICERC20(fork.config.compound.ceth, provider);
     const weth = new StandardToken(fork.config.weth, provider);
 
@@ -49,7 +49,7 @@ describe('calcUnderlyingValues', () => {
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
     const dai = new StandardToken(fork.config.primitives.dai, provider);
 
@@ -70,7 +70,7 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const cusdc = new ICERC20(fork.config.compound.ctokens.cusdc, provider);
     const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 

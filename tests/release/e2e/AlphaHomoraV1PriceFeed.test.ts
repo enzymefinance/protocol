@@ -17,14 +17,14 @@ beforeEach(async () => {
 
 describe('calcUnderlyingValues', () => {
   it('does not allow unsupported asset', async () => {
-    const alphaHomoraPriceFeed = fork.deployment.AlphaHomoraV1PriceFeed;
+    const alphaHomoraPriceFeed = fork.deployment.alphaHomoraV1PriceFeed;
     await expect(alphaHomoraPriceFeed.calcUnderlyingValues.args(randomAddress(), 1).call()).rejects.toBeRevertedWith(
       'Only ibETH is supported',
     );
   });
 
   it('returns rate for underlying token', async () => {
-    const alphaHomoraPriceFeed = fork.deployment.AlphaHomoraV1PriceFeed;
+    const alphaHomoraPriceFeed = fork.deployment.alphaHomoraV1PriceFeed;
     const alphaHomoraBank = new IAlphaHomoraV1Bank(fork.config.alphaHomoraV1.ibeth, provider);
     const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
     const weth = new StandardToken(fork.config.weth, provider);
@@ -42,19 +42,19 @@ describe('calcUnderlyingValues', () => {
 
 describe('isSupportedAsset', () => {
   it('returns false for non-ibeth asset', async () => {
-    const alphaHomoraPriceFeed = fork.deployment.AlphaHomoraV1PriceFeed;
+    const alphaHomoraPriceFeed = fork.deployment.alphaHomoraV1PriceFeed;
     expect(await alphaHomoraPriceFeed.isSupportedAsset(fork.config.weth)).toBe(false);
   });
 
   it('returns true for ibeth', async () => {
-    const alphaHomoraPriceFeed = fork.deployment.AlphaHomoraV1PriceFeed;
+    const alphaHomoraPriceFeed = fork.deployment.alphaHomoraV1PriceFeed;
     expect(await alphaHomoraPriceFeed.isSupportedAsset(fork.config.alphaHomoraV1.ibeth)).toBe(true);
   });
 });
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const ibeth = new StandardToken(fork.config.alphaHomoraV1.ibeth, provider);
     const weth = new StandardToken(fork.config.weth, provider);
 
@@ -79,7 +79,7 @@ describe('derivative gas costs', () => {
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -101,9 +101,9 @@ describe('derivative gas costs', () => {
     // Lend arbitrary partial weth balance to receive some ibETH
     await alphaHomoraV1Lend({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      alphaHomoraV1Adapter: fork.deployment.AlphaHomoraV1Adapter,
+      alphaHomoraV1Adapter: fork.deployment.alphaHomoraV1Adapter,
       wethAmount: initialTokenAmount.div(2),
     });
 

@@ -1,42 +1,50 @@
 import { extractEvent, randomAddress, resolveAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { ChainlinkRateAsset, MockChainlinkPriceSource, MockToken } from '@enzymefinance/protocol';
-import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    accounts: [arbitraryUser],
+    deployer,
+    deployment: { dispatcher, chainlinkPriceFeed },
+    config: {
+      weth,
+      primitives,
+      chainlink: { aggregators, ethusd },
+    },
+  } = await deployProtocolFixture();
 
   const primitiveMocks = await Promise.all([
-    MockToken.deploy(config.deployer, 'Mock Token 1', 'MCK001', 18),
-    MockToken.deploy(config.deployer, 'Mock Token 2', 'MCK001', 18),
+    MockToken.deploy(deployer, 'Mock Token 1', 'MCK001', 18),
+    MockToken.deploy(deployer, 'Mock Token 2', 'MCK001', 18),
   ]);
 
   const aggregatorMocks = await Promise.all([
-    MockChainlinkPriceSource.deploy(config.deployer, 18),
-    MockChainlinkPriceSource.deploy(config.deployer, 18),
+    MockChainlinkPriceSource.deploy(deployer, 18),
+    MockChainlinkPriceSource.deploy(deployer, 18),
   ]);
 
-  const rateAssets = [0, 0];
+  const rateAssetMocks = [0, 0];
 
   return {
-    accounts,
-    deployment,
-    mocks: { aggregatorMocks, primitiveMocks, rateAssets },
-    config,
+    arbitraryUser,
+    aggregators,
+    ethusd,
+    primitives,
+    weth,
+    deployer,
+    dispatcher,
+    chainlinkPriceFeed,
+    aggregatorMocks,
+    primitiveMocks,
+    rateAssetMocks,
   };
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      config: {
-        dispatcher,
-        weth,
-        chainlink: { ethUsdAggregator, primitives, aggregators, rateAssets },
-      },
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, chainlinkPriceFeed, weth, primitives, aggregators, ethusd } = await provider.snapshot(snapshot);
 
     const storedDispatcher = await chainlinkPriceFeed.getDispatcher();
     const storedWeth = await chainlinkPriceFeed.getWethToken();
@@ -45,18 +53,18 @@ describe('constructor', () => {
     // Check variables
     expect(storedDispatcher).toMatchAddress(dispatcher);
     expect(storedWeth).toMatchAddress(weth);
-    expect(storedEthUsdAggregator).toMatchAddress(ethUsdAggregator);
+    expect(storedEthUsdAggregator).toMatchAddress(ethusd);
 
     // Check static weth values
     expect(await chainlinkPriceFeed.getRateAssetForPrimitive(weth)).toEqBigNumber(ChainlinkRateAsset.ETH);
     expect(await chainlinkPriceFeed.getUnitForPrimitive(weth)).toEqBigNumber(utils.parseEther('1'));
 
     // Check primitives setup
-    for (let i = 0; i < primitives.length; i++) {
-      const storedPrimitive = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitives[i]);
+    for (const symbol of Object.keys(primitives)) {
+      const storedPrimitive = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitives[symbol]);
       expect(storedPrimitive).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
-        aggregator: aggregators[i],
-        rateAsset: rateAssets[i],
+        aggregator: aggregators[symbol][0],
+        rateAsset: aggregators[symbol][1],
       });
     }
   });
@@ -64,13 +72,14 @@ describe('constructor', () => {
 
 describe('addPrimitives', () => {
   it('adds multiple primitives and emit events', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks, rateAssets },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks, rateAssetMocks } = await provider.snapshot(snapshot);
 
     // Add primitives
-    const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets);
+    const addPrimitivesReceipt = await chainlinkPriceFeed.addPrimitives(
+      primitiveMocks,
+      aggregatorMocks,
+      rateAssetMocks,
+    );
 
     // Extract events
     const events = extractEvent(addPrimitivesReceipt, 'PrimitiveAdded');
@@ -81,9 +90,10 @@ describe('addPrimitives', () => {
       const info = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitiveMocks[i]);
       expect(info).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
-        rateAsset: rateAssets[i],
+        rateAsset: rateAssetMocks[i],
       });
-      expect(await chainlinkPriceFeed.getRateAssetForPrimitive(primitiveMocks[i])).toEqBigNumber(rateAssets[i]);
+
+      expect(await chainlinkPriceFeed.getRateAssetForPrimitive(primitiveMocks[i])).toEqBigNumber(rateAssetMocks[i]);
 
       const primitiveUnit = utils.parseUnits('1', await primitiveMocks[i].decimals());
       expect(await chainlinkPriceFeed.getUnitForPrimitive(primitiveMocks[i])).toEqBigNumber(primitiveUnit);
@@ -91,17 +101,14 @@ describe('addPrimitives', () => {
       expect(events[i]).toMatchEventArgs({
         primitive: primitiveMocks[i],
         aggregator: aggregatorMocks[i],
-        rateAsset: rateAssets[i],
+        rateAsset: rateAssetMocks[i],
         unit: primitiveUnit,
       });
     }
   });
 
   it('reverts when the aggregator is empty', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { primitiveMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, primitiveMocks } = await provider.snapshot(snapshot);
 
     // Set the aggregator address to zero
     const aggregatorAddress = constants.AddressZero;
@@ -112,10 +119,7 @@ describe('addPrimitives', () => {
   });
 
   it('reverts when primitives are empty', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks } = await provider.snapshot(snapshot);
 
     await expect(chainlinkPriceFeed.addPrimitives([], [aggregatorMocks[0]], [0])).rejects.toBeRevertedWith(
       '_primitives cannot be empty',
@@ -123,10 +127,7 @@ describe('addPrimitives', () => {
   });
 
   it('reverts when params array length differs', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks } = await provider.snapshot(snapshot);
 
     // Check they revert
     await expect(
@@ -138,25 +139,19 @@ describe('addPrimitives', () => {
   });
 
   it('reverts when the primitive is already set', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks, rateAssets },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks, rateAssetMocks } = await provider.snapshot(snapshot);
 
     // Add the primitive mocks
-    await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets);
+    await chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssetMocks);
 
     // Attempting to re-add the primitive mocks should fail
     await expect(
-      chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssets),
+      chainlinkPriceFeed.addPrimitives(primitiveMocks, aggregatorMocks, rateAssetMocks),
     ).rejects.toBeRevertedWith('Value already set');
   });
 
   it('reverts when latest answer is zero', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks } = await provider.snapshot(snapshot);
 
     // Set latest answer on aggregator mock to be 0
     const latestTimestamp = (await provider.getBlock('latest')).timestamp;
@@ -172,44 +167,38 @@ describe('addPrimitives', () => {
 
 describe('updatePrimitives', () => {
   it('updates multiple primitives and emit events', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        chainlink: { primitives, aggregators, rateAssets },
-      },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, primitives, aggregators, aggregatorMocks } = await provider.snapshot(snapshot);
 
     // Start off from the already deployed primitives
-    const primitivesToUpdate = primitives.slice(0, 2);
+    const primitiveKeys = Object.keys(primitives);
+    const primitivesToUpdate = primitiveKeys.slice(0, 2).map((symbol) => primitives[symbol]);
 
     // Update primitives to aggregatorMocks
     const updatePrimitivesReceipt = await chainlinkPriceFeed.updatePrimitives(primitivesToUpdate, aggregatorMocks);
 
     // Check events and values stored are consistent
     const events = extractEvent(updatePrimitivesReceipt, 'PrimitiveUpdated');
-    expect(events).toHaveLength(primitivesToUpdate.length);
+    expect(events).toHaveLength(2);
 
-    for (let i = 0; i < primitivesToUpdate.length; i++) {
+    for (const i in primitivesToUpdate) {
+      const symbol = primitiveKeys[i];
       const aggregator = await chainlinkPriceFeed.getAggregatorInfoForPrimitive(primitivesToUpdate[i]);
       expect(aggregator).toMatchFunctionOutput(chainlinkPriceFeed.getAggregatorInfoForPrimitive, {
         aggregator: aggregatorMocks[i],
-        rateAsset: rateAssets[i],
+        // NOTE: The rateAsset value remains unchanged. In order to change a rate asset, an asset has to first be unregistered.
+        rateAsset: aggregators[symbol][1],
       });
 
       expect(events[i]).toMatchEventArgs({
         primitive: primitivesToUpdate[i],
-        prevAggregator: aggregators[i],
         nextAggregator: aggregatorMocks[i],
+        prevAggregator: aggregators[symbol][0],
       });
     }
   });
 
   it('reverts when primitives are empty', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks } = await provider.snapshot(snapshot);
 
     // Update primitives with an empty value
     const updatedPrimitives = chainlinkPriceFeed.updatePrimitives([], [aggregatorMocks[0]]);
@@ -217,10 +206,7 @@ describe('updatePrimitives', () => {
   });
 
   it('reverts when updating a non added primitive', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks } = await provider.snapshot(snapshot);
 
     // Update primitives with a random address
     await expect(chainlinkPriceFeed.updatePrimitives([randomAddress()], [aggregatorMocks[0]])).rejects.toBeRevertedWith(
@@ -229,10 +215,7 @@ describe('updatePrimitives', () => {
   });
 
   it('reverts when updating a primitive to an already set value', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks } = await provider.snapshot(snapshot);
 
     // Add primitive and aggregator mocks
     await chainlinkPriceFeed.addPrimitives([primitiveMocks[0]], [aggregatorMocks[0]], [0]);
@@ -246,15 +229,10 @@ describe('updatePrimitives', () => {
 
 describe('removePrimitives', () => {
   it('removes multiple primitives and emit events', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      config: {
-        chainlink: { primitives },
-      },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, primitives } = await provider.snapshot(snapshot);
 
     // Select the already deployed primitives
-    const primitivesToRemove = primitives.slice(0, 2);
+    const primitivesToRemove = Object.values(primitives).slice(0, 2);
     const removePrimitivesReceipt = await chainlinkPriceFeed.removePrimitives(primitivesToRemove);
 
     // Remove and check consistent values and events
@@ -275,18 +253,14 @@ describe('removePrimitives', () => {
   });
 
   it('reverts when primitives are empty', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     // Call remove with empty values
     await expect(chainlinkPriceFeed.removePrimitives([])).rejects.toBeRevertedWith('_primitives cannot be empty');
   });
 
   it('reverts when primitives have not yet been added', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     // Call remove on a random (non added) address
     await expect(chainlinkPriceFeed.removePrimitives([randomAddress()])).rejects.toBeRevertedWith(
@@ -297,18 +271,14 @@ describe('removePrimitives', () => {
 
 describe('removeStalePrimitives', () => {
   it('reverts when primitives are empty', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     // Call remove with empty values
     await expect(chainlinkPriceFeed.removeStalePrimitives([])).rejects.toBeRevertedWith('_primitives cannot be empty');
   });
 
   it('reverts when primitives have not yet been added', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     // Call remove on a random (non added) address
     await expect(chainlinkPriceFeed.removeStalePrimitives([randomAddress()])).rejects.toBeRevertedWith(
@@ -317,24 +287,19 @@ describe('removeStalePrimitives', () => {
   });
 
   it('allows a random user to remove a stale primitive based on the timestamp, and fires the correct event', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: {
-        chainlinkPriceFeed,
-        tokens: { dai, usdc },
-      },
-    } = await provider.snapshot(snapshot);
+    const { arbitraryUser, chainlinkPriceFeed, primitives } = await provider.snapshot(snapshot);
 
-    const primitivesToRemove = [dai, usdc];
+    const primitivesToRemove = [primitives.dai, primitives.usdc];
 
     // Should fail initially because the rate is not stale
     await expect(
-      chainlinkPriceFeed.connect(randomUser).removeStalePrimitives(primitivesToRemove),
+      chainlinkPriceFeed.connect(arbitraryUser).removeStalePrimitives(primitivesToRemove),
     ).rejects.toBeRevertedWith('Rate is not stale');
 
     // Should succeed after warping beyond staleness threshold
     await provider.send('evm_increaseTime', [60 * 60 * 49]);
-    const receipt = await chainlinkPriceFeed.connect(randomUser).removeStalePrimitives(primitivesToRemove);
+    await provider.send('evm_mine', []);
+    const receipt = await chainlinkPriceFeed.connect(arbitraryUser).removeStalePrimitives(primitivesToRemove);
 
     // Assert that the primitive has been removed from storage, and that the correct event fired
     const events = extractEvent(receipt, 'StalePrimitiveRemoved');
@@ -353,10 +318,7 @@ describe('removeStalePrimitives', () => {
 
 describe('setEthUsdAggregator', () => {
   it('properly sets eth/usd aggregator', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks } = await provider.snapshot(snapshot);
 
     // Get already stored ETH USD aggregator
     const storedEthUsdAggregator = await chainlinkPriceFeed.getEthUsdAggregator();
@@ -375,9 +337,7 @@ describe('setEthUsdAggregator', () => {
   });
 
   it('reverts when setting an already set aggregator', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     const storedEthUsdAggregator = await chainlinkPriceFeed.getEthUsdAggregator();
 
@@ -391,10 +351,7 @@ describe('setEthUsdAggregator', () => {
 // NOTE: Behaviour tests included under e2e tests
 describe('getCanonicalRate', () => {
   it('reverts when it receives a negative or zero value', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-      mocks: { aggregatorMocks, primitiveMocks },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks } = await provider.snapshot(snapshot);
 
     // Create aggreagator mocks with negative (-1) and 0 values
     const latestTimestamp = (await provider.getBlock('latest')).timestamp;
@@ -413,9 +370,7 @@ describe('getCanonicalRate', () => {
 
 describe('setStaleRateThreshold', () => {
   it('does not allow its prev value', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();
 
@@ -425,9 +380,7 @@ describe('setStaleRateThreshold', () => {
   });
 
   it('properly sets value', async () => {
-    const {
-      deployment: { chainlinkPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { chainlinkPriceFeed } = await provider.snapshot(snapshot);
 
     // Get stored staleRateThreshold
     const storedStaleRateThreshold = await chainlinkPriceFeed.getStaleRateThreshold();

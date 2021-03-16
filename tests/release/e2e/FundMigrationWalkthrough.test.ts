@@ -65,34 +65,34 @@ describe('Walkthrough a fund migration', () => {
     const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
 
     const feeManagerConfig = feeManagerConfigArgs({
-      fees: [fork.deployment.ManagementFee, fork.deployment.PerformanceFee, fork.deployment.EntranceRateBurnFee],
+      fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
       settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
     });
 
     // policies
     const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-    const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.CompoundAdapter]);
+    const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
     const adapterWhitelistSettings = adapterWhitelistArgs([
-      fork.deployment.KyberAdapter,
-      fork.deployment.UniswapV2Adapter,
-      fork.deployment.TrackedAssetsAdapter,
-      fork.deployment.ChaiAdapter,
+      fork.deployment.kyberAdapter,
+      fork.deployment.uniswapV2Adapter,
+      fork.deployment.trackedAssetsAdapter,
+      fork.deployment.chaiAdapter,
     ]);
     const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [
-        fork.deployment.MaxConcentration,
-        fork.deployment.AdapterBlacklist,
-        fork.deployment.AdapterWhitelist,
-        fork.deployment.AssetBlacklist,
+        fork.deployment.maxConcentration,
+        fork.deployment.adapterBlacklist,
+        fork.deployment.adapterWhitelist,
+        fork.deployment.assetBlacklist,
       ],
       settings: [maxConcentrationSettings, adapterBlacklistSettings, adapterWhitelistSettings, assetBlacklistSettings],
     });
 
     const createFundTx = await createNewFund({
       signer: manager,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner: manager,
       denominationAsset,
       feeManagerConfig,
@@ -156,9 +156,9 @@ describe('Walkthrough a fund migration', () => {
 
     await addTrackedAssets({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      trackedAssetsAdapter: fork.deployment.TrackedAssetsAdapter,
+      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
       incomingAssets: Object.values(assets),
     });
 
@@ -183,7 +183,7 @@ describe('Walkthrough a fund migration', () => {
   //   newRelease = await deployRelease(fork.config);
 
   //   await newRelease.fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
-  //   await fork.deployment.Dispatcher.setCurrentFundDeployer(newRelease.fundDeployer);
+  //   await fork.deployment.dispatcher.setCurrentFundDeployer(newRelease.fundDeployer);
   // });
 
   // it('creates a migrated fund on the new release', async () => {
@@ -243,7 +243,7 @@ describe('Walkthrough a fund migration', () => {
 
   // it('executes the fund migration', async () => {
   //   // Warp to migratable time
-  //   const migrationTimelock = await fork.deployment.Dispatcher.getMigrationTimelock();
+  //   const migrationTimelock = await fork.deployment.dispatcher.getMigrationTimelock();
   //   await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
   //   await newRelease.fundDeployer.connect(manager).executeMigration(vaultProxy);

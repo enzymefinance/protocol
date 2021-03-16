@@ -1,50 +1,67 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { ReleaseStatusTypes } from '@enzymefinance/protocol';
+import { ReleaseStatusTypes, StandardToken } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   createMigratedFundConfig,
   createNewFund,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
   createFundDeployer,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [signer],
+    deployment: {
+      fundDeployer,
+      chainlinkPriceFeed,
+      dispatcher,
+      feeManager,
+      integrationManager,
+      policyManager,
+      synthetixPriceFeed,
+      valueInterpreter,
+      vaultLib,
+    },
+    config,
+  } = await deployProtocolFixture();
 
   // Get mock fees and mock policies data with which to configure funds
   const feeManagerConfigData = await generateFeeManagerConfigWithMockFees({
-    deployer: config.deployer,
-    feeManager: deployment.feeManager,
+    deployer,
+    feeManager,
   });
 
   const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies({
-    deployer: config.deployer,
-    policyManager: deployment.policyManager,
+    deployer,
+    policyManager,
   });
 
   // TODO: use an alternative deployment that has not yet set the ReleaseStatus to Live?
   const nonLiveFundDeployer = await createFundDeployer({
-    deployer: config.deployer,
-    chainlinkPriceFeed: deployment.chainlinkPriceFeed,
-    dispatcher: deployment.dispatcher,
-    feeManager: deployment.feeManager,
-    integrationManager: deployment.integrationManager,
-    policyManager: deployment.policyManager,
-    synthetixPriceFeed: deployment.synthetixPriceFeed,
-    synthetixAddressResolverAddress: config.integratees.synthetix.addressResolver,
-    valueInterpreter: deployment.valueInterpreter,
-    vaultLib: deployment.vaultLib,
+    deployer,
+    chainlinkPriceFeed,
+    dispatcher,
+    feeManager,
+    integrationManager,
+    policyManager,
+    synthetixPriceFeed,
+    synthetixAddressResolverAddress: config.synthetix.addressResolver,
+    valueInterpreter,
+    vaultLib,
     setReleaseStatusLive: false,
     setOnDispatcher: false,
   });
 
+  const denominationAsset = new StandardToken(config.weth, deployer);
+
   return {
-    accounts,
-    deployment,
-    config,
+    signer,
+    dispatcher,
+    fundDeployer,
+    denominationAsset,
     feeManagerConfigData,
     policyManagerConfigData,
     nonLiveFundDeployer,
@@ -53,9 +70,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('createNewFund', () => {
   it('does not allow an empty _fundOwner', async () => {
-    const {
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer } = await provider.snapshot(snapshot);
 
     await expect(
       fundDeployer.createNewFund(constants.AddressZero, '', randomAddress(), 0, constants.HashZero, constants.HashZero),
@@ -63,9 +78,7 @@ describe('createNewFund', () => {
   });
 
   it('does not allow an empty _denominationAsset', async () => {
-    const {
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer } = await provider.snapshot(snapshot);
 
     await expect(
       fundDeployer.createNewFund(randomAddress(), '', constants.AddressZero, 0, constants.HashZero, constants.HashZero),
@@ -73,12 +86,7 @@ describe('createNewFund', () => {
   });
 
   it('does not allow the release status to be Paused', async () => {
-    const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
-    } = await provider.snapshot(snapshot);
+    const { denominationAsset, fundDeployer } = await provider.snapshot(snapshot);
 
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
@@ -89,13 +97,7 @@ describe('createNewFund', () => {
   });
 
   it('does not allow the release status to be PreLaunch', async () => {
-    const {
-      deployment: {
-        dispatcher,
-        tokens: { weth: denominationAsset },
-      },
-      nonLiveFundDeployer,
-    } = await provider.snapshot(snapshot);
+    const { denominationAsset, dispatcher, nonLiveFundDeployer } = await provider.snapshot(snapshot);
 
     // Set the FundDeployer as the current release, but do not set release status to Live
     await dispatcher.setCurrentFundDeployer(nonLiveFundDeployer);
@@ -113,17 +115,10 @@ describe('createNewFund', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth },
-      },
-      accounts: [signer],
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, denominationAsset, signer } = await provider.snapshot(snapshot);
 
     const fundOwner = randomAddress();
     const fundName = 'My Fund';
-    const denominationAsset = weth;
 
     // TODO: Fix this. Gets the wrong return values for the newly deployed contracts.
     // Get expected return values via .call() before executing tx
@@ -153,9 +148,7 @@ describe('createNewFund', () => {
 
 describe('createMigratedFundConfig', () => {
   it('does not allow an empty _denominationAsset', async () => {
-    const {
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer } = await provider.snapshot(snapshot);
 
     await expect(
       fundDeployer.createMigratedFundConfig(constants.AddressZero, 0, constants.HashZero, constants.HashZero),
@@ -163,12 +156,7 @@ describe('createMigratedFundConfig', () => {
   });
 
   it('does not allow the release to be paused', async () => {
-    const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
-    } = await provider.snapshot(snapshot);
+    const { denominationAsset, fundDeployer } = await provider.snapshot(snapshot);
 
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
@@ -179,13 +167,7 @@ describe('createMigratedFundConfig', () => {
   });
 
   it('does not allow the release status to be PreLaunch', async () => {
-    const {
-      deployment: {
-        dispatcher,
-        tokens: { weth: denominationAsset },
-      },
-      nonLiveFundDeployer,
-    } = await provider.snapshot(snapshot);
+    const { denominationAsset, dispatcher, nonLiveFundDeployer } = await provider.snapshot(snapshot);
 
     // Set the FundDeployer as the current release, but do not set release status to Live
     await dispatcher.setCurrentFundDeployer(nonLiveFundDeployer);
@@ -197,11 +179,9 @@ describe('createMigratedFundConfig', () => {
 
   it('correctly handles valid call', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
-      accounts: [signer],
+      denominationAsset,
+      fundDeployer,
+      signer,
       feeManagerConfigData,
       policyManagerConfigData,
     } = await provider.snapshot(snapshot);

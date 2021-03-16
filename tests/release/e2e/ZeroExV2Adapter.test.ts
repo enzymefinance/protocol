@@ -19,7 +19,7 @@ beforeEach(async () => {
 
 describe('takeOrder', () => {
   it('works as expected without takerFee', async () => {
-    const zeroExV2Adapter = fork.deployment.ZeroExV2Adapter;
+    const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
     const incomingAsset = weth;
@@ -28,7 +28,7 @@ describe('takeOrder', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -68,9 +68,9 @@ describe('takeOrder', () => {
     await zeroExV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      zeroExV2Adapter: fork.deployment.ZeroExV2Adapter,
+      zeroExV2Adapter: fork.deployment.zeroExV2Adapter,
       signedOrder,
       takerAssetFillAmount,
     });
@@ -87,7 +87,7 @@ describe('takeOrder', () => {
   });
 
   it('works as expected with takerFee', async () => {
-    const zeroExV2Adapter = fork.deployment.ZeroExV2Adapter;
+    const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const denominationAsset = new StandardToken(fork.config.weth, provider);
     const outgoingAsset = new StandardToken(fork.config.primitives.zrx, whales.zrx);
     const incomingAsset = new StandardToken(fork.config.primitives.knc, whales.knc);
@@ -96,7 +96,7 @@ describe('takeOrder', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
     });
 
@@ -137,7 +137,7 @@ describe('takeOrder', () => {
     await zeroExV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       zeroExV2Adapter,
       signedOrder,
@@ -155,7 +155,7 @@ describe('takeOrder', () => {
   });
 
   it('partially fill an order', async () => {
-    const zeroExV2Adapter = fork.deployment.ZeroExV2Adapter;
+    const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const outgoingAsset = weth;
     const incomingAsset = new StandardToken(fork.config.primitives.knc, whales.knc);
@@ -164,7 +164,7 @@ describe('takeOrder', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -204,7 +204,7 @@ describe('takeOrder', () => {
     await zeroExV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       zeroExV2Adapter,
       signedOrder,

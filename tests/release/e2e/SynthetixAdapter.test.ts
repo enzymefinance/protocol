@@ -31,7 +31,7 @@ it('works as expected when called by a fund (synth to synth)', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   // Load the SynthetixExchange contract
@@ -46,7 +46,7 @@ it('works as expected when called by a fund (synth to synth)', async () => {
     comptrollerProxy,
     addressResolver: synthetixAddressResolver,
     fundOwner,
-    delegate: fork.deployment.SynthetixAdapter,
+    delegate: fork.deployment.synthetixAdapter,
   });
 
   // Define order params
@@ -68,9 +68,9 @@ it('works as expected when called by a fund (synth to synth)', async () => {
   await synthetixTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    synthetixAdapter: fork.deployment.SynthetixAdapter,
+    synthetixAdapter: fork.deployment.synthetixAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,

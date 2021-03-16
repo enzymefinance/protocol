@@ -1,16 +1,16 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
+  WETH,
 } from '@enzymefinance/protocol';
-import { createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { accounts, deployment, config } = await deployProtocolFixture();
 
   // Get mock fees and mock policies data with which to configure funds
   const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
@@ -28,7 +28,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: accounts[1],
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new WETH(config.weth, whales.weth),
     fundOwner: randomAddress(),
     feeManagerConfig,
   });

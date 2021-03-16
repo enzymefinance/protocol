@@ -7,7 +7,7 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const lidoStethPriceFeed = fork.deployment.LidoStethPriceFeed;
+    const lidoStethPriceFeed = fork.deployment.lidoStethPriceFeed;
 
     expect(await lidoStethPriceFeed.getDerivative()).toMatchAddress(fork.config.lido.steth);
     expect(await lidoStethPriceFeed.getUnderlying()).toMatchAddress(fork.config.weth);

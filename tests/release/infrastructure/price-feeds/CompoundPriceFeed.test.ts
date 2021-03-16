@@ -1,17 +1,25 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { MockCTokenIntegratee } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    accounts: [arbitraryUser],
+    deployment: { compoundPriceFeed },
+    deployer,
+    config: {
+      weth,
+      primitives,
+      compound: { ctokens, ceth },
+    },
+  } = await deployProtocolFixture();
 
   // Deploy new mock cTokens
   const newCToken1Underlying = randomAddress();
   const newCToken2Underlying = randomAddress();
   const newCToken1 = await MockCTokenIntegratee.deploy(
-    config.deployer,
+    deployer,
     'Mock cToken 1',
     'cMOCK1',
     8,
@@ -19,8 +27,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
     randomAddress(),
     utils.parseEther('1'),
   );
+
   const newCToken2 = await MockCTokenIntegratee.deploy(
-    config.deployer,
+    deployer,
     'Mock cToken 2',
     'cMOCK2',
     8,
@@ -30,34 +39,32 @@ async function snapshot(provider: EthereumTestnetProvider) {
   );
 
   return {
-    accounts,
-    deployment,
-    config,
+    ctokens,
+    ceth,
+    weth,
+    primitives,
     newCToken1,
     newCToken2,
     newCToken1Underlying,
     newCToken2Underlying,
+    compoundPriceFeed,
+    arbitraryUser,
   };
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      config: {
-        derivatives: {
-          compound: { ccomp, cdai, ceth, crep, cusdc, czrx },
-        },
-      },
-      deployment: {
-        compoundPriceFeed,
-        tokens: { comp, dai, weth, rep, usdc, zrx },
-      },
+      compoundPriceFeed,
+      ceth,
+      weth,
+      ctokens: { ccomp, cdai, cusdc, czrx },
+      primitives: { comp, dai, usdc, zrx },
     } = await provider.snapshot(snapshot);
 
     expect(await compoundPriceFeed.getTokenFromCToken(ccomp)).toMatchAddress(comp);
     expect(await compoundPriceFeed.getTokenFromCToken(cdai)).toMatchAddress(dai);
     expect(await compoundPriceFeed.getTokenFromCToken(ceth)).toMatchAddress(weth);
-    expect(await compoundPriceFeed.getTokenFromCToken(crep)).toMatchAddress(rep);
     expect(await compoundPriceFeed.getTokenFromCToken(cusdc)).toMatchAddress(usdc);
     expect(await compoundPriceFeed.getTokenFromCToken(czrx)).toMatchAddress(zrx);
   });
@@ -65,32 +72,23 @@ describe('constructor', () => {
 
 describe('addCTokens', () => {
   it('does not allow a random caller', async () => {
-    const {
-      accounts: { 0: randomUser },
-      deployment: { compoundPriceFeed },
-      newCToken1,
-      newCToken2,
-    } = await provider.snapshot(snapshot);
+    const { arbitraryUser, compoundPriceFeed, newCToken1, newCToken2 } = await provider.snapshot(snapshot);
 
-    await expect(compoundPriceFeed.connect(randomUser).addCTokens([newCToken1, newCToken2])).rejects.toBeRevertedWith(
-      'Only the Dispatcher owner can call this function',
-    );
+    await expect(
+      compoundPriceFeed.connect(arbitraryUser).addCTokens([newCToken1, newCToken2]),
+    ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
   });
 
   it('does not allow an empty _cTokens param', async () => {
-    const {
-      deployment: { compoundPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { compoundPriceFeed } = await provider.snapshot(snapshot);
 
     await expect(compoundPriceFeed.addCTokens([])).rejects.toBeRevertedWith('Empty _cTokens');
   });
 
   it('does not allow an already-set cToken', async () => {
     const {
-      deployment: {
-        compoundPriceFeed,
-        compoundTokens: { cdai },
-      },
+      compoundPriceFeed,
+      ctokens: { cdai },
     } = await provider.snapshot(snapshot);
 
     await expect(compoundPriceFeed.addCTokens([cdai])).rejects.toBeRevertedWith('Value already set');
@@ -98,7 +96,7 @@ describe('addCTokens', () => {
 
   it('adds multiple cTokens and emits an event per added cToken', async () => {
     const {
-      deployment: { compoundPriceFeed },
+      compoundPriceFeed,
       newCToken1,
       newCToken2,
       newCToken1Underlying,

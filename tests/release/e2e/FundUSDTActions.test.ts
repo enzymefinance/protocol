@@ -26,7 +26,7 @@ describe('adapters', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -44,9 +44,9 @@ describe('adapters', () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],

@@ -1,38 +1,53 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { IDerivativePriceFeed, MockToken } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    deployment: { aggregatedDerivativePriceFeed, chaiPriceFeed, compoundPriceFeed, uniswapV2PoolPriceFeed },
+    config,
+  } = await deployProtocolFixture();
 
-  const mockDerivative1 = await MockToken.deploy(config.deployer, 'Mock Derivative 1', 'MCKD001', 18);
-  const mockDerivative2 = await MockToken.deploy(config.deployer, 'Mock Derivative 2', 'MCKD002', 18);
+  const uniswapV2PoolTokens = config.uniswap.pools;
+  const compoundTokens = config.compound.ctokens;
+  const chai = config.chai.chai;
 
-  const mockDerivativePriceFeed1 = await IDerivativePriceFeed.mock(config.deployer);
+  const mockDerivative1 = await MockToken.deploy(deployer, 'Mock Derivative 1', 'MCKD001', 18);
+  const mockDerivative2 = await MockToken.deploy(deployer, 'Mock Derivative 2', 'MCKD002', 18);
+
+  const mockDerivativePriceFeed1 = await IDerivativePriceFeed.mock(deployer);
   await mockDerivativePriceFeed1.isSupportedAsset.returns(false);
 
-  const mockDerivativePriceFeed2 = await IDerivativePriceFeed.mock(config.deployer);
+  const mockDerivativePriceFeed2 = await IDerivativePriceFeed.mock(deployer);
   await mockDerivativePriceFeed2.isSupportedAsset.returns(false);
 
   return {
-    deployment,
+    chai,
+    compoundTokens,
+    uniswapV2PoolTokens,
+    aggregatedDerivativePriceFeed,
+    chaiPriceFeed,
+    compoundPriceFeed,
+    uniswapV2PoolPriceFeed,
     mockDerivative1,
     mockDerivative2,
     mockDerivativePriceFeed1,
     mockDerivativePriceFeed2,
-    config,
   };
 }
 
 describe('constructor', () => {
   it('sets initial storage vars', async () => {
     const {
-      deployment: { aggregatedDerivativePriceFeed, chaiPriceFeed, compoundPriceFeed, uniswapV2PoolPriceFeed },
-      config: {
-        derivatives: { chai, compound, uniswapV2 },
-      },
+      aggregatedDerivativePriceFeed,
+      chaiPriceFeed,
+      compoundPriceFeed,
+      uniswapV2PoolPriceFeed,
+      uniswapV2PoolTokens,
+      compoundTokens,
+      chai,
     } = await provider.snapshot(snapshot);
 
     // Check chai
@@ -40,15 +55,13 @@ describe('constructor', () => {
     expect(storedPriceFeed).toMatchAddress(chaiPriceFeed);
 
     // Check compound
-    const compoundTokens = Object.values(compound);
-    for (const cToken of compoundTokens) {
+    for (const cToken of Object.values(compoundTokens)) {
       const storedPriceFeed = await aggregatedDerivativePriceFeed.getPriceFeedForDerivative(cToken);
       expect(storedPriceFeed).toMatchAddress(compoundPriceFeed);
     }
 
     // Check uniswapV2
-    const uniswapTokens = Object.values(uniswapV2);
-    for (const lpToken of uniswapTokens) {
+    for (const lpToken of Object.values(uniswapV2PoolTokens)) {
       const storedPriceFeed = await aggregatedDerivativePriceFeed.getPriceFeedForDerivative(lpToken);
       expect(storedPriceFeed).toMatchAddress(uniswapV2PoolPriceFeed);
     }
@@ -64,7 +77,7 @@ describe('addDerivatives', () => {
       mockDerivative2,
       mockDerivativePriceFeed1,
       mockDerivativePriceFeed2,
-      deployment: { aggregatedDerivativePriceFeed },
+      aggregatedDerivativePriceFeed,
     } = await provider.snapshot(snapshot);
 
     // Define which asset each mock price feed supports
@@ -99,11 +112,9 @@ describe('addDerivatives', () => {
   });
 
   it('does not support adding a non supportedAsset', async () => {
-    const {
-      mockDerivative1,
-      mockDerivativePriceFeed1,
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { mockDerivative1, mockDerivativePriceFeed1, aggregatedDerivativePriceFeed } = await provider.snapshot(
+      snapshot,
+    );
 
     // It should not be possible now to add this derivative
     await expect(
@@ -112,11 +123,9 @@ describe('addDerivatives', () => {
   });
 
   it('does not allow adding an already added derivative', async () => {
-    const {
-      mockDerivative1,
-      mockDerivativePriceFeed1,
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { mockDerivative1, mockDerivativePriceFeed1, aggregatedDerivativePriceFeed } = await provider.snapshot(
+      snapshot,
+    );
 
     // Define which asset the mock price feed supports
     await mockDerivativePriceFeed1.isSupportedAsset.given(mockDerivative1).returns(true);
@@ -131,9 +140,7 @@ describe('addDerivatives', () => {
   });
 
   it('does not allow an empty list of derivatives', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(aggregatedDerivativePriceFeed.addDerivatives([], [randomAddress()])).rejects.toBeRevertedWith(
       '_derivatives cannot be empty',
@@ -141,9 +148,7 @@ describe('addDerivatives', () => {
   });
 
   it('does not allow an empty derivative value', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(
       aggregatedDerivativePriceFeed.addDerivatives([constants.AddressZero], [randomAddress()]),
@@ -151,9 +156,7 @@ describe('addDerivatives', () => {
   });
 
   it('does not allow different argument length as an input', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     // Use arrays with length 1 and 2 to assert it reverts
     await expect(
@@ -165,7 +168,7 @@ describe('addDerivatives', () => {
 describe('updateDerivatives', () => {
   it('updates a set of derivatives to new price feeds', async () => {
     const {
-      deployment: { aggregatedDerivativePriceFeed },
+      aggregatedDerivativePriceFeed,
       mockDerivative1,
       mockDerivative2,
       mockDerivativePriceFeed1,
@@ -214,9 +217,7 @@ describe('updateDerivatives', () => {
   });
 
   it('does not allow an empty array of derivatives', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(aggregatedDerivativePriceFeed.updateDerivatives([], [randomAddress()])).rejects.toBeRevertedWith(
       '_derivatives cannot be empty',
@@ -224,9 +225,7 @@ describe('updateDerivatives', () => {
   });
 
   it('does not allow different argument length as an input', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     // Call updateDerivatives with array lengths of 1 and 2
     await expect(
@@ -235,9 +234,7 @@ describe('updateDerivatives', () => {
   });
 
   it('does not allow a non added derivative address as an input', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(
       aggregatedDerivativePriceFeed.updateDerivatives([randomAddress()], [randomAddress()]),
@@ -245,11 +242,9 @@ describe('updateDerivatives', () => {
   });
 
   it('does not allow to update to an already set value', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-      mockDerivative1,
-      mockDerivativePriceFeed1,
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed, mockDerivative1, mockDerivativePriceFeed1 } = await provider.snapshot(
+      snapshot,
+    );
 
     // Add a derivative to the aggregate feed
     await mockDerivativePriceFeed1.isSupportedAsset.given(mockDerivative1).returns(true);
@@ -265,7 +260,7 @@ describe('updateDerivatives', () => {
 describe('removeDerivatives', () => {
   it('removes a set of derivatives', async () => {
     const {
-      deployment: { aggregatedDerivativePriceFeed },
+      aggregatedDerivativePriceFeed,
       mockDerivative1,
       mockDerivative2,
       mockDerivativePriceFeed1,
@@ -305,9 +300,7 @@ describe('removeDerivatives', () => {
   });
 
   it('does not allow to remove a derivative that has not been added before', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(aggregatedDerivativePriceFeed.removeDerivatives([randomAddress()])).rejects.toBeRevertedWith(
       'Derivative not yet added',
@@ -315,9 +308,7 @@ describe('removeDerivatives', () => {
   });
 
   it('does not allow an empty array of derivatives', async () => {
-    const {
-      deployment: { aggregatedDerivativePriceFeed },
-    } = await provider.snapshot(snapshot);
+    const { aggregatedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     await expect(aggregatedDerivativePriceFeed.removeDerivatives([])).rejects.toBeRevertedWith(
       '_derivatives cannot be empty',

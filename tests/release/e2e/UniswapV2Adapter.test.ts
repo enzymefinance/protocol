@@ -29,7 +29,7 @@ describe('lend', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -60,9 +60,9 @@ describe('lend', () => {
     await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       tokenA,
       tokenB,
       amountADesired,
@@ -96,7 +96,7 @@ describe('redeem', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -108,9 +108,9 @@ describe('redeem', () => {
     await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       tokenA,
       tokenB,
       amountADesired,
@@ -141,9 +141,9 @@ describe('redeem', () => {
 
     await uniswapV2Redeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       poolTokenAmount: redeemPoolTokenAmount,
       tokenA,
       tokenB,
@@ -175,7 +175,7 @@ describe('takeOrder', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -193,9 +193,9 @@ describe('takeOrder', () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],
@@ -221,7 +221,7 @@ describe('takeOrder', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -239,9 +239,9 @@ describe('takeOrder', () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],

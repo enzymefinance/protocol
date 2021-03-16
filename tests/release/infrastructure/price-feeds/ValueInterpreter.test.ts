@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   AggregatedDerivativePriceFeed,
   IDerivativePriceFeed,
@@ -7,20 +6,20 @@ import {
   MockToken,
   ValueInterpreter,
 } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { deployer, deployment, config } = await deployProtocolFixture();
 
   // Set up primitives
 
   // Create primitives with different decimals
-  const mockPrimitive1 = await MockToken.deploy(config.deployer, 'Mock Primitive 1', 'MCKP001', 18);
-  const mockPrimitive2 = await MockToken.deploy(config.deployer, 'Mock Primitive 2', 'MCKP002', 18);
+  const mockPrimitive1 = await MockToken.deploy(deployer, 'Mock Primitive 1', 'MCKP001', 18);
+  const mockPrimitive2 = await MockToken.deploy(deployer, 'Mock Primitive 2', 'MCKP002', 18);
 
   // Create mock primitive price feed
-  const mockPrimitivePriceFeed = await IPrimitivePriceFeed.mock(config.deployer);
+  const mockPrimitivePriceFeed = await IPrimitivePriceFeed.mock(deployer);
   await mockPrimitivePriceFeed.isSupportedAsset.returns(false);
   await mockPrimitivePriceFeed.isSupportedAsset.given(mockPrimitive1).returns(true);
   await mockPrimitivePriceFeed.isSupportedAsset.given(mockPrimitive2).returns(true);
@@ -29,14 +28,14 @@ async function snapshot(provider: EthereumTestnetProvider) {
   // Set up derivatives
 
   // Create derivative mock
-  const mockDerivative = await MockToken.deploy(config.deployer, 'Mock Derivative 1', 'MCKD001', 18);
+  const mockDerivative = await MockToken.deploy(deployer, 'Mock Derivative 1', 'MCKD001', 18);
 
   // Create derivative price feed mock
-  const mockDerivativePriceFeed = await IDerivativePriceFeed.mock(config.deployer);
+  const mockDerivativePriceFeed = await IDerivativePriceFeed.mock(deployer);
   await mockDerivativePriceFeed.calcUnderlyingValues.returns([], []);
 
   // Create aggregated derivative price feed mock
-  const mockAggregatedDerivativePriceFeed = await AggregatedDerivativePriceFeed.mock(config.deployer);
+  const mockAggregatedDerivativePriceFeed = await AggregatedDerivativePriceFeed.mock(deployer);
   await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative.returns(constants.AddressZero);
   await mockAggregatedDerivativePriceFeed.getPriceFeedForDerivative
     .given(mockDerivative)
@@ -44,7 +43,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   // Deploy a new value interpreter with mock price feeds
   const valueInterpreterWithMocks = await ValueInterpreter.deploy(
-    config.deployer,
+    deployer,
     mockPrimitivePriceFeed,
     mockAggregatedDerivativePriceFeed,
   );

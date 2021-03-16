@@ -9,7 +9,7 @@ beforeEach(async () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token weth', async () => {
-    const wdgldPriceFeed = fork.deployment.WdgldPriceFeed;
+    const wdgldPriceFeed = fork.deployment.wdgldPriceFeed;
     const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
     const weth = new StandardToken(fork.config.weth, provider);
     const xauAggregator = new IChainlinkAggregator(fork.config.wdgld.xauusd, provider);
@@ -35,7 +35,7 @@ describe('calcUnderlyingValues', () => {
   });
 
   it('returns the expected value from the valueInterpreter', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
     const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 

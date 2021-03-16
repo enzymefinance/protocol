@@ -14,7 +14,7 @@ describe('calcUnderlyingValues', () => {
     const dai = fork.config.chai.dai;
     const chi = await pot.chi();
 
-    const chaiPriceFeed = fork.deployment.ChaiPriceFeed;
+    const chaiPriceFeed = fork.deployment.chaiPriceFeed;
     const chaiGetPriceFeedReceipt = await chaiPriceFeed.calcUnderlyingValues.args(chai, utils.parseEther('1')).call();
 
     expect(chaiGetPriceFeedReceipt).toMatchFunctionOutput(chaiPriceFeed.calcUnderlyingValues, {
@@ -28,7 +28,7 @@ describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const chai = new StandardToken(fork.config.chai.chai, fork.deployer);
     const dai = new StandardToken(fork.config.chai.dai, fork.deployer);
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
 
     const baseDecimals = await chai.decimals();
     const quoteDecimals = await dai.decimals();

@@ -90,6 +90,7 @@ export interface DeploymentConfig {
       redemptionWindowBuffer: number;
     };
   };
+  vaultCalls: [address: string, sighash: string][];
 }
 
 const fn: DeployFunction = async () => {

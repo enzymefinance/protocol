@@ -1,26 +1,27 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { TestSingleUnderlyingDerivativeRegistry } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [dispatcherOwner],
+    deployment: { dispatcher },
+  } = await deployProtocolFixture();
 
   // Update the dispatcher so that the deployer is no longer the owner
-  const [dispatcherOwner, ...remainingAccounts] = accounts;
-  await deployment.dispatcher.setNominatedOwner(dispatcherOwner);
-  await deployment.dispatcher.connect(dispatcherOwner).claimOwnership();
+  await dispatcher.setNominatedOwner(dispatcherOwner);
+  await dispatcher.connect(dispatcherOwner).claimOwnership();
 
   const testSingleUnderlyingDerivativeRegistry = await TestSingleUnderlyingDerivativeRegistry.deploy(
-    config.deployer,
-    config.dispatcher,
+    deployer,
+    dispatcher,
   );
 
   return {
-    accounts: remainingAccounts,
-    config,
-    deployment,
+    deployer,
+    dispatcher,
     dispatcherOwner,
     testSingleUnderlyingDerivativeRegistry: testSingleUnderlyingDerivativeRegistry.connect(dispatcherOwner),
   };
@@ -28,10 +29,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('constructor', () => {
   it('sets initial storage vars', async () => {
-    const {
-      config: { dispatcher },
-      testSingleUnderlyingDerivativeRegistry,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     expect(await testSingleUnderlyingDerivativeRegistry.getDispatcher()).toMatchAddress(dispatcher);
   });
@@ -39,10 +37,7 @@ describe('constructor', () => {
 
 describe('addDerivatives', () => {
   it('does not allow a non-Dispatcher owner', async () => {
-    const {
-      config: { deployer },
-      testSingleUnderlyingDerivativeRegistry,
-    } = await provider.snapshot(snapshot);
+    const { deployer, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     await expect(
       testSingleUnderlyingDerivativeRegistry.connect(deployer).addDerivatives([randomAddress()], [randomAddress()]),
@@ -124,10 +119,7 @@ describe('addDerivatives', () => {
 
 describe('removeDerivatives', () => {
   it('does not allow a non-Dispatcher owner', async () => {
-    const {
-      config: { deployer },
-      testSingleUnderlyingDerivativeRegistry,
-    } = await provider.snapshot(snapshot);
+    const { deployer, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     await expect(
       testSingleUnderlyingDerivativeRegistry.connect(deployer).removeDerivatives([randomAddress()]),

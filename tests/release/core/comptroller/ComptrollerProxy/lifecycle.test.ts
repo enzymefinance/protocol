@@ -1,24 +1,33 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, IExtension, ReleaseStatusTypes, VaultLib } from '@enzymefinance/protocol';
-import { assertEvent, createComptrollerProxy, defaultTestDeployment } from '@enzymefinance/testutils';
+import {
+  ComptrollerLib,
+  FundDeployer,
+  IExtension,
+  ReleaseStatusTypes,
+  StandardToken,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import { assertEvent, createComptrollerProxy, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
+    deployer,
     accounts: [mockVaultProxyOwner, ...remainingAccounts],
     config,
     deployment,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
+
+  const denominationAsset = new StandardToken(config.weth, deployer);
 
   // Deploy a mock FundDeployer
-  const mockFundDeployer = await FundDeployer.mock(config.deployer);
+  const mockFundDeployer = await FundDeployer.mock(deployer);
   await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
 
   // Deploy mock extensions
-  const mockFeeManager = await IExtension.mock(config.deployer);
-  const mockIntegrationManager = await IExtension.mock(config.deployer);
-  const mockPolicyManager = await IExtension.mock(config.deployer);
+  const mockFeeManager = await IExtension.mock(deployer);
+  const mockIntegrationManager = await IExtension.mock(deployer);
+  const mockPolicyManager = await IExtension.mock(deployer);
 
   await Promise.all([
     mockFeeManager.setConfigForFund.returns(undefined),
@@ -32,8 +41,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
   ]);
 
   const comptrollerLib = await ComptrollerLib.deploy(
-    config.deployer,
-    config.dispatcher,
+    deployer,
+    deployment.dispatcher,
     mockFundDeployer,
     randomAddress(), // ValueInterpreter
     mockFeeManager,
@@ -49,14 +58,14 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const feeManagerConfigData = utils.hexlify(utils.randomBytes(4));
   const policyManagerConfigData = utils.hexlify(utils.randomBytes(8));
   const { comptrollerProxy } = await createComptrollerProxy({
-    signer: config.deployer,
+    signer: deployer,
     comptrollerLib,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset,
     sharesActionTimelock,
   });
 
   // Deploy Mock VaultProxy
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.addTrackedAsset.returns(undefined);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
@@ -64,7 +73,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   return {
     accounts: remainingAccounts,
-    config,
+    deployer,
     comptrollerLib,
     comptrollerProxy: comptrollerProxy.connect(mockVaultProxyOwner),
     feeManagerConfigData,
@@ -76,16 +85,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
     mockVaultProxyOwner,
     policyManagerConfigData,
     sharesActionTimelock,
-    supportedAsset: deployment.tokens.weth,
+    supportedAsset: denominationAsset,
   };
 }
 
 describe('init', () => {
   it('does not allow an unsupported denomination asset', async () => {
-    const {
-      config: { deployer: signer },
-      comptrollerLib,
-    } = await provider.snapshot(snapshot);
+    const { deployer: signer, comptrollerLib } = await provider.snapshot(snapshot);
 
     await expect(
       createComptrollerProxy({

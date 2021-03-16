@@ -25,7 +25,7 @@ it('works as expected when called by a fund (no network fees)', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -68,9 +68,9 @@ it('works as expected when called by a fund (no network fees)', async () => {
   // Execute the take order
   await paraswapTakeOrder({
     comptrollerProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    paraswapAdapter: fork.deployment.ParaSwapAdapter,
+    paraswapAdapter: fork.deployment.paraSwapAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,
@@ -96,7 +96,7 @@ it('refunds unused network fees', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -132,9 +132,9 @@ it('refunds unused network fees', async () => {
   // Execute the take order
   await paraswapTakeOrder({
     comptrollerProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    paraswapAdapter: fork.deployment.ParaSwapAdapter,
+    paraswapAdapter: fork.deployment.paraSwapAdapter,
     outgoingAsset,
     outgoingAssetAmount,
     incomingAsset,

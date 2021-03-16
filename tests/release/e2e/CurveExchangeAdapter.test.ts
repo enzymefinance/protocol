@@ -34,10 +34,10 @@ async function getCurveSwapsContract(addressProvider: AddressLike) {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const curveExchangeAdapter = fork.deployment.CurveExchangeAdapter;
+    const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
 
     const getIntegrationManagerCall = await curveExchangeAdapter.getIntegrationManager();
-    expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.IntegrationManager);
+    expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
     const getAddressProvider = await curveExchangeAdapter.getAddressProvider();
     expect(getAddressProvider).toMatchAddress(fork.config.curve.addressProvider);
@@ -49,7 +49,7 @@ describe('constructor', () => {
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const curveExchangeAdapter = fork.deployment.CurveExchangeAdapter;
+    const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
 
     await expect(
       curveExchangeAdapter.parseAssetsForMethod(utils.randomBytes(4), constants.HashZero),
@@ -57,7 +57,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('does not allow empty _pool address', async () => {
-    const curveExchangeAdapter = fork.deployment.CurveExchangeAdapter;
+    const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
     const pool = constants.AddressZero;
     const outgoingAsset = randomAddress();
     const outgoingAssetAmount = utils.parseEther('0.1');
@@ -79,7 +79,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output', async () => {
-    const curveExchangeAdapter = fork.deployment.CurveExchangeAdapter;
+    const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
     const pool = randomAddress();
     const outgoingAsset = randomAddress();
     const outgoingAssetAmount = utils.parseEther('0.1');
@@ -118,7 +118,7 @@ describe('takeOrder', () => {
       signer: fundOwner as SignerWithAddress,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -135,9 +135,9 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      curveExchangeAdapter: fork.deployment.CurveExchangeAdapter,
+      curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
       pool: bestPool,
       outgoingAsset,
       outgoingAssetAmount,
@@ -161,7 +161,7 @@ describe('takeOrder', () => {
       signer: fundOwner as SignerWithAddress,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -178,9 +178,9 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      curveExchangeAdapter: fork.deployment.CurveExchangeAdapter,
+      curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
       pool: bestPool,
       outgoingAsset,
       outgoingAssetAmount,
@@ -204,7 +204,7 @@ describe('takeOrder', () => {
       signer: fundOwner as SignerWithAddress,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -221,9 +221,9 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      curveExchangeAdapter: fork.deployment.CurveExchangeAdapter,
+      curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
       pool: bestPool,
       outgoingAsset,
       outgoingAssetAmount,

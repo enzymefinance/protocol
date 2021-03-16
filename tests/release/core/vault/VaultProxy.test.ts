@@ -1,27 +1,30 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { IMigrationHookHandler, VaultLib } from '@enzymefinance/protocol';
-import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { IMigrationHookHandler, StandardToken, VaultLib, WETH } from '@enzymefinance/protocol';
+import { addNewAssetsToFund, assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [fundOwner, ...accounts],
+    deployment: { vaultLib, dispatcher, fundDeployer, integrationManager, trackedAssetsAdapter },
+    config,
+  } = await deployProtocolFixture();
 
-  // Define the values to use in deploying the VaultProxy
-  const [fundOwner, ...remainingAccounts] = accounts;
+  const weth = new WETH(config.weth, whales.weth);
   const fundName = 'VaultLib Test Fund';
 
   // Mock a FundDeployer to set as the current fund deployer
-  const mockFundDeployer = await IMigrationHookHandler.mock(config.deployer);
-  await deployment.dispatcher.setCurrentFundDeployer(mockFundDeployer);
+  const mockFundDeployer = await IMigrationHookHandler.mock(deployer);
+  await dispatcher.setCurrentFundDeployer(mockFundDeployer);
 
   // Use a generic mock contract as the vault accessor
-  const mockVaultAccessor = await IMigrationHookHandler.mock(config.deployer);
+  const mockVaultAccessor = await IMigrationHookHandler.mock(deployer);
 
   // Deploy the VaultProxy via the Dispatcher
   const deployVaultProxyReceipt = await mockFundDeployer.forward(
-    deployment.dispatcher.deployVaultProxy,
-    deployment.vaultLib,
+    dispatcher.deployVaultProxy,
+    vaultLib,
     fundOwner,
     mockVaultAccessor,
     fundName,
@@ -32,26 +35,24 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const vaultProxy = new VaultLib(vaultProxyDeployedEvent.args.vaultProxy, provider);
 
   return {
-    accounts: remainingAccounts,
     config,
-    deployment,
+    weth,
+    accounts,
     fundName,
     fundOwner,
     mockFundDeployer,
     mockVaultAccessor,
+    fundDeployer,
+    integrationManager,
+    trackedAssetsAdapter,
+    dispatcher,
     vaultProxy,
   };
 }
 
 describe('init', () => {
   it('correctly sets initial proxy values', async () => {
-    const {
-      deployment: { dispatcher },
-      fundName,
-      fundOwner,
-      mockVaultAccessor,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, fundName, fundOwner, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     const accessorValue = await vaultProxy.getAccessor();
     expect(accessorValue).toMatchAddress(mockVaultAccessor);
@@ -84,24 +85,18 @@ describe('init', () => {
 describe('addTrackedAsset', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser],
-      config: { weth },
+      accounts: [arbitraryUser],
+      weth,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.connect(randomUser).addTrackedAsset(weth)).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(arbitraryUser).addTrackedAsset(weth)).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
 
   it('skip if the asset already exists', async () => {
-    const {
-      deployment: {
-        tokens: { weth },
-      },
-      mockVaultAccessor,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { weth, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
     await mockVaultAccessor.forward(vaultProxy.addTrackedAsset, weth);
@@ -115,32 +110,13 @@ describe('addTrackedAsset', () => {
 
   it('does not allow exceeding the tracked assets limit', async () => {
     const {
-      accounts: [fundOwner],
-      deployment: {
-        compoundTokens: { cbat, ccomp, cdai, ceth, cuni },
-        dispatcher,
-        fundDeployer,
-        integrationManager,
-        tokens: {
-          weth: denominationAsset,
-          mln: extraAsset,
-          bat,
-          bnb,
-          bnt,
-          comp,
-          dai,
-          knc,
-          link,
-          mana,
-          ren,
-          rep,
-          uni,
-          usdc,
-          usdt,
-          zrx,
-        },
-        trackedAssetsAdapter,
-      },
+      fundOwner,
+      weth,
+      dispatcher,
+      fundDeployer,
+      integrationManager,
+      trackedAssetsAdapter,
+      config,
     } = await provider.snapshot(snapshot);
 
     // Reset the deployed FundDeployer as the currentFundDeployer
@@ -151,8 +127,32 @@ describe('addTrackedAsset', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset,
+      denominationAsset: weth,
     });
+
+    const assets = [
+      new StandardToken(config.primitives.bat, whales.bat),
+      new StandardToken(config.primitives.bnb, whales.bnb),
+      new StandardToken(config.primitives.bnt, whales.bnt),
+      new StandardToken(config.primitives.comp, whales.comp),
+      new StandardToken(config.primitives.dai, whales.dai),
+      new StandardToken(config.primitives.knc, whales.knc),
+      new StandardToken(config.primitives.link, whales.link),
+      new StandardToken(config.primitives.mana, whales.mana),
+      new StandardToken(config.primitives.mln, whales.mln),
+      new StandardToken(config.primitives.rep, whales.rep),
+      new StandardToken(config.primitives.ren, whales.ren),
+      new StandardToken(config.primitives.uni, whales.uni),
+      new StandardToken(config.primitives.usdc, whales.usdc),
+      new StandardToken(config.primitives.usdt, whales.usdt),
+      new StandardToken(config.primitives.zrx, whales.zrx),
+      new StandardToken(config.compound.ctokens.czrx, whales.czrx),
+      new StandardToken(config.compound.ctokens.ccomp, whales.ccomp),
+      new StandardToken(config.compound.ctokens.cusdc, whales.cusdc),
+      new StandardToken(config.synthetix.susd, whales.susd),
+    ];
+
+    const extra = new StandardToken(config.compound.ctokens.cuni, whales.cuni);
 
     // Seed with 19 assets to reach the max assets limit
     // (since the denomination asset is already tracked).
@@ -162,27 +162,7 @@ describe('addTrackedAsset', () => {
       vaultProxy,
       integrationManager,
       trackedAssetsAdapter,
-      assets: [
-        bat,
-        bnb,
-        bnt,
-        comp,
-        dai,
-        knc,
-        link,
-        mana,
-        ren,
-        rep,
-        uni,
-        usdc,
-        usdt,
-        zrx,
-        cbat,
-        ccomp,
-        cdai,
-        ceth,
-        cuni,
-      ],
+      assets,
     });
 
     // Adding a new asset should fail
@@ -193,19 +173,13 @@ describe('addTrackedAsset', () => {
         vaultProxy,
         integrationManager,
         trackedAssetsAdapter,
-        assets: [extraAsset],
+        assets: [extra],
       }),
     ).rejects.toBeRevertedWith('Limit exceeded');
   });
 
   it('works as expected', async () => {
-    const {
-      deployment: {
-        tokens: { weth },
-      },
-      mockVaultAccessor,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { weth, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
 
@@ -225,22 +199,18 @@ describe('addTrackedAsset', () => {
 describe('removeTrackedAsset', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser],
-      config: { weth },
+      accounts: [arbitraryUser],
+      weth,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.connect(randomUser).removeTrackedAsset(weth)).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(arbitraryUser).removeTrackedAsset(weth)).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
 
   it('skip if removing a non-tracked asset', async () => {
-    const {
-      config: { weth },
-      mockVaultAccessor,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { weth, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
     await mockVaultAccessor.forward(vaultProxy.removeTrackedAsset, weth);
 
@@ -249,13 +219,10 @@ describe('removeTrackedAsset', () => {
   });
 
   it('works as expected', async () => {
-    const {
-      deployment: {
-        tokens: { weth, mln, knc },
-      },
-      mockVaultAccessor,
-      vaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { weth, config, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
+
+    const mln = new StandardToken(config.primitives.mln, whales.mln);
+    const knc = new StandardToken(config.primitives.knc, whales.knc);
 
     await weth.transfer(vaultProxy, utils.parseEther('1'));
     await mln.transfer(vaultProxy, utils.parseEther('1'));
@@ -277,22 +244,20 @@ describe('removeTrackedAsset', () => {
 describe('withdrawAssetTo', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser],
-      config: { weth },
+      accounts: [arbitraryUser],
+      weth,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultProxy.connect(randomUser).withdrawAssetTo(weth, randomAddress(), utils.parseEther('2')),
+      vaultProxy.connect(arbitraryUser).withdrawAssetTo(weth, randomAddress(), utils.parseEther('2')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
   it('partially withdraw an asset balance', async () => {
     const {
       accounts: [investor],
-      deployment: {
-        tokens: { weth },
-      },
+      weth,
       mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
@@ -329,22 +294,20 @@ describe('withdrawAssetTo', () => {
 describe('approveAssetSpender', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser, investor],
-      config: { weth },
+      accounts: [arbitraryUser, investor],
+      weth,
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultProxy.connect(randomUser).approveAssetSpender(weth, investor, utils.parseEther('1')),
+      vaultProxy.connect(arbitraryUser).approveAssetSpender(weth, investor, utils.parseEther('1')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
   it('works as expected', async () => {
     const {
       accounts: [investor],
-      deployment: {
-        tokens: { weth },
-      },
+      weth,
       mockVaultAccessor,
       vaultProxy,
     } = await provider.snapshot(snapshot);
@@ -366,13 +329,13 @@ describe('approveAssetSpender', () => {
 describe('mintShares', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser, investor],
+      accounts: [arbitraryUser, investor],
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.connect(randomUser).mintShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
-      'Only the designated accessor can make this call',
-    );
+    await expect(
+      vaultProxy.connect(arbitraryUser).mintShares(investor, utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
   it('does not allow mint to a zero address', async () => {
@@ -413,13 +376,13 @@ describe('mintShares', () => {
 describe('burnShares', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser, investor],
+      accounts: [arbitraryUser, investor],
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
-    await expect(vaultProxy.connect(randomUser).burnShares(investor, utils.parseEther('1'))).rejects.toBeRevertedWith(
-      'Only the designated accessor can make this call',
-    );
+    await expect(
+      vaultProxy.connect(arbitraryUser).burnShares(investor, utils.parseEther('1')),
+    ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
   it('does not allow burn from a zero address', async () => {
@@ -501,12 +464,12 @@ describe('burnShares', () => {
 describe('transferShares', () => {
   it('can only be called by the accessor', async () => {
     const {
-      accounts: [randomUser, investor1, investor2],
+      accounts: [arbitraryUser, investor1, investor2],
       vaultProxy,
     } = await provider.snapshot(snapshot);
 
     await expect(
-      vaultProxy.connect(randomUser).transferShares(investor1, investor2, utils.parseEther('1')),
+      vaultProxy.connect(arbitraryUser).transferShares(investor1, investor2, utils.parseEther('1')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 

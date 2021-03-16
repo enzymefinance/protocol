@@ -7,7 +7,7 @@ async function snapshot() {
   const {
     accounts,
     deployer,
-    deployment: { Dispatcher: dispatcher },
+    deployment: { dispatcher },
   } = await deployProtocolFixture();
 
   const mockVaultLib1 = await MockVaultLib.deploy(deployer);

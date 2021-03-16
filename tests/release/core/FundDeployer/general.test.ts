@@ -1,33 +1,24 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { ReleaseStatusTypes } from '@enzymefinance/protocol';
-import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets initial state', async () => {
-    const {
-      config: { deployer, registeredVaultCalls },
-      deployment: { dispatcher, fundDeployer, vaultLib },
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, vaultLib, dispatcher } = fork.deployment;
 
     const getCreatorCall = await fundDeployer.getCreator();
-    expect(getCreatorCall).toMatchAddress(deployer);
+    expect(getCreatorCall).toMatchAddress(fork.deployer);
 
     const getDispatcherCall = await fundDeployer.getDispatcher();
     expect(getDispatcherCall).toMatchAddress(dispatcher);
 
     const getOwnerCall = await fundDeployer.getOwner();
-    expect(getOwnerCall).toMatchAddress(deployer);
+    expect(getOwnerCall).toMatchAddress(fork.deployer);
 
     const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
     expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Live);
@@ -35,11 +26,9 @@ describe('constructor', () => {
     const getVaultLibCall = await fundDeployer.getVaultLib();
     expect(getVaultLibCall).toMatchAddress(vaultLib);
 
-    for (const key in registeredVaultCalls.contracts) {
-      const isRegisteredVaultCallCall = await fundDeployer.isRegisteredVaultCall(
-        registeredVaultCalls.contracts[key],
-        registeredVaultCalls.selectors[key],
-      );
+    for (const [contract, selector] of fork.config.vaultCalls) {
+      const isRegisteredVaultCallCall = await fundDeployer.isRegisteredVaultCall(contract, selector);
+
       expect(isRegisteredVaultCallCall).toBe(true);
     }
   });
@@ -49,9 +38,7 @@ describe('setComptrollerLib', () => {
   it.todo('emits ControllerLibSet event');
 
   it('is set during deployment and can only be set once', async () => {
-    const {
-      deployment: { fundDeployer, comptrollerLib },
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, comptrollerLib } = fork.deployment;
 
     const comptrollerLibCall = await fundDeployer.getComptrollerLib();
     expect(comptrollerLibCall).toMatchAddress(comptrollerLib);
@@ -72,10 +59,7 @@ describe('setReleaseStatus', () => {
   it.todo('can only be called when a comptroller lib is set');
 
   it('correctly handles setting the release status', async () => {
-    const {
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
-
+    const { fundDeployer } = fork.deployment;
     const receipt = await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
     // ReleaseStatusSet event is emitted

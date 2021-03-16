@@ -1,4 +1,5 @@
-import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import { utils } from 'ethers';
+import { ChainlinkRateAsset, sighash } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { DeploymentConfig, saveConfig } from '../../utils/config';
@@ -138,7 +139,6 @@ const ctokens = {
   cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
   ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
   cdai: '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643',
-  crep: '0x158079ee67fce2f58472a96584a73c7ab9ac95c1',
   cuni: '0x35A18000230DA775CAc24873d00Ff85BccdeD550',
   cusdc: '0x39aa39c021dfbae8fac545936693ac917d5e7563',
   cusdt: '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9',
@@ -216,6 +216,9 @@ const pools = {
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
+const curveMinter = '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0';
+const synthetixDelegateApprovals = '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f';
+
 // prettier-ignore
 const mainnetConfig: DeploymentConfig = {
   aave: {
@@ -241,7 +244,7 @@ const mainnetConfig: DeploymentConfig = {
   },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
-    minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',
+    minter: curveMinter,
     pools: {
       steth: {
         invariantProxyAsset: weth,
@@ -272,7 +275,7 @@ const mainnetConfig: DeploymentConfig = {
   },
   synthetix: {
     addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2',
-    delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
+    delegateApprovals: synthetixDelegateApprovals,
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     snx: primitives.snx,
     susd: primitives.susd,
@@ -297,6 +300,15 @@ const mainnetConfig: DeploymentConfig = {
     ],
     exchange: '0x080bf510fcbf18b91105470639e9561022937712',
   },
+  vaultCalls: [
+    [
+      synthetixDelegateApprovals,
+      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)')),
+    ],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)'))],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])'))],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)'))],
+  ],
 }
 
 const fn: DeployFunction = async (hre) => {

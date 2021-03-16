@@ -1,47 +1,68 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { feeManagerConfigArgs, ReleaseStatusTypes, StandardToken } from '@enzymefinance/protocol';
+import {
+  feeManagerConfigArgs,
+  MockReentrancyToken,
+  ReleaseStatusTypes,
+  StandardToken,
+  WETH,
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
   buyShares,
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   generateRegisteredMockFees,
   getAssetBalances,
   redeemShares,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
-    accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    accounts: [fundOwner, ...remainingAccounts],
+  } = await deployProtocolFixture();
 
+  const weth = new WETH(config.weth, whales.weth);
   const fees = await generateRegisteredMockFees({
-    deployer: config.deployer,
+    deployer,
     feeManager: deployment.feeManager,
   });
 
-  const denominationAsset = deployment.tokens.weth;
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     signer: fundOwner,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset,
+    denominationAsset: weth,
   });
 
+  const reentrancyToken = await MockReentrancyToken.deploy(deployer);
+  await deployment.chainlinkPriceFeed.addPrimitives(
+    [reentrancyToken],
+    [config.chainlink.aggregators.dai[0]],
+    [config.chainlink.aggregators.dai[1]],
+  );
+
+  // Seed some accounts with some weth.
+  const seedAmount = utils.parseEther('100');
+  const seedAccounts = [fundOwner, remainingAccounts[0], remainingAccounts[1]];
+  await Promise.all(seedAccounts.map((account) => weth.transfer(account.address, seedAmount)));
+
   return {
+    weth,
     fees,
+    deployer,
     accounts: remainingAccounts,
     config,
     deployment,
+    reentrancyToken,
     fund: {
+      denominationAsset: weth,
       comptrollerProxy,
-      denominationAsset,
       fundOwner,
       vaultProxy,
     },
@@ -51,12 +72,13 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('buyShares', () => {
   it('does not allow re-entrance', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { mrt: denominationAsset },
-      },
+      deployment: { fundDeployer },
       accounts: [signer, buyer],
+      reentrancyToken: denominationAsset,
     } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('2');
+    await denominationAsset.mintFor(signer, investmentAmount);
 
     const { comptrollerProxy } = await createNewFund({
       signer,
@@ -65,8 +87,6 @@ describe('buyShares', () => {
     });
 
     await denominationAsset.makeItReentracyToken(comptrollerProxy);
-
-    const investmentAmount = utils.parseEther('2');
     await expect(
       buyShares({
         comptrollerProxy,
@@ -80,12 +100,10 @@ describe('buyShares', () => {
 
   it('does not allow a fund that is pending migration', async () => {
     const {
+      deployer,
       accounts: [signer, buyer],
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -150,10 +168,8 @@ describe('buyShares', () => {
 
   it('works for a fund with no extensions (single buyShares)', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [signer, buyer],
     } = await provider.snapshot(snapshot);
 
@@ -208,10 +224,8 @@ describe('buyShares', () => {
 
   it('fulfills multiple shares orders and emits an event for each', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer },
+      fund: { denominationAsset },
       accounts: [signer, buyer1, buyer2],
     } = await provider.snapshot(snapshot);
 
@@ -256,10 +270,8 @@ describe('buyShares', () => {
 
   it('works for a fund with a non-18 decimal denominationAsset', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { usdc: denominationAsset },
-      },
+      deployment: { fundDeployer },
+      fund: { denominationAsset },
       accounts: [signer, buyer],
     } = await provider.snapshot(snapshot);
 
@@ -312,10 +324,8 @@ describe('buyShares', () => {
 
   it('does not allow a paused release, unless overridePause is set', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer },
+      fund: { denominationAsset },
       accounts: [signer, buyer, fundOwner],
     } = await provider.snapshot(snapshot);
 
@@ -358,13 +368,12 @@ describe('redeemShares', () => {
   it('cannot be re-entered', async () => {
     const {
       accounts: [fundManager, investor],
-      deployment: {
-        fundDeployer,
-        tokens: { mrt: denominationAsset },
-      },
+      deployment: { fundDeployer },
+      reentrancyToken: denominationAsset,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('2');
+    await denominationAsset.mintFor(investor, utils.parseEther('10'));
+
     const { comptrollerProxy } = await createNewFund({
       signer: fundManager,
       fundDeployer,
@@ -372,7 +381,7 @@ describe('redeemShares', () => {
       investment: {
         signer: investor,
         buyers: [investor],
-        investmentAmounts: [investmentAmount],
+        investmentAmounts: [utils.parseEther('2')],
       },
     });
 
@@ -383,11 +392,9 @@ describe('redeemShares', () => {
 
   it('returns the token revert reason on a failed transfer', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      deployer,
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
     } = await provider.snapshot(snapshot);
 
@@ -423,10 +430,8 @@ describe('redeemShares', () => {
   it('handles a preRedeemSharesHook failure', async () => {
     const {
       accounts: [fundManager, investor],
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       fees: { mockContinuousFeeSettleOnly },
     } = await provider.snapshot(snapshot);
 
@@ -472,10 +477,8 @@ describe('redeemShares', () => {
 
   it('allows sender to redeem all their shares', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
     } = await provider.snapshot(snapshot);
 
@@ -510,15 +513,16 @@ describe('redeemShares', () => {
 describe('redeemSharesDetailed', () => {
   it('cannot be re-entered', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { mrt: denominationAsset },
-      },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
+      reentrancyToken: denominationAsset,
     } = await provider.snapshot(snapshot);
 
-    // Create a new fund, and invested in equally by the fund manager and an investor
     const investmentAmount = utils.parseEther('2');
+    await denominationAsset.mintFor(fundManager, investmentAmount);
+    await denominationAsset.mintFor(investor, investmentAmount);
+
+    // Create a new fund, and invested in equally by the fund manager and an investor
     const { comptrollerProxy } = await createNewFund({
       signer: fundManager,
       fundDeployer,
@@ -564,10 +568,8 @@ describe('redeemSharesDetailed', () => {
 
   it('does not allow duplicate _additionalAssets', async () => {
     const {
+      weth,
       accounts: [investor],
-      deployment: {
-        tokens: { weth },
-      },
       fund: { comptrollerProxy },
     } = await provider.snapshot(snapshot);
 
@@ -583,10 +585,8 @@ describe('redeemSharesDetailed', () => {
 
   it('does not allow duplicate _assetsToSkip', async () => {
     const {
+      weth,
       accounts: [investor],
-      deployment: {
-        tokens: { weth },
-      },
       fund: { comptrollerProxy },
     } = await provider.snapshot(snapshot);
 
@@ -602,10 +602,8 @@ describe('redeemSharesDetailed', () => {
 
   it('does not allow a _sharesQuantity greater than the redeemer balance', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
     } = await provider.snapshot(snapshot);
 
@@ -643,10 +641,8 @@ describe('redeemSharesDetailed', () => {
 
   it('does not allow a redemption if there are no payoutAssets', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
     } = await provider.snapshot(snapshot);
 
@@ -684,11 +680,12 @@ describe('redeemSharesDetailed', () => {
 
   it('handles a valid call (one additional asset)', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset, mln: untrackedAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
+      config: {
+        primitives: { mln },
+      },
     } = await provider.snapshot(snapshot);
 
     // Create a new fund, and invested in equally by the fund manager and an investor
@@ -713,6 +710,7 @@ describe('redeemSharesDetailed', () => {
     });
 
     // Send untracked asset directly to fund
+    const untrackedAsset = new StandardToken(mln, whales.mln);
     const untrackedAssetBalance = utils.parseEther('2');
     await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
 
@@ -764,11 +762,12 @@ describe('redeemSharesDetailed', () => {
 
   it('handles a valid call (one additional asset and one asset to ignore)', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset, mln: untrackedAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor],
+      config: {
+        primitives: { mln },
+      },
     } = await provider.snapshot(snapshot);
 
     // Create a new fund, and invested in equally by the fund manager and an investor
@@ -793,6 +792,7 @@ describe('redeemSharesDetailed', () => {
     });
 
     // Send untracked asset directly to fund
+    const untrackedAsset = new StandardToken(mln, whales.mln);
     const untrackedAssetBalance = utils.parseEther('2');
     await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
 
@@ -846,12 +846,12 @@ describe('redeemSharesDetailed', () => {
 describe('sharesActionTimelock', () => {
   it('does not affect buying or redeeming shares if set to 0', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor, buySharesCaller],
     } = await provider.snapshot(snapshot);
+
+    await denominationAsset.transfer(buySharesCaller, utils.parseEther('10'));
 
     // Create a new fund, without a timelock
     const { comptrollerProxy } = await createNewFund({
@@ -888,14 +888,15 @@ describe('sharesActionTimelock', () => {
 
   it('is respected when buying or redeeming shares (no pending migration)', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
       accounts: [fundManager, investor, buySharesCaller],
     } = await provider.snapshot(snapshot);
 
     const failureMessage = 'Shares action timelocked';
+
+    // Transfer some weth to the buySharesCaller account.
+    await denominationAsset.transfer(buySharesCaller, utils.parseEther('10'));
 
     // Create a new fund, with a timelock
     const sharesActionTimelock = 100;
@@ -978,11 +979,9 @@ describe('sharesActionTimelock', () => {
 
   it('is skipped when redeeming shares if there is a pending migration', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -992,14 +991,17 @@ describe('sharesActionTimelock', () => {
         integrationManager,
         policyManager,
         synthetixPriceFeed,
-        tokens: { weth: denominationAsset },
         valueInterpreter,
         vaultLib,
       },
+      fund: { denominationAsset },
       accounts: [fundOwner, investor, buySharesCaller],
     } = await provider.snapshot(snapshot);
 
     const failureMessage = 'Shares action timelocked';
+
+    // Transfer some weth to the buySharesCaller account.
+    await denominationAsset.transfer(buySharesCaller, utils.parseEther('10'));
 
     // Create a new fund, with a timelock
     const sharesActionTimelock = 100;

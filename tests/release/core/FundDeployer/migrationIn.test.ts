@@ -1,72 +1,83 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
+  IMigrationHookHandler,
+  MigrationOutHook,
+  MockVaultLib,
+  ReleaseStatusTypes,
+  StandardToken,
+} from '@enzymefinance/protocol';
+import {
   createMigratedFundConfig,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
-    accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     config,
-    deployment,
-  } = await defaultTestDeployment(provider);
+    accounts: [fundOwner, arbitraryUser, arbitraryComptrollerProxyCreator],
+    deployment: { dispatcher, vaultLib, fundDeployer, feeManager, policyManager },
+  } = await deployProtocolFixture();
+
+  const denominationAsset = new StandardToken(config.weth, deployer);
 
   // Mock a FundDeployer contract for the prev fund
-  const mockPrevFundDeployer = await IMigrationHookHandler.mock(config.deployer);
+  const mockPrevFundDeployer = await IMigrationHookHandler.mock(deployer);
   await mockPrevFundDeployer.invokeMigrationOutHook.returns(undefined);
 
   // Set the mock FundDeployer on Dispatcher
-  await deployment.dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
+  await dispatcher.setCurrentFundDeployer(mockPrevFundDeployer);
 
   // Deploy a migratable VaultProxy using a mock VaultLib
-  const mockPrevVaultAccessor = await IMigrationHookHandler.mock(config.deployer);
-  const mockPrevVaultLib = await MockVaultLib.deploy(config.deployer);
+  const mockPrevVaultAccessor = await IMigrationHookHandler.mock(deployer);
+  const mockPrevVaultLib = await MockVaultLib.deploy(deployer);
   const receipt = await mockPrevFundDeployer.forward(
-    deployment.dispatcher.deployVaultProxy,
+    dispatcher.deployVaultProxy,
     mockPrevVaultLib,
     fundOwner,
     mockPrevVaultAccessor,
     '',
   );
 
-  const eventFragment = deployment.dispatcher.abi.getEvent('VaultProxyDeployed');
+  const eventFragment = dispatcher.abi.getEvent('VaultProxyDeployed');
   const vaultProxyDeployedEvent = extractEvent(receipt, eventFragment)[0];
   const vaultProxyAddress = vaultProxyDeployedEvent.args.vaultProxy;
 
   // Set real fund deployer on Dispatcher
-  await deployment.dispatcher.setCurrentFundDeployer(deployment.fundDeployer);
+  await dispatcher.setCurrentFundDeployer(fundDeployer);
 
   // Get mock fees and mock policies data with which to configure funds
   const feeManagerConfigData = await generateFeeManagerConfigWithMockFees({
-    deployer: config.deployer,
-    feeManager: deployment.feeManager,
+    deployer,
+    feeManager,
   });
 
   const policyManagerConfigData = await generatePolicyManagerConfigWithMockPolicies({
-    deployer: config.deployer,
-    policyManager: deployment.policyManager,
+    deployer,
+    policyManager,
   });
 
   // Create fund config on the FundDeployer
   const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
     signer: fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    fundDeployer,
+    denominationAsset,
     feeManagerConfigData,
     policyManagerConfigData,
   });
 
   return {
-    accounts: remainingAccounts,
+    arbitraryUser,
+    arbitraryComptrollerProxyCreator,
     nextComptrollerProxy,
-    config,
-    deployment,
     fundOwner,
+    denominationAsset,
+    fundDeployer,
+    vaultLib,
+    dispatcher,
     mockPrevFundDeployer,
     vaultProxyAddress,
   };
@@ -74,15 +85,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('signalMigration', () => {
   it('can only be called by the comptrollerProxy creator', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
-      fundOwner,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { arbitraryUser, fundDeployer, denominationAsset, fundOwner, vaultProxyAddress } = await provider.snapshot(
+      snapshot,
+    );
 
     const { comptrollerProxy } = await createMigratedFundConfig({
       signer: fundOwner,
@@ -91,38 +96,31 @@ describe('signalMigration', () => {
     });
 
     await expect(
-      fundDeployer.connect(randomUser).signalMigration(vaultProxyAddress, comptrollerProxy),
+      fundDeployer.connect(arbitraryUser).signalMigration(vaultProxyAddress, comptrollerProxy),
     ).rejects.toBeRevertedWith('Only the ComptrollerProxy creator can call this function');
   });
 
   it('can only be called by a permissioned migrator of the vault', async () => {
     const {
-      accounts: [randomComptrollerProxyCreator],
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      arbitraryComptrollerProxyCreator,
+      fundDeployer,
+      denominationAsset,
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createMigratedFundConfig({
-      signer: randomComptrollerProxyCreator,
+      signer: arbitraryComptrollerProxyCreator,
       fundDeployer,
       denominationAsset,
     });
 
     await expect(
-      fundDeployer.connect(randomComptrollerProxyCreator).signalMigration(vaultProxyAddress, comptrollerProxy),
+      fundDeployer.connect(arbitraryComptrollerProxyCreator).signalMigration(vaultProxyAddress, comptrollerProxy),
     ).rejects.toBeRevertedWith('Only a permissioned migrator can call this function');
   });
 
   it('does not allow the release to be paused', async () => {
-    const {
-      deployment: { fundDeployer },
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, fundOwner, nextComptrollerProxy, vaultProxyAddress } = await provider.snapshot(snapshot);
 
     // Pause the release
     await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
@@ -134,7 +132,9 @@ describe('signalMigration', () => {
 
   it('correctly handles valid call', async () => {
     const {
-      deployment: { dispatcher, fundDeployer, vaultLib },
+      dispatcher,
+      fundDeployer,
+      vaultLib,
       fundOwner,
       nextComptrollerProxy,
       vaultProxyAddress,
@@ -155,12 +155,10 @@ describe('signalMigration', () => {
 describe('executeMigration', () => {
   it('can only be called by a permissioned migrator of the vault', async () => {
     const {
-      accounts: [randomUser],
-      deployment: {
-        dispatcher,
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
+      arbitraryUser,
+      dispatcher,
+      fundDeployer,
+      denominationAsset,
       fundOwner,
       vaultProxyAddress,
     } = await provider.snapshot(snapshot);
@@ -177,18 +175,13 @@ describe('executeMigration', () => {
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
-    await expect(fundDeployer.connect(randomUser).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
+    await expect(fundDeployer.connect(arbitraryUser).executeMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
 
   it('does not allow the release to be paused', async () => {
-    const {
-      deployment: { fundDeployer },
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, fundOwner, nextComptrollerProxy, vaultProxyAddress } = await provider.snapshot(snapshot);
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
@@ -200,12 +193,9 @@ describe('executeMigration', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      deployment: { dispatcher, fundDeployer },
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, fundDeployer, fundOwner, nextComptrollerProxy, vaultProxyAddress } = await provider.snapshot(
+      snapshot,
+    );
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
@@ -229,15 +219,9 @@ describe('executeMigration', () => {
 
 describe('cancelMigration', () => {
   it('can only be called by a permissioned migrator of the vault', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: {
-        fundDeployer,
-        tokens: { weth: denominationAsset },
-      },
-      fundOwner,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { arbitraryUser, fundDeployer, denominationAsset, fundOwner, vaultProxyAddress } = await provider.snapshot(
+      snapshot,
+    );
 
     const { comptrollerProxy } = await createMigratedFundConfig({
       signer: fundOwner,
@@ -246,18 +230,13 @@ describe('cancelMigration', () => {
     });
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, comptrollerProxy);
-    await expect(fundDeployer.connect(randomUser).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
+    await expect(fundDeployer.connect(arbitraryUser).cancelMigration(vaultProxyAddress)).rejects.toBeRevertedWith(
       'Only a permissioned migrator can call this function',
     );
   });
 
   it('does not allow the release to be paused', async () => {
-    const {
-      deployment: { fundDeployer },
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, fundOwner, nextComptrollerProxy, vaultProxyAddress } = await provider.snapshot(snapshot);
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
@@ -269,12 +248,9 @@ describe('cancelMigration', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      deployment: { dispatcher, fundDeployer },
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, fundDeployer, fundOwner, nextComptrollerProxy, vaultProxyAddress } = await provider.snapshot(
+      snapshot,
+    );
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
     await fundDeployer.connect(fundOwner).cancelMigration(vaultProxyAddress);
@@ -288,7 +264,9 @@ describe('emergency functions', () => {
   describe('signalMigrationEmergency', () => {
     it('correctly handles valid call', async () => {
       const {
-        deployment: { dispatcher, fundDeployer, vaultLib },
+        dispatcher,
+        fundDeployer,
+        vaultLib,
         fundOwner,
         mockPrevFundDeployer,
         nextComptrollerProxy,
@@ -323,7 +301,9 @@ describe('emergency functions', () => {
   describe('executeMigrationEmergency', () => {
     it('correctly handles valid call', async () => {
       const {
-        deployment: { dispatcher, fundDeployer, vaultLib },
+        dispatcher,
+        fundDeployer,
+        vaultLib,
         fundOwner,
         mockPrevFundDeployer,
         nextComptrollerProxy,
@@ -358,7 +338,9 @@ describe('emergency functions', () => {
   describe('cancelMigrationEmergency', () => {
     it('correctly handles valid call', async () => {
       const {
-        deployment: { dispatcher, fundDeployer, vaultLib },
+        dispatcher,
+        fundDeployer,
+        vaultLib,
         fundOwner,
         mockPrevFundDeployer,
         nextComptrollerProxy,

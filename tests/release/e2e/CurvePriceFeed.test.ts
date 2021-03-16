@@ -10,22 +10,22 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const curvePriceFeed = fork.deployment.CurvePriceFeed;
+    const curvePriceFeed = fork.deployment.curvePriceFeed;
 
     expect(await curvePriceFeed.getAddressProvider()).toMatchAddress(fork.config.curve.addressProvider);
-    expect(await curvePriceFeed.getDispatcher()).toMatchAddress(fork.deployment.Dispatcher);
+    expect(await curvePriceFeed.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
   });
 });
 
 describe('calcUnderlyingValues', () => {
   it('does not allow an unsupported derivative', async () => {
-    await expect(fork.deployment.CurvePriceFeed.calcUnderlyingValues(randomAddress(), 1)).rejects.toBeRevertedWith(
+    await expect(fork.deployment.curvePriceFeed.calcUnderlyingValues(randomAddress(), 1)).rejects.toBeRevertedWith(
       '_derivative is not supported',
     );
   });
 
   it('returns correct values (18-decimal invariant asset proxy)', async () => {
-    const curvePriceFeed = fork.deployment.CurvePriceFeed;
+    const curvePriceFeed = fork.deployment.curvePriceFeed;
     const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
     const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
@@ -44,7 +44,7 @@ describe('calcUnderlyingValues', () => {
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
-    const curvePriceFeed = fork.deployment.CurvePriceFeed;
+    const curvePriceFeed = fork.deployment.curvePriceFeed;
 
     // Curve pool: 3pool
     const curvePool = new ICurveLiquidityPool('0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7', provider);
@@ -76,7 +76,7 @@ describe('calcUnderlyingValues', () => {
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18-decimal invariant asset proxy)', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
@@ -94,9 +94,9 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
-    const aggregatedDerivativePriceFeed = fork.deployment.AggregatedDerivativePriceFeed;
-    const curvePriceFeed = fork.deployment.CurvePriceFeed;
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const aggregatedDerivativePriceFeed = fork.deployment.aggregatedDerivativePriceFeed;
+    const curvePriceFeed = fork.deployment.curvePriceFeed;
+    const valueInterpreter = fork.deployment.valueInterpreter;
 
     // Curve pool: 3pool
     const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
@@ -123,46 +123,46 @@ describe('expected values', () => {
 describe('derivatives registry', () => {
   describe('addDerivatives', () => {
     it('does not allow an empty _derivatives array', async () => {
-      await expect(fork.deployment.CurvePriceFeed.addDerivatives([], [randomAddress()])).rejects.toBeRevertedWith(
+      await expect(fork.deployment.curvePriceFeed.addDerivatives([], [randomAddress()])).rejects.toBeRevertedWith(
         'Empty _derivatives',
       );
     });
 
     it('does not allow unequal _derivatives and _invariantProxyAssets arrays', async () => {
-      await expect(fork.deployment.CurvePriceFeed.addDerivatives([randomAddress()], [])).rejects.toBeRevertedWith(
+      await expect(fork.deployment.curvePriceFeed.addDerivatives([randomAddress()], [])).rejects.toBeRevertedWith(
         'Unequal arrays',
       );
     });
 
     it('does not allow an empty derivative', async () => {
       await expect(
-        fork.deployment.CurvePriceFeed.addDerivatives([constants.AddressZero], [randomAddress()]),
+        fork.deployment.curvePriceFeed.addDerivatives([constants.AddressZero], [randomAddress()]),
       ).rejects.toBeRevertedWith('Empty derivative');
     });
 
     it('does not allow an empty invariantProxyAsset', async () => {
       await expect(
-        fork.deployment.CurvePriceFeed.addDerivatives([randomAddress()], [constants.AddressZero]),
+        fork.deployment.curvePriceFeed.addDerivatives([randomAddress()], [constants.AddressZero]),
       ).rejects.toBeRevertedWith('Empty invariantProxyAsset');
     });
 
     it('does not allow an already-added derivative', async () => {
       await expect(
-        fork.deployment.CurvePriceFeed.addDerivatives([fork.config.curve.pools.steth.lpToken], [randomAddress()]),
+        fork.deployment.curvePriceFeed.addDerivatives([fork.config.curve.pools.steth.lpToken], [randomAddress()]),
       ).rejects.toBeRevertedWith('Value already set');
     });
 
     it('does not allow an invalid derivative', async () => {
       // Revert reason tough to reach as most assets will revert on Curve's end
       await expect(
-        fork.deployment.CurvePriceFeed.addDerivatives([fork.config.primitives.mln], [fork.config.weth]),
+        fork.deployment.curvePriceFeed.addDerivatives([fork.config.primitives.mln], [fork.config.weth]),
       ).rejects.toBeReverted();
     });
 
     it.todo('does not allow a derivative if the ValueInterpreter cannot produce a valid price for it');
 
     it('adds multiple derivatives (both LP and liquidity gauge) and emits an event for each', async () => {
-      const curvePriceFeed = fork.deployment.CurvePriceFeed;
+      const curvePriceFeed = fork.deployment.curvePriceFeed;
 
       // Curve pool: Aave
       const curvePool = '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE';
@@ -227,23 +227,23 @@ describe('derivatives registry', () => {
 
   describe('removeDerivatives', () => {
     it('does not allow an empty _derivatives array', async () => {
-      await expect(fork.deployment.CurvePriceFeed.removeDerivatives([])).rejects.toBeRevertedWith('Empty _derivatives');
+      await expect(fork.deployment.curvePriceFeed.removeDerivatives([])).rejects.toBeRevertedWith('Empty _derivatives');
     });
 
     it('does not allow an empty derivative', async () => {
-      await expect(fork.deployment.CurvePriceFeed.removeDerivatives([constants.AddressZero])).rejects.toBeRevertedWith(
+      await expect(fork.deployment.curvePriceFeed.removeDerivatives([constants.AddressZero])).rejects.toBeRevertedWith(
         'Empty derivative',
       );
     });
 
     it('does not allow a non-added derivative', async () => {
-      await expect(fork.deployment.CurvePriceFeed.removeDerivatives([randomAddress()])).rejects.toBeRevertedWith(
+      await expect(fork.deployment.curvePriceFeed.removeDerivatives([randomAddress()])).rejects.toBeRevertedWith(
         'Value is not set',
       );
     });
 
     it('removes multiple derivatives from registry and emits an event for each', async () => {
-      const curvePriceFeed = fork.deployment.CurvePriceFeed;
+      const curvePriceFeed = fork.deployment.curvePriceFeed;
       const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
       const curveLiquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 

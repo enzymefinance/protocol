@@ -24,7 +24,7 @@ describe('derivative gas costs', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
     });
 
@@ -48,9 +48,9 @@ describe('derivative gas costs', () => {
     await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.UniswapV2Adapter,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
       tokenA: weth,
       tokenB: mln,
       amountADesired: initialTokenAmount.div(2),
@@ -70,8 +70,8 @@ describe('derivative gas costs', () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
-    const uniswapV2PoolPriceFeed = fork.deployment.UniswapV2PoolPriceFeed;
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
 
     const token0Address = await uniswapPair.token0();
@@ -121,7 +121,7 @@ describe('calcUnderlyingValues', () => {
 
   describe('expected values', () => {
     it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
-      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const valueInterpreter = fork.deployment.valueInterpreter;
       const usdc = new StandardToken(fork.config.primitives.usdc, provider);
       const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, provider);
 
@@ -144,7 +144,7 @@ describe('calcUnderlyingValues', () => {
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
-      const valueInterpreter = fork.deployment.ValueInterpreter;
+      const valueInterpreter = fork.deployment.valueInterpreter;
       const dai = new StandardToken(fork.config.primitives.dai, provider);
       const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, provider);
 

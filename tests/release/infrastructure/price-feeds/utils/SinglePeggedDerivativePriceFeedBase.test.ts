@@ -1,24 +1,22 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { MockToken, TestSinglePeggedDerivativePriceFeed } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { getNamedSigner } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const deployer = await getNamedSigner('deployer');
 
   // Deploy mock derivative and mock underlying with same decimals
-  const mockDerivative = await MockToken.deploy(config.deployer, 'Mock Derivative', 'MOCK_D', 18);
-  const mockUnderlying = await MockToken.deploy(config.deployer, 'Mock Underlying', 'MOCK_U', 18);
+  const mockDerivative = await MockToken.deploy(deployer, 'Mock Derivative', 'MOCK_D', 18);
+  const mockUnderlying = await MockToken.deploy(deployer, 'Mock Underlying', 'MOCK_U', 18);
 
   const testSinglePeggedDerivativePriceFeed = await TestSinglePeggedDerivativePriceFeed.deploy(
-    config.deployer,
+    deployer,
     mockDerivative,
     mockUnderlying,
   );
 
   return {
-    config,
-    deployment,
+    deployer,
     mockDerivative,
     mockUnderlying,
     testSinglePeggedDerivativePriceFeed,
@@ -34,10 +32,7 @@ describe('constructor', () => {
   });
 
   it('does not allow a derivative and underlying with different decimals', async () => {
-    const {
-      config: { deployer },
-      mockDerivative,
-    } = await provider.snapshot(snapshot);
+    const { deployer, mockDerivative } = await provider.snapshot(snapshot);
 
     const mockNon18DecimalsUnderlying = await MockToken.deploy(deployer, 'Mock Underlying 2', 'MOCK_U_2', 8);
 

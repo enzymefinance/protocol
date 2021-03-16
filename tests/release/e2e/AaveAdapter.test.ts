@@ -25,7 +25,7 @@ describe('lend', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
     });
 
@@ -42,9 +42,9 @@ describe('lend', () => {
 
     const lendReceipt = await aaveLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      aaveAdapter: fork.deployment.AaveAdapter,
+      aaveAdapter: fork.deployment.aaveAdapter,
       aToken,
       amount,
     });
@@ -69,7 +69,7 @@ describe('redeem', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
     });
 
@@ -86,9 +86,9 @@ describe('redeem', () => {
 
     const redeemReceipt = await aaveRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      aaveAdapter: fork.deployment.AaveAdapter,
+      aaveAdapter: fork.deployment.aaveAdapter,
       aToken,
       amount,
     });
@@ -109,7 +109,7 @@ describe('redeem', () => {
 // TODO: Move this assertions to unit tests
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const lendingPoolAddressProvider = await aaveAdapter.getLendingPoolAddressProvider();
     expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
 
@@ -120,7 +120,7 @@ describe('constructor', () => {
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
     const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
@@ -138,7 +138,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for lending', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
     const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
@@ -164,7 +164,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.AaveAdapter, provider);
+    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
     const amount = utils.parseUnits('1', await aToken.decimals());
     const token = new StandardToken(fork.config.primitives.usdc, provider);

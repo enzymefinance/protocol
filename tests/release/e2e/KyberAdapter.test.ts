@@ -82,7 +82,7 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -92,9 +92,9 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    kyberAdapter: fork.deployment.KyberAdapter,
+    kyberAdapter: fork.deployment.kyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -113,7 +113,7 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -123,9 +123,9 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    kyberAdapter: fork.deployment.KyberAdapter,
+    kyberAdapter: fork.deployment.kyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -144,7 +144,7 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -154,9 +154,9 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
   await assertKyberTakeOrder({
     comptrollerProxy,
     vaultProxy,
-    integrationManager: fork.deployment.IntegrationManager,
+    integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    kyberAdapter: fork.deployment.KyberAdapter,
+    kyberAdapter: fork.deployment.kyberAdapter,
     outgoingAsset: outgoingAsset,
     outgoingAssetAmount,
     incomingAsset: incomingAsset,
@@ -177,7 +177,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   const outgoingAssetAmount = utils.parseEther('1');
@@ -190,9 +190,9 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
     kyberTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      kyberAdapter: fork.deployment.KyberAdapter,
+      kyberAdapter: fork.deployment.kyberAdapter,
       outgoingAsset: outgoingAsset,
       outgoingAssetAmount,
       incomingAsset: incomingAsset,
@@ -212,7 +212,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal
     signer: fundOwner as SignerWithAddress,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
-    fundDeployer: fork.deployment.FundDeployer,
+    fundDeployer: fork.deployment.fundDeployer,
   });
 
   // 1 USDC (6 decimals)
@@ -226,9 +226,9 @@ it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal
     kyberTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      kyberAdapter: fork.deployment.KyberAdapter,
+      kyberAdapter: fork.deployment.kyberAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,

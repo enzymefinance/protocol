@@ -1,23 +1,21 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { MockToken, TestPeggedDerivativesPriceFeed } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    deployment: { dispatcher },
+  } = await deployProtocolFixture();
 
-  const testPeggedDerivativesPriceFeed = await TestPeggedDerivativesPriceFeed.deploy(
-    config.deployer,
-    config.dispatcher,
-  );
+  const testPeggedDerivativesPriceFeed = await TestPeggedDerivativesPriceFeed.deploy(deployer, dispatcher);
 
   // Deploy mock derivative and mock underlying with same decimals
-  const mockDerivative = await MockToken.deploy(config.deployer, 'Mock Derivative', 'MOCK_D', 18);
-  const mockUnderlying = await MockToken.deploy(config.deployer, 'Mock Underlying', 'MOCK_U', 18);
+  const mockDerivative = await MockToken.deploy(deployer, 'Mock Derivative', 'MOCK_D', 18);
+  const mockUnderlying = await MockToken.deploy(deployer, 'Mock Underlying', 'MOCK_U', 18);
 
   return {
-    config,
-    deployment,
+    deployer,
     mockDerivative,
     mockUnderlying,
     testPeggedDerivativesPriceFeed,
@@ -26,12 +24,9 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('addDerivatives', () => {
   it('does not allow a derivative and underlying with unequal decimals', async () => {
-    const {
-      config: { deployer },
-      mockDerivative,
-      mockUnderlying,
-      testPeggedDerivativesPriceFeed,
-    } = await provider.snapshot(snapshot);
+    const { deployer, mockDerivative, mockUnderlying, testPeggedDerivativesPriceFeed } = await provider.snapshot(
+      snapshot,
+    );
 
     // Should fail with an underlying that does not match the decimals of the derivative
     const mockNon18DecimalsUnderlying = await MockToken.deploy(deployer, 'Mock Underlying 2', 'MOCK_U_2', 8);

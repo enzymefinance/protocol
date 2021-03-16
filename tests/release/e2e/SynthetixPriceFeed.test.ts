@@ -8,7 +8,7 @@ beforeEach(async () => {
 });
 
 it('returns rate for underlying token', async () => {
-  const synthetixPriceFeed = fork.deployment.SynthetixPriceFeed;
+  const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
   const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
   const susd = new StandardToken(fork.config.primitives.susd, provider);
 
@@ -36,7 +36,7 @@ it('returns rate for underlying token', async () => {
 
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals quote)', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
     const dai = new StandardToken(fork.config.primitives.dai, provider);
 
@@ -60,7 +60,7 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
-    const valueInterpreter = fork.deployment.ValueInterpreter;
+    const valueInterpreter = fork.deployment.valueInterpreter;
     const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
     const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 

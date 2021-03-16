@@ -119,27 +119,27 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
 
       const feeManagerConfig = feeManagerConfigArgs({
-        fees: [fork.deployment.ManagementFee, fork.deployment.PerformanceFee, fork.deployment.EntranceRateBurnFee],
+        fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
         settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
       });
 
       // policies
       const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-      const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.CompoundAdapter]);
+      const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
       const adapterWhitelistSettings = adapterWhitelistArgs([
-        fork.deployment.KyberAdapter,
-        fork.deployment.UniswapV2Adapter,
-        fork.deployment.TrackedAssetsAdapter,
-        fork.deployment.ChaiAdapter,
+        fork.deployment.kyberAdapter,
+        fork.deployment.uniswapV2Adapter,
+        fork.deployment.trackedAssetsAdapter,
+        fork.deployment.chaiAdapter,
       ]);
       const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
       const policyManagerConfig = policyManagerConfigArgs({
         policies: [
-          fork.deployment.MaxConcentration,
-          fork.deployment.AdapterBlacklist,
-          fork.deployment.AdapterWhitelist,
-          fork.deployment.AssetBlacklist,
+          fork.deployment.maxConcentration,
+          fork.deployment.adapterBlacklist,
+          fork.deployment.adapterWhitelist,
+          fork.deployment.assetBlacklist,
         ],
         settings: [
           maxConcentrationSettings,
@@ -151,7 +151,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const createFundTx = await createNewFund({
         signer: manager,
-        fundDeployer: fork.deployment.FundDeployer,
+        fundDeployer: fork.deployment.fundDeployer,
         fundOwner: manager,
         denominationAsset,
         feeManagerConfig,
@@ -165,10 +165,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('enables the InvestorWhitelist policy for the fund', async () => {
-      const enabled = await fork.deployment.PolicyManager.connect(manager)
+      const enabled = await fork.deployment.policyManager
+        .connect(manager)
         .enablePolicyForFund.args(
           comptrollerProxy.address,
-          fork.deployment.InvestorWhitelist,
+          fork.deployment.investorWhitelist,
           investorWhitelistArgs({
             investorsToAdd: [randomAddress(), randomAddress(), investor.address],
           }),
@@ -248,9 +249,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
       await kyberTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        kyberAdapter: fork.deployment.KyberAdapter,
+        kyberAdapter: fork.deployment.kyberAdapter,
         incomingAsset,
         minIncomingAssetAmount,
         outgoingAsset,
@@ -269,9 +270,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
       await chaiLend({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        chaiAdapter: fork.deployment.ChaiAdapter,
+        chaiAdapter: fork.deployment.chaiAdapter,
         dai: new StandardToken(fork.config.primitives.dai, provider),
         daiAmount,
         minChaiAmount: daiAmount.mul(90).div(100),
@@ -282,10 +283,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       await chaiRedeem({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
         chai,
-        chaiAdapter: fork.deployment.ChaiAdapter,
+        chaiAdapter: fork.deployment.chaiAdapter,
         chaiAmount,
         minDaiAmount: chaiAmount.mul(90).div(100),
       });
@@ -319,9 +320,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await addTrackedAssets({
         comptrollerProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        trackedAssetsAdapter: fork.deployment.TrackedAssetsAdapter,
+        trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
         incomingAssets: Object.values(assets),
       });
     });
@@ -347,9 +348,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await addTrackedAssets({
         comptrollerProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        trackedAssetsAdapter: fork.deployment.TrackedAssetsAdapter,
+        trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
         incomingAssets: Object.values(compoundAssets),
       });
     });
@@ -383,9 +384,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const receipt = await kyberTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        kyberAdapter: fork.deployment.KyberAdapter,
+        kyberAdapter: fork.deployment.kyberAdapter,
         incomingAsset,
         minIncomingAssetAmount,
         outgoingAsset,
@@ -446,10 +447,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('changes the InvestorWhitelist', async () => {
-      await fork.deployment.PolicyManager.connect(manager)
+      await fork.deployment.policyManager
+        .connect(manager)
         .updatePolicySettingsForFund.args(
           comptrollerProxy.address,
-          fork.deployment.InvestorWhitelist,
+          fork.deployment.investorWhitelist,
           investorWhitelistArgs({
             investorsToAdd: [anotherInvestor],
             investorsToRemove: [investor],

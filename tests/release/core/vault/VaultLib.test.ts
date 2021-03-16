@@ -1,22 +1,8 @@
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
-
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
 
 describe('constructor', () => {
   it('sets initial state for library', async () => {
-    const {
-      deployment: { vaultLib },
-    } = await provider.snapshot(snapshot);
+    const vaultLib = fork.deployment.vaultLib;
 
     const accessorValue = await vaultLib.getAccessor();
     expect(accessorValue).toMatchAddress(constants.AddressZero);

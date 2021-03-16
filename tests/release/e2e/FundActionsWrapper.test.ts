@@ -10,23 +10,23 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('correctly sets state vars', async () => {
-    const fundActionsWrapper = fork.deployment.FundActionsWrapper;
+    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
 
-    expect(await fundActionsWrapper.getFeeManager()).toMatchAddress(fork.deployment.FeeManager);
+    expect(await fundActionsWrapper.getFeeManager()).toMatchAddress(fork.deployment.feeManager);
     expect(await fundActionsWrapper.getWethToken()).toMatchAddress(fork.config.weth);
   });
 });
 
 describe('exchangeAndBuyShares', () => {
   it('handles a WETH denominationAsset', async () => {
-    const fundActionsWrapper = fork.deployment.FundActionsWrapper;
+    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
     const denominationAsset = new StandardToken(fork.config.weth, provider);
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
     });
 
@@ -52,7 +52,7 @@ describe('exchangeAndBuyShares', () => {
   });
 
   it('handles a mon-WETH, non-18 decimal denominationAsset', async () => {
-    const fundActionsWrapper = fork.deployment.FundActionsWrapper;
+    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner, buyer] = fork.accounts;
@@ -63,7 +63,7 @@ describe('exchangeAndBuyShares', () => {
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner as SignerWithAddress,
       fundOwner,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
     });
 

@@ -1,7 +1,6 @@
 import { AddressLike, Contract, contract, randomAddress, Send } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { encodeArgs, ReleaseStatusTypes, sighash } from '@enzymefinance/protocol';
-import { assertEvent, callOnExtension, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { encodeArgs, ReleaseStatusTypes, sighash, StandardToken } from '@enzymefinance/protocol';
+import { assertEvent, callOnExtension, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 
 // prettier-ignore
@@ -18,18 +17,18 @@ const MockExternalContract = contract<MockExternalContract>()`
   function functionC(address addr, uint256 num)
 `;
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployment,
-    config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+    accounts: [fundOwner, randomUser],
+    deployment: { fundDeployer },
+    config: { weth },
+  } = await deployProtocolFixture();
 
-  // Create a fund
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new StandardToken(weth, deployer);
 
   // Define a mock external contract to call with 2 functions
-  const mockExternalContract = await MockExternalContract.mock(config.deployer);
+  const mockExternalContract = await MockExternalContract.mock(deployer);
   await mockExternalContract.functionA.returns(undefined);
   await mockExternalContract.functionB.returns(undefined);
   await mockExternalContract.functionC.returns(undefined);
@@ -38,17 +37,16 @@ async function snapshot(provider: EthereumTestnetProvider) {
   const unregisteredVaultCallSelector = sighash(mockExternalContract.functionB.fragment);
   const registeredVaultCallSelector = sighash(mockExternalContract.functionA.fragment);
   const registeredVaultCallSelectorWithArgs = sighash(mockExternalContract.functionC.fragment);
-  await deployment.fundDeployer.registerVaultCalls(
+  await fundDeployer.registerVaultCalls(
     [mockExternalContract, mockExternalContract],
     [registeredVaultCallSelector, registeredVaultCallSelectorWithArgs],
   );
 
   return {
-    accounts: remainingAccounts,
-    config,
-    deployment,
+    randomUser,
     denominationAsset,
     fundOwner,
+    fundDeployer,
     mockExternalContract,
     registeredVaultCallSelector,
     registeredVaultCallSelectorWithArgs,
@@ -58,11 +56,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
 describe('callOnExtension', () => {
   it('can not call a random extension', async () => {
-    const {
-      deployment: { fundDeployer },
-      fundOwner,
-      denominationAsset,
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, fundOwner, denominationAsset } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -82,11 +76,7 @@ describe('callOnExtension', () => {
   });
 
   it('does not allow a paused release, unless overridePause is set', async () => {
-    const {
-      fundOwner,
-      denominationAsset,
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
+    const { fundOwner, denominationAsset, fundDeployer } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -125,12 +115,7 @@ describe('callOnExtension', () => {
 
 describe('setOverridePause', () => {
   it('cannot be called by a random user', async () => {
-    const {
-      accounts: [randomUser],
-      deployment: { fundDeployer },
-      fundOwner,
-      denominationAsset,
-    } = await provider.snapshot(snapshot);
+    const { randomUser, fundDeployer, fundOwner, denominationAsset } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -145,11 +130,7 @@ describe('setOverridePause', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      deployment: { fundDeployer },
-      fundOwner,
-      denominationAsset,
-    } = await provider.snapshot(snapshot);
+    const { fundDeployer, fundOwner, denominationAsset } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -173,12 +154,12 @@ describe('setOverridePause', () => {
 describe('vaultCallOnContract', () => {
   it('cannot be called by a random user', async () => {
     const {
-      accounts: [randomUser],
+      randomUser,
       mockExternalContract,
       registeredVaultCallSelector,
       fundOwner,
       denominationAsset,
-      deployment: { fundDeployer },
+      fundDeployer,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
@@ -199,7 +180,7 @@ describe('vaultCallOnContract', () => {
       registeredVaultCallSelector,
       fundOwner,
       denominationAsset,
-      deployment: { fundDeployer },
+      fundDeployer,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
@@ -224,7 +205,7 @@ describe('vaultCallOnContract', () => {
       registeredVaultCallSelector,
       fundOwner,
       denominationAsset,
-      deployment: { fundDeployer },
+      fundDeployer,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
@@ -259,7 +240,7 @@ describe('vaultCallOnContract', () => {
       unregisteredVaultCallSelector,
       fundOwner,
       denominationAsset,
-      deployment: { fundDeployer },
+      fundDeployer,
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({

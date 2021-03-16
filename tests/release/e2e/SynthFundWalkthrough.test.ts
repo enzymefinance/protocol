@@ -64,7 +64,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     // Set GuaranteedRedemption policy with redemption window starting immediately
     const policyManagerConfig = policyManagerConfigArgs({
-      policies: [fork.deployment.GuaranteedRedemption],
+      policies: [fork.deployment.guaranteedRedemption],
       settings: [
         guaranteedRedemptionArgs({
           duration: [100],
@@ -75,7 +75,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     const createFundRes = await createNewFund({
       signer: manager,
-      fundDeployer: fork.deployment.FundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner: manager,
       denominationAsset,
       policyManagerConfig,
@@ -101,9 +101,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.SynthetixAdapter,
+        synthetixAdapter: fork.deployment.synthetixAdapter,
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
         incomingAsset: sbtc,
@@ -113,7 +113,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   });
 
   it('warps beyond the redemption window', async () => {
-    const duration = (await fork.deployment.GuaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
+    const duration = (await fork.deployment.guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
     await provider.send('evm_increaseTime', [duration.toNumber()]);
     await provider.send('evm_mine', []);
   });
@@ -123,9 +123,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.SynthetixAdapter,
+        synthetixAdapter: fork.deployment.synthetixAdapter,
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
         incomingAsset: sbtc,
@@ -139,7 +139,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
       comptrollerProxy,
       fundOwner: manager,
-      delegate: fork.deployment.SynthetixAdapter,
+      delegate: fork.deployment.synthetixAdapter,
     });
   });
 
@@ -161,9 +161,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.SynthetixAdapter,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -197,9 +197,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.SynthetixAdapter,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -230,9 +230,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       synthetixTakeOrder({
         comptrollerProxy,
         vaultProxy,
-        integrationManager: fork.deployment.IntegrationManager,
+        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.SynthetixAdapter,
+        synthetixAdapter: fork.deployment.synthetixAdapter,
         outgoingAsset,
         outgoingAssetAmount,
         incomingAsset,
@@ -262,9 +262,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager: fork.deployment.IntegrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.SynthetixAdapter,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,

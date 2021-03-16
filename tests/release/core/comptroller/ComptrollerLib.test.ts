@@ -1,37 +1,20 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
-
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
-    deployment,
-    config,
-  };
-}
 
 describe('constructor', () => {
   it('sets initial state for library', async () => {
     const {
-      config: {
-        integratees: { synthetix },
-      },
-      deployment: {
-        chainlinkPriceFeed,
-        comptrollerLib,
-        dispatcher,
-        feeManager,
-        fundDeployer,
-        integrationManager,
-        policyManager,
-        synthetixPriceFeed,
-        valueInterpreter,
-      },
-    } = await provider.snapshot(snapshot);
+      comptrollerLib,
+      dispatcher,
+      feeManager,
+      fundDeployer,
+      integrationManager,
+      policyManager,
+      chainlinkPriceFeed,
+      valueInterpreter,
+      synthetixPriceFeed,
+    } = fork.deployment;
 
     const routesCall = await comptrollerLib.getLibRoutes();
     expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
@@ -45,7 +28,7 @@ describe('constructor', () => {
     });
 
     const getSynthetixAddressResolverCall = await comptrollerLib.getSynthetixAddressResolver();
-    expect(getSynthetixAddressResolverCall).toMatchAddress(synthetix.addressResolver);
+    expect(getSynthetixAddressResolverCall).toMatchAddress(fork.config.synthetix.addressResolver);
 
     const getSynthetixPriceFeedCall = await comptrollerLib.getSynthetixPriceFeed();
     expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
@@ -61,15 +44,11 @@ describe('constructor', () => {
 
 describe('destruct', () => {
   it('cannot be non-delegatecalled', async () => {
-    const {
-      config: { deployer },
-    } = await provider.snapshot(snapshot);
-
-    const mockFundDeployer = await FundDeployer.mock(deployer);
+    const mockFundDeployer = await FundDeployer.mock(fork.deployer);
     await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
 
     const comptrollerLib = await ComptrollerLib.deploy(
-      deployer,
+      fork.deployer,
       randomAddress(),
       mockFundDeployer,
       randomAddress(),
