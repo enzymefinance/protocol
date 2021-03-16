@@ -15,6 +15,34 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library to extend the address array data type
 library AddressArrayLib {
+    /// @dev Helper to add an item to an array. Does not assert uniqueness of the new item.
+    function addItem(address[] memory _self, address _itemToAdd)
+        internal
+        pure
+        returns (address[] memory nextArray_)
+    {
+        nextArray_ = new address[](_self.length + 1);
+        for (uint256 i; i < _self.length; i++) {
+            nextArray_[i] = _self[i];
+        }
+        nextArray_[_self.length] = _itemToAdd;
+
+        return nextArray_;
+    }
+
+    /// @dev Helper to add an item to an array, only if it is not already in the array.
+    function addUniqueItem(address[] memory _self, address _itemToAdd)
+        internal
+        pure
+        returns (address[] memory nextArray_)
+    {
+        if (contains(_self, _itemToAdd)) {
+            return _self;
+        }
+
+        return addItem(_self, _itemToAdd);
+    }
+
     /// @dev Helper to verify if an array contains a particular value
     function contains(address[] memory _self, address _target)
         internal
@@ -27,6 +55,20 @@ library AddressArrayLib {
             }
         }
         return false;
+    }
+
+    /// @dev Helper to reassign all items in an array with a specified value
+    function fill(address[] memory _self, address _value)
+        internal
+        pure
+        returns (address[] memory nextArray_)
+    {
+        nextArray_ = new address[](_self.length);
+        for (uint256 i; i < nextArray_.length; i++) {
+            nextArray_[i] = _value;
+        }
+
+        return nextArray_;
     }
 
     /// @dev Helper to verify if array is a set of unique values.

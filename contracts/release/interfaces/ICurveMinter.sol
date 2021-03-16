@@ -11,14 +11,8 @@
 
 pragma solidity 0.6.12;
 
-/// @title ICurveLiquidityGaugeV2 interface
+/// @title ICurveMinter interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface ICurveLiquidityGaugeV2 {
-    function claim_rewards(address) external;
-
-    function deposit(uint256, address) external;
-
-    function reward_tokens(uint256) external view returns (address);
-
-    function withdraw(uint256) external;
+interface ICurveMinter {
+    function mint_for(address, address) external;
 }

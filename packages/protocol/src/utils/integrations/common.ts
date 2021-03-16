@@ -10,6 +10,11 @@ export enum SpendAssetsHandleType {
 }
 
 export const addTrackedAssetsFragment = utils.FunctionFragment.fromString('addTrackedAssets(address,bytes,bytes)');
+export const approveAssetsFragment = utils.FunctionFragment.fromString('approveAssets(address,bytes,bytes)');
+export const claimRewardsAndReinvestFragment = utils.FunctionFragment.fromString(
+  'claimRewardsAndReinvest(address,bytes,bytes)',
+);
+export const claimRewardsFragment = utils.FunctionFragment.fromString('claimRewards(address,bytes,bytes)');
 export const lendFragment = utils.FunctionFragment.fromString('lend(address,bytes,bytes)');
 export const lendAndStakeFragment = utils.FunctionFragment.fromString('lendAndStake(address,bytes,bytes)');
 export const redeemFragment = utils.FunctionFragment.fromString('redeem(address,bytes,bytes)');
@@ -19,6 +24,9 @@ export const unstakeFragment = utils.FunctionFragment.fromString('unstake(addres
 export const unstakeAndRedeemFragment = utils.FunctionFragment.fromString('unstakeAndRedeem(address,bytes,bytes)');
 
 export const addTrackedAssetsSelector = sighash(addTrackedAssetsFragment);
+export const approveAssetsSelector = sighash(approveAssetsFragment);
+export const claimRewardsAndReinvestSelector = sighash(claimRewardsAndReinvestFragment);
+export const claimRewardsSelector = sighash(claimRewardsFragment);
 export const lendSelector = sighash(lendFragment);
 export const lendAndStakeSelector = sighash(lendAndStakeFragment);
 export const redeemSelector = sighash(redeemFragment);

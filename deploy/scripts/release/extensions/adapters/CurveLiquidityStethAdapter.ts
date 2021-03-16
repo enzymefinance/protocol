@@ -18,9 +18,12 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       config.curve.pools.steth.liquidityGaugeToken,
       config.curve.pools.steth.lpToken,
+      config.curve.minter,
       config.curve.pools.steth.pool,
+      config.primitives.crv,
       config.lido.steth,
       config.weth,
+      config.uniswap.router,
     ] as CurveLiquidityStethAdapterArgs,
     from: deployer.address,
     linkedData: {

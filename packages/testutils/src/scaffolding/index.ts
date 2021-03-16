@@ -6,3 +6,4 @@ export * from './extensions';
 export * from './peripheral';
 export * from './setup';
 export * from './shares';
+export * from './vaultCalls';

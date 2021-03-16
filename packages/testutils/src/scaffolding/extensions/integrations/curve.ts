@@ -1,16 +1,18 @@
 import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
+  approveAssetsSelector,
   ComptrollerLib,
+  curveApproveAssetsArgs,
   CurveExchangeAdapter,
   CurveLiquidityStethAdapter,
   IntegrationManager,
   IntegrationManagerActionId,
   StandardToken,
   callOnIntegrationArgs,
-  curveMinterMintManySelector,
-  curveMinterMintSelector,
-  curveMinterToggleApproveMintSelector,
+  claimRewardsAndReinvestSelector,
+  claimRewardsSelector,
+  curveStethClaimRewardsAndReinvestArgs,
   curveStethLendAndStakeArgs,
   curveStethLendArgs,
   curveStethRedeemArgs,
@@ -18,7 +20,6 @@ import {
   curveStethUnstakeAndRedeemArgs,
   curveStethUnstakeArgs,
   curveTakeOrderArgs,
-  encodeArgs,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
@@ -56,53 +57,128 @@ export const CurveMinter = contract<CurveMinter>()`
   function mint_for(address,address)
 `;
 
-export function curveMinterMint({
+export async function curveApproveAssets({
   comptrollerProxy,
-  minter,
-  gauge,
+  integrationManager,
+  fundOwner,
+  adapter,
+  assets,
+  amounts = new Array(assets.length).fill(constants.MaxUint256),
 }: {
   comptrollerProxy: ComptrollerLib;
-  minter: AddressLike;
-  gauge: AddressLike;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  adapter: AddressLike;
+  assets: AddressLike[];
+  amounts?: BigNumberish[];
 }) {
-  return comptrollerProxy.vaultCallOnContract(minter, curveMinterMintSelector, encodeArgs(['address'], [gauge]));
+  const callArgs = callOnIntegrationArgs({
+    adapter: adapter,
+    selector: approveAssetsSelector,
+    encodedCallArgs: curveApproveAssetsArgs({
+      assets,
+      amounts,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 
-export function curveMinterMintMany({
+// exchanges
+
+export async function curveTakeOrder({
   comptrollerProxy,
-  minter,
-  gauges,
+  integrationManager,
+  fundOwner,
+  curveExchangeAdapter,
+  pool,
+  outgoingAsset,
+  outgoingAssetAmount = utils.parseEther('1'),
+  incomingAsset,
+  minIncomingAssetAmount = utils.parseEther('1'),
 }: {
   comptrollerProxy: ComptrollerLib;
-  minter: AddressLike;
-  gauges: AddressLike[];
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveExchangeAdapter: CurveExchangeAdapter;
+  pool: AddressLike;
+  outgoingAsset: StandardToken;
+  outgoingAssetAmount?: BigNumberish;
+  incomingAsset: StandardToken;
+  minIncomingAssetAmount?: BigNumberish;
 }) {
-  const gaugesFormatted = new Array(8).fill(constants.AddressZero);
-  for (const i in gauges) {
-    gaugesFormatted[i] = gauges[i];
-  }
+  const takeOrderArgs = curveTakeOrderArgs({
+    pool,
+    outgoingAsset: outgoingAsset,
+    outgoingAssetAmount: outgoingAssetAmount,
+    incomingAsset: incomingAsset,
+    minIncomingAssetAmount: minIncomingAssetAmount,
+  });
 
-  return comptrollerProxy.vaultCallOnContract(
-    minter,
-    curveMinterMintManySelector,
-    encodeArgs(['address[8]'], [gaugesFormatted]),
-  );
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveExchangeAdapter,
+    selector: takeOrderSelector,
+    encodedCallArgs: takeOrderArgs,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 
-export function curveMinterToggleApproveMint({
+// stETH pool
+
+export function curveStethClaimRewards({
   comptrollerProxy,
-  minter,
-  account,
+  integrationManager,
+  fundOwner,
+  curveLiquidityStethAdapter,
 }: {
   comptrollerProxy: ComptrollerLib;
-  minter: AddressLike;
-  account: AddressLike;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityStethAdapter: CurveLiquidityStethAdapter;
 }) {
-  return comptrollerProxy.vaultCallOnContract(
-    minter,
-    curveMinterToggleApproveMintSelector,
-    encodeArgs(['address'], [account]),
-  );
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityStethAdapter,
+    selector: claimRewardsSelector,
+    encodedCallArgs: constants.HashZero,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveStethClaimRewardsAndReinvest({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityStethAdapter,
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount = BigNumber.from(1),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityStethAdapter: CurveLiquidityStethAdapter;
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount?: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityStethAdapter,
+    selector: claimRewardsAndReinvestSelector,
+    encodedCallArgs: curveStethClaimRewardsAndReinvestArgs({
+      useFullBalances,
+      minIncomingLiquidityGaugeTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 
 export function curveStethLend({
@@ -284,46 +360,6 @@ export function curveStethUnstake({
     encodedCallArgs: curveStethUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
-  });
-
-  return comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-}
-
-export async function curveTakeOrder({
-  comptrollerProxy,
-  integrationManager,
-  fundOwner,
-  curveExchangeAdapter,
-  pool,
-  outgoingAsset,
-  outgoingAssetAmount = utils.parseEther('1'),
-  incomingAsset,
-  minIncomingAssetAmount = utils.parseEther('1'),
-}: {
-  comptrollerProxy: ComptrollerLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  curveExchangeAdapter: CurveExchangeAdapter;
-  pool: AddressLike;
-  outgoingAsset: StandardToken;
-  outgoingAssetAmount?: BigNumberish;
-  incomingAsset: StandardToken;
-  minIncomingAssetAmount?: BigNumberish;
-}) {
-  const takeOrderArgs = curveTakeOrderArgs({
-    pool,
-    outgoingAsset: outgoingAsset,
-    outgoingAssetAmount: outgoingAssetAmount,
-    incomingAsset: incomingAsset,
-    minIncomingAssetAmount: minIncomingAssetAmount,
-  });
-
-  const callArgs = callOnIntegrationArgs({
-    adapter: curveExchangeAdapter,
-    selector: takeOrderSelector,
-    encodedCallArgs: takeOrderArgs,
   });
 
   return comptrollerProxy

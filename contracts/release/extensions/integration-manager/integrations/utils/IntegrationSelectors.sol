@@ -20,6 +20,11 @@ abstract contract IntegrationSelectors {
         keccak256("addTrackedAssets(address,bytes,bytes)")
     );
 
+    // Asset approval
+    bytes4 public constant APPROVE_ASSETS_SELECTOR = bytes4(
+        keccak256("approveAssets(address,bytes,bytes)")
+    );
+
     // Trading
     bytes4 public constant TAKE_ORDER_SELECTOR = bytes4(
         keccak256("takeOrder(address,bytes,bytes)")
@@ -33,7 +38,15 @@ abstract contract IntegrationSelectors {
     bytes4 public constant STAKE_SELECTOR = bytes4(keccak256("stake(address,bytes,bytes)"));
     bytes4 public constant UNSTAKE_SELECTOR = bytes4(keccak256("unstake(address,bytes,bytes)"));
 
+    // Rewards
+    bytes4 public constant CLAIM_REWARDS_SELECTOR = bytes4(
+        keccak256("claimRewards(address,bytes,bytes)")
+    );
+
     // Combined
+    bytes4 public constant CLAIM_REWARDS_AND_REINVEST_SELECTOR = bytes4(
+        keccak256("claimRewardsAndReinvest(address,bytes,bytes)")
+    );
     bytes4 public constant LEND_AND_STAKE_SELECTOR = bytes4(
         keccak256("lendAndStake(address,bytes,bytes)")
     );

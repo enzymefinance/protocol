@@ -49,6 +49,10 @@ const primitives = {
 
 const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
+const unsupportedRewardsTokens = {
+  ldo: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
+};
+
 const aggregators = {
   aave: ['0x6Df09E975c830ECae5bd4eD9d90f3A95a4f88012', ChainlinkRateAsset.ETH],
   adx: ['0x231e764B44b2C1b7Ca171fa8021A24ed520Cde10', ChainlinkRateAsset.USD],
@@ -287,6 +291,7 @@ const mainnetConfig: DeploymentConfig = {
     pools,
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   },
+  unsupportedRewardsTokens,
   wdgld: {
     ethusd: ethUsdAggregator,
     wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',
@@ -308,6 +313,10 @@ const mainnetConfig: DeploymentConfig = {
     [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)'))],
     [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])'))],
     [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)'))],
+    ...Object.values(unsupportedRewardsTokens).map((tokenAddress) => [
+      tokenAddress,
+      sighash(utils.FunctionFragment.fromString('approve(address, uint)')),
+    ] as [string, string]),
   ],
 }
 

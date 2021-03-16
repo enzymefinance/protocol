@@ -11,6 +11,43 @@ export const curveMinterToggleApproveMintSelector = sighash(
   utils.FunctionFragment.fromString('toggle_approve_mint(address)'),
 );
 
+export function curveApproveAssetsArgs({ assets, amounts }: { assets: AddressLike[]; amounts: BigNumberish[] }) {
+  return encodeArgs(['address[]', 'uint256[]'], [assets, amounts]);
+}
+
+// exchanges
+
+export function curveTakeOrderArgs({
+  pool,
+  outgoingAsset,
+  outgoingAssetAmount,
+  incomingAsset,
+  minIncomingAssetAmount,
+}: {
+  pool: AddressLike;
+  outgoingAsset: AddressLike;
+  outgoingAssetAmount: BigNumberish;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(
+    ['address', 'address', 'uint256', 'address', 'uint256'],
+    [pool, outgoingAsset, outgoingAssetAmount, incomingAsset, minIncomingAssetAmount],
+  );
+}
+
+// stETH pool
+
+export function curveStethClaimRewardsAndReinvestArgs({
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount,
+}: {
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
+}
+
 export function curveStethLendAndStakeArgs({
   outgoingWethAmount,
   outgoingStethAmount,
@@ -85,23 +122,4 @@ export function curveStethUnstakeArgs({
   outgoingLiquidityGaugeTokenAmount: BigNumberish;
 }) {
   return encodeArgs(['uint256'], [outgoingLiquidityGaugeTokenAmount]);
-}
-
-export function curveTakeOrderArgs({
-  pool,
-  outgoingAsset,
-  outgoingAssetAmount,
-  incomingAsset,
-  minIncomingAssetAmount,
-}: {
-  pool: AddressLike;
-  outgoingAsset: AddressLike;
-  outgoingAssetAmount: BigNumberish;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(
-    ['address', 'address', 'uint256', 'address', 'uint256'],
-    [pool, outgoingAsset, outgoingAssetAmount, incomingAsset, minIncomingAssetAmount],
-  );
 }
