@@ -43,7 +43,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { chaiAdapter, integrationManager },
@@ -66,7 +66,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { chaiAdapter },
@@ -149,7 +149,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('lend', () => {
+xdescribe('lend', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { chaiAdapter },
@@ -229,7 +229,7 @@ describe('lend', () => {
   });
 });
 
-describe('redeem', () => {
+xdescribe('redeem', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { chaiAdapter },

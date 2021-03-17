@@ -7,17 +7,17 @@ import {
   PolicyHook,
   validateRulePreCoIArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { deployer, accounts, deployment, config } = await deployProtocolFixture();
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
   const comptrollerProxy = randomAddress();
 
   const standaloneGuaranteedRedemption = await GuaranteedRedemption.deploy(
-    config.deployer,
+    deployer,
     EOAPolicyManager,
     deployment.fundDeployer,
     config.policies.guaranteedRedemption.redemptionWindowBuffer,
@@ -171,7 +171,7 @@ describe('addRedemptionBlockingAdapters', () => {
 
   it('does not allow adapters to be empty', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -187,7 +187,7 @@ describe('addRedemptionBlockingAdapters', () => {
 
   it('does not allow adapters to contain address 0', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -203,7 +203,7 @@ describe('addRedemptionBlockingAdapters', () => {
 
   it('does not allow adding an already added adapter', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -224,7 +224,7 @@ describe('addRedemptionBlockingAdapters', () => {
 
   it('correctly handles adding an adapter and fires an event', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -254,7 +254,7 @@ describe('removeRedemptionBlockingAdapters', () => {
 
   it('does not allow adapters to be empty', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -270,7 +270,7 @@ describe('removeRedemptionBlockingAdapters', () => {
 
   it('does not allow removing an adapter which is not added yet', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -286,7 +286,7 @@ describe('removeRedemptionBlockingAdapters', () => {
 
   it('correctly handles removing adapters and fires events', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
 
@@ -318,11 +318,11 @@ describe('setRedemptionWindowBuffer', () => {
 
   it('does not allow new redemptionWindowBuffer to be the current redemptionWindowBuffer', async () => {
     const {
+      deployment: { dispatcher },
       config: {
         policies: {
           guaranteedRedemption: { redemptionWindowBuffer },
         },
-        dispatcher,
       },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
@@ -339,11 +339,11 @@ describe('setRedemptionWindowBuffer', () => {
 
   it('correctly sets the redemptionWindowBuffer and fires an event', async () => {
     const {
+      deployment: { dispatcher },
       config: {
         policies: {
           guaranteedRedemption: { redemptionWindowBuffer: prevBuffer },
         },
-        dispatcher,
       },
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
@@ -382,8 +382,8 @@ describe('validateRule', () => {
 
   it('returns true if the adapter is listed and the current time is before the first redemption window', async () => {
     const {
+      deployment: { dispatcher },
       config: {
-        dispatcher,
         policies: {
           guaranteedRedemption: { redemptionWindowBuffer },
         },
@@ -427,7 +427,7 @@ describe('validateRule', () => {
 
   it('returns true if the adapter is listed and current time is beyond the lst redemption window', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       comptrollerProxy,
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
@@ -467,7 +467,7 @@ describe('validateRule', () => {
 
   it('returns false if the adapter is listed and the redemption window is not defined', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       comptrollerProxy,
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
@@ -496,7 +496,7 @@ describe('validateRule', () => {
 
   it('returns false if the adapter is listed and current time is within the redemption window', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       comptrollerProxy,
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);
@@ -536,7 +536,7 @@ describe('validateRule', () => {
 
   it('returns false if the adapter is listed and current time is within the redemption window buffer', async () => {
     const {
-      config: { dispatcher },
+      deployment: { dispatcher },
       comptrollerProxy,
       standaloneGuaranteedRedemption,
     } = await provider.snapshot(snapshot);

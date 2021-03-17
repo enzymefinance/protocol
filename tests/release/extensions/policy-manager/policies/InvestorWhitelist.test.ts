@@ -1,31 +1,31 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   InvestorWhitelist,
   investorWhitelistArgs,
   PolicyHook,
   policyManagerConfigArgs,
   validateRulePreBuySharesArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { deployer, accounts, deployment, config } = await deployProtocolFixture();
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
   const comptrollerProxy = randomAddress();
   const whitelistedInvestors = [randomAddress(), randomAddress()];
 
-  const investorWhitelist1 = await InvestorWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const investorWhitelist1 = await InvestorWhitelist.deploy(deployer, EOAPolicyManager);
   const permissionedInvestorWhitelist = investorWhitelist1.connect(EOAPolicyManager);
 
-  const investorWhitelist2 = await InvestorWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const investorWhitelist2 = await InvestorWhitelist.deploy(deployer, EOAPolicyManager);
   const configuredInvestorWhitelist = investorWhitelist2.connect(EOAPolicyManager);
 
   const investorWhitelistConfig = investorWhitelistArgs({
@@ -35,6 +35,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await configuredInvestorWhitelist.addFundSettings(comptrollerProxy, investorWhitelistConfig);
 
   return {
+    deployer,
     accounts: remainingAccounts,
     comptrollerProxy,
     config,
@@ -238,14 +239,12 @@ describe('validateRule', () => {
 describe('integration tests', () => {
   it('can create a new fund with this policy, and it can disable and re-enable the policy for that fund', async () => {
     const {
+      config,
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        investorWhitelist,
-        policyManager,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer, investorWhitelist, policyManager },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(config.weth, whales.weth);
 
     // declare variables for policy config
     const investorWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
@@ -299,11 +298,10 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -316,9 +314,10 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         investorWhitelist,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
 
     // declare variables for policy config
     const investorWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];

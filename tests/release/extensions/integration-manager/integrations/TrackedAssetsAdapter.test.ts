@@ -30,7 +30,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, trackedAssetsAdapter },
@@ -41,7 +41,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { trackedAssetsAdapter },
@@ -87,7 +87,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('addTrackedAssets', () => {
+xdescribe('addTrackedAssets', () => {
   it('addTrackedAssets successfully', async () => {
     const {
       deployment: {

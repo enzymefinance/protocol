@@ -51,7 +51,7 @@ import {
   GuaranteedRedemption,
 } from '@enzymefinance/protocol';
 
-import { DeploymentConfig } from '../../../../../deploy/utils/config';
+import { DeploymentConfig } from '../../../deploy/utils/config';
 
 export async function getNamedSigner(name: string) {
   const accounts = await hre.getNamedAccounts();
@@ -147,3 +147,9 @@ export interface DeploymentFixtureWithConfig<T extends ContractMap> extends Depl
 }
 
 export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
+
+// TODO: Remove this.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function defaultTestDeployment(_: any): Promise<any> {
+  throw new Error('Removed');
+}

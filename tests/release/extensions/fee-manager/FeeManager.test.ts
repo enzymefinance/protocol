@@ -1,5 +1,4 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   IMigrationHookHandler,
   MockVaultLib,
@@ -10,31 +9,33 @@ import {
   FeeHook,
   FeeManagerActionId,
   payoutSharesOutstandingForFeesArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
-  defaultTestDeployment,
   buyShares,
   callOnExtension,
   createNewFund,
   generateRegisteredMockFees,
   assertNoEvent,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
 
   const fees = await generateRegisteredMockFees({
-    deployer: config.deployer,
+    deployer,
     feeManager: deployment.feeManager,
   });
 
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new WETH(config.weth, whales.weth);
 
   const createFund = () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), constants.HashZero];
@@ -55,6 +56,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 
   return {
     accounts: remainingAccounts,
+    deployer,
     config,
     deployment,
     fees,
@@ -80,8 +82,8 @@ describe('constructor', () => {
 
     const getRegisteredFeesCall = await feeManager.getRegisteredFees();
     expect(getRegisteredFeesCall).toMatchFunctionOutput(feeManager.getRegisteredFees, [
-      entranceRateBurnFee,
       entranceRateDirectFee,
+      entranceRateBurnFee,
       managementFee,
       performanceFee,
       ...Object.values(fees),
@@ -118,13 +120,16 @@ describe('deactivateForFund', () => {
   it('settles Continuous fees, pays out all shares outstanding, and deletes storage for fund', async () => {
     const {
       accounts: [buyer],
-      config: { deployer },
+      deployer,
       deployment: { dispatcher, feeManager },
       fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates },
       fundOwner,
       denominationAsset,
       createFund,
     } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(buyer, investmentAmount);
 
     const { vaultProxy, comptrollerProxy } = await createFund();
 
@@ -135,6 +140,7 @@ describe('deactivateForFund', () => {
       signer: buyer,
       buyers: [buyer],
       denominationAsset,
+      investmentAmounts: [investmentAmount],
     });
 
     // All fee settlement amounts are the same
@@ -225,6 +231,9 @@ describe('receiveCallFromComptroller', () => {
       denominationAsset,
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(fundInvestor, investmentAmount);
+
     const { comptrollerProxy } = await createFund();
 
     // Buy shares of the fund so that fees accrue
@@ -233,6 +242,7 @@ describe('receiveCallFromComptroller', () => {
       signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
+      investmentAmounts: [investmentAmount],
     });
 
     // Mint mock continuous fee
@@ -265,11 +275,9 @@ describe('receiveCallFromComptroller', () => {
 describe('setConfigForFund', () => {
   it('does not allow unequal fees and settingsData array lengths', async () => {
     const {
+      denominationAsset,
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        tokens: { weth },
-      },
+      deployment: { fundDeployer },
       fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates },
     } = await provider.snapshot(snapshot);
 
@@ -286,7 +294,7 @@ describe('setConfigForFund', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset: weth,
+      denominationAsset,
       feeManagerConfig,
     });
 
@@ -296,10 +304,8 @@ describe('setConfigForFund', () => {
   it('does not allow duplicate fees', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        tokens: { weth },
-      },
+      denominationAsset,
+      deployment: { fundDeployer },
       fees: { mockContinuousFeeSettleOnly },
     } = await provider.snapshot(snapshot);
 
@@ -316,7 +322,7 @@ describe('setConfigForFund', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset: weth,
+      denominationAsset,
       feeManagerConfig,
     });
 
@@ -325,11 +331,9 @@ describe('setConfigForFund', () => {
 
   it('does not allow an unregistered fee', async () => {
     const {
+      denominationAsset,
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        tokens: { weth },
-      },
+      deployment: { fundDeployer },
     } = await provider.snapshot(snapshot);
 
     // Unregistered fee
@@ -345,7 +349,7 @@ describe('setConfigForFund', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset: weth,
+      denominationAsset,
       feeManagerConfig,
     });
 
@@ -354,12 +358,9 @@ describe('setConfigForFund', () => {
 
   it('calls `addFundSettings` on each Fee, adds all fees to storage, and fires the correct event per Fee', async () => {
     const {
+      denominationAsset,
       accounts: [fundOwner],
-      deployment: {
-        feeManager,
-        fundDeployer,
-        tokens: { weth },
-      },
+      deployment: { feeManager, fundDeployer },
       fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates, mockPostBuySharesFee },
     } = await provider.snapshot(snapshot);
 
@@ -375,7 +376,7 @@ describe('setConfigForFund', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset: weth,
+      denominationAsset,
       feeManagerConfig,
     });
 
@@ -406,13 +407,10 @@ describe('invokeHook', () => {
   // TODO: fix this test (not sure if it's doing what it's trying to do)
   xit('does not allow a non-activated fund', async () => {
     const {
+      denominationAsset,
       accounts: [fundOwner],
-      config: { deployer },
-      deployment: {
-        feeManager,
-        fundDeployer,
-        tokens: { weth },
-      },
+      deployer,
+      deployment: { feeManager, fundDeployer },
     } = await provider.snapshot(snapshot);
 
     // Register new mock fee that will not be activated on fund
@@ -442,7 +440,7 @@ describe('invokeHook', () => {
       signer: fundOwner,
       fundOwner,
       fundDeployer,
-      denominationAsset: weth,
+      denominationAsset,
       feeManagerConfig,
     });
 
@@ -458,6 +456,9 @@ describe('invokeHook', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('2');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     const { comptrollerProxy } = await createFund();
 
     // Buy shares
@@ -466,6 +467,7 @@ describe('invokeHook', () => {
       signer: buyer,
       buyers: [buyer],
       denominationAsset,
+      investmentAmounts: [investmentAmount],
     });
 
     // Settle fees without having defined fee settlement
@@ -492,9 +494,10 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const { vaultProxy, comptrollerProxy } = await createFund();
-
         const investmentAmount = utils.parseEther('2');
+        await denominationAsset.transfer(buyer, investmentAmount);
+
+        const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Buying shares
         await buyShares({
@@ -551,10 +554,12 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
+        const investmentAmount = utils.parseEther('2');
+        await denominationAsset.transfer(buyer, investmentAmount);
+
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Define fee settlement
-        const investmentAmount = utils.parseEther('2');
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.Direct;
         await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
@@ -605,10 +610,12 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
+        const investmentAmount = utils.parseEther('2');
+        await denominationAsset.transfer(buyer, investmentAmount);
+
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Define fee settlement
-        const investmentAmount = utils.parseEther('2');
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.Burn;
         await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
@@ -666,6 +673,9 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
+        const investmentAmount = utils.parseEther('1');
+        await denominationAsset.transfer(buyer, investmentAmount);
+
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Seed fund with initial fund shares,
@@ -675,6 +685,7 @@ describe('invokeHook', () => {
           signer: buyer,
           buyers: [buyer],
           denominationAsset,
+          investmentAmounts: [investmentAmount],
         });
 
         // Define fee settlement
@@ -726,6 +737,9 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
+        const investmentAmount = utils.parseEther('1');
+        await denominationAsset.transfer(buyer, investmentAmount);
+
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Seed fund with initial fund shares,
@@ -735,6 +749,7 @@ describe('invokeHook', () => {
           signer: buyer,
           buyers: [buyer],
           denominationAsset,
+          investmentAmounts: [investmentAmount],
         });
 
         // Define fee settlement
@@ -803,6 +818,9 @@ describe('invokeHook', () => {
         createFund,
       } = await provider.snapshot(snapshot);
 
+      const investmentAmount = utils.parseEther('1');
+      await denominationAsset.transfer(buyer, investmentAmount);
+
       const { vaultProxy, comptrollerProxy } = await createFund();
 
       // Seed fund with initial fund shares,
@@ -812,6 +830,7 @@ describe('invokeHook', () => {
         signer: buyer,
         buyers: [buyer],
         denominationAsset,
+        investmentAmounts: [investmentAmount],
       });
 
       const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -898,10 +917,12 @@ describe('invokeHook', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
-    const { vaultProxy, comptrollerProxy } = await createFund();
-
     const investmentAmount = utils.parseEther('2');
     const gav = investmentAmount;
+    await denominationAsset.transfer(buyer, investmentAmount);
+
+    const { vaultProxy, comptrollerProxy } = await createFund();
+
     await buyShares({
       comptrollerProxy,
       signer: buyer,
@@ -950,20 +971,20 @@ describe('invokeHook', () => {
 describe('__InvokeContinuousHook', () => {
   it('correctly handles a Continuous FeeHook when called by a random user', async () => {
     const {
+      denominationAsset,
       accounts: [randomUser, buyer],
-      deployment: {
-        feeManager,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { feeManager },
       fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates },
       createFund,
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('2');
+    const gav = investmentAmount;
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     // Seed fund so it has a non-zero GAV
-    const investmentAmount = utils.parseEther('2');
-    const gav = investmentAmount;
     await buyShares({
       comptrollerProxy,
       signer: buyer,
@@ -1020,15 +1041,19 @@ describe('__payoutSharesOutstandingForFees', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
       comptrollerProxy,
+      denominationAsset,
       signer: buyer,
       buyers: [buyer],
-      denominationAsset,
+      investmentAmounts: [investmentAmount],
     });
 
     const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -1063,6 +1088,7 @@ describe('__payoutSharesOutstandingForFees', () => {
       actionId,
       callArgs,
     });
+
     expect(await vaultProxy.balanceOf(fundOwner)).toEqBigNumber(preFundOwnerSharesCall);
 
     // Set payout() to return true on both fees
@@ -1189,7 +1215,7 @@ describe('fee registry', () => {
     it('can only be called by the owner of the FundDeployer contract', async () => {
       const {
         accounts: [randomAccount],
-        config: { deployer },
+        deployer,
         deployment: { feeManager },
       } = await provider.snapshot(snapshot);
 
@@ -1227,7 +1253,7 @@ describe('fee registry', () => {
 
     it('successfully registers multiple fees (stores registered fee and implemented fee hooks) and fires one event per fee', async () => {
       const {
-        config: { deployer },
+        deployer,
         deployment: { feeManager },
       } = await provider.snapshot(snapshot);
 

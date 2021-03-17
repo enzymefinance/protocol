@@ -1,20 +1,21 @@
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { WETH } from '@enzymefinance/protocol';
+import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
+    deployer,
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await provider.snapshot(defaultTestDeployment);
+  } = await deployProtocolFixture();
 
   // Deploy a fund
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new WETH(config.weth, whales.weth);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset,
   });
 
   return {

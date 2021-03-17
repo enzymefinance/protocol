@@ -113,7 +113,7 @@ async function assertKyberTakeOrder({
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, kyberAdapter },
@@ -130,7 +130,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { kyberAdapter },
@@ -179,7 +179,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('takeOrder', () => {
+xdescribe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { kyberAdapter },

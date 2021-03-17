@@ -1,5 +1,4 @@
 import { AddressLike, MockContract, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   StandardToken,
   ComptrollerLib,
@@ -14,56 +13,63 @@ import {
   addTrackedAssetsSelector,
   IntegrationManagerActionId,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [EOAPolicyManager, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
+
+  const weth = new WETH(config.weth, whales.weth);
+  const mln = new StandardToken(config.primitives.mln, whales.mln);
 
   const maxConcentrationValue = utils.parseEther('.1'); // 10%
 
   // Mock the ValueInterpreter
-  const mockValueInterpreter = await ValueInterpreter.mock(config.deployer);
+  const mockValueInterpreter = await ValueInterpreter.mock(deployer);
   await mockValueInterpreter.calcLiveAssetValue.returns(0, false);
 
   // Deploy the standalone MaxConcentration policy
-  const maxConcentration = await MaxConcentration.deploy(config.deployer, EOAPolicyManager, mockValueInterpreter);
+  const maxConcentration = await MaxConcentration.deploy(deployer, EOAPolicyManager, mockValueInterpreter);
 
   // Define mock fund values and calculate the limit of assetGav based on the maxConcentration
-  const denominationAsset = deployment.tokens.weth;
   const totalGav = utils.parseEther('1');
   const assetGavLimit = BigNumber.from(totalGav).mul(maxConcentrationValue).div(utils.parseEther('1'));
   expect(assetGavLimit).toEqBigNumber(utils.parseEther('0.1'));
 
   // Mock the VaultProxy
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.getTrackedAssets.returns([]);
 
   // Mock the ComptrollerProxy
-  const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
+  const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
   await mockComptrollerProxy.calcGav.returns(totalGav, true);
-  await mockComptrollerProxy.getDenominationAsset.returns(denominationAsset);
+  await mockComptrollerProxy.getDenominationAsset.returns(weth);
 
   // Add policy settings for ComptrollerProxy
   const maxConcentrationConfig = maxConcentrationArgs(maxConcentrationValue);
   await maxConcentration.connect(EOAPolicyManager).addFundSettings(mockComptrollerProxy, maxConcentrationConfig);
 
   return {
+    config,
+    weth,
+    mln,
+    deployer,
     accounts: remainingAccounts,
     assetGavLimit,
-    denominationAsset,
     deployment,
     maxConcentration,
     maxConcentrationValue,
@@ -134,9 +140,7 @@ describe('constructor', () => {
 describe('activateForFund', () => {
   it('does only allow a misc asset with balance <maxConcentration in the fund trackedAssets', async () => {
     const {
-      deployment: {
-        tokens: { mln: incomingAsset },
-      },
+      mln: incomingAsset,
       mockValueInterpreter,
       mockComptrollerProxy,
       mockVaultProxy,
@@ -173,7 +177,7 @@ describe('activateForFund', () => {
       mockVaultProxy,
       maxConcentration,
       EOAPolicyManager,
-      denominationAsset,
+      weth: denominationAsset,
     } = await provider.snapshot(snapshot);
 
     // track "denomination asset" in the mocked vault proxy
@@ -258,11 +262,9 @@ describe('validateRule', () => {
 
   it('properly queries live rates', async () => {
     const {
-      deployment: {
-        tokens: { mln: incomingAsset },
-      },
+      mln: incomingAsset,
+      weth: denominationAsset,
       assetGavLimit: incomingAssetGav,
-      denominationAsset,
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
@@ -287,9 +289,7 @@ describe('validateRule', () => {
 
   it('returns true if the incoming asset gav is exactly the threshold amount', async () => {
     const {
-      deployment: {
-        tokens: { mln: incomingAsset },
-      },
+      mln: incomingAsset,
       assetGavLimit: incomingAssetGav,
       maxConcentration,
       mockComptrollerProxy,
@@ -311,9 +311,7 @@ describe('validateRule', () => {
 
   it('returns false if the incoming asset gav is slightly over the threshold amount', async () => {
     const {
-      deployment: {
-        tokens: { mln: incomingAsset },
-      },
+      mln: incomingAsset,
       assetGavLimit,
       maxConcentration,
       mockComptrollerProxy,
@@ -337,7 +335,7 @@ describe('validateRule', () => {
   it('returns true if the incoming asset is the denomination asset', async () => {
     const {
       assetGavLimit,
-      denominationAsset: incomingAsset,
+      weth: incomingAsset,
       maxConcentration,
       mockComptrollerProxy,
       mockValueInterpreter,
@@ -359,9 +357,7 @@ describe('validateRule', () => {
 
   it('returns false if the asset value lookup is invalid', async () => {
     const {
-      deployment: {
-        tokens: { mln: incomingAsset },
-      },
+      mln: incomingAsset,
       assetGavLimit: incomingAssetGav,
       maxConcentration,
       mockComptrollerProxy,
@@ -387,14 +383,10 @@ describe('integration tests', () => {
   it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        maxConcentration,
-        trackedAssetsAdapter,
-        integrationManager,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
-      },
-    } = await defaultTestDeployment(provider);
+      weth: denominationAsset,
+      mln: incomingAsset,
+      deployment: { fundDeployer, maxConcentration, trackedAssetsAdapter, integrationManager },
+    } = await provider.snapshot(snapshot);
 
     // configure policy
     const maxConcentrationRate = utils.parseEther('.1'); // 10%
@@ -438,11 +430,9 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         maxConcentration,
@@ -456,9 +446,10 @@ describe('integration tests', () => {
         synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
       },
-    } = await defaultTestDeployment(provider);
+      weth: denominationAsset,
+      mln: incomingAsset,
+    } = await provider.snapshot(snapshot);
 
     // configure policy
     const maxConcentrationRate = utils.parseEther('.1'); // 10%

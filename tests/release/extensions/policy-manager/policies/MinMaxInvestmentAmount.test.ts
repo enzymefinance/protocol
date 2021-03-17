@@ -1,30 +1,36 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   MinMaxInvestment,
   minMaxInvestmentArgs,
   PolicyHook,
   policyManagerConfigArgs,
   validateRulePreBuySharesArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const {
+    deployer,
+    deployment,
+    config,
+    accounts: [EOAPolicyManager, ...remainingAccounts],
+  } = await deployProtocolFixture();
 
-  const [EOAPolicyManager, ...remainingAccounts] = accounts;
-
-  const minMaxInvestment = await MinMaxInvestment.deploy(config.deployer, EOAPolicyManager);
+  const minMaxInvestment = await MinMaxInvestment.deploy(deployer, EOAPolicyManager);
   const permissionedMinMaxInvestment = minMaxInvestment.connect(EOAPolicyManager);
+  const denominationAsset = new WETH(config.weth, whales.weth);
 
   return {
+    deployer,
+    denominationAsset,
     accounts: remainingAccounts,
     deployment,
     config,
@@ -368,13 +374,9 @@ describe('validateRule', () => {
 describe('integration tests', () => {
   it('can create a new fund with this policy, and it can disable and re-enable the policy for that fund', async () => {
     const {
+      denominationAsset,
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        minMaxInvestment,
-        policyManager,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer, minMaxInvestment, policyManager },
     } = await provider.snapshot(snapshot);
 
     // declare variables for policy config
@@ -429,11 +431,10 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
+      denominationAsset,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -446,7 +447,6 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         minMaxInvestment,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
 
@@ -455,6 +455,7 @@ describe('integration tests', () => {
       minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
     });
+
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [minMaxInvestment],
       settings: [minMaxInvestmentSettings],

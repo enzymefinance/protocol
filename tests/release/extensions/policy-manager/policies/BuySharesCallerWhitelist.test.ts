@@ -1,32 +1,33 @@
+import { utils } from 'ethers';
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   BuySharesCallerWhitelist,
   buySharesCallerWhitelistArgs,
   PolicyHook,
   policyManagerConfigArgs,
   validateRuleBuySharesSetupArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   buyShares,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { deployer, accounts, deployment, config } = await deployProtocolFixture();
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
   const comptrollerProxy = randomAddress();
   const whitelistedCallers = [randomAddress(), randomAddress()];
 
-  const buySharesCallerWhitelist1 = await BuySharesCallerWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const buySharesCallerWhitelist1 = await BuySharesCallerWhitelist.deploy(deployer, EOAPolicyManager);
   const unconfiguredBuySharesCallerWhitelist = buySharesCallerWhitelist1.connect(EOAPolicyManager);
 
-  const buySharesCallerWhitelist2 = await BuySharesCallerWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const buySharesCallerWhitelist2 = await BuySharesCallerWhitelist.deploy(deployer, EOAPolicyManager);
   const configuredBuySharesCallerWhitelist = buySharesCallerWhitelist2.connect(EOAPolicyManager);
 
   const buySharesCallerWhitelistConfig = buySharesCallerWhitelistArgs({
@@ -36,6 +37,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await configuredBuySharesCallerWhitelist.addFundSettings(comptrollerProxy, buySharesCallerWhitelistConfig);
 
   return {
+    deployer,
     accounts: remainingAccounts,
     comptrollerProxy,
     config,
@@ -274,19 +276,22 @@ describe('validateRule', () => {
 describe('integration tests', () => {
   it('only allows a whitelisted sender to call buyShares()', async () => {
     const {
+      config: { weth },
       accounts: [fundOwner, whitelistedCaller, unWhitelistedCaller],
-      deployment: {
-        fundDeployer,
-        buySharesCallerWhitelist,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer, buySharesCallerWhitelist },
     } = await provider.snapshot(snapshot);
+
+    const sharesBuyer = randomAddress();
+    const investmentAmount = utils.parseEther('1');
+    const denominationAsset = new WETH(weth, whales.weth);
+    await denominationAsset.transfer(whitelistedCaller, investmentAmount);
 
     // declare variables for policy config
     const buySharesCallerWhitelistAddresses = [randomAddress(), whitelistedCaller];
     const buySharesCallerWhitelistSettings = buySharesCallerWhitelistArgs({
       buySharesCallersToAdd: buySharesCallerWhitelistAddresses,
     });
+
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [buySharesCallerWhitelist.address],
       settings: [buySharesCallerWhitelistSettings],
@@ -306,7 +311,8 @@ describe('integration tests', () => {
     const buySharesArgs = {
       comptrollerProxy,
       denominationAsset,
-      buyers: [randomAddress()],
+      buyers: [sharesBuyer],
+      investmentAmounts: [investmentAmount],
     };
 
     // Buying shares for a random buyer should fail from the unWhitelisted caller
@@ -328,14 +334,12 @@ describe('integration tests', () => {
 
   it('can create a new fund with this policy, and it can disable and re-enable the policy for that fund', async () => {
     const {
+      config: { weth },
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        buySharesCallerWhitelist,
-        policyManager,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer, buySharesCallerWhitelist, policyManager },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
 
     // declare variables for policy config
     const buySharesCallerWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
@@ -393,11 +397,10 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -410,15 +413,17 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         buySharesCallerWhitelist,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
 
     // declare variables for policy config
     const buySharesCallerWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
     const buySharesCallerWhitelistSettings = buySharesCallerWhitelistArgs({
       buySharesCallersToAdd: buySharesCallerWhitelistAddresses,
     });
+
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [buySharesCallerWhitelist.address],
       settings: [buySharesCallerWhitelistSettings],

@@ -4,25 +4,25 @@
  */
 
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   EntranceRateDirectFee,
   entranceRateFeeConfigArgs,
   FeeHook,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, defaultTestDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [EOAFeeManager, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
 
   // Create standalone EntranceRateDirectFee
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(config.deployer, EOAFeeManager);
+  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(deployer, EOAFeeManager);
 
   return {
     accounts: remainingAccounts,

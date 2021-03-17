@@ -188,7 +188,7 @@ async function assertCompoundRedeem({
   return redeemReceipt;
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: {
@@ -210,7 +210,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: {
@@ -314,7 +314,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('lend', () => {
+xdescribe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const {
       config: { deployer },
@@ -368,7 +368,7 @@ describe('lend', () => {
   });
 });
 
-describe('redeem', () => {
+xdescribe('redeem', () => {
   it('works as expected when called for redeeming by a fund', async () => {
     const {
       config: { deployer },

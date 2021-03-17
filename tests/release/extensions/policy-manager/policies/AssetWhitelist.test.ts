@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   addTrackedAssetsArgs,
   addTrackedAssetsSelector,
@@ -10,45 +9,48 @@ import {
   IntegrationManagerActionId,
   PolicyHook,
   policyManagerConfigArgs,
+  StandardToken,
   validateRulePostCoIArgs,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { deployer, accounts, deployment, config } = await deployProtocolFixture();
 
   const [EOAPolicyManager, ...remainingAccounts] = accounts;
 
-  const assetWhitelist1 = await AssetWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const assetWhitelist1 = await AssetWhitelist.deploy(deployer, EOAPolicyManager);
   const unconfiguredAssetWhitelist = assetWhitelist1.connect(EOAPolicyManager);
 
   const denominationAssetAddress = randomAddress();
   const whitelistedAssets = [denominationAssetAddress, randomAddress(), randomAddress()];
 
   // Mock the ComptrollerProxy and VaultProxy
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.getTrackedAssets.returns([]);
 
-  const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
+  const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   await mockComptrollerProxy.getDenominationAsset.returns(denominationAssetAddress);
 
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
-  const assetWhitelist2 = await AssetWhitelist.deploy(config.deployer, EOAPolicyManager);
+  const assetWhitelist2 = await AssetWhitelist.deploy(deployer, EOAPolicyManager);
   const configuredAssetWhitelist = assetWhitelist2.connect(EOAPolicyManager);
   const assetWhitelistConfig = assetWhitelistArgs(whitelistedAssets);
 
   await configuredAssetWhitelist.addFundSettings(mockComptrollerProxy, assetWhitelistConfig);
 
   return {
+    deployer,
     accounts: remainingAccounts,
     config,
     configuredAssetWhitelist,
@@ -209,14 +211,13 @@ describe('integration tests', () => {
   it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        trackedAssetsAdapter,
-        integrationManager,
-        fundDeployer,
-        assetWhitelist,
-        tokens: { weth: denominationAsset, mln: incomingAsset, comp: nonWhitelistedAsset },
-      },
+      config: { weth, primitives },
+      deployment: { trackedAssetsAdapter, integrationManager, fundDeployer, assetWhitelist },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(primitives.mln, whales.mln);
+    const nonWhitelistedAsset = new StandardToken(primitives.comp, whales.comp);
 
     // declare variables for policy config
     const assetWhitelistAddresses = [
@@ -225,6 +226,7 @@ describe('integration tests', () => {
       randomAddress(),
       randomAddress(),
     ];
+
     const assetWhitelistSettings = assetWhitelistArgs(assetWhitelistAddresses);
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [assetWhitelist.address],
@@ -289,11 +291,11 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        primitives,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -307,9 +309,12 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         assetWhitelist,
-        tokens: { weth: denominationAsset, mln: incomingAsset, comp: nonWhitelistedAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(primitives.mln, whales.mln);
+    const nonWhitelistedAsset = new StandardToken(primitives.comp, whales.comp);
 
     const assetWhitelistAddresses = [denominationAsset.address, incomingAsset, randomAddress(), randomAddress()];
     const assetWhitelistSettings = assetWhitelistArgs(assetWhitelistAddresses);

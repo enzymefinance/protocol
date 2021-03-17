@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   AdapterBlacklist,
   adapterBlacklistArgs,
@@ -8,65 +7,46 @@ import {
   kyberTakeOrderArgs,
   PolicyHook,
   policyManagerConfigArgs,
+  StandardToken,
   takeOrderSelector,
   validateRulePreCoIArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   createNewFund,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [EOAPolicyManager, ...remainingAccounts],
     deployment,
     config,
-  };
-}
+  } = await deployProtocolFixture();
 
-async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [EOAPolicyManager, ...remainingAccounts],
-    config,
-  } = await provider.snapshot(snapshot);
-
-  const adapterBlacklist = await AdapterBlacklist.deploy(config.deployer, EOAPolicyManager);
-
-  return {
-    accounts: remainingAccounts,
-    adapterBlacklist,
-    blacklistedAdapters: [randomAddress(), randomAddress()],
-    comptrollerProxy: randomAddress(),
-    EOAPolicyManager,
-  };
-}
-
-async function snapshotWithConfiguredStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    adapterBlacklist,
-    blacklistedAdapters,
-    comptrollerProxy,
-    EOAPolicyManager,
-  } = await provider.snapshot(snapshotWithStandalonePolicy);
-
+  const adapterBlacklist = await AdapterBlacklist.deploy(deployer, EOAPolicyManager);
   const permissionedAdapterBlacklist = adapterBlacklist.connect(EOAPolicyManager);
 
+  const blacklistedAdapters = [randomAddress(), randomAddress()];
+  const comptrollerProxy = randomAddress();
   const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
   await permissionedAdapterBlacklist.addFundSettings(comptrollerProxy, adapterBlacklistConfig);
 
   return {
-    accounts,
-    adapterBlacklist: permissionedAdapterBlacklist,
-    comptrollerProxy,
-    blacklistedAdapters,
+    deployer,
+    accounts: remainingAccounts,
     EOAPolicyManager,
+    comptrollerProxy,
+    deployment,
+    config,
+    blacklistedAdapters,
+    permissionedAdapterBlacklist,
+    adapterBlacklist,
   };
 }
 
@@ -86,9 +66,7 @@ describe('constructor', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(snapshot);
 
     const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
 
@@ -97,31 +75,28 @@ describe('addFundSettings', () => {
     );
   });
 
-  it('sets initial config values for fund and fires events', async () => {
-    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy, EOAPolicyManager } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+  it('sets config values for fund and fires events', async () => {
+    const { permissionedAdapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(snapshot);
 
-    const adapterBlacklistConfig = adapterBlacklistArgs(blacklistedAdapters);
-    const receipt = await adapterBlacklist
-      .connect(EOAPolicyManager)
-      .addFundSettings(comptrollerProxy, adapterBlacklistConfig);
+    const additionalBlacklistedAdapters = [randomAddress(), randomAddress()];
+    const adapterBlacklistConfig = adapterBlacklistArgs(additionalBlacklistedAdapters);
+    const receipt = await permissionedAdapterBlacklist.addFundSettings(comptrollerProxy, adapterBlacklistConfig);
 
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
       comptrollerProxy,
-      items: blacklistedAdapters,
+      items: additionalBlacklistedAdapters,
     });
 
     // List should be the blacklisted adapters
-    const listResult = await adapterBlacklist.getList(comptrollerProxy);
-    expect(listResult).toMatchObject(blacklistedAdapters);
+    const listResult = await permissionedAdapterBlacklist.getList(comptrollerProxy);
+    expect(listResult).toMatchObject(blacklistedAdapters.concat(additionalBlacklistedAdapters));
   });
 });
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { adapterBlacklist } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { adapterBlacklist } = await provider.snapshot(snapshot);
 
     await expect(adapterBlacklist.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
@@ -131,9 +106,7 @@ describe('updateFundSettings', () => {
 
 describe('validateRule', () => {
   it('returns false if an adapter is in the blacklist', async () => {
-    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { adapterBlacklist, blacklistedAdapters, comptrollerProxy } = await provider.snapshot(snapshot);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -149,7 +122,7 @@ describe('validateRule', () => {
   });
 
   it('returns true if an adapter is not in the blacklist', async () => {
-    const { adapterBlacklist, comptrollerProxy } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+    const { adapterBlacklist, comptrollerProxy } = await provider.snapshot(snapshot);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -169,14 +142,12 @@ describe('integration tests', () => {
   it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        kyberAdapter,
-        integrationManager,
-        fundDeployer,
-        adapterBlacklist,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager, fundDeployer, adapterBlacklist },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(config.weth, whales.weth);
+    const incomingAsset = new StandardToken(config.primitives.mln, whales.mln);
 
     // declare variables for policy config
     const adapterBlacklistAddresses = [kyberAdapter];
@@ -222,11 +193,11 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        primitives,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -240,12 +211,12 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         adapterBlacklist,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
       },
     } = await provider.snapshot(snapshot);
 
-    const rate = utils.parseEther('0.1'); // 10%
-    rate;
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(primitives.mln, whales.mln);
+
     const adapterBlacklistAddresses = [kyberAdapter];
     const adapterBlacklistSettings = adapterBlacklistArgs(adapterBlacklistAddresses);
     const adapterBlacklistConfigData = policyManagerConfigArgs({

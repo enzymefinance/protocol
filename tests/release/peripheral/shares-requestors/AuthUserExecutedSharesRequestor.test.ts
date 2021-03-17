@@ -1,33 +1,34 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   AuthUserExecutedSharesRequestorLib,
   AuthUserExecutedSharesRequestorProxy,
   encodeFunctionData,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createAuthUserExecutedSharesRequest,
   createAuthUserExecutedSharesRequestorProxy,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
+    deployer,
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await provider.snapshot(defaultTestDeployment);
+  } = await deployProtocolFixture();
 
   // Deploy a fund
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new WETH(config.weth, whales.weth);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset,
   });
 
   // Create a shares requestor proxy for the fund
@@ -109,11 +110,15 @@ describe('createRequest', () => {
       fund: { authUserExecutedSharesRequestorProxy, denominationAsset },
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     // First request from `buyer` should succeed
     await createAuthUserExecutedSharesRequest({
       buyer,
       authUserExecutedSharesRequestorProxy,
       denominationAsset,
+      investmentAmount,
     });
 
     // Second request from `buyer` should fail since there is already a request pending
@@ -134,6 +139,8 @@ describe('createRequest', () => {
 
     const investmentAmount = utils.parseEther('2');
     const minSharesQuantity = utils.parseEther('1');
+
+    await denominationAsset.transfer(buyer, investmentAmount);
 
     const preTxSharesRequestorDenominationAssetBalance = await denominationAsset.balanceOf(
       authUserExecutedSharesRequestorProxy,
@@ -174,12 +181,17 @@ describe('createRequest', () => {
       fund: { authUserExecutedSharesRequestorProxy, denominationAsset },
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     // Execute and cancel a request
     await createAuthUserExecutedSharesRequest({
       buyer,
       authUserExecutedSharesRequestorProxy,
       denominationAsset,
+      investmentAmount,
     });
+
     await authUserExecutedSharesRequestorProxy.connect(buyer).cancelRequest();
 
     // Second request from `buyer` should fail since they are within the cooldown period
@@ -225,6 +237,8 @@ describe('cancelRequest', () => {
 
     const investmentAmount = utils.parseEther('2');
     const minSharesQuantity = utils.parseEther('1');
+
+    await denominationAsset.transfer(buyer, investmentAmount);
 
     // Create a request
     await createAuthUserExecutedSharesRequest({
@@ -293,6 +307,9 @@ describe('executeRequests', () => {
     const investmentAmount2 = utils.parseEther('0.5');
     const minSharesQuantity2 = utils.parseEther('0.5');
 
+    await denominationAsset.transfer(buyer1, investmentAmount1);
+    await denominationAsset.transfer(buyer2, investmentAmount2);
+
     // Create requests from two buyers
     await createAuthUserExecutedSharesRequest({
       buyer: buyer1,
@@ -301,6 +318,7 @@ describe('executeRequests', () => {
       investmentAmount: investmentAmount1,
       minSharesQuantity: minSharesQuantity1,
     });
+
     await createAuthUserExecutedSharesRequest({
       buyer: buyer2,
       authUserExecutedSharesRequestorProxy,
@@ -361,6 +379,9 @@ describe('executeRequests', () => {
     const investmentAmount2 = utils.parseEther('0.5');
     const minSharesQuantity2 = utils.parseEther('0.5');
 
+    await denominationAsset.transfer(buyer1, investmentAmount1);
+    await denominationAsset.transfer(buyer2, investmentAmount2);
+
     // Create requests from two buyers
     await createAuthUserExecutedSharesRequest({
       buyer: buyer1,
@@ -369,6 +390,7 @@ describe('executeRequests', () => {
       investmentAmount: investmentAmount1,
       minSharesQuantity: minSharesQuantity1,
     });
+
     await createAuthUserExecutedSharesRequest({
       buyer: buyer2,
       authUserExecutedSharesRequestorProxy,
@@ -427,6 +449,8 @@ describe('executeRequests', () => {
 
     // Create a request from a 3rd party
     const investmentAmount = utils.parseEther('2');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     const minSharesQuantity = utils.parseEther('1');
     await createAuthUserExecutedSharesRequest({
       buyer,

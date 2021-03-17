@@ -42,7 +42,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, paraswapAdapter },
@@ -64,7 +64,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { paraswapAdapter },
@@ -191,7 +191,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('takeOrder', () => {
+xdescribe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { paraswapAdapter },

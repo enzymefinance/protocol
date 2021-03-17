@@ -42,7 +42,7 @@ async function getFundDeployerOwner(dispatcher: AddressLike, provider: EthereumT
   return dispatcherContract.getOwner();
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, zeroExV2Adapter },
@@ -64,7 +64,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a maker which is not whitelisted', async () => {
     const {
       config: {
@@ -326,7 +326,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('allowed makers', () => {
+xdescribe('allowed makers', () => {
   describe('addAllowedMakers', () => {
     it('can only be called by fundDeployerOwner', async () => {
       const {

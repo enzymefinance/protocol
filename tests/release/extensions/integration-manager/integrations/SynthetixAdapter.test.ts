@@ -46,7 +46,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, synthetixAdapter, synthetixPriceFeed },
@@ -72,7 +72,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { synthetixAdapter },
@@ -137,7 +137,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('takeOrder', () => {
+xdescribe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { synthetixAdapter },

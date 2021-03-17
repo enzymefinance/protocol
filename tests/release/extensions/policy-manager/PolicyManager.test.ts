@@ -1,16 +1,18 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   IPolicy,
+  MockGenericAdapter,
+  MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
+  StandardToken,
   validateRulePostBuySharesArgs,
   validateRulePostCoIArgs,
   validateRulePreBuySharesArgs,
   validateRulePreCoIArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   buyShares,
   createNewFund,
   generateRegisteredMockPolicies,
@@ -19,20 +21,26 @@ import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
 
   const policies = await generateRegisteredMockPolicies({
-    deployer: config.deployer,
+    deployer,
     policyManager: deployment.policyManager,
   });
+
+  const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
+  const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
+  await deployment.integrationManager.registerAdapters([mockGenericAdapter]);
 
   const orderedPolicies = Object.values(policies);
   const policiesSettingsData = [utils.randomBytes(10), '0x', utils.randomBytes(2), '0x'];
@@ -42,9 +50,10 @@ async function snapshot(provider: EthereumTestnetProvider) {
     settings: policiesSettingsData,
   });
 
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new WETH(config.weth, whales.weth);
 
   return {
+    deployer,
     accounts: remainingAccounts,
     config,
     deployment,
@@ -54,6 +63,8 @@ async function snapshot(provider: EthereumTestnetProvider) {
     policyManagerConfig,
     denominationAsset,
     fundOwner,
+    mockGenericIntegratee,
+    mockGenericAdapter,
   };
 }
 
@@ -84,9 +95,9 @@ describe('constructor', () => {
       assetWhitelist,
       buySharesCallerWhitelist,
       guaranteedRedemption,
+      investorWhitelist,
       maxConcentration,
       minMaxInvestment,
-      investorWhitelist,
       ...Object.values(policies),
     ]);
 
@@ -150,11 +161,9 @@ describe('activateForFund', () => {
   it('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)', async () => {
     // create fund with policies
     const {
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         fundDeployer,
@@ -222,11 +231,9 @@ describe('activateForFund', () => {
 describe('deactivateForFund', () => {
   it('removes VaultProxy and all policies from local storage', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         fundDeployer,
@@ -890,6 +897,8 @@ describe('validatePolicies', () => {
     });
 
     const investmentAmount = utils.parseEther('2');
+    await denominationAsset.transfer(buyer, investmentAmount);
+
     await buyShares({
       comptrollerProxy,
       signer: buyer,
@@ -932,16 +941,14 @@ describe('validatePolicies', () => {
 
   it('correctly handles a CallOnIntegration PolicyHook', async () => {
     const {
-      deployment: {
-        fundDeployer,
-        integrationManager,
-        mockGenericAdapter,
-        tokens: { dai, mln, weth },
-      },
+      mockGenericAdapter,
+      mockGenericIntegratee,
+      deployment: { fundDeployer, integrationManager },
       policies: { mockPreBuySharesPolicy, mockPostBuySharesPolicy, mockPreCoIPolicy, mockPostCoIPolicy },
       fundOwner,
       denominationAsset,
       policyManagerConfig,
+      config: { primitives },
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -952,7 +959,14 @@ describe('validatePolicies', () => {
       policyManagerConfig,
     });
 
+    const dai = new StandardToken(primitives.dai, whales.dai);
+    const mln = new StandardToken(primitives.mln, whales.mln);
+
+    await dai.transfer(mockGenericIntegratee, utils.parseEther('5000'));
+    await mln.transfer(mockGenericIntegratee, utils.parseEther('5000'));
+
     // Define complex spend and incoming asset values to ensure correct data passed to PolicyManager
+    const weth = denominationAsset;
     const spendAssets = [weth, dai];
     const actualSpendAssetAmounts = [utils.parseEther('1'), utils.parseEther('1')];
     const incomingAssets = [dai, mln];
@@ -1014,7 +1028,8 @@ describe('validatePolicies', () => {
 
   it('reverts if return value is false', async () => {
     const {
-      deployment: { fundDeployer, integrationManager, mockGenericAdapter },
+      mockGenericAdapter,
+      deployment: { fundDeployer, integrationManager },
       policies: { mockPreCoIPolicy },
       fundOwner,
       denominationAsset,
@@ -1114,8 +1129,8 @@ describe('policy registry', () => {
   describe('registerPolicies', () => {
     it('can only be called by the owner of the FundDeployer contract', async () => {
       const {
+        deployer,
         accounts: [randomAccount],
-        config: { deployer },
         deployment: { policyManager },
       } = await provider.snapshot(snapshot);
 
@@ -1153,7 +1168,7 @@ describe('policy registry', () => {
 
     it('successfully registers a policy with multiple implemented hooks and emits the correct event', async () => {
       const {
-        config: { deployer },
+        deployer,
         deployment: { policyManager },
       } = await provider.snapshot(snapshot);
 

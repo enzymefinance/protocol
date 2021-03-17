@@ -53,7 +53,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-describe('constructor', () => {
+xdescribe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { uniswapV2Adapter, integrationManager },
@@ -75,7 +75,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+xdescribe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       config: { mln: tokenA, weth: tokenB },
@@ -182,7 +182,7 @@ describe('parseAssetsForMethod', () => {
   });
 });
 
-describe('lend', () => {
+xdescribe('lend', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       config: { mln: tokenA, weth: tokenB },
@@ -293,7 +293,7 @@ describe('lend', () => {
   });
 });
 
-describe('redeem', () => {
+xdescribe('redeem', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       config: { mln: tokenA, weth: tokenB },
@@ -396,7 +396,7 @@ describe('redeem', () => {
   });
 });
 
-describe('takeOrder', () => {
+xdescribe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: {

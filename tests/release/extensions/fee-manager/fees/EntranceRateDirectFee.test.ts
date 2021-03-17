@@ -4,7 +4,6 @@
  */
 
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   EntranceRateDirectFee,
   FeeHook,
@@ -13,6 +12,7 @@ import {
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
   feeManagerConfigArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
@@ -20,21 +20,25 @@ import {
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [EOAFeeManager, ...remainingAccounts],
     deployment,
+    deployer,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   // Create standalone EntranceRateDirectFee
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(config.deployer, EOAFeeManager);
+  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(deployer, EOAFeeManager);
+  const denominationAsset = new WETH(config.weth, whales.weth);
 
   return {
+    deployer,
+    denominationAsset,
     accounts: remainingAccounts,
     config,
     deployment,
@@ -112,12 +116,12 @@ describe('integration', () => {
   it('can create a new fund with this fee, works correctly while buying shares', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
-      deployment: {
-        fundDeployer,
-        entranceRateDirectFee,
-        tokens: { weth: denominationAsset },
-      },
+      denominationAsset,
+      deployment: { fundDeployer, entranceRateDirectFee },
     } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(fundInvestor, investmentAmount);
 
     // Setting up the fund with EntranceRateDirectFee
     const rate = utils.parseEther('0.1'); // 10%
@@ -126,6 +130,7 @@ describe('integration', () => {
       fees: [entranceRateDirectFee],
       settings: [entranceRateFeeSettings],
     });
+
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundDeployer,
@@ -141,7 +146,7 @@ describe('integration', () => {
       signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
-      investmentAmounts: [utils.parseEther('1')],
+      investmentAmounts: [investmentAmount],
       minSharesAmounts: [utils.parseEther('0.1')],
     });
 
@@ -164,12 +169,11 @@ describe('integration', () => {
   it('can migrate a fund with this fee', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
+      denominationAsset,
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
@@ -181,9 +185,11 @@ describe('integration', () => {
         synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(fundInvestor, investmentAmount);
 
     // Setting up the fund with EntranceRateDirectFee
     const rate = utils.parseEther('0.1'); // 10%
@@ -236,7 +242,7 @@ describe('integration', () => {
       signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
-      investmentAmounts: [utils.parseEther('1')],
+      investmentAmounts: [investmentAmount],
       minSharesAmounts: [utils.parseEther('0.1')],
     });
 
@@ -259,12 +265,11 @@ describe('integration', () => {
   it('can add this fee to a fund on migration', async () => {
     const {
       accounts: [fundOwner, fundInvestor],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
+      denominationAsset,
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
@@ -276,9 +281,11 @@ describe('integration', () => {
         synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const investmentAmount = utils.parseEther('1');
+    await denominationAsset.transfer(fundInvestor, investmentAmount);
 
     // Setting up the fund with EntranceRateDirectFee
     const rate = utils.parseEther('0.1'); // 10%
@@ -330,7 +337,7 @@ describe('integration', () => {
       signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
-      investmentAmounts: [utils.parseEther('1')],
+      investmentAmounts: [investmentAmount],
       minSharesAmounts: [utils.parseEther('0.1')],
     });
 

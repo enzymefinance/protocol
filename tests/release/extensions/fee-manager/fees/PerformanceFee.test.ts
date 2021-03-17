@@ -1,5 +1,4 @@
 import { MockContract } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   FeeHook,
@@ -7,11 +6,13 @@ import {
   FeeManagerActionId,
   feeManagerConfigArgs,
   FeeSettlementType,
+  MockChainlinkPriceSource,
   PerformanceFee,
   performanceFeeConfigArgs,
   performanceFeeSharesDue,
   StandardToken,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssets,
@@ -22,33 +23,33 @@ import {
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   transactionTimestamp,
   updateChainlinkAggregator,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
+async function snapshot() {
+  const { accounts, deployment, config, deployer } = await deployProtocolFixture();
 
   // Mock a FeeManager
-  const mockFeeManager = await FeeManager.mock(config.deployer);
+  const mockFeeManager = await FeeManager.mock(deployer);
   await mockFeeManager.getFeeSharesOutstandingForFund.returns(0);
 
   // Create standalone PerformanceFee
-  const standalonePerformanceFee = await PerformanceFee.deploy(config.deployer, mockFeeManager);
+  const standalonePerformanceFee = await PerformanceFee.deploy(deployer, mockFeeManager);
 
   // Mock a denomination asset
-  const mockDenominationAsset = await StandardToken.mock(config.deployer);
+  const mockDenominationAsset = await StandardToken.mock(deployer);
   await mockDenominationAsset.decimals.returns(18);
 
   // Mock a VaultProxy
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.totalSupply.returns(0);
   await mockVaultProxy.balanceOf.returns(0);
 
   // Mock a ComptrollerProxy
-  const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
+  const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   await mockComptrollerProxy.calcGav.returns(0, false);
   await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseEther('1'), true);
   await mockComptrollerProxy.getDenominationAsset.returns(mockDenominationAsset);
@@ -65,6 +66,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   await mockFeeManager.forward(standalonePerformanceFee.addFundSettings, mockComptrollerProxy, performanceFeeConfig);
 
   return {
+    deployer,
     accounts,
     config,
     deployment,
@@ -821,22 +823,28 @@ describe('settle', () => {
 describe('integration', () => {
   it('can create a new fund with this fee, works correctly while buying shares, and is paid out when allowed', async () => {
     const {
+      deployer,
       accounts: [fundOwner, fundInvestor],
+      config: { weth, primitives },
       deployment: {
-        chainlinkAggregators,
+        chainlinkPriceFeed,
         feeManager,
         trackedAssetsAdapter,
         integrationManager,
         performanceFee,
         fundDeployer,
-        tokens: { weth: denominationAsset, mln: mln },
       },
     } = await provider.snapshot(snapshot);
 
+    const investmentAmount = utils.parseEther('1');
+    const denominationAsset = new WETH(weth, whales.weth);
+    await denominationAsset.transfer(fundInvestor, investmentAmount.mul(2));
+
+    const mockPriceSource = await MockChainlinkPriceSource.deploy(deployer, 18);
+    chainlinkPriceFeed.updatePrimitives([primitives.mln], [mockPriceSource]);
+
     const performanceFeeRate = utils.parseEther('.1'); // 10%
-
     const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
-
     const performanceFeeConfigSettings = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,
@@ -876,10 +884,9 @@ describe('integration', () => {
     expect(truePayoutCall).toBe(true);
 
     // invest in the fund so there are shares
-    const investmentAmount = utils.parseEther('1');
     await buyShares({
       comptrollerProxy,
-      signer: fundOwner,
+      signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
       investmentAmounts: [investmentAmount],
@@ -888,6 +895,7 @@ describe('integration', () => {
 
     // add assets to fund
     const amount = utils.parseEther('75');
+    const mln = new StandardToken(primitives.mln, whales.mln);
     await mln.transfer(vaultProxy, amount);
 
     // track them
@@ -907,7 +915,7 @@ describe('integration', () => {
     const profitCaseSharesBeforeSettlement = await vaultProxy.totalSupply();
 
     // update price feed to accommodate time warp
-    await updateChainlinkAggregator(chainlinkAggregators.mln);
+    await updateChainlinkAggregator(mockPriceSource);
 
     // settle fees
     await callOnExtension({
@@ -931,12 +939,12 @@ describe('integration', () => {
     const lossCaseSharesBeforeSettlement = await vaultProxy.totalSupply();
 
     // update price feed to accommodate time warp and tick down the price of MLN to decrease GAV
-    await updateChainlinkAggregator(chainlinkAggregators.mln, utils.parseEther('.75'));
+    await updateChainlinkAggregator(mockPriceSource, utils.parseEther('.75'));
 
     // buy shares to settle fees
     await buyShares({
       comptrollerProxy,
-      signer: fundOwner,
+      signer: fundInvestor,
       buyers: [fundInvestor],
       denominationAsset,
       investmentAmounts: [investmentAmount],
@@ -953,12 +961,11 @@ describe('integration', () => {
 
   it('can create a migrated fund with this fee', async () => {
     const {
+      deployer,
       accounts: [fundOwner],
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -971,14 +978,13 @@ describe('integration', () => {
         valueInterpreter,
         vaultLib,
         performanceFee,
-        tokens: { weth: denominationAsset },
       },
     } = await provider.snapshot(snapshot);
 
+    const denominationAsset = new WETH(weth, whales.weth);
+
     const performanceFeeRate = utils.parseEther('.1'); // 10%
-
     const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
-
     const performanceFeeConfigSettings = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,

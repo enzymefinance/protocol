@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
   ComptrollerLib,
@@ -7,18 +7,20 @@ import {
   IntegrationManager,
   IntegrationManagerActionId,
   MockGenericAdapter,
+  MockGenericIntegratee,
   PolicyHook,
   sighash,
   StandardToken,
   validateRulePostCoIArgs,
   validateRulePreCoIArgs,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssets,
   assertEvent,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   getAssetBalances,
   mockGenericSwap,
   mockGenericSwapArgs,
@@ -27,28 +29,47 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
 
-  const denominationAsset = deployment.tokens.weth;
+  const weth = new WETH(config.weth, whales.weth);
+  const knc = new StandardToken(config.primitives.knc, whales.knc);
+  const dai = new StandardToken(config.primitives.dai, whales.dai);
+  const mln = new StandardToken(config.primitives.mln, whales.mln);
+
+  const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
+  const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
+  await deployment.integrationManager.registerAdapters([mockGenericAdapter]);
+
+  await Promise.all([
+    knc.transfer(mockGenericIntegratee, utils.parseEther('1000')),
+    dai.transfer(mockGenericIntegratee, utils.parseEther('1000')),
+    mln.transfer(mockGenericIntegratee, utils.parseEther('1000')),
+    weth.transfer(mockGenericIntegratee, utils.parseEther('1000')),
+  ]);
+
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset,
+    denominationAsset: weth,
   });
 
   return {
+    mockGenericAdapter,
+    mockGenericIntegratee,
     accounts: remainingAccounts,
     deployment,
     config,
+    tokens: { knc, weth, dai, mln },
     fund: {
       comptrollerProxy,
-      denominationAsset,
+      denominationAsset: weth,
       fundOwner,
       vaultProxy,
     },
@@ -112,8 +133,9 @@ describe('callOnIntegration', () => {
   it('only allows authorized users', async () => {
     const {
       accounts: [newAuthUser],
-      deployment: { mockGenericAdapter, integrationManager },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
+      mockGenericAdapter,
     } = await provider.snapshot(snapshot);
 
     const swapArgs = mockGenericSwapArgs({});
@@ -151,11 +173,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow an unregistered adapter', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-      },
+      mockGenericAdapter,
+      deployment: { integrationManager },
+      tokens: { weth: outgoingAsset, mln: incomingAsset },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -178,11 +198,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow spendAssets and actualSpendAssetAmounts arrays to have unequal lengths', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: incomingAsset, weth, dai },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: incomingAsset, weth, dai },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -208,11 +226,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow incomingAssets and incomingAssetAmounts arrays to have unequal lengths', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: outgoingAsset, weth, dai },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: outgoingAsset, weth, dai },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -238,11 +254,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow duplicate spend assets', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: outgoingAsset, weth: incomingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: outgoingAsset, weth: incomingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -268,11 +282,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow duplicate incoming assets', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: outgoingAsset, weth: incomingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: outgoingAsset, weth: incomingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -298,11 +310,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow a non-receivable incoming asset', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { weth: outgoingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { weth: outgoingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -324,13 +334,10 @@ describe('callOnIntegration', () => {
 
   it('does not allow spendAsset spent to be greater than expected', async () => {
     const {
-      deployment: {
-        integrationManager,
-        fundDeployer,
-        mockGenericAdapter,
-        mockGenericIntegratee,
-        tokens: { weth: outgoingAsset },
-      },
+      mockGenericAdapter,
+      mockGenericIntegratee,
+      tokens: { weth: outgoingAsset },
+      deployment: { integrationManager, fundDeployer },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -369,11 +376,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow incomingAsset received to be less than expected', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { weth: outgoingAsset, mln: incomingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -396,11 +401,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow empty spend asset address', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: incomingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: incomingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -426,11 +429,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow empty incoming asset address', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { mln: outgoingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { mln: outgoingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
@@ -456,11 +457,9 @@ describe('callOnIntegration', () => {
 
   it('does not allow empty spend asset amount', async () => {
     const {
-      deployment: {
-        mockGenericAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
-      },
+      mockGenericAdapter,
+      tokens: { weth: outgoingAsset, mln: incomingAsset },
+      deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -485,12 +484,9 @@ describe('callOnIntegration', () => {
 describe('valid calls', () => {
   it('handles multiple incoming assets and multiple spend assets', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { dai, knc, mln, weth },
-      },
+      tokens: { dai, knc, mln, weth },
+      mockGenericAdapter,
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -572,12 +568,9 @@ describe('valid calls', () => {
 
   it('handles untracked incoming asset with a non-zero starting balance', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { knc },
-      },
+      mockGenericAdapter,
+      tokens: { knc },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -659,12 +652,9 @@ describe('valid calls', () => {
 
   it('handles untracked incoming asset with a zero starting balance', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { knc },
-      },
+      mockGenericAdapter,
+      tokens: { knc },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -741,12 +731,9 @@ describe('valid calls', () => {
 
   it('handles a spend asset that is also an incoming asset and increases', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { mln },
-      },
+      mockGenericAdapter,
+      tokens: { mln },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -822,12 +809,9 @@ describe('valid calls', () => {
 
   it('handles a spend asset that is also an incoming asset and decreases', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { mln },
-      },
+      tokens: { mln },
+      mockGenericAdapter,
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -900,12 +884,9 @@ describe('valid calls', () => {
 
   it('handles a spend asset that is not an incoming asset and increases', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { mln },
-      },
+      mockGenericAdapter,
+      tokens: { mln },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -982,13 +963,9 @@ describe('valid calls', () => {
 
   it('handles a spend asset that is entirely transferred to the adapter, but partially used', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        trackedAssetsAdapter,
-        tokens: { mln: spendAsset },
-      },
+      mockGenericAdapter,
+      tokens: { mln: spendAsset },
+      deployment: { integrationManager, policyManager, trackedAssetsAdapter },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -1072,7 +1049,8 @@ describe('valid calls', () => {
 
   it('handles empty spend assets and incoming assets', async () => {
     const {
-      deployment: { integrationManager, mockGenericAdapter, policyManager },
+      mockGenericAdapter,
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -1134,12 +1112,9 @@ describe('valid calls', () => {
 
   it('handles a spend asset that is completely spent', async () => {
     const {
-      deployment: {
-        integrationManager,
-        mockGenericAdapter,
-        policyManager,
-        tokens: { mln },
-      },
+      mockGenericAdapter,
+      tokens: { mln },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 

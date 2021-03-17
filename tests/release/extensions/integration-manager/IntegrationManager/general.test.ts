@@ -1,33 +1,35 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   addZeroBalanceTrackedAssetsArgs,
   ComptrollerLib,
   IntegrationManagerActionId,
   removeZeroBalanceTrackedAssetsArgs,
+  StandardToken,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
-import { addNewAssetsToFund, assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { addNewAssetsToFund, assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+    deployer,
+  } = await deployProtocolFixture();
 
-  const denominationAsset = deployment.tokens.weth;
+  const denominationAsset = new WETH(config.weth, whales.weth);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
     denominationAsset,
   });
 
   // Deploy connected mocks for ComptrollerProxy and VaultProxy
-  const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.getAccessor.returns(mockComptrollerProxy);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
@@ -49,9 +51,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      config: {
-        integratees: { synthetix },
-      },
+      config: { synthetix },
       deployment: {
         aggregatedDerivativePriceFeed,
         chainlinkPriceFeed,
@@ -298,9 +298,9 @@ describe('callOnExtension actions', () => {
     it('only allows authorized users', async () => {
       const {
         accounts: [newAuthUser],
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToAdd1, dai: assetToAdd2 },
+        deployment: { integrationManager },
+        config: {
+          primitives: { mln: assetToAdd1, dai: assetToAdd2 },
         },
         fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
@@ -344,14 +344,15 @@ describe('callOnExtension actions', () => {
 
     it('does not allow an asset with a non-zero balance', async () => {
       const {
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToAdd },
+        deployment: { integrationManager },
+        config: {
+          primitives: { mln },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
       // Give the asset to add a non-zero vault balance
+      const assetToAdd = new StandardToken(mln, whales.mln);
       await assetToAdd.transfer(vaultProxy, 1);
 
       await expect(
@@ -367,9 +368,9 @@ describe('callOnExtension actions', () => {
 
     it('successfully adds each asset to tracked assets', async () => {
       const {
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToAdd1, dai: assetToAdd2 },
+        deployment: { integrationManager },
+        config: {
+          primitives: { mln: assetToAdd1, dai: assetToAdd2 },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
@@ -397,9 +398,9 @@ describe('callOnExtension actions', () => {
     it('only allows authorized users', async () => {
       const {
         accounts: [newAuthUser],
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToRemove1, dai: assetToRemove2 },
+        deployment: { integrationManager },
+        config: {
+          primitives: { mln: assetToRemove1, dai: assetToRemove2 },
         },
         fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
@@ -469,13 +470,14 @@ describe('callOnExtension actions', () => {
 
     it('does not allow an asset with a non-zero balance', async () => {
       const {
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToRemove },
-          trackedAssetsAdapter,
+        deployment: { integrationManager, trackedAssetsAdapter },
+        config: {
+          primitives: { mln },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
+
+      const assetToRemove = new StandardToken(mln, whales.mln);
 
       // Track the asset to remove and give it a non-zero vault balance
       await addNewAssetsToFund({
@@ -501,12 +503,15 @@ describe('callOnExtension actions', () => {
 
     it('successfully removes each asset from tracked assets', async () => {
       const {
-        deployment: {
-          integrationManager,
-          tokens: { mln: assetToRemove1, dai: assetToRemove2 },
+        deployment: { integrationManager },
+        config: {
+          primitives: { mln, dai },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
+
+      const assetToRemove1 = new StandardToken(mln, whales.mln);
+      const assetToRemove2 = new StandardToken(dai, whales.dai);
 
       // Add zero-balance assets to the fund
       await comptrollerProxy

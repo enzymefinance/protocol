@@ -15,7 +15,7 @@ function project(name: string, roots: string[]) {
 
 const projects = [
   project('persistent', ['tests/persistent']),
-  project('core', ['tests/mocks', 'tests/release/core']),
+  project('core', ['tests/release/core']),
   project('infrastructure', ['tests/release/infrastructure']),
   project('policy', ['tests/release/extensions/policy-manager']),
   project('integration', ['tests/release/extensions/integration-manager']),

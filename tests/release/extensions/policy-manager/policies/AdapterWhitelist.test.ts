@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   AdapterWhitelist,
   adapterWhitelistArgs,
@@ -8,65 +7,45 @@ import {
   kyberTakeOrderArgs,
   PolicyHook,
   policyManagerConfigArgs,
+  StandardToken,
   takeOrderSelector,
   uniswapV2TakeOrderArgs,
   validateRulePreCoIArgs,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [EOAPolicyManager, ...remainingAccounts],
     deployment,
     config,
-  };
-}
+  } = await deployProtocolFixture();
 
-async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [EOAPolicyManager, ...remainingAccounts],
-    config,
-  } = await provider.snapshot(snapshot);
-
-  const adapterWhitelist = await AdapterWhitelist.deploy(config.deployer, EOAPolicyManager);
-
-  return {
-    accounts: remainingAccounts,
-    adapterWhitelist,
-    whitelistedAdapters: [randomAddress(), randomAddress()],
-    comptrollerProxy: randomAddress(),
-    EOAPolicyManager,
-  };
-}
-
-async function snapshotWithConfiguredStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    adapterWhitelist,
-    whitelistedAdapters,
-    comptrollerProxy,
-    EOAPolicyManager,
-  } = await provider.snapshot(snapshotWithStandalonePolicy);
-
+  const comptrollerProxy = randomAddress();
+  const whitelistedAdapters = [randomAddress(), randomAddress()];
+  const adapterWhitelist = await AdapterWhitelist.deploy(deployer, EOAPolicyManager);
   const permissionedAdapterWhitelist = adapterWhitelist.connect(EOAPolicyManager);
-
   const adapterWhitelistConfig = adapterWhitelistArgs(whitelistedAdapters);
   await permissionedAdapterWhitelist.addFundSettings(comptrollerProxy, adapterWhitelistConfig);
 
   return {
-    accounts,
-    adapterWhitelist: permissionedAdapterWhitelist,
+    deployer,
+    accounts: remainingAccounts,
+    deployment,
     comptrollerProxy,
+    adapterWhitelist,
     whitelistedAdapters,
+    permissionedAdapterWhitelist,
+    config,
     EOAPolicyManager,
   };
 }
@@ -87,9 +66,7 @@ describe('constructor', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const { adapterWhitelist, whitelistedAdapters, comptrollerProxy } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { adapterWhitelist, whitelistedAdapters, comptrollerProxy } = await provider.snapshot(snapshot);
 
     const adapterWhitelistConfig = adapterWhitelistArgs(whitelistedAdapters);
 
@@ -100,10 +77,11 @@ describe('addFundSettings', () => {
 
   it('sets initial config values for fund and fires events', async () => {
     const { adapterWhitelist, whitelistedAdapters, comptrollerProxy, EOAPolicyManager } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
+      snapshot,
     );
 
-    const adapterWhitelistConfig = adapterWhitelistArgs(whitelistedAdapters);
+    const extraWhitelistedAdapters = [randomAddress(), randomAddress()];
+    const adapterWhitelistConfig = adapterWhitelistArgs(extraWhitelistedAdapters);
     const receipt = await adapterWhitelist
       .connect(EOAPolicyManager)
       .addFundSettings(comptrollerProxy, adapterWhitelistConfig);
@@ -111,18 +89,18 @@ describe('addFundSettings', () => {
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
       comptrollerProxy,
-      items: whitelistedAdapters,
+      items: extraWhitelistedAdapters,
     });
 
     // List should be the whitelisted adapters
     const listResult = await adapterWhitelist.getList(comptrollerProxy);
-    expect(listResult).toMatchObject(whitelistedAdapters);
+    expect(listResult).toMatchObject(whitelistedAdapters.concat(extraWhitelistedAdapters));
   });
 });
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { adapterWhitelist } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { adapterWhitelist } = await provider.snapshot(snapshot);
 
     await expect(adapterWhitelist.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
@@ -132,9 +110,7 @@ describe('updateFundSettings', () => {
 
 describe('validateRule', () => {
   it('returns true if an adapter is in the whitelist', async () => {
-    const { adapterWhitelist, whitelistedAdapters, comptrollerProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { adapterWhitelist, whitelistedAdapters, comptrollerProxy } = await provider.snapshot(snapshot);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -150,7 +126,7 @@ describe('validateRule', () => {
   });
 
   it('returns false if an adapter is not in the whitelist', async () => {
-    const { adapterWhitelist, comptrollerProxy } = await provider.snapshot(snapshotWithConfiguredStandalonePolicy);
+    const { adapterWhitelist, comptrollerProxy } = await provider.snapshot(snapshot);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -170,12 +146,11 @@ describe('integration tests', () => {
   it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        fundDeployer,
-        adapterWhitelist,
-        tokens: { weth: denominationAsset },
-      },
+      deployment: { fundDeployer, adapterWhitelist },
+      config: { weth },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
 
     // declare variables for policy config
     const adapterWhitelistAddresses = [randomAddress(), randomAddress(), randomAddress()];
@@ -224,11 +199,11 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        primitives,
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         kyberAdapter,
@@ -243,9 +218,11 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         adapterWhitelist,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(primitives.mln, whales.mln);
 
     const adapterWhitelistAddresses = [kyberAdapter.address];
     const adapterWhitelistSettings = adapterWhitelistArgs(adapterWhitelistAddresses);

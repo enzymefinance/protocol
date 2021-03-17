@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   addTrackedAssetsArgs,
   addTrackedAssetsSelector,
@@ -10,76 +9,52 @@ import {
   IntegrationManagerActionId,
   PolicyHook,
   policyManagerConfigArgs,
+  StandardToken,
   validateRulePostCoIArgs,
   VaultLib,
+  WETH,
 } from '@enzymefinance/protocol';
 import {
-  defaultTestDeployment,
   assertEvent,
   createNewFund,
   createMigratedFundConfig,
   createFundDeployer,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils, constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  return {
-    accounts,
+async function snapshot() {
+  const {
+    deployer,
+    accounts: [EOAPolicyManager, ...remainingAccounts],
     deployment,
     config,
-  };
-}
-
-async function snapshotWithStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts: [EOAPolicyManager, ...remainingAccounts],
-    config,
-  } = await provider.snapshot(snapshot);
-
-  const assetBlacklist = await AssetBlacklist.deploy(config.deployer, EOAPolicyManager);
-
+  } = await deployProtocolFixture();
   const denominationAssetAddress = randomAddress();
 
   // Mock the ComptrollerProxy and VaultProxy
-  const mockVaultProxy = await VaultLib.mock(config.deployer);
+  const mockVaultProxy = await VaultLib.mock(deployer);
   await mockVaultProxy.getTrackedAssets.returns([]);
 
-  const mockComptrollerProxy = await ComptrollerLib.mock(config.deployer);
+  const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   await mockComptrollerProxy.getDenominationAsset.returns(denominationAssetAddress);
-
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
-  return {
-    accounts: remainingAccounts,
-    assetBlacklist,
-    blacklistedAssets: [randomAddress(), randomAddress()],
-    denominationAssetAddress,
-    EOAPolicyManager,
-    mockComptrollerProxy,
-    mockVaultProxy,
-  };
-}
-
-async function snapshotWithConfiguredStandalonePolicy(provider: EthereumTestnetProvider) {
-  const {
-    accounts,
-    assetBlacklist,
-    blacklistedAssets,
-    EOAPolicyManager,
-    mockComptrollerProxy,
-    mockVaultProxy,
-  } = await provider.snapshot(snapshotWithStandalonePolicy);
-
+  const assetBlacklist = await AssetBlacklist.deploy(deployer, EOAPolicyManager);
+  const blacklistedAssets = [randomAddress(), randomAddress()];
   const permissionedAssetBlacklist = assetBlacklist.connect(EOAPolicyManager);
   const assetBlacklistConfig = assetBlacklistArgs(blacklistedAssets);
   await permissionedAssetBlacklist.addFundSettings(mockComptrollerProxy, assetBlacklistConfig);
 
   return {
-    accounts,
-    assetBlacklist: permissionedAssetBlacklist,
+    deployer,
+    accounts: remainingAccounts,
+    deployment,
+    config,
+    assetBlacklist,
     blacklistedAssets,
+    permissionedAssetBlacklist,
+    denominationAssetAddress,
     EOAPolicyManager,
     mockComptrollerProxy,
     mockVaultProxy,
@@ -102,9 +77,7 @@ describe('constructor', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the PolicyManager', async () => {
-    const { assetBlacklist, blacklistedAssets, mockComptrollerProxy } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
-    );
+    const { assetBlacklist, blacklistedAssets, mockComptrollerProxy } = await provider.snapshot(snapshot);
 
     const assetBlacklistConfig = assetBlacklistArgs(blacklistedAssets);
 
@@ -120,7 +93,7 @@ describe('addFundSettings', () => {
       denominationAssetAddress,
       mockComptrollerProxy,
       EOAPolicyManager,
-    } = await provider.snapshot(snapshotWithStandalonePolicy);
+    } = await provider.snapshot(snapshot);
 
     const assetBlacklistConfig = assetBlacklistArgs([...blacklistedAssets, denominationAssetAddress]);
 
@@ -131,10 +104,11 @@ describe('addFundSettings', () => {
 
   it('sets initial config values for fund and fires events', async () => {
     const { assetBlacklist, blacklistedAssets, mockComptrollerProxy, EOAPolicyManager } = await provider.snapshot(
-      snapshotWithStandalonePolicy,
+      snapshot,
     );
 
-    const assetBlacklistConfig = assetBlacklistArgs(blacklistedAssets);
+    const extraBlacklistedAssets = [randomAddress(), randomAddress()];
+    const assetBlacklistConfig = assetBlacklistArgs(extraBlacklistedAssets);
     const receipt = await assetBlacklist
       .connect(EOAPolicyManager)
       .addFundSettings(mockComptrollerProxy, assetBlacklistConfig);
@@ -142,18 +116,18 @@ describe('addFundSettings', () => {
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
       comptrollerProxy: mockComptrollerProxy,
-      items: blacklistedAssets,
+      items: extraBlacklistedAssets,
     });
 
     // List should be the blacklisted assets
     const getListCall = await assetBlacklist.getList(mockComptrollerProxy);
-    expect(getListCall).toMatchObject(blacklistedAssets);
+    expect(getListCall).toMatchObject(blacklistedAssets.concat(extraBlacklistedAssets));
   });
 });
 
 describe('updateFundSettings', () => {
   it('cannot be called', async () => {
-    const { assetBlacklist } = await provider.snapshot(snapshotWithStandalonePolicy);
+    const { assetBlacklist } = await provider.snapshot(snapshot);
 
     await expect(assetBlacklist.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
@@ -163,28 +137,33 @@ describe('updateFundSettings', () => {
 
 describe('activateForFund', () => {
   it('does not allow a blacklisted asset in the fund trackedAssets', async () => {
-    const { assetBlacklist, blacklistedAssets, mockComptrollerProxy, mockVaultProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const {
+      permissionedAssetBlacklist,
+      blacklistedAssets,
+      mockComptrollerProxy,
+      mockVaultProxy,
+    } = await provider.snapshot(snapshot);
 
     // Activation should pass if a blacklisted asset is not a trackedAsset
     await mockVaultProxy.getTrackedAssets.returns([randomAddress()]);
 
-    await expect(assetBlacklist.activateForFund(mockComptrollerProxy, mockVaultProxy)).resolves.toBeReceipt();
+    await expect(
+      permissionedAssetBlacklist.activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).resolves.toBeReceipt();
 
     // Setting a blacklistedAsset as a trackedAsset should make activation fail
     await mockVaultProxy.getTrackedAssets.returns([randomAddress(), blacklistedAssets[0]]);
 
-    await expect(assetBlacklist.activateForFund(mockComptrollerProxy, mockVaultProxy)).rejects.toBeRevertedWith(
-      'Blacklisted asset detected',
-    );
+    await expect(
+      permissionedAssetBlacklist.activateForFund(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('Blacklisted asset detected');
   });
 });
 
 describe('validateRule', () => {
   it('returns false if an asset is in the blacklist', async () => {
     const { assetBlacklist, blacklistedAssets, mockComptrollerProxy, mockVaultProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
+      snapshot,
     );
 
     // Only the incoming assets arg matters for this policy
@@ -205,9 +184,7 @@ describe('validateRule', () => {
   });
 
   it('returns true if an asset is not in the blacklist', async () => {
-    const { assetBlacklist, mockComptrollerProxy, mockVaultProxy } = await provider.snapshot(
-      snapshotWithConfiguredStandalonePolicy,
-    );
+    const { assetBlacklist, mockComptrollerProxy, mockVaultProxy } = await provider.snapshot(snapshot);
 
     // Only the incoming assets arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
@@ -231,14 +208,15 @@ describe('integration tests', () => {
   it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
     const {
       accounts: [fundOwner],
-      deployment: {
-        trackedAssetsAdapter,
-        fundDeployer,
-        assetBlacklist,
-        integrationManager,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
+      config: {
+        weth,
+        primitives: { mln },
       },
+      deployment: { trackedAssetsAdapter, fundDeployer, assetBlacklist, integrationManager },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, whales.mln);
 
     // declare variables for policy config
     const assetBlacklistAddresses = [incomingAsset.address];
@@ -283,11 +261,11 @@ describe('integration tests', () => {
   it('can create a migrated fund with this policy', async () => {
     const {
       accounts: [fundOwner],
+      deployer,
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver: synthetixAddressResolverAddress },
-        },
+        weth,
+        primitives: { mln },
+        synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
         chainlinkPriceFeed,
@@ -301,9 +279,11 @@ describe('integration tests', () => {
         vaultLib,
         assetBlacklist,
         trackedAssetsAdapter,
-        tokens: { weth: denominationAsset, mln: incomingAsset },
       },
     } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new WETH(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, whales.mln);
 
     const assetBlacklistAddresses = [incomingAsset.address];
     const assetBlacklistSettings = assetBlacklistArgs(assetBlacklistAddresses);
