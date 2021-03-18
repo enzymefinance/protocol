@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ISynthetixAddressResolver, ISynthetixExchanger, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
@@ -28,7 +27,7 @@ it('works as expected when called by a fund (synth to synth)', async () => {
   const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
     fundDeployer: fork.deployment.fundDeployer,

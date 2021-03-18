@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import {
   buyShares,
@@ -22,7 +21,7 @@ describe('derivative gas costs', () => {
     const [fundOwner, investor] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,

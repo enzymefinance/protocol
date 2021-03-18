@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { IAlphaHomoraV1Bank, StandardToken } from '@enzymefinance/protocol';
 import {
   alphaHomoraV1Lend,
@@ -77,7 +76,7 @@ describe('derivative gas costs', () => {
     const [fundOwner, investor] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,

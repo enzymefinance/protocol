@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { createUnsignedZeroExV2Order, signZeroExV2Order, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
@@ -26,7 +25,7 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -94,7 +93,7 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
@@ -162,7 +161,7 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,

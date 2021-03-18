@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import { createNewFund, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -24,7 +23,7 @@ describe('exchangeAndBuyShares', () => {
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
@@ -61,7 +60,7 @@ describe('exchangeAndBuyShares', () => {
     const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,

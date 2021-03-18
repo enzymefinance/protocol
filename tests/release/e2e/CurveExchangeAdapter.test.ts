@@ -1,5 +1,4 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   curveTakeOrderArgs,
   ICurveAddressProvider,
@@ -115,7 +114,7 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -158,7 +157,7 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -201,7 +200,7 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,

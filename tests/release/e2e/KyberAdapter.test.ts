@@ -79,7 +79,7 @@ it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
@@ -110,7 +110,7 @@ it('works as expected when called by a fund (ETH to ERC20)', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
@@ -141,7 +141,7 @@ it('works as expected when called by a fund (ERC20 to ETH)', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
@@ -174,7 +174,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
@@ -209,7 +209,7 @@ it('respects minConversionRate as set via minIncomingAssetAmount (non-18 decimal
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,

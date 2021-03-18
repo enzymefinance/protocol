@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import {
   createNewFund,
@@ -24,7 +23,7 @@ describe('adapters', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,

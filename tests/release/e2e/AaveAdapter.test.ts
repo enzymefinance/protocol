@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   AaveAdapter,
   aaveLendArgs,
@@ -23,7 +22,7 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
@@ -67,7 +66,7 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),

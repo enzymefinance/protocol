@@ -13,6 +13,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         project: ['persistent', 'core', 'infrastructure', 'fee', 'policy', 'integration', 'peripheral', 'e2e']
@@ -22,28 +23,48 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 12
-          always-auth: true
-          registry-url: https://npm.fury.io/melonproject/
-          scope: '@enzymefinance'
+          node-version: 14
 
-      - name: Retrieve dependency cache
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Yarn cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Node module cache
         uses: actions/cache@v2
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-modules-
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-modules-
 
-      # Stores a cache for fork requests for the e2e jest project.
-      - name: Retrieve fork cache
+      - name: Hardhat artifact cache
         uses: actions/cache@v2
-        if: ${{ matrix.project == 'e2e' }}
         with:
-          path: 'cache/hardhat-network-fork'
-          key: fork-${{ github.sha }}
-          restore-keys: fork-
+          path: |
+            artifacts
+            cache/solidity-files-cache.json
+          key: ${{ runner.os }}-artifacts-${{ hashFiles('contracts/**/*.sol') }}
+          restore-keys: |
+            ${{ runner.os }}-artifacts-
+
+      - name: Hardhat fork cache
+        uses: actions/cache@v2
+        with:
+          path: cache/hardhat-network-fork
+          key: fork-${{ matrix.project }}-${{ github.sha }}
+          restore-keys: |
+            fork-${{ matrix.project }}-
+            fork-
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -65,14 +86,23 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 12
-          always-auth: true
-          registry-url: https://npm.fury.io/melonproject/
-          scope: '@enzymefinance'
+          node-version: 14
 
-      - name: Retrieve dependency cache
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Yarn cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Node module cache
         uses: actions/cache@v2
         with:
           path: '**/node_modules'
@@ -100,24 +130,38 @@ jobs:
   #       uses: actions/checkout@v2
 
   #     - name: Set up node
-  #       uses: actions/setup-node@v1
+  #       uses: actions/setup-node@v2
   #       with:
-  #         node-version: 12
-  #         always-auth: true
-  #         registry-url: https://npm.fury.io/melonproject/
-  #         scope: '@enzymefinance'
+  #         node-version: 14
 
-  #     - name: Retrieve dependency cache
+  #     - name: Get yarn cache directory path
+  #       id: yarn-cache-dir-path
+  #       run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+  #     - name: Yarn cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-yarn-
+
+  #     - name: Node module cache
   #       uses: actions/cache@v2
   #       with:
   #         path: '**/node_modules'
   #         key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-modules-
 
-  #     - name: Retrieve fork cache
+  #     - name: Hardhat fork cache
   #       uses: actions/cache@v2
   #       with:
-  #         path: 'cache/hardhat-network-fork'
-  #         key: static
+  #         path: cache/hardhat-network-fork
+  #         key: fork-${{ matrix.project }}-${{ github.sha }}
+  #         restore-keys: |
+  #           fork-${{ matrix.project }}-
+  #           fork-
 
   #     - name: Install dependencies
   #       run: yarn install --frozen-lockfile

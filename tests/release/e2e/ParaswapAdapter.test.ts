@@ -1,4 +1,3 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
@@ -22,7 +21,7 @@ it('works as expected when called by a fund (no network fees)', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
@@ -93,7 +92,7 @@ it('refunds unused network fees', async () => {
   const [fundOwner] = fork.accounts;
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
     fundOwner,
     denominationAsset: new StandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,

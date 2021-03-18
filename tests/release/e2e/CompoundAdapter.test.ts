@@ -148,7 +148,7 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,

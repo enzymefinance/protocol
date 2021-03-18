@@ -1,5 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   approveAssetsSelector,
   claimRewardsAndReinvestSelector,
@@ -529,7 +528,7 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -569,7 +568,7 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -613,7 +612,7 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -662,7 +661,7 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -702,7 +701,7 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -747,7 +746,7 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -798,7 +797,7 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -855,7 +854,7 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -913,7 +912,7 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -973,7 +972,7 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1032,7 +1031,7 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1090,7 +1089,7 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1150,7 +1149,7 @@ describe('stake and unstake', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1223,7 +1222,7 @@ describe('claimRewards', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1289,7 +1288,7 @@ describe('claimRewardsAndReinvest', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1391,7 +1390,7 @@ describe('claimRewardsAndReinvest', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
@@ -1495,7 +1494,7 @@ describe('claim rewards (manually)', () => {
     const minter = new CurveMinter(fork.config.curve.minter, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
