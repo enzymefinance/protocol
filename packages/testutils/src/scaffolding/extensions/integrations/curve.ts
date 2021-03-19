@@ -5,6 +5,7 @@ import {
   ComptrollerLib,
   curveApproveAssetsArgs,
   CurveExchangeAdapter,
+  CurveLiquiditySethAdapter,
   CurveLiquidityStethAdapter,
   IntegrationManager,
   IntegrationManagerActionId,
@@ -12,6 +13,13 @@ import {
   callOnIntegrationArgs,
   claimRewardsAndReinvestSelector,
   claimRewardsSelector,
+  curveSethClaimRewardsAndReinvestArgs,
+  curveSethLendAndStakeArgs,
+  curveSethLendArgs,
+  curveSethRedeemArgs,
+  curveSethStakeArgs,
+  curveSethUnstakeAndRedeemArgs,
+  curveSethUnstakeArgs,
   curveStethClaimRewardsAndReinvestArgs,
   curveStethLendAndStakeArgs,
   curveStethLendArgs,
@@ -121,6 +129,245 @@ export async function curveTakeOrder({
     adapter: curveExchangeAdapter,
     selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+// sETH pool
+
+export function curveSethClaimRewards({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: claimRewardsSelector,
+    encodedCallArgs: constants.HashZero,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethClaimRewardsAndReinvest({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount = BigNumber.from(1),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount?: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: claimRewardsAndReinvestSelector,
+    encodedCallArgs: curveSethClaimRewardsAndReinvestArgs({
+      useFullBalances,
+      minIncomingLiquidityGaugeTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethLend({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingWethAmount,
+  outgoingSethAmount,
+  minIncomingLPTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingWethAmount: BigNumberish;
+  outgoingSethAmount: BigNumberish;
+  minIncomingLPTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: lendSelector,
+    encodedCallArgs: curveSethLendArgs({
+      outgoingWethAmount,
+      outgoingSethAmount,
+      minIncomingLPTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethLendAndStake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingWethAmount,
+  outgoingSethAmount,
+  minIncomingLiquidityGaugeTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingWethAmount: BigNumberish;
+  outgoingSethAmount: BigNumberish;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: lendAndStakeSelector,
+    encodedCallArgs: curveSethLendAndStakeArgs({
+      outgoingWethAmount,
+      outgoingSethAmount,
+      minIncomingLiquidityGaugeTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethRedeem({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingLPTokenAmount,
+  minIncomingWethAmount,
+  minIncomingSethAmount,
+  receiveSingleAsset,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingLPTokenAmount: BigNumberish;
+  minIncomingWethAmount: BigNumberish;
+  minIncomingSethAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: redeemSelector,
+    encodedCallArgs: curveSethRedeemArgs({
+      outgoingLPTokenAmount,
+      minIncomingWethAmount,
+      minIncomingSethAmount,
+      receiveSingleAsset,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethStake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingLPTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingLPTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: stakeSelector,
+    encodedCallArgs: curveSethStakeArgs({
+      outgoingLPTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethUnstakeAndRedeem({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingLiquidityGaugeTokenAmount,
+  minIncomingWethAmount,
+  minIncomingSethAmount,
+  receiveSingleAsset,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+  minIncomingWethAmount: BigNumberish;
+  minIncomingSethAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: unstakeAndRedeemSelector,
+    encodedCallArgs: curveSethUnstakeAndRedeemArgs({
+      outgoingLiquidityGaugeTokenAmount,
+      minIncomingWethAmount,
+      minIncomingSethAmount,
+      receiveSingleAsset,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethUnstake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  outgoingLiquidityGaugeTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: unstakeSelector,
+    encodedCallArgs: curveSethUnstakeArgs({
+      outgoingLiquidityGaugeTokenAmount,
+    }),
   });
 
   return comptrollerProxy

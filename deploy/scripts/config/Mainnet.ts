@@ -250,6 +250,12 @@ const mainnetConfig: DeploymentConfig = {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: curveMinter,
     pools: {
+      seth: {
+        invariantProxyAsset: weth,
+        liquidityGaugeToken: '0x3C0FFFF15EA30C35d7A85B85c0782D6c94e1d238',
+        lpToken: '0xA3D87FffcE63B53E0d54fAa1cc983B7eB0b74A9c',
+        pool: '0xc5424B857f758E906013F3555Dad202e4bdB4567'
+      },
       steth: {
         invariantProxyAsset: weth,
         liquidityGaugeToken: '0x182B723a58739a9c974cFDB385ceaDb237453c28',

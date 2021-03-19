@@ -36,6 +36,94 @@ export function curveTakeOrderArgs({
   );
 }
 
+// sETH pool
+
+export function curveSethClaimRewardsAndReinvestArgs({
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount,
+}: {
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
+}
+
+export function curveSethLendAndStakeArgs({
+  outgoingWethAmount,
+  outgoingSethAmount,
+  minIncomingLiquidityGaugeTokenAmount,
+}: {
+  outgoingWethAmount: BigNumberish;
+  outgoingSethAmount: BigNumberish;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256', 'uint256'],
+    [outgoingWethAmount, outgoingSethAmount, minIncomingLiquidityGaugeTokenAmount],
+  );
+}
+
+export function curveSethLendArgs({
+  outgoingWethAmount,
+  outgoingSethAmount,
+  minIncomingLPTokenAmount,
+}: {
+  outgoingWethAmount: BigNumberish;
+  outgoingSethAmount: BigNumberish;
+  minIncomingLPTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256', 'uint256'],
+    [outgoingWethAmount, outgoingSethAmount, minIncomingLPTokenAmount],
+  );
+}
+
+export function curveSethStakeArgs({ outgoingLPTokenAmount }: { outgoingLPTokenAmount: BigNumberish }) {
+  return encodeArgs(['uint256'], [outgoingLPTokenAmount]);
+}
+
+export function curveSethRedeemArgs({
+  outgoingLPTokenAmount,
+  minIncomingWethAmount,
+  minIncomingSethAmount,
+  receiveSingleAsset,
+}: {
+  outgoingLPTokenAmount: BigNumberish;
+  minIncomingWethAmount: BigNumberish;
+  minIncomingSethAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256', 'uint256', 'bool'],
+    [outgoingLPTokenAmount, minIncomingWethAmount, minIncomingSethAmount, receiveSingleAsset],
+  );
+}
+
+export function curveSethUnstakeAndRedeemArgs({
+  outgoingLiquidityGaugeTokenAmount,
+  minIncomingWethAmount,
+  minIncomingSethAmount,
+  receiveSingleAsset,
+}: {
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+  minIncomingWethAmount: BigNumberish;
+  minIncomingSethAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256', 'uint256', 'bool'],
+    [outgoingLiquidityGaugeTokenAmount, minIncomingWethAmount, minIncomingSethAmount, receiveSingleAsset],
+  );
+}
+
+export function curveSethUnstakeArgs({
+  outgoingLiquidityGaugeTokenAmount,
+}: {
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['uint256'], [outgoingLiquidityGaugeTokenAmount]);
+}
+
 // stETH pool
 
 export function curveStethClaimRewardsAndReinvestArgs({

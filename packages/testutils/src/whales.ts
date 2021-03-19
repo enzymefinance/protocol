@@ -30,6 +30,7 @@ const whales = {
   cuni: '0x78e96be52e38b3fc3445a2ed34a6e586ffab9631',
   cusdc: '0x926e78b8df67e129011750dd7b975f8e50d3d7ad',
   czrx: '0x767ecb395def19ab8d1b2fcc89b3ddfbed28fd6b',
+  seth: '0x27cc4d6bc95b55a3a981bf1f1c7261cda7bb0931',
   susd: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
 } as const;
