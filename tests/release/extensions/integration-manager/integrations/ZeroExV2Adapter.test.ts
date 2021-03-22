@@ -1,32 +1,33 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   createUnsignedZeroExV2Order,
-  Dispatcher,
   signZeroExV2Order,
   SpendAssetsHandleType,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
+  StandardToken,
 } from '@enzymefinance/protocol';
-import { createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.synthetix.susd, deployer),
   });
 
   return {
     accounts: remainingAccounts,
+    deployer,
     deployment,
     config,
     fund: {
@@ -37,45 +38,42 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-async function getFundDeployerOwner(dispatcher: AddressLike, provider: EthereumTestnetProvider) {
-  const dispatcherContract = new Dispatcher(dispatcher, provider);
-  return dispatcherContract.getOwner();
-}
-
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, zeroExV2Adapter },
       config: {
-        integratees: { zeroExV2 },
+        zeroex: { allowedMakers, exchange },
       },
     } = await provider.snapshot(snapshot);
 
     const getExchangeCall = await zeroExV2Adapter.getExchange();
-    expect(getExchangeCall).toMatchAddress(zeroExV2.exchange);
+    expect(getExchangeCall).toMatchAddress(exchange);
 
     const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
     expect(getIntegrationManagerCall).toMatchAddress(integrationManager);
 
-    for (const allowedMaker of zeroExV2.allowedMakers) {
+    for (const allowedMaker of allowedMakers) {
       const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(allowedMaker);
       expect(isAllowedMakerCall).toBe(true);
     }
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a maker which is not whitelisted', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        integratees: { zeroExV2 },
+        weth,
+        primitives: { mln },
+        zeroex: { exchange },
       },
-      deployment: {
-        tokens: { mln: incomingAsset, weth: outgoingAsset },
-        zeroExV2Adapter,
-      },
+      deployment: { zeroExV2Adapter },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, provider);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
@@ -84,7 +82,7 @@ xdescribe('parseAssetsForMethod', () => {
     const takerAssetFillAmount = BigNumber.from(11);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      exchange: zeroExV2.exchange,
+      exchange: exchange,
       maker: deployer,
       feeRecipientAddress,
       makerAssetAmount,
@@ -107,18 +105,19 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output without takerFee', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        dispatcher,
-        integratees: { zeroExV2 },
+        weth,
+        primitives: { mln },
+        zeroex: { exchange },
       },
-      deployment: {
-        tokens: { mln: incomingAsset, weth: outgoingAsset },
-        zeroExV2Adapter,
-      },
+      deployment: { dispatcher, zeroExV2Adapter },
     } = await provider.snapshot(snapshot);
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+    const outgoingAsset = new StandardToken(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, provider);
+
+    const fundDeployerOwner = await dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
     await adapter.addAllowedMakers([deployer]);
@@ -131,7 +130,7 @@ xdescribe('parseAssetsForMethod', () => {
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      exchange: zeroExV2.exchange,
+      exchange,
       maker: deployer,
       feeRecipientAddress,
       makerAssetAmount,
@@ -161,18 +160,18 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output with takerFeeAsset that is the same as makerAsset', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        dispatcher,
-        integratees: { zeroExV2 },
+        primitives: { mln, zrx },
+        zeroex: { exchange },
       },
-      deployment: {
-        tokens: { zrx: incomingAsset, mln: outgoingAsset },
-        zeroExV2Adapter,
-      },
+      deployment: { dispatcher, zeroExV2Adapter },
     } = await provider.snapshot(snapshot);
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+    const outgoingAsset = new StandardToken(mln, whales.mln);
+    const incomingAsset = new StandardToken(zrx, provider);
+
+    const fundDeployerOwner = await dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
     await adapter.addAllowedMakers([deployer]);
@@ -189,7 +188,7 @@ xdescribe('parseAssetsForMethod', () => {
       .sub(expectedTakerFee);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      exchange: zeroExV2.exchange,
+      exchange: exchange,
       maker: deployer,
       feeRecipientAddress,
       makerAssetAmount,
@@ -218,18 +217,18 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output with takerFeeAsset that is the same as takerAsset', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        dispatcher,
-        integratees: { zeroExV2 },
+        primitives: { mln, zrx },
+        zeroex: { exchange },
       },
-      deployment: {
-        tokens: { mln: incomingAsset, zrx: outgoingAsset },
-        zeroExV2Adapter,
-      },
+      deployment: { dispatcher, zeroExV2Adapter },
     } = await provider.snapshot(snapshot);
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+    const outgoingAsset = new StandardToken(zrx, whales.zrx);
+    const incomingAsset = new StandardToken(mln, provider);
+
+    const fundDeployerOwner = await dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
     await adapter.addAllowedMakers([deployer]);
@@ -243,7 +242,7 @@ xdescribe('parseAssetsForMethod', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      exchange: zeroExV2.exchange,
+      exchange: exchange,
       maker: deployer,
       feeRecipientAddress,
       makerAssetAmount,
@@ -272,18 +271,20 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output with takerFee', async () => {
     const {
+      deployer,
       config: {
-        deployer,
-        dispatcher,
-        integratees: { zeroExV2 },
+        weth,
+        primitives: { mln, zrx },
+        zeroex: { exchange },
       },
-      deployment: {
-        tokens: { mln: incomingAsset, weth: outgoingAsset, zrx: takerFeeAsset },
-        zeroExV2Adapter,
-      },
+      deployment: { dispatcher, zeroExV2Adapter },
     } = await provider.snapshot(snapshot);
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+    const outgoingAsset = new StandardToken(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, provider);
+    const takerFeeAsset = new StandardToken(zrx, provider);
+
+    const fundDeployerOwner = await dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
     await adapter.addAllowedMakers([deployer]);
@@ -297,7 +298,7 @@ xdescribe('parseAssetsForMethod', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = await createUnsignedZeroExV2Order({
-      exchange: zeroExV2.exchange,
+      exchange: exchange,
       maker: deployer,
       feeRecipientAddress,
       makerAssetAmount,
@@ -326,16 +327,15 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('allowed makers', () => {
+describe('allowed makers', () => {
   describe('addAllowedMakers', () => {
     it('can only be called by fundDeployerOwner', async () => {
       const {
-        config: { dispatcher },
-        deployment: { zeroExV2Adapter },
+        deployment: { dispatcher, zeroExV2Adapter },
         fund: { fundOwner },
       } = await provider.snapshot(snapshot);
 
-      const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+      const fundDeployerOwner = await dispatcher.getOwner();
       const makerAddress = randomAddress();
       const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
@@ -346,11 +346,10 @@ xdescribe('allowed makers', () => {
 
     it('does not allow an already-set maker', async () => {
       const {
-        config: { dispatcher },
-        deployment: { zeroExV2Adapter },
+        deployment: { dispatcher, zeroExV2Adapter },
       } = await provider.snapshot(snapshot);
 
-      const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
+      const fundDeployerOwner = await dispatcher.getOwner();
       const makerAddress = randomAddress();
       const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 

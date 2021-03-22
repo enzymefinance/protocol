@@ -1,4 +1,3 @@
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   assetTransferArgs,
   ISynthetixAddressResolver,
@@ -10,25 +9,35 @@ import {
 } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   getAssetBalances,
   synthetixAssignExchangeDelegate,
   synthetixTakeOrder,
+  synthetixResolveAddress,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await provider.snapshot(defaultTestDeployment);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: new StandardToken(config.integratees.synthetix.susd, config.deployer),
+    denominationAsset: new StandardToken(config.synthetix.susd, deployer),
+  });
+
+  const synthetixAddressResolver = new ISynthetixAddressResolver(config.synthetix.addressResolver, provider);
+
+  // Load the SynthetixExchange contract
+  const exchangerAddress = await synthetixResolveAddress({
+    addressResolver: synthetixAddressResolver,
+    name: 'Exchanger',
   });
 
   return {
@@ -42,17 +51,15 @@ async function snapshot(provider: EthereumTestnetProvider) {
     },
     sbtcCurrencyKey: utils.formatBytes32String('sBTC'),
     susdCurrencyKey: utils.formatBytes32String('sUSD'),
-    synthetixExchanger: new ISynthetixExchanger(deployment.synthetix.mockSynthetixIntegratee, provider),
+    synthetixExchanger: new ISynthetixExchanger(exchangerAddress, provider),
   };
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, synthetixAdapter, synthetixPriceFeed },
-      config: {
-        integratees: { synthetix },
-      },
+      config: { synthetix },
     } = await provider.snapshot(snapshot);
 
     const integrationManagerResult = await synthetixAdapter.getIntegrationManager();
@@ -72,16 +79,14 @@ xdescribe('constructor', () => {
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { synthetixAdapter },
       config: {
-        derivatives: {
-          synthetix: { sbtc },
-        },
-        integratees: {
-          synthetix: { susd },
+        synthetix: {
+          susd,
+          synths: { sbtc },
         },
       },
     } = await provider.snapshot(snapshot);
@@ -104,11 +109,9 @@ xdescribe('parseAssetsForMethod', () => {
     const {
       deployment: { synthetixAdapter },
       config: {
-        derivatives: {
-          synthetix: { sbtc },
-        },
-        integratees: {
-          synthetix: { susd },
+        synthetix: {
+          susd,
+          synths: { sbtc },
         },
       },
     } = await provider.snapshot(snapshot);
@@ -137,17 +140,15 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('takeOrder', () => {
+describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { synthetixAdapter },
       fund: { vaultProxy },
       config: {
-        derivatives: {
-          synthetix: { sbtc },
-        },
-        integratees: {
-          synthetix: { susd },
+        synthetix: {
+          susd,
+          synths: { sbtc },
         },
       },
     } = await provider.snapshot(snapshot);
@@ -178,32 +179,21 @@ xdescribe('takeOrder', () => {
   it('works as expected when called by a fund (synth to synth)', async () => {
     const {
       config: {
-        deployer,
-        integratees: {
-          synthetix: { addressResolver },
-        },
-        derivatives: {
-          synthetix: { sbtc, susd },
+        synthetix: {
+          addressResolver,
+          susd,
+          synths: { sbtc },
         },
       },
-      deployment: {
-        integrationManager,
-        synthetixAdapter,
-        synthetix: { mockSynthetixPriceSource },
-      },
+      deployment: { integrationManager, synthetixAdapter },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
       sbtcCurrencyKey,
       susdCurrencyKey,
       synthetixExchanger,
     } = await provider.snapshot(snapshot);
 
-    const incomingAsset = new StandardToken(sbtc, deployer);
-    const outgoingAsset = new StandardToken(susd, deployer);
-
-    // Necessary to set rates to avoid using chainlink price sources.
-    // TODO: Remove when aggregators are disabled
-    await mockSynthetixPriceSource.setRate(sbtcCurrencyKey, utils.parseEther('1'));
-    await mockSynthetixPriceSource.setRate(susdCurrencyKey, utils.parseEther('1'));
+    const incomingAsset = new StandardToken(sbtc, provider);
+    const outgoingAsset = new StandardToken(susd, whales.susd);
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({

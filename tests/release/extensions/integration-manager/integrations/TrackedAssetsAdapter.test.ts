@@ -1,21 +1,26 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { addTrackedAssetsArgs, addTrackedAssetsSelector, SpendAssetsHandleType } from '@enzymefinance/protocol';
-import { addTrackedAssets, assertEvent, createNewFund, defaultTestDeployment } from '@enzymefinance/testutils';
+import {
+  addTrackedAssetsArgs,
+  addTrackedAssetsSelector,
+  StandardToken,
+  SpendAssetsHandleType,
+} from '@enzymefinance/protocol';
+import { addTrackedAssets, assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.weth, deployer),
   });
 
   return {
@@ -30,7 +35,7 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, trackedAssetsAdapter },
@@ -41,7 +46,7 @@ xdescribe('constructor', () => {
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { trackedAssetsAdapter },
@@ -87,16 +92,16 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('addTrackedAssets', () => {
+describe('addTrackedAssets', () => {
   it('addTrackedAssets successfully', async () => {
     const {
-      deployment: {
-        trackedAssetsAdapter,
-        integrationManager,
-        tokens: { mln, dai },
-      },
+      config,
+      deployment: { trackedAssetsAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const mln = new StandardToken(config.primitives.mln, whales.mln);
+    const dai = new StandardToken(config.primitives.dai, whales.dai);
 
     const incomingAssets = [mln, dai];
 

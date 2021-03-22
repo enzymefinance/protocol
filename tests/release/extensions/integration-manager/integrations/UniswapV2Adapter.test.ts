@@ -1,4 +1,3 @@
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   assetTransferArgs,
   lendSelector,
@@ -9,11 +8,14 @@ import {
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
+  min,
+  IUniswapV2Pair,
+  UniswapV2Router,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   getAssetBalances,
   uniswapV2Lend,
   uniswapV2Redeem,
@@ -21,30 +23,26 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.weth, deployer),
   });
-
-  const token1 = deployment.tokens.mln;
-  const token0 = deployment.tokens.weth;
-
-  const mockPair = config.derivatives.uniswapV2.mlnWeth;
 
   return {
     accounts: remainingAccounts,
+    deployer,
     deployment,
     config,
-    mocks: { mockPair, token0, token1 },
     fund: {
       comptrollerProxy,
       fundOwner,
@@ -53,14 +51,12 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { uniswapV2Adapter, integrationManager },
       config: {
-        integratees: {
-          uniswapV2: { router, factory },
-        },
+        uniswap: { router, factory },
       },
     } = await provider.snapshot(snapshot);
 
@@ -75,10 +71,13 @@ xdescribe('constructor', () => {
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
-      config: { mln: tokenA, weth: tokenB },
+      config: {
+        primitives: { mln: tokenA },
+        weth: tokenB,
+      },
       deployment: { uniswapV2Adapter },
     } = await provider.snapshot(snapshot);
 
@@ -108,10 +107,10 @@ xdescribe('parseAssetsForMethod', () => {
   it('generates expected output for lending', async () => {
     const {
       config: {
-        mln: tokenA,
+        primitives: { mln: tokenA },
         weth: tokenB,
-        derivatives: {
-          uniswapV2: { mlnWeth: poolToken },
+        uniswap: {
+          pools: { mlnWeth: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
@@ -148,10 +147,10 @@ xdescribe('parseAssetsForMethod', () => {
   it('generates expected output for redeeming', async () => {
     const {
       config: {
-        mln: tokenA,
+        primitives: { mln: tokenA },
         weth: tokenB,
-        derivatives: {
-          uniswapV2: { mlnWeth: poolToken },
+        uniswap: {
+          pools: { mlnWeth: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
@@ -182,10 +181,13 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('lend', () => {
+describe('lend', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      config: { mln: tokenA, weth: tokenB },
+      config: {
+        primitives: { mln: tokenA },
+        weth: tokenB,
+      },
       deployment: { uniswapV2Adapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -214,43 +216,50 @@ xdescribe('lend', () => {
   it('works as expected when called by a fund', async () => {
     const {
       config: {
-        derivatives: {
-          uniswapV2: { mlnWeth: poolToken },
+        primitives: { mln },
+        weth,
+        uniswap: {
+          router,
+          pools: { mlnWeth },
         },
       },
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: tokenA, weth: tokenB },
-      },
+      deployment: { uniswapV2Adapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const poolTokenContract = new StandardToken(poolToken, provider);
+    const tokenA = new StandardToken(mln, whales.mln);
+    const tokenB = new StandardToken(weth, whales.weth);
+    const poolToken = new StandardToken(mlnWeth, provider);
+
+    const uniswapPair = new IUniswapV2Pair(poolToken, provider);
+    const uniswapRouter = new UniswapV2Router(router, provider);
 
     const amountADesired = utils.parseEther('1');
-    const amountBDesired = utils.parseEther('1');
+
+    // Calc amountBDesired relative to amountADesired
+    const getReservesRes = await uniswapPair.getReserves();
+    const [reservesA, reservesB] =
+      (await uniswapPair.token0()) == tokenA.address
+        ? [getReservesRes[0], getReservesRes[1]]
+        : [getReservesRes[1], getReservesRes[0]];
+    const amountBDesired = await uniswapRouter.quote(amountADesired, reservesA, reservesB);
 
     // Seed fund
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
 
-    const preTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const preTxPoolTokenBalance = await poolToken.balanceOf(vaultProxy);
     const preTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
     });
 
-    const poolTokenTotalSupply = await poolTokenContract.totalSupply();
-    const reservesA = await tokenA.balanceOf(poolToken);
-    const reservesB = await tokenB.balanceOf(poolToken);
-    expect(reservesA).toEqBigNumber(reservesB);
+    const poolTokenTotalSupply = await poolToken.totalSupply();
 
-    // Rates are calculated under the asumption of equal reserves
-    expect(reservesA).toEqBigNumber(reservesB);
-
-    const expectedRate = poolTokenTotalSupply.mul(utils.parseEther('1')).div(reservesA);
-    const expectedIncomingAmount = amountADesired.mul(expectedRate).div(utils.parseEther('1'));
+    const expectedIncomingAmount = min(
+      amountADesired.mul(poolTokenTotalSupply).div(reservesA),
+      amountBDesired.mul(poolTokenTotalSupply).div(reservesB),
+    );
 
     const receipt = await uniswapV2Lend({
       comptrollerProxy,
@@ -275,13 +284,13 @@ xdescribe('lend', () => {
       caller: fundOwner,
       adapter: uniswapV2Adapter,
       selector: lendSelector,
-      incomingAssets: [poolTokenContract],
+      incomingAssets: [poolToken],
       incomingAssetAmounts: [expectedIncomingAmount],
       outgoingAssets: [tokenA, tokenB],
       outgoingAssetAmounts: [amountADesired, amountBDesired],
       integrationData: expect.anything(),
     });
-    const postTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
+    const postTxPoolTokenBalance = await poolToken.balanceOf(vaultProxy);
     const postTxTokenBalances = await getAssetBalances({
       account: vaultProxy,
       assets: [tokenA, tokenB],
@@ -293,10 +302,13 @@ xdescribe('lend', () => {
   });
 });
 
-xdescribe('redeem', () => {
+describe('redeem', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      config: { mln: tokenA, weth: tokenB },
+      config: {
+        primitives: { mln: tokenA },
+        weth: tokenB,
+      },
       deployment: { uniswapV2Adapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -323,50 +335,70 @@ xdescribe('redeem', () => {
   it('works as expected when called by a fund', async () => {
     const {
       config: {
-        deployer,
-        derivatives: {
-          uniswapV2: { mlnWeth: poolToken },
+        primitives: { mln },
+        weth,
+        uniswap: {
+          pools: { mlnWeth },
         },
       },
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: tokenA, weth: tokenB },
-      },
+      deployment: { uniswapV2Adapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
-    const poolTokenAmount = utils.parseEther('1');
-    const poolTokenContract = new StandardToken(poolToken, provider);
-    const poolTokenTotalSupply = await poolTokenContract.totalSupply();
 
-    const reservesA = await tokenA.balanceOf(poolToken);
-    const reservesB = await tokenB.balanceOf(poolToken);
+    const tokenA = new StandardToken(mln, whales.mln);
+    const tokenB = new StandardToken(weth, whales.weth);
+    const poolToken = new StandardToken(mlnWeth, provider);
 
-    const expectedRate = reservesA.mul(utils.parseEther('1')).div(poolTokenTotalSupply);
-    const expectedIncomingAmount = poolTokenAmount.mul(expectedRate).div(utils.parseEther('1'));
+    // Seed fund and lend arbitrary amounts of tokens for an arbitrary amount of pool tokens
+    const amountADesired = utils.parseEther('1');
+    const amountBDesired = utils.parseEther('1');
+    await tokenA.transfer(vaultProxy, amountADesired);
+    await tokenB.transfer(vaultProxy, amountBDesired);
 
-    // Rates are calculated under the asumption of equal reserves
-    expect(reservesA).toEqBigNumber(reservesB);
+    await uniswapV2Lend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      uniswapV2Adapter,
+      tokenA,
+      tokenB,
+      amountADesired,
+      amountBDesired,
+      amountAMin: BigNumber.from('1'),
+      amountBMin: BigNumber.from('1'),
+      minPoolTokenAmount: BigNumber.from('1'),
+    });
 
-    // seed fund
-    await poolTokenContract.connect(deployer).transfer(vaultProxy, poolTokenAmount);
-
-    const preTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
-    const preTxTokenBalances = await getAssetBalances({
+    // Get pre-redeem balances of all tokens
+    const [preRedeemTokenABalance, preRedeemTokenBBalance, preRedeemPoolTokenBalance] = await getAssetBalances({
       account: vaultProxy,
+      assets: [tokenA, tokenB, poolToken],
+    });
+
+    // Define redeem params to redeem 1/2 of pool tokens
+    const redeemPoolTokenAmount = preRedeemPoolTokenBalance.div(2);
+    expect(redeemPoolTokenAmount).not.toEqBigNumber(BigNumber.from(0));
+
+    // Calc expected amounts of tokens to receive
+    const poolTokensSupply = await poolToken.totalSupply();
+    const [poolTokenABalance, poolTokenBBalance] = await getAssetBalances({
+      account: poolToken,
       assets: [tokenA, tokenB],
     });
+    const expectedTokenAAmount = redeemPoolTokenAmount.mul(poolTokenABalance).div(poolTokensSupply);
+    const expectedTokenBAmount = redeemPoolTokenAmount.mul(poolTokenBBalance).div(poolTokensSupply);
 
     const receipt = await uniswapV2Redeem({
       comptrollerProxy,
       integrationManager,
       fundOwner,
       uniswapV2Adapter,
-      poolTokenAmount,
+      poolTokenAmount: redeemPoolTokenAmount,
       tokenA,
       tokenB,
-      amountAMin: expectedIncomingAmount,
-      amountBMin: expectedIncomingAmount,
+      amountAMin: BigNumber.from(1),
+      amountBMin: BigNumber.from(1),
     });
 
     const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
@@ -378,33 +410,37 @@ xdescribe('redeem', () => {
       adapter: uniswapV2Adapter,
       selector: redeemSelector,
       incomingAssets: [tokenA, tokenB],
-      incomingAssetAmounts: [expectedIncomingAmount, expectedIncomingAmount],
-      outgoingAssets: [poolTokenContract],
-      outgoingAssetAmounts: [poolTokenAmount],
+      incomingAssetAmounts: [expectedTokenAAmount, expectedTokenBAmount],
+      outgoingAssets: [poolToken],
+      outgoingAssetAmounts: [redeemPoolTokenAmount],
       integrationData: expect.anything(),
     });
 
-    const postTxPoolTokenBalance = await poolTokenContract.balanceOf(vaultProxy);
-    const postTxTokenBalances = await getAssetBalances({
+    // Get post-redeem balances of all tokens
+    const [postRedeemTokenABalance, postRedeemTokenBBalance, postRedeemPoolTokenBalance] = await getAssetBalances({
       account: vaultProxy,
-      assets: [tokenA, tokenB],
+      assets: [tokenA, tokenB, poolToken],
     });
 
-    expect(postTxTokenBalances[0]).toEqBigNumber(preTxTokenBalances[0].add(expectedIncomingAmount));
-    expect(postTxTokenBalances[1]).toEqBigNumber(preTxTokenBalances[1].add(expectedIncomingAmount));
-    expect(postTxPoolTokenBalance).toEqBigNumber(preTxPoolTokenBalance.sub(poolTokenAmount));
+    expect(postRedeemTokenABalance).toEqBigNumber(preRedeemTokenABalance.add(expectedTokenAAmount));
+    expect(postRedeemTokenBBalance).toEqBigNumber(preRedeemTokenBBalance.add(expectedTokenBAmount));
+    expect(postRedeemPoolTokenBalance).toEqBigNumber(preRedeemPoolTokenBalance.sub(redeemPoolTokenAmount));
   });
 });
 
-xdescribe('takeOrder', () => {
+describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      deployment: {
-        tokens: { mln: outgoingAsset, weth: incomingAsset },
-        uniswapV2Adapter,
+      config: {
+        weth,
+        primitives: { mln },
       },
+      deployment: { uniswapV2Adapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(mln, whales.mln);
+    const incomingAsset = new StandardToken(weth, provider);
 
     const takeOrderArgs = uniswapV2TakeOrderArgs({
       path: [outgoingAsset, incomingAsset],
@@ -424,13 +460,14 @@ xdescribe('takeOrder', () => {
 
   it('does not allow a path with less than 2 assets', async () => {
     const {
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: outgoingAsset },
+      config: {
+        primitives: { mln },
       },
+      deployment: { uniswapV2Adapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(mln, whales.mln);
 
     await expect(
       uniswapV2TakeOrder({
@@ -448,16 +485,22 @@ xdescribe('takeOrder', () => {
 
   it('works as expected when called by a fund', async () => {
     const {
-      deployment: {
-        uniswapV2Adapter,
-        integrationManager,
-        tokens: { mln: outgoingAsset, dai: incomingAsset },
+      config: {
+        primitives: { mln, knc },
       },
+      deployment: { uniswapV2Adapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const outgoingAssetAmount = utils.parseEther('1');
-    const expectedIncomingAssetAmount = utils.parseEther('1');
+    const outgoingAsset = new StandardToken(mln, whales.mln);
+    const incomingAsset = new StandardToken(knc, provider);
+    const path = [outgoingAsset, incomingAsset];
+
+    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+
+    const outgoingAssetAmount = utils.parseEther('0.1');
+    const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
+    const expectedIncomingAssetAmount = amountsOut[1];
 
     // Seed fund with outgoing asset
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);

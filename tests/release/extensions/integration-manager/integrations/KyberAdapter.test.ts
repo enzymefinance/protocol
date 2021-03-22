@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   assetTransferArgs,
   ComptrollerLib,
@@ -14,24 +14,26 @@ import {
 import {
   assertEvent,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   getAssetBalances,
   kyberTakeOrder,
+  KyberNetworkProxy,
 } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.weth, deployer),
   });
 
   return {
@@ -56,6 +58,7 @@ async function assertKyberTakeOrder({
   outgoingAssetAmount = utils.parseEther('1'),
   incomingAsset,
   minIncomingAssetAmount = utils.parseEther('1'),
+  expectedIncomingAssetAmount = utils.parseEther('1'),
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
@@ -66,6 +69,7 @@ async function assertKyberTakeOrder({
   outgoingAssetAmount?: BigNumberish;
   incomingAsset: StandardToken;
   minIncomingAssetAmount?: BigNumberish;
+  expectedIncomingAssetAmount?: BigNumberish;
 }) {
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
 
@@ -107,30 +111,28 @@ async function assertKyberTakeOrder({
     assets: [incomingAsset, outgoingAsset],
   });
 
-  // TODO: if we use rates other than 1:1, need to look up the actual rate
-  const expectedIncomingAssetAmount = outgoingAssetAmount;
   expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: { integrationManager, kyberAdapter },
       config: {
-        integratees: { kyber },
+        kyber: { networkProxy },
       },
     } = await provider.snapshot(snapshot);
 
     const exchangeResult = await kyberAdapter.getExchange();
-    expect(exchangeResult).toMatchAddress(kyber);
+    expect(exchangeResult).toMatchAddress(networkProxy);
 
     const integrationManagerResult = await kyberAdapter.getIntegrationManager();
     expect(integrationManagerResult).toMatchAddress(integrationManager);
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
       deployment: { kyberAdapter },
@@ -179,7 +181,7 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('takeOrder', () => {
+describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
       deployment: { kyberAdapter },
@@ -206,13 +208,12 @@ xdescribe('takeOrder', () => {
 
   it('does not allow incoming and outgoing assets to be the same', async () => {
     const {
-      deployment: {
-        kyberAdapter,
-        tokens: { weth: outgoingAsset, weth: incomingAsset },
-        integrationManager,
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const weth = new StandardToken(config.weth, whales.weth);
 
     await expect(
       kyberTakeOrder({
@@ -221,9 +222,9 @@ xdescribe('takeOrder', () => {
         integrationManager,
         fundOwner,
         kyberAdapter,
-        outgoingAsset,
+        outgoingAsset: weth,
         outgoingAssetAmount: utils.parseEther('1'),
-        incomingAsset,
+        incomingAsset: weth,
         seedFund: true,
       }),
     ).rejects.toBeRevertedWith('incomingAsset and outgoingAsset asset cannot be the same');
@@ -231,13 +232,13 @@ xdescribe('takeOrder', () => {
 
   it('does not allow empty minimum asset amount', async () => {
     const {
-      deployment: {
-        kyberAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(config.weth, whales.weth);
+    const incomingAsset = new StandardToken(config.primitives.mln, provider);
 
     await expect(
       kyberTakeOrder({
@@ -257,13 +258,18 @@ xdescribe('takeOrder', () => {
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {
     const {
-      deployment: {
-        kyberAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(config.weth, whales.weth);
+    const incomingAsset = new StandardToken(config.primitives.mln, provider);
+    const outgoingAssetAmount = utils.parseEther('1');
+
+    const kyberNetworkProxy = new KyberNetworkProxy(config.kyber.networkProxy, provider);
+
+    const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
     await assertKyberTakeOrder({
       comptrollerProxy,
@@ -272,19 +278,27 @@ xdescribe('takeOrder', () => {
       fundOwner,
       kyberAdapter,
       outgoingAsset,
+      outgoingAssetAmount,
       incomingAsset,
+      minIncomingAssetAmount: expectedRate,
+      expectedIncomingAssetAmount: expectedRate,
     });
   });
 
   it('works as expected when called by a fund (ERC20 to ETH)', async () => {
     const {
-      deployment: {
-        kyberAdapter,
-        tokens: { mln: outgoingAsset, weth: incomingAsset },
-        integrationManager,
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(config.primitives.mln, whales.mln);
+    const incomingAsset = new StandardToken(config.weth, provider);
+    const outgoingAssetAmount = utils.parseEther('1');
+
+    const kyberNetworkProxy = new KyberNetworkProxy(config.kyber.networkProxy, provider);
+
+    const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
     await assertKyberTakeOrder({
       comptrollerProxy,
@@ -294,18 +308,25 @@ xdescribe('takeOrder', () => {
       kyberAdapter,
       outgoingAsset,
       incomingAsset,
+      minIncomingAssetAmount: expectedRate,
+      expectedIncomingAssetAmount: expectedRate,
     });
   });
 
   it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
     const {
-      deployment: {
-        kyberAdapter,
-        tokens: { mln: outgoingAsset, dai: incomingAsset },
-        integrationManager,
-      },
+      config,
+      deployment: { kyberAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(config.primitives.mln, whales.mln);
+    const incomingAsset = new StandardToken(config.primitives.dai, provider);
+    const outgoingAssetAmount = utils.parseEther('1');
+
+    const kyberNetworkProxy = new KyberNetworkProxy(config.kyber.networkProxy, provider);
+
+    const { expectedRate } = await kyberNetworkProxy.getExpectedRate(outgoingAsset, incomingAsset, outgoingAssetAmount);
 
     await assertKyberTakeOrder({
       comptrollerProxy,
@@ -315,6 +336,8 @@ xdescribe('takeOrder', () => {
       kyberAdapter,
       outgoingAsset,
       incomingAsset,
+      minIncomingAssetAmount: expectedRate,
+      expectedIncomingAssetAmount: expectedRate,
     });
   });
 

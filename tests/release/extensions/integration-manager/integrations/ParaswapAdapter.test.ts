@@ -1,33 +1,36 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import {
   assetTransferArgs,
   paraswapTakeOrderArgs,
   SpendAssetsHandleType,
   takeOrderSelector,
+  StandardToken,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
-  defaultTestDeployment,
   getAssetBalances,
   paraswapGenerateMockPaths,
   paraswapTakeOrder,
+  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+const payload = `0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f`;
+
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.weth, deployer),
   });
 
   return {
@@ -42,32 +45,30 @@ async function snapshot(provider: EthereumTestnetProvider) {
   };
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { integrationManager, paraswapAdapter },
+      deployment: { integrationManager, paraSwapAdapter },
       config: {
-        integratees: {
-          paraswap: { augustusSwapper, tokenTransferProxy },
-        },
+        paraswap: { augustusSwapper, tokenTransferProxy },
       },
     } = await provider.snapshot(snapshot);
 
-    const exchangeResult = await paraswapAdapter.getExchange();
+    const exchangeResult = await paraSwapAdapter.getExchange();
     expect(exchangeResult).toMatchAddress(augustusSwapper);
 
-    const integrationManagerResult = await paraswapAdapter.getIntegrationManager();
+    const integrationManagerResult = await paraSwapAdapter.getIntegrationManager();
     expect(integrationManagerResult).toMatchAddress(integrationManager);
 
-    const tokenTransferProxyResult = await paraswapAdapter.getTokenTransferProxy();
+    const tokenTransferProxyResult = await paraSwapAdapter.getTokenTransferProxy();
     expect(tokenTransferProxyResult).toMatchAddress(tokenTransferProxy);
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
-      deployment: { paraswapAdapter },
+      deployment: { paraSwapAdapter },
     } = await provider.snapshot(snapshot);
 
     const args = paraswapTakeOrderArgs({
@@ -79,16 +80,16 @@ xdescribe('parseAssetsForMethod', () => {
       paths: paraswapGenerateMockPaths(),
     });
 
-    await expect(paraswapAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
+    await expect(paraSwapAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
       '_selector invalid',
     );
 
-    await expect(paraswapAdapter.parseAssetsForMethod(takeOrderSelector, args)).resolves.toBeTruthy();
+    await expect(paraSwapAdapter.parseAssetsForMethod(takeOrderSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output (no fees)', async () => {
     const {
-      deployment: { paraswapAdapter },
+      deployment: { paraSwapAdapter },
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
@@ -105,9 +106,9 @@ xdescribe('parseAssetsForMethod', () => {
       paths: paraswapGenerateMockPaths(),
     });
 
-    const result = await paraswapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await paraSwapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(paraswapAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(paraSwapAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
@@ -118,10 +119,8 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output (with fees and non-WETH outgoingAsset)', async () => {
     const {
-      deployment: {
-        paraswapAdapter,
-        tokens: { weth: feeAsset },
-      },
+      config: { weth: feeAsset },
+      deployment: { paraSwapAdapter },
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
@@ -142,9 +141,9 @@ xdescribe('parseAssetsForMethod', () => {
       paths: paraswapGenerateMockPaths([networkFee1, networkFee2]),
     });
 
-    const result = await paraswapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await paraSwapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(paraswapAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(paraSwapAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset, feeAsset],
@@ -155,10 +154,8 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output (with fees and fee asset as outgoingAsset)', async () => {
     const {
-      deployment: {
-        paraswapAdapter,
-        tokens: { weth: feeAsset },
-      },
+      config: { weth: feeAsset },
+      deployment: { paraSwapAdapter },
     } = await provider.snapshot(snapshot);
 
     const incomingAsset = randomAddress();
@@ -179,9 +176,9 @@ xdescribe('parseAssetsForMethod', () => {
       paths: paraswapGenerateMockPaths([networkFee1, networkFee2]),
     });
 
-    const result = await paraswapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await paraSwapAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(paraswapAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(paraSwapAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
@@ -191,10 +188,10 @@ xdescribe('parseAssetsForMethod', () => {
   });
 });
 
-xdescribe('takeOrder', () => {
+describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
     const {
-      deployment: { paraswapAdapter },
+      deployment: { paraSwapAdapter },
       fund: { vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -208,25 +205,47 @@ xdescribe('takeOrder', () => {
     });
 
     const transferArgs = await assetTransferArgs({
-      adapter: paraswapAdapter,
+      adapter: paraSwapAdapter,
       selector: takeOrderSelector,
       encodedCallArgs: takeOrderArgs,
     });
 
-    await expect(paraswapAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
+    await expect(paraSwapAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
       'Only the IntegrationManager can call this function',
     );
   });
 
   it('works as expected (no fee)', async () => {
     const {
-      deployment: {
-        paraswapAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
+      config: {
+        weth,
+        primitives: { dai },
       },
+      deployment: { paraSwapAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(weth, whales.weth);
+    const incomingAsset = new StandardToken(dai, provider);
+
+    // Define the Paraswap Paths
+    // Data taken directly from API: https://paraswapv2.docs.apiary.io/
+    // `payload` is hardcoded from the API call
+    const paths = [
+      {
+        to: incomingAsset.address, // dest token or intermediary (i.e., dai)
+        totalNetworkFee: 0,
+        routes: [
+          {
+            exchange: '0x3b4503CBA9ADd1194Dd8098440e4Be91c4C37806', // Paraswap's UniswapV2 adapter
+            targetExchange: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Uniswap Router2
+            percent: 10000, // Out of 10000
+            payload,
+            networkFee: 0,
+          },
+        ],
+      },
+    ];
 
     // Seed the fund with outgoingAsset
     const outgoingAssetAmount = utils.parseEther('1');
@@ -243,12 +262,12 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       integrationManager,
       fundOwner,
-      paraswapAdapter,
+      paraswapAdapter: paraSwapAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
-      minIncomingAssetAmount: 1,
-      paths: paraswapGenerateMockPaths(),
+      minIncomingAssetAmount: '1',
+      paths,
     });
 
     // Get the balances of incoming and outgoing assets post-trade
@@ -257,10 +276,7 @@ xdescribe('takeOrder', () => {
       assets: [incomingAsset, outgoingAsset],
     });
 
-    // Assert the expected final token balances against what was expected
-    // Incoming and outgoing asset amounts are the same as long as the rate remains 1:1
-    const expectedIncomingAssetAmount = outgoingAssetAmount;
-    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedIncomingAssetAmount));
+    expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 
     // Assert the correct event was fired
@@ -268,25 +284,29 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       vaultProxy,
       caller: fundOwner,
-      adapter: paraswapAdapter,
+      adapter: paraSwapAdapter,
       selector: takeOrderSelector,
       incomingAssets: [incomingAsset],
-      incomingAssetAmounts: [expectedIncomingAssetAmount],
+      incomingAssetAmounts: [postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance)],
       outgoingAssets: [outgoingAsset],
       outgoingAssetAmounts: [outgoingAssetAmount],
       integrationData: expect.anything(),
     });
   });
 
-  it('works as expected (with fee, outgoingAsset is not fee asset)', async () => {
+  xit('works as expected (with fee, outgoingAsset is not fee asset)', async () => {
     const {
-      deployment: {
-        paraswapAdapter,
-        tokens: { weth: feeAsset, dai: outgoingAsset, mln: incomingAsset },
-        integrationManager,
+      config: {
+        weth,
+        primitives: { dai, mln },
       },
+      deployment: { paraSwapAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(dai, whales.dai);
+    const incomingAsset = new StandardToken(mln, provider);
+    const feeAsset = new StandardToken(weth, whales.weth);
 
     // Seed the fund with outgoingAsset and feeAsset
     const outgoingAssetAmount = utils.parseEther('1');
@@ -305,7 +325,7 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       integrationManager,
       fundOwner,
-      paraswapAdapter,
+      paraswapAdapter: paraSwapAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -331,7 +351,7 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       vaultProxy,
       caller: fundOwner,
-      adapter: paraswapAdapter,
+      adapter: paraSwapAdapter,
       selector: takeOrderSelector,
       incomingAssets: [incomingAsset],
       incomingAssetAmounts: [expectedIncomingAssetAmount],
@@ -341,15 +361,18 @@ xdescribe('takeOrder', () => {
     });
   });
 
-  it('works as expected (with fee, outgoingAsset is fee asset)', async () => {
+  xit('works as expected (with fee, outgoingAsset is fee asset)', async () => {
     const {
-      deployment: {
-        paraswapAdapter,
-        tokens: { weth: outgoingAsset, mln: incomingAsset },
-        integrationManager,
+      config: {
+        weth,
+        primitives: { mln },
       },
+      deployment: { paraSwapAdapter, integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
+
+    const outgoingAsset = new StandardToken(weth, whales.weth);
+    const incomingAsset = new StandardToken(mln, provider);
 
     // Seed the fund with outgoingAsset and feeAsset
     const outgoingAssetAmount = utils.parseEther('1');
@@ -367,7 +390,7 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       integrationManager,
       fundOwner,
-      paraswapAdapter,
+      paraswapAdapter: paraSwapAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
@@ -393,7 +416,7 @@ xdescribe('takeOrder', () => {
       comptrollerProxy,
       vaultProxy,
       caller: fundOwner,
-      adapter: paraswapAdapter,
+      adapter: paraSwapAdapter,
       selector: takeOrderSelector,
       incomingAssets: [incomingAsset],
       incomingAssetAmounts: [expectedIncomingAssetAmount],

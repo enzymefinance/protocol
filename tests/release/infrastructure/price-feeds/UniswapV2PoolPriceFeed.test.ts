@@ -1,64 +1,24 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
-import { IUniswapV2Pair, MockToken, MockUniswapV2PriceSource, StandardToken } from '@enzymefinance/protocol';
-import { defaultTestDeployment } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
+import { deployProtocolFixture, UniswapV2Factory } from '@enzymefinance/testutils';
+import { utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
-  const { accounts, deployment, config } = await defaultTestDeployment(provider);
-
-  const usdc = deployment.tokens.usdc;
-  const weth = deployment.tokens.weth;
-  const mln = deployment.tokens.mln;
-
-  // Denormalized amount of the initial pair seed
-  const defaultSeedAmount = '100';
-
-  // Create a pair formed by different decimal tokens (usdc/weth)
-  const wethUsdcPair = await MockUniswapV2PriceSource.deploy(
-    config.deployer,
-    deployment.centralizedRateProvider,
-    usdc,
-    weth,
-  );
-
-  await deployment.uniswapV2PoolPriceFeed.addPoolTokens([wethUsdcPair]);
-  await deployment.aggregatedDerivativePriceFeed.addDerivatives([wethUsdcPair], [deployment.uniswapV2PoolPriceFeed]);
-
-  await usdc.transfer(wethUsdcPair, utils.parseUnits(defaultSeedAmount, 6));
-  await weth.transfer(wethUsdcPair, utils.parseEther(defaultSeedAmount));
-
-  // Create a pair formed by same decimal tokens (mln/weth)
-  const mlnWethPair = await MockUniswapV2PriceSource.deploy(
-    config.deployer,
-    deployment.centralizedRateProvider,
-    mln,
-    weth,
-  );
-  await deployment.uniswapV2PoolPriceFeed.addPoolTokens([mlnWethPair]);
-  await deployment.aggregatedDerivativePriceFeed.addDerivatives([mlnWethPair], [deployment.uniswapV2PoolPriceFeed]);
-
-  await mln.transfer(mlnWethPair, utils.parseEther(defaultSeedAmount));
-  await weth.transfer(mlnWethPair, utils.parseEther(defaultSeedAmount));
+async function snapshot() {
+  const { accounts, deployer, deployment, config } = await deployProtocolFixture();
 
   return {
     accounts,
+    deployer,
     deployment,
-    mocks: { mlnWethPair, wethUsdcPair },
-    defaultSeedAmount,
     config,
   };
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       config: {
-        deployer,
-        derivatives: { uniswapV2 },
-        integratees: {
-          uniswapV2: { factory },
-        },
+        uniswap: { factory, pools },
       },
       deployment: { aggregatedDerivativePriceFeed, chainlinkPriceFeed, uniswapV2PoolPriceFeed, valueInterpreter },
     } = await provider.snapshot(snapshot);
@@ -68,8 +28,8 @@ xdescribe('constructor', () => {
     expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
     expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
 
-    for (const poolToken of Object.values(uniswapV2)) {
-      const pairContract = new IUniswapV2Pair(poolToken as any, deployer);
+    for (const poolToken of Object.values(pools)) {
+      const pairContract = new IUniswapV2Pair(poolToken, provider);
       const token0 = await pairContract.token0();
       const token1 = await pairContract.token1();
       expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
@@ -77,75 +37,64 @@ xdescribe('constructor', () => {
         {
           token0,
           token1,
-          token0Decimals: await new StandardToken(token0, deployer).decimals(),
-          token1Decimals: await new StandardToken(token1, deployer).decimals(),
+          token0Decimals: await new StandardToken(token0, provider).decimals(),
+          token1Decimals: await new StandardToken(token1, provider).decimals(),
         },
       );
     }
   });
 });
 
-xdescribe('calcUnderlyingValues', () => {
+describe('calcUnderlyingValues', () => {
   it('returns rate for 18 decimals underlying assets', async () => {
     const {
-      deployment: {
-        uniswapV2PoolPriceFeed,
-        tokens: { mln, weth },
+      config: {
+        uniswap: {
+          pools: { mlnWeth },
+        },
       },
-      mocks: { mlnWethPair },
-      defaultSeedAmount,
+      deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
-    const uniswapWethUsdtPairToken = new StandardToken(mlnWethPair, provider);
-    const totalSupply = await uniswapWethUsdtPairToken.totalSupply();
-    const calcUnderlyingValues = await uniswapV2PoolPriceFeed.calcUnderlyingValues
-      .args(mlnWethPair, utils.parseUnits('1', await mlnWethPair.decimals()))
-      .call();
-    const ratePrecision = BigNumber.from(10).pow(18);
+    const poolToken = new IUniswapV2Pair(mlnWeth, provider);
+    const token0Address = await poolToken.token0();
+    const token1Address = await poolToken.token1();
 
-    const wethAmount = utils.parseEther(defaultSeedAmount);
-    const mlnAmount = utils.parseEther(defaultSeedAmount);
+    const calcUnderlyingValues = await uniswapV2PoolPriceFeed.calcUnderlyingValues
+      .args(poolToken, utils.parseEther('1'))
+      .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: [
-        wethAmount.mul(ratePrecision).div(totalSupply),
-        mlnAmount.mul(ratePrecision).div(totalSupply),
-      ],
-      underlyings_: [mln, weth],
+      underlyingAmounts_: ['247050525008990036', '8120369388601496194'],
+      underlyings_: [token0Address, token1Address],
     });
   });
 
   it('returns rate for non-18 decimals underlying assets', async () => {
     const {
-      deployment: {
-        uniswapV2PoolPriceFeed,
-        tokens: { weth, usdc },
+      config: {
+        uniswap: {
+          pools: { usdcWeth },
+        },
       },
-      mocks: { wethUsdcPair },
-      defaultSeedAmount,
+      deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
 
-    const uniswapWethUsdcPairToken = new StandardToken(wethUsdcPair, provider);
-    const totalSupply = await uniswapWethUsdcPairToken.totalSupply();
+    const poolToken = new IUniswapV2Pair(usdcWeth, provider);
+    const token0Address = await poolToken.token0();
+    const token1Address = await poolToken.token1();
 
     const calcUnderlyingValues = await uniswapV2PoolPriceFeed.calcUnderlyingValues
-      .args(wethUsdcPair, utils.parseUnits('1', await uniswapWethUsdcPairToken.decimals()))
+      .args(poolToken, utils.parseEther('1'))
       .call();
-    const ratePrecision = utils.parseUnits('1', 18);
-
-    const usdcAmount = utils.parseUnits(defaultSeedAmount, 6);
-    const wethAmount = utils.parseEther(defaultSeedAmount);
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: [
-        usdcAmount.mul(ratePrecision).div(totalSupply),
-        wethAmount.mul(ratePrecision).div(totalSupply),
-      ],
-      underlyings_: [usdc, weth],
+      underlyingAmounts_: ['46228706552089', '39452063369591764460002'],
+      underlyings_: [token0Address, token1Address],
     });
   });
 });
 
-xdescribe('addPoolTokens', () => {
+describe('addPoolTokens', () => {
   it('does not allow a random caller', async () => {
     const {
       accounts: { 0: randomUser },
@@ -167,10 +116,12 @@ xdescribe('addPoolTokens', () => {
 
   it('does not allow an already-set poolToken', async () => {
     const {
-      deployment: {
-        uniswapV2PoolPriceFeed,
-        uniswapV2Derivatives: { kncWeth },
+      config: {
+        uniswap: {
+          pools: { kncWeth },
+        },
       },
+      deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
 
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([kncWeth])).rejects.toBeRevertedWith('Value already set');
@@ -178,44 +129,31 @@ xdescribe('addPoolTokens', () => {
 
   it('does not allow unsupportable pool tokens', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        centralizedRateProvider,
-        compoundTokens: { cdai, ccomp },
-        uniswapV2PoolPriceFeed,
-        tokens: { weth },
-      },
+      deployer,
+      config,
+      deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
 
-    const unsupportedToken = await MockToken.deploy(deployer, 'Unsupported Token', 'UN', 18);
     const revertReason = 'Unsupported pool token';
+    const ceth = new StandardToken(config.compound.ceth, provider);
+    const cdai = new StandardToken(config.compound.ctokens.cdai, provider);
+    const uniswapV2Factory = new UniswapV2Factory(config.uniswap.factory, deployer);
 
-    const derivative0Derivative1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      cdai,
-      ccomp,
-    );
+    // cdai-ceth
+    await uniswapV2Factory.createPair(cdai, ceth);
+    const derivative0Derivative1Pair = await uniswapV2Factory.getPair(cdai, ceth);
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([derivative0Derivative1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const primitive0Unsupported1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      weth,
-      unsupportedToken,
-    );
+    // usdt-hez pair
+    const primitive0Unsupported1Pair = '0xf6c4e4f339912541d3f8ed99dba64a1372af5e5b'; // USDT-HEZ pair
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([primitive0Unsupported1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
 
-    const Unsupported0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      unsupportedToken,
-      weth,
-    );
+    // ousd-usdt pair
+    const Unsupported0Primitive1Pair = '0xcc01d9d54d06b6a0b6d09a9f79c3a6438e505f71';
     await expect(uniswapV2PoolPriceFeed.addPoolTokens([Unsupported0Primitive1Pair])).rejects.toBeRevertedWith(
       revertReason,
     );
@@ -223,34 +161,46 @@ xdescribe('addPoolTokens', () => {
 
   it('adds pool tokens and emits an event per added pool token', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        centralizedRateProvider,
-        compoundTokens: { cdai },
-        uniswapV2PoolPriceFeed,
-        tokens: { weth, mln },
-      },
+      deployer,
+      config,
+      deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
 
+    const bat = new StandardToken(config.primitives.bat, provider);
+    const mln = new StandardToken(config.primitives.mln, provider);
+    const weth = new StandardToken(config.weth, provider);
+    const cdai = new StandardToken(config.compound.ctokens.cdai, provider);
+
     // Create valid pool tokens (all possible valid types)
-    const primitive0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      weth,
-      mln,
-    );
-    const primitive0Derivative1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      weth,
-      cdai,
-    );
-    const derivative0Primitive1Pair = await MockUniswapV2PriceSource.deploy(
-      deployer,
-      centralizedRateProvider,
-      cdai,
-      weth,
-    );
+
+    const uniswapV2Factory = new UniswapV2Factory(config.uniswap.factory, deployer);
+
+    // bat-mln
+    await uniswapV2Factory.createPair(bat, mln);
+    const batMln = await uniswapV2Factory.getPair(bat, mln);
+    const batMlnPair = new IUniswapV2Pair(batMln, provider);
+
+    await expect(batMlnPair.token0()).resolves.toMatchAddress(bat);
+    await expect(batMlnPair.token1()).resolves.toMatchAddress(mln);
+
+    // bat-cdai
+    await uniswapV2Factory.createPair(bat, cdai);
+    const batCdai = await uniswapV2Factory.getPair(bat, cdai);
+    const batCdaiPair = new IUniswapV2Pair(batCdai, provider);
+
+    await expect(batCdaiPair.token0()).resolves.toMatchAddress(bat);
+    await expect(batCdaiPair.token1()).resolves.toMatchAddress(cdai);
+
+    // cdai-weth
+    const cdaiWeth = await uniswapV2Factory.getPair(cdai, weth);
+    const cdaiWethPair = new IUniswapV2Pair(cdaiWeth, provider);
+
+    await expect(cdaiWethPair.token0()).resolves.toMatchAddress(cdai);
+    await expect(cdaiWethPair.token1()).resolves.toMatchAddress(weth);
+
+    const primitive0Primitive1Pair = batMln;
+    const primitive0Derivative1Pair = batCdai;
+    const derivative0Primitive1Pair = cdaiWeth;
 
     // The pool tokens should not be supported assets initially
     expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Primitive1Pair)).toBe(false);
@@ -268,32 +218,32 @@ xdescribe('addPoolTokens', () => {
     expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(primitive0Primitive1Pair)).toMatchFunctionOutput(
       uniswapV2PoolPriceFeed.getPoolTokenInfo,
       {
-        token0: weth,
+        token0: bat,
         token1: mln,
-        token0Decimals: await weth.decimals(),
+        token0Decimals: await bat.decimals(),
         token1Decimals: await mln.decimals(),
       },
     );
     expect(await uniswapV2PoolPriceFeed.getPoolTokenUnderlyings(primitive0Primitive1Pair)).toMatchFunctionOutput(
       uniswapV2PoolPriceFeed.getPoolTokenUnderlyings,
       {
-        token0_: weth,
+        token0_: bat,
         token1_: mln,
       },
     );
     expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(primitive0Derivative1Pair)).toMatchFunctionOutput(
       uniswapV2PoolPriceFeed.getPoolTokenInfo,
       {
-        token0: weth,
+        token0: bat,
         token1: cdai,
-        token0Decimals: await weth.decimals(),
+        token0Decimals: await bat.decimals(),
         token1Decimals: await cdai.decimals(),
       },
     );
     expect(await uniswapV2PoolPriceFeed.getPoolTokenUnderlyings(primitive0Derivative1Pair)).toMatchFunctionOutput(
       uniswapV2PoolPriceFeed.getPoolTokenUnderlyings,
       {
-        token0_: weth,
+        token0_: bat,
         token1_: cdai,
       },
     );
@@ -324,12 +274,12 @@ xdescribe('addPoolTokens', () => {
     expect(events.length).toBe(3);
     expect(events[0]).toMatchEventArgs({
       poolToken: primitive0Primitive1Pair,
-      token0: weth,
+      token0: bat,
       token1: mln,
     });
     expect(events[1]).toMatchEventArgs({
       poolToken: primitive0Derivative1Pair,
-      token0: weth,
+      token0: bat,
       token1: cdai,
     });
     expect(events[2]).toMatchEventArgs({

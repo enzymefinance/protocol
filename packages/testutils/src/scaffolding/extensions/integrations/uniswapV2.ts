@@ -1,4 +1,4 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
@@ -16,6 +16,16 @@ import {
   VaultLib,
 } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
+
+export interface UniswapV2Factory extends Contract<UniswapV2Factory> {
+  createPair: Send<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
+  getPair: Call<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
+}
+
+export const UniswapV2Factory = contract<UniswapV2Factory>()`
+  function createPair(address,address) returns (address)
+  function getPair(address,address) view returns (address)
+`;
 
 export async function uniswapV2Lend({
   comptrollerProxy,

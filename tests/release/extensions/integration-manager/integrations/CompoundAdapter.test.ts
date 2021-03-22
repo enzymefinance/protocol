@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   CompoundAdapter,
   compoundArgs,
@@ -8,8 +8,6 @@ import {
   ICERC20,
   IntegrationManager,
   lendSelector,
-  MockCTokenIntegratee,
-  MockToken,
   redeemSelector,
   SpendAssetsHandleType,
   StandardToken,
@@ -19,41 +17,29 @@ import {
   compoundLend,
   compoundRedeem,
   createNewFund,
-  defaultTestDeployment,
+  deployProtocolFixture,
   getAssetBalances,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-async function snapshot(provider: EthereumTestnetProvider) {
+async function snapshot() {
   const {
     accounts: [fundOwner, ...remainingAccounts],
+    deployer,
     deployment,
     config,
-  } = await defaultTestDeployment(provider);
+  } = await deployProtocolFixture();
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: config.deployer,
+    signer: deployer,
     fundOwner,
     fundDeployer: deployment.fundDeployer,
-    denominationAsset: deployment.tokens.weth,
+    denominationAsset: new StandardToken(config.weth, deployer),
   });
-
-  const token = await MockToken.deploy(config.deployer, 'Underlying', 'Mock', 18);
-  const cTokenIntegratee = await MockCTokenIntegratee.deploy(
-    config.deployer,
-    'Mock',
-    'MCK',
-    18,
-    token,
-    randomAddress(),
-    utils.parseEther('2'),
-  );
-
-  const cToken = new ICERC20(cTokenIntegratee, config.deployer);
-  await deployment.compoundPriceFeed.addCTokens([cToken]);
 
   return {
     accounts: remainingAccounts,
+    deployer,
     deployment,
     config,
     fund: {
@@ -61,14 +47,11 @@ async function snapshot(provider: EthereumTestnetProvider) {
       fundOwner,
       vaultProxy,
     },
-    mocks: {
-      cToken,
-      token,
-    },
   };
 }
 
 async function assertCompoundLend({
+  tokenWhale,
   comptrollerProxy,
   vaultProxy,
   integrationManager,
@@ -78,6 +61,7 @@ async function assertCompoundLend({
   cToken,
   compoundPriceFeed,
 }: {
+  tokenWhale: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
@@ -88,7 +72,7 @@ async function assertCompoundLend({
   compoundPriceFeed: CompoundPriceFeed;
 }) {
   const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), fundOwner);
-  await token.transfer(vaultProxy, tokenAmount);
+  await token.connect(tokenWhale).transfer(vaultProxy, tokenAmount);
 
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
@@ -120,6 +104,7 @@ async function assertCompoundLend({
 }
 
 async function assertCompoundRedeem({
+  tokenWhale,
   comptrollerProxy,
   vaultProxy,
   integrationManager,
@@ -129,6 +114,7 @@ async function assertCompoundRedeem({
   cToken,
   compoundPriceFeed,
 }: {
+  tokenWhale: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
@@ -140,7 +126,7 @@ async function assertCompoundRedeem({
 }) {
   const tokenAmount = utils.parseEther('1');
   const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), fundOwner);
-  await token.transfer(vaultProxy, tokenAmount);
+  await token.connect(tokenWhale).transfer(vaultProxy, tokenAmount);
 
   await compoundLend({
     comptrollerProxy,
@@ -188,15 +174,11 @@ async function assertCompoundRedeem({
   return redeemReceipt;
 }
 
-xdescribe('constructor', () => {
+describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: {
-        compoundAdapter,
-        compoundPriceFeed,
-        integrationManager,
-        tokens: { weth },
-      },
+      config: { weth },
+      deployment: { compoundAdapter, compoundPriceFeed, integrationManager },
     } = await provider.snapshot(snapshot);
 
     const getCompoundPriceFeedCall = await compoundAdapter.getCompoundPriceFeed();
@@ -210,13 +192,15 @@ xdescribe('constructor', () => {
   });
 });
 
-xdescribe('parseAssetsForMethod', () => {
+describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     const {
-      deployment: {
-        compoundAdapter,
-        compoundTokens: { ccomp: cToken },
+      config: {
+        compound: {
+          ctokens: { ccomp: cToken },
+        },
       },
+      deployment: { compoundAdapter },
     } = await provider.snapshot(snapshot);
 
     const args = compoundArgs({
@@ -234,10 +218,12 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('does not allow a bad cToken', async () => {
     const {
-      deployment: {
-        compoundAdapter,
-        compoundTokens: { ccomp: cToken },
+      config: {
+        compound: {
+          ctokens: { ccomp: cToken },
+        },
       },
+      deployment: { compoundAdapter },
     } = await provider.snapshot(snapshot);
 
     const badArgs = compoundArgs({
@@ -261,8 +247,13 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output for lending', async () => {
     const {
+      config: {
+        primitives: { comp: token },
+        compound: {
+          ctokens: { ccomp: cToken },
+        },
+      },
       deployment: { compoundAdapter },
-      mocks: { cToken, token },
     } = await provider.snapshot(snapshot);
 
     const tokenAmount = utils.parseEther('1');
@@ -279,7 +270,7 @@ xdescribe('parseAssetsForMethod', () => {
 
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-      incomingAssets_: [cToken.address],
+      incomingAssets_: [cToken],
       spendAssets_: [token],
       spendAssetAmounts_: [tokenAmount],
       minIncomingAssetAmounts_: [minIncomingCTokenAmount],
@@ -288,8 +279,13 @@ xdescribe('parseAssetsForMethod', () => {
 
   it('generates expected output for redeeming', async () => {
     const {
+      config: {
+        primitives: { comp: token },
+        compound: {
+          ctokens: { ccomp: cToken },
+        },
+      },
       deployment: { compoundAdapter },
-      mocks: { cToken, token },
     } = await provider.snapshot(snapshot);
 
     const cTokenAmount = utils.parseEther('1');
@@ -307,29 +303,29 @@ xdescribe('parseAssetsForMethod', () => {
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [token],
-      spendAssets_: [cToken.address],
+      spendAssets_: [cToken],
       spendAssetAmounts_: [cTokenAmount],
       minIncomingAssetAmounts_: [minIncomingTokenAmount],
     });
   });
 });
 
-xdescribe('lend', () => {
+describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        integrationManager,
-        compoundAdapter,
-        compoundPriceFeed,
-        compoundTokens: { ccomp },
+      config: {
+        compound: {
+          ctokens: { ccomp },
+        },
       },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
       fund: { fundOwner, comptrollerProxy, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const cToken = new ICERC20(ccomp, deployer);
+    const cToken = new ICERC20(ccomp, provider);
 
     await assertCompoundLend({
+      tokenWhale: whales.comp,
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -343,19 +339,17 @@ xdescribe('lend', () => {
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        integrationManager,
-        compoundAdapter,
-        compoundPriceFeed,
-        compoundTokens: { ceth: cTokenAddress },
+      config: {
+        compound: { ceth: cTokenAddress },
       },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
       fund: { fundOwner, comptrollerProxy, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const cToken = new ICERC20(cTokenAddress, deployer);
+    const cToken = new ICERC20(cTokenAddress, provider);
 
     await assertCompoundLend({
+      tokenWhale: whales.weth,
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -368,22 +362,22 @@ xdescribe('lend', () => {
   });
 });
 
-xdescribe('redeem', () => {
+describe('redeem', () => {
   it('works as expected when called for redeeming by a fund', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        integrationManager,
-        compoundAdapter,
-        compoundPriceFeed,
-        compoundTokens: { cdai: cTokenAddress },
+      config: {
+        compound: {
+          ctokens: { cdai: cTokenAddress },
+        },
       },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
       fund: { fundOwner, comptrollerProxy, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const cToken = new ICERC20(cTokenAddress, deployer);
+    const cToken = new ICERC20(cTokenAddress, provider);
 
     await assertCompoundRedeem({
+      tokenWhale: whales.dai,
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -396,19 +390,17 @@ xdescribe('redeem', () => {
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
     const {
-      config: { deployer },
-      deployment: {
-        integrationManager,
-        compoundAdapter,
-        compoundPriceFeed,
-        compoundTokens: { ceth: cTokenAddress },
+      config: {
+        compound: { ceth: cTokenAddress },
       },
+      deployment: { integrationManager, compoundAdapter, compoundPriceFeed },
       fund: { fundOwner, comptrollerProxy, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const cToken = new ICERC20(cTokenAddress, deployer);
+    const cToken = new ICERC20(cTokenAddress, provider);
 
     await assertCompoundRedeem({
+      tokenWhale: whales.weth,
       comptrollerProxy,
       vaultProxy,
       integrationManager,
