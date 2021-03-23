@@ -81,7 +81,7 @@ contract CurveLiquiditySethAdapter is
         __curveGaugeV2ClaimAllRewards(LIQUIDITY_GAUGE_TOKEN, _vaultProxy);
     }
 
-    /// @notice Claims rewards and then compounds the accrued rewards back into the staked LP token
+    /// @notice Claims rewards and then compounds the rewards tokens back into the staked LP token
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
     /// @dev Requires the adapter to be granted an allowance of each reward token by the vault.
@@ -103,36 +103,25 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingLiquidityGaugeTokenAmount
         ) = __decodeClaimRewardsAndReinvestCallArgs(_encodedCallArgs);
 
-        address[] memory rewardsTokens;
-        uint256[] memory rewardsTokenAmountsToUse;
-        if (useFullBalances) {
-            // Use full reward token balances in the VaultProxy
-            (
-                rewardsTokens,
-                rewardsTokenAmountsToUse
-            ) = __curveGaugeV2ClaimRewardsAndPullFullBalances(LIQUIDITY_GAUGE_TOKEN, _vaultProxy);
-        } else {
-            // Use newly claimed reward token balances only
-            (
-                rewardsTokens,
-                rewardsTokenAmountsToUse
-            ) = __curveGaugeV2ClaimRewardsAndPullClaimedBalances(
-                LIQUIDITY_GAUGE_TOKEN,
-                _vaultProxy
-            );
-        }
+        (
+            address[] memory rewardsTokens,
+            uint256[] memory rewardsTokenAmountsToUse
+        ) = __curveGaugeV2ClaimRewardsAndPullBalances(
+            LIQUIDITY_GAUGE_TOKEN,
+            _vaultProxy,
+            useFullBalances
+        );
 
-        // Swap all reward tokens to WETH via UniswapV2
+        // Swap all reward tokens to WETH via UniswapV2.
         // Note that if a reward token takes a fee on transfer,
         // we could not use these memory balances.
-        address[] memory uniswapPath = new address[](2);
-        uniswapPath[1] = getCurveSethLiquidityWethToken();
-        for (uint256 i; i < rewardsTokens.length; i++) {
-            if (rewardsTokenAmountsToUse[i] > 0) {
-                uniswapPath[0] = rewardsTokens[i];
-                __uniswapV2Swap(address(this), rewardsTokenAmountsToUse[i], 1, uniswapPath);
-            }
-        }
+        __uniswapV2SwapManyToOne(
+            address(this),
+            rewardsTokens,
+            rewardsTokenAmountsToUse,
+            getCurveSethLiquidityWethToken(),
+            address(0)
+        );
 
         // Lend all received WETH for staked LP tokens
         uint256 wethBalance = ERC20(getCurveSethLiquidityWethToken()).balanceOf(address(this));
@@ -144,6 +133,44 @@ contract CurveLiquiditySethAdapter is
                 ERC20(LP_TOKEN).balanceOf(address(this))
             );
         }
+    }
+
+    /// @notice Claims rewards and then swaps the rewards tokens to the specified asset via UniswapV2
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @dev Requires the adapter to be granted an allowance of each reward token by the vault.
+    /// For supported assets (e.g., CRV), this must be done via the `approveAssets()` function in this adapter.
+    /// For unsupported assets, this must be done via `ComptrollerProxy.vaultCallOnContract()`.
+    /// The `useFullBalances` option indicates whether to use only the newly claimed balances of
+    /// rewards tokens, or whether to use the full balances of these assets in the vault.
+    function claimRewardsAndSwap(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (bool useFullBalances, address incomingAsset, ) = __decodeClaimRewardsAndSwapCallArgs(
+            _encodedCallArgs
+        );
+
+        (
+            address[] memory rewardsTokens,
+            uint256[] memory rewardsTokenAmountsToUse
+        ) = __curveGaugeV2ClaimRewardsAndPullBalances(
+            LIQUIDITY_GAUGE_TOKEN,
+            _vaultProxy,
+            useFullBalances
+        );
+
+        // Swap all reward tokens to the designated incomingAsset via UniswapV2.
+        // Note that if a reward token takes a fee on transfer,
+        // we could not use these memory balances.
+        __uniswapV2SwapManyToOne(
+            _vaultProxy,
+            rewardsTokens,
+            rewardsTokenAmountsToUse,
+            incomingAsset,
+            getCurveSethLiquidityWethToken()
+        );
     }
 
     /// @notice Lends assets for seth LP tokens
@@ -327,6 +354,8 @@ contract CurveLiquiditySethAdapter is
             return __parseAssetsForClaimRewards();
         } else if (_selector == CLAIM_REWARDS_AND_REINVEST_SELECTOR) {
             return __parseAssetsForClaimRewardsAndReinvest(_encodedCallArgs);
+        } else if (_selector == CLAIM_REWARDS_AND_SWAP_SELECTOR) {
+            return __parseAssetsForClaimRewardsAndSwap(_encodedCallArgs);
         } else if (_selector == LEND_SELECTOR) {
             return __parseAssetsForLend(_encodedCallArgs);
         } else if (_selector == LEND_AND_STAKE_SELECTOR) {
@@ -431,6 +460,40 @@ contract CurveLiquiditySethAdapter is
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = minIncomingLiquidityGaugeTokenAmount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.None,
+            new address[](0),
+            new uint256[](0),
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during claimRewardsAndSwap() calls.
+    function __parseAssetsForClaimRewardsAndSwap(bytes calldata _encodedCallArgs)
+        private
+        pure
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (
+            ,
+            address incomingAsset,
+            uint256 minIncomingAssetAmount
+        ) = __decodeClaimRewardsAndSwapCallArgs(_encodedCallArgs);
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = incomingAsset;
+
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.None,
@@ -765,6 +828,19 @@ contract CurveLiquiditySethAdapter is
         returns (bool useFullBalances_, uint256 minIncomingLiquidityGaugeTokenAmount_)
     {
         return abi.decode(_encodedCallArgs, (bool, uint256));
+    }
+
+    /// @dev Helper to decode the encoded call arguments for claiming rewards and swapping
+    function __decodeClaimRewardsAndSwapCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            bool useFullBalances_,
+            address incomingAsset_,
+            uint256 minIncomingAssetAmount_
+        )
+    {
+        return abi.decode(_encodedCallArgs, (bool, address, uint256));
     }
 
     /// @dev Helper to decode the encoded call arguments for lending

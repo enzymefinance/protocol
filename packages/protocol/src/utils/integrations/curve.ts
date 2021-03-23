@@ -48,6 +48,18 @@ export function curveSethClaimRewardsAndReinvestArgs({
   return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
 }
 
+export function curveSethClaimRewardsAndSwapArgs({
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount,
+}: {
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
+}
+
 export function curveSethLendAndStakeArgs({
   outgoingWethAmount,
   outgoingSethAmount,
@@ -134,6 +146,18 @@ export function curveStethClaimRewardsAndReinvestArgs({
   minIncomingLiquidityGaugeTokenAmount: BigNumberish;
 }) {
   return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
+}
+
+export function curveStethClaimRewardsAndSwapArgs({
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount,
+}: {
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
 }
 
 export function curveStethLendAndStakeArgs({

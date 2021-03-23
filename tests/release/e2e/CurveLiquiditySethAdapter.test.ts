@@ -2,9 +2,11 @@ import { randomAddress } from '@enzymefinance/ethers';
 import {
   approveAssetsSelector,
   claimRewardsAndReinvestSelector,
+  claimRewardsAndSwapSelector,
   claimRewardsSelector,
   curveApproveAssetsArgs,
   curveSethClaimRewardsAndReinvestArgs,
+  curveSethClaimRewardsAndSwapArgs,
   curveSethLendArgs,
   curveSethLendAndStakeArgs,
   curveSethRedeemArgs,
@@ -25,6 +27,7 @@ import {
   curveApproveAssets,
   curveSethClaimRewards,
   curveSethClaimRewardsAndReinvest,
+  curveSethClaimRewardsAndSwap,
   curveSethLend,
   curveSethLendAndStake,
   curveSethRedeem,
@@ -172,6 +175,31 @@ describe('parseAssetsForMethod', () => {
         spendAssetAmounts_: [],
         incomingAssets_: [fork.config.curve.pools.seth.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+      });
+    });
+  });
+
+  describe('claimRewardsAndSwap', () => {
+    it('generates expected output', async () => {
+      const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
+      const incomingAsset = randomAddress();
+      const minIncomingAssetAmount = utils.parseEther('2');
+
+      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+        claimRewardsAndSwapSelector,
+        curveSethClaimRewardsAndSwapArgs({
+          useFullBalances: true, // Does not matter
+          incomingAsset,
+          minIncomingAssetAmount,
+        }),
+      );
+
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+        spendAssetsHandleType_: SpendAssetsHandleType.None,
+        spendAssets_: [],
+        spendAssetAmounts_: [],
+        incomingAssets_: [incomingAsset],
+        minIncomingAssetAmounts_: [minIncomingAssetAmount],
       });
     });
   });
@@ -1431,5 +1459,173 @@ describe('claimRewardsAndReinvest', () => {
 
     // Assert the amount of liquidity gauge tokens in the vault increased
     expect(postClaimRewardsLiquidityGaugeTokenBalance).toBeGtBigNumber(preClaimRewardsLiquidityGaugeTokenBalance);
+  });
+});
+
+describe('claimRewardsAndSwap', () => {
+  it('claimed amounts only: claim rewards and swaps only the amounts claimed of each reward token (into WETH)', async () => {
+    const [fundOwner] = fork.accounts;
+    const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
+    const integrationManager = fork.deployment.integrationManager;
+    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const incomingAsset = weth;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: weth,
+    });
+
+    // Lend and stake to start accruing rewards
+    const outgoingWethAmount = utils.parseEther('2');
+    await weth.transfer(vaultProxy, outgoingWethAmount);
+    await curveSethLendAndStake({
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      fundOwner,
+      curveLiquiditySethAdapter,
+      outgoingWethAmount,
+      outgoingSethAmount: BigNumber.from(0),
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+    });
+
+    // Warp ahead in time to accrue rewards
+    await provider.send('evm_increaseTime', [86400]);
+
+    // Send some balances of the rewards assets to the vault
+    await crv.transfer(vaultProxy, utils.parseEther('2'));
+
+    const [preClaimRewardsCrvBalance, preClaimRewardsIncomingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [crv, incomingAsset],
+    });
+
+    // Assert rewards tokens start with non-0 balances
+    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
+
+    // Approve the adapter to claim $CRV rewards on behalf of the vault
+    await vaultCallCurveMinterToggleApproveMint({
+      comptrollerProxy,
+      minter: fork.config.curve.minter,
+      account: curveLiquiditySethAdapter,
+    });
+
+    // Approve the adapter to use CRV
+    await curveApproveAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      adapter: curveLiquiditySethAdapter,
+      assets: [fork.config.primitives.crv],
+    });
+
+    // Claim all earned rewards and swap for the specified incoming asset
+    await curveSethClaimRewardsAndSwap({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      curveLiquiditySethAdapter,
+      useFullBalances: false,
+      incomingAsset: incomingAsset,
+    });
+
+    const [postClaimRewardsCrvBalance, postClaimRewardsIncomingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [crv, incomingAsset],
+    });
+
+    // Assert only the newly claimed balances of reward tokens were used
+    expect(postClaimRewardsCrvBalance).toEqBigNumber(preClaimRewardsCrvBalance);
+
+    // Assert no rewards tokens are remaining in the adapter
+    expect(await crv.balanceOf(curveLiquiditySethAdapter)).toEqBigNumber(0);
+
+    // Assert the amount of incoming asset in the vault increased
+    expect(postClaimRewardsIncomingAssetBalance).toBeGtBigNumber(preClaimRewardsIncomingAssetBalance);
+  });
+
+  it('full balances: claim rewards and swaps the full vault balances of each reward token (into DAI)', async () => {
+    const [fundOwner] = fork.accounts;
+    const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
+    const integrationManager = fork.deployment.integrationManager;
+    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: weth,
+    });
+
+    // Lend and stake to start accruing rewards
+    const outgoingWethAmount = utils.parseEther('2');
+    await weth.transfer(vaultProxy, outgoingWethAmount);
+    await curveSethLendAndStake({
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      fundOwner,
+      curveLiquiditySethAdapter,
+      outgoingWethAmount,
+      outgoingSethAmount: BigNumber.from(0),
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+    });
+
+    // Warp ahead in time to accrue rewards
+    await provider.send('evm_increaseTime', [86400]);
+
+    // Send some balances of the rewards assets to the vault
+    await crv.transfer(vaultProxy, utils.parseEther('2'));
+
+    const [preClaimRewardsCrvBalance, preClaimRewardsIncomingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [crv, incomingAsset],
+    });
+
+    // Assert rewards tokens start with non-0 balances
+    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
+
+    // Approve the adapter to claim $CRV rewards on behalf of the vault
+    await vaultCallCurveMinterToggleApproveMint({
+      comptrollerProxy,
+      minter: fork.config.curve.minter,
+      account: curveLiquiditySethAdapter,
+    });
+
+    // Approve the adapter to use CRV
+    await curveApproveAssets({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      adapter: curveLiquiditySethAdapter,
+      assets: [fork.config.primitives.crv],
+    });
+
+    // Claim all earned rewards and swap for the specified incoming asset
+    await curveSethClaimRewardsAndSwap({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      curveLiquiditySethAdapter,
+      useFullBalances: true,
+      incomingAsset,
+    });
+
+    const [postClaimRewardsCrvBalance, postClaimRewardsIncomingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [crv, incomingAsset],
+    });
+
+    // Assert entire vault balances of reward tokens were used
+    expect(postClaimRewardsCrvBalance).toEqBigNumber(0);
+
+    // Assert no rewards tokens are remaining in the adapter
+    expect(await crv.balanceOf(curveLiquiditySethAdapter)).toEqBigNumber(0);
+
+    // Assert the amount of incoming asset in the vault increased
+    expect(postClaimRewardsIncomingAssetBalance).toBeGtBigNumber(preClaimRewardsIncomingAssetBalance);
   });
 });

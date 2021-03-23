@@ -47,6 +47,9 @@ abstract contract IntegrationSelectors {
     bytes4 public constant CLAIM_REWARDS_AND_REINVEST_SELECTOR = bytes4(
         keccak256("claimRewardsAndReinvest(address,bytes,bytes)")
     );
+    bytes4 public constant CLAIM_REWARDS_AND_SWAP_SELECTOR = bytes4(
+        keccak256("claimRewardsAndSwap(address,bytes,bytes)")
+    );
     bytes4 public constant LEND_AND_STAKE_SELECTOR = bytes4(
         keccak256("lendAndStake(address,bytes,bytes)")
     );

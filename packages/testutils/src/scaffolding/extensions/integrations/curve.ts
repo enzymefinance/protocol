@@ -12,8 +12,10 @@ import {
   StandardToken,
   callOnIntegrationArgs,
   claimRewardsAndReinvestSelector,
+  claimRewardsAndSwapSelector,
   claimRewardsSelector,
   curveSethClaimRewardsAndReinvestArgs,
+  curveSethClaimRewardsAndSwapArgs,
   curveSethLendAndStakeArgs,
   curveSethLendArgs,
   curveSethRedeemArgs,
@@ -21,6 +23,7 @@ import {
   curveSethUnstakeAndRedeemArgs,
   curveSethUnstakeArgs,
   curveStethClaimRewardsAndReinvestArgs,
+  curveStethClaimRewardsAndSwapArgs,
   curveStethLendAndStakeArgs,
   curveStethLendArgs,
   curveStethRedeemArgs,
@@ -181,6 +184,38 @@ export function curveSethClaimRewardsAndReinvest({
     encodedCallArgs: curveSethClaimRewardsAndReinvestArgs({
       useFullBalances,
       minIncomingLiquidityGaugeTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveSethClaimRewardsAndSwap({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquiditySethAdapter,
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount = BigNumber.from(1),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquiditySethAdapter: CurveLiquiditySethAdapter;
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount?: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquiditySethAdapter,
+    selector: claimRewardsAndSwapSelector,
+    encodedCallArgs: curveSethClaimRewardsAndSwapArgs({
+      useFullBalances,
+      incomingAsset,
+      minIncomingAssetAmount,
     }),
   });
 
@@ -420,6 +455,38 @@ export function curveStethClaimRewardsAndReinvest({
     encodedCallArgs: curveStethClaimRewardsAndReinvestArgs({
       useFullBalances,
       minIncomingLiquidityGaugeTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveStethClaimRewardsAndSwap({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityStethAdapter,
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount = BigNumber.from(1),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityStethAdapter: CurveLiquidityStethAdapter;
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount?: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityStethAdapter,
+    selector: claimRewardsAndSwapSelector,
+    encodedCallArgs: curveStethClaimRewardsAndSwapArgs({
+      useFullBalances,
+      incomingAsset,
+      minIncomingAssetAmount,
     }),
   });
 

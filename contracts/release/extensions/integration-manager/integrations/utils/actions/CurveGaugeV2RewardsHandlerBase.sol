@@ -40,6 +40,23 @@ abstract contract CurveGaugeV2RewardsHandlerBase is CurveGaugeV2ActionsMixin {
         __curveGaugeV2ClaimRewards(_gauge, _target);
     }
 
+    /// @dev Helper to claim all rewards, then pull either the newly claimed balances only,
+    /// or full vault balances into the current contract
+    function __curveGaugeV2ClaimRewardsAndPullBalances(
+        address _gauge,
+        address _target,
+        bool _useFullBalances
+    )
+        internal
+        returns (address[] memory rewardsTokens_, uint256[] memory rewardsTokenAmountsPulled_)
+    {
+        if (_useFullBalances) {
+            return __curveGaugeV2ClaimRewardsAndPullFullBalances(_gauge, _target);
+        }
+
+        return __curveGaugeV2ClaimRewardsAndPullClaimedBalances(_gauge, _target);
+    }
+
     /// @dev Helper to claim all rewards, then pull only the newly claimed balances
     /// of all rewards tokens into the current contract
     function __curveGaugeV2ClaimRewardsAndPullClaimedBalances(address _gauge, address _target)
