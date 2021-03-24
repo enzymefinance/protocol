@@ -36,6 +36,147 @@ export function curveTakeOrderArgs({
   );
 }
 
+// aave pool
+
+export enum CurveAavePoolAssetIndex {
+  AaveDai,
+  AaveUsdc,
+  AaveUsdt,
+}
+
+export function curveAaveClaimRewardsAndReinvestArgs({
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount,
+  intermediaryUnderlyingAssetIndex,
+}: {
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+  intermediaryUnderlyingAssetIndex: CurveAavePoolAssetIndex;
+}) {
+  return encodeArgs(
+    ['bool', 'uint256', 'uint8'],
+    [useFullBalances, minIncomingLiquidityGaugeTokenAmount, intermediaryUnderlyingAssetIndex],
+  );
+}
+
+export function curveAaveClaimRewardsAndSwapArgs({
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount,
+}: {
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
+}
+
+export function curveAaveLendAndStakeArgs({
+  outgoingAaveDaiAmount,
+  outgoingAaveUsdcAmount,
+  outgoingAaveUsdtAmount,
+  minIncomingLiquidityGaugeTokenAmount,
+  useUnderlyings,
+}: {
+  outgoingAaveDaiAmount: BigNumberish;
+  outgoingAaveUsdcAmount: BigNumberish;
+  outgoingAaveUsdtAmount: BigNumberish;
+  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
+  useUnderlyings: boolean;
+}) {
+  return encodeArgs(
+    ['uint256[3]', 'uint256', 'bool'],
+    [
+      [outgoingAaveDaiAmount, outgoingAaveUsdcAmount, outgoingAaveUsdtAmount],
+      minIncomingLiquidityGaugeTokenAmount,
+      useUnderlyings,
+    ],
+  );
+}
+
+export function curveAaveLendArgs({
+  outgoingAaveDaiAmount,
+  outgoingAaveUsdcAmount,
+  outgoingAaveUsdtAmount,
+  minIncomingLPTokenAmount,
+  useUnderlyings,
+}: {
+  outgoingAaveDaiAmount: BigNumberish;
+  outgoingAaveUsdcAmount: BigNumberish;
+  outgoingAaveUsdtAmount: BigNumberish;
+  minIncomingLPTokenAmount: BigNumberish;
+  useUnderlyings: boolean;
+}) {
+  return encodeArgs(
+    ['uint256[3]', 'uint256', 'bool'],
+    [[outgoingAaveDaiAmount, outgoingAaveUsdcAmount, outgoingAaveUsdtAmount], minIncomingLPTokenAmount, useUnderlyings],
+  );
+}
+
+export function curveAaveStakeArgs({ outgoingLPTokenAmount }: { outgoingLPTokenAmount: BigNumberish }) {
+  return encodeArgs(['uint256'], [outgoingLPTokenAmount]);
+}
+
+export function curveAaveRedeemArgs({
+  outgoingLPTokenAmount,
+  minIncomingAaveDaiAmount,
+  minIncomingAaveUsdcAmount,
+  minIncomingAaveUsdtAmount,
+  receiveSingleAsset,
+  useUnderlyings,
+}: {
+  outgoingLPTokenAmount: BigNumberish;
+  minIncomingAaveDaiAmount: BigNumberish;
+  minIncomingAaveUsdcAmount: BigNumberish;
+  minIncomingAaveUsdtAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+  useUnderlyings: boolean;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256[3]', 'bool', 'bool'],
+    [
+      outgoingLPTokenAmount,
+      [minIncomingAaveDaiAmount, minIncomingAaveUsdcAmount, minIncomingAaveUsdtAmount],
+      receiveSingleAsset,
+      useUnderlyings,
+    ],
+  );
+}
+
+export function curveAaveUnstakeAndRedeemArgs({
+  outgoingLiquidityGaugeTokenAmount,
+  minIncomingAaveDaiAmount,
+  minIncomingAaveUsdcAmount,
+  minIncomingAaveUsdtAmount,
+  receiveSingleAsset,
+  useUnderlyings,
+}: {
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+  minIncomingAaveDaiAmount: BigNumberish;
+  minIncomingAaveUsdcAmount: BigNumberish;
+  minIncomingAaveUsdtAmount: BigNumberish;
+  receiveSingleAsset: boolean;
+  useUnderlyings: boolean;
+}) {
+  return encodeArgs(
+    ['uint256', 'uint256[3]', 'bool', 'bool'],
+    [
+      outgoingLiquidityGaugeTokenAmount,
+      [minIncomingAaveDaiAmount, minIncomingAaveUsdcAmount, minIncomingAaveUsdtAmount],
+      receiveSingleAsset,
+      useUnderlyings,
+    ],
+  );
+}
+
+export function curveAaveUnstakeArgs({
+  outgoingLiquidityGaugeTokenAmount,
+}: {
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['uint256'], [outgoingLiquidityGaugeTokenAmount]);
+}
+
 // sETH pool
 
 export function curveSethClaimRewardsAndReinvestArgs({

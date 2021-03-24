@@ -2,18 +2,25 @@ import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethe
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   approveAssetsSelector,
-  ComptrollerLib,
-  curveApproveAssetsArgs,
-  CurveExchangeAdapter,
-  CurveLiquiditySethAdapter,
-  CurveLiquidityStethAdapter,
-  IntegrationManager,
-  IntegrationManagerActionId,
-  StandardToken,
   callOnIntegrationArgs,
   claimRewardsAndReinvestSelector,
   claimRewardsAndSwapSelector,
   claimRewardsSelector,
+  ComptrollerLib,
+  curveAaveClaimRewardsAndReinvestArgs,
+  curveAaveClaimRewardsAndSwapArgs,
+  curveAaveLendAndStakeArgs,
+  curveAaveLendArgs,
+  CurveAavePoolAssetIndex,
+  curveAaveRedeemArgs,
+  curveAaveStakeArgs,
+  curveAaveUnstakeAndRedeemArgs,
+  curveAaveUnstakeArgs,
+  curveApproveAssetsArgs,
+  CurveExchangeAdapter,
+  CurveLiquidityAaveAdapter,
+  CurveLiquiditySethAdapter,
+  CurveLiquidityStethAdapter,
   curveSethClaimRewardsAndReinvestArgs,
   curveSethClaimRewardsAndSwapArgs,
   curveSethLendAndStakeArgs,
@@ -31,10 +38,13 @@ import {
   curveStethUnstakeAndRedeemArgs,
   curveStethUnstakeArgs,
   curveTakeOrderArgs,
+  IntegrationManager,
+  IntegrationManagerActionId,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   stakeSelector,
+  StandardToken,
   takeOrderSelector,
   unstakeAndRedeemSelector,
   unstakeSelector,
@@ -132,6 +142,304 @@ export async function curveTakeOrder({
     adapter: curveExchangeAdapter,
     selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+// aave pool
+
+export function curveAaveClaimRewards({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: claimRewardsSelector,
+    encodedCallArgs: constants.HashZero,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveClaimRewardsAndReinvest({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  useFullBalances,
+  minIncomingLiquidityGaugeTokenAmount = BigNumber.from(1),
+  intermediaryUnderlyingAssetIndex = CurveAavePoolAssetIndex.AaveDai,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  useFullBalances: boolean;
+  minIncomingLiquidityGaugeTokenAmount?: BigNumberish;
+  intermediaryUnderlyingAssetIndex?: CurveAavePoolAssetIndex;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: claimRewardsAndReinvestSelector,
+    encodedCallArgs: curveAaveClaimRewardsAndReinvestArgs({
+      useFullBalances,
+      minIncomingLiquidityGaugeTokenAmount,
+      intermediaryUnderlyingAssetIndex,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveClaimRewardsAndSwap({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  useFullBalances,
+  incomingAsset,
+  minIncomingAssetAmount = BigNumber.from(1),
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  useFullBalances: boolean;
+  incomingAsset: AddressLike;
+  minIncomingAssetAmount?: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: claimRewardsAndSwapSelector,
+    encodedCallArgs: curveAaveClaimRewardsAndSwapArgs({
+      useFullBalances,
+      incomingAsset,
+      minIncomingAssetAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveLend({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingAaveDaiAmount = BigNumber.from(0),
+  outgoingAaveUsdcAmount = BigNumber.from(0),
+  outgoingAaveUsdtAmount = BigNumber.from(0),
+  minIncomingLPTokenAmount = BigNumber.from(1),
+  useUnderlyings = false,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingAaveDaiAmount?: BigNumberish;
+  outgoingAaveUsdcAmount?: BigNumberish;
+  outgoingAaveUsdtAmount?: BigNumberish;
+  minIncomingLPTokenAmount?: BigNumberish;
+  useUnderlyings?: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: lendSelector,
+    encodedCallArgs: curveAaveLendArgs({
+      outgoingAaveDaiAmount,
+      outgoingAaveUsdcAmount,
+      outgoingAaveUsdtAmount,
+      minIncomingLPTokenAmount,
+      useUnderlyings,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveLendAndStake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingAaveDaiAmount = BigNumber.from(0),
+  outgoingAaveUsdcAmount = BigNumber.from(0),
+  outgoingAaveUsdtAmount = BigNumber.from(0),
+  minIncomingLiquidityGaugeTokenAmount = BigNumber.from(1),
+  useUnderlyings = false,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingAaveDaiAmount?: BigNumberish;
+  outgoingAaveUsdcAmount?: BigNumberish;
+  outgoingAaveUsdtAmount?: BigNumberish;
+  minIncomingLiquidityGaugeTokenAmount?: BigNumberish;
+  useUnderlyings?: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: lendAndStakeSelector,
+    encodedCallArgs: curveAaveLendAndStakeArgs({
+      outgoingAaveDaiAmount,
+      outgoingAaveUsdcAmount,
+      outgoingAaveUsdtAmount,
+      minIncomingLiquidityGaugeTokenAmount,
+      useUnderlyings,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveRedeem({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingLPTokenAmount,
+  minIncomingAaveDaiAmount = BigNumber.from(1),
+  minIncomingAaveUsdcAmount = BigNumber.from(1),
+  minIncomingAaveUsdtAmount = BigNumber.from(1),
+  receiveSingleAsset = false,
+  useUnderlyings = false,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingLPTokenAmount: BigNumberish;
+  minIncomingAaveDaiAmount?: BigNumberish;
+  minIncomingAaveUsdcAmount?: BigNumberish;
+  minIncomingAaveUsdtAmount?: BigNumberish;
+  receiveSingleAsset?: boolean;
+  useUnderlyings?: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: redeemSelector,
+    encodedCallArgs: curveAaveRedeemArgs({
+      outgoingLPTokenAmount,
+      minIncomingAaveDaiAmount,
+      minIncomingAaveUsdcAmount,
+      minIncomingAaveUsdtAmount,
+      receiveSingleAsset,
+      useUnderlyings,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveStake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingLPTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingLPTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: stakeSelector,
+    encodedCallArgs: curveAaveStakeArgs({
+      outgoingLPTokenAmount,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveUnstakeAndRedeem({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingLiquidityGaugeTokenAmount,
+  minIncomingAaveDaiAmount = BigNumber.from(1),
+  minIncomingAaveUsdcAmount = BigNumber.from(1),
+  minIncomingAaveUsdtAmount = BigNumber.from(1),
+  receiveSingleAsset = false,
+  useUnderlyings = false,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+  minIncomingAaveDaiAmount?: BigNumberish;
+  minIncomingAaveUsdcAmount?: BigNumberish;
+  minIncomingAaveUsdtAmount?: BigNumberish;
+  receiveSingleAsset?: boolean;
+  useUnderlyings?: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: unstakeAndRedeemSelector,
+    encodedCallArgs: curveAaveUnstakeAndRedeemArgs({
+      outgoingLiquidityGaugeTokenAmount,
+      minIncomingAaveDaiAmount,
+      minIncomingAaveUsdcAmount,
+      minIncomingAaveUsdtAmount,
+      receiveSingleAsset,
+      useUnderlyings,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export function curveAaveUnstake({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAaveAdapter,
+  outgoingLiquidityGaugeTokenAmount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAaveAdapter: CurveLiquidityAaveAdapter;
+  outgoingLiquidityGaugeTokenAmount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAaveAdapter,
+    selector: unstakeSelector,
+    encodedCallArgs: curveAaveUnstakeArgs({
+      outgoingLiquidityGaugeTokenAmount,
+    }),
   });
 
   return comptrollerProxy
