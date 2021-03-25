@@ -6,7 +6,13 @@ import {
   MockToken,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  ProtocolDeployment,
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  kyberTakeOrder,
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, Signer, utils } from 'ethers';
 
 // Unused chf/usd aggregator
@@ -48,6 +54,115 @@ async function swapDaiAggregatorForUsd({
 
   return nextDaiAggregator;
 }
+
+describe('primitives gas costs', () => {
+  it('adds to calcGav for weth-denominated fund (same rate assets)', async () => {
+    const [fundOwner, investor] = fork.accounts;
+    const dai = new StandardToken(fork.config.primitives.usdc, whales.dai);
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const denominationAsset = weth;
+    const integrationManager = fork.deployment.integrationManager;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Seed investor and buy shares to add denomination asset
+    await weth.transfer(investor, initialTokenAmount);
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyers: [investor],
+      denominationAsset,
+      investmentAmounts: [initialTokenAmount],
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Seed fund and use half of the weth balance to get dai
+    await kyberTakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      kyberAdapter: fork.deployment.kyberAdapter,
+      outgoingAsset: weth,
+      outgoingAssetAmount: initialTokenAmount.div(2),
+      incomingAsset: dai,
+      minIncomingAssetAmount: BigNumber.from(1),
+      seedFund: false,
+    });
+
+    // Get the calcGav() cost including adai
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(29100));
+  });
+
+  it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
+    const [fundOwner, investor] = fork.accounts;
+    const dai = new StandardToken(fork.config.primitives.usdc, provider);
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const denominationAsset = weth;
+    const integrationManager = fork.deployment.integrationManager;
+    const chainlinkPriceFeed = fork.deployment.chainlinkPriceFeed;
+
+    await swapDaiAggregatorForUsd({
+      signer: fork.deployer,
+      chainlinkPriceFeed,
+      dai,
+    });
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Seed investor and buy shares to add denomination asset
+    await weth.transfer(investor, initialTokenAmount);
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyers: [investor],
+      denominationAsset,
+      investmentAmounts: [initialTokenAmount],
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Seed fund and use half of the weth balance to get dai
+    await kyberTakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      kyberAdapter: fork.deployment.kyberAdapter,
+      outgoingAsset: weth,
+      outgoingAssetAmount: initialTokenAmount.div(2),
+      incomingAsset: dai,
+      minIncomingAssetAmount: BigNumber.from(1),
+      seedFund: false,
+    });
+
+    // Get the calcGav() cost including adai
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(38800));
+  });
+});
 
 describe('getCanonicalRate', () => {
   // USDC/ETH and WETH/ETH

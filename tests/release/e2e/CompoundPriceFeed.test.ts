@@ -1,10 +1,66 @@
 import { ICERC20, StandardToken } from '@enzymefinance/protocol';
-import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  ProtocolDeployment,
+  buyShares,
+  compoundLend,
+  createNewFund,
+  deployProtocolFixture,
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+});
+
+describe('derivative gas costs', () => {
+  it('adds to calcGav for weth-denominated fund', async () => {
+    const [fundOwner, investor] = fork.accounts;
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const denominationAsset = weth;
+    const integrationManager = fork.deployment.integrationManager;
+
+    const { vaultProxy, comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Seed fund and buy shares to add denomination asset
+    await weth.transfer(investor, initialTokenAmount);
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyers: [investor],
+      denominationAsset,
+      investmentAmounts: [initialTokenAmount],
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Use max of the dai balance to get cDai
+    await dai.transfer(vaultProxy, initialTokenAmount);
+    await compoundLend({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      compoundAdapter: fork.deployment.compoundAdapter,
+      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      tokenAmount: initialTokenAmount,
+      cTokenAmount: BigNumber.from('1'),
+    });
+
+    // Get the calcGav() cost including the pool token
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(59000));
+  });
 });
 
 describe('calcUnderlyingValues', () => {

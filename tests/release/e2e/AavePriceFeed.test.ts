@@ -1,11 +1,62 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
-import { ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import { aaveLend } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+});
+
+describe('derivative gas costs', () => {
+  it('adds to calcGav for weth-denominated fund', async () => {
+    const [fundOwner, investor] = fork.accounts;
+    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const denominationAsset = weth;
+    const integrationManager = fork.deployment.integrationManager;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Seed investor and buy shares to add denomination asset
+    await weth.transfer(investor, initialTokenAmount);
+
+    await buyShares({
+      comptrollerProxy,
+      signer: investor,
+      buyers: [investor],
+      denominationAsset,
+      investmentAmounts: [initialTokenAmount],
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Seed fund and use max of the dai balance to get adai
+    await dai.transfer(vaultProxy, initialTokenAmount);
+    await aaveLend({
+      comptrollerProxy,
+      integrationManager,
+      fundOwner,
+      aaveAdapter: fork.deployment.aaveAdapter,
+      aToken: new StandardToken(fork.config.aave.atokens.adai[0], provider),
+      amount: initialTokenAmount,
+    });
+
+    // Get the calcGav() cost including adai
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(48000));
+  });
 });
 
 describe('addDerivatives', () => {
