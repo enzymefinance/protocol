@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
       'IMigrationHookHandler',
       'IMigratableVault',
       'IAlphaHomoraV1Bank',
+      'IIdleTokenV4',
       'IChainlinkAggregator',
       'IMakerDaoPot',
       'IUniswapV2Factory',

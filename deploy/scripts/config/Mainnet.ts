@@ -50,6 +50,7 @@ const primitives = {
 const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
 const unsupportedRewardsTokens = {
+  idle: '0x875773784af8135ea0ef43b5a374aad105c5d39e',
   ldo: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
 };
 
@@ -269,6 +270,17 @@ const mainnetConfig: DeploymentConfig = {
         pool: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
       },
     },
+  },
+  idle: {
+    bestYieldIdleDai: '0x3fE7940616e5Bc47b0775a0dccf6237893353bB4',
+    bestYieldIdleUsdc: '0x5274891bEC421B39D23760c04A6755eCB444797C',
+    bestYieldIdleUsdt: '0xF34842d05A1c888Ca02769A633DF37177415C2f8',
+    bestYieldIdleSusd: '0xf52cdcd458bf455aed77751743180ec4a595fd3f',
+    bestYieldIdleTusd: '0xc278041fDD8249FE4c1Aad1193876857EEa3D68c',
+    bestYieldIdleWbtc: '0x8C81121B15197fA0eEaEE1DC75533419DcfD3151',
+    riskAdjustedIdleDai: '0xa14eA0E11121e6E951E87c66AFe460A00BCD6A16',
+    riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
+    riskAdjustedIdleUsdt: '0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5',
   },
   kyber: {
     networkProxy: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',

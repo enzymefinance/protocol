@@ -64,6 +64,17 @@ export interface DeploymentConfig {
     chai: string;
     pot: string;
   };
+  idle: {
+    bestYieldIdleDai: string;
+    bestYieldIdleUsdc: string;
+    bestYieldIdleUsdt: string;
+    bestYieldIdleSusd: string;
+    bestYieldIdleTusd: string;
+    bestYieldIdleWbtc: string;
+    riskAdjustedIdleDai: string;
+    riskAdjustedIdleUsdc: string;
+    riskAdjustedIdleUsdt: string;
+  };
   kyber: {
     networkProxy: string;
   };

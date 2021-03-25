@@ -35,6 +35,20 @@ abstract contract AssetHelpers {
         }
     }
 
+    /// @dev Helper to get the balances of specified assets for a target
+    function __getAssetBalances(address _target, address[] memory _assets)
+        internal
+        view
+        returns (uint256[] memory balances_)
+    {
+        balances_ = new uint256[](_assets.length);
+        for (uint256 i; i < _assets.length; i++) {
+            balances_[i] = ERC20(_assets[i]).balanceOf(_target);
+        }
+
+        return balances_;
+    }
+
     /// @dev Helper to transfer full asset balances from a target to the current contract.
     /// Requires an adequate allowance for each asset granted to the current contract for the target.
     function __pullFullAssetBalances(address _target, address[] memory _assets)
@@ -49,6 +63,8 @@ abstract contract AssetHelpers {
                 assetContract.safeTransferFrom(_target, address(this), amountsTransferred_[i]);
             }
         }
+
+        return amountsTransferred_;
     }
 
     /// @dev Helper to transfer partial asset balances from a target to the current contract.
@@ -66,5 +82,24 @@ abstract contract AssetHelpers {
                 assetContract.safeTransferFrom(_target, address(this), amountsTransferred_[i]);
             }
         }
+
+        return amountsTransferred_;
+    }
+
+    /// @dev Helper to transfer full asset balances from the current contract to a target
+    function __pushFullAssetBalances(address _target, address[] memory _assets)
+        internal
+        returns (uint256[] memory amountsTransferred_)
+    {
+        amountsTransferred_ = new uint256[](_assets.length);
+        for (uint256 i; i < _assets.length; i++) {
+            ERC20 assetContract = ERC20(_assets[i]);
+            amountsTransferred_[i] = assetContract.balanceOf(address(this));
+            if (amountsTransferred_[i] > 0) {
+                assetContract.safeTransfer(_target, amountsTransferred_[i]);
+            }
+        }
+
+        return amountsTransferred_;
     }
 }
