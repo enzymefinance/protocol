@@ -14,7 +14,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../../persistent/vault/VaultLibBase1.sol";
+import "../../../../persistent/vault/VaultLibBase2.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract
@@ -24,8 +24,8 @@ import "./IVault.sol";
 /// A fund might actually have asset balances of un-tracked assets,
 /// but only tracked assets are used in gav calculations.
 /// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
-/// from SharesTokenBase via VaultLibBase1
-contract VaultLib is VaultLibBase1, IVault {
+/// from SharesTokenBase via VaultLibBase2
+contract VaultLib is VaultLibBase2, IVault {
     using SafeERC20 for ERC20;
 
     // Before updating TRACKED_ASSETS_LIMIT in the future, it is important to consider:
@@ -38,21 +38,76 @@ contract VaultLib is VaultLibBase1, IVault {
         _;
     }
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
     /////////////
     // GENERAL //
     /////////////
 
+    /// @notice Claim ownership of the contract
+    function claimOwnership() external {
+        address nextOwner = nominatedOwner;
+        require(
+            msg.sender == nextOwner,
+            "claimOwnership: Only the nominatedOwner can call this function"
+        );
+
+        delete nominatedOwner;
+
+        address prevOwner = owner;
+        owner = nextOwner;
+
+        emit OwnershipTransferred(prevOwner, nextOwner);
+    }
+
+    /// @notice Revoke the nomination of a new contract owner
+    function removeNominatedOwner() external onlyOwner {
+        address removedNominatedOwner = nominatedOwner;
+        require(
+            removedNominatedOwner != address(0),
+            "removeNominatedOwner: There is no nominated owner"
+        );
+
+        delete nominatedOwner;
+
+        emit NominatedOwnerRemoved(removedNominatedOwner);
+    }
+
     /// @notice Sets the account that is allowed to migrate a fund to new releases
     /// @param _nextMigrator The account to set as the allowed migrator
     /// @dev Set to address(0) to remove the migrator.
-    function setMigrator(address _nextMigrator) external {
-        require(msg.sender == owner, "setMigrator: Only the owner can call this function");
+    function setMigrator(address _nextMigrator) external onlyOwner {
         address prevMigrator = migrator;
         require(_nextMigrator != prevMigrator, "setMigrator: Value already set");
 
         migrator = _nextMigrator;
 
         emit MigratorSet(prevMigrator, _nextMigrator);
+    }
+
+    /// @notice Nominate a new contract owner
+    /// @param _nextNominatedOwner The account to nominate
+    /// @dev Does not prohibit overwriting the current nominatedOwner
+    function setNominatedOwner(address _nextNominatedOwner) external onlyOwner {
+        require(
+            _nextNominatedOwner != address(0),
+            "setNominatedOwner: _nextNominatedOwner cannot be empty"
+        );
+        require(
+            _nextNominatedOwner != owner,
+            "setNominatedOwner: _nextNominatedOwner is already the owner"
+        );
+        require(
+            _nextNominatedOwner != nominatedOwner,
+            "setNominatedOwner: _nextNominatedOwner is already nominated"
+        );
+
+        nominatedOwner = _nextNominatedOwner;
+
+        emit NominatedOwnerSet(_nextNominatedOwner);
     }
 
     ///////////
@@ -224,6 +279,12 @@ contract VaultLib is VaultLibBase1, IVault {
     /// @return migrator_ The `migrator` variable value
     function getMigrator() external view returns (address migrator_) {
         return migrator;
+    }
+
+    /// @notice Gets the account that is nominated to be the next owner of this contract
+    /// @return nominatedOwner_ The account that is nominated to be the owner
+    function getNominatedOwner() external view returns (address nominatedOwner_) {
+        return nominatedOwner;
     }
 
     /// @notice Gets the `owner` variable
