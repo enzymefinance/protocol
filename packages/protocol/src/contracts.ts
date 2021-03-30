@@ -16,6 +16,8 @@ export * from './codegen/VaultLib';
 
 // Infrastructure
 export * from './codegen/ValueInterpreter';
+export * from './codegen/GlobalConfigLib';
+export * from './codegen/GlobalConfigProxy';
 
 // Extensions
 export * from './codegen/IExtension';

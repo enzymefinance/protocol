@@ -53,6 +53,7 @@ import {
   MinMaxInvestment,
   InvestorWhitelist,
   GuaranteedRedemption,
+  GlobalConfigLib,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -131,6 +132,8 @@ export async function deployProtocolFixture() {
     minMaxInvestment: new MinMaxInvestment(fixture['MinMaxInvestment'].address, deployer),
     investorWhitelist: new InvestorWhitelist(fixture['InvestorWhitelist'].address, deployer),
     guaranteedRedemption: new GuaranteedRedemption(fixture['GuaranteedRedemption'].address, deployer),
+    globalConfigLib: new GlobalConfigLib(fixture['GlobalConfigLib'].address, deployer),
+    globalConfigProxy: new GlobalConfigLib(fixture['GlobalConfigProxy'].address, deployer)
   } as const;
 
   return {
