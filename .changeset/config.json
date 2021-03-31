@@ -3,7 +3,7 @@
   "commit": false,
   "linked": [],
   "access": "public",
-  "baseBranch": "current",
+  "baseBranch": "next",
   "updateInternalDependencies": "patch",
   "ignore": ["@enzymefinance/testutils"]
 }
