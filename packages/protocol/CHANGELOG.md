@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.3
+
+### Patch Changes
+
+- c82260c8: Adding idle and curve integration contracts
+
 ## 2.0.2
 
 ### Patch Changes
