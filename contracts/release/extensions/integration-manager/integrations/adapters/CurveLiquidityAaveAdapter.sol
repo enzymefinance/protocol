@@ -13,8 +13,7 @@ import "../utils/AdapterBase2.sol";
 /// or claimRewardsAndReinvest(). Rationale:
 /// - rewards tokens can be claimed to the vault outside of the IntegrationManager, so no need
 /// to enforce policy management or emit an event
-/// - rewards tokens can be outside of the asset universe, e.g., $LDO, in which case
-/// they cannot be tracked
+/// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 /// This adapter will need to be re-deployed if UniswapV2 low liquidity becomes
 /// a concern for rewards tokens when using claimRewardsAndReinvest().
 contract CurveLiquidityAaveAdapter is
