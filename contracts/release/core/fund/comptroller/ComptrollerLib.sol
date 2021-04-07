@@ -930,6 +930,27 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         return (payoutAssets_, payoutAmounts_);
     }
 
+    // TRANSFER SHARES
+
+    /// @notice Runs logic prior to transferring shares between two parties
+    /// @param _sender The sender of the shares
+    /// @param _recipient The recipient of the shares
+    /// @param _amount The amount of shares
+    function preTransferSharesHook(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) external override {
+        require(msg.sender == vaultProxy, "preTransferSharesHook: Only VaultProxy callable");
+        __assertSharesActionNotTimelocked(_sender);
+
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.PreTransferShares,
+            abi.encode(_sender, _recipient, _amount)
+        );
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -938,6 +959,17 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
     /// @return denominationAsset_ The `denominationAsset` variable value
     function getDenominationAsset() external view override returns (address denominationAsset_) {
         return denominationAsset;
+    }
+
+    /// @notice Gets the last shares action timestamp for a given account
+    /// @param _who The account for which to get the last shares action timestamp
+    /// @return lastSharesActionTimestamp_ The timestamp of the lastSharesAction
+    function getLastSharesActionTimestampForAccount(address _who)
+        external
+        view
+        returns (uint256 lastSharesActionTimestamp_)
+    {
+        return acctToLastSharesAction[_who];
     }
 
     /// @notice Gets the routes for the various contracts used by all funds

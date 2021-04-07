@@ -95,6 +95,14 @@ describe('addTrackedAsset', () => {
     );
   });
 
+  it('cannot specify shares as the asset', async () => {
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
+
+    await expect(mockVaultAccessor.forward(vaultProxy.addTrackedAsset, vaultProxy)).rejects.toBeRevertedWith(
+      'Cannot act on shares',
+    );
+  });
+
   it('skip if the asset already exists', async () => {
     const { weth, mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
 
@@ -254,6 +262,14 @@ describe('withdrawAssetTo', () => {
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
   });
 
+  it('cannot specify shares as the asset', async () => {
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
+
+    await expect(
+      mockVaultAccessor.forward(vaultProxy.withdrawAssetTo, vaultProxy, randomAddress(), 1),
+    ).rejects.toBeRevertedWith('Cannot act on shares');
+  });
+
   it('partially withdraw an asset balance', async () => {
     const {
       accounts: [investor],
@@ -302,6 +318,14 @@ describe('approveAssetSpender', () => {
     await expect(
       vaultProxy.connect(arbitraryUser).approveAssetSpender(weth, investor, utils.parseEther('1')),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
+  });
+
+  it('cannot specify shares as the asset', async () => {
+    const { mockVaultAccessor, vaultProxy } = await provider.snapshot(snapshot);
+
+    await expect(
+      mockVaultAccessor.forward(vaultProxy.approveAssetSpender, vaultProxy, randomAddress(), 1),
+    ).rejects.toBeRevertedWith('Cannot act on shares');
   });
 
   it('works as expected', async () => {

@@ -64,7 +64,7 @@ const expectedGasCosts = {
 
   'redeem partial shares: max assets': {
     usdc: 2868000,
-    weth: 2664000,
+    weth: 2665000,
   },
   // Kyber is used here because it is one of the most expensive.
   // If another adapter is significantly more expensive, we should use that one.

@@ -5,4 +5,5 @@ export enum PolicyHook {
   BuySharesCompleted,
   PreCallOnIntegration,
   PostCallOnIntegration,
+  PreTransferShares,
 }

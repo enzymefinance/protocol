@@ -48,4 +48,10 @@ interface IComptroller {
     function init(address, uint256) external;
 
     function permissionedVaultAction(VaultAction, bytes calldata) external;
+
+    function preTransferSharesHook(
+        address,
+        address,
+        uint256
+    ) external;
 }

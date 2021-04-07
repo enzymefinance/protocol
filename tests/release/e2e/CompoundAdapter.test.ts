@@ -166,7 +166,8 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostLessThan('528000');
+    // Rounded up from 528057
+    expect(lendReceipt).toCostLessThan('529000');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {

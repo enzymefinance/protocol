@@ -22,7 +22,8 @@ interface IPolicyManager {
         PostBuyShares,
         BuySharesCompleted,
         PreCallOnIntegration,
-        PostCallOnIntegration
+        PostCallOnIntegration,
+        PreTransferShares
     }
 
     function validatePolicies(

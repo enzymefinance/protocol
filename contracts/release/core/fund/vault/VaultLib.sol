@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../comptroller/IComptroller.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract
@@ -40,6 +41,11 @@ contract VaultLib is VaultLibBase2, IVault {
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    modifier notShares(address _asset) {
+        require(_asset != address(this), "Cannot act on shares");
         _;
     }
 
@@ -117,7 +123,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @notice Adds a tracked asset to the fund
     /// @param _asset The asset to add
     /// @dev Allows addition of already tracked assets to fail silently.
-    function addTrackedAsset(address _asset) external override onlyAccessor {
+    function addTrackedAsset(address _asset) external override onlyAccessor notShares(_asset) {
         if (!isTrackedAsset(_asset)) {
             require(
                 trackedAssets.length < TRACKED_ASSETS_LIMIT,
@@ -139,7 +145,7 @@ contract VaultLib is VaultLibBase2, IVault {
         address _asset,
         address _target,
         uint256 _amount
-    ) external override onlyAccessor {
+    ) external override onlyAccessor notShares(_asset) {
         ERC20(_asset).approve(_target, _amount);
     }
 
@@ -169,7 +175,7 @@ contract VaultLib is VaultLibBase2, IVault {
         address _asset,
         address _target,
         uint256 _amount
-    ) external override onlyAccessor {
+    ) external override onlyAccessor notShares(_asset) {
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
@@ -223,6 +229,8 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @param _from The account from which to transfer shares
     /// @param _to The account to which to transfer shares
     /// @param _amount The amount of shares to transfer
+    /// @dev For protocol use only, all other transfers should operate
+    /// via standard ERC20 functions
     function transferShares(
         address _from,
         address _to,
@@ -233,11 +241,6 @@ contract VaultLib is VaultLibBase2, IVault {
 
     // ERC20 overrides
 
-    /// @dev Disallows the standard ERC20 approve() function
-    function approve(address, uint256) public override returns (bool) {
-        revert("Unimplemented");
-    }
-
     /// @notice Gets the `symbol` value of the shares token
     /// @return symbol_ The `symbol` value
     /// @dev Defers the shares symbol value to the Dispatcher contract
@@ -245,18 +248,24 @@ contract VaultLib is VaultLibBase2, IVault {
         return IDispatcher(creator).getSharesTokenSymbol();
     }
 
-    /// @dev Disallows the standard ERC20 transfer() function
-    function transfer(address, uint256) public override returns (bool) {
-        revert("Unimplemented");
+    /// @dev Standard implementation of ERC20's transfer().
+    /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
+    function transfer(address _recipient, uint256 _amount) public override returns (bool) {
+        IComptroller(accessor).preTransferSharesHook(msg.sender, _recipient, _amount);
+
+        return super.transfer(_recipient, _amount);
     }
 
-    /// @dev Disallows the standard ERC20 transferFrom() function
+    /// @dev Standard implementation of ERC20's transferFrom().
+    /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
     function transferFrom(
-        address,
-        address,
-        uint256
+        address _sender,
+        address _recipient,
+        uint256 _amount
     ) public override returns (bool) {
-        revert("Unimplemented");
+        IComptroller(accessor).preTransferSharesHook(_sender, _recipient, _amount);
+
+        return super.transferFrom(_sender, _recipient, _amount);
     }
 
     ///////////////////
