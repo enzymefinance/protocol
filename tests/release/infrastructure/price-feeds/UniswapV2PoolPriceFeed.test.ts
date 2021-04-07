@@ -64,7 +64,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['247050525008990036', '8120369388601496194'],
+      underlyingAmounts_: ['328411124723970509', '7122828229726532451'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -88,7 +88,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['46228706552089', '39452063369591764460002'],
+      underlyingAmounts_: ['68482961567867', '32564716289027301249863'],
       underlyings_: [token0Address, token1Address],
     });
   });

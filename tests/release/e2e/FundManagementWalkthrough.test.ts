@@ -38,7 +38,7 @@ const expectedGasCosts = {
   },
   'buy shares: max assets': {
     usdc: 1495000,
-    weth: 1244000,
+    weth: 1245000,
   },
   'calc gav: 20 assets': {
     usdc: 977000,
@@ -370,7 +370,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         .send();
     });
 
-    it('buys shares of a fund as another investor', async () => {
+    it('buy shares: max assets', async () => {
       const investmentAmount = utils.parseUnits('1', denominationAssetDecimals);
 
       const grossShareValue = await comptrollerProxy.calcGrossShareValue.call();

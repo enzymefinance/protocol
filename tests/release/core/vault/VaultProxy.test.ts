@@ -1,6 +1,12 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { IMigrationHookHandler, StandardToken, VaultLib, WETH } from '@enzymefinance/protocol';
-import { addNewAssetsToFund, assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  addNewAssetsToFund,
+  addTrackedAssets,
+  assertEvent,
+  createNewFund,
+  deployProtocolFixture,
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot() {
@@ -164,13 +170,22 @@ describe('addTrackedAsset', () => {
 
     // Seed with 19 assets to reach the max assets limit
     // (since the denomination asset is already tracked).
-    await addNewAssetsToFund({
-      fundOwner,
+    // Use this loop instead of addNewAssetsToFund() to make debugging easier
+    // when a whale changes.
+    for (const asset of Object.values(assets)) {
+      const decimals = await asset.decimals();
+      const transferAmount = utils.parseUnits('1', decimals);
+      await asset.transfer(vaultProxy, transferAmount);
+
+      const balance = await asset.balanceOf(vaultProxy);
+      expect(balance).toBeGteBigNumber(transferAmount);
+    }
+    await addTrackedAssets({
       comptrollerProxy,
-      vaultProxy,
+      fundOwner,
       integrationManager,
       trackedAssetsAdapter,
-      assets,
+      incomingAssets: assets,
     });
 
     // Adding a new asset should fail

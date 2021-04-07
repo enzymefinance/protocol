@@ -64,6 +64,7 @@ it('works as expected when called by a fund (synth to synth)', async () => {
 
   // Seed fund and execute Synthetix order
   await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+
   await synthetixTakeOrder({
     comptrollerProxy,
     vaultProxy,

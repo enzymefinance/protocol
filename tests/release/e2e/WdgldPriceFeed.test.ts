@@ -57,7 +57,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(38000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(39000));
   });
 });
 
@@ -95,11 +95,11 @@ describe('calcUnderlyingValues', () => {
 
     const wdgldUnit = utils.parseUnits('1', await wdgld.decimals());
 
-    // XAU/USD price at Jan 17, 2021 had a rate of 1849 USD. Given an approximate GTR of 0.0988xx gives a value around 182 USD
+    // XAU/USD price at Apr 6, 2021 had a rate of 1730 USD. Given an approximate GTR of 0.0988xx gives a value around 171 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(wdgld, wdgldUnit, usdc).call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: 180795013,
+      value_: 171191349,
       isValid_: true,
     });
   });

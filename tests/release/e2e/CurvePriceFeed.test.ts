@@ -58,7 +58,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(56200));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(58000));
   });
 });
 
@@ -93,8 +93,8 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    // Rounding up from 61325
-    expect(calcUnderlyingValuesTx).toCostLessThan('62000');
+    // Rounding up from 62505
+    expect(calcUnderlyingValuesTx).toCostLessThan('63000');
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -143,7 +143,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of WETH (10^18)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1000503621316749605',
+      value_: '1008079019022234643',
     });
   });
 
@@ -169,7 +169,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of USDC (10^6)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1007359',
+      value_: '1015133',
     });
   });
 });

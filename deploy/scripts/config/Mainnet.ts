@@ -21,7 +21,6 @@ const primitives = {
   cro: '0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b',
   crv: '0xd533a949740bb3306d119cc777fa900ba034cd52',
   dai: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-  dmg: '0xEd91879919B71bB6905f23af0A68d231EcF87b14',
   enj: '0xf629cbd94d3791c9250152bd8dfbdf380e2a3b9c',
   knc: '0xdd974D5C2e2928deA5F71b9825b8b646686BD200',
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
@@ -68,7 +67,6 @@ const aggregators = {
   cro: ['0xcA696a9Eb93b81ADFE6435759A29aB4cf2991A96', ChainlinkRateAsset.ETH],
   crv: ['0x8a12be339b0cd1829b91adc01977caa5e9ac121e', ChainlinkRateAsset.ETH],
   dai: ['0x773616e4d11a78f511299002da57a0a94577f1f4', ChainlinkRateAsset.ETH],
-  dmg: ['0xD010e899f7ab723AC93f825cDC5Aa057669557c2', ChainlinkRateAsset.ETH],
   enj: ['0x24d9ab51950f3d62e9144fdc2f3135daa6ce8d1b', ChainlinkRateAsset.ETH],
   knc: ['0x656c0544ef4c98a6a98491833a89204abb045d6b', ChainlinkRateAsset.ETH],
   link: ['0xdc530d9457755926550b59e8eccdae7624181557', ChainlinkRateAsset.ETH],
@@ -96,7 +94,6 @@ const aggregators = {
 
 const synths = {
   iada: '0x8a8079c7149b8a1611e5c5d978dca3be16545f83',
-  ibch: '0xf6e9b246319ea30e8c2fa2d1540aaebf6f9e1b89',
   ibnb: '0xafd870f32ce54efdbf677466b612bf8ad164454b',
   ibtc: '0xd6014ea05bde904448b743833ddf07c3c7837481',
   icex: '0x336213e1ddfc69f4701fc3f86f4ef4a160c1159d',
@@ -153,7 +150,7 @@ const ctokens = {
 
 const atokens = {
   aaave: ['0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B', primitives.aave] as [string, string],
-  // abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
+  abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
   abusd: ['0xA361718326c15715591c299427c62086F69923D9', primitives.busd] as [string, string],
   acrv: ['0x8dAE6Cb04688C62d939ed9B68d32Bc62e49970b1', primitives.crv] as [string, string],
   adai: ['0x028171bCA77440897B824Ca71D1c56caC55b68A3', primitives.dai] as [string, string],
@@ -190,7 +187,6 @@ const pools = {
   daiUsdc: '0xae461ca67b15dc8dc81ce7615e0320da1a9ab8d5',
   daiUsdt: '0xb20bd5d04be54f870d5c0d3ca85d82b34b836405',
   daiWeth: '0xa478c2975ab1ea89e8196811f51a7b7ade33eb11',
-  dmgWeth: '0x8175362afbeee32afb22d05adc0bbd08de32f5ae',
   enjWeth: '0xe56c60b5f9f7b5fc70de0eb79c6ee7d00efa2625',
   kncWeth: '0xf49c43ae0faf37217bdcb00df478cf793edd6687',
   linkWeth: '0xa2107fa5b38d9bbd2c461d6edf11b11a50f6b974',
