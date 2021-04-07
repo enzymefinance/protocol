@@ -73,10 +73,8 @@ describe('Walkthrough a fund migration', () => {
     const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
     const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
     const adapterWhitelistSettings = adapterWhitelistArgs([
-      fork.deployment.kyberAdapter,
       fork.deployment.uniswapV2Adapter,
       fork.deployment.trackedAssetsAdapter,
-      fork.deployment.chaiAdapter,
     ]);
     const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
@@ -202,10 +200,8 @@ describe('Walkthrough a fund migration', () => {
   //   // policies
   //   const adapterBlacklistSettings = adapterBlacklistArgs([newRelease.compoundAdapter]);
   //   const adapterWhitelistSettings = adapterWhitelistArgs([
-  //     newRelease.kyberAdapter,
   //     newRelease.uniswapV2Adapter,
   //     newRelease.trackedAssetsAdapter,
-  //     newRelease.chaiAdapter,
   //   ]);
   //   const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 

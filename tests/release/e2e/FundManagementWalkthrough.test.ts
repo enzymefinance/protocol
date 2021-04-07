@@ -19,16 +19,13 @@ import {
 import {
   addTrackedAssets,
   buyShares,
-  chaiLend,
-  chaiRedeem,
   createNewFund,
-  ProtocolDeployment,
-  KyberNetworkProxy,
-  kyberTakeOrder,
   deployProtocolFixture,
+  ProtocolDeployment,
   redeemShares,
+  uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
-import { BigNumberish, utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
@@ -53,8 +50,8 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 1508000,
-    weth: 1501000,
+    usdc: 1418000,
+    weth: 1411000,
   },
 
   'redeem all shares: max assets: all remaining': {
@@ -66,11 +63,10 @@ const expectedGasCosts = {
     usdc: 2868000,
     weth: 2665000,
   },
-  // Kyber is used here because it is one of the most expensive.
-  // If another adapter is significantly more expensive, we should use that one.
-  'trade on Kyber: max assets': {
-    usdc: 2435000,
-    weth: 1656000,
+
+  'trade on Uniswap: max assets': {
+    usdc: 1397000,
+    weth: 1155000,
   },
 } as const;
 
@@ -127,10 +123,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
       const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
       const adapterWhitelistSettings = adapterWhitelistArgs([
-        fork.deployment.kyberAdapter,
         fork.deployment.uniswapV2Adapter,
         fork.deployment.trackedAssetsAdapter,
-        fork.deployment.chaiAdapter,
       ]);
       const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
@@ -228,76 +222,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: denomination asset only'][denominationAssetId]);
     });
 
-    it('trades on Kyber', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
-
-      const outgoingAsset = denominationAsset;
-      const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
-      const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
-
-      const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-        outgoingAsset,
-        incomingAsset,
-        outgoingAssetAmount,
-      );
-      expect(expectedRate).toBeGtBigNumber(0);
-
-      const minIncomingAssetAmount = expectedRate
-        .mul(outgoingAssetAmount)
-        .div(utils.parseUnits('1', denominationAssetDecimals));
-
-      await kyberTakeOrder({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        kyberAdapter: fork.deployment.kyberAdapter,
-        incomingAsset,
-        minIncomingAssetAmount,
-        outgoingAsset,
-        outgoingAssetAmount,
-      });
-
-      const balance = await incomingAsset.balanceOf(vaultProxy);
-      expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
-    });
-
-    xit('lends and redeems Chai', async () => {
-      const dai = new StandardToken(fork.config.primitives.dai, provider);
-      const chai = new StandardToken(fork.config.chai.chai, provider);
-      const daiAmount = await dai.balanceOf(vaultProxy);
-
-      await chaiLend({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        chaiAdapter: fork.deployment.chaiAdapter,
-        dai: new StandardToken(fork.config.primitives.dai, provider),
-        daiAmount,
-        minChaiAmount: daiAmount.mul(90).div(100),
-      });
-
-      const chaiAmount = await chai.balanceOf(vaultProxy);
-
-      await chaiRedeem({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        chai,
-        chaiAdapter: fork.deployment.chaiAdapter,
-        chaiAmount,
-        minDaiAmount: chaiAmount.mul(90).div(100),
-      });
-    });
-
     it('seeds the fund with all more assets', async () => {
       const assets = [
         new StandardToken(fork.config.primitives.bat, whales.bat),
         new StandardToken(fork.config.primitives.bnb, whales.bnb),
         new StandardToken(fork.config.primitives.bnt, whales.bnt),
         new StandardToken(fork.config.primitives.comp, whales.comp),
+        new StandardToken(fork.config.primitives.dai, whales.dai),
         new StandardToken(fork.config.primitives.link, whales.link),
         new StandardToken(fork.config.primitives.mana, whales.mana),
         new StandardToken(fork.config.primitives.mln, whales.mln),
@@ -363,40 +294,19 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: 20 assets'][denominationAssetId]);
     });
 
-    it('trades on Kyber again', async () => {
-      const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
-
-      const outgoingAsset = denominationAsset;
-      const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
-      const outgoingAssetAmount = utils.parseUnits('0.1', denominationAssetDecimals);
-
-      const { expectedRate } = await kyberNetworkProxy.getExpectedRate(
-        outgoingAsset,
-        incomingAsset,
-        outgoingAssetAmount,
-      );
-      expect(expectedRate).toBeGteBigNumber(0);
-
-      const minIncomingAssetAmount = expectedRate
-        .mul(outgoingAssetAmount)
-        .div(utils.parseUnits('1', denominationAssetDecimals));
-
-      const receipt = await kyberTakeOrder({
+    it('trades on Uniswap', async () => {
+      const receipt = await uniswapV2TakeOrder({
         comptrollerProxy,
         vaultProxy,
         integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        kyberAdapter: fork.deployment.kyberAdapter,
-        incomingAsset,
-        minIncomingAssetAmount,
-        outgoingAsset,
-        outgoingAssetAmount,
+        uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
+        path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
+        outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
+        minIncomingAssetAmount: BigNumber.from(1),
       });
 
-      const balance = await incomingAsset.balanceOf(vaultProxy);
-      expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
-
-      expect(receipt).toCostLessThan(expectedGasCosts['trade on Kyber: max assets'][denominationAssetId]);
+      expect(receipt).toCostLessThan(expectedGasCosts['trade on Uniswap: max assets'][denominationAssetId]);
     });
 
     it("sends an asset amount to the fund's vault", async () => {

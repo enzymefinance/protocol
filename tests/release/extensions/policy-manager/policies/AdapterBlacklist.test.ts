@@ -2,13 +2,9 @@ import { randomAddress } from '@enzymefinance/ethers';
 import {
   AdapterBlacklist,
   adapterBlacklistArgs,
-  callOnIntegrationArgs,
-  IntegrationManagerActionId,
-  kyberTakeOrderArgs,
   PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
-  takeOrderSelector,
   validateRulePreCoIArgs,
   WETH,
 } from '@enzymefinance/protocol';
@@ -18,6 +14,7 @@ import {
   createFundDeployer,
   createMigratedFundConfig,
   deployProtocolFixture,
+  uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -143,14 +140,13 @@ describe('integration tests', () => {
     const {
       accounts: [fundOwner],
       config,
-      deployment: { kyberAdapter, integrationManager, fundDeployer, adapterBlacklist },
+      deployment: { integrationManager, fundDeployer, adapterBlacklist, uniswapV2Adapter },
     } = await provider.snapshot(snapshot);
 
     const denominationAsset = new WETH(config.weth, whales.weth);
-    const incomingAsset = new StandardToken(config.primitives.mln, whales.mln);
 
     // declare variables for policy config
-    const adapterBlacklistAddresses = [kyberAdapter];
+    const adapterBlacklistAddresses = [uniswapV2Adapter];
     const adapterBlacklistSettings = adapterBlacklistArgs(adapterBlacklistAddresses);
     const adapterBlacklistConfigData = policyManagerConfigArgs({
       policies: [adapterBlacklist.address],
@@ -158,7 +154,7 @@ describe('integration tests', () => {
     });
 
     // create new fund with policyManagerConfig argument
-    const { comptrollerProxy } = await createNewFund({
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundDeployer,
       denominationAsset,
@@ -167,25 +163,19 @@ describe('integration tests', () => {
       policyManagerConfig: adapterBlacklistConfigData,
     });
 
-    // Try to trade on kyber and expect a failure
-    const kyberArgs = kyberTakeOrderArgs({
-      incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      outgoingAsset: denominationAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-    });
-
-    const kyberCallArgs = callOnIntegrationArgs({
-      adapter: kyberAdapter,
-      selector: takeOrderSelector,
-      encodedCallArgs: kyberArgs,
-    });
-
-    const kyberTx = comptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
-
-    await expect(kyberTx).rejects.toBeRevertedWith(
+    // Try to trade on uniswap and expect a failure
+    await expect(
+      uniswapV2TakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        uniswapV2Adapter,
+        path: [denominationAsset, new StandardToken(config.primitives.mln, provider)],
+        outgoingAssetAmount: 1,
+        minIncomingAssetAmount: 1,
+      }),
+    ).rejects.toBeRevertedWith(
       'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_BLACKLIST',
     );
   });
@@ -202,7 +192,6 @@ describe('integration tests', () => {
       deployment: {
         chainlinkPriceFeed,
         dispatcher,
-        kyberAdapter,
         feeManager,
         fundDeployer,
         integrationManager,
@@ -211,13 +200,13 @@ describe('integration tests', () => {
         valueInterpreter,
         vaultLib,
         adapterBlacklist,
+        uniswapV2Adapter,
       },
     } = await provider.snapshot(snapshot);
 
     const denominationAsset = new WETH(weth, whales.weth);
-    const incomingAsset = new StandardToken(primitives.mln, whales.mln);
 
-    const adapterBlacklistAddresses = [kyberAdapter];
+    const adapterBlacklistAddresses = [uniswapV2Adapter];
     const adapterBlacklistSettings = adapterBlacklistArgs(adapterBlacklistAddresses);
     const adapterBlacklistConfigData = policyManagerConfigArgs({
       policies: [adapterBlacklist.address],
@@ -265,24 +254,18 @@ describe('integration tests', () => {
     // Migration execution settles the accrued fee
     await signedNextFundDeployer.executeMigration(vaultProxy);
 
-    const kyberArgs = kyberTakeOrderArgs({
-      incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      outgoingAsset: denominationAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-    });
-
-    const kyberCallArgs = callOnIntegrationArgs({
-      adapter: kyberAdapter,
-      selector: takeOrderSelector,
-      encodedCallArgs: kyberArgs,
-    });
-
-    const kyberTx = nextComptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
-
-    await expect(kyberTx).rejects.toBeRevertedWith(
+    await expect(
+      uniswapV2TakeOrder({
+        comptrollerProxy: nextComptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        uniswapV2Adapter,
+        path: [denominationAsset, new StandardToken(primitives.mln, whales.mln)],
+        outgoingAssetAmount: 1,
+        minIncomingAssetAmount: 1,
+      }),
+    ).rejects.toBeRevertedWith(
       'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_BLACKLIST',
     );
   });

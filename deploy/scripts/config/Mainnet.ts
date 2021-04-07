@@ -234,11 +234,6 @@ const mainnetConfig: DeploymentConfig = {
   alphaHomoraV1: {
     ibeth: '0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A'
   },
-  chai: {
-    chai: '0x06af07097c9eeb7fd685c692751d5c66db49c215',
-    dai: primitives.dai,
-    pot: '0x197E90f9FAD81970bA7976f33CbD77088E5D7cf7',
-  },
   chainlink: {
     aggregators,
     ethusd: ethUsdAggregator,
@@ -281,9 +276,6 @@ const mainnetConfig: DeploymentConfig = {
     riskAdjustedIdleDai: '0xa14eA0E11121e6E951E87c66AFe460A00BCD6A16',
     riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
     riskAdjustedIdleUsdt: '0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5',
-  },
-  kyber: {
-    networkProxy: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   },
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'

@@ -565,43 +565,43 @@ describe('adapter registry', () => {
 
     it('correctly handles valid call', async () => {
       const {
-        deployment: { integrationManager, kyberAdapter, chaiAdapter },
+        deployment: { integrationManager, uniswapV2Adapter, compoundAdapter },
       } = await provider.snapshot(snapshot);
 
       const preAdapters = await integrationManager.getRegisteredAdapters();
-      expect(preAdapters).toEqual(expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]));
+      expect(preAdapters).toEqual(expect.arrayContaining([uniswapV2Adapter.address, compoundAdapter.address]));
 
-      const receipt = await integrationManager.deregisterAdapters([kyberAdapter, chaiAdapter]);
+      const receipt = await integrationManager.deregisterAdapters([uniswapV2Adapter, compoundAdapter]);
       const events = extractEvent(receipt, 'AdapterDeregistered');
 
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
-        adapter: kyberAdapter,
+        adapter: uniswapV2Adapter,
         identifier: expect.objectContaining({
-          hash: utils.id('KYBER_NETWORK'),
+          hash: utils.id('UNISWAP_V2'),
         }),
       });
 
       expect(events[1]).toMatchEventArgs({
-        adapter: chaiAdapter,
+        adapter: compoundAdapter,
         identifier: expect.objectContaining({
-          hash: utils.id('CHAI'),
+          hash: utils.id('COMPOUND'),
         }),
       });
 
       const postAdapters = await integrationManager.getRegisteredAdapters();
-      expect(postAdapters.includes(kyberAdapter.address)).toBe(false);
-      expect(postAdapters.includes(chaiAdapter.address)).toBe(false);
+      expect(postAdapters.includes(uniswapV2Adapter.address)).toBe(false);
+      expect(postAdapters.includes(compoundAdapter.address)).toBe(false);
       expect(postAdapters.length).toBe(preAdapters.length - 2);
     });
 
     it('does not allow an unregistered adapter', async () => {
       const {
-        deployment: { integrationManager, kyberAdapter },
+        deployment: { integrationManager, uniswapV2Adapter },
       } = await provider.snapshot(snapshot);
 
-      await expect(integrationManager.deregisterAdapters([kyberAdapter])).resolves.toBeReceipt();
-      await expect(integrationManager.deregisterAdapters([kyberAdapter])).rejects.toBeRevertedWith(
+      await expect(integrationManager.deregisterAdapters([uniswapV2Adapter])).resolves.toBeReceipt();
+      await expect(integrationManager.deregisterAdapters([uniswapV2Adapter])).rejects.toBeRevertedWith(
         'Adapter is not registered',
       );
     });
@@ -632,40 +632,42 @@ describe('adapter registry', () => {
 
     it('does not allow a registered adapter', async () => {
       const {
-        deployment: { integrationManager, kyberAdapter, chaiAdapter },
+        deployment: { integrationManager, uniswapV2Adapter, compoundAdapter },
       } = await provider.snapshot(snapshot);
 
-      await expect(integrationManager.registerAdapters([kyberAdapter, chaiAdapter])).rejects.toBeRevertedWith(
+      await expect(integrationManager.registerAdapters([uniswapV2Adapter, compoundAdapter])).rejects.toBeRevertedWith(
         'Adapter already registered',
       );
     });
 
     it('correctly handles valid call', async () => {
       const {
-        deployment: { integrationManager, kyberAdapter, chaiAdapter },
+        deployment: { integrationManager, uniswapV2Adapter, compoundAdapter },
       } = await provider.snapshot(snapshot);
 
-      await integrationManager.deregisterAdapters([kyberAdapter, chaiAdapter]);
-      const receipt = await integrationManager.registerAdapters([kyberAdapter, chaiAdapter]);
+      await integrationManager.deregisterAdapters([uniswapV2Adapter, compoundAdapter]);
+      const receipt = await integrationManager.registerAdapters([uniswapV2Adapter, compoundAdapter]);
 
       const events = extractEvent(receipt, 'AdapterRegistered');
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
-        adapter: kyberAdapter,
+        adapter: uniswapV2Adapter,
         identifier: expect.objectContaining({
-          hash: utils.id('KYBER_NETWORK'),
+          hash: utils.id('UNISWAP_V2'),
         }),
       });
 
       expect(events[1]).toMatchEventArgs({
-        adapter: chaiAdapter,
+        adapter: compoundAdapter,
         identifier: expect.objectContaining({
-          hash: utils.id('CHAI'),
+          hash: utils.id('COMPOUND'),
         }),
       });
 
       const getRegisteredAdaptersCall = await integrationManager.getRegisteredAdapters();
-      expect(getRegisteredAdaptersCall).toEqual(expect.arrayContaining([kyberAdapter.address, chaiAdapter.address]));
+      expect(getRegisteredAdaptersCall).toEqual(
+        expect.arrayContaining([uniswapV2Adapter.address, compoundAdapter.address]),
+      );
     });
   });
 });

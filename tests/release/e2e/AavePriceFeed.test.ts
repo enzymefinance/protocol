@@ -81,9 +81,7 @@ describe('addDerivatives', () => {
     const aavePriceFeed = fork.deployment.aavePriceFeed;
     const derivatives = [randomAddress()];
     const underlyings = [fork.config.aave.atokens.ausdc[0]];
-    await expect(aavePriceFeed.addDerivatives(derivatives, underlyings)).rejects.toBeRevertedWith(
-      'function call to a non-contract account',
-    );
+    await expect(aavePriceFeed.addDerivatives(derivatives, underlyings)).rejects.toBeReverted();
   });
 });
 

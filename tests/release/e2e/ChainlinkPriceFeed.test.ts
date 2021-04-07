@@ -7,11 +7,11 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import {
-  ProtocolDeployment,
+  addTrackedAssets,
   buyShares,
   createNewFund,
   deployProtocolFixture,
-  kyberTakeOrder,
+  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, Signer, utils } from 'ethers';
 
@@ -58,7 +58,7 @@ async function swapDaiAggregatorForUsd({
 describe('primitives gas costs', () => {
   it('adds to calcGav for weth-denominated fund (same rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.usdc, whales.dai);
+    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
@@ -85,30 +85,27 @@ describe('primitives gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Seed fund and use half of the weth balance to get dai
-    await kyberTakeOrder({
+    // Send dai to fund and add as tracked asset
+    const daiAmount = utils.parseUnits('1', await dai.decimals());
+    await dai.transfer(vaultProxy, daiAmount);
+    await addTrackedAssets({
       comptrollerProxy,
-      vaultProxy,
       integrationManager,
       fundOwner,
-      kyberAdapter: fork.deployment.kyberAdapter,
-      outgoingAsset: weth,
-      outgoingAssetAmount: initialTokenAmount.div(2),
-      incomingAsset: dai,
-      minIncomingAssetAmount: BigNumber.from(1),
-      seedFund: false,
+      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
+      incomingAssets: [dai],
     });
 
-    // Get the calcGav() cost including adai
+    // Get the calcGav() cost including dai
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(29100));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(27000));
   });
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.usdc, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
@@ -142,25 +139,22 @@ describe('primitives gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Seed fund and use half of the weth balance to get dai
-    await kyberTakeOrder({
+    // Send dai to fund and add as tracked asset
+    const daiAmount = utils.parseUnits('1', await dai.decimals());
+    await dai.transfer(vaultProxy, daiAmount);
+    await addTrackedAssets({
       comptrollerProxy,
-      vaultProxy,
       integrationManager,
       fundOwner,
-      kyberAdapter: fork.deployment.kyberAdapter,
-      outgoingAsset: weth,
-      outgoingAssetAmount: initialTokenAmount.div(2),
-      incomingAsset: dai,
-      minIncomingAssetAmount: BigNumber.from(1),
-      seedFund: false,
+      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
+      incomingAssets: [dai],
     });
 
-    // Get the calcGav() cost including adai
+    // Get the calcGav() cost including dai
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(38800));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(37000));
   });
 });
 

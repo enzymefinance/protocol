@@ -3,7 +3,6 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 
 const whales = {
   wdgld: '0x9aa65464b4cfbe3dc2bdb3df412aee2b3de86687',
-  chai: '0xa25e31d8e4ed3e959898a089dc2624f14a7fb738',
   adai: '0x62e41b1185023bcc14a465d350e1dde341557925',
   ausdc: '0x98fa411ab5f0bd2655f2499e35666e83835996bc',
   bat: '0x312da0eae223b2062ecd4d3f3a1100eb7d4414b1',

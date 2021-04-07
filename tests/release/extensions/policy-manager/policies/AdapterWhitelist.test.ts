@@ -4,7 +4,6 @@ import {
   adapterWhitelistArgs,
   callOnIntegrationArgs,
   IntegrationManagerActionId,
-  kyberTakeOrderArgs,
   PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
@@ -206,7 +205,7 @@ describe('integration tests', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
-        kyberAdapter,
+        compoundAdapter,
         uniswapV2Adapter,
         chainlinkPriceFeed,
         dispatcher,
@@ -224,7 +223,7 @@ describe('integration tests', () => {
     const denominationAsset = new WETH(weth, whales.weth);
     const incomingAsset = new StandardToken(primitives.mln, whales.mln);
 
-    const adapterWhitelistAddresses = [kyberAdapter.address];
+    const adapterWhitelistAddresses = [compoundAdapter.address];
     const adapterWhitelistSettings = adapterWhitelistArgs(adapterWhitelistAddresses);
     const policyManagerConfig = policyManagerConfigArgs({
       policies: [adapterWhitelist.address],
@@ -274,24 +273,6 @@ describe('integration tests', () => {
 
     // send money to vault to trade
     await denominationAsset.transfer(vaultProxy.address, utils.parseEther('10'));
-
-    // trade with an allowed adapter, expect success
-    const kyberArgs = kyberTakeOrderArgs({
-      incomingAsset,
-      minIncomingAssetAmount: utils.parseEther('1'),
-      outgoingAsset: denominationAsset,
-      outgoingAssetAmount: utils.parseEther('1'),
-    });
-
-    const kyberCallArgs = callOnIntegrationArgs({
-      adapter: kyberAdapter,
-      selector: takeOrderSelector,
-      encodedCallArgs: kyberArgs,
-    });
-
-    await nextComptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
 
     // trade with an adapter that's not explicitly allowed, expect failure
     const uniswapArgs = uniswapV2TakeOrderArgs({

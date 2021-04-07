@@ -59,11 +59,6 @@ export interface DeploymentConfig {
     ceth: string;
     ctokens: Record<string, string>;
   };
-  chai: {
-    dai: string;
-    chai: string;
-    pot: string;
-  };
   idle: {
     bestYieldIdleDai: string;
     bestYieldIdleUsdc: string;
@@ -74,9 +69,6 @@ export interface DeploymentConfig {
     riskAdjustedIdleDai: string;
     riskAdjustedIdleUsdc: string;
     riskAdjustedIdleUsdt: string;
-  };
-  kyber: {
-    networkProxy: string;
   };
   lido: {
     steth: string;
