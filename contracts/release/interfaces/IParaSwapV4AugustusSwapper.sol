@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-/// @title ParaSwap IAugustusSwapper interface
-interface IParaSwapAugustusSwapper {
+/// @title ParaSwap V4 IAugustusSwapper interface
+interface IParaSwapV4AugustusSwapper {
     struct Route {
         address payable exchange;
         address targetExchange;
@@ -28,16 +28,16 @@ interface IParaSwapAugustusSwapper {
         Route[] routes;
     }
 
-    function multiSwap(
-        address,
-        address,
-        uint256,
-        uint256,
-        uint256,
-        Path[] calldata,
-        uint256,
-        address payable,
-        uint256,
-        string calldata
-    ) external payable returns (uint256);
+    struct SellData {
+        address fromToken;
+        uint256 fromAmount;
+        uint256 toAmount;
+        uint256 expectedAmount;
+        address payable beneficiary;
+        string referrer;
+        bool useReduxToken;
+        Path[] path;
+    }
+
+    function multiSwap(SellData calldata) external payable returns (uint256);
 }

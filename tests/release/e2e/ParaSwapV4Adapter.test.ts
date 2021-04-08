@@ -4,7 +4,7 @@ import {
   ProtocolDeployment,
   getAssetBalances,
   deployProtocolFixture,
-  paraswapTakeOrder,
+  paraSwapV4TakeOrder,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -30,7 +30,7 @@ it('works as expected when called by a fund (no network fees)', async () => {
   const outgoingAssetAmount = utils.parseEther('1');
   const minIncomingAssetAmount = '1';
 
-  // Define the Paraswap Paths
+  // Define the ParaSwap Paths
   // Data taken directly from API: https://paraswapv2.docs.apiary.io/
   // `payload` is hardcoded from the API call
   const paths = [
@@ -39,16 +39,16 @@ it('works as expected when called by a fund (no network fees)', async () => {
       totalNetworkFee: 0,
       routes: [
         {
-          exchange: '0x3b4503CBA9ADd1194Dd8098440e4Be91c4C37806', // Paraswap's UniswapV2 adapter
-          targetExchange: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Uniswap Router2
+          exchange: '0x695725627E04898Ef4a126Ae71FC30aA935c5fb6', // ParaSwap's UniswapV2 adapter
+          targetExchange: '0x86d3579b043585A97532514016dCF0C2d6C4b6a1', // Uniswap Router2
           percent: 5000, // Out of 10000
           payload:
             '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f',
           networkFee: 0,
         },
         {
-          exchange: '0x3b4503CBA9ADd1194Dd8098440e4Be91c4C37806', // Paraswap's UniswapV2 adapter
-          targetExchange: '0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F', // Sushiswap contract
+          exchange: '0x77Bc1A1ba4E9A6DF5BDB21f2bBC07B9854E8D1a8', // ParaSwap's Sushiswap adapter
+          targetExchange: '0xBc1315CD2671BC498fDAb42aE1214068003DC51e', // Sushiswap contract
           percent: 5000, // Out of 10000
           payload:
             '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f',
@@ -65,14 +65,13 @@ it('works as expected when called by a fund (no network fees)', async () => {
   // TODO: can call multiSwap() first to get the expected amount
 
   // Execute the take order
-  await paraswapTakeOrder({
+  await paraSwapV4TakeOrder({
     comptrollerProxy,
     integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    paraswapAdapter: fork.deployment.paraSwapAdapter,
+    paraSwapV4Adapter: fork.deployment.paraSwapV4Adapter,
     outgoingAsset,
     outgoingAssetAmount,
-    incomingAsset,
     minIncomingAssetAmount,
     paths,
   });
@@ -101,7 +100,7 @@ it('refunds unused network fees', async () => {
   const outgoingAssetAmount = utils.parseEther('1');
   const minIncomingAssetAmount = '1';
 
-  // Define the Paraswap Paths
+  // Define the ParaSwap Paths
   // Data taken directly from API: https://paraswapv2.docs.apiary.io/
   // `payload` is hardcoded from the API call
   const totalNetworkFee = utils.parseEther('0.1'); // THIS WILL BE UNUSED
@@ -111,8 +110,8 @@ it('refunds unused network fees', async () => {
       totalNetworkFee,
       routes: [
         {
-          exchange: '0x3b4503CBA9ADd1194Dd8098440e4Be91c4C37806', // Paraswap's UniswapV2 adapter
-          targetExchange: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Uniswap Router2
+          exchange: '0x695725627E04898Ef4a126Ae71FC30aA935c5fb6', // ParaSwap's UniswapV2 adapter
+          targetExchange: '0x86d3579b043585A97532514016dCF0C2d6C4b6a1', // Uniswap Router2
           percent: 10000, // Out of 10000
           payload:
             '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f',
@@ -129,14 +128,13 @@ it('refunds unused network fees', async () => {
   // TODO: can call multiSwap() first to get the expected amount
 
   // Execute the take order
-  await paraswapTakeOrder({
+  await paraSwapV4TakeOrder({
     comptrollerProxy,
     integrationManager: fork.deployment.integrationManager,
     fundOwner,
-    paraswapAdapter: fork.deployment.paraSwapAdapter,
+    paraSwapV4Adapter: fork.deployment.paraSwapV4Adapter,
     outgoingAsset,
     outgoingAssetAmount,
-    incomingAsset,
     minIncomingAssetAmount,
     paths,
   });
