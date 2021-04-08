@@ -288,9 +288,9 @@ const mainnetConfig: DeploymentConfig = {
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
   },
-  paraswap: {
-    augustusSwapper: '0x9509665d015Bfe3C77AA5ad6Ca20C8Afa1d98989',
-    tokenTransferProxy: '0x0A87c89B5007ff406Ab5280aBdD80fC495ec238e',
+  paraSwapV4: {
+    augustusSwapper: '0x1bD435F3C054b6e901B7b108a0ab7617C808677b',
+    tokenTransferProxy: '0xb70Bc06D2c9Bf03b3373799606dc7d39346c06B3',
   },
   policies: {
     guaranteedRedemption: {

@@ -6,7 +6,7 @@ export * from './curve';
 export * from './idle';
 export * from './kyber';
 export * from './mock';
-export * from './paraswap';
+export * from './paraSwapV4';
 export * from './synthetix';
 export * from './trackedAssets';
 export * from './uniswapV2';

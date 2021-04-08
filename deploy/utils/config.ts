@@ -81,7 +81,7 @@ export interface DeploymentConfig {
   lido: {
     steth: string;
   };
-  paraswap: {
+  paraSwapV4: {
     augustusSwapper: string;
     tokenTransferProxy: string;
   };

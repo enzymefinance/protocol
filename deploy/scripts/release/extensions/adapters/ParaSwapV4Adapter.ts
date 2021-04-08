@@ -1,4 +1,4 @@
-import { ParaSwapAdapterArgs } from '@enzymefinance/protocol';
+import { ParaSwapV4AdapterArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -13,13 +13,12 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const integrationManager = await get('IntegrationManager');
 
-  await deploy('ParaSwapAdapter', {
+  await deploy('ParaSwapV4Adapter', {
     args: [
       integrationManager.address,
-      config.paraswap.augustusSwapper,
-      config.paraswap.tokenTransferProxy,
-      config.weth,
-    ] as ParaSwapAdapterArgs,
+      config.paraSwapV4.augustusSwapper,
+      config.paraSwapV4.tokenTransferProxy,
+    ] as ParaSwapV4AdapterArgs,
     from: deployer.address,
     linkedData: {
       type: 'ADAPTER',
@@ -29,7 +28,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Adapters', 'ParaSwapAdapter'];
+fn.tags = ['Release', 'Adapters', 'ParaSwapV4Adapter'];
 fn.dependencies = ['Config', 'IntegrationManager'];
 
 export default fn;
