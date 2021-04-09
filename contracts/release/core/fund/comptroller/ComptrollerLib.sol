@@ -86,9 +86,10 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
     bool internal permissionedVaultActionAllowed;
     // A mutex to protect against reentrancy
     bool internal reentranceLocked;
-    // A timelock between any "shares actions" (i.e., buy and redeem shares), per-account
+    // A timelock after the last time shares were bought for an account
+    // that must expire before that account transfers or redeems their shares
     uint256 internal sharesActionTimelock;
-    mapping(address => uint256) internal acctToLastSharesAction;
+    mapping(address => uint256) internal acctToLastSharesBoughtTimestamp;
 
     ///////////////
     // MODIFIERS //
@@ -128,12 +129,6 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         _;
     }
 
-    modifier timelockedSharesAction(address _account) {
-        __assertSharesActionNotTimelocked(_account);
-        _;
-        acctToLastSharesAction[_account] = block.timestamp;
-    }
-
     // ASSERTION HELPERS
 
     // Modifiers are inefficient in terms of contract size,
@@ -169,9 +164,14 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         require(!permissionedVaultActionAllowed, "Vault action re-entrance");
     }
 
-    function __assertSharesActionNotTimelocked(address _account) private view {
+    function __assertSharesActionNotTimelocked(address _vaultProxy, address _account)
+        private
+        view
+    {
         require(
-            block.timestamp.sub(acctToLastSharesAction[_account]) >= sharesActionTimelock,
+            block.timestamp.sub(getLastSharesBoughtTimestampForAccount(_account)) >=
+                sharesActionTimelock ||
+                IDispatcher(DISPATCHER).hasMigrationRequest(_vaultProxy),
             "Shares action timelocked"
         );
     }
@@ -621,7 +621,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         uint256 _sharePrice,
         uint256 _preBuySharesGav,
         address _denominationAsset
-    ) private timelockedSharesAction(_buyer) returns (uint256 sharesReceived_) {
+    ) private returns (uint256 sharesReceived_) {
         require(_investmentAmount > 0, "__buyShares: Empty _investmentAmount");
 
         // Gives Extensions a chance to run logic prior to the minting of bought shares
@@ -649,6 +649,8 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
             sharesReceived_ >= _minSharesQuantity,
             "__buyShares: Shares received < _minSharesQuantity"
         );
+
+        acctToLastSharesBoughtTimestamp[_buyer] = block.timestamp;
 
         emit SharesBought(msg.sender, _buyer, _investmentAmount, sharesIssued, sharesReceived_);
 
@@ -860,11 +862,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
 
         IVault vaultProxyContract = IVault(vaultProxy);
 
-        // Only apply the sharesActionTimelock when a migration is not pending
-        if (!IDispatcher(DISPATCHER).hasMigrationRequest(address(vaultProxyContract))) {
-            __assertSharesActionNotTimelocked(_redeemer);
-            acctToLastSharesAction[_redeemer] = block.timestamp;
-        }
+        __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
 
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
@@ -941,8 +939,9 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         address _recipient,
         uint256 _amount
     ) external override {
-        require(msg.sender == vaultProxy, "preTransferSharesHook: Only VaultProxy callable");
-        __assertSharesActionNotTimelocked(_sender);
+        address vaultProxyCopy = vaultProxy;
+        require(msg.sender == vaultProxyCopy, "preTransferSharesHook: Only VaultProxy callable");
+        __assertSharesActionNotTimelocked(vaultProxyCopy, _sender);
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             address(this),
@@ -961,15 +960,15 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         return denominationAsset;
     }
 
-    /// @notice Gets the last shares action timestamp for a given account
-    /// @param _who The account for which to get the last shares action timestamp
-    /// @return lastSharesActionTimestamp_ The timestamp of the lastSharesAction
-    function getLastSharesActionTimestampForAccount(address _who)
-        external
+    /// @notice Gets the timestamp of the last time shares were bought for a given account
+    /// @param _who The account for which to get the timestamp
+    /// @return lastSharesBoughtTimestamp_ The timestamp of the last shares bought
+    function getLastSharesBoughtTimestampForAccount(address _who)
+        public
         view
-        returns (uint256 lastSharesActionTimestamp_)
+        returns (uint256 lastSharesBoughtTimestamp_)
     {
-        return acctToLastSharesAction[_who];
+        return acctToLastSharesBoughtTimestamp[_who];
     }
 
     /// @notice Gets the routes for the various contracts used by all funds

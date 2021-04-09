@@ -16,6 +16,7 @@ import {
   generateRegisteredMockFees,
   getAssetBalances,
   redeemShares,
+  transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -871,14 +872,6 @@ describe('sharesActionTimelock', () => {
       denominationAsset,
     });
 
-    // Immediately buying shares again should succeed
-    await buyShares({
-      comptrollerProxy,
-      signer: buySharesCaller,
-      buyers: [investor],
-      denominationAsset,
-    });
-
     // Immediately redeeming shares should succeed
     await redeemShares({
       comptrollerProxy,
@@ -886,14 +879,12 @@ describe('sharesActionTimelock', () => {
     });
   });
 
-  it('is respected when buying or redeeming shares (no pending migration)', async () => {
+  it('does not impact making multiple shares buys', async () => {
     const {
       fund: { denominationAsset },
       deployment: { fundDeployer },
       accounts: [fundManager, investor, buySharesCaller],
     } = await provider.snapshot(snapshot);
-
-    const failureMessage = 'Shares action timelocked';
 
     // Transfer some weth to the buySharesCaller account.
     await denominationAsset.transfer(buySharesCaller, utils.parseEther('10'));
@@ -907,15 +898,47 @@ describe('sharesActionTimelock', () => {
       sharesActionTimelock,
     });
 
-    // Attempting to buy multiple shares for the same user should fail
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        signer: buySharesCaller,
-        buyers: [investor, investor],
-        denominationAsset,
-      }),
-    ).rejects.toBeRevertedWith(failureMessage);
+    // Attempting to buy multiple shares for the same user should succeed
+    await buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyers: [investor, investor],
+      denominationAsset,
+    });
+
+    // Warp slightly forward to get a distinct timelock time (not really necessary)
+    await provider.send('evm_increaseTime', [10]);
+
+    // Buying more shares should succeed and reset the timelock
+    const tx = await buyShares({
+      comptrollerProxy,
+      signer: buySharesCaller,
+      buyers: [investor],
+      denominationAsset,
+    });
+    expect(await comptrollerProxy.getLastSharesBoughtTimestampForAccount(investor)).toEqBigNumber(
+      await transactionTimestamp(tx),
+    );
+  });
+
+  it('is respected when redeeming shares (no pending migration)', async () => {
+    const {
+      fund: { denominationAsset },
+      deployment: { fundDeployer },
+      accounts: [fundManager, investor, buySharesCaller],
+    } = await provider.snapshot(snapshot);
+
+    // Transfer some weth to the buySharesCaller account.
+    await denominationAsset.transfer(buySharesCaller, utils.parseEther('10'));
+
+    // Create a new fund, with a timelock
+    const sharesActionTimelock = 100;
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundManager,
+      fundDeployer,
+      denominationAsset,
+      sharesActionTimelock,
+    });
 
     // Buy shares to start the timelock
     await expect(
@@ -927,22 +950,13 @@ describe('sharesActionTimelock', () => {
       }),
     ).resolves.toBeReceipt();
 
-    // Buying or redeeming shares for the same user should both fail since the timelock has started
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        signer: buySharesCaller,
-        buyers: [investor],
-        denominationAsset,
-      }),
-    ).rejects.toBeRevertedWith(failureMessage);
-
+    // Redeeming shares for the same user should fail since the timelock has started
     await expect(
       redeemShares({
         comptrollerProxy,
         signer: investor,
       }),
-    ).rejects.toBeRevertedWith(failureMessage);
+    ).rejects.toBeRevertedWith('Shares action timelocked');
 
     // Buying shares for another party succeeds
     await expect(
@@ -950,18 +964,6 @@ describe('sharesActionTimelock', () => {
         comptrollerProxy,
         signer: buySharesCaller,
         buyers: [buySharesCaller],
-        denominationAsset,
-      }),
-    ).resolves.toBeReceipt();
-
-    // Warping forward to past the timelock should allow another buy
-    await provider.send('evm_increaseTime', [sharesActionTimelock]);
-
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        signer: buySharesCaller,
-        buyers: [investor],
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
