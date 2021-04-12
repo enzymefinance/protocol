@@ -49,8 +49,7 @@ async function snapshot() {
     mockIntegrationManager,
     mockPolicyManager,
     deployment.chainlinkPriceFeed,
-    randomAddress(), // SynthetixPriceFeed
-    randomAddress(), // SynthetixAddressResolver
+    randomAddress(), // AssetFinalityResolver
   );
 
   // Deploy configured ComptrollerProxy

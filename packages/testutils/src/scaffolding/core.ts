@@ -1,5 +1,6 @@
 import { AddressLike } from '@enzymefinance/ethers';
 import {
+  AssetFinalityResolver,
   ChainlinkPriceFeed,
   ComptrollerLib,
   Dispatcher,
@@ -16,13 +17,12 @@ import { BytesLike, Signer } from 'ethers';
 
 export async function createFundDeployer({
   deployer,
+  assetFinalityResolver,
   chainlinkPriceFeed,
   dispatcher,
   feeManager,
   integrationManager,
   policyManager,
-  synthetixAddressResolverAddress,
-  synthetixPriceFeed,
   valueInterpreter,
   vaultLib,
   vaultCallContracts = [],
@@ -31,6 +31,7 @@ export async function createFundDeployer({
   setReleaseStatusLive = true,
 }: {
   deployer: Signer;
+  assetFinalityResolver: AssetFinalityResolver;
   chainlinkPriceFeed: ChainlinkPriceFeed;
   dispatcher: Dispatcher;
   feeManager: FeeManager;
@@ -61,8 +62,7 @@ export async function createFundDeployer({
     integrationManager,
     policyManager,
     chainlinkPriceFeed,
-    synthetixPriceFeed,
-    synthetixAddressResolverAddress,
+    assetFinalityResolver,
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 

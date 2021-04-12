@@ -437,6 +437,7 @@ describe('integration tests', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -474,6 +475,7 @@ describe('integration tests', () => {
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,

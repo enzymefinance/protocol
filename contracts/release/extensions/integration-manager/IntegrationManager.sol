@@ -15,10 +15,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
+import "../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
-import "../../utils/AssetFinalityResolver.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
@@ -33,8 +33,7 @@ contract IntegrationManager is
     IIntegrationManager,
     ExtensionBase,
     FundDeployerOwnerMixin,
-    PermissionedVaultActionMixin,
-    AssetFinalityResolver
+    PermissionedVaultActionMixin
 {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -61,6 +60,7 @@ contract IntegrationManager is
         uint256[] outgoingAssetAmounts
     );
 
+    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
@@ -74,13 +74,9 @@ contract IntegrationManager is
         address _policyManager,
         address _derivativePriceFeed,
         address _primitivePriceFeed,
-        address _synthetixPriceFeed,
-        address _synthetixAddressResolver
-    )
-        public
-        FundDeployerOwnerMixin(_fundDeployer)
-        AssetFinalityResolver(_synthetixPriceFeed, _synthetixAddressResolver)
-    {
+        address _assetFinalityResolver
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
+        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -205,9 +201,13 @@ contract IntegrationManager is
     /// @dev Adds assets with a zero balance as tracked assets of the fund
     function __addZeroBalanceTrackedAssets(address _vaultProxy, bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
+
+        // Resolve finality of all assets as needed
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
+
         for (uint256 i; i < assets.length; i++) {
             require(
-                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
                 "__addZeroBalanceTrackedAssets: Balance is not zero"
             );
 
@@ -220,6 +220,10 @@ contract IntegrationManager is
         private
     {
         address[] memory assets = abi.decode(_callArgs, (address[]));
+
+        // Resolve finality of all assets as needed
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
+
         address denominationAsset = IComptroller(msg.sender).getDenominationAsset();
         for (uint256 i; i < assets.length; i++) {
             require(
@@ -227,7 +231,7 @@ contract IntegrationManager is
                 "__removeZeroBalanceTrackedAssets: Cannot remove denomination asset"
             );
             require(
-                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
                 "__removeZeroBalanceTrackedAssets: Balance is not zero"
             );
 
@@ -477,6 +481,18 @@ contract IntegrationManager is
 
         IVault vaultProxyContract = IVault(_vaultProxy);
 
+        // INCOMING ASSETS
+
+        // We do not require incoming asset finality, but we attempt to finalize so that
+        // the final incoming asset amount is more accurate. There is no need to finalize
+        // post-tx.
+        // TODO: test gas and consider removing, as unnecessary unless policies implement this
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            _vaultProxy,
+            expectedIncomingAssets_,
+            false
+        );
+
         preCallIncomingAssetBalances_ = new uint256[](expectedIncomingAssets_.length);
         for (uint256 i = 0; i < expectedIncomingAssets_.length; i++) {
             require(
@@ -495,16 +511,23 @@ contract IntegrationManager is
             // Get pre-call balance of each incoming asset.
             // If the asset is not tracked by the fund, allow the balance to default to 0.
             if (vaultProxyContract.isTrackedAsset(expectedIncomingAssets_[i])) {
-                // We do not require incoming asset finality, but we attempt to finalize so that
-                // the final incoming asset amount is more accurate. There is no need to finalize
-                // post-tx.
-                preCallIncomingAssetBalances_[i] = __finalizeIfSynthAndGetAssetBalance(
-                    _vaultProxy,
-                    expectedIncomingAssets_[i],
-                    false
+                preCallIncomingAssetBalances_[i] = ERC20(expectedIncomingAssets_[i]).balanceOf(
+                    _vaultProxy
                 );
             }
         }
+
+        // SPEND ASSETS
+
+        // By requiring spend asset finality before CoI, we will know whether or
+        // not the asset balance was entirely spent during the call. There is no need
+        // to finalize post-tx.
+        // TODO: test gas and consider removing... might be unnecessary if we no longer auto-remove assets with zero-balances
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            _vaultProxy,
+            spendAssets_,
+            true
+        );
 
         // Get pre-call balances of spend assets and grant approvals to adapter
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
@@ -522,14 +545,7 @@ contract IntegrationManager is
 
             // If spend asset is also an incoming asset, no need to record its balance
             if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
-                // By requiring spend asset finality before CoI, we will know whether or
-                // not the asset balance was entirely spent during the call. There is no need
-                // to finalize post-tx.
-                preCallSpendAssetBalances_[i] = __finalizeIfSynthAndGetAssetBalance(
-                    _vaultProxy,
-                    spendAssets_[i],
-                    true
-                );
+                preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
             }
 
             // Grant spend assets access to the adapter.
@@ -816,6 +832,12 @@ contract IntegrationManager is
     /// @return isRegistered_ True if the adapter is registered
     function adapterIsRegistered(address _adapter) public view returns (bool isRegistered_) {
         return registeredAdapters.contains(_adapter);
+    }
+
+    /// @notice Gets the `ASSET_FINALITY_RESOLVER` variable
+    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
+    function getAssetFinalityResolver() external view returns (address assetFinalityResolver_) {
+        return ASSET_FINALITY_RESOLVER;
     }
 
     /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable

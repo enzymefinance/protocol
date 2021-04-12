@@ -787,8 +787,8 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    // Rounding up from 783196
-    expect(lendReceipt).toCostLessThan('784000');
+    // Rounding up from 795466
+    expect(lendReceipt).toCostLessThan('796000');
   });
 });
 
@@ -864,8 +864,8 @@ describe('redeem', () => {
       expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
     }
 
-    // Rounding up from 765756
-    expect(redeemReceipt).toCostLessThan('766000');
+    // Rounding up from 778026
+    expect(redeemReceipt).toCostLessThan('779000');
   });
 });
 

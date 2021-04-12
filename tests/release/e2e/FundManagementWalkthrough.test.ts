@@ -29,12 +29,12 @@ import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 494000,
-    weth: 475000,
+    usdc: 502000,
+    weth: 483000,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 459000,
-    weth: 450000,
+    usdc: 462000,
+    weth: 453000,
   },
   'buy shares: max assets': {
     usdc: 1495000,
@@ -42,16 +42,16 @@ const expectedGasCosts = {
   },
   'calc gav: 20 assets': {
     usdc: 977000,
-    weth: 784000,
+    weth: 760000,
   },
   'calc gav: denomination asset only': {
-    usdc: 48000,
-    weth: 44000,
+    usdc: 53000,
+    weth: 49000,
   },
 
   'create fund': {
-    usdc: 1418000,
-    weth: 1411000,
+    usdc: 1422000,
+    weth: 1415000,
   },
 
   'redeem all shares: max assets: all remaining': {

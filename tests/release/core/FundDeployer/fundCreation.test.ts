@@ -15,6 +15,7 @@ async function snapshot() {
     deployer,
     accounts: [signer],
     deployment: {
+      assetFinalityResolver,
       fundDeployer,
       chainlinkPriceFeed,
       dispatcher,
@@ -42,6 +43,7 @@ async function snapshot() {
   // TODO: use an alternative deployment that has not yet set the ReleaseStatus to Live?
   const nonLiveFundDeployer = await createFundDeployer({
     deployer,
+    assetFinalityResolver,
     chainlinkPriceFeed,
     dispatcher,
     feeManager,

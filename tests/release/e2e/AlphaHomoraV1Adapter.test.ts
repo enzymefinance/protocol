@@ -82,7 +82,8 @@ describe('lend', () => {
     );
 
     // Assert gas cost of lend tx
-    expect(lendReceipt).toCostLessThan(317000);
+    // Rounded up from 329005
+    expect(lendReceipt).toCostLessThan(330000);
   });
 });
 
@@ -151,8 +152,8 @@ describe('redeem', () => {
     expect(receivedWethAmount.sub(approxIncomingWethAmount)).toBeLteBigNumber(approxIncomingWethAmount.div(100000000));
 
     // Assert gas cost of redeem tx
-    // Rounding up from 253489
-    expect(redeemReceipt).toCostLessThan(254000);
+    // Rounding up from 263234
+    expect(redeemReceipt).toCostLessThan(264000);
   });
 });
 

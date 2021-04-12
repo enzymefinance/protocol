@@ -18,10 +18,10 @@ import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
+import "../../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
-import "../../../utils/AssetFinalityResolver.sol";
 import "../../fund-deployer/IFundDeployer.sol";
 import "../vault/IVault.sol";
 import "./IComptroller.sol";
@@ -29,7 +29,7 @@ import "./IComptroller.sol";
 /// @title ComptrollerLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
-contract ComptrollerLib is IComptroller, AssetFinalityResolver {
+contract ComptrollerLib is IComptroller {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
@@ -63,6 +63,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
 
     // Constants and immutables - shared by all proxies
     uint256 private constant SHARES_UNIT = 10**18;
+    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DISPATCHER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
@@ -184,9 +185,9 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         address _integrationManager,
         address _policyManager,
         address _primitivePriceFeed,
-        address _synthetixPriceFeed,
-        address _synthetixAddressResolver
-    ) public AssetFinalityResolver(_synthetixPriceFeed, _synthetixAddressResolver) {
+        address _assetFinalityResolver
+    ) public {
+        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DISPATCHER = _dispatcher;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
@@ -487,13 +488,16 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
             return (0, true);
         }
 
+        // Resolve finality of all assets as needed
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            vaultProxyAddress,
+            assets,
+            _requireFinality
+        );
+
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
-            balances[i] = __finalizeIfSynthAndGetAssetBalance(
-                vaultProxyAddress,
-                assets[i],
-                _requireFinality
-            );
+            balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
         (gav_, isValid_) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
@@ -899,12 +903,17 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         // Calculate and transfer payout asset amounts due to redeemer
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         address denominationAssetCopy = denominationAsset;
+
+        // Resolve finality of all assets as needed
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            address(vaultProxyContract),
+            payoutAssets_,
+            true
+        );
+
+        // Payout assets to redeemer
         for (uint256 i; i < payoutAssets_.length; i++) {
-            uint256 assetBalance = __finalizeIfSynthAndGetAssetBalance(
-                address(vaultProxyContract),
-                payoutAssets_[i],
-                true
-            );
+            uint256 assetBalance = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
 
             // If all remaining shares are being redeemed, the logic changes slightly
             if (_sharesQuantity == sharesSupply) {
@@ -972,6 +981,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
     }
 
     /// @notice Gets the routes for the various contracts used by all funds
+    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
     /// @return dispatcher_ The `DISPATCHER` variable value
     /// @return feeManager_ The `FEE_MANAGER` variable value
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
@@ -983,6 +993,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         external
         view
         returns (
+            address assetFinalityResolver_,
             address dispatcher_,
             address feeManager_,
             address fundDeployer_,
@@ -993,6 +1004,7 @@ contract ComptrollerLib is IComptroller, AssetFinalityResolver {
         )
     {
         return (
+            ASSET_FINALITY_RESOLVER,
             DISPATCHER,
             FEE_MANAGER,
             FUND_DEPLOYER,

@@ -166,6 +166,7 @@ describe('activateForFund', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
+        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -193,6 +194,7 @@ describe('activateForFund', () => {
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
@@ -236,6 +238,7 @@ describe('deactivateForFund', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
+        assetFinalityResolver,
         fundDeployer,
         chainlinkPriceFeed,
         dispatcher,
@@ -262,6 +265,7 @@ describe('deactivateForFund', () => {
 
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,

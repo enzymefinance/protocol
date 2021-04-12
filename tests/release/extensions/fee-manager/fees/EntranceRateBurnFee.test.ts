@@ -171,6 +171,7 @@ describe('integration', () => {
       },
       denominationAsset,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateBurnFee,
@@ -205,6 +206,7 @@ describe('integration', () => {
 
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
@@ -262,6 +264,7 @@ describe('integration', () => {
       },
       denominationAsset,
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         entranceRateBurnFee,
@@ -296,6 +299,7 @@ describe('integration', () => {
 
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,

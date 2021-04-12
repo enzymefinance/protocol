@@ -1,6 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
-import { constants } from 'ethers';
 
 describe('constructor', () => {
   it('sets initial state for library', async () => {
@@ -13,11 +12,12 @@ describe('constructor', () => {
       policyManager,
       chainlinkPriceFeed,
       valueInterpreter,
-      synthetixPriceFeed,
+      assetFinalityResolver,
     } = fork.deployment;
 
     const routesCall = await comptrollerLib.getLibRoutes();
     expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
+      assetFinalityResolver_: assetFinalityResolver,
       dispatcher_: dispatcher,
       feeManager_: feeManager,
       fundDeployer_: fundDeployer,
@@ -26,19 +26,6 @@ describe('constructor', () => {
       primitivePriceFeed_: chainlinkPriceFeed,
       valueInterpreter_: valueInterpreter,
     });
-
-    const getSynthetixAddressResolverCall = await comptrollerLib.getSynthetixAddressResolver();
-    expect(getSynthetixAddressResolverCall).toMatchAddress(fork.config.synthetix.addressResolver);
-
-    const getSynthetixPriceFeedCall = await comptrollerLib.getSynthetixPriceFeed();
-    expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
-
-    // The following should be default values
-    const denominationAssetCall = await comptrollerLib.getDenominationAsset();
-    expect(denominationAssetCall).toMatchAddress(constants.AddressZero);
-
-    const vaultProxyCall = await comptrollerLib.getVaultProxy();
-    expect(vaultProxyCall).toMatchAddress(constants.AddressZero);
   });
 });
 
@@ -51,7 +38,6 @@ describe('destruct', () => {
       fork.deployer,
       randomAddress(),
       mockFundDeployer,
-      randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),

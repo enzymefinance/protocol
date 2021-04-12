@@ -107,6 +107,7 @@ describe('buyShares', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -122,6 +123,7 @@ describe('buyShares', () => {
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,
@@ -986,6 +988,7 @@ describe('sharesActionTimelock', () => {
         synthetix: { addressResolver: synthetixAddressResolverAddress },
       },
       deployment: {
+        assetFinalityResolver,
         chainlinkPriceFeed,
         dispatcher,
         feeManager,
@@ -1036,6 +1039,7 @@ describe('sharesActionTimelock', () => {
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
       deployer,
+      assetFinalityResolver,
       chainlinkPriceFeed,
       dispatcher,
       feeManager,

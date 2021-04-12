@@ -15,9 +15,10 @@ export * from './codegen/ComptrollerProxy';
 export * from './codegen/VaultLib';
 
 // Infrastructure
-export * from './codegen/ValueInterpreter';
+export * from './codegen/AssetFinalityResolver';
 export * from './codegen/GlobalConfigLib';
 export * from './codegen/GlobalConfigProxy';
+export * from './codegen/ValueInterpreter';
 
 // Extensions
 export * from './codegen/IExtension';

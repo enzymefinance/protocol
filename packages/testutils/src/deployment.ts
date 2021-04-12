@@ -51,6 +51,7 @@ import {
   InvestorWhitelist,
   GuaranteedRedemption,
   GlobalConfigLib,
+  AssetFinalityResolver,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -127,7 +128,8 @@ export async function deployProtocolFixture() {
     investorWhitelist: new InvestorWhitelist(fixture['InvestorWhitelist'].address, deployer),
     guaranteedRedemption: new GuaranteedRedemption(fixture['GuaranteedRedemption'].address, deployer),
     globalConfigLib: new GlobalConfigLib(fixture['GlobalConfigLib'].address, deployer),
-    globalConfigProxy: new GlobalConfigLib(fixture['GlobalConfigProxy'].address, deployer)
+    globalConfigProxy: new GlobalConfigLib(fixture['GlobalConfigProxy'].address, deployer),
+    assetFinalityResolver: new AssetFinalityResolver(fixture['AssetFinalityResolver'].address, deployer),
   } as const;
 
   return {

@@ -51,14 +51,13 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      config: { synthetix },
       deployment: {
         aggregatedDerivativePriceFeed,
         chainlinkPriceFeed,
         integrationManager,
         fundDeployer,
         policyManager,
-        synthetixPriceFeed,
+        assetFinalityResolver,
       },
     } = await provider.snapshot(snapshot);
 
@@ -74,12 +73,7 @@ describe('constructor', () => {
     const getPrimitivePriceFeedCall = await integrationManager.getPrimitivePriceFeed();
     expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
 
-    // AssetFinalityResolver
-    const getSynthetixAddressResolverCall = await integrationManager.getSynthetixAddressResolver();
-    expect(getSynthetixAddressResolverCall).toMatchAddress(synthetix.addressResolver);
-
-    const getSynthetixPriceFeedCall = await integrationManager.getSynthetixPriceFeed();
-    expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
+    expect(await integrationManager.getAssetFinalityResolver()).toMatchAddress(assetFinalityResolver);
   });
 });
 
