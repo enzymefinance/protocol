@@ -9,12 +9,11 @@
     "./dist/enzymefinance-testutils.esm.js": "./dist/enzymefinance-testutils.browser.esm.js"
   },
   "dependencies": {
-    "@babel/runtime": "^7.13.9",
-    "@enzymefinance/ethers": "^0.0.3",
-    "@enzymefinance/hardhat": "^0.0.6",
+    "@babel/runtime": "^7.13.10",
+    "@enzymefinance/ethers": "^0.0.4",
+    "@enzymefinance/hardhat": "^0.0.7",
     "@enzymefinance/protocol": "^2.0.3",
-    "ethers": "^5.0.31",
-    "ethers-eip712": "^0.2.0",
-    "hardhat": "^2.1.1"
+    "ethers": "^5.1.0",
+    "ethers-eip712": "^0.2.0"
   }
 }
