@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.4
+
+### Patch Changes
+
+- 3c91a284: Add ParaSwap v4 adapter
+
 ## 2.0.3
 
 ### Patch Changes
