@@ -104,11 +104,8 @@ describe('Walkthrough a fund migration', () => {
   it('buys shares of the fund', async () => {
     await buyShares({
       comptrollerProxy,
-      signer: investor,
-      buyers: [investor],
+      buyer: investor,
       denominationAsset,
-      investmentAmounts: [utils.parseEther('1')],
-      minSharesAmounts: [utils.parseEther('0.00000000001')],
     });
 
     const rate = utils.parseEther('0.05');

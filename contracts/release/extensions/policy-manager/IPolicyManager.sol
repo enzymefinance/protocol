@@ -17,10 +17,8 @@ pragma experimental ABIEncoderV2;
 /// @notice Interface for the PolicyManager
 interface IPolicyManager {
     enum PolicyHook {
-        BuySharesSetup,
         PreBuyShares,
         PostBuyShares,
-        BuySharesCompleted,
         PreCallOnIntegration,
         PostCallOnIntegration,
         PreTransferShares

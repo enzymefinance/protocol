@@ -24,6 +24,7 @@ import {
   createMigratedFundConfig,
   createNewFund,
   deployProtocolFixture,
+  getAssetUnit,
   transactionTimestamp,
   updateChainlinkAggregator,
 } from '@enzymefinance/testutils';
@@ -224,8 +225,8 @@ describe('constructor', () => {
     // Implements expected hooks
     const implementedHooksCall = await performanceFee.implementedHooks();
     expect(implementedHooksCall).toMatchFunctionOutput(performanceFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.BuySharesSetup, FeeHook.PreRedeemShares],
-      implementedHooksForUpdate_: [FeeHook.Continuous, FeeHook.BuySharesCompleted, FeeHook.PreRedeemShares],
+      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
+      implementedHooksForUpdate_: [FeeHook.Continuous, FeeHook.PostBuyShares, FeeHook.PreRedeemShares],
       usesGavOnSettle_: true,
       usesGavOnUpdate_: true,
     });
@@ -236,11 +237,8 @@ describe('constructor', () => {
     const feeSettlesOnHookContinuousValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.Continuous);
     expect(feeSettlesOnHookContinuousValue).toBe(true);
 
-    const feeSettlesOnHookBuySharesSetupValue = await feeManager.feeSettlesOnHook(
-      performanceFee,
-      FeeHook.BuySharesSetup,
-    );
-    expect(feeSettlesOnHookBuySharesSetupValue).toBe(true);
+    const feeSettlesOnHookPreBuySharesValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.PreBuyShares);
+    expect(feeSettlesOnHookPreBuySharesValue).toBe(true);
 
     const feeSettlesOnHookPreRedeemSharesValue = await feeManager.feeSettlesOnHook(
       performanceFee,
@@ -249,9 +247,6 @@ describe('constructor', () => {
     expect(feeSettlesOnHookPreRedeemSharesValue).toBe(true);
 
     // Settle - false
-    const feeSettlesOnHookPreBuySharesValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.PreBuyShares);
-    expect(feeSettlesOnHookPreBuySharesValue).toBe(false);
-
     const feeSettlesOnHookPostBuySharesValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.PostBuyShares);
     expect(feeSettlesOnHookPostBuySharesValue).toBe(false);
 
@@ -259,11 +254,8 @@ describe('constructor', () => {
     const feeUpdatesOnHookContinuousValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.Continuous);
     expect(feeUpdatesOnHookContinuousValue).toBe(true);
 
-    const feeUpdatesOnHookBuySharesCompletedValue = await feeManager.feeUpdatesOnHook(
-      performanceFee,
-      FeeHook.BuySharesCompleted,
-    );
-    expect(feeUpdatesOnHookBuySharesCompletedValue).toBe(true);
+    const feeUpdatesOnHookPostBuySharesValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.PostBuyShares);
+    expect(feeUpdatesOnHookPostBuySharesValue).toBe(true);
 
     const feeUpdatesOnHookPreRedeemSharesValue = await feeManager.feeUpdatesOnHook(
       performanceFee,
@@ -274,9 +266,6 @@ describe('constructor', () => {
     // Update - false
     const feeUpdatesOnHookPreBuySharesValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.PreBuyShares);
     expect(feeUpdatesOnHookPreBuySharesValue).toBe(false);
-
-    const feeUpdatesOnHookPostBuySharesValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.PostBuyShares);
-    expect(feeUpdatesOnHookPostBuySharesValue).toBe(false);
 
     // Uses GAV
     const feeUsesGavOnSettleValue = await feeManager.feeUsesGavOnSettle(performanceFee);
@@ -836,9 +825,7 @@ describe('integration', () => {
       },
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
     const denominationAsset = new WETH(weth, whales.weth);
-    await denominationAsset.transfer(fundInvestor, investmentAmount.mul(2));
 
     const mockPriceSource = await MockChainlinkPriceSource.deploy(deployer, 18);
     chainlinkPriceFeed.updatePrimitives([primitives.mln], [mockPriceSource]);
@@ -883,14 +870,15 @@ describe('integration', () => {
     expect(falsePayoutCall).toBe(false);
     expect(truePayoutCall).toBe(true);
 
+    const investmentAmount = await getAssetUnit(denominationAsset);
+
     // invest in the fund so there are shares
     await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('1')],
+      investmentAmount,
+      seedBuyer: true,
     });
 
     // add assets to fund
@@ -944,11 +932,10 @@ describe('integration', () => {
     // buy shares to settle fees
     await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('.01')],
+      investmentAmount,
+      seedBuyer: true,
     });
 
     // count shares of fund

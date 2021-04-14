@@ -1,6 +1,5 @@
 import { StandardToken } from '@enzymefinance/protocol';
 import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -13,17 +12,14 @@ describe('transfer', () => {
     const denominationAsset = new StandardToken(fork.config.weth, whales.weth);
 
     // Spin up and invest in a fund to create shares
-    const investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
-    await denominationAsset.transfer(investor, investmentAmount);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
       investment: {
-        signer: investor,
-        buyers: [investor],
-        investmentAmounts: [investmentAmount],
+        buyer: investor,
+        seedBuyer: true,
       },
     });
 
@@ -54,17 +50,14 @@ describe('transferFrom', () => {
     const denominationAsset = new StandardToken(fork.config.weth, whales.weth);
 
     // Spin up and invest in a fund to create shares
-    const investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
-    await denominationAsset.transfer(investor, investmentAmount);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
       investment: {
-        signer: investor,
-        buyers: [investor],
-        investmentAmounts: [investmentAmount],
+        buyer: investor,
+        seedBuyer: true,
       },
     });
 

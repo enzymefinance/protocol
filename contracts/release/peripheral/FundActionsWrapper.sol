@@ -59,7 +59,6 @@ contract FundActionsWrapper {
 
     /// @notice Exchanges ETH into a fund's denomination asset and then buys shares
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _buyer The account for which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy with the sent ETH
     /// @param _exchange The exchange on which to execute the swap to the denomination asset
     /// @param _exchangeApproveTarget The address that should be given an allowance of WETH
@@ -68,7 +67,7 @@ contract FundActionsWrapper {
     /// to the denomination asset
     /// @param _minInvestmentAmount The minimum amount of the denomination asset
     /// to receive in the trade for investment (not necessary for WETH)
-    /// @return sharesReceivedAmount_ The actual amount of shares received
+    /// @return sharesReceived_ The actual amount of shares received
     /// @dev Use a reasonable _minInvestmentAmount always, in case the exchange
     /// does not perform as expected (low incoming asset amount, blend of assets, etc).
     /// If the fund's denomination asset is WETH, _exchange, _exchangeApproveTarget, _exchangeData,
@@ -76,20 +75,20 @@ contract FundActionsWrapper {
     function exchangeAndBuyShares(
         address _comptrollerProxy,
         address _denominationAsset,
-        address _buyer,
         uint256 _minSharesQuantity,
         address _exchange,
         address _exchangeApproveTarget,
         bytes calldata _exchangeData,
         uint256 _minInvestmentAmount
-    ) external payable returns (uint256 sharesReceivedAmount_) {
+    ) external payable returns (uint256 sharesReceived_) {
         // Wrap ETH into WETH
         IWETH(payable(WETH_TOKEN)).deposit{value: msg.value}();
 
         // If denominationAsset is WETH, can just buy shares directly
         if (_denominationAsset == WETH_TOKEN) {
             __approveMaxWethAsNeeded(_comptrollerProxy);
-            return __buyShares(_comptrollerProxy, _buyer, msg.value, _minSharesQuantity);
+
+            return __buyShares(_comptrollerProxy, msg.sender, msg.value, _minSharesQuantity);
         }
 
         // Exchange ETH to the fund's denomination asset
@@ -108,9 +107,9 @@ contract FundActionsWrapper {
         __approveMaxAsNeeded(_denominationAsset, _comptrollerProxy, investmentAmount);
 
         // Buy fund shares
-        sharesReceivedAmount_ = __buyShares(
+        sharesReceived_ = __buyShares(
             _comptrollerProxy,
-            _buyer,
+            msg.sender,
             investmentAmount,
             _minSharesQuantity
         );
@@ -123,7 +122,7 @@ contract FundActionsWrapper {
             require(success, string(returnData));
         }
 
-        return sharesReceivedAmount_;
+        return sharesReceived_;
     }
 
     /// @notice Invokes the Continuous fee hook on all specified fees, and then attempts to payout
@@ -213,20 +212,15 @@ contract FundActionsWrapper {
         address _buyer,
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
-    ) private returns (uint256 sharesReceivedAmount_) {
-        address[] memory buyers = new address[](1);
-        buyers[0] = _buyer;
-        uint256[] memory investmentAmounts = new uint256[](1);
-        investmentAmounts[0] = _investmentAmount;
-        uint256[] memory minSharesQuantities = new uint256[](1);
-        minSharesQuantities[0] = _minSharesQuantity;
+    ) private returns (uint256 sharesReceived_) {
+        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
+        sharesReceived_ = comptrollerProxyContract.buyShares(
+            _investmentAmount,
+            _minSharesQuantity
+        );
+        ERC20(comptrollerProxyContract.getVaultProxy()).safeTransfer(_buyer, sharesReceived_);
 
-        return
-            ComptrollerLib(_comptrollerProxy).buyShares(
-                buyers,
-                investmentAmounts,
-                minSharesQuantities
-            )[0];
+        return sharesReceived_;
     }
 
     ///////////////////

@@ -1,20 +1,15 @@
-import { AddressLike, Contract, Send } from '@enzymefinance/ethers';
+import { AddressLike } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
-
-// prettier-ignore
-export interface DenominationAssetInterface extends Contract<any> {
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, any>;
-}
+import { ComptrollerLib, StandardToken } from '@enzymefinance/protocol';
+import { BigNumberish, utils } from 'ethers';
 
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;
-  signer: SignerWithAddress;
-  buyers: AddressLike[];
-  denominationAsset: DenominationAssetInterface;
-  investmentAmounts?: BigNumberish[];
-  minSharesAmounts?: BigNumberish[];
+  denominationAsset: StandardToken;
+  buyer: SignerWithAddress;
+  investmentAmount?: BigNumberish;
+  minSharesQuantity?: BigNumberish;
+  seedBuyer?: boolean;
 }
 
 export interface RedeemSharesParams {
@@ -27,22 +22,22 @@ export interface RedeemSharesParams {
 
 export async function buyShares({
   comptrollerProxy,
-  signer,
-  buyers,
   denominationAsset,
-  investmentAmounts = new Array(buyers.length).fill(utils.parseEther('1')),
-  minSharesAmounts = investmentAmounts,
+  buyer,
+  investmentAmount,
+  minSharesQuantity = 1,
+  seedBuyer = false,
 }: BuySharesParams) {
-  const totalInvestmentAmount = investmentAmounts.reduce(
-    (total: BigNumber, amount) => total.add(amount),
-    constants.Zero,
-  );
+  if (investmentAmount == undefined) {
+    investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
+  }
+  if (seedBuyer) {
+    await denominationAsset.transfer(buyer, investmentAmount);
+  }
 
-  const callerDenominationAsset = denominationAsset.connect(signer);
-  await callerDenominationAsset.approve(comptrollerProxy, totalInvestmentAmount);
+  await denominationAsset.connect(buyer).approve(comptrollerProxy, investmentAmount);
 
-  const callerComptrollerProxy = comptrollerProxy.connect(signer);
-  return callerComptrollerProxy.buyShares(buyers, investmentAmounts, minSharesAmounts);
+  return comptrollerProxy.connect(buyer).buyShares(investmentAmount, minSharesQuantity);
 }
 
 export async function redeemShares({

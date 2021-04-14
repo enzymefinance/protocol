@@ -120,9 +120,6 @@ describe('integration', () => {
       deployment: { fundDeployer, entranceRateBurnFee },
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     // Setting up the fund with EntranceRateBurnFee
     const rate = utils.parseEther('0.1'); // 10%
     const entranceRateFeeSettings = entranceRateFeeConfigArgs(rate);
@@ -140,14 +137,12 @@ describe('integration', () => {
       feeManagerConfig: feeManagerConfigData,
     });
 
-    // Buying shares of the fund
+    // Buy shares of the fund
     await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('0.1')],
+      seedBuyer: true,
     });
 
     // Check the number of shares we have (check that fee has been paid)
@@ -184,9 +179,6 @@ describe('integration', () => {
         vaultLib,
       },
     } = await provider.snapshot(snapshot);
-
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
 
     const rate = utils.parseEther('0.1'); // 10%
     const entranceRateFeeSettings = entranceRateFeeConfigArgs(rate);
@@ -236,11 +228,9 @@ describe('integration', () => {
 
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('0.1')],
+      seedBuyer: true,
     });
 
     // Check the number of shares the user has (check that fee has been paid)
@@ -329,11 +319,9 @@ describe('integration', () => {
 
     await buyShares({
       comptrollerProxy: nextComptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('0.1')],
+      seedBuyer: true,
     });
 
     // Check the number of shares the user has (check that fee has been paid)

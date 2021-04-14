@@ -30,11 +30,11 @@ describe('exchangeAndBuyShares', () => {
     });
 
     const investmentEth = utils.parseEther('2');
-    await fundActionsWrapper.exchangeAndBuyShares
-      .args(
+    await fundActionsWrapper
+      .connect(buyer)
+      .exchangeAndBuyShares.args(
         comptrollerProxy,
         denominationAsset,
-        buyer,
         1,
         constants.AddressZero,
         constants.AddressZero,
@@ -87,11 +87,11 @@ describe('exchangeAndBuyShares', () => {
 
     // Attempting to execute the exchange and buy shares with a too-high minInvestmentAmount should fail
     await expect(
-      fundActionsWrapper.exchangeAndBuyShares
-        .args(
+      fundActionsWrapper
+        .connect(buyer)
+        .exchangeAndBuyShares.args(
           comptrollerProxy,
           denominationAsset,
-          buyer,
           1,
           fork.config.uniswap.router,
           fork.config.uniswap.router,
@@ -104,11 +104,11 @@ describe('exchangeAndBuyShares', () => {
 
     // Execute the exchange and buy shares action with the exact expected investmentAmount
     const preTxBuyerEthBalance = await provider.getBalance(buyer.address);
-    await fundActionsWrapper.exchangeAndBuyShares
-      .args(
+    await fundActionsWrapper
+      .connect(buyer)
+      .exchangeAndBuyShares.args(
         comptrollerProxy,
         denominationAsset,
-        buyer,
         1,
         fork.config.uniswap.router,
         fork.config.uniswap.router,

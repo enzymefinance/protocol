@@ -76,7 +76,6 @@ describe('constructor', () => {
         adapterWhitelist,
         assetBlacklist,
         assetWhitelist,
-        buySharesCallerWhitelist,
         fundDeployer,
         guaranteedRedemption,
         maxConcentration,
@@ -93,7 +92,6 @@ describe('constructor', () => {
       adapterWhitelist,
       assetBlacklist,
       assetWhitelist,
-      buySharesCallerWhitelist,
       guaranteedRedemption,
       investorWhitelist,
       maxConcentration,
@@ -122,10 +120,7 @@ describe('constructor', () => {
       assetWhitelist,
       PolicyHook.PostCallOnIntegration,
     );
-    const buySharesCallerWhitelistImplementsBuySharesSetup = await policyManager.policyImplementsHook(
-      buySharesCallerWhitelist,
-      PolicyHook.BuySharesSetup,
-    );
+
     const guaranteedRedemptionImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
       guaranteedRedemption,
       PolicyHook.PreCallOnIntegration,
@@ -149,7 +144,6 @@ describe('constructor', () => {
     expect(adapterWhitelistImplementsPreCallOnIntegration).toBe(true);
     expect(assetBlacklistImplementsPostCallOnIntegration).toBe(true);
     expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
-    expect(buySharesCallerWhitelistImplementsBuySharesSetup).toBe(true);
     expect(guaranteedRedemptionImplementsPreCallOnIntegration).toBe(true);
     expect(maxConcentrationImplementsPostCallOnIntegration).toBe(true);
     expect(investorsWhitelistImplementsPreBuyShares).toBe(true);
@@ -901,20 +895,21 @@ describe('validatePolicies', () => {
     });
 
     const investmentAmount = utils.parseEther('2');
-    await denominationAsset.transfer(buyer, investmentAmount);
+    const minSharesQuantity = 123;
 
     await buyShares({
       comptrollerProxy,
-      signer: buyer,
-      buyers: [buyer],
+      buyer,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      investmentAmount,
+      minSharesQuantity,
+      seedBuyer: true,
     });
 
     const preRuleArgs = validateRulePreBuySharesArgs({
       buyer,
       investmentAmount,
-      minSharesQuantity: investmentAmount,
+      minSharesQuantity,
       fundGav: 0, // No investments have been made yet, so gav is 0
     });
 

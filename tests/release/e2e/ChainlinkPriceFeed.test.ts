@@ -73,13 +73,12 @@ describe('primitives gas costs', () => {
     const initialTokenAmount = utils.parseEther('1');
 
     // Seed investor and buy shares to add denomination asset
-    await weth.transfer(investor, initialTokenAmount);
     await buyShares({
       comptrollerProxy,
-      signer: investor,
-      buyers: [investor],
+      buyer: investor,
       denominationAsset,
-      investmentAmounts: [initialTokenAmount],
+      investmentAmount: initialTokenAmount,
+      seedBuyer: true,
     });
 
     // Calc base cost of calcGav with already tracked assets
@@ -126,14 +125,13 @@ describe('primitives gas costs', () => {
 
     const initialTokenAmount = utils.parseEther('1');
 
-    // Seed investor and buy shares to add denomination asset
-    await weth.transfer(investor, initialTokenAmount);
+    // Buy shares to add denomination asset
     await buyShares({
       comptrollerProxy,
-      signer: investor,
-      buyers: [investor],
+      buyer: investor,
       denominationAsset,
-      investmentAmounts: [initialTokenAmount],
+      investmentAmount: initialTokenAmount,
+      seedBuyer: true,
     });
 
     // Calc base cost of calcGav with already tracked assets

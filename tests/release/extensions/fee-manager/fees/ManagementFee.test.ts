@@ -80,7 +80,7 @@ describe('constructor', () => {
     // Implements expected hooks
     const implementedHooksCall = await managementFee.implementedHooks();
     expect(implementedHooksCall).toMatchFunctionOutput(managementFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.BuySharesSetup, FeeHook.PreRedeemShares],
+      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
       implementedHooksForUpdate_: [],
       usesGavOnSettle_: false,
       usesGavOnUpdate_: false,
@@ -400,9 +400,6 @@ describe('integration', () => {
       deployment: { feeManager, fundDeployer, managementFee },
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     const rate = utils.parseEther('0.1'); // 10%
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
@@ -427,11 +424,9 @@ describe('integration', () => {
     // Buying shares of the fund
     const buySharesReceipt = await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('1')],
+      seedBuyer: true,
     });
 
     // Mine a block after a time delay
@@ -477,9 +472,6 @@ describe('integration', () => {
       deployment: { fundDeployer, managementFee },
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     const rate = utils.parseEther('0.1'); // 10%
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
@@ -504,11 +496,9 @@ describe('integration', () => {
     // Buying shares of the fund
     const buySharesReceipt = await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('1')],
+      seedBuyer: true,
     });
 
     // Mine a block after a time delay
@@ -568,9 +558,6 @@ describe('integration', () => {
       scaledPerSecondRate,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
     const feeManagerConfigData = feeManagerConfigArgs({
       fees: [managementFee],
@@ -622,11 +609,9 @@ describe('integration', () => {
     // Buying shares of the fund
     const buySharesReceipt = await buyShares({
       comptrollerProxy: nextComptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('1')],
+      seedBuyer: true,
     });
 
     // Mine a block after a time delay
@@ -689,9 +674,6 @@ describe('integration', () => {
       scaledPerSecondRate,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
     const feeManagerConfigData = feeManagerConfigArgs({
       fees: [managementFee],
@@ -710,11 +692,9 @@ describe('integration', () => {
     // Buying shares of the fund
     const buySharesReceipt = await buyShares({
       comptrollerProxy: comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
-      minSharesAmounts: [utils.parseEther('1')],
+      seedBuyer: true,
     });
 
     const sharesBeforePayout = await vaultProxy.totalSupply(); // 1.0

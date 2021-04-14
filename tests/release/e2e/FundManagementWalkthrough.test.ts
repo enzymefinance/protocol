@@ -29,16 +29,16 @@ import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 502000,
-    weth: 483000,
+    usdc: 416000,
+    weth: 397000,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 462000,
-    weth: 453000,
+    usdc: 376000,
+    weth: 366000,
   },
   'buy shares: max assets': {
-    usdc: 1495000,
-    weth: 1245000,
+    usdc: 1386000,
+    weth: 1135000,
   },
   'calc gav: 20 assets': {
     usdc: 977000,
@@ -176,11 +176,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
     it('buys shares of a fund', async () => {
       const buySharesTx = await buyShares({
         comptrollerProxy,
-        signer: investor,
-        buyers: [investor],
+        buyer: investor,
         denominationAsset,
-        investmentAmounts: [utils.parseUnits('1', denominationAssetDecimals)],
-        minSharesAmounts: [utils.parseUnits('0.00001', denominationAssetDecimals)],
       });
 
       const rate = utils.parseEther('0.05');
@@ -202,11 +199,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const minSharesAmount = utils.parseUnits('0.00001', denominationAssetDecimals);
       const buySharesTx = await buyShares({
         comptrollerProxy,
-        signer: investor,
-        buyers: [investor],
+        buyer: investor,
         denominationAsset,
-        investmentAmounts: [utils.parseUnits('1', denominationAssetDecimals)],
-        minSharesAmounts: [minSharesAmount],
       });
 
       expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
@@ -374,7 +368,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const investmentAmount = utils.parseUnits('1', denominationAssetDecimals);
 
       const grossShareValue = await comptrollerProxy.calcGrossShareValue.call();
-      const minSharesAmount = investmentAmount
+      const minSharesQuantity = investmentAmount
         .mul(utils.parseEther('1'))
         .div(grossShareValue.grossShareValue_)
         .mul(95) // deduct 5% for safety
@@ -382,14 +376,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const buySharesTx = await buyShares({
         comptrollerProxy,
-        signer: anotherInvestor,
-        buyers: [anotherInvestor],
+        buyer: anotherInvestor,
         denominationAsset,
-        investmentAmounts: [investmentAmount],
-        minSharesAmounts: [minSharesAmount],
+        investmentAmount,
+        minSharesQuantity,
       });
 
-      expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesAmount);
+      expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesQuantity);
 
       expect(buySharesTx).toCostLessThan(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
     });

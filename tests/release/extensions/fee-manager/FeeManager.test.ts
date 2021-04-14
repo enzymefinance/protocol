@@ -3,12 +3,13 @@ import {
   IMigrationHookHandler,
   MockVaultLib,
   IFee,
-  settlePreBuySharesArgs,
   feeManagerConfigArgs,
   FeeSettlementType,
   FeeHook,
   FeeManagerActionId,
   payoutSharesOutstandingForFeesArgs,
+  settlePreBuySharesArgs,
+  settlePostBuySharesArgs,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -19,6 +20,7 @@ import {
   generateRegisteredMockFees,
   assertNoEvent,
   deployProtocolFixture,
+  getAssetUnit,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -128,19 +130,15 @@ describe('deactivateForFund', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(buyer, investmentAmount);
-
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
       comptrollerProxy,
-      signer: buyer,
-      buyers: [buyer],
+      buyer,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      seedBuyer: true,
     });
 
     // All fee settlement amounts are the same
@@ -231,18 +229,14 @@ describe('receiveCallFromComptroller', () => {
       denominationAsset,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(fundInvestor, investmentAmount);
-
     const { comptrollerProxy } = await createFund();
 
     // Buy shares of the fund so that fees accrue
     await buyShares({
       comptrollerProxy,
-      signer: fundInvestor,
-      buyers: [fundInvestor],
+      buyer: fundInvestor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      seedBuyer: true,
     });
 
     // Mint mock continuous fee
@@ -456,18 +450,14 @@ describe('invokeHook', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('2');
-    await denominationAsset.transfer(buyer, investmentAmount);
-
     const { comptrollerProxy } = await createFund();
 
     // Buy shares
     await buyShares({
       comptrollerProxy,
-      signer: buyer,
-      buyers: [buyer],
+      buyer,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      seedBuyer: true,
     });
 
     // Settle fees without having defined fee settlement
@@ -494,18 +484,14 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const investmentAmount = utils.parseEther('2');
-        await denominationAsset.transfer(buyer, investmentAmount);
-
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Buying shares
         await buyShares({
           comptrollerProxy,
-          signer: buyer,
-          buyers: [buyer],
+          buyer,
           denominationAsset,
-          investmentAmounts: [investmentAmount],
+          seedBuyer: true,
         });
 
         // Define fee settlement
@@ -554,9 +540,6 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const investmentAmount = utils.parseEther('2');
-        await denominationAsset.transfer(buyer, investmentAmount);
-
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Define fee settlement
@@ -568,13 +551,12 @@ describe('invokeHook', () => {
         const preBuyerSharesCall = await vaultProxy.balanceOf(buyer);
 
         // Buy shares with active fee
+        const investmentAmount = await getAssetUnit(denominationAsset);
         const receipt = await buyShares({
           comptrollerProxy,
-          signer: buyer,
-          buyers: [buyer],
+          buyer,
           denominationAsset,
-          investmentAmounts: [investmentAmount],
-          minSharesAmounts: [BigNumber.from(investmentAmount).sub(feeAmount)],
+          seedBuyer: true,
         });
 
         // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
@@ -610,9 +592,6 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const investmentAmount = utils.parseEther('2');
-        await denominationAsset.transfer(buyer, investmentAmount);
-
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Define fee settlement
@@ -625,14 +604,14 @@ describe('invokeHook', () => {
         const preSharesSupplyCall = await vaultProxy.totalSupply();
 
         // Buy shares with active fee
-        const expectedSharesReceived = BigNumber.from(investmentAmount).sub(feeAmount);
+        const investmentAmount = await getAssetUnit(denominationAsset);
+        const expectedSharesReceived = utils.parseEther('1').sub(feeAmount);
         const receipt = await buyShares({
           comptrollerProxy,
-          signer: buyer,
-          buyers: [buyer],
+          buyer,
           denominationAsset,
-          investmentAmounts: [investmentAmount],
-          minSharesAmounts: [expectedSharesReceived],
+          investmentAmount,
+          seedBuyer: true,
         });
 
         // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
@@ -673,19 +652,15 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const investmentAmount = utils.parseEther('1');
-        await denominationAsset.transfer(buyer, investmentAmount);
-
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
           comptrollerProxy,
-          signer: buyer,
-          buyers: [buyer],
+          buyer,
           denominationAsset,
-          investmentAmounts: [investmentAmount],
+          seedBuyer: true,
         });
 
         // Define fee settlement
@@ -737,19 +712,15 @@ describe('invokeHook', () => {
           createFund,
         } = await provider.snapshot(snapshot);
 
-        const investmentAmount = utils.parseEther('1');
-        await denominationAsset.transfer(buyer, investmentAmount);
-
         const { vaultProxy, comptrollerProxy } = await createFund();
 
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
           comptrollerProxy,
-          signer: buyer,
-          buyers: [buyer],
+          buyer,
           denominationAsset,
-          investmentAmounts: [investmentAmount],
+          seedBuyer: true,
         });
 
         // Define fee settlement
@@ -818,19 +789,15 @@ describe('invokeHook', () => {
         createFund,
       } = await provider.snapshot(snapshot);
 
-      const investmentAmount = utils.parseEther('1');
-      await denominationAsset.transfer(buyer, investmentAmount);
-
       const { vaultProxy, comptrollerProxy } = await createFund();
 
       // Seed fund with initial fund shares,
       // to give a non-zero totalSupply (so that minting new shares is allowed)
       await buyShares({
         comptrollerProxy,
-        signer: buyer,
-        buyers: [buyer],
+        buyer,
         denominationAsset,
-        investmentAmounts: [investmentAmount],
+        seedBuyer: true,
       });
 
       const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -918,24 +885,26 @@ describe('invokeHook', () => {
     } = await provider.snapshot(snapshot);
 
     const investmentAmount = utils.parseEther('2');
+    const minSharesQuantity = 123;
+
     const gav = investmentAmount;
-    await denominationAsset.transfer(buyer, investmentAmount);
 
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     await buyShares({
       comptrollerProxy,
-      signer: buyer,
-      buyers: [buyer],
+      buyer,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      investmentAmount,
+      minSharesQuantity,
+      seedBuyer: true,
     });
 
     // Assert called settle and payout on Continuous fees (called before BuyShares fee hook)
     const preBuySharesArgs = settlePreBuySharesArgs({
       buyer,
       investmentAmount,
-      minSharesQuantity: investmentAmount,
+      minSharesQuantity,
     });
 
     // Actual gav is 0 at time of call, so both fees should be called with 0 gav
@@ -955,11 +924,17 @@ describe('invokeHook', () => {
     );
 
     // Assert update to have been called with the actual new gav, post-buyShares
+    const postBuySharesArgs = settlePostBuySharesArgs({
+      buyer,
+      investmentAmount,
+      sharesBought: await vaultProxy.balanceOf(buyer),
+    });
+
     expect(mockContinuousFeeWithGavAndUpdates.update).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       vaultProxy,
       FeeHook.PostBuyShares,
-      preBuySharesArgs,
+      postBuySharesArgs,
       gav,
     );
 
@@ -980,17 +955,16 @@ describe('__InvokeContinuousHook', () => {
 
     const investmentAmount = utils.parseEther('2');
     const gav = investmentAmount;
-    await denominationAsset.transfer(buyer, investmentAmount);
 
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     // Seed fund so it has a non-zero GAV
     await buyShares({
       comptrollerProxy,
-      signer: buyer,
-      buyers: [buyer],
+      buyer,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      investmentAmount,
+      seedBuyer: true,
     });
 
     await callOnExtension({
@@ -1041,19 +1015,15 @@ describe('__payoutSharesOutstandingForFees', () => {
       createFund,
     } = await provider.snapshot(snapshot);
 
-    const investmentAmount = utils.parseEther('1');
-    await denominationAsset.transfer(buyer, investmentAmount);
-
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
       comptrollerProxy,
+      buyer,
       denominationAsset,
-      signer: buyer,
-      buyers: [buyer],
-      investmentAmounts: [investmentAmount],
+      seedBuyer: true,
     });
 
     const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);

@@ -1,16 +1,23 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, ComptrollerProxy, encodeFunctionData, FundDeployer, VaultLib } from '@enzymefinance/protocol';
+import {
+  ComptrollerLib,
+  ComptrollerProxy,
+  encodeFunctionData,
+  FundDeployer,
+  StandardToken,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { assertEvent } from '../assertions';
-import { buyShares, BuySharesParams, DenominationAssetInterface } from './shares';
+import { buyShares, BuySharesParams } from './shares';
 
 export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' | 'denominationAsset'>;
 
 export interface CreateMigratedFundConfigParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
-  denominationAsset: DenominationAssetInterface;
+  denominationAsset: StandardToken;
   sharesActionTimelock?: BigNumberish;
   feeManagerConfigData?: BytesLike;
   policyManagerConfigData?: BytesLike;
@@ -19,7 +26,7 @@ export interface CreateMigratedFundConfigParams {
 export interface CreateNewFundParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
-  denominationAsset: DenominationAssetInterface;
+  denominationAsset: StandardToken;
   sharesActionTimelock?: BigNumberish;
   fundOwner?: AddressLike;
   fundName?: string;

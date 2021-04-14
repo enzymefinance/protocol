@@ -12,6 +12,7 @@ import {
   buyShares,
   createNewFund,
   getAssetBalances,
+  getAssetUnit,
   redeemShares,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
@@ -88,11 +89,9 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('buys shares of a fund', async () => {
     await buyShares({
       comptrollerProxy,
-      signer: investor,
-      buyers: [investor],
+      buyer: investor,
       denominationAsset,
-      investmentAmounts: [utils.parseEther('100')],
-      minSharesAmounts: [utils.parseEther('0.00000000001')],
+      investmentAmount: (await getAssetUnit(denominationAsset)).mul(100),
     });
   });
 

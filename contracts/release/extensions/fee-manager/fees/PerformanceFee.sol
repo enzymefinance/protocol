@@ -144,12 +144,12 @@ contract PerformanceFee is FeeBase {
     {
         implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
         implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForSettle_[1] = IFeeManager.FeeHook.BuySharesSetup;
+        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
         implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
         implementedHooksForUpdate_ = new IFeeManager.FeeHook[](3);
         implementedHooksForUpdate_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForUpdate_[1] = IFeeManager.FeeHook.BuySharesCompleted;
+        implementedHooksForUpdate_[1] = IFeeManager.FeeHook.PostBuyShares;
         implementedHooksForUpdate_[2] = IFeeManager.FeeHook.PreRedeemShares;
 
         return (implementedHooksForSettle_, implementedHooksForUpdate_, true, true);

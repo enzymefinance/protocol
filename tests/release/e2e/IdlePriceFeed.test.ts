@@ -148,15 +148,12 @@ describe('derivative gas costs', () => {
       denominationAsset: weth,
     });
 
-    // Seed fund and buy shares to add denomination asset
-    const investmentAmount = utils.parseEther('1');
-    await weth.transfer(investor, investmentAmount);
+    // Buy shares to add denomination asset
     await buyShares({
       comptrollerProxy,
-      signer: investor,
-      buyers: [investor],
+      buyer: investor,
       denominationAsset,
-      investmentAmounts: [investmentAmount],
+      seedBuyer: true,
     });
 
     // Calc base cost of calcGav with already tracked assets

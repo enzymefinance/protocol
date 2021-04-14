@@ -72,16 +72,12 @@ export * from './codegen/AdapterBlacklist';
 export * from './codegen/AdapterWhitelist';
 export * from './codegen/AssetBlacklist';
 export * from './codegen/AssetWhitelist';
-export * from './codegen/BuySharesCallerWhitelist';
 export * from './codegen/GuaranteedRedemption';
 export * from './codegen/MaxConcentration';
 export * from './codegen/MinMaxInvestment';
 export * from './codegen/InvestorWhitelist';
 
 // Peripheral
-export * from './codegen/AuthUserExecutedSharesRequestorFactory';
-export * from './codegen/AuthUserExecutedSharesRequestorLib';
-export * from './codegen/AuthUserExecutedSharesRequestorProxy';
 export * from './codegen/FundActionsWrapper';
 
 // Test contracts
