@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../../../interfaces/IWETH.sol";
 import "../comptroller/IComptroller.sol";
 import "./IVault.sol";
 
@@ -34,6 +35,13 @@ contract VaultLib is VaultLibBase2, IVault {
     // 2. That the next value will need to be respected by all future releases
     uint256 private constant TRACKED_ASSETS_LIMIT = 20;
 
+    address private immutable WETH_TOKEN;
+
+    modifier notShares(address _asset) {
+        require(_asset != address(this), "Cannot act on shares");
+        _;
+    }
+
     modifier onlyAccessor() {
         require(msg.sender == accessor, "Only the designated accessor can make this call");
         _;
@@ -44,9 +52,14 @@ contract VaultLib is VaultLibBase2, IVault {
         _;
     }
 
-    modifier notShares(address _asset) {
-        require(_asset != address(this), "Cannot act on shares");
-        _;
+    constructor(address _weth) public {
+        WETH_TOKEN = _weth;
+    }
+
+    /// @dev If a VaultProxy receives ETH, immediately wrap into WETH.
+    /// Will not be able to receive ETH via .transfer() or .send() due to limited gas forwarding.
+    receive() external payable {
+        IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
     /////////////
@@ -306,6 +319,12 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return trackedAssets_ The `trackedAssets` variable value
     function getTrackedAssets() external view override returns (address[] memory trackedAssets_) {
         return trackedAssets;
+    }
+
+    /// @notice Gets the `WETH_TOKEN` variable
+    /// @return wethToken_ The `WETH_TOKEN` variable value
+    function getWethToken() external view returns (address wethToken_) {
+        return WETH_TOKEN;
     }
 
     /// @notice Check whether an address is a tracked asset of the fund

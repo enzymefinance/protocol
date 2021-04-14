@@ -82,7 +82,7 @@ contract AuthUserExecutedSharesRequestorLib is IAuthUserExecutedSharesRequestor 
         // Cache frequently-used values that require external calls
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
         denominationAsset = comptrollerProxyContract.getDenominationAsset();
-        fundOwner = VaultLib(comptrollerProxyContract.getVaultProxy()).getOwner();
+        fundOwner = VaultLib(payable(comptrollerProxyContract.getVaultProxy())).getOwner();
     }
 
     /// @notice Cancels the shares request of the caller

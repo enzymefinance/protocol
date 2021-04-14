@@ -1,12 +1,36 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 import { assertEvent, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+});
+
+describe('receive', () => {
+  it('immediately wraps ETH as WETH', async () => {
+    const [fundOwner] = fork.accounts;
+    const weth = new StandardToken(fork.config.weth, provider);
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+    });
+
+    // Send ETH to the VaultProxy
+    const ethAmount = utils.parseEther('2');
+    await fundOwner.sendTransaction({
+      to: vaultProxy.address,
+      value: ethAmount,
+    });
+
+    // VaultProxy ETH balance should be 0 and WETH balance should be the sent ETH amount
+    expect(await provider.getBalance(vaultProxy.address)).toEqBigNumber(0);
+    expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(ethAmount);
+  });
 });
 
 describe('setNominatedOwner', () => {
@@ -14,7 +38,7 @@ describe('setNominatedOwner', () => {
     const [fundOwner, randomUser] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -29,7 +53,7 @@ describe('setNominatedOwner', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -44,7 +68,7 @@ describe('setNominatedOwner', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -59,7 +83,7 @@ describe('setNominatedOwner', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -79,7 +103,7 @@ describe('setNominatedOwner', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -109,7 +133,7 @@ describe('removeNominatedOwner', () => {
     const [fundOwner, randomUser] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -128,7 +152,7 @@ describe('removeNominatedOwner', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -161,7 +185,7 @@ describe('claimOwnership', () => {
     const [fundOwner, randomUser] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -180,7 +204,7 @@ describe('claimOwnership', () => {
     const [fundOwner, nominatedOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
+      signer: fundOwner,
       fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,

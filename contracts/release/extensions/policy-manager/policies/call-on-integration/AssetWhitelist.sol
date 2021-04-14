@@ -34,7 +34,7 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
         onlyPolicyManager
     {
         require(
-            passesRule(_comptrollerProxy, VaultLib(_vaultProxy).getTrackedAssets()),
+            passesRule(_comptrollerProxy, VaultLib(payable(_vaultProxy)).getTrackedAssets()),
             "activateForFund: Non-whitelisted asset detected"
         );
     }

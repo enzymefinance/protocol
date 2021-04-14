@@ -50,7 +50,11 @@ contract MaxConcentration is PostCallOnIntegrationValidatePolicyBase {
         onlyPolicyManager
     {
         require(
-            passesRule(_comptrollerProxy, _vaultProxy, VaultLib(_vaultProxy).getTrackedAssets()),
+            passesRule(
+                _comptrollerProxy,
+                _vaultProxy,
+                VaultLib(payable(_vaultProxy)).getTrackedAssets()
+            ),
             "activateForFund: Max concentration exceeded"
         );
     }

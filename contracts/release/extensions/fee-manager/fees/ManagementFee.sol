@@ -53,7 +53,7 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         onlyFeeManager
     {
         // It is only necessary to set `lastSettled` for a migrated fund
-        if (VaultLib(_vaultProxy).totalSupply() > 0) {
+        if (VaultLib(payable(_vaultProxy)).totalSupply() > 0) {
             comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
         }
     }
@@ -142,7 +142,7 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         }
 
         // If there are shares issued for the fund, calculate the shares due
-        VaultLib vaultProxyContract = VaultLib(_vaultProxy);
+        VaultLib vaultProxyContract = VaultLib(payable(_vaultProxy));
         uint256 sharesSupply = vaultProxyContract.totalSupply();
         if (sharesSupply > 0) {
             // This assumes that all shares in the VaultProxy are shares outstanding,

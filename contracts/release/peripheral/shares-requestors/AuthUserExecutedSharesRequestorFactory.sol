@@ -43,7 +43,9 @@ contract AuthUserExecutedSharesRequestorFactory {
         returns (address sharesRequestorProxy_)
     {
         // Confirm fund is genuine
-        VaultLib vaultProxyContract = VaultLib(ComptrollerLib(_comptrollerProxy).getVaultProxy());
+        VaultLib vaultProxyContract = VaultLib(
+            payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())
+        );
         require(
             vaultProxyContract.getAccessor() == _comptrollerProxy,
             "deploySharesRequestorProxy: Invalid VaultProxy for ComptrollerProxy"
