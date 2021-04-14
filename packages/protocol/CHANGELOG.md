@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.5
+
+### Patch Changes
+
+- 5f329498: Update dependencies
+
 ## 2.0.4
 
 ### Patch Changes
