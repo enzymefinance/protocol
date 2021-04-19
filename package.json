@@ -17,7 +17,7 @@
     "dev": "preconstruct dev",
     "build": "preconstruct build",
     "release": "yarn compile && yarn build && changeset publish",
-    "typecheck": "manypkg exec tsc --noEmit",
+    "typecheck": "manypkg exec tsc --noEmit && tsc --noEmit",
     "lint": "yarn lint:eslint && yarn lint:prettier && yarn lint:solhint",
     "lint:eslint": "eslint \"{*,**/*}.{js,jsx,ts,tsx}\"",
     "lint:prettier": "prettier --list-different \"{*,**/*}.{sol,json}\"",

@@ -7,68 +7,44 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import {
+  ProtocolDeployment,
   assertEvent,
   createNewFund,
+  deployProtocolFixture,
   getAssetBalances,
   paraSwapV4GenerateDummyPaths,
   paraSwapV4TakeOrder,
-  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 const payload = `0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f`;
 
-async function snapshot() {
-  const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployer,
-    deployment,
-    config,
-  } = await deployProtocolFixture();
-
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: new StandardToken(config.weth, deployer),
-  });
-
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    fund: {
-      comptrollerProxy,
-      fundOwner,
-      vaultProxy,
-    },
-  };
-}
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { integrationManager, paraSwapV4Adapter },
-      config: {
-        paraSwapV4: { augustusSwapper, tokenTransferProxy },
-      },
-    } = await provider.snapshot(snapshot);
+    const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
     // AdapterBase2
     const integrationManagerResult = await paraSwapV4Adapter.getIntegrationManager();
-    expect(integrationManagerResult).toMatchAddress(integrationManager);
+    expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
 
     // ParaSwapV4ActionsMixin
-    expect(await paraSwapV4Adapter.getParaSwapV4AugustusSwapper()).toMatchAddress(augustusSwapper);
-    expect(await paraSwapV4Adapter.getParaSwapV4TokenTransferProxy()).toMatchAddress(tokenTransferProxy);
+    expect(await paraSwapV4Adapter.getParaSwapV4AugustusSwapper()).toMatchAddress(
+      fork.config.paraSwapV4.augustusSwapper,
+    );
+    expect(await paraSwapV4Adapter.getParaSwapV4TokenTransferProxy()).toMatchAddress(
+      fork.config.paraSwapV4.tokenTransferProxy,
+    );
   });
 });
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const {
-      deployment: { paraSwapV4Adapter },
-    } = await provider.snapshot(snapshot);
+    const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
     const args = paraSwapV4TakeOrderArgs({
       minIncomingAssetAmount: 1,
@@ -86,9 +62,7 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output', async () => {
-    const {
-      deployment: { paraSwapV4Adapter },
-    } = await provider.snapshot(snapshot);
+    const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
     const incomingAsset = randomAddress();
     const minIncomingAssetAmount = utils.parseEther('1');
@@ -117,10 +91,15 @@ describe('parseAssetsForMethod', () => {
 
 describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
-    const {
-      deployment: { paraSwapV4Adapter },
-      fund: { vaultProxy },
-    } = await provider.snapshot(snapshot);
+    const [fundOwner] = fork.accounts;
+    const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
+
+    const { vaultProxy } = await createNewFund({
+      signer: fork.deployer,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+    });
 
     const takeOrderArgs = paraSwapV4TakeOrderArgs({
       minIncomingAssetAmount: 1,
@@ -141,18 +120,22 @@ describe('takeOrder', () => {
     );
   });
 
-  it('works as expected', async () => {
-    const {
-      config: {
-        weth,
-        primitives: { dai },
-      },
-      deployment: { paraSwapV4Adapter, integrationManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
+  it('works as expected when called by a fund (no network fees)', async () => {
+    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const [fundOwner] = fork.accounts;
+    const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
+    const integrationManager = fork.deployment.integrationManager;
 
-    const outgoingAsset = new StandardToken(weth, whales.weth);
-    const incomingAsset = new StandardToken(dai, provider);
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+    });
+
+    const outgoingAssetAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = '1';
 
     // Define the ParaSwap Paths
     // Data taken directly from API: https://paraswapv2.docs.apiary.io/
@@ -165,7 +148,14 @@ describe('takeOrder', () => {
           {
             exchange: '0x695725627E04898Ef4a126Ae71FC30aA935c5fb6', // ParaSwap's UniswapV2 adapter
             targetExchange: '0x86d3579b043585A97532514016dCF0C2d6C4b6a1', // Uniswap Router2
-            percent: 10000, // Out of 10000
+            percent: 5000, // Out of 10000
+            payload,
+            networkFee: 0,
+          },
+          {
+            exchange: '0x77Bc1A1ba4E9A6DF5BDB21f2bBC07B9854E8D1a8', // ParaSwap's Sushiswap adapter
+            targetExchange: '0xBc1315CD2671BC498fDAb42aE1214068003DC51e', // Sushiswap contract
+            percent: 5000, // Out of 10000
             payload,
             networkFee: 0,
           },
@@ -173,36 +163,29 @@ describe('takeOrder', () => {
       },
     ];
 
-    // Seed the fund with outgoingAsset
-    const outgoingAssetAmount = utils.parseEther('1');
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    // Seed fund with more than what will be spent
+    const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
+    await outgoingAsset.transfer(vaultProxy, initialOutgoingAssetBalance);
 
-    // Get the balances of incoming and outgoing assets pre-trade
-    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAsset, outgoingAsset],
-    });
+    // TODO: can call multiSwap() first to get the expected amount
 
     // Trade on ParaSwap
     const receipt = await paraSwapV4TakeOrder({
       comptrollerProxy,
       integrationManager,
       fundOwner,
-      paraSwapV4Adapter: paraSwapV4Adapter,
+      paraSwapV4Adapter,
       outgoingAsset,
       outgoingAssetAmount,
-      minIncomingAssetAmount: '1',
+      minIncomingAssetAmount,
       paths,
     });
 
-    // Get the balances of incoming and outgoing assets post-trade
+    // Calculate the fund balances after the tx and assert the correct final token balances
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
     });
-
-    expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingAssetAmount));
 
     // Assert the correct event was fired
     assertEvent(receipt, integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund'), {
@@ -212,10 +195,13 @@ describe('takeOrder', () => {
       adapter: paraSwapV4Adapter,
       selector: takeOrderSelector,
       incomingAssets: [incomingAsset],
-      incomingAssetAmounts: [postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance)],
+      incomingAssetAmounts: [postTxIncomingAssetBalance],
       outgoingAssets: [outgoingAsset],
       outgoingAssetAmounts: [outgoingAssetAmount],
       integrationData: expect.anything(),
     });
+
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));
+    expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
   });
 });

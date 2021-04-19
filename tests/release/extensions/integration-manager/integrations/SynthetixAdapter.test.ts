@@ -8,93 +8,53 @@ import {
   takeOrderSelector,
 } from '@enzymefinance/protocol';
 import {
+  ProtocolDeployment,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
   synthetixAssignExchangeDelegate,
-  synthetixTakeOrder,
   synthetixResolveAddress,
+  synthetixTakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot() {
-  const {
-    accounts: [fundOwner, ...remainingAccounts],
-    deployer,
-    deployment,
-    config,
-  } = await deployProtocolFixture();
+const sbtcCurrencyKey = utils.formatBytes32String('sBTC');
+const susdCurrencyKey = utils.formatBytes32String('sUSD');
 
-  const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
-    denominationAsset: new StandardToken(config.synthetix.susd, deployer),
-  });
-
-  const synthetixAddressResolver = new ISynthetixAddressResolver(config.synthetix.addressResolver, provider);
-
-  // Load the SynthetixExchange contract
-  const exchangerAddress = await synthetixResolveAddress({
-    addressResolver: synthetixAddressResolver,
-    name: 'Exchanger',
-  });
-
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    fund: {
-      comptrollerProxy,
-      fundOwner,
-      vaultProxy,
-    },
-    sbtcCurrencyKey: utils.formatBytes32String('sBTC'),
-    susdCurrencyKey: utils.formatBytes32String('sUSD'),
-    synthetixExchanger: new ISynthetixExchanger(exchangerAddress, provider),
-  };
-}
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { integrationManager, synthetixAdapter, synthetixPriceFeed },
-      config: { synthetix },
-    } = await provider.snapshot(snapshot);
+    const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const integrationManagerResult = await synthetixAdapter.getIntegrationManager();
-    expect(integrationManagerResult).toMatchAddress(integrationManager);
+    expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
 
     const originatorResult = await synthetixAdapter.getOriginator();
-    expect(originatorResult).toMatchAddress(synthetix.originator);
+    expect(originatorResult).toMatchAddress(fork.config.synthetix.originator);
 
     const synthetixPriceFeedResult = await synthetixAdapter.getSynthetixPriceFeed();
-    expect(synthetixPriceFeedResult).toMatchAddress(synthetixPriceFeed);
+    expect(synthetixPriceFeedResult).toMatchAddress(fork.deployment.synthetixPriceFeed);
 
     const synthetixResult = await synthetixAdapter.getSynthetix();
-    expect(synthetixResult).toMatchAddress(synthetix.snx);
+    expect(synthetixResult).toMatchAddress(fork.config.synthetix.snx);
 
     const trackingCodeResult = await synthetixAdapter.getTrackingCode();
-    expect(trackingCodeResult).toBe(synthetix.trackingCode);
+    expect(trackingCodeResult).toBe(fork.config.synthetix.trackingCode);
   });
 });
 
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
-    const {
-      deployment: { synthetixAdapter },
-      config: {
-        synthetix: {
-          susd,
-          synths: { sbtc },
-        },
-      },
-    } = await provider.snapshot(snapshot);
+    const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const args = synthetixTakeOrderArgs({
-      incomingAsset: sbtc,
+      incomingAsset: fork.config.synthetix.synths.sbtc,
       minIncomingAssetAmount: 1,
-      outgoingAsset: susd,
+      outgoingAsset: fork.config.synthetix.susd,
       outgoingAssetAmount: 1,
     });
 
@@ -106,19 +66,10 @@ describe('parseAssetsForMethod', () => {
   });
 
   it('generates expected output', async () => {
-    const {
-      deployment: { synthetixAdapter },
-      config: {
-        synthetix: {
-          susd,
-          synths: { sbtc },
-        },
-      },
-    } = await provider.snapshot(snapshot);
-
-    const incomingAsset = sbtc;
+    const synthetixAdapter = fork.deployment.synthetixAdapter;
+    const incomingAsset = fork.config.synthetix.synths.sbtc;
     const minIncomingAssetAmount = utils.parseEther('1');
-    const outgoingAsset = susd;
+    const outgoingAsset = fork.config.synthetix.susd;
     const outgoingAssetAmount = utils.parseEther('1');
 
     const takeOrderArgs = synthetixTakeOrderArgs({
@@ -142,21 +93,19 @@ describe('parseAssetsForMethod', () => {
 
 describe('takeOrder', () => {
   it('can only be called via the IntegrationManager', async () => {
-    const {
-      deployment: { synthetixAdapter },
-      fund: { vaultProxy },
-      config: {
-        synthetix: {
-          susd,
-          synths: { sbtc },
-        },
-      },
-    } = await provider.snapshot(snapshot);
-
-    const incomingAsset = sbtc;
+    const [fundOwner] = fork.accounts;
+    const synthetixAdapter = fork.deployment.synthetixAdapter;
+    const incomingAsset = fork.config.synthetix.synths.sbtc;
     const minIncomingAssetAmount = utils.parseEther('1');
-    const outgoingAsset = susd;
+    const outgoingAsset = fork.config.synthetix.susd;
     const outgoingAssetAmount = utils.parseEther('1');
+
+    const { vaultProxy } = await createNewFund({
+      signer: fork.deployer,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+    });
 
     const takeOrderArgs = synthetixTakeOrderArgs({
       incomingAsset,
@@ -177,57 +126,60 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (synth to synth)', async () => {
-    const {
-      config: {
-        synthetix: {
-          addressResolver,
-          susd,
-          synths: { sbtc },
-        },
-      },
-      deployment: { integrationManager, synthetixAdapter },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-      sbtcCurrencyKey,
-      susdCurrencyKey,
-      synthetixExchanger,
-    } = await provider.snapshot(snapshot);
+    const [fundOwner] = fork.accounts;
+    const synthetixAdapter = fork.deployment.synthetixAdapter;
+    const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
+    const outgoingAsset = new StandardToken(fork.config.primitives.susd, whales.susd);
+    const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
 
-    const incomingAsset = new StandardToken(sbtc, provider);
-    const outgoingAsset = new StandardToken(susd, whales.susd);
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+    });
+
+    // Load the SynthetixExchange contract
+    const exchangerAddress = await synthetixResolveAddress({
+      addressResolver: synthetixAddressResolver,
+      name: 'Exchanger',
+    });
+    const synthetixExchanger = new ISynthetixExchanger(exchangerAddress, provider);
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
       comptrollerProxy,
-      addressResolver: new ISynthetixAddressResolver(addressResolver, provider),
+      addressResolver: synthetixAddressResolver,
       fundOwner,
-      delegate: synthetixAdapter.address,
+      delegate: synthetixAdapter,
     });
 
     // Define order params
     const outgoingAssetAmount = utils.parseEther('100');
-    const { 0: minIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
       outgoingAssetAmount,
       susdCurrencyKey,
       sbtcCurrencyKey,
     );
+
     // Get incoming asset balance prior to tx
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset],
     });
 
-    // Execute Synthetix order
+    // Seed fund and execute Synthetix order
+    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
     await synthetixTakeOrder({
       comptrollerProxy,
       vaultProxy,
-      integrationManager,
+      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       synthetixAdapter,
       outgoingAsset,
       outgoingAssetAmount,
       incomingAsset,
-      minIncomingAssetAmount,
-      seedFund: true,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
     });
 
     // Get incoming and outgoing asset balances after the tx
@@ -238,7 +190,7 @@ describe('takeOrder', () => {
 
     // Assert the expected final token balances of the VaultProxy
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
-    expect(incomingAssetAmount).toEqBigNumber(minIncomingAssetAmount);
+    expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });
 });

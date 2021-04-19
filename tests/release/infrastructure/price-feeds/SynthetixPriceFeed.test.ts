@@ -1,64 +1,110 @@
-import { extractEvent } from '@enzymefinance/ethers';
-import { MockSynthetixIntegratee, MockSynthetixPriceSource, MockSynthetixToken } from '@enzymefinance/protocol';
-import { deployProtocolFixture } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { AddressLike, extractEvent } from '@enzymefinance/ethers';
+import {
+  ISynthetixAddressResolver,
+  ISynthetixExchangeRates,
+  ISynthetixProxyERC20,
+  ISynthetixSynth,
+  StandardToken,
+  SynthetixPriceFeed,
+} from '@enzymefinance/protocol';
+import {
+  ProtocolDeployment,
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  synthetixAssignExchangeDelegate,
+  synthetixResolveAddress,
+  synthetixTakeOrder,
+} from '@enzymefinance/testutils';
+import { BigNumber, constants, utils } from 'ethers';
 
-async function snapshot() {
-  const {
-    deployment: { synthetixPriceFeed },
-    accounts: [arbitraryUser],
-    config: {
-      primitives,
-      synthetix: { synths, susd, addressResolver },
-    },
-    deployer,
-  } = await deployProtocolFixture();
-
-  // Deploy new Synths
-  const newSynth1Symbol = 'sMOCK1';
-  const newSynth1CurrencyKey = utils.formatBytes32String(newSynth1Symbol);
-  const newSynth1 = await MockSynthetixToken.deploy(
-    deployer,
-    'Mock Synth 1',
-    newSynth1Symbol,
-    18,
-    newSynth1CurrencyKey,
-  );
-
-  const newSynth2Symbol = 'sMOCK2';
-  const newSynth2CurrencyKey = utils.formatBytes32String(newSynth2Symbol);
-  const newSynth2 = await MockSynthetixToken.deploy(
-    deployer,
-    'Mock Synth 2',
-    newSynth2Symbol,
-    18,
-    newSynth2CurrencyKey,
-  );
-
-  return {
-    susd,
-    synths,
-    synthetixPriceFeed,
-    addressResolver,
-    newSynth1,
-    newSynth1CurrencyKey,
-    newSynth2,
-    newSynth2CurrencyKey,
-    deployer,
-    primitives,
-    arbitraryUser,
-  };
+async function warpBeyondWaitingPeriod() {
+  const waitingPeriod = 360;
+  await provider.send('evm_increaseTime', [waitingPeriod]);
+  await provider.send('evm_mine', []);
 }
+
+async function getCurrencyKey(synthProxy: AddressLike) {
+  const synth = await new ISynthetixProxyERC20(synthProxy, provider).target();
+  return await new ISynthetixSynth(synth, provider).currencyKey();
+}
+
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
+
+describe('derivative gas costs', () => {
+  it('adds to calcGav for weth-denominated fund', async () => {
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const susd = new StandardToken(fork.config.primitives.susd, whales.susd);
+    const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const [fundOwner, investor] = fork.accounts;
+    const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
+    const denominationAsset = weth;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+    });
+
+    // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
+    await synthetixAssignExchangeDelegate({
+      comptrollerProxy,
+      addressResolver: synthetixAddressResolver,
+      fundOwner,
+      delegate: fork.deployment.synthetixAdapter,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Buy shares to add denomination asset
+    await buyShares({
+      comptrollerProxy,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount: initialTokenAmount,
+      seedBuyer: true,
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Seed fund and execute Synthetix order
+    await susd.transfer(vaultProxy, initialTokenAmount);
+    await synthetixTakeOrder({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: fork.deployment.integrationManager,
+      fundOwner,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
+      outgoingAsset: susd,
+      outgoingAssetAmount: initialTokenAmount,
+      incomingAsset,
+      minIncomingAssetAmount: BigNumber.from(1),
+    });
+
+    await warpBeyondWaitingPeriod();
+
+    // Get the calcGav() cost including the synth token
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(182000));
+  });
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const { addressResolver, synths, susd, synthetixPriceFeed } = await provider.snapshot(snapshot);
+    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-    expect(await synthetixPriceFeed.getAddressResolver()).toMatchAddress(addressResolver);
-    expect(await synthetixPriceFeed.getSUSD()).toMatchAddress(susd);
+    expect(await synthetixPriceFeed.getAddressResolver()).toMatchAddress(fork.config.synthetix.addressResolver);
+    expect(await synthetixPriceFeed.getSUSD()).toMatchAddress(fork.config.primitives.susd);
 
     // TODO: can check this more precisely by calling Synthetix
-    for (const synth of Object.values(synths)) {
+    for (const synth of Object.values(fork.config.synthetix.synths)) {
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(synth)).not.toBe(constants.HashZero);
     }
   });
@@ -67,17 +113,20 @@ describe('constructor', () => {
 describe('calcUnderlyingValues', () => {
   // TODO: Do not use a mock contract for these.
   xit('revert on invalid rate', async () => {
+    /*
     const {
-      deployer,
-      addressResolver: addressResolverAddress,
-      synthetixPriceFeed,
-      newSynth1,
-      newSynth1CurrencyKey,
+    deployer,
+    addressResolver: addressResolverAddress,
+    synthetixPriceFeed,
+    newSynth1,
+    newSynth1CurrencyKey,
     } = await provider.snapshot(snapshot);
+    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
     await synthetixPriceFeed.addSynths([newSynth1]);
 
-    const addressResolver = new MockSynthetixIntegratee(addressResolverAddress, deployer);
+    // const addressResolver = new MockSynthetixIntegratee(addressResolverAddress, deployer);
+    const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
     const exchangeRatesAddress = await addressResolver.requireAndGetAddress(
       utils.formatBytes32String('ExchangeRates'),
       '',
@@ -88,61 +137,55 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValues = synthetixPriceFeed.calcUnderlyingValues.args(newSynth1, utils.parseEther('1')).call();
     await expect(calcUnderlyingValues).rejects.toBeRevertedWith('calcUnderlyingValues: _derivative rate is not valid');
+    */
   });
 
-  // TODO: Do not use a mock contract for these.
-  xit('returns valid rate', async () => {
-    const {
-      deployer,
-      susd,
-      addressResolver: addressResolverAddress,
-      synthetixPriceFeed,
-      newSynth1,
-      newSynth1CurrencyKey,
-    } = await provider.snapshot(snapshot);
+  it('returns rate for underlying token', async () => {
+    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const susd = new StandardToken(fork.config.primitives.susd, provider);
 
-    await synthetixPriceFeed.addSynths([newSynth1]);
-    const expectedAmount = utils.parseEther('1');
+    const exchangeRates = await synthetixResolveAddress({
+      addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
+      name: 'ExchangeRates',
+    });
 
-    const addressResolver = new MockSynthetixIntegratee(addressResolverAddress, deployer);
-    const exchangeRatesAddress = await addressResolver.requireAndGetAddress(
-      utils.formatBytes32String('ExchangeRates'),
-      '',
-    );
-    const exchangeRates = new MockSynthetixPriceSource(exchangeRatesAddress, deployer);
+    const synthUnit = utils.parseEther('1');
 
-    await exchangeRates.setRate(newSynth1CurrencyKey, expectedAmount);
+    const synthetixExchangeRate = new ISynthetixExchangeRates(exchangeRates, provider);
+    await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
 
-    const calcUnderlyingValues = await synthetixPriceFeed.calcUnderlyingValues
-      .args(newSynth1, utils.parseEther('1'))
-      .call();
+    // Synthetix rates
+    const { '0': expectedRate } = await synthetixExchangeRate.rateAndInvalid(utils.formatBytes32String('sBTC'));
+    const expectedAmount = synthUnit.mul(expectedRate).div(synthUnit); // i.e., just expectedRate
 
-    expect(calcUnderlyingValues).toMatchFunctionOutput(synthetixPriceFeed.calcUnderlyingValues, {
+    // Internal feed rates
+    const feedRate = await synthetixPriceFeed.calcUnderlyingValues.args(sbtc, synthUnit).call();
+    expect(feedRate).toMatchFunctionOutput(synthetixPriceFeed.calcUnderlyingValues.fragment, {
       underlyingAmounts_: [expectedAmount],
       underlyings_: [susd],
     });
+
+    // Assert gas
+    // Rounded up from 65676
+    const calcUnderlyingValuesTx = await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
+    expect(calcUnderlyingValuesTx).toCostLessThan(66000);
   });
 });
 
 describe('isSupportedAsset', () => {
   it('return false on invalid synth', async () => {
-    const {
-      synthetixPriceFeed,
-      primitives: { dai },
-    } = await provider.snapshot(snapshot);
+    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-    const isSupportedAsset = await synthetixPriceFeed.isSupportedAsset(dai);
+    const isSupportedAsset = await synthetixPriceFeed.isSupportedAsset(fork.config.primitives.dai);
 
     expect(isSupportedAsset).toBe(false);
   });
 
   it('returns true on valid synth', async () => {
-    const {
-      synths: { sbtc },
-      synthetixPriceFeed,
-    } = await provider.snapshot(snapshot);
+    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-    const isSupportedAsset = await synthetixPriceFeed.isSupportedAsset(sbtc);
+    const isSupportedAsset = await synthetixPriceFeed.isSupportedAsset(fork.config.synthetix.synths.sbtc);
 
     expect(isSupportedAsset).toBe(true);
   });
@@ -151,38 +194,43 @@ describe('isSupportedAsset', () => {
 describe('synths registry', () => {
   describe('addSynths', () => {
     it('does not allow a random caller', async () => {
-      const { arbitraryUser, synthetixPriceFeed, newSynth1, newSynth2 } = await provider.snapshot(snapshot);
+      const [arbitraryUser] = fork.accounts;
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
       await expect(
-        synthetixPriceFeed.connect(arbitraryUser).addSynths([newSynth1, newSynth2]),
+        synthetixPriceFeed
+          .connect(arbitraryUser)
+          .addSynths([fork.config.synthetix.synths.sbnb, fork.config.synthetix.synths.seth]),
       ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
     });
 
     it('does not allow an empty _synths param', async () => {
-      const { synthetixPriceFeed } = await provider.snapshot(snapshot);
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
       await expect(synthetixPriceFeed.addSynths([])).rejects.toBeRevertedWith('Empty _synths');
     });
 
     it('does not allow an already-set Synth', async () => {
-      const {
-        synths: { sbtc },
-        synthetixPriceFeed,
-      } = await provider.snapshot(snapshot);
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-      await expect(synthetixPriceFeed.addSynths([sbtc])).rejects.toBeRevertedWith('Value already set');
+      await expect(synthetixPriceFeed.addSynths([fork.config.synthetix.synths.sbtc])).rejects.toBeRevertedWith(
+        'Value already set',
+      );
     });
 
     it.todo('does not allow an asset without a currencyKey');
 
     it('adds multiple Synths and emits an event per added Synth', async () => {
-      const {
-        synthetixPriceFeed,
-        newSynth1,
-        newSynth2,
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      } = await provider.snapshot(snapshot);
+      const newSynth1 = fork.config.synthetix.synths.seth;
+      const newSynth2 = fork.config.synthetix.synths.sbtc;
+
+      const synthetixPriceFeed = await SynthetixPriceFeed.deploy(
+        fork.deployer,
+        fork.deployment.dispatcher,
+        fork.config.synthetix.addressResolver,
+        fork.config.synthetix.susd,
+        [],
+      );
 
       // The Synths should not be supported assets initially
       expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(false);
@@ -190,6 +238,9 @@ describe('synths registry', () => {
 
       // Add the new Synths
       const addSynthsTx = await synthetixPriceFeed.addSynths([newSynth1, newSynth2]);
+
+      const newSynth1CurrencyKey = await getCurrencyKey(newSynth1);
+      const newSynth2CurrencyKey = await getCurrencyKey(newSynth2);
 
       // The currencyKey should be stored for each Synth
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth1)).toBe(newSynth1CurrencyKey);
@@ -221,37 +272,31 @@ describe('synths registry', () => {
 
   describe('updateSynthCurrencyKeys', () => {
     it('does not allow an empty _synths param', async () => {
-      const { synthetixPriceFeed } = await provider.snapshot(snapshot);
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
       await expect(synthetixPriceFeed.updateSynthCurrencyKeys([])).rejects.toBeRevertedWith('Empty _synths');
     });
 
     it('does not allow an unset Synth', async () => {
-      const { synthetixPriceFeed, newSynth1 } = await provider.snapshot(snapshot);
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-      await expect(synthetixPriceFeed.updateSynthCurrencyKeys([newSynth1])).rejects.toBeRevertedWith('Synth not set');
-    });
-
-    it('does not allow a Synth that has the correct currencyKey', async () => {
-      const {
-        synths: { sbtc },
-        synthetixPriceFeed,
-      } = await provider.snapshot(snapshot);
-
-      await expect(synthetixPriceFeed.updateSynthCurrencyKeys([sbtc])).rejects.toBeRevertedWith(
-        'Synth has correct currencyKey',
+      await expect(synthetixPriceFeed.updateSynthCurrencyKeys([fork.config.primitives.dai])).rejects.toBeRevertedWith(
+        'Synth not set',
       );
     });
 
-    it('updates multiple Synths and emits an event per updated Synth (called by random user)', async () => {
-      const {
-        arbitraryUser,
-        synthetixPriceFeed,
-        newSynth1,
-        newSynth2,
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      } = await provider.snapshot(snapshot);
+    it('does not allow a Synth that has the correct currencyKey', async () => {
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
+
+      await expect(
+        synthetixPriceFeed.updateSynthCurrencyKeys([fork.config.synthetix.synths.sbtc]),
+      ).rejects.toBeRevertedWith('Synth has correct currencyKey');
+    });
+
+    xit('updates multiple Synths and emits an event per updated Synth (called by random user)', async () => {
+      /*
+      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
+      const [arbitraryUser] = fork.accounts;
 
       // Add the new Synths so they are supported
       await synthetixPriceFeed.addSynths([newSynth1, newSynth2]);
@@ -296,6 +341,57 @@ describe('synths registry', () => {
         prevCurrencyKey: newSynth2CurrencyKey,
         nextCurrencyKey: altSynth2CurrencyKey,
       });
+    */
+    });
+  });
+});
+
+describe('expected values', () => {
+  it('returns the expected value from the valueInterpreter (18 decimals quote)', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
+
+    const baseDecimals = await sbtc.decimals();
+    const quoteDecimals = await dai.decimals();
+
+    expect(baseDecimals).toEqBigNumber(18);
+    expect(quoteDecimals).toEqBigNumber(18);
+
+    // sbtc/usd price at Apr 6, 2020 had a price of $59,000
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06#panel>
+
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
+      .call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      isValid_: true,
+      value_: BigNumber.from('59031011334570209829948'),
+    });
+  });
+
+  it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+
+    const baseDecimals = await sbtc.decimals();
+    const quoteDecimals = await usdc.decimals();
+
+    expect(baseDecimals).toEqBigNumber(18);
+    expect(quoteDecimals).toEqBigNumber(6);
+
+    // sbtc/usd price at Apr 6, 2020 had a price of $59,000
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06#panel>
+
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
+      .call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: BigNumber.from('58891891970'),
+      isValid_: true,
     });
   });
 });

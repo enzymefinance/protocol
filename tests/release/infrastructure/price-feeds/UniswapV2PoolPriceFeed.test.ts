@@ -1,34 +1,83 @@
-import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
-import { deployProtocolFixture, UniswapV2Factory } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import {
+  ProtocolDeployment,
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  uniswapV2Lend,
+} from '@enzymefinance/testutils';
+import { BigNumber, utils } from 'ethers';
 
-async function snapshot() {
-  const { accounts, deployer, deployment, config } = await deployProtocolFixture();
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
-  return {
-    accounts,
-    deployer,
-    deployment,
-    config,
-  };
-}
+describe('derivative gas costs', () => {
+  it('adds to calcGav for weth-denominated fund', async () => {
+    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const denominationAsset = weth;
+    const [fundOwner, investor] = fork.accounts;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: weth,
+    });
+
+    const initialTokenAmount = utils.parseEther('1');
+
+    // Buy shares to add denomination asset
+    await buyShares({
+      comptrollerProxy,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount: initialTokenAmount,
+      seedBuyer: true,
+    });
+
+    // Calc base cost of calcGav with already tracked assets
+    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+
+    // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
+    await mln.transfer(vaultProxy, initialTokenAmount);
+    await uniswapV2Lend({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager: fork.deployment.integrationManager,
+      fundOwner,
+      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
+      tokenA: weth,
+      tokenB: mln,
+      amountADesired: initialTokenAmount.div(2),
+      amountBDesired: initialTokenAmount.div(2),
+      amountAMin: 1,
+      amountBMin: 1,
+      minPoolTokenAmount: 1,
+    });
+
+    // Get the calcGav() cost including the pool token
+    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+
+    // Assert gas
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(88000));
+  });
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      config: {
-        uniswap: { factory, pools },
-      },
-      deployment: { aggregatedDerivativePriceFeed, chainlinkPriceFeed, uniswapV2PoolPriceFeed, valueInterpreter },
-    } = await provider.snapshot(snapshot);
+    const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
 
-    expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(factory);
-    expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(aggregatedDerivativePriceFeed);
-    expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(chainlinkPriceFeed);
-    expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(valueInterpreter);
+    expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(fork.config.uniswap.factory);
+    expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(
+      fork.deployment.aggregatedDerivativePriceFeed,
+    );
+    expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(fork.deployment.chainlinkPriceFeed);
+    expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
 
-    for (const poolToken of Object.values(pools)) {
+    for (const poolToken of Object.values(fork.config.uniswap.pools)) {
       const pairContract = new IUniswapV2Pair(poolToken, provider);
       const token0 = await pairContract.token0();
       const token1 = await pairContract.token1();
@@ -46,40 +95,10 @@ describe('constructor', () => {
 });
 
 describe('calcUnderlyingValues', () => {
-  it('returns rate for 18 decimals underlying assets', async () => {
-    const {
-      config: {
-        uniswap: {
-          pools: { mlnWeth },
-        },
-      },
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
-    const poolToken = new IUniswapV2Pair(mlnWeth, provider);
-    const token0Address = await poolToken.token0();
-    const token1Address = await poolToken.token1();
-
-    const calcUnderlyingValues = await uniswapV2PoolPriceFeed.calcUnderlyingValues
-      .args(poolToken, utils.parseEther('1'))
-      .call();
-
-    expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['328411124723970509', '7122828229726532451'],
-      underlyings_: [token0Address, token1Address],
-    });
-  });
-
   it('returns rate for non-18 decimals underlying assets', async () => {
-    const {
-      config: {
-        uniswap: {
-          pools: { usdcWeth },
-        },
-      },
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
 
-    const poolToken = new IUniswapV2Pair(usdcWeth, provider);
+    const poolToken = new IUniswapV2Pair(fork.config.uniswap.pools.usdcWeth, provider);
     const token0Address = await poolToken.token0();
     const token1Address = await poolToken.token1();
 
@@ -92,200 +111,105 @@ describe('calcUnderlyingValues', () => {
       underlyings_: [token0Address, token1Address],
     });
   });
-});
 
-describe('addPoolTokens', () => {
-  it('does not allow a random caller', async () => {
-    const {
-      accounts: { 0: randomUser },
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
+  it('returns the correct rate for two 18-decimal primitive tokens', async () => {
+    const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
 
-    await expect(uniswapV2PoolPriceFeed.connect(randomUser).addPoolTokens([randomAddress()])).rejects.toBeRevertedWith(
-      'Only the Dispatcher owner can call this function',
-    );
-  });
+    const token0Address = await uniswapPair.token0();
+    const token0RatioAmount = utils.parseEther('1');
+    const token1Address = await uniswapPair.token1();
 
-  it('does not allow an empty _poolTokens param', async () => {
-    const {
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
+    const poolTokenUnit = utils.parseEther('1');
 
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([])).rejects.toBeRevertedWith('Empty _poolTokens');
-  });
-
-  it('does not allow an already-set poolToken', async () => {
-    const {
-      config: {
-        uniswap: {
-          pools: { kncWeth },
-        },
-      },
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
-
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([kncWeth])).rejects.toBeRevertedWith('Value already set');
-  });
-
-  it('does not allow unsupportable pool tokens', async () => {
-    const {
-      deployer,
-      config,
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
-
-    const revertReason = 'Unsupported pool token';
-    const ceth = new StandardToken(config.compound.ceth, provider);
-    const cdai = new StandardToken(config.compound.ctokens.cdai, provider);
-    const uniswapV2Factory = new UniswapV2Factory(config.uniswap.factory, deployer);
-
-    // cdai-ceth
-    await uniswapV2Factory.createPair(cdai, ceth);
-    const derivative0Derivative1Pair = await uniswapV2Factory.getPair(cdai, ceth);
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([derivative0Derivative1Pair])).rejects.toBeRevertedWith(
-      revertReason,
-    );
-
-    // usdt-hez pair
-    const primitive0Unsupported1Pair = '0xf6c4e4f339912541d3f8ed99dba64a1372af5e5b'; // USDT-HEZ pair
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([primitive0Unsupported1Pair])).rejects.toBeRevertedWith(
-      revertReason,
-    );
-
-    // ousd-usdt pair
-    const Unsupported0Primitive1Pair = '0xcc01d9d54d06b6a0b6d09a9f79c3a6438e505f71';
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([Unsupported0Primitive1Pair])).rejects.toBeRevertedWith(
-      revertReason,
-    );
-  });
-
-  it('adds pool tokens and emits an event per added pool token', async () => {
-    const {
-      deployer,
-      config,
-      deployment: { uniswapV2PoolPriceFeed },
-    } = await provider.snapshot(snapshot);
-
-    const bat = new StandardToken(config.primitives.bat, provider);
-    const mln = new StandardToken(config.primitives.mln, provider);
-    const weth = new StandardToken(config.weth, provider);
-    const cdai = new StandardToken(config.compound.ctokens.cdai, provider);
-
-    // Create valid pool tokens (all possible valid types)
-
-    const uniswapV2Factory = new UniswapV2Factory(config.uniswap.factory, deployer);
-
-    // bat-mln
-    await uniswapV2Factory.createPair(bat, mln);
-    const batMln = await uniswapV2Factory.getPair(bat, mln);
-    const batMlnPair = new IUniswapV2Pair(batMln, provider);
-
-    await expect(batMlnPair.token0()).resolves.toMatchAddress(bat);
-    await expect(batMlnPair.token1()).resolves.toMatchAddress(mln);
-
-    // bat-cdai
-    await uniswapV2Factory.createPair(bat, cdai);
-    const batCdai = await uniswapV2Factory.getPair(bat, cdai);
-    const batCdaiPair = new IUniswapV2Pair(batCdai, provider);
-
-    await expect(batCdaiPair.token0()).resolves.toMatchAddress(bat);
-    await expect(batCdaiPair.token1()).resolves.toMatchAddress(cdai);
-
-    // cdai-weth
-    const cdaiWeth = await uniswapV2Factory.getPair(cdai, weth);
-    const cdaiWethPair = new IUniswapV2Pair(cdaiWeth, provider);
-
-    await expect(cdaiWethPair.token0()).resolves.toMatchAddress(cdai);
-    await expect(cdaiWethPair.token1()).resolves.toMatchAddress(weth);
-
-    const primitive0Primitive1Pair = batMln;
-    const primitive0Derivative1Pair = batCdai;
-    const derivative0Primitive1Pair = cdaiWeth;
-
-    // The pool tokens should not be supported assets initially
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Primitive1Pair)).toBe(false);
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Derivative1Pair)).toBe(false);
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(derivative0Primitive1Pair)).toBe(false);
-
-    // Add the new pool tokens
-    const addPoolTokensTx = await uniswapV2PoolPriceFeed.addPoolTokens([
-      primitive0Primitive1Pair,
-      primitive0Derivative1Pair,
-      derivative0Primitive1Pair,
-    ]);
-
-    // Token info should be stored for each pool token (also validates getPoolTokenUnderlyings)
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(primitive0Primitive1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenInfo,
-      {
-        token0: bat,
-        token1: mln,
-        token0Decimals: await bat.decimals(),
-        token1Decimals: await mln.decimals(),
-      },
-    );
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenUnderlyings(primitive0Primitive1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenUnderlyings,
-      {
-        token0_: bat,
-        token1_: mln,
-      },
-    );
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(primitive0Derivative1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenInfo,
-      {
-        token0: bat,
-        token1: cdai,
-        token0Decimals: await bat.decimals(),
-        token1Decimals: await cdai.decimals(),
-      },
-    );
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenUnderlyings(primitive0Derivative1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenUnderlyings,
-      {
-        token0_: bat,
-        token1_: cdai,
-      },
-    );
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(derivative0Primitive1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenInfo,
-      {
-        token0: cdai,
-        token1: weth,
-        token0Decimals: await cdai.decimals(),
-        token1Decimals: await weth.decimals(),
-      },
-    );
-    expect(await uniswapV2PoolPriceFeed.getPoolTokenUnderlyings(derivative0Primitive1Pair)).toMatchFunctionOutput(
-      uniswapV2PoolPriceFeed.getPoolTokenUnderlyings,
-      {
-        token0_: cdai,
-        token1_: weth,
-      },
-    );
-
-    // The tokens should now be supported assets
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Primitive1Pair)).toBe(true);
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(primitive0Derivative1Pair)).toBe(true);
-    expect(await uniswapV2PoolPriceFeed.isSupportedAsset(derivative0Primitive1Pair)).toBe(true);
-
-    // The correct event should have been emitted for each pool token
-    const events = extractEvent(addPoolTokensTx, 'PoolTokenAdded');
-    expect(events.length).toBe(3);
-    expect(events[0]).toMatchEventArgs({
-      poolToken: primitive0Primitive1Pair,
-      token0: bat,
-      token1: mln,
+    const calcUnderlyingValuesRes = await uniswapV2PoolPriceFeed.calcUnderlyingValues
+      .args(uniswapPair, poolTokenUnit)
+      .call();
+    expect(calcUnderlyingValuesRes).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
+      underlyingAmounts_: [expect.any(String), expect.any(String)],
+      underlyings_: [token0Address, token1Address],
     });
-    expect(events[1]).toMatchEventArgs({
-      poolToken: primitive0Derivative1Pair,
-      token0: bat,
-      token1: cdai,
+
+    // Confirms arb has moved the price in the correct direction
+
+    // Get the rate ratio of the Uniswap pool
+    const getReservesRes = await uniswapPair.getReserves();
+    const poolRateRatio = getReservesRes[0].mul(utils.parseEther('1')).div(getReservesRes[1]);
+
+    // Get the trusted rate ratio based on trusted prices
+    const calcCanonicalAssetValueRes = await valueInterpreter.calcCanonicalAssetValue
+      .args(token0Address, token0RatioAmount, token1Address)
+      .call();
+    const trustedUnderlyingsRateRatio = token0RatioAmount
+      .mul(utils.parseEther('1'))
+      .div(calcCanonicalAssetValueRes.value_);
+
+    // Get the final calculated canonical rate
+    const canonicalUnderlyingsRateRatio = calcUnderlyingValuesRes.underlyingAmounts_[0]
+      .mul(utils.parseEther('1'))
+      .div(calcUnderlyingValuesRes.underlyingAmounts_[1]);
+
+    // Final canonical rate should be pushed towards the trusted rate ratio
+    if (poolRateRatio > trustedUnderlyingsRateRatio) {
+      expect(canonicalUnderlyingsRateRatio).toBeLtBigNumber(poolRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(trustedUnderlyingsRateRatio);
+    } else if (poolRateRatio < trustedUnderlyingsRateRatio) {
+      expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(poolRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeLtBigNumber(trustedUnderlyingsRateRatio);
+    } else {
+      expect(canonicalUnderlyingsRateRatio).toEqBigNumber(poolRateRatio);
+    }
+  });
+
+  describe('expected values', () => {
+    it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
+      const valueInterpreter = fork.deployment.valueInterpreter;
+      const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+      const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, provider);
+
+      const baseDecimals = await usdcWeth.decimals();
+      const quoteDecimals = await usdc.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(6);
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
+        .call();
+
+      // usdc/weth on Apr 6, 2021 was worth about $137M
+      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        isValid_: true,
+        value_: 136924790907934,
+      });
     });
-    expect(events[2]).toMatchEventArgs({
-      poolToken: derivative0Primitive1Pair,
-      token0: cdai,
-      token1: weth,
+
+    it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
+      const valueInterpreter = fork.deployment.valueInterpreter;
+      const dai = new StandardToken(fork.config.primitives.dai, provider);
+      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, provider);
+
+      const baseDecimals = await kncWeth.decimals();
+      const quoteDecimals = await dai.decimals();
+
+      expect(baseDecimals).toEqBigNumber(18);
+      expect(quoteDecimals).toEqBigNumber(18);
+
+      const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+        .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
+        .call();
+
+      // knc/weth on Apr 6, 2021 was worth about $220
+      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
+      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+        value_: BigNumber.from('220264591769758477782'),
+        isValid_: true,
+      });
     });
+
+    it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');
+    it.todo('[adjust the above tests to assert exact rate calcs]');
   });
 });

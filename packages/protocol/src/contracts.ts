@@ -86,23 +86,12 @@ export * from './codegen/TestSinglePeggedDerivativePriceFeed';
 export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
 
 // Mocks
-
 export * from './codegen/MockVaultLib';
-export * from './codegen/CentralizedRateProvider';
-export * from './codegen/MockCEtherIntegratee';
-export * from './codegen/MockCTokenIntegratee';
 export * from './codegen/MockGenericAdapter';
 export * from './codegen/MockGenericIntegratee';
-export * from './codegen/MockChainlinkPriceSource';
 export * from './codegen/MockToken';
 export * from './codegen/MockReentrancyToken';
-export * from './codegen/MockSynthetixToken';
-export * from './codegen/MockSynthetixIntegratee';
-export * from './codegen/MockSynthetixPriceSource';
-export * from './codegen/MockZeroExV2Integratee';
-export * from './codegen/MockUniswapV2Integratee';
-export * from './codegen/MockUniswapV2PriceSource';
-export * from './codegen/WETH';
+export * from './codegen/MockChainlinkPriceSource';
 
 // External interfaces
 export * from './codegen/IAlphaHomoraV1Bank';
@@ -116,23 +105,23 @@ export * from './codegen/ICurveRegistry';
 export * from './codegen/ICurveStableSwapSteth';
 export * from './codegen/IIdleTokenV4';
 export * from './codegen/ISynthetixAddressResolver';
-export * from './codegen/ISynthetixDelegateApprovals';
 export * from './codegen/ISynthetixExchangeRates';
 export * from './codegen/ISynthetixExchanger';
+export * from './codegen/ISynthetixProxyERC20';
+export * from './codegen/ISynthetixSynth';
 export * from './codegen/IUniswapV2Factory';
 export * from './codegen/IUniswapV2Pair';
 export * from './codegen/IUniswapV2Router2';
 
-// prettier-ignore
 export interface StandardToken extends Contract<StandardToken> {
-  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
-  balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>
-  decimals: Call<() => BigNumber, Contract<any>>
-  symbol: Call<() => string, Contract<any>>
-  totalSupply: Call<() => BigNumber, Contract<any>>
-  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
-  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>
+  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>;
+  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>;
+  decimals: Call<() => BigNumber, Contract<any>>;
+  symbol: Call<() => string, Contract<any>>;
+  totalSupply: Call<() => BigNumber, Contract<any>>;
+  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
 }
 
 export const StandardToken = contract<StandardToken>()`
@@ -146,6 +135,36 @@ export const StandardToken = contract<StandardToken>()`
   function totalSupply() view returns (uint256)
   function transfer(address recipient, uint256 amount) returns (bool)
   function transferFrom(address sender, address recipient, uint256 amount) returns (bool)
+`;
+
+export interface WETH extends Contract<WETH> {
+  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>;
+  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>;
+  decimals: Call<() => BigNumber, Contract<any>>;
+  symbol: Call<() => string, Contract<any>>;
+  totalSupply: Call<() => BigNumber, Contract<any>>;
+  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  deposit: Send<() => void, Contract<any>>;
+  withdraw: Send<(amount: BigNumberish) => void, Contract<any>>;
+}
+
+export const WETH = contract<WETH>()`
+  event Approval(address indexed owner, address indexed spender, uint256 value)
+  event Transfer(address indexed from, address indexed to, uint256 value)
+  event Deposit(address indexed destination, uint256 value)
+  event Withdrawal(address indexed source, uint256 value)
+  function allowance(address owner, address spender) view returns (uint256)
+  function approve(address spender, uint256 amount) returns (bool)
+  function balanceOf(address account) view returns (uint256)
+  function decimals() view returns (uint8)
+  function symbol() view returns (string)
+  function totalSupply() view returns (uint256)
+  function transfer(address recipient, uint256 amount) returns (bool)
+  function transferFrom(address sender, address recipient, uint256 amount) returns (bool)
+  function deposit()
+  function withdraw(uint256 amount)
 `;
 
 export interface UniswapV2Router extends Contract<UniswapV2Router> {

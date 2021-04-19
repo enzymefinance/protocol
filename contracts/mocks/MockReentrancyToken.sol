@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../release/core/fund/comptroller/ComptrollerLib.sol";
+import "../release/core/fund/comptroller/ComptrollerLib.sol";
 import "./MockToken.sol";
 
 /// @title MockReentrancyToken Contract

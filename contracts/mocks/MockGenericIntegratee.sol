@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../utils/SwapperBase.sol";
+import "./utils/SwapperBase.sol";
 
 contract MockGenericIntegratee is SwapperBase {
     function swap(

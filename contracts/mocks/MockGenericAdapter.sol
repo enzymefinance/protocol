@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../release/extensions/integration-manager/integrations/utils/AdapterBase.sol";
+import "../release/extensions/integration-manager/integrations/utils/AdapterBase.sol";
 
 /// @title IMockGenericIntegratee Interface
 /// @author Enzyme Council <security@enzyme.finance>
