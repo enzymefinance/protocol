@@ -864,8 +864,8 @@ describe('redeem', () => {
       expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
     }
 
-    // Rounding up from 733979
-    expect(redeemReceipt).toCostLessThan('734500');
+    // Rounding up from 735270
+    expect(redeemReceipt).toCostLessThan('736000');
   });
 });
 

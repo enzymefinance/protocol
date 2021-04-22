@@ -202,7 +202,11 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
-    /// @dev This will also pay out any due gov token rewards
+    /// @dev This will also pay out any due gov token rewards.
+    /// We use the full IdleToken balance of the current contract rather than the user input
+    /// for the corner case of a prior balance existing in the current contract, which would
+    /// throw off the per-user avg price of the IdleToken used by Idle, and would leave the
+    /// initial token balance in the current contract post-tx.
     function redeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
@@ -212,11 +216,9 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (address idleToken, uint256 outgoingIdleTokenAmount, ) = __decodeRedeemCallArgs(
-            _encodedCallArgs
-        );
+        (address idleToken, , ) = __decodeRedeemCallArgs(_encodedCallArgs);
 
-        __idleV4Redeem(idleToken, outgoingIdleTokenAmount);
+        __idleV4Redeem(idleToken, ERC20(idleToken).balanceOf(address(this)));
 
         __pushFullAssetBalances(_vaultProxy, __idleV4GetRewardsTokens(idleToken));
     }
