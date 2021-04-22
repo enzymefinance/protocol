@@ -1,10 +1,9 @@
-import { AddressLike, Contract, contract, Send } from '@enzymefinance/ethers';
+import { AddressLike, Contract, contract, resolveAddress, Send } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
   CompoundAdapter,
   compoundArgs,
-  ComptrollerLib,
   IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
@@ -12,6 +11,7 @@ import {
   VaultLib,
 } from '@enzymefinance/protocol';
 import { BigNumberish, utils } from 'ethers';
+import { ComptrollerLib } from '../../../../../protocol/src/codegen/ComptrollerLib';
 
 export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
   claimComp: Send<(_account: AddressLike) => void>;
@@ -38,7 +38,7 @@ export async function compoundLend({
   tokenAmount?: BigNumberish;
   cTokenAmount?: BigNumberish;
 }) {
-  const lendArgs = await compoundArgs({
+  const lendArgs = compoundArgs({
     cToken,
     outgoingAssetAmount: tokenAmount,
     minIncomingAssetAmount: cTokenAmount,
@@ -75,13 +75,13 @@ export async function compoundRedeem({
   tokenAmount?: BigNumberish;
   cTokenAmount?: BigNumberish;
 }) {
-  const redeemArgs = await compoundArgs({
-    cToken,
+  const redeemArgs = compoundArgs({
+    cToken: resolveAddress(cToken),
     outgoingAssetAmount: cTokenAmount,
     minIncomingAssetAmount: tokenAmount,
   });
 
-  const callArgs = await callOnIntegrationArgs({
+  const callArgs = callOnIntegrationArgs({
     adapter: compoundAdapter,
     selector: redeemSelector,
     encodedCallArgs: redeemArgs,

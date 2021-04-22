@@ -2,20 +2,18 @@
 
 /*
     This file is part of the Enzyme Protocol.
-
     (c) Enzyme Council <council@enzyme.finance>
-
     For the full license information, please view the LICENSE
     file that was distributed with this source code.
 */
 
 pragma solidity ^0.6.12;
 
-/// @title ICEther Interface
+/// @title ICompoundComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Minimal interface for interactions with Compound Ether
-interface ICEther {
-    function mint() external payable;
+/// @notice Minimal interface for interactions with Compound Comptroller
+interface ICompoundComptroller {
+    function enterMarkets(address[] calldata) external returns (uint256[] memory);
 
-    function repayBorrow() external payable;
+    function exitMarket(address) external returns (uint256);
 }

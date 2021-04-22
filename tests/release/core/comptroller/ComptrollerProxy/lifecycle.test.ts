@@ -25,11 +25,14 @@ async function snapshot() {
   await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
 
   // Deploy mock extensions
+  const mockDebtPositionManager = await IExtension.mock(deployer);
   const mockFeeManager = await IExtension.mock(deployer);
   const mockIntegrationManager = await IExtension.mock(deployer);
   const mockPolicyManager = await IExtension.mock(deployer);
 
   await Promise.all([
+    mockDebtPositionManager.activateForFund.returns(undefined),
+    mockDebtPositionManager.deactivateForFund.returns(undefined),
     mockFeeManager.setConfigForFund.returns(undefined),
     mockFeeManager.activateForFund.returns(undefined),
     mockFeeManager.deactivateForFund.returns(undefined),
@@ -45,6 +48,7 @@ async function snapshot() {
     deployment.dispatcher,
     mockFundDeployer,
     randomAddress(), // ValueInterpreter
+    mockDebtPositionManager,
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,

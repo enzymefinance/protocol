@@ -957,6 +957,7 @@ describe('integration', () => {
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
+        debtPositionManager,
         dispatcher,
         feeManager,
         fundDeployer,
@@ -996,6 +997,7 @@ describe('integration', () => {
       deployer,
       assetFinalityResolver,
       chainlinkPriceFeed,
+      debtPositionManager,
       dispatcher,
       feeManager,
       integrationManager,

@@ -439,6 +439,7 @@ describe('integration tests', () => {
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
+        debtPositionManager,
         dispatcher,
         feeManager,
         fundDeployer,
@@ -477,6 +478,7 @@ describe('integration tests', () => {
       deployer,
       assetFinalityResolver,
       chainlinkPriceFeed,
+      debtPositionManager,
       dispatcher,
       feeManager,
       integrationManager,

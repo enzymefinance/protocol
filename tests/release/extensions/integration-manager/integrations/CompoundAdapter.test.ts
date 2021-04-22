@@ -277,8 +277,8 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    // Rounded up from 540209
-    expect(lendReceipt).toCostLessThan('541000');
+    // Rounded up from 541049
+    expect(lendReceipt).toCostLessThan('542000');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -303,8 +303,8 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    // Rounded up from 460297
-    expect(lendReceipt).toCostLessThan('461000');
+    // Rounded up from 461057
+    expect(lendReceipt).toCostLessThan('462000');
   });
 });
 

@@ -22,6 +22,7 @@ export * from './codegen/ValueInterpreter';
 
 // Extensions
 export * from './codegen/IExtension';
+export * from './codegen/DebtPositionManager';
 export * from './codegen/FeeManager';
 export * from './codegen/IntegrationManager';
 export * from './codegen/PolicyManager';
@@ -58,6 +59,9 @@ export * from './codegen/SynthetixAdapter';
 export * from './codegen/TrackedAssetsAdapter';
 export * from './codegen/UniswapV2Adapter';
 export * from './codegen/ZeroExV2Adapter';
+
+// Debt positions
+export * from './codegen/CompoundDebtPosition';
 
 // Fees
 export * from './codegen/IFee';

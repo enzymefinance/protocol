@@ -44,6 +44,7 @@ describe('destruct', () => {
       randomAddress(),
       randomAddress(),
       randomAddress(),
+      randomAddress(),
     );
 
     // Calling the ComptrollerLib directly should fail

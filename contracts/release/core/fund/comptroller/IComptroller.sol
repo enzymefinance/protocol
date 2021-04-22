@@ -22,7 +22,13 @@ interface IComptroller {
         ApproveAssetSpender,
         WithdrawAssetTo,
         AddTrackedAsset,
-        RemoveTrackedAsset
+        RemoveTrackedAsset,
+        RemoveCollateralAsset,
+        RemoveDebtPosition,
+        RepayBorrowedAsset,
+        AddCollateralAsset,
+        BorrowAsset,
+        AddDebtPosition
     }
 
     function activate(address, bool) external;

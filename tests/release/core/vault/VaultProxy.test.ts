@@ -309,6 +309,97 @@ describe('removeTrackedAsset', () => {
   });
 });
 
+describe('addDebtPosition', () => {
+  it('can only be called by the accessor', async () => {
+    const [fundOwner, arbitraryUser] = fork.accounts;
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+    });
+
+    await expect(vaultProxy.connect(arbitraryUser).addDebtPosition(randomAddress())).rejects.toBeRevertedWith(
+      'Only the designated accessor can make this call',
+    );
+  });
+
+  it('works as expected', async () => {
+    const [fundOwner, fundAccessor] = fork.accounts;
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+
+    const vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+
+    const [debtPositionAddress1, debtPositionAddress2] = [randomAddress(), randomAddress()];
+
+    const receipt = await vaultProxy.addDebtPosition(debtPositionAddress1);
+    await vaultProxy.addDebtPosition(debtPositionAddress2);
+
+    assertEvent(receipt, 'DebtPositionAdded', {
+      debtPosition: debtPositionAddress1,
+    });
+
+    const debtPositions = await vaultProxy.getActiveDebtPositions();
+    expect(debtPositions).toMatchFunctionOutput(vaultProxy.getActiveDebtPositions, [
+      debtPositionAddress1,
+      debtPositionAddress2,
+    ]);
+
+    const isActiveDebtPosition1 = await vaultProxy.isActiveDebtPosition(debtPositionAddress1);
+    const isActiveDebtPosition2 = await vaultProxy.isActiveDebtPosition(debtPositionAddress2);
+
+    expect(isActiveDebtPosition1).toBe(true);
+    expect(isActiveDebtPosition2).toBe(true);
+  });
+});
+
+describe('removeDebtPosition', () => {
+  it('can only be called by the accessor', async () => {
+    const [fundOwner, arbitraryUser] = fork.accounts;
+
+    const { vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+    });
+
+    await expect(vaultProxy.connect(arbitraryUser).removeDebtPosition(randomAddress())).rejects.toBeRevertedWith(
+      'Only the designated accessor can make this call',
+    );
+  });
+
+  it('works as expected', async () => {
+    const [fundOwner, fundAccessor] = fork.accounts;
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+
+    const vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+
+    const [debtPositionAddress] = [randomAddress()];
+
+    await vaultProxy.addDebtPosition(debtPositionAddress);
+    await vaultProxy.removeDebtPosition(debtPositionAddress);
+
+    const debtPositions = await vaultProxy.getActiveDebtPositions();
+    expect(debtPositions).toMatchFunctionOutput(vaultProxy.getActiveDebtPositions, []);
+
+    const isActiveDebtPosition = await vaultProxy.isActiveDebtPosition(debtPositionAddress);
+
+    expect(isActiveDebtPosition).toBe(false);
+  });
+});
+
 describe('withdrawAssetTo', () => {
   it('can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor, arbitraryUser] = fork.accounts;

@@ -19,6 +19,7 @@ const projects = [
   project('infrastructure', ['tests/release/infrastructure']),
   project('policy', ['tests/release/extensions/policy-manager']),
   project('integration', ['tests/release/extensions/integration-manager']),
+  project('debt', ['tests/release/extensions/debt-position-manager']),
   project('fee', ['tests/release/extensions/fee-manager']),
   project('peripheral', ['tests/release/peripheral']),
   project('e2e', ['tests/release/e2e']),

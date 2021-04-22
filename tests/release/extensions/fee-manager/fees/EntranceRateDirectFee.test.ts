@@ -172,6 +172,7 @@ describe('integration', () => {
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
+        debtPositionManager,
         dispatcher,
         entranceRateDirectFee,
         feeManager,
@@ -205,6 +206,7 @@ describe('integration', () => {
       deployer,
       assetFinalityResolver,
       chainlinkPriceFeed,
+      debtPositionManager,
       dispatcher,
       feeManager,
       integrationManager,
@@ -265,6 +267,7 @@ describe('integration', () => {
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
+        debtPositionManager,
         dispatcher,
         entranceRateDirectFee,
         feeManager,
@@ -297,6 +300,7 @@ describe('integration', () => {
       deployer,
       assetFinalityResolver,
       chainlinkPriceFeed,
+      debtPositionManager,
       dispatcher,
       feeManager,
       integrationManager,

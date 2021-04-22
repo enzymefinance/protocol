@@ -148,6 +148,8 @@ const ctokens = {
   czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
 } as const;
 
+const compoundComptroller = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
+
 const atokens = {
   aaave: ['0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B', primitives.aave] as [string, string],
   abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
@@ -237,6 +239,7 @@ const mainnetConfig: DeploymentConfig = {
   compound: {
     ceth: '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
     ctokens,
+    comptroller: compoundComptroller
   },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',

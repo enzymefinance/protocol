@@ -57,6 +57,7 @@ export interface DeploymentConfig {
   };
   compound: {
     ceth: string;
+    comptroller: string;
     ctokens: Record<string, string>;
   };
   idle: {

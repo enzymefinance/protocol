@@ -17,6 +17,7 @@ import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
 import "../../../interfaces/IWETH.sol";
 import "../comptroller/IComptroller.sol";
+import "../debt-positions/IDebtPosition.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract
@@ -38,7 +39,7 @@ contract VaultLib is VaultLibBase2, IVault {
     address private immutable WETH_TOKEN;
 
     modifier notShares(address _asset) {
-        require(_asset != address(this), "Cannot act on shares");
+        __assertNotShares(_asset);
         _;
     }
 
@@ -150,6 +151,37 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
+    /// @notice Adds a new debt position to the fund
+    /// @param _debtPosition The debt position to add
+    /// TODO: Decide whether or not it makes sense to impose a debt position limit
+    function addDebtPosition(address _debtPosition) external override onlyAccessor {
+        if (!isActiveDebtPosition(_debtPosition)) {
+            debtPositionToIsActive[_debtPosition] = true;
+            activeDebtPositions.push(_debtPosition);
+        }
+
+        emit DebtPositionAdded(_debtPosition);
+    }
+
+    /// @notice Adds collateral assets to a specific debt position
+    /// @param _debtPosition The debt position address
+    /// @param _assets The assets to add as collateral
+    /// @param _amounts The amounts of collateral to be added
+    /// @param _data Additional data to be processed by the debt position
+    function addCollateralAssets(
+        address _debtPosition,
+        address[] memory _assets,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) external override onlyAccessor {
+        for (uint256 i; i < _assets.length; i++) {
+            __assertNotShares(_assets[i]);
+            ERC20(_assets[i]).safeTransfer(_debtPosition, _amounts[i]);
+        }
+
+        IDebtPosition(_debtPosition).addCollateralAssets(_assets, _amounts, _data);
+    }
+
     /// @notice Grants an allowance to a spender to use the fund's asset
     /// @param _asset The asset for which to grant an allowance
     /// @param _target The spender of the allowance
@@ -160,6 +192,20 @@ contract VaultLib is VaultLibBase2, IVault {
         uint256 _amount
     ) external override onlyAccessor notShares(_asset) {
         ERC20(_asset).approve(_target, _amount);
+    }
+
+    /// @notice Borrows a set of assets from a specific debt position
+    /// @param _debtPosition The debt position address
+    /// @param _assets The assets to borrow
+    /// @param _amounts The amounts of assets to be borrowed
+    /// @param _data Additional data to be processed by the debt position
+    function borrowAssets(
+        address _debtPosition,
+        address[] memory _assets,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) external override onlyAccessor {
+        IDebtPosition(_debtPosition).borrowAssets(_assets, _amounts, _data);
     }
 
     /// @notice Makes an arbitrary call with this contract as the sender
@@ -178,6 +224,60 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @param _asset The asset to remove
     function removeTrackedAsset(address _asset) external override onlyAccessor {
         __removeTrackedAsset(_asset);
+    }
+
+    /// @notice Removes an amount of collateral assets from a specific debt position
+    /// @param _debtPosition The debt position address
+    /// @param _assets The assets to remove as collateral
+    /// @param _amounts The amounts of collateral to be removed
+    /// @param _data Additional data to be processed by the debt position
+    function removeCollateralAssets(
+        address _debtPosition,
+        address[] memory _assets,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) external override onlyAccessor {
+        IDebtPosition(_debtPosition).removeCollateralAssets(_assets, _amounts, _data);
+    }
+
+    /// @notice Removes a debt position from the fund
+    /// @param _debtPosition The debt position to remove
+    function removeDebtPosition(address _debtPosition) external override onlyAccessor {
+        if (isActiveDebtPosition(_debtPosition)) {
+            debtPositionToIsActive[_debtPosition] = false;
+
+            uint256 debtPositionsCount = activeDebtPositions.length;
+            for (uint256 i; i < debtPositionsCount; i++) {
+                if (activeDebtPositions[i] == _debtPosition) {
+                    if (i < debtPositionsCount - 1) {
+                        activeDebtPositions[i] = activeDebtPositions[debtPositionsCount - 1];
+                    }
+                    activeDebtPositions.pop();
+                    break;
+                }
+            }
+
+            emit DebtPositionRemoved(_debtPosition);
+        }
+    }
+
+    /// @notice Repays an amount of assets from a specific debt position
+    /// @param _debtPosition The debt position address
+    /// @param _assets The assets to be repaid
+    /// @param _amounts The amounts to be repaid
+    /// @param _data Additional data to be processed by the debt position
+    function repayBorrowedAssets(
+        address _debtPosition,
+        address[] memory _assets,
+        uint256[] memory _amounts,
+        bytes memory _data
+    ) external override onlyAccessor {
+        for (uint256 i; i < _assets.length; i++) {
+            __assertNotShares(_assets[i]);
+            ERC20(_assets[i]).safeTransfer(_debtPosition, _amounts[i]);
+        }
+
+        IDebtPosition(_debtPosition).repayBorrowedAssets(_assets, _amounts, _data);
     }
 
     /// @notice Withdraws an asset from the VaultProxy to a given account
@@ -206,7 +306,7 @@ contract VaultLib is VaultLibBase2, IVault {
             assetToIsTracked[_asset] = false;
 
             uint256 trackedAssetsCount = trackedAssets.length;
-            for (uint256 i = 0; i < trackedAssetsCount; i++) {
+            for (uint256 i; i < trackedAssetsCount; i++) {
                 if (trackedAssets[i] == _asset) {
                     if (i < trackedAssetsCount - 1) {
                         trackedAssets[i] = trackedAssets[trackedAssetsCount - 1];
@@ -281,6 +381,11 @@ contract VaultLib is VaultLibBase2, IVault {
         return super.transferFrom(_sender, _recipient, _amount);
     }
 
+    /// @dev Checks that assets are not shares
+    function __assertNotShares(address _asset) private view {
+        require(_asset != address(this), "Cannot act on shares");
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -315,10 +420,33 @@ contract VaultLib is VaultLibBase2, IVault {
         return owner;
     }
 
+    /// @notice Gets the `debtPositions` variable
+    /// @return debtPositions_ The `debtPositions` variable value
+    function getActiveDebtPositions()
+        external
+        view
+        override
+        returns (address[] memory debtPositions_)
+    {
+        return activeDebtPositions;
+    }
+
     /// @notice Gets the `trackedAssets` variable
     /// @return trackedAssets_ The `trackedAssets` variable value
     function getTrackedAssets() external view override returns (address[] memory trackedAssets_) {
         return trackedAssets;
+    }
+
+    /// @notice Check whether a debt position is active on the vault
+    /// @param _debtPosition The debtPosition to check
+    /// @return isActiveDebtPosition_ True if the address is an active debt position on the vault
+    function isActiveDebtPosition(address _debtPosition)
+        public
+        view
+        override
+        returns (bool isActiveDebtPosition_)
+    {
+        return debtPositionToIsActive[_debtPosition];
     }
 
     /// @notice Gets the `WETH_TOKEN` variable
