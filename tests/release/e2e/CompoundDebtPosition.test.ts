@@ -107,7 +107,6 @@ describe('addCollateralAssets', () => {
 
     const debtPositionCollateralBalanceBefore = await cdai.balanceOf(compoundDebtPosition.address);
     const vaultProxyCollateralBalanceBefore = await cdai.balanceOf(vaultProxyUsed.address);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
 
     // Add collateral twice to check it does not fail calling markets twice with the same assets
     await addCollateral({
@@ -130,22 +129,17 @@ describe('addCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
-    // Rounding up from 198266
-    expect(addCollateralReceipt).toCostLessThan('199000');
-
     const debtPositionCollateralBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
+    const vaultProxyCollateralBalanceAfter = await cdai.balanceOf(vaultProxyUsed.address);
+
+    // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
     expect(debtPositionCollateralBalanceAfter.sub(debtPositionCollateralBalanceBefore)).toEqBigNumber(
       collateralAmounts[0],
     );
-
-    const vaultProxyCollateralBalanceAfter = await cdai.balanceOf(vaultProxyUsed.address);
     expect(vaultProxyCollateralBalanceBefore.sub(vaultProxyCollateralBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
 
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
-    expect(gavAfter).toMatchFunctionOutput(comptrollerProxyUsed.calcGav.fragment, {
-      gav_: gavBefore.gav_,
-      isValid_: true,
-    });
+    // Rounding up from 198266
+    expect(addCollateralReceipt).toCostLessThan('199000');
 
     const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
     expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -160,8 +154,8 @@ describe('addCollateralAssets', () => {
     const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
     const collateralAssets = [ceth.address];
 
-    const collateralBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
+    const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);
+    const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
 
     await addCollateral({
       comptrollerProxy: comptrollerProxyUsed,
@@ -173,14 +167,12 @@ describe('addCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const collateralBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
-    expect(collateralBalanceAfter.sub(collateralBalanceBefore)).toEqBigNumber(collateralAmounts[0]);
+    const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
+    const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
 
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
-    expect(gavAfter).toMatchFunctionOutput(comptrollerProxyUsed.calcGav.fragment, {
-      gav_: gavBefore.gav_,
-      isValid_: true,
-    });
+    // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
+    expect(debtPositionBalanceAfter.sub(debtPositionBalanceBefore)).toEqBigNumber(collateralAmounts[0]);
+    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
 
     const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
     expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -212,8 +204,8 @@ describe('removeCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const collateralBalanceBefore = await cdai.balanceOf(compoundDebtPosition);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
+    const debtPositionBalanceBefore = await cdai.balanceOf(compoundDebtPosition);
+    const vaultBalanceBefore = await cdai.balanceOf(vaultProxyUsed);
 
     const removeCollateralReceipt = await removeCollateral({
       comptrollerProxy: comptrollerProxyUsed,
@@ -225,17 +217,15 @@ describe('removeCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
+    const debtPositionBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
+    const vaultBalanceAfter = await cdai.balanceOf(vaultProxyUsed);
+
+    // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
+    expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+
     // Rounding up from 246552
     expect(removeCollateralReceipt).toCostLessThan('247000');
-
-    const collateralBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
-    expect(collateralBalanceBefore.sub(collateralBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
-
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
-    expect(gavAfter).toMatchFunctionOutput(comptrollerProxyUsed.calcGav.fragment, {
-      gav_: gavBefore.gav_,
-      isValid_: true,
-    });
 
     const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
     expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -263,8 +253,8 @@ describe('removeCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const collateralBalanceBefore = await ceth.balanceOf(compoundDebtPosition);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
+    const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition);
+    const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
 
     await removeCollateral({
       comptrollerProxy: comptrollerProxyUsed,
@@ -276,14 +266,12 @@ describe('removeCollateralAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const collateralBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
-    expect(collateralBalanceBefore.sub(collateralBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+    const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
+    const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
 
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
-    expect(gavAfter).toMatchFunctionOutput(comptrollerProxyUsed.calcGav.fragment, {
-      gav_: gavBefore.gav_,
-      isValid_: true,
-    });
+    // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
+    expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
     const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
     expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -381,8 +369,7 @@ describe('borrowAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const borrowedAssetBalanceBefore = await dai.balanceOf(vaultProxyUsed);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
+    const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
     const borrowReceipt = await borrow({
       comptrollerProxy: comptrollerProxyUsed,
@@ -395,25 +382,13 @@ describe('borrowAssets', () => {
       cTokens: collateralAssets,
     });
 
-    // Rounding up from 373563
-    expect(borrowReceipt).toCostLessThan('374000');
+    const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
 
-    const borrowedAssetBalanceAfter = await dai.balanceOf(vaultProxyUsed);
-    expect(borrowedAssetBalanceAfter.sub(borrowedAssetBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+    // Assert the correct balance of asset was received at the vaultProxy
+    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
-
-    // Accept a small deviation in GAV (0.01%) given that cToken value can slightly deviate each block
-    const minExpectedValue = gavBefore.gav_
-      .mul(BigNumber.from('10000').sub(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    const maxExpectedValue = gavBefore.gav_
-      .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    expect(gavAfter.gav_).toBeGteBigNumber(minExpectedValue);
-    expect(gavAfter.gav_).toBeLteBigNumber(maxExpectedValue);
+    // Rounding up from 376360
+    expect(borrowReceipt).toCostLessThan('377000');
 
     const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
     expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -427,6 +402,7 @@ describe('borrowAssets', () => {
 
     const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
     const collateralAssets = [ceth.address];
+
     const borrowedAssets = [weth.address];
     const borrowedAmounts = [lentAmount.div(10)];
 
@@ -440,10 +416,9 @@ describe('borrowAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const borrowedAssetBalanceBefore = await weth.balanceOf(vaultProxyUsed);
-    const gavBefore = await comptrollerProxyUsed.calcGav.args(true).call();
+    const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
-    await borrow({
+    const borrowReceipt = await borrow({
       comptrollerProxy: comptrollerProxyUsed,
       vaultProxy: vaultProxyUsed,
       debtPositionManager: fork.deployment.debtPositionManager,
@@ -454,22 +429,13 @@ describe('borrowAssets', () => {
       cTokens: collateralAssets,
     });
 
-    const borrowedAssetBalanceAfter = await weth.balanceOf(vaultProxyUsed);
-    expect(borrowedAssetBalanceAfter.sub(borrowedAssetBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+    const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
 
-    const gavAfter = await comptrollerProxyUsed.calcGav.args(true).call();
+    // Assert the correct balance of asset was received at the vaultProxy
+    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-    // Accept a small deviation in GAV (0.01%) given that cToken value can slightly deviate each block. TODO: carefully review
-    const minExpectedValue = gavBefore.gav_
-      .mul(BigNumber.from('10000').sub(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    const maxExpectedValue = gavBefore.gav_
-      .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    expect(gavAfter.gav_).toBeGteBigNumber(minExpectedValue);
-    expect(gavAfter.gav_).toBeLteBigNumber(maxExpectedValue);
+    // Rounding up from 383473
+    expect(borrowReceipt).toCostLessThan('384000');
 
     const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
     expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -583,6 +549,7 @@ describe('repayBorrowedAssets', () => {
     });
 
     const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+    const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
     const repayBorrowReceipt = await repayBorrow({
       comptrollerProxy: comptrollerProxyUsed,
@@ -594,17 +561,21 @@ describe('repayBorrowedAssets', () => {
       cTokens: collateralAssets,
     });
 
-    // Rounding up from 311904
-    expect(repayBorrowReceipt).toCostLessThan('312000');
-
     const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+    const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
 
-    // Accept a small deviation in GAV (0.01%) given that cToken value can slightly deviate each block. TODO: carefully review
+    // Assert the correct balance of asset was removed from the VaultProxy
+    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
+
+    // Accept a small deviation from the expected value, given that borrow balance changes each block
     const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
     const maxBorrowedExpectedValue = borrowedBalancesBefore
       .sub(borrowedAmountsToBeRepaid[0])
       .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
       .div(BigNumber.from('10000'));
+
+    // Rounding up from 311904
+    expect(repayBorrowReceipt).toCostLessThan('312000');
 
     expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
     expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -644,8 +615,9 @@ describe('repayBorrowedAssets', () => {
     });
 
     const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+    const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
-    await repayBorrow({
+    const repayBorrowReceipt = await repayBorrow({
       comptrollerProxy: comptrollerProxyUsed,
       debtPositionManager: fork.deployment.debtPositionManager,
       fundOwner,
@@ -655,14 +627,21 @@ describe('repayBorrowedAssets', () => {
       cTokens: collateralAssets,
     });
 
+    const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
     const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
 
-    // Accept a small deviation in GAV (0.01%) given that cToken value can slightly deviate each block. TODO: carefully review
+    // Assert the correct balance of asset was removed from the VaultProxy
+    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
+
+    // Accept a small deviation from the expected value, given that borrow balance changes each block
     const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
     const maxBorrowedExpectedValue = borrowedBalancesBefore
       .sub(borrowedAmountsToBeRepaid[0])
       .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
       .div(BigNumber.from('10000'));
+
+    // Rounding up from 300912
+    expect(repayBorrowReceipt).toCostLessThan('301000');
 
     expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
     expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
