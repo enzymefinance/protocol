@@ -52,11 +52,19 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
 
-    event VaultCallDeregistered(address indexed contractAddress, bytes4 selector);
+    event VaultCallDeregistered(
+        address indexed contractAddress,
+        bytes4 selector,
+        bytes32 dataHash
+    );
 
-    event VaultCallRegistered(address indexed contractAddress, bytes4 selector);
+    event VaultCallRegistered(address indexed contractAddress, bytes4 selector, bytes32 dataHash);
 
     // Constants
+    // keccak256(abi.encodePacked("mln.vaultCall.any")
+    bytes32
+        private constant ANY_VAULT_CALL = 0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
+
     address private immutable CREATOR;
     address private immutable DISPATCHER;
     address private immutable VAULT_LIB;
@@ -66,8 +74,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     // Storage
     ReleaseStatus private releaseStatus;
-    mapping(address => mapping(bytes4 => bool)) private contractToSelectorToIsRegisteredVaultCall;
+
     mapping(address => address) private pendingComptrollerProxyToCreator;
+    mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
 
     modifier onlyLiveRelease() {
         require(releaseStatus == ReleaseStatus.Live, "Release is not Live");
@@ -95,15 +104,13 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         _;
     }
 
-    constructor(
-        address _dispatcher,
-        address _vaultLib,
-        address[] memory _vaultCallContracts,
-        bytes4[] memory _vaultCallSelectors
-    ) public {
-        if (_vaultCallContracts.length > 0) {
-            __registerVaultCalls(_vaultCallContracts, _vaultCallSelectors);
-        }
+    constructor(address _dispatcher, address _vaultLib) public {
+        // Validate constants
+        require(
+            ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")),
+            "constructor: Incorrect ANY_VAULT_CALL"
+        );
+
         CREATOR = msg.sender;
         DISPATCHER = _dispatcher;
         VAULT_LIB = _vaultLib;
@@ -438,65 +445,67 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         IComptroller(comptrollerProxy).destruct();
     }
 
-    //////////////
-    // REGISTRY //
-    //////////////
+    /////////////////////////
+    // VAULT CALL REGISTRY //
+    /////////////////////////
 
     /// @notice De-registers allowed arbitrary contract calls that can be sent from the VaultProxy
     /// @param _contracts The contracts of the calls to de-register
     /// @param _selectors The selectors of the calls to de-register
-    function deregisterVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
-        external
-        onlyOwner
-    {
+    /// @param _dataHashes The keccak call data hashes of the calls to de-register
+    /// @dev ANY_VAULT_CALL is a wildcard that allows any payload
+    function deregisterVaultCalls(
+        address[] calldata _contracts,
+        bytes4[] calldata _selectors,
+        bytes32[] memory _dataHashes
+    ) external onlyOwner {
         require(_contracts.length > 0, "deregisterVaultCalls: Empty _contracts");
         require(
-            _contracts.length == _selectors.length,
+            _contracts.length == _selectors.length && _contracts.length == _dataHashes.length,
             "deregisterVaultCalls: Uneven input arrays"
         );
 
         for (uint256 i; i < _contracts.length; i++) {
             require(
-                isRegisteredVaultCall(_contracts[i], _selectors[i]),
+                isRegisteredVaultCall(_contracts[i], _selectors[i], _dataHashes[i]),
                 "deregisterVaultCalls: Call not registered"
             );
 
-            contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]] = false;
+            vaultCallToPayloadToIsAllowed[keccak256(
+                abi.encodePacked(_contracts[i], _selectors[i])
+            )][_dataHashes[i]] = false;
 
-            emit VaultCallDeregistered(_contracts[i], _selectors[i]);
+            emit VaultCallDeregistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
     }
 
     /// @notice Registers allowed arbitrary contract calls that can be sent from the VaultProxy
     /// @param _contracts The contracts of the calls to register
     /// @param _selectors The selectors of the calls to register
-    function registerVaultCalls(address[] calldata _contracts, bytes4[] calldata _selectors)
-        external
-        onlyOwner
-    {
+    /// @param _dataHashes The keccak call data hashes of the calls to register
+    /// @dev ANY_VAULT_CALL is a wildcard that allows any payload
+    function registerVaultCalls(
+        address[] calldata _contracts,
+        bytes4[] calldata _selectors,
+        bytes32[] memory _dataHashes
+    ) external onlyOwner {
         require(_contracts.length > 0, "registerVaultCalls: Empty _contracts");
-
-        __registerVaultCalls(_contracts, _selectors);
-    }
-
-    /// @dev Helper to register allowed vault calls
-    function __registerVaultCalls(address[] memory _contracts, bytes4[] memory _selectors)
-        private
-    {
         require(
-            _contracts.length == _selectors.length,
-            "__registerVaultCalls: Uneven input arrays"
+            _contracts.length == _selectors.length && _contracts.length == _dataHashes.length,
+            "registerVaultCalls: Uneven input arrays"
         );
 
         for (uint256 i; i < _contracts.length; i++) {
             require(
-                !isRegisteredVaultCall(_contracts[i], _selectors[i]),
-                "__registerVaultCalls: Call already registered"
+                !isRegisteredVaultCall(_contracts[i], _selectors[i], _dataHashes[i]),
+                "registerVaultCalls: Call already registered"
             );
 
-            contractToSelectorToIsRegisteredVaultCall[_contracts[i]][_selectors[i]] = true;
+            vaultCallToPayloadToIsAllowed[keccak256(
+                abi.encodePacked(_contracts[i], _selectors[i])
+            )][_dataHashes[i]] = true;
 
-            emit VaultCallRegistered(_contracts[i], _selectors[i]);
+            emit VaultCallRegistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
     }
 
@@ -544,16 +553,38 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         return VAULT_LIB;
     }
 
+    /// @notice Checks if a contract call is allowed
+    /// @param _contract The contract of the call to check
+    /// @param _selector The selector of the call to check
+    /// @param _dataHash The keccak call data hash of the call to check
+    /// @return isAllowed_ True if the call is allowed
+    /// @dev A vault call is allowed if the _dataHash is specifically allowed,
+    /// or if any _dataHash is allowed
+    function isAllowedVaultCall(
+        address _contract,
+        bytes4 _selector,
+        bytes32 _dataHash
+    ) external view override returns (bool isAllowed_) {
+        bytes32 contractFunctionHash = keccak256(abi.encodePacked(_contract, _selector));
+
+        return
+            vaultCallToPayloadToIsAllowed[contractFunctionHash][_dataHash] ||
+            vaultCallToPayloadToIsAllowed[contractFunctionHash][ANY_VAULT_CALL];
+    }
+
     /// @notice Checks if a contract call is registered
     /// @param _contract The contract of the call to check
     /// @param _selector The selector of the call to check
+    /// @param _dataHash The keccak call data hash of the call to check
     /// @return isRegistered_ True if the call is registered
-    function isRegisteredVaultCall(address _contract, bytes4 _selector)
-        public
-        view
-        override
-        returns (bool isRegistered_)
-    {
-        return contractToSelectorToIsRegisteredVaultCall[_contract][_selector];
+    function isRegisteredVaultCall(
+        address _contract,
+        bytes4 _selector,
+        bytes32 _dataHash
+    ) public view returns (bool isRegistered_) {
+        return
+            vaultCallToPayloadToIsAllowed[keccak256(
+                abi.encodePacked(_contract, _selector)
+            )][_dataHash];
     }
 }

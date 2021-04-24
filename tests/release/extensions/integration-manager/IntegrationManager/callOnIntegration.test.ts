@@ -350,7 +350,11 @@ describe('callOnIntegration', () => {
     // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
     // by registering the token's approve() function for use in vaultCallOnContract()
     const approveSelector = sighash(outgoingAsset.approve.fragment);
-    await fundDeployer.registerVaultCalls([outgoingAsset], [approveSelector]);
+    await fundDeployer.registerVaultCalls(
+      [outgoingAsset],
+      [approveSelector],
+      [utils.keccak256(encodeArgs(['address', 'uint'], [mockGenericIntegratee, actualSpendAssetAmount]))],
+    );
     await comptrollerProxy
       .connect(fundOwner)
       .vaultCallOnContract(

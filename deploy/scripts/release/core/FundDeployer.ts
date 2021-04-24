@@ -1,11 +1,11 @@
-import { FundDeployerArgs } from '@enzymefinance/protocol';
+import { FundDeployerArgs, FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, log },
     ethers: { getSigners },
   } = hre;
 
@@ -14,17 +14,25 @@ const fn: DeployFunction = async function (hre) {
   const dispatcher = await get('Dispatcher');
   const vaultLib = await get('VaultLib');
 
-  await deploy('FundDeployer', {
-    args: [
-      dispatcher.address,
-      vaultLib.address,
-      config.vaultCalls.map(([address]) => address),
-      config.vaultCalls.map(([, selector]) => selector),
-    ] as FundDeployerArgs,
+  const fundDeployer = await deploy('FundDeployer', {
+    args: [dispatcher.address, vaultLib.address] as FundDeployerArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
+
+  if (fundDeployer.newlyDeployed) {
+    const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
+    const vaultCallValues = Object.values(config.vaultCalls);
+
+    if (!!vaultCallValues.length) {
+      const vaultCallContracts = vaultCallValues.map(([contract]) => contract);
+      const vaultCallFunctionSigs = vaultCallValues.map(([, functionSig]) => functionSig);
+      const vaultCallDataHashes = vaultCallValues.map(([, , dataHash]) => dataHash);
+      log('Registering vault calls');
+      await fundDeployerInstance.registerVaultCalls(vaultCallContracts, vaultCallFunctionSigs, vaultCallDataHashes);
+    }
+  }
 };
 
 fn.tags = ['Release', 'FundDeployer'];

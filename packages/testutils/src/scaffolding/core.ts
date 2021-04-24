@@ -14,7 +14,7 @@ import {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { BytesLike, Signer } from 'ethers';
+import { Signer } from 'ethers';
 
 export async function createFundDeployer({
   deployer,
@@ -27,8 +27,6 @@ export async function createFundDeployer({
   policyManager,
   valueInterpreter,
   vaultLib,
-  vaultCallContracts = [],
-  vaultCallSelectors = [],
   setOnDispatcher = true,
   setReleaseStatusLive = true,
 }: {
@@ -44,18 +42,10 @@ export async function createFundDeployer({
   synthetixPriceFeed: SynthetixPriceFeed;
   valueInterpreter: ValueInterpreter;
   vaultLib: VaultLib;
-  vaultCallContracts?: AddressLike[];
-  vaultCallSelectors?: BytesLike[];
   setOnDispatcher?: boolean;
   setReleaseStatusLive?: boolean;
 }) {
-  const nextFundDeployer = await FundDeployer.deploy(
-    deployer,
-    dispatcher,
-    vaultLib,
-    vaultCallContracts,
-    vaultCallSelectors,
-  );
+  const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher, vaultLib);
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,

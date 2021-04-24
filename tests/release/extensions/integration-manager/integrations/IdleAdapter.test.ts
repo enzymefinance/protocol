@@ -4,6 +4,7 @@ import {
   claimRewardsAndReinvestSelector,
   claimRewardsAndSwapSelector,
   claimRewardsSelector,
+  encodeArgs,
   idleApproveAssetsArgs,
   idleClaimRewardsAndReinvestArgs,
   idleClaimRewardsAndSwapArgs,
@@ -13,6 +14,7 @@ import {
   IIdleTokenV4,
   lendSelector,
   redeemSelector,
+  sighash,
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -33,6 +35,13 @@ import { BigNumber, constants, utils } from 'ethers';
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+
+  // Register the specific vault call for IDLE.approve() with this adapter and max uint
+  await fork.deployment.fundDeployer.registerVaultCalls(
+    [fork.config.unsupportedRewardsTokens.idle],
+    [sighash(utils.FunctionFragment.fromString('approve(address,uint)'))],
+    [utils.keccak256(encodeArgs(['address', 'uint'], [fork.deployment.idleAdapter, constants.MaxUint256]))],
+  );
 });
 
 describe('constructor', () => {

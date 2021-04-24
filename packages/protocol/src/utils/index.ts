@@ -6,3 +6,4 @@ export * from './policies';
 export * from './integrations';
 export * from './debt-positions';
 export * from './migrations';
+export * from './vaultCalls';

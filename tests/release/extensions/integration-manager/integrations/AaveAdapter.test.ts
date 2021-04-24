@@ -57,7 +57,7 @@ describe('lend', () => {
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
     // Rounding up from 496046
-    expect(lendReceipt).toCostLessThan('496100');
+    expect(lendReceipt).toCostLessThan('497000');
   });
 });
 

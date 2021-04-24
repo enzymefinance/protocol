@@ -247,8 +247,12 @@ contract ComptrollerLib is IComptroller {
         bytes calldata _encodedArgs
     ) external onlyNotPaused onlyActive onlyOwner {
         require(
-            IFundDeployer(FUND_DEPLOYER).isRegisteredVaultCall(_contract, _selector),
-            "vaultCallOnContract: Unregistered"
+            IFundDeployer(FUND_DEPLOYER).isAllowedVaultCall(
+                _contract,
+                _selector,
+                keccak256(_encodedArgs)
+            ),
+            "vaultCallOnContract: Not allowed"
         );
 
         IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _encodedArgs));

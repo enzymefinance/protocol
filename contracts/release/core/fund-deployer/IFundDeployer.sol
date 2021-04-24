@@ -20,5 +20,9 @@ interface IFundDeployer {
 
     function getReleaseStatus() external view returns (ReleaseStatus);
 
-    function isRegisteredVaultCall(address, bytes4) external view returns (bool);
+    function isAllowedVaultCall(
+        address,
+        bytes4,
+        bytes32
+    ) external view returns (bool);
 }

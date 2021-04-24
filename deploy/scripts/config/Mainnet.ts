@@ -1,5 +1,5 @@
 import { utils } from 'ethers';
-import { ChainlinkRateAsset, sighash } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { DeploymentConfig, saveConfig } from '../../utils/config';
@@ -324,14 +324,11 @@ const mainnetConfig: DeploymentConfig = {
     [
       synthetixDelegateApprovals,
       sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)')),
+      vaultCallAnyDataHash
     ],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)'))],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])'))],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)'))],
-    ...Object.values(unsupportedRewardsTokens).map((tokenAddress) => [
-      tokenAddress,
-      sighash(utils.FunctionFragment.fromString('approve(address, uint)')),
-    ] as [string, string]),
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')), vaultCallAnyDataHash],
   ],
 }
 
