@@ -11,7 +11,7 @@
   "dependencies": {
     "@babel/runtime": "^7.13.10",
     "@enzymefinance/ethers": "^0.0.4",
-    "@enzymefinance/hardhat": "^0.0.7",
+    "@enzymefinance/hardhat": "^0.0.8",
     "@enzymefinance/protocol": "^2.0.3",
     "ethers": "^5.1.0",
     "ethers-eip712": "^0.2.0"

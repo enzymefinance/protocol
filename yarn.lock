@@ -1324,10 +1324,10 @@
     "@ethersproject/abi" "^5.1.0"
     ethers "^5.1.0"
 
-"@enzymefinance/hardhat@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.7.tgz#c636b09d4ccc8c1b3323db109e48356db7979f9c"
-  integrity sha512-zUpuqgwv3+7WBirlV2cLC3C1r1dE/U2U1BxmObRWyGuhKnTUHezufz1ptrEj4DoxGPFWVNvPl8BBkDARBJYN5g==
+"@enzymefinance/hardhat@^0.0.8":
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.8.tgz#14b875ebe414e6cb9d337548138c8253df4a0583"
+  integrity sha512-fSR6tvvtKOb9SwB9vw8N7RmOYP5A81K3kyo6SFRVrVDvRLH1/zbcuNUtAhnrWMIrbbfD7KaE0OWNvImK0Z4oyA==
   dependencies:
     "@babel/runtime" "^7.13.10"
     "@enzymefinance/codegen" "0.0.1"
