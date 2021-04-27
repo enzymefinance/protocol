@@ -12,25 +12,18 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../interfaces/IZeroExV2.sol";
-import "../../../../utils/MathHelpers.sol";
-import "../../../../utils/AddressArrayLib.sol";
 import "../../../utils/FundDeployerOwnerMixin.sol";
+import "../utils/actions/ZeroExV2ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter to 0xV2 Exchange Contract
-contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
-    using AddressArrayLib for address[];
-    using SafeMath for uint256;
-
+contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2ActionsMixin {
     event AllowedMakerAdded(address indexed account);
 
     event AllowedMakerRemoved(address indexed account);
 
-    address private immutable EXCHANGE;
     mapping(address => bool) private makerToIsAllowed;
 
     // Gas could be optimized for the end-user by also storing an immutable ZRX_ASSET_DATA,
@@ -40,8 +33,12 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         address _exchange,
         address _fundDeployer,
         address[] memory _allowedMakers
-    ) public AdapterBase(_integrationManager) FundDeployerOwnerMixin(_fundDeployer) {
-        EXCHANGE = _exchange;
+    )
+        public
+        AdapterBase(_integrationManager)
+        FundDeployerOwnerMixin(_fundDeployer)
+        ZeroExV2ActionsMixin(_exchange)
+    {
         if (_allowedMakers.length > 0) {
             __addAllowedMakers(_allowedMakers);
         }
@@ -55,6 +52,34 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         return "ZERO_EX_V2";
     }
 
+    /// @notice Take an order on 0x
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    function takeOrder(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata _encodedAssetTransferArgs
+    )
+        external
+        onlyIntegrationManager
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+    {
+        (
+            bytes memory encodedZeroExOrderArgs,
+            uint256 takerAssetFillAmount
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
+        IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
+        (, , , bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
+
+        __zeroExV2TakeOrder(order, takerAssetFillAmount, signature);
+    }
+
+    /////////////////////////////
+    // PARSE ASSETS FOR METHOD //
+    /////////////////////////////
+
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
@@ -64,7 +89,11 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override
@@ -107,7 +136,9 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         );
 
         if (order.takerFee > 0) {
-            address takerFeeAsset = __getAssetAddress(IZeroExV2(EXCHANGE).ZRX_ASSET_DATA());
+            address takerFeeAsset = __getAssetAddress(
+                IZeroExV2(getZeroExV2Exchange()).ZRX_ASSET_DATA()
+            );
             uint256 takerFeeFillAmount = __calcRelativeQuantity(
                 order.takerAssetAmount,
                 order.takerFee,
@@ -159,81 +190,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         );
     }
 
-    /// @notice Take an order on 0x
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
-    )
-        external
-        onlyIntegrationManager
-        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
-    {
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
-        IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
-
-        // Approve spend assets as needed
-        __approveMaxAsNeeded(
-            __getAssetAddress(order.takerAssetData),
-            __getAssetProxy(order.takerAssetData),
-            takerAssetFillAmount
-        );
-        // Ignores whether makerAsset or takerAsset overlap with the takerFee asset for simplicity
-        if (order.takerFee > 0) {
-            bytes memory zrxData = IZeroExV2(EXCHANGE).ZRX_ASSET_DATA();
-            __approveMaxAsNeeded(
-                __getAssetAddress(zrxData),
-                __getAssetProxy(zrxData),
-                __calcRelativeQuantity(
-                    order.takerAssetAmount,
-                    order.takerFee,
-                    takerAssetFillAmount
-                ) // fee calculated relative to taker fill amount
-            );
-        }
-
-        // Execute order
-        (, , , bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
-        IZeroExV2(EXCHANGE).fillOrder(order, takerAssetFillAmount, signature);
-    }
-
     // PRIVATE FUNCTIONS
-
-    /// @dev Parses user inputs into a ZeroExV2.Order format
-    function __constructOrderStruct(bytes memory _encodedOrderArgs)
-        private
-        pure
-        returns (IZeroExV2.Order memory order_)
-    {
-        (
-            address[4] memory orderAddresses,
-            uint256[6] memory orderValues,
-            bytes[2] memory orderData,
-
-        ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
-
-        return
-            IZeroExV2.Order({
-                makerAddress: orderAddresses[0],
-                takerAddress: orderAddresses[1],
-                feeRecipientAddress: orderAddresses[2],
-                senderAddress: orderAddresses[3],
-                makerAssetAmount: orderValues[0],
-                takerAssetAmount: orderValues[1],
-                makerFee: orderValues[2],
-                takerFee: orderValues[3],
-                expirationTimeSeconds: orderValues[4],
-                salt: orderValues[5],
-                makerAssetData: orderData[0],
-                takerAssetData: orderData[1]
-            });
-    }
 
     /// @dev Decode the parameters of a takeOrder call
     /// @param _encodedCallArgs Encoded parameters passed from client side
@@ -245,61 +202,6 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         returns (bytes memory encodedZeroExOrderArgs_, uint256 takerAssetFillAmount_)
     {
         return abi.decode(_encodedCallArgs, (bytes, uint256));
-    }
-
-    /// @dev Decode the parameters of a 0x order
-    /// @param _encodedZeroExOrderArgs Encoded parameters of the 0x order
-    /// @return orderAddresses_ Addresses used in the order
-    /// - [0] 0x Order param: makerAddress
-    /// - [1] 0x Order param: takerAddress
-    /// - [2] 0x Order param: feeRecipientAddress
-    /// - [3] 0x Order param: senderAddress
-    /// @return orderValues_ Values used in the order
-    /// - [0] 0x Order param: makerAssetAmount
-    /// - [1] 0x Order param: takerAssetAmount
-    /// - [2] 0x Order param: makerFee
-    /// - [3] 0x Order param: takerFee
-    /// - [4] 0x Order param: expirationTimeSeconds
-    /// - [5] 0x Order param: salt
-    /// @return orderData_ Bytes data used in the order
-    /// - [0] 0x Order param: makerAssetData
-    /// - [1] 0x Order param: takerAssetData
-    /// @return signature_ Signature of the order
-    function __decodeZeroExOrderArgs(bytes memory _encodedZeroExOrderArgs)
-        private
-        pure
-        returns (
-            address[4] memory orderAddresses_,
-            uint256[6] memory orderValues_,
-            bytes[2] memory orderData_,
-            bytes memory signature_
-        )
-    {
-        return abi.decode(_encodedZeroExOrderArgs, (address[4], uint256[6], bytes[2], bytes));
-    }
-
-    /// @dev Parses the asset address from 0x assetData
-    function __getAssetAddress(bytes memory _assetData)
-        private
-        pure
-        returns (address assetAddress_)
-    {
-        assembly {
-            assetAddress_ := mload(add(_assetData, 36))
-        }
-    }
-
-    /// @dev Gets the 0x assetProxy address for an ERC20 token
-    function __getAssetProxy(bytes memory _assetData) private view returns (address assetProxy_) {
-        bytes4 assetProxyId;
-
-        assembly {
-            assetProxyId := and(
-                mload(add(_assetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
-        }
-        assetProxy_ = IZeroExV2(EXCHANGE).getAssetProxy(assetProxyId);
     }
 
     /////////////////////////////
@@ -345,15 +247,70 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, MathHelpers {
         }
     }
 
+    /// @dev Parses user inputs into a ZeroExV2.Order format
+    function __constructOrderStruct(bytes memory _encodedOrderArgs)
+        private
+        pure
+        returns (IZeroExV2.Order memory order_)
+    {
+        (
+            address[4] memory orderAddresses,
+            uint256[6] memory orderValues,
+            bytes[2] memory orderData,
+
+        ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
+
+        return
+            IZeroExV2.Order({
+                makerAddress: orderAddresses[0],
+                takerAddress: orderAddresses[1],
+                feeRecipientAddress: orderAddresses[2],
+                senderAddress: orderAddresses[3],
+                makerAssetAmount: orderValues[0],
+                takerAssetAmount: orderValues[1],
+                makerFee: orderValues[2],
+                takerFee: orderValues[3],
+                expirationTimeSeconds: orderValues[4],
+                salt: orderValues[5],
+                makerAssetData: orderData[0],
+                takerAssetData: orderData[1]
+            });
+    }
+
+    /// @dev Decode the parameters of a 0x order
+    /// @param _encodedZeroExOrderArgs Encoded parameters of the 0x order
+    /// @return orderAddresses_ Addresses used in the order
+    /// - [0] 0x Order param: makerAddress
+    /// - [1] 0x Order param: takerAddress
+    /// - [2] 0x Order param: feeRecipientAddress
+    /// - [3] 0x Order param: senderAddress
+    /// @return orderValues_ Values used in the order
+    /// - [0] 0x Order param: makerAssetAmount
+    /// - [1] 0x Order param: takerAssetAmount
+    /// - [2] 0x Order param: makerFee
+    /// - [3] 0x Order param: takerFee
+    /// - [4] 0x Order param: expirationTimeSeconds
+    /// - [5] 0x Order param: salt
+    /// @return orderData_ Bytes data used in the order
+    /// - [0] 0x Order param: makerAssetData
+    /// - [1] 0x Order param: takerAssetData
+    /// @return signature_ Signature of the order
+    function __decodeZeroExOrderArgs(bytes memory _encodedZeroExOrderArgs)
+        private
+        pure
+        returns (
+            address[4] memory orderAddresses_,
+            uint256[6] memory orderValues_,
+            bytes[2] memory orderData_,
+            bytes memory signature_
+        )
+    {
+        return abi.decode(_encodedZeroExOrderArgs, (address[4], uint256[6], bytes[2], bytes));
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
-
-    /// @notice Gets the `EXCHANGE` variable value
-    /// @return exchange_ The `EXCHANGE` variable value
-    function getExchange() external view returns (address exchange_) {
-        return EXCHANGE;
-    }
 
     /// @notice Checks whether an account is an allowed maker of 0x orders
     /// @param _who The account to check

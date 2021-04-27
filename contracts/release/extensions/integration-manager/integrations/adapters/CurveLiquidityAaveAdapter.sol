@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "../utils/actions/CurveAaveLiquidityActionsMixin.sol";
 import "../utils/actions/CurveGaugeV2RewardsHandlerBase.sol";
 import "../utils/actions/UniswapV2ActionsMixin.sol";
-import "../utils/AdapterBase2.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title CurveLiquidityAaveAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -17,7 +17,7 @@ import "../utils/AdapterBase2.sol";
 /// This adapter will need to be re-deployed if UniswapV2 low liquidity becomes
 /// a concern for rewards tokens when using claimRewardsAndReinvest().
 contract CurveLiquidityAaveAdapter is
-    AdapterBase2,
+    AdapterBase,
     CurveGaugeV2RewardsHandlerBase,
     CurveAaveLiquidityActionsMixin,
     UniswapV2ActionsMixin
@@ -47,7 +47,7 @@ contract CurveLiquidityAaveAdapter is
         address _uniswapV2Router2
     )
         public
-        AdapterBase2(_integrationManager)
+        AdapterBase(_integrationManager)
         CurveAaveLiquidityActionsMixin(_pool, _aaveTokens, _underlyingTokens)
         CurveGaugeV2RewardsHandlerBase(_minter, _crvToken)
         UniswapV2ActionsMixin(_uniswapV2Router2)
@@ -362,7 +362,11 @@ contract CurveLiquidityAaveAdapter is
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override

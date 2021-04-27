@@ -101,7 +101,7 @@ describe('parseAssetsForMethod', () => {
     const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
 
     await expect(
-      curveLiquidityStethAdapter.parseAssetsForMethod(utils.randomBytes(4), constants.HashZero),
+      curveLiquidityStethAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -111,6 +111,7 @@ describe('parseAssetsForMethod', () => {
 
       await expect(
         curveLiquidityStethAdapter.parseAssetsForMethod(
+          randomAddress(),
           approveAssetsSelector,
           curveApproveAssetsArgs({
             assets: [randomAddress(), randomAddress()],
@@ -125,6 +126,7 @@ describe('parseAssetsForMethod', () => {
 
       await expect(
         curveLiquidityStethAdapter.parseAssetsForMethod(
+          randomAddress(),
           approveAssetsSelector,
           curveApproveAssetsArgs({
             assets: [randomAddress()],
@@ -141,6 +143,7 @@ describe('parseAssetsForMethod', () => {
       const assets = [fork.config.primitives.crv, randomAddress()];
       const amounts = [1, 0];
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         approveAssetsSelector,
         curveApproveAssetsArgs({
           assets,
@@ -162,7 +165,11 @@ describe('parseAssetsForMethod', () => {
     it('generates expected output', async () => {
       const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
 
-      const result = await curveLiquidityStethAdapter.parseAssetsForMethod(claimRewardsSelector, constants.HashZero);
+      const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
+        claimRewardsSelector,
+        constants.HashZero,
+      );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForMethod, {
         spendAssetsHandleType_: SpendAssetsHandleType.None,
@@ -180,6 +187,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('2');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         claimRewardsAndReinvestSelector,
         curveStethClaimRewardsAndReinvestArgs({
           useFullBalances: true, // Does not matter
@@ -204,6 +212,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAssetAmount = utils.parseEther('2');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         claimRewardsAndSwapSelector,
         curveStethClaimRewardsAndSwapArgs({
           useFullBalances: true, // Does not matter
@@ -229,6 +238,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendSelector,
         curveStethLendArgs({
           outgoingWethAmount,
@@ -252,6 +262,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendSelector,
         curveStethLendArgs({
           outgoingWethAmount: BigNumber.from(0),
@@ -276,6 +287,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendSelector,
         curveStethLendArgs({
           outgoingWethAmount,
@@ -301,6 +313,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
           outgoingWethAmount,
@@ -324,6 +337,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
           outgoingWethAmount: BigNumber.from(0),
@@ -348,6 +362,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
           outgoingWethAmount,
@@ -374,6 +389,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
           outgoingLPTokenAmount,
@@ -398,6 +414,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
           outgoingLPTokenAmount,
@@ -422,6 +439,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLPTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
           outgoingLPTokenAmount,
@@ -447,6 +465,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLPTokenAmount = utils.parseEther('2');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         stakeSelector,
         curveStethStakeArgs({
           outgoingLPTokenAmount,
@@ -469,6 +488,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('2');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         unstakeSelector,
         curveStethUnstakeArgs({
           outgoingLiquidityGaugeTokenAmount,
@@ -493,6 +513,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
           outgoingLiquidityGaugeTokenAmount,
@@ -517,6 +538,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
           outgoingLiquidityGaugeTokenAmount,
@@ -541,6 +563,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
       const result = await curveLiquidityStethAdapter.parseAssetsForMethod(
+        randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
           outgoingLiquidityGaugeTokenAmount,

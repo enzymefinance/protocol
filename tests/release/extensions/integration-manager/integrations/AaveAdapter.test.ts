@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   AaveAdapter,
   aaveLendArgs,
@@ -109,10 +110,10 @@ describe('redeem', () => {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const lendingPoolAddressProvider = await aaveAdapter.getLendingPoolAddressProvider();
+    const lendingPoolAddressProvider = await aaveAdapter.getAaveLendingPoolAddressProvider();
     expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
 
-    const referralCode = await aaveAdapter.getReferralCode();
+    const referralCode = await aaveAdapter.getAaveReferralCode();
     expect(referralCode).toEqBigNumber(BigNumber.from('158'));
   });
 });
@@ -129,11 +130,11 @@ describe('parseAssetsForMethod', () => {
       amount,
     });
 
-    await expect(aaveAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      aaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(aaveAdapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
+    await expect(aaveAdapter.parseAssetsForMethod(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -147,11 +148,11 @@ describe('parseAssetsForMethod', () => {
       amount,
     });
 
-    await expect(aaveAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      aaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    const result = await aaveAdapter.parseAssetsForMethod(lendSelector, args);
+    const result = await aaveAdapter.parseAssetsForMethod(randomAddress(), lendSelector, args);
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -173,7 +174,7 @@ describe('parseAssetsForMethod', () => {
       amount,
     });
 
-    const result = await aaveAdapter.parseAssetsForMethod(redeemSelector, args);
+    const result = await aaveAdapter.parseAssetsForMethod(randomAddress(), redeemSelector, args);
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,

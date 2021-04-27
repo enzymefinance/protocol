@@ -27,7 +27,7 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
 
-    const getExchangeCall = await zeroExV2Adapter.getExchange();
+    const getExchangeCall = await zeroExV2Adapter.getZeroExV2Exchange();
     expect(getExchangeCall).toMatchAddress(fork.config.zeroex.exchange);
 
     const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
@@ -69,9 +69,9 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    await expect(zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs)).rejects.toBeRevertedWith(
-      'Order maker is not allowed',
-    );
+    await expect(
+      zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs),
+    ).rejects.toBeRevertedWith('Order maker is not allowed');
   });
 
   it('generates expected output without takerFee', async () => {
@@ -110,7 +110,7 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
@@ -160,7 +160,7 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
@@ -207,7 +207,7 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],
@@ -256,7 +256,7 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [incomingAsset],

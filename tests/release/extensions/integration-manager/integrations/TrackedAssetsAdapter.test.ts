@@ -53,11 +53,13 @@ describe('parseAssetsForMethod', () => {
     } = await provider.snapshot(snapshot);
 
     const args = addTrackedAssetsArgs([randomAddress()]);
-    await expect(trackedAssetsAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      trackedAssetsAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args)).resolves.toBeTruthy();
+    await expect(
+      trackedAssetsAdapter.parseAssetsForMethod(randomAddress(), addTrackedAssetsSelector, args),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -74,7 +76,7 @@ describe('parseAssetsForMethod', () => {
       spendAssets_,
       spendAssetAmounts_,
       minIncomingAssetAmounts_,
-    } = await trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args);
+    } = await trackedAssetsAdapter.parseAssetsForMethod(randomAddress(), addTrackedAssetsSelector, args);
 
     expect({
       spendAssetsHandleType_,

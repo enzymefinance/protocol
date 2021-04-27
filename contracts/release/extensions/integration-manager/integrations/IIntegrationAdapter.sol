@@ -19,7 +19,11 @@ import "../IIntegrationManager.sol";
 interface IIntegrationAdapter {
     function identifier() external pure returns (string memory identifier_);
 
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address _vaultProxy,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         returns (

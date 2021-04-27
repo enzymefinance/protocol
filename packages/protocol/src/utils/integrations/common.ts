@@ -1,4 +1,4 @@
-import { Call } from '@enzymefinance/ethers';
+import { AddressLike, Call, randomAddress } from '@enzymefinance/ethers';
 import { BytesLike, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';
@@ -41,14 +41,16 @@ export const unstakeAndRedeemSelector = sighash(unstakeAndRedeemFragment);
 
 // prettier-ignore
 export interface IntegrationAdapterInterface {
-  parseAssetsForMethod: Call<(selector: BytesLike, encodedCallArgs: BytesLike) => any>;
+  parseAssetsForMethod: Call<(vaultProxy: AddressLike, selector: BytesLike, encodedCallArgs: BytesLike) => any>;
 }
 
 export async function assetTransferArgs({
+  vaultProxy = randomAddress(),
   adapter,
   selector,
   encodedCallArgs,
 }: {
+  vaultProxy?: AddressLike;
   adapter: IntegrationAdapterInterface;
   selector: BytesLike;
   encodedCallArgs: BytesLike;
@@ -58,7 +60,7 @@ export async function assetTransferArgs({
     1: spendAssets,
     2: spendAssetAmounts,
     3: expectedIncomingAssets,
-  } = await adapter.parseAssetsForMethod(selector, encodedCallArgs);
+  } = await adapter.parseAssetsForMethod(vaultProxy, selector, encodedCallArgs);
 
   return encodeArgs(
     ['uint', 'address[]', 'uint[]', 'address[]'],

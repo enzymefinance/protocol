@@ -12,24 +12,20 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/AavePriceFeed.sol";
-import "../../../../interfaces/IAaveLendingPool.sol";
-import "../../../../interfaces/IAaveLendingPoolAddressProvider.sol";
+import "../utils/actions/AaveActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title AaveAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Aave Lending <https://aave.com/>
-contract AaveAdapter is AdapterBase {
+contract AaveAdapter is AdapterBase, AaveActionsMixin {
     address private immutable AAVE_PRICE_FEED;
-    address private immutable LENDING_POOL_ADDRESS_PROVIDER;
-    uint16 private constant REFERRAL_CODE = 158;
 
     constructor(
         address _integrationManager,
         address _lendingPoolAddressProvider,
         address _aavePriceFeed
-    ) public AdapterBase(_integrationManager) {
-        LENDING_POOL_ADDRESS_PROVIDER = _lendingPoolAddressProvider;
+    ) public AdapterBase(_integrationManager) AaveActionsMixin(_lendingPoolAddressProvider) {
         AAVE_PRICE_FEED = _aavePriceFeed;
     }
 
@@ -37,72 +33,6 @@ contract AaveAdapter is AdapterBase {
     /// @return identifier_ An identifier string
     function identifier() external pure override returns (string memory identifier_) {
         return "AAVE";
-    }
-
-    /// @notice Parses the expected assets to receive from a call on integration
-    /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
-    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
-    /// the adapter access to spend assets (`None` by default)
-    /// @return spendAssets_ The assets to spend in the call
-    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
-    /// @return incomingAssets_ The assets to receive in the call
-    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
-        external
-        view
-        override
-        returns (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_
-        )
-    {
-        if (_selector == LEND_SELECTOR) {
-            (address aToken, uint256 amount) = __decodeCallArgs(_encodedCallArgs);
-
-            // Prevent from invalid token/aToken combination
-            address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
-            require(token != address(0), "parseAssetsForMethod: Unsupported aToken");
-
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = token;
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = amount;
-
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = aToken;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = amount;
-        } else if (_selector == REDEEM_SELECTOR) {
-            (address aToken, uint256 amount) = __decodeCallArgs(_encodedCallArgs);
-
-            // Prevent from invalid token/aToken combination
-            address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
-            require(token != address(0), "parseAssetsForMethod: Unsupported aToken");
-
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = aToken;
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = amount;
-
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = token;
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = amount;
-        } else {
-            revert("parseAssetsForMethod: _selector invalid");
-        }
-
-        return (
-            IIntegrationManager.SpendAssetsHandleType.Transfer,
-            spendAssets_,
-            spendAssetAmounts_,
-            incomingAssets_,
-            minIncomingAssetAmounts_
-        );
     }
 
     /// @notice Lends an amount of a token to AAVE
@@ -120,17 +50,7 @@ contract AaveAdapter is AdapterBase {
 
         ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
 
-        address lendingPoolAddress = IAaveLendingPoolAddressProvider(LENDING_POOL_ADDRESS_PROVIDER)
-            .getLendingPool();
-
-        __approveMaxAsNeeded(spendAssets[0], lendingPoolAddress, spendAssetAmounts[0]);
-
-        IAaveLendingPool(lendingPoolAddress).deposit(
-            spendAssets[0],
-            spendAssetAmounts[0],
-            _vaultProxy,
-            REFERRAL_CODE
-        );
+        __aaveLend(_vaultProxy, spendAssets[0], spendAssetAmounts[0]);
     }
 
     /// @notice Redeems an amount of aTokens from AAVE
@@ -148,15 +68,120 @@ contract AaveAdapter is AdapterBase {
             address[] memory incomingAssets
         ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
 
-        address lendingPoolAddress = IAaveLendingPoolAddressProvider(LENDING_POOL_ADDRESS_PROVIDER)
-            .getLendingPool();
+        __aaveRedeem(_vaultProxy, spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
+    }
 
-        __approveMaxAsNeeded(spendAssets[0], lendingPoolAddress, spendAssetAmounts[0]);
+    /////////////////////////////
+    // PARSE ASSETS FOR METHOD //
+    /////////////////////////////
 
-        IAaveLendingPool(lendingPoolAddress).withdraw(
-            incomingAssets[0],
-            spendAssetAmounts[0],
-            _vaultProxy
+    /// @notice Parses the expected assets to receive from a call on integration
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
+    /// the adapter access to spend assets (`None` by default)
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
+        external
+        view
+        override
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        if (_selector == LEND_SELECTOR) {
+            return __parseAssetsForLend(_encodedCallArgs);
+        } else if (_selector == REDEEM_SELECTOR) {
+            return __parseAssetsForRedeem(_encodedCallArgs);
+        }
+
+        revert("parseAssetsForMethod: _selector invalid");
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during lend() calls
+    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (address aToken, uint256 amount) = __decodeCallArgs(_encodedCallArgs);
+
+        // Prevent from invalid token/aToken combination
+        address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
+        require(token != address(0), "__parseAssetsForLend: Unsupported aToken");
+
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = token;
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = amount;
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = aToken;
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = amount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during redeem() calls
+    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (address aToken, uint256 amount) = __decodeCallArgs(_encodedCallArgs);
+
+        // Prevent from invalid token/aToken combination
+        address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
+        require(token != address(0), "__parseAssetsForRedeem: Unsupported aToken");
+
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = aToken;
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = amount;
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = token;
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = amount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
         );
     }
 
@@ -179,21 +204,5 @@ contract AaveAdapter is AdapterBase {
     /// @return aavePriceFeed_ The `AAVE_PRICE_FEED` variable value
     function getAavePriceFeed() external view returns (address aavePriceFeed_) {
         return AAVE_PRICE_FEED;
-    }
-
-    /// @notice Gets the `LENDING_POOL_ADDRESS_PROVIDER` variable
-    /// @return lendingPoolAddressProvider_ The `LENDING_POOL_ADDRESS_PROVIDER` variable value
-    function getLendingPoolAddressProvider()
-        external
-        view
-        returns (address lendingPoolAddressProvider_)
-    {
-        return LENDING_POOL_ADDRESS_PROVIDER;
-    }
-
-    /// @notice Gets the `REFERRAL_CODE` variable
-    /// @return referralCode_ The `REFERRAL_CODE` variable value
-    function getReferralCode() external pure returns (uint16 referralCode_) {
-        return REFERRAL_CODE;
     }
 }

@@ -11,31 +11,24 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
-import "../../../../interfaces/ISynthetix.sol";
+import "../utils/actions/SynthetixActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Synthetix
-contract SynthetixAdapter is AdapterBase {
-    address private immutable ORIGINATOR;
-    address private immutable SYNTHETIX;
-    address private immutable SYNTHETIX_PRICE_FEED;
-    bytes32 private immutable TRACKING_CODE;
-
+contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     constructor(
         address _integrationManager,
         address _synthetixPriceFeed,
         address _originator,
         address _synthetix,
         bytes32 _trackingCode
-    ) public AdapterBase(_integrationManager) {
-        ORIGINATOR = _originator;
-        SYNTHETIX = _synthetix;
-        SYNTHETIX_PRICE_FEED = _synthetixPriceFeed;
-        TRACKING_CODE = _trackingCode;
-    }
+    )
+        public
+        AdapterBase(_integrationManager)
+        SynthetixActionsMixin(_synthetixPriceFeed, _originator, _synthetix, _trackingCode)
+    {}
 
     // EXTERNAL FUNCTIONS
 
@@ -44,6 +37,28 @@ contract SynthetixAdapter is AdapterBase {
     function identifier() external pure override returns (string memory identifier_) {
         return "SYNTHETIX";
     }
+
+    /// @notice Trades assets on Synthetix
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function takeOrder(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (
+            address incomingAsset,
+            ,
+            address outgoingAsset,
+            uint256 outgoingAssetAmount
+        ) = __decodeCallArgs(_encodedCallArgs);
+
+        __synthetixTakeOrder(_vaultProxy, outgoingAsset, outgoingAssetAmount, incomingAsset);
+    }
+
+    /////////////////////////////
+    // PARSE ASSETS FOR METHOD //
+    /////////////////////////////
 
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
@@ -54,7 +69,11 @@ contract SynthetixAdapter is AdapterBase {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override
@@ -94,38 +113,6 @@ contract SynthetixAdapter is AdapterBase {
         );
     }
 
-    /// @notice Trades assets on Synthetix
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata
-    ) external onlyIntegrationManager {
-        (
-            address incomingAsset,
-            ,
-            address outgoingAsset,
-            uint256 outgoingAssetAmount
-        ) = __decodeCallArgs(_encodedCallArgs);
-
-        address[] memory synths = new address[](2);
-        synths[0] = outgoingAsset;
-        synths[1] = incomingAsset;
-
-        bytes32[] memory currencyKeys = SynthetixPriceFeed(SYNTHETIX_PRICE_FEED)
-            .getCurrencyKeysForSynths(synths);
-
-        ISynthetix(SYNTHETIX).exchangeOnBehalfWithTracking(
-            _vaultProxy,
-            currencyKeys[0],
-            outgoingAssetAmount,
-            currencyKeys[1],
-            ORIGINATOR,
-            TRACKING_CODE
-        );
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the encoded call arguments
@@ -140,33 +127,5 @@ contract SynthetixAdapter is AdapterBase {
         )
     {
         return abi.decode(_encodedCallArgs, (address, uint256, address, uint256));
-    }
-
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
-
-    /// @notice Gets the `ORIGINATOR` variable
-    /// @return originator_ The `ORIGINATOR` variable value
-    function getOriginator() external view returns (address originator_) {
-        return ORIGINATOR;
-    }
-
-    /// @notice Gets the `SYNTHETIX` variable
-    /// @return synthetix_ The `SYNTHETIX` variable value
-    function getSynthetix() external view returns (address synthetix_) {
-        return SYNTHETIX;
-    }
-
-    /// @notice Gets the `SYNTHETIX_PRICE_FEED` variable
-    /// @return synthetixPriceFeed_ The `SYNTHETIX_PRICE_FEED` variable value
-    function getSynthetixPriceFeed() external view returns (address synthetixPriceFeed_) {
-        return SYNTHETIX_PRICE_FEED;
-    }
-
-    /// @notice Gets the `TRACKING_CODE` variable
-    /// @return trackingCode_ The `TRACKING_CODE` variable value
-    function getTrackingCode() external view returns (bytes32 trackingCode_) {
-        return TRACKING_CODE;
     }
 }

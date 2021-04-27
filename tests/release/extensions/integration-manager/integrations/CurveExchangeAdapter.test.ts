@@ -38,10 +38,10 @@ describe('constructor', () => {
     const getIntegrationManagerCall = await curveExchangeAdapter.getIntegrationManager();
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
-    const getAddressProvider = await curveExchangeAdapter.getAddressProvider();
+    const getAddressProvider = await curveExchangeAdapter.getCurveExchangeAddressProvider();
     expect(getAddressProvider).toMatchAddress(fork.config.curve.addressProvider);
 
-    const getWethTokenCall = await curveExchangeAdapter.getWethToken();
+    const getWethTokenCall = await curveExchangeAdapter.getCurveExchangeWethToken();
     expect(getWethTokenCall).toMatchAddress(fork.config.weth);
   });
 });
@@ -51,7 +51,7 @@ describe('parseAssetsForMethod', () => {
     const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
 
     await expect(
-      curveExchangeAdapter.parseAssetsForMethod(utils.randomBytes(4), constants.HashZero),
+      curveExchangeAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -65,6 +65,7 @@ describe('parseAssetsForMethod', () => {
 
     await expect(
       curveExchangeAdapter.parseAssetsForMethod(
+        randomAddress(),
         takeOrderSelector,
         curveTakeOrderArgs({
           pool,
@@ -86,6 +87,7 @@ describe('parseAssetsForMethod', () => {
     const minIncomingAssetAmount = utils.parseEther('0.3');
 
     const result = await curveExchangeAdapter.parseAssetsForMethod(
+      randomAddress(),
       takeOrderSelector,
       curveTakeOrderArgs({
         pool,

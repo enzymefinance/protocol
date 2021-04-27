@@ -43,7 +43,11 @@ contract TrackedAssetsAdapter is AdapterBase {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override

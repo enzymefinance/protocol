@@ -62,7 +62,7 @@ describe('constructor', () => {
 describe('parseAssetsForMethod', () => {
   it('does not allow a bad selector', async () => {
     await expect(
-      fork.deployment.idleAdapter.parseAssetsForMethod(utils.randomBytes(4), constants.HashZero),
+      fork.deployment.idleAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -70,6 +70,7 @@ describe('parseAssetsForMethod', () => {
     it('does not allow an invalid idleToken', async () => {
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          randomAddress(),
           approveAssetsSelector,
           idleApproveAssetsArgs({
             idleToken: randomAddress(),
@@ -83,6 +84,7 @@ describe('parseAssetsForMethod', () => {
     it('does not allow unequal input arrays', async () => {
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          randomAddress(),
           approveAssetsSelector,
           idleApproveAssetsArgs({
             idleToken: fork.config.idle.bestYieldIdleDai,
@@ -96,6 +98,7 @@ describe('parseAssetsForMethod', () => {
     it('does not allow an asset that is not a rewards token (with an amount >0)', async () => {
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          randomAddress(),
           approveAssetsSelector,
           idleApproveAssetsArgs({
             idleToken: fork.config.idle.bestYieldIdleDai,
@@ -113,6 +116,7 @@ describe('parseAssetsForMethod', () => {
       const assets = [fork.config.unsupportedRewardsTokens.idle, randomAddress()];
       const amounts = [1, 0];
       const result = await idleAdapter.parseAssetsForMethod(
+        randomAddress(),
         approveAssetsSelector,
         idleApproveAssetsArgs({
           idleToken: fork.config.idle.bestYieldIdleDai,
@@ -145,9 +149,9 @@ describe('parseAssetsForMethod', () => {
 
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          vaultProxy,
           claimRewardsSelector,
           idleClaimRewardsArgs({
-            vaultProxy,
             idleToken: randomAddress(),
           }),
         ),
@@ -180,11 +184,9 @@ describe('parseAssetsForMethod', () => {
       });
 
       const result = await idleAdapter.parseAssetsForMethod(
+        vaultProxy,
         claimRewardsSelector,
-        idleClaimRewardsArgs({
-          vaultProxy,
-          idleToken,
-        }),
+        idleClaimRewardsArgs({ idleToken }),
       );
 
       expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForMethod, {
@@ -226,9 +228,9 @@ describe('parseAssetsForMethod', () => {
       const minIncomingIdleTokenAmount = utils.parseEther('2');
 
       const result = await idleAdapter.parseAssetsForMethod(
+        vaultProxy,
         claimRewardsAndReinvestSelector,
         idleClaimRewardsAndReinvestArgs({
-          vaultProxy,
           idleToken,
           minIncomingIdleTokenAmount,
           useFullBalances: false, // Not relevant here
@@ -259,9 +261,9 @@ describe('parseAssetsForMethod', () => {
 
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          vaultProxy,
           claimRewardsAndSwapSelector,
           idleClaimRewardsAndSwapArgs({
-            vaultProxy,
             idleToken: randomAddress(),
             incomingAsset: randomAddress(),
             minIncomingAssetAmount: BigNumber.from(1),
@@ -300,9 +302,9 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAssetAmount = utils.parseEther('2');
 
       const result = await idleAdapter.parseAssetsForMethod(
+        vaultProxy,
         claimRewardsAndSwapSelector,
         idleClaimRewardsAndSwapArgs({
-          vaultProxy,
           idleToken,
           incomingAsset,
           minIncomingAssetAmount,
@@ -324,6 +326,7 @@ describe('parseAssetsForMethod', () => {
     it('does not allow an invalid idleToken', async () => {
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          randomAddress(),
           lendSelector,
           idleLendArgs({
             idleToken: randomAddress(),
@@ -342,6 +345,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingIdleTokenAmount = utils.parseEther('3');
 
       const result = await idleAdapter.parseAssetsForMethod(
+        randomAddress(),
         lendSelector,
         idleLendArgs({
           idleToken,
@@ -364,6 +368,7 @@ describe('parseAssetsForMethod', () => {
     it('does not allow an invalid idleToken', async () => {
       await expect(
         fork.deployment.idleAdapter.parseAssetsForMethod(
+          randomAddress(),
           redeemSelector,
           idleRedeemArgs({
             idleToken: randomAddress(),
@@ -382,6 +387,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingUnderlyingAmount = utils.parseEther('3');
 
       const result = await idleAdapter.parseAssetsForMethod(
+        randomAddress(),
         redeemSelector,
         idleRedeemArgs({
           idleToken,

@@ -14,43 +14,36 @@ export function idleApproveAssetsArgs({
   return encodeArgs(['address', 'address[]', 'uint256[]'], [idleToken, assets, amounts]);
 }
 
-export function idleClaimRewardsArgs({ vaultProxy, idleToken }: { vaultProxy: AddressLike; idleToken: AddressLike }) {
-  return encodeArgs(['address', 'address'], [vaultProxy, idleToken]);
+export function idleClaimRewardsArgs({ idleToken }: { idleToken: AddressLike }) {
+  return encodeArgs(['address'], [idleToken]);
 }
 
 export function idleClaimRewardsAndReinvestArgs({
-  vaultProxy,
   idleToken,
   minIncomingIdleTokenAmount,
   useFullBalances,
 }: {
-  vaultProxy: AddressLike;
   idleToken: AddressLike;
   minIncomingIdleTokenAmount: BigNumberish;
   useFullBalances: boolean;
 }) {
-  return encodeArgs(
-    ['address', 'address', 'uint256', 'bool'],
-    [vaultProxy, idleToken, minIncomingIdleTokenAmount, useFullBalances],
-  );
+  return encodeArgs(['address', 'uint256', 'bool'], [idleToken, minIncomingIdleTokenAmount, useFullBalances]);
 }
 
 export function idleClaimRewardsAndSwapArgs({
-  vaultProxy,
   idleToken,
   incomingAsset,
   minIncomingAssetAmount,
   useFullBalances,
 }: {
-  vaultProxy: AddressLike;
   idleToken: AddressLike;
   incomingAsset: AddressLike;
   minIncomingAssetAmount: BigNumberish;
   useFullBalances: boolean;
 }) {
   return encodeArgs(
-    ['address', 'address', 'address', 'uint256', 'bool'],
-    [vaultProxy, idleToken, incomingAsset, minIncomingAssetAmount, useFullBalances],
+    ['address', 'address', 'uint256', 'bool'],
+    [idleToken, incomingAsset, minIncomingAssetAmount, useFullBalances],
   );
 }
 

@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
   ISynthetixAddressResolver,
@@ -33,7 +34,7 @@ describe('constructor', () => {
     const integrationManagerResult = await synthetixAdapter.getIntegrationManager();
     expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
 
-    const originatorResult = await synthetixAdapter.getOriginator();
+    const originatorResult = await synthetixAdapter.getSynthetixOriginator();
     expect(originatorResult).toMatchAddress(fork.config.synthetix.originator);
 
     const synthetixPriceFeedResult = await synthetixAdapter.getSynthetixPriceFeed();
@@ -42,7 +43,7 @@ describe('constructor', () => {
     const synthetixResult = await synthetixAdapter.getSynthetix();
     expect(synthetixResult).toMatchAddress(fork.config.synthetix.snx);
 
-    const trackingCodeResult = await synthetixAdapter.getTrackingCode();
+    const trackingCodeResult = await synthetixAdapter.getSynthetixTrackingCode();
     expect(trackingCodeResult).toBe(fork.config.synthetix.trackingCode);
   });
 });
@@ -58,11 +59,11 @@ describe('parseAssetsForMethod', () => {
       outgoingAssetAmount: 1,
     });
 
-    await expect(synthetixAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      synthetixAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(synthetixAdapter.parseAssetsForMethod(takeOrderSelector, args)).resolves.toBeTruthy();
+    await expect(synthetixAdapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -79,7 +80,7 @@ describe('parseAssetsForMethod', () => {
       outgoingAssetAmount,
     });
 
-    const result = await synthetixAdapter.parseAssetsForMethod(takeOrderSelector, takeOrderArgs);
+    const result = await synthetixAdapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(synthetixAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.None,

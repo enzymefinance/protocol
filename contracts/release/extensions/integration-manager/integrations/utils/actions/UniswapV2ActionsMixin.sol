@@ -24,8 +24,6 @@ abstract contract UniswapV2ActionsMixin is AssetHelpers {
         UNISWAP_V2_ROUTER2 = _router;
     }
 
-    // EXTERNAL FUNCTIONS
-
     /// @dev Helper to add liquidity
     function __uniswapV2Lend(
         address _recipient,

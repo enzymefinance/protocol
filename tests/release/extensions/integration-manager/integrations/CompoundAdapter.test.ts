@@ -157,7 +157,7 @@ describe('constructor', () => {
     const getIntegrationManagerCall = await compoundAdapter.getIntegrationManager();
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
-    const getWethTokenCall = await compoundAdapter.getWethToken();
+    const getWethTokenCall = await compoundAdapter.getCompoundWethToken();
     expect(getWethTokenCall).toMatchAddress(fork.config.weth);
   });
 });
@@ -172,11 +172,11 @@ describe('parseAssetsForMethod', () => {
       outgoingAssetAmount: utils.parseEther('1'),
     });
 
-    await expect(compoundAdapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      compoundAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(compoundAdapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
+    await expect(compoundAdapter.parseAssetsForMethod(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('does not allow a bad cToken', async () => {
@@ -194,11 +194,11 @@ describe('parseAssetsForMethod', () => {
       outgoingAssetAmount: utils.parseEther('1'),
     });
 
-    await expect(compoundAdapter.parseAssetsForMethod(lendSelector, badArgs)).rejects.toBeRevertedWith(
+    await expect(compoundAdapter.parseAssetsForMethod(randomAddress(), lendSelector, badArgs)).rejects.toBeRevertedWith(
       'Unsupported cToken',
     );
 
-    await expect(compoundAdapter.parseAssetsForMethod(lendSelector, goodArgs)).resolves.toBeTruthy();
+    await expect(compoundAdapter.parseAssetsForMethod(randomAddress(), lendSelector, goodArgs)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -216,7 +216,7 @@ describe('parseAssetsForMethod', () => {
     });
     const selector = lendSelector;
 
-    const result = await compoundAdapter.parseAssetsForMethod(selector, args);
+    const result = await compoundAdapter.parseAssetsForMethod(randomAddress(), selector, args);
 
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -242,7 +242,7 @@ describe('parseAssetsForMethod', () => {
     });
     const selector = redeemSelector;
 
-    const result = await compoundAdapter.parseAssetsForMethod(selector, args);
+    const result = await compoundAdapter.parseAssetsForMethod(randomAddress(), selector, args);
 
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,

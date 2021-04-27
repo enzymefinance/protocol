@@ -11,30 +11,22 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../../interfaces/ICurveAddressProvider.sol";
-import "../../../../interfaces/ICurveSwapsERC20.sol";
-import "../../../../interfaces/ICurveSwapsEther.sol";
-import "../../../../interfaces/IWETH.sol";
+import "../utils/actions/CurveExchangeActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title CurveExchangeAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for swapping assets on Curve <https://www.curve.fi/>
-contract CurveExchangeAdapter is AdapterBase {
-    address private constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    address private immutable ADDRESS_PROVIDER;
-    address private immutable WETH_TOKEN;
-
+contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
     constructor(
         address _integrationManager,
         address _addressProvider,
         address _wethToken
-    ) public AdapterBase(_integrationManager) {
-        ADDRESS_PROVIDER = _addressProvider;
-        WETH_TOKEN = _wethToken;
-    }
+    )
+        public
+        AdapterBase(_integrationManager)
+        CurveExchangeActionsMixin(_addressProvider, _wethToken)
+    {}
 
     /// @dev Needed to receive ETH from swap and to unwrap WETH
     receive() external payable {}
@@ -47,6 +39,36 @@ contract CurveExchangeAdapter is AdapterBase {
         return "CURVE_EXCHANGE";
     }
 
+    /// @notice Trades assets on Curve
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _encodedCallArgs Encoded order parameters
+    function takeOrder(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs,
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (
+            address pool,
+            address outgoingAsset,
+            uint256 outgoingAssetAmount,
+            address incomingAsset,
+            uint256 minIncomingAssetAmount
+        ) = __decodeCallArgs(_encodedCallArgs);
+
+        __curveTakeOrder(
+            _vaultProxy,
+            pool,
+            outgoingAsset,
+            outgoingAssetAmount,
+            incomingAsset,
+            minIncomingAssetAmount
+        );
+    }
+
+    /////////////////////////////
+    // PARSE ASSETS FOR METHOD //
+    /////////////////////////////
+
     /// @notice Parses the expected assets to receive from a call on integration
     /// @param _selector The function selector for the callOnIntegration
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
@@ -56,7 +78,11 @@ contract CurveExchangeAdapter is AdapterBase {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override
@@ -98,35 +124,6 @@ contract CurveExchangeAdapter is AdapterBase {
         );
     }
 
-    /// @notice Trades assets on Curve
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _encodedCallArgs,
-        bytes calldata
-    ) external onlyIntegrationManager {
-        (
-            address pool,
-            address outgoingAsset,
-            uint256 outgoingAssetAmount,
-            address incomingAsset,
-            uint256 minIncomingAssetAmount
-        ) = __decodeCallArgs(_encodedCallArgs);
-
-        address swaps = ICurveAddressProvider(ADDRESS_PROVIDER).get_address(2);
-
-        __takeOrder(
-            _vaultProxy,
-            swaps,
-            pool,
-            outgoingAsset,
-            outgoingAssetAmount,
-            incomingAsset,
-            minIncomingAssetAmount
-        );
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the take order encoded call arguments
@@ -142,72 +139,5 @@ contract CurveExchangeAdapter is AdapterBase {
         )
     {
         return abi.decode(_encodedCallArgs, (address, address, uint256, address, uint256));
-    }
-
-    /// @dev Helper to execute takeOrder. Avoids stack-too-deep error.
-    function __takeOrder(
-        address _vaultProxy,
-        address _swaps,
-        address _pool,
-        address _outgoingAsset,
-        uint256 _outgoingAssetAmount,
-        address _incomingAsset,
-        uint256 _minIncomingAssetAmount
-    ) private {
-        if (_outgoingAsset == WETH_TOKEN) {
-            IWETH(WETH_TOKEN).withdraw(_outgoingAssetAmount);
-
-            ICurveSwapsEther(_swaps).exchange{value: _outgoingAssetAmount}(
-                _pool,
-                ETH_ADDRESS,
-                _incomingAsset,
-                _outgoingAssetAmount,
-                _minIncomingAssetAmount,
-                _vaultProxy
-            );
-        } else if (_incomingAsset == WETH_TOKEN) {
-            __approveMaxAsNeeded(_outgoingAsset, _swaps, _outgoingAssetAmount);
-
-            ICurveSwapsERC20(_swaps).exchange(
-                _pool,
-                _outgoingAsset,
-                ETH_ADDRESS,
-                _outgoingAssetAmount,
-                _minIncomingAssetAmount,
-                address(this)
-            );
-
-            // wrap received ETH and send back to the vault
-            uint256 receivedAmount = payable(address(this)).balance;
-            IWETH(payable(WETH_TOKEN)).deposit{value: receivedAmount}();
-            ERC20(WETH_TOKEN).safeTransfer(_vaultProxy, receivedAmount);
-        } else {
-            __approveMaxAsNeeded(_outgoingAsset, _swaps, _outgoingAssetAmount);
-
-            ICurveSwapsERC20(_swaps).exchange(
-                _pool,
-                _outgoingAsset,
-                _incomingAsset,
-                _outgoingAssetAmount,
-                _minIncomingAssetAmount,
-                _vaultProxy
-            );
-        }
-    }
-
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
-
-    /// @notice Gets the `ADDRESS_PROVIDER` variable
-    /// @return addressProvider_ The `ADDRESS_PROVIDER` variable value
-    function getAddressProvider() external view returns (address addressProvider_) {
-        return ADDRESS_PROVIDER;
-    }
-
-    /// @notice Gets the `WETH_TOKEN` variable
-    /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() external view returns (address wethToken_) {
-        return WETH_TOKEN;
     }
 }

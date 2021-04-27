@@ -42,6 +42,40 @@ interface IMockGenericIntegratee {
 contract MockGenericAdapter is AdapterBase {
     address public immutable INTEGRATEE;
 
+    /// @dev Provides a standard implementation for transferring assets between
+    /// the fund's VaultProxy and the adapter, by wrapping the adapter action.
+    /// This modifier should be implemented in almost all adapter actions, unless they
+    /// do not move assets or can spend and receive assets directly with the VaultProxy
+    modifier fundAssetsTransferHandler(
+        address _vaultProxy,
+        bytes memory _encodedAssetTransferArgs
+    ) {
+        (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType,
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
+            address[] memory incomingAssets
+        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+
+        // Take custody of spend assets (if necessary)
+        if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
+            for (uint256 i = 0; i < spendAssets.length; i++) {
+                ERC20(spendAssets[i]).safeTransferFrom(
+                    _vaultProxy,
+                    address(this),
+                    spendAssetAmounts[i]
+                );
+            }
+        }
+
+        // Execute call
+        _;
+
+        // Transfer remaining assets back to the fund's VaultProxy
+        __pushFullAssetBalances(_vaultProxy, incomingAssets);
+        __pushFullAssetBalances(_vaultProxy, spendAssets);
+    }
+
     // No need to specify the IntegrationManager
     constructor(address _integratee) public AdapterBase(address(0)) {
         INTEGRATEE = _integratee;
@@ -51,7 +85,11 @@ contract MockGenericAdapter is AdapterBase {
         return "MOCK_GENERIC";
     }
 
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _callArgs)
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _callArgs
+    )
         external
         view
         override

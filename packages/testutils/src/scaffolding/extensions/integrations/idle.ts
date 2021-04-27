@@ -71,7 +71,6 @@ export async function idleClaimRewards({
     adapter: idleAdapter,
     selector: claimRewardsSelector,
     encodedCallArgs: idleClaimRewardsArgs({
-      vaultProxy: await comptrollerProxy.getVaultProxy(),
       idleToken,
     }),
   });
@@ -102,7 +101,6 @@ export async function idleClaimRewardsAndReinvest({
     adapter: idleAdapter,
     selector: claimRewardsAndReinvestSelector,
     encodedCallArgs: idleClaimRewardsAndReinvestArgs({
-      vaultProxy: await comptrollerProxy.getVaultProxy(),
       idleToken,
       minIncomingIdleTokenAmount,
       useFullBalances,
@@ -137,7 +135,6 @@ export async function idleClaimRewardsAndSwap({
     adapter: idleAdapter,
     selector: claimRewardsAndSwapSelector,
     encodedCallArgs: idleClaimRewardsAndSwapArgs({
-      vaultProxy: await comptrollerProxy.getVaultProxy(),
       idleToken,
       incomingAsset,
       minIncomingAssetAmount,

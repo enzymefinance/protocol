@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
   lendSelector,
@@ -33,7 +34,7 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const uniswapV2Adapter = fork.deployment.uniswapV2Adapter;
 
-    const getRouterCall = await uniswapV2Adapter.getRouter();
+    const getRouterCall = await uniswapV2Adapter.getUniswapV2Router2();
     expect(getRouterCall).toMatchAddress(fork.config.uniswap.router);
 
     const getFactoryCall = await uniswapV2Adapter.getFactory();
@@ -64,11 +65,11 @@ describe('parseAssetsForMethod', () => {
       minPoolTokenAmount,
     });
 
-    await expect(uniswapV2Adapter.parseAssetsForMethod(utils.randomBytes(4), args)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      uniswapV2Adapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(uniswapV2Adapter.parseAssetsForMethod(lendSelector, args)).resolves.toBeTruthy();
+    await expect(uniswapV2Adapter.parseAssetsForMethod(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -93,7 +94,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = lendSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(selector, lendArgs);
+    const result = await uniswapV2Adapter.parseAssetsForMethod(randomAddress(), selector, lendArgs);
 
     expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [poolToken],
@@ -122,7 +123,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = redeemSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(selector, redeemArgs);
+    const result = await uniswapV2Adapter.parseAssetsForMethod(randomAddress(), selector, redeemArgs);
 
     expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
       incomingAssets_: [tokenA, tokenB],

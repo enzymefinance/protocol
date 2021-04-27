@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   alphaHomoraV1LendArgs,
   alphaHomoraV1RedeemArgs,
@@ -168,11 +169,13 @@ describe('parseAssetsForMethod', () => {
       minIncomingIbethAmount: 1,
     });
 
-    await expect(alphaHomoraAdapter.parseAssetsForMethod(utils.randomBytes(4), lendArgs)).rejects.toBeRevertedWith(
-      '_selector invalid',
-    );
+    await expect(
+      alphaHomoraAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), lendArgs),
+    ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(alphaHomoraAdapter.parseAssetsForMethod(lendSelector, lendArgs)).resolves.toBeTruthy();
+    await expect(
+      alphaHomoraAdapter.parseAssetsForMethod(randomAddress(), lendSelector, lendArgs),
+    ).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -186,7 +189,7 @@ describe('parseAssetsForMethod', () => {
       minIncomingIbethAmount,
     });
 
-    const result = await alphaHomoraAdapter.parseAssetsForMethod(lendSelector, lendArgs);
+    const result = await alphaHomoraAdapter.parseAssetsForMethod(randomAddress(), lendSelector, lendArgs);
     expect(result).toMatchFunctionOutput(alphaHomoraAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [fork.config.alphaHomoraV1.ibeth],
@@ -207,7 +210,7 @@ describe('parseAssetsForMethod', () => {
       minIncomingWethAmount,
     });
 
-    const result = await alphaHomoraAdapter.parseAssetsForMethod(redeemSelector, redeemArgs);
+    const result = await alphaHomoraAdapter.parseAssetsForMethod(randomAddress(), redeemSelector, redeemArgs);
     expect(result).toMatchFunctionOutput(alphaHomoraAdapter.parseAssetsForMethod, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [fork.config.weth],

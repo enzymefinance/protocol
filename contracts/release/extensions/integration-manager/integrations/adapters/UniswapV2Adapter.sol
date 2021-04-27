@@ -11,27 +11,22 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../interfaces/IUniswapV2Factory.sol";
-import "../../../../interfaces/IUniswapV2Router2.sol";
+import "../utils/actions/UniswapV2ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title UniswapV2Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Uniswap v2
-contract UniswapV2Adapter is AdapterBase {
-    using SafeMath for uint256;
-
+contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
     address private immutable FACTORY;
-    address private immutable ROUTER;
 
     constructor(
         address _integrationManager,
         address _router,
         address _factory
-    ) public AdapterBase(_integrationManager) {
+    ) public AdapterBase(_integrationManager) UniswapV2ActionsMixin(_router) {
         FACTORY = _factory;
-        ROUTER = _router;
     }
 
     // EXTERNAL FUNCTIONS
@@ -42,120 +37,14 @@ contract UniswapV2Adapter is AdapterBase {
         return "UNISWAP_V2";
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
-    /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
-    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
-    /// the adapter access to spend assets (`None` by default)
-    /// @return spendAssets_ The assets to spend in the call
-    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
-    /// @return incomingAssets_ The assets to receive in the call
-    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
-        external
-        view
-        override
-        returns (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_
-        )
-    {
-        if (_selector == LEND_SELECTOR) {
-            (
-                address[2] memory outgoingAssets,
-                uint256[2] memory maxOutgoingAssetAmounts,
-                ,
-                uint256 minIncomingAssetAmount
-            ) = __decodeLendCallArgs(_encodedCallArgs);
-
-            spendAssets_ = new address[](2);
-            spendAssets_[0] = outgoingAssets[0];
-            spendAssets_[1] = outgoingAssets[1];
-
-            spendAssetAmounts_ = new uint256[](2);
-            spendAssetAmounts_[0] = maxOutgoingAssetAmounts[0];
-            spendAssetAmounts_[1] = maxOutgoingAssetAmounts[1];
-
-            incomingAssets_ = new address[](1);
-            // No need to validate not address(0), this will be caught in IntegrationManager
-            incomingAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
-                outgoingAssets[0],
-                outgoingAssets[1]
-            );
-
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        } else if (_selector == REDEEM_SELECTOR) {
-            (
-                uint256 outgoingAssetAmount,
-                address[2] memory incomingAssets,
-                uint256[2] memory minIncomingAssetAmounts
-            ) = __decodeRedeemCallArgs(_encodedCallArgs);
-
-            spendAssets_ = new address[](1);
-            // No need to validate not address(0), this will be caught in IntegrationManager
-            spendAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
-                incomingAssets[0],
-                incomingAssets[1]
-            );
-
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = outgoingAssetAmount;
-
-            incomingAssets_ = new address[](2);
-            incomingAssets_[0] = incomingAssets[0];
-            incomingAssets_[1] = incomingAssets[1];
-
-            minIncomingAssetAmounts_ = new uint256[](2);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmounts[0];
-            minIncomingAssetAmounts_[1] = minIncomingAssetAmounts[1];
-        } else if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                address[] memory path,
-                uint256 outgoingAssetAmount,
-                uint256 minIncomingAssetAmount
-            ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
-
-            require(path.length >= 2, "parseAssetsForMethod: _path must be >= 2");
-
-            spendAssets_ = new address[](1);
-            spendAssets_[0] = path[0];
-            spendAssetAmounts_ = new uint256[](1);
-            spendAssetAmounts_[0] = outgoingAssetAmount;
-
-            incomingAssets_ = new address[](1);
-            incomingAssets_[0] = path[path.length - 1];
-            minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-        } else {
-            revert("parseAssetsForMethod: _selector invalid");
-        }
-
-        return (
-            IIntegrationManager.SpendAssetsHandleType.Transfer,
-            spendAssets_,
-            spendAssetAmounts_,
-            incomingAssets_,
-            minIncomingAssetAmounts_
-        );
-    }
-
     /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
     function lend(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
-    )
-        external
-        onlyIntegrationManager
-        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
-    {
+        bytes calldata
+    ) external onlyIntegrationManager {
         (
             address[2] memory outgoingAssets,
             uint256[2] memory maxOutgoingAssetAmounts,
@@ -163,7 +52,7 @@ contract UniswapV2Adapter is AdapterBase {
 
         ) = __decodeLendCallArgs(_encodedCallArgs);
 
-        __lend(
+        __uniswapV2Lend(
             _vaultProxy,
             outgoingAssets[0],
             outgoingAssets[1],
@@ -182,11 +71,7 @@ contract UniswapV2Adapter is AdapterBase {
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
         bytes calldata _encodedAssetTransferArgs
-    )
-        external
-        onlyIntegrationManager
-        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
-    {
+    ) external onlyIntegrationManager {
         (
             uint256 outgoingAssetAmount,
             address[2] memory incomingAssets,
@@ -198,7 +83,7 @@ contract UniswapV2Adapter is AdapterBase {
             _encodedAssetTransferArgs
         );
 
-        __redeem(
+        __uniswapV2Redeem(
             _vaultProxy,
             spendAssets[0],
             outgoingAssetAmount,
@@ -212,15 +97,162 @@ contract UniswapV2Adapter is AdapterBase {
     /// @notice Trades assets on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
     function takeOrder(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (
+            address[] memory path,
+            uint256 outgoingAssetAmount,
+            uint256 minIncomingAssetAmount
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
+        __uniswapV2Swap(_vaultProxy, outgoingAssetAmount, minIncomingAssetAmount, path);
+    }
+
+    /////////////////////////////
+    // PARSE ASSETS FOR METHOD //
+    /////////////////////////////
+
+    /// @notice Parses the expected assets to receive from a call on integration
+    /// @param _selector The function selector for the callOnIntegration
+    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @return spendAssetsHandleType_ A type that dictates how to handle granting
+    /// the adapter access to spend assets (`None` by default)
+    /// @return spendAssets_ The assets to spend in the call
+    /// @return spendAssetAmounts_ The max asset amounts to spend in the call
+    /// @return incomingAssets_ The assets to receive in the call
+    /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
+    function parseAssetsForMethod(
+        address,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
     )
         external
-        onlyIntegrationManager
-        fundAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        view
+        override
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        if (_selector == LEND_SELECTOR) {
+            return __parseAssetsForLend(_encodedCallArgs);
+        } else if (_selector == REDEEM_SELECTOR) {
+            return __parseAssetsForRedeem(_encodedCallArgs);
+        } else if (_selector == TAKE_ORDER_SELECTOR) {
+            return __parseAssetsForTakeOrder(_encodedCallArgs);
+        }
+
+        revert("parseAssetsForMethod: _selector invalid");
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during lend() calls
+    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (
+            address[2] memory outgoingAssets,
+            uint256[2] memory maxOutgoingAssetAmounts,
+            ,
+            uint256 minIncomingAssetAmount
+        ) = __decodeLendCallArgs(_encodedCallArgs);
+
+        spendAssets_ = new address[](2);
+        spendAssets_[0] = outgoingAssets[0];
+        spendAssets_[1] = outgoingAssets[1];
+
+        spendAssetAmounts_ = new uint256[](2);
+        spendAssetAmounts_[0] = maxOutgoingAssetAmounts[0];
+        spendAssetAmounts_[1] = maxOutgoingAssetAmounts[1];
+
+        incomingAssets_ = new address[](1);
+        // No need to validate not address(0), this will be caught in IntegrationManager
+        incomingAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
+            outgoingAssets[0],
+            outgoingAssets[1]
+        );
+
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during redeem() calls
+    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (
+            uint256 outgoingAssetAmount,
+            address[2] memory incomingAssets,
+            uint256[2] memory minIncomingAssetAmounts
+        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+
+        spendAssets_ = new address[](1);
+        // No need to validate not address(0), this will be caught in IntegrationManager
+        spendAssets_[0] = IUniswapV2Factory(FACTORY).getPair(incomingAssets[0], incomingAssets[1]);
+
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = outgoingAssetAmount;
+
+        incomingAssets_ = new address[](2);
+        incomingAssets_[0] = incomingAssets[0];
+        incomingAssets_[1] = incomingAssets[1];
+
+        minIncomingAssetAmounts_ = new uint256[](2);
+        minIncomingAssetAmounts_[0] = minIncomingAssetAmounts[0];
+        minIncomingAssetAmounts_[1] = minIncomingAssetAmounts[1];
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during takeOrder() calls
+    function __parseAssetsForTakeOrder(bytes calldata _encodedCallArgs)
+        private
+        pure
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
     {
         (
             address[] memory path,
@@ -228,7 +260,25 @@ contract UniswapV2Adapter is AdapterBase {
             uint256 minIncomingAssetAmount
         ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
 
-        __takeOrder(_vaultProxy, outgoingAssetAmount, minIncomingAssetAmount, path);
+        require(path.length >= 2, "__parseAssetsForTakeOrder: _path must be >= 2");
+
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = path[0];
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = outgoingAssetAmount;
+
+        incomingAssets_ = new address[](1);
+        incomingAssets_[0] = path[path.length - 1];
+        minIncomingAssetAmounts_ = new uint256[](1);
+        minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
     }
 
     // PRIVATE FUNCTIONS
@@ -273,75 +323,6 @@ contract UniswapV2Adapter is AdapterBase {
         return abi.decode(_encodedCallArgs, (address[], uint256, uint256));
     }
 
-    /// @dev Helper to execute lend. Avoids stack-too-deep error.
-    function __lend(
-        address _vaultProxy,
-        address _tokenA,
-        address _tokenB,
-        uint256 _amountADesired,
-        uint256 _amountBDesired,
-        uint256 _amountAMin,
-        uint256 _amountBMin
-    ) private {
-        __approveMaxAsNeeded(_tokenA, ROUTER, _amountADesired);
-        __approveMaxAsNeeded(_tokenB, ROUTER, _amountBDesired);
-
-        // Execute lend on Uniswap
-        IUniswapV2Router2(ROUTER).addLiquidity(
-            _tokenA,
-            _tokenB,
-            _amountADesired,
-            _amountBDesired,
-            _amountAMin,
-            _amountBMin,
-            _vaultProxy,
-            block.timestamp.add(1)
-        );
-    }
-
-    /// @dev Helper to execute redeem. Avoids stack-too-deep error.
-    function __redeem(
-        address _vaultProxy,
-        address _poolToken,
-        uint256 _poolTokenAmount,
-        address _tokenA,
-        address _tokenB,
-        uint256 _amountAMin,
-        uint256 _amountBMin
-    ) private {
-        __approveMaxAsNeeded(_poolToken, ROUTER, _poolTokenAmount);
-
-        // Execute redeem on Uniswap
-        IUniswapV2Router2(ROUTER).removeLiquidity(
-            _tokenA,
-            _tokenB,
-            _poolTokenAmount,
-            _amountAMin,
-            _amountBMin,
-            _vaultProxy,
-            block.timestamp.add(1)
-        );
-    }
-
-    /// @dev Helper to execute takeOrder. Avoids stack-too-deep error.
-    function __takeOrder(
-        address _vaultProxy,
-        uint256 _outgoingAssetAmount,
-        uint256 _minIncomingAssetAmount,
-        address[] memory _path
-    ) private {
-        __approveMaxAsNeeded(_path[0], ROUTER, _outgoingAssetAmount);
-
-        // Execute fill
-        IUniswapV2Router2(ROUTER).swapExactTokensForTokens(
-            _outgoingAssetAmount,
-            _minIncomingAssetAmount,
-            _path,
-            _vaultProxy,
-            block.timestamp.add(1)
-        );
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -350,11 +331,5 @@ contract UniswapV2Adapter is AdapterBase {
     /// @return factory_ The `FACTORY` variable value
     function getFactory() external view returns (address factory_) {
         return FACTORY;
-    }
-
-    /// @notice Gets the `ROUTER` variable
-    /// @return router_ The `ROUTER` variable value
-    function getRouter() external view returns (address router_) {
-        return ROUTER;
     }
 }

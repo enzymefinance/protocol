@@ -464,7 +464,11 @@ contract IntegrationManager is
             maxSpendAssetAmounts_,
             expectedIncomingAssets_,
             minIncomingAssetAmounts_
-        ) = IIntegrationAdapter(adapter).parseAssetsForMethod(selector, integrationData);
+        ) = IIntegrationAdapter(adapter).parseAssetsForMethod(
+            _vaultProxy,
+            selector,
+            integrationData
+        );
         require(
             spendAssets_.length == maxSpendAssetAmounts_.length,
             "__preProcessCoI: Spend assets arrays unequal"

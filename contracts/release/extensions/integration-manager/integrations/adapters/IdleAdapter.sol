@@ -16,7 +16,7 @@ import "../../../../interfaces/IIdleTokenV4.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/actions/IdleV4ActionsMixin.sol";
 import "../utils/actions/UniswapV2ActionsMixin.sol";
-import "../utils/AdapterBase2.sol";
+import "../utils/AdapterBase.sol";
 
 /// @title IdleAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -32,7 +32,7 @@ import "../utils/AdapterBase2.sol";
 /// then getGovTokensAmounts() will return 0 balances). Because of this difficulty -
 /// and in keeping with how other adapters treat claimed rewards -
 /// this adapter does not report claimed rewards as incomingAssets.
-contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin {
+contract IdleAdapter is AdapterBase, IdleV4ActionsMixin, UniswapV2ActionsMixin {
     using AddressArrayLib for address[];
 
     address private immutable IDLE_PRICE_FEED;
@@ -43,7 +43,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         address _idlePriceFeed,
         address _wethToken,
         address _uniswapV2Router2
-    ) public AdapterBase2(_integrationManager) UniswapV2ActionsMixin(_uniswapV2Router2) {
+    ) public AdapterBase(_integrationManager) UniswapV2ActionsMixin(_uniswapV2Router2) {
         IDLE_PRICE_FEED = _idlePriceFeed;
         WETH_TOKEN = _wethToken;
     }
@@ -76,7 +76,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         onlyIntegrationManager
         postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (, address idleToken) = __decodeClaimRewardsCallArgs(_encodedCallArgs);
+        address idleToken = __decodeClaimRewardsCallArgs(_encodedCallArgs);
 
         __idleV4ClaimRewards(idleToken);
 
@@ -103,7 +103,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         // The idleToken is both the spend asset and the incoming asset in this case
         postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
-        (, address idleToken, , bool useFullBalances) = __decodeClaimRewardsAndReinvestCallArgs(
+        (address idleToken, , bool useFullBalances) = __decodeClaimRewardsAndReinvestCallArgs(
             _encodedCallArgs
         );
 
@@ -152,7 +152,6 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
     {
         (
-            ,
             address idleToken,
             address incomingAsset,
             ,
@@ -265,7 +264,11 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(bytes4 _selector, bytes calldata _encodedCallArgs)
+    function parseAssetsForMethod(
+        address _vaultProxy,
+        bytes4 _selector,
+        bytes calldata _encodedCallArgs
+    )
         external
         view
         override
@@ -280,11 +283,11 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         if (_selector == APPROVE_ASSETS_SELECTOR) {
             return __parseAssetsForApproveAssets(_encodedCallArgs);
         } else if (_selector == CLAIM_REWARDS_SELECTOR) {
-            return __parseAssetsForClaimRewards(_encodedCallArgs);
+            return __parseAssetsForClaimRewards(_vaultProxy, _encodedCallArgs);
         } else if (_selector == CLAIM_REWARDS_AND_REINVEST_SELECTOR) {
-            return __parseAssetsForClaimRewardsAndReinvest(_encodedCallArgs);
+            return __parseAssetsForClaimRewardsAndReinvest(_vaultProxy, _encodedCallArgs);
         } else if (_selector == CLAIM_REWARDS_AND_SWAP_SELECTOR) {
-            return __parseAssetsForClaimRewardsAndSwap(_encodedCallArgs);
+            return __parseAssetsForClaimRewardsAndSwap(_vaultProxy, _encodedCallArgs);
         } else if (_selector == LEND_SELECTOR) {
             return __parseAssetsForLend(_encodedCallArgs);
         } else if (_selector == REDEEM_SELECTOR) {
@@ -343,7 +346,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during claimRewards() calls
-    function __parseAssetsForClaimRewards(bytes calldata _encodedCallArgs)
+    function __parseAssetsForClaimRewards(address _vaultProxy, bytes calldata _encodedCallArgs)
         private
         view
         returns (
@@ -354,7 +357,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address vaultProxy, address idleToken) = __decodeClaimRewardsCallArgs(_encodedCallArgs);
+        address idleToken = __decodeClaimRewardsCallArgs(_encodedCallArgs);
 
         require(
             __getUnderlyingForIdleToken(idleToken) != address(0),
@@ -362,7 +365,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         );
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForClaimRewardsCalls(
-            vaultProxy,
+            _vaultProxy,
             idleToken
         );
 
@@ -377,7 +380,10 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during claimRewardsAndReinvest() calls.
-    function __parseAssetsForClaimRewardsAndReinvest(bytes calldata _encodedCallArgs)
+    function __parseAssetsForClaimRewardsAndReinvest(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs
+    )
         private
         view
         returns (
@@ -389,7 +395,6 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         )
     {
         (
-            address vaultProxy,
             address idleToken,
             uint256 minIncomingIdleTokenAmount,
 
@@ -398,7 +403,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         // Does not validate idleToken here as we need to do fetch the underlying during the action
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForClaimRewardsCalls(
-            vaultProxy,
+            _vaultProxy,
             idleToken
         );
 
@@ -419,7 +424,10 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during claimRewardsAndSwap() calls.
-    function __parseAssetsForClaimRewardsAndSwap(bytes calldata _encodedCallArgs)
+    function __parseAssetsForClaimRewardsAndSwap(
+        address _vaultProxy,
+        bytes calldata _encodedCallArgs
+    )
         private
         view
         returns (
@@ -431,7 +439,6 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         )
     {
         (
-            address vaultProxy,
             address idleToken,
             address incomingAsset,
             uint256 minIncomingAssetAmount,
@@ -444,7 +451,7 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         );
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForClaimRewardsCalls(
-            vaultProxy,
+            _vaultProxy,
             idleToken
         );
 
@@ -585,9 +592,9 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
     function __decodeClaimRewardsCallArgs(bytes memory _encodedCallArgs)
         private
         pure
-        returns (address vaultProxy_, address idleToken_)
+        returns (address idleToken_)
     {
-        return abi.decode(_encodedCallArgs, (address, address));
+        return abi.decode(_encodedCallArgs, (address));
     }
 
     /// @dev Helper to decode the encoded call arguments for claiming rewards and reinvesting
@@ -595,13 +602,12 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         private
         pure
         returns (
-            address vaultProxy_,
             address idleToken_,
             uint256 minIncomingIdleTokenAmount_,
             bool useFullBalances_
         )
     {
-        return abi.decode(_encodedCallArgs, (address, address, uint256, bool));
+        return abi.decode(_encodedCallArgs, (address, uint256, bool));
     }
 
     /// @dev Helper to decode the encoded call arguments for claiming rewards and swapping
@@ -609,14 +615,13 @@ contract IdleAdapter is AdapterBase2, IdleV4ActionsMixin, UniswapV2ActionsMixin 
         private
         pure
         returns (
-            address vaultProxy_,
             address idleToken_,
             address incomingAsset_,
             uint256 minIncomingAssetAmount_,
             bool useFullBalances_
         )
     {
-        return abi.decode(_encodedCallArgs, (address, address, address, uint256, bool));
+        return abi.decode(_encodedCallArgs, (address, address, uint256, bool));
     }
 
     /// @dev Helper to decode callArgs for lending
