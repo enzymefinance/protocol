@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   feeManagerConfigArgs,
   MockReentrancyToken,
@@ -674,6 +675,7 @@ describe('redeemSharesDetailed', () => {
 
     assertEvent(receipt, 'SharesRedeemed', {
       redeemer: investor,
+      recipient: investor,
       sharesQuantity: redeemQuantity,
       receivedAssets: expectedPayoutAssets,
       receivedAssetQuantities: expectedPayoutAmounts,
@@ -694,7 +696,7 @@ describe('redeemSharesDetailed', () => {
     }
   });
 
-  it('handles a valid call (one additional asset and one asset to ignore)', async () => {
+  it('handles a valid call (one additional asset, one asset to ignore, and a different recipient)', async () => {
     const {
       fund: { denominationAsset },
       deployment: { fundDeployer },
@@ -733,6 +735,7 @@ describe('redeemSharesDetailed', () => {
     expect(isTrackedAssetCall).toBe(false);
 
     // Define the redemption params and the expected payout assets
+    const recipient = randomAddress();
     const redeemQuantity = investmentAmount.div(2);
     const additionalAssets = [untrackedAsset];
     const assetsToSkip = [denominationAsset];
@@ -741,7 +744,7 @@ describe('redeemSharesDetailed', () => {
 
     // Record the investor's pre-redemption balances
     const [preExpectedPayoutAssetBalance, preAssetToSkipBalance] = await getAssetBalances({
-      account: investor,
+      account: recipient,
       assets: [untrackedAsset, denominationAsset],
     });
 
@@ -749,6 +752,7 @@ describe('redeemSharesDetailed', () => {
     const receipt = await redeemShares({
       comptrollerProxy,
       signer: investor,
+      recipient,
       quantity: redeemQuantity,
       additionalAssets,
       assetsToSkip,
@@ -757,17 +761,18 @@ describe('redeemSharesDetailed', () => {
     // Assert the event
     assertEvent(receipt, 'SharesRedeemed', {
       redeemer: investor,
+      recipient,
       sharesQuantity: redeemQuantity,
       receivedAssets: expectedPayoutAssets,
       receivedAssetQuantities: expectedPayoutAmounts,
     });
 
     const [postExpectedPayoutAssetBalance, postAssetToSkipBalance] = await getAssetBalances({
-      account: investor,
+      account: recipient,
       assets: [untrackedAsset, denominationAsset],
     });
 
-    // Assert the redeemer has redeemed the correct shares quantity and received the expected assets and balances
+    // Assert the redeemer has redeemed the correct shares quantity and that the recipient received the expected assets and balances
     const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
     expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
     expect(postExpectedPayoutAssetBalance).toEqBigNumber(preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]));

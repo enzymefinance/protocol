@@ -54,6 +54,7 @@ contract ComptrollerLib is IComptroller {
 
     event SharesRedeemed(
         address indexed redeemer,
+        address indexed recipient,
         uint256 sharesQuantity,
         address[] receivedAssets,
         uint256[] receivedAssetQuantities
@@ -802,7 +803,8 @@ contract ComptrollerLib is IComptroller {
 
     // REDEEM SHARES
 
-    /// @notice Redeem all of the sender's shares for a proportionate slice of the fund's assets
+    /// @notice Redeems all of the sender's shares and returns a proportionate slice of
+    /// the vault's tracked assets to the sender
     /// @return payoutAssets_ The assets paid out to the redeemer
     /// @return payoutAmounts_ The amount of each asset paid out to the redeemer
     /// @dev See __redeemShares() for further detail
@@ -813,14 +815,16 @@ contract ComptrollerLib is IComptroller {
         return
             __redeemShares(
                 msg.sender,
+                msg.sender,
                 ERC20(vaultProxy).balanceOf(msg.sender),
                 new address[](0),
                 new address[](0)
             );
     }
 
-    /// @notice Redeem a specified quantity of the sender's shares for a proportionate slice of
-    /// the fund's assets, optionally specifying additional assets and assets to skip.
+    /// @notice Redeems some of the sender's shares for a proportionate slice of
+    /// the vault's assets, with detailed configuration options
+    /// @param _recipient The account that will receive the proportionate slice of assets
     /// @param _sharesQuantity The quantity of shares to redeem
     /// @param _additionalAssets Additional (non-tracked) assets to claim
     /// @param _assetsToSkip Tracked assets to forfeit
@@ -829,11 +833,19 @@ contract ComptrollerLib is IComptroller {
     /// @dev Any claim to passed _assetsToSkip will be forfeited entirely. This should generally
     /// only be exercised if a bad asset is causing redemption to fail.
     function redeemSharesDetailed(
+        address _recipient,
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
     ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
-        return __redeemShares(msg.sender, _sharesQuantity, _additionalAssets, _assetsToSkip);
+        return
+            __redeemShares(
+                msg.sender,
+                _recipient,
+                _sharesQuantity,
+                _additionalAssets,
+                _assetsToSkip
+            );
     }
 
     /// @dev Helper to parse an array of payout assets during redemption, taking into account
@@ -905,6 +917,7 @@ contract ComptrollerLib is IComptroller {
     /// of the timelock period on shares actions that must be respected.
     function __redeemShares(
         address _redeemer,
+        address _recipient,
         uint256 _sharesQuantity,
         address[] memory _additionalAssets,
         address[] memory _assetsToSkip
@@ -956,7 +969,7 @@ contract ComptrollerLib is IComptroller {
         uint256 sharesSupply = sharesContract.totalSupply();
         vaultProxyContract.burnShares(_redeemer, _sharesQuantity);
 
-        // Calculate and transfer payout asset amounts due to redeemer
+        // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         address denominationAssetCopy = denominationAsset;
 
@@ -967,7 +980,6 @@ contract ComptrollerLib is IComptroller {
             true
         );
 
-        // Payout assets to redeemer
         for (uint256 i; i < payoutAssets_.length; i++) {
             uint256 assetBalance = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
 
@@ -982,13 +994,17 @@ contract ComptrollerLib is IComptroller {
                 payoutAmounts_[i] = assetBalance.mul(_sharesQuantity).div(sharesSupply);
             }
 
-            // Transfer payout asset to redeemer
+            // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {
-                vaultProxyContract.withdrawAssetTo(payoutAssets_[i], _redeemer, payoutAmounts_[i]);
+                vaultProxyContract.withdrawAssetTo(
+                    payoutAssets_[i],
+                    _recipient,
+                    payoutAmounts_[i]
+                );
             }
         }
 
-        emit SharesRedeemed(_redeemer, _sharesQuantity, payoutAssets_, payoutAmounts_);
+        emit SharesRedeemed(_redeemer, _recipient, _sharesQuantity, payoutAssets_, payoutAmounts_);
 
         return (payoutAssets_, payoutAmounts_);
     }

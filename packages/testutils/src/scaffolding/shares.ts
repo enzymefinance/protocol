@@ -15,6 +15,7 @@ export interface BuySharesParams {
 export interface RedeemSharesParams {
   comptrollerProxy: ComptrollerLib;
   signer: SignerWithAddress;
+  recipient?: AddressLike;
   quantity?: BigNumberish;
   additionalAssets?: AddressLike[];
   assetsToSkip?: AddressLike[];
@@ -43,6 +44,7 @@ export async function buyShares({
 export async function redeemShares({
   comptrollerProxy,
   signer,
+  recipient = signer,
   quantity,
   additionalAssets = [],
   assetsToSkip = [],
@@ -53,6 +55,6 @@ export async function redeemShares({
     }
     return comptrollerProxy.connect(signer).redeemShares();
   } else {
-    return comptrollerProxy.connect(signer).redeemSharesDetailed(quantity, additionalAssets, assetsToSkip);
+    return comptrollerProxy.connect(signer).redeemSharesDetailed(recipient, quantity, additionalAssets, assetsToSkip);
   }
 }
