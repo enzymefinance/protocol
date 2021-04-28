@@ -137,7 +137,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @notice Adds a tracked asset to the fund
     /// @param _asset The asset to add
     /// @dev Allows addition of already tracked assets to fail silently.
-    function addTrackedAsset(address _asset) external override onlyAccessor notShares(_asset) {
+    function addTrackedAsset(address _asset) public override onlyAccessor notShares(_asset) {
         if (!isTrackedAsset(_asset)) {
             require(
                 trackedAssets.length < TRACKED_ASSETS_LIMIT,
@@ -163,25 +163,6 @@ contract VaultLib is VaultLibBase2, IVault {
         emit DebtPositionAdded(_debtPosition);
     }
 
-    /// @notice Adds collateral assets to a specific debt position
-    /// @param _debtPosition The debt position address
-    /// @param _assets The assets to add as collateral
-    /// @param _amounts The amounts of collateral to be added
-    /// @param _data Additional data to be processed by the debt position
-    function addCollateralAssets(
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) external override onlyAccessor {
-        for (uint256 i; i < _assets.length; i++) {
-            __assertNotShares(_assets[i]);
-            ERC20(_assets[i]).safeTransfer(_debtPosition, _amounts[i]);
-        }
-
-        IDebtPosition(_debtPosition).addCollateralAssets(_assets, _amounts, _data);
-    }
-
     /// @notice Grants an allowance to a spender to use the fund's asset
     /// @param _asset The asset for which to grant an allowance
     /// @param _target The spender of the allowance
@@ -192,20 +173,6 @@ contract VaultLib is VaultLibBase2, IVault {
         uint256 _amount
     ) external override onlyAccessor notShares(_asset) {
         ERC20(_asset).approve(_target, _amount);
-    }
-
-    /// @notice Borrows a set of assets from a specific debt position
-    /// @param _debtPosition The debt position address
-    /// @param _assets The assets to borrow
-    /// @param _amounts The amounts of assets to be borrowed
-    /// @param _data Additional data to be processed by the debt position
-    function borrowAssets(
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) external override onlyAccessor {
-        IDebtPosition(_debtPosition).borrowAssets(_assets, _amounts, _data);
     }
 
     /// @notice Makes an arbitrary call with this contract as the sender
@@ -220,24 +187,34 @@ contract VaultLib is VaultLibBase2, IVault {
         require(success, string(returnData));
     }
 
+    /// @notice Makes a call on a debt position
+    /// @param _debtPosition The debt position to call
+    /// @param _actionData The action data for the call
+    /// @param _assetsToTransfer The assets to transfer to the debt position
+    /// @param _amountsToTransfer The amount of assets to be transfered to the debt position
+    /// @param _assetsToReceive The assets that will be received from the call
+    function callOnDebtPosition(
+        address _debtPosition,
+        bytes calldata _actionData,
+        address[] memory _assetsToTransfer,
+        uint256[] memory _amountsToTransfer,
+        address[] memory _assetsToReceive
+    ) external override onlyAccessor {
+        for (uint256 i; i < _assetsToTransfer.length; i++) {
+            ERC20(_assetsToTransfer[i]).safeTransfer(_debtPosition, _amountsToTransfer[i]);
+        }
+
+        IDebtPosition(_debtPosition).receiveCallFromVault(_actionData);
+
+        for (uint256 i; i < _assetsToReceive.length; i++) {
+            addTrackedAsset(_assetsToReceive[i]);
+        }
+    }
+
     /// @notice Removes a tracked asset from the fund
     /// @param _asset The asset to remove
     function removeTrackedAsset(address _asset) external override onlyAccessor {
         __removeTrackedAsset(_asset);
-    }
-
-    /// @notice Removes an amount of collateral assets from a specific debt position
-    /// @param _debtPosition The debt position address
-    /// @param _assets The assets to remove as collateral
-    /// @param _amounts The amounts of collateral to be removed
-    /// @param _data Additional data to be processed by the debt position
-    function removeCollateralAssets(
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) external override onlyAccessor {
-        IDebtPosition(_debtPosition).removeCollateralAssets(_assets, _amounts, _data);
     }
 
     /// @notice Removes a debt position from the fund
@@ -259,25 +236,6 @@ contract VaultLib is VaultLibBase2, IVault {
 
             emit DebtPositionRemoved(_debtPosition);
         }
-    }
-
-    /// @notice Repays an amount of assets from a specific debt position
-    /// @param _debtPosition The debt position address
-    /// @param _assets The assets to be repaid
-    /// @param _amounts The amounts to be repaid
-    /// @param _data Additional data to be processed by the debt position
-    function repayBorrowedAssets(
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) external override onlyAccessor {
-        for (uint256 i; i < _assets.length; i++) {
-            __assertNotShares(_assets[i]);
-            ERC20(_assets[i]).safeTransfer(_debtPosition, _amounts[i]);
-        }
-
-        IDebtPosition(_debtPosition).repayBorrowedAssets(_assets, _amounts, _data);
     }
 
     /// @notice Withdraws an asset from the VaultProxy to a given account

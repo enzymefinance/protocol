@@ -1,10 +1,14 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../../../../protocol/src';
 
 export enum DebtPositionManagerActionId {
   CreateDebtPosition,
+  CallOnDebtPosition,
   RemoveDebtPosition,
+}
+
+export enum DebtPositionActionId {
   AddCollateralAssets,
   RemoveCollateralAssets,
   BorrowAsset,
@@ -15,24 +19,32 @@ export enum DebtPositionProtocolId {
   CompoundDebtPosition,
 }
 
-export function debtPositionRemoveArgs({ debtPosition }: { debtPosition: AddressLike }) {
-  return encodeArgs(['address'], [debtPosition]);
-}
-
-export function debtPositionCallArgs({ protocol, encodedCallArgs }: { protocol: Number; encodedCallArgs: BytesLike }) {
-  return encodeArgs(['uint256', 'bytes'], [protocol, encodedCallArgs]);
-}
-
 export function debtPositionActionArgs({
   assets,
   amounts,
-  debtPosition,
   data,
 }: {
-  debtPosition: AddressLike;
   assets: AddressLike[];
   amounts: BigNumberish[];
   data: BytesLike;
 }) {
-  return encodeArgs(['address', 'address[]', 'uint256[]', 'bytes'], [debtPosition, assets, amounts, data]);
+  return encodeArgs(['address[]', 'uint256[]', 'bytes'], [assets, amounts, data]);
+}
+
+export function debtPositionCallArgs({
+  debtPosition = randomAddress(),
+  protocol,
+  actionId = 0,
+  encodedCallArgs,
+}: {
+  debtPosition?: AddressLike;
+  protocol: Number;
+  actionId?: Number;
+  encodedCallArgs: BytesLike;
+}) {
+  return encodeArgs(['address', 'uint256', 'uint256', 'bytes'], [debtPosition, protocol, actionId, encodedCallArgs]);
+}
+
+export function debtPositionRemoveArgs({ debtPosition }: { debtPosition: AddressLike }) {
+  return encodeArgs(['address'], [debtPosition]);
 }

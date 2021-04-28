@@ -52,7 +52,6 @@ beforeEach(async () => {
     comptrollerProxy,
     debtPositionManager: fork.deployment.debtPositionManager,
     fundOwner,
-    protocol: 0,
   });
 
   const compoundDebtPositionAddress = (await vaultUsed.getActiveDebtPositions.call())[0];
@@ -97,615 +96,624 @@ beforeEach(async () => {
   });
 });
 
-// HAPPY PATHS
-describe('addCollateralAssets', () => {
-  it('works as expected when called to addCollateral by a Fund', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [cdai.address];
-
-    const debtPositionCollateralBalanceBefore = await cdai.balanceOf(compoundDebtPosition.address);
-    const vaultProxyCollateralBalanceBefore = await cdai.balanceOf(vaultProxyUsed.address);
-
-    // Add collateral twice to check it does not fail calling markets twice with the same assets
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: [collateralAmounts[0].div(2)],
-      cTokens: collateralAssets,
-    });
-
-    const addCollateralReceipt = await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: [collateralAmounts[0].div(2)],
-      cTokens: collateralAssets,
-    });
-
-    const debtPositionCollateralBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
-    const vaultProxyCollateralBalanceAfter = await cdai.balanceOf(vaultProxyUsed.address);
-
-    // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
-    expect(debtPositionCollateralBalanceAfter.sub(debtPositionCollateralBalanceBefore)).toEqBigNumber(
-      collateralAmounts[0],
+describe('receiveCallFromVault', () => {
+  it('reverts when it is called from an acount different than vault', async () => {
+    await expect(compoundDebtPosition.receiveCallFromVault(utils.randomBytes(0))).rejects.toBeRevertedWith(
+      'Only the vault can make this call',
     );
-    expect(vaultProxyCollateralBalanceBefore.sub(vaultProxyCollateralBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
+  });
 
-    // Rounding up from 198266
-    expect(addCollateralReceipt).toCostLessThan('199000');
+  describe('addCollateralAssets', () => {
+    it('works as expected when called to addCollateral by a Fund', async () => {
+      const [fundOwner] = fork.accounts;
 
-    const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-    expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: collateralAssets,
-      amounts_: collateralAmounts,
+      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [cdai.address];
+
+      const debtPositionCollateralBalanceBefore = await cdai.balanceOf(compoundDebtPosition.address);
+      const vaultProxyCollateralBalanceBefore = await cdai.balanceOf(vaultProxyUsed.address);
+
+      // Add collateral twice to check it does not fail calling markets twice with the same assets
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: [collateralAmounts[0].div(2)],
+        cTokens: collateralAssets,
+      });
+
+      const addCollateralReceipt = await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: [collateralAmounts[0].div(2)],
+        cTokens: collateralAssets,
+      });
+
+      const debtPositionCollateralBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
+      const vaultProxyCollateralBalanceAfter = await cdai.balanceOf(vaultProxyUsed.address);
+
+      // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
+      expect(debtPositionCollateralBalanceAfter.sub(debtPositionCollateralBalanceBefore)).toEqBigNumber(
+        collateralAmounts[0],
+      );
+      expect(vaultProxyCollateralBalanceBefore.sub(vaultProxyCollateralBalanceAfter)).toEqBigNumber(
+        collateralAmounts[0],
+      );
+
+      // Rounding up from 205451
+      expect(addCollateralReceipt).toCostLessThan('206000');
+
+      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
+      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: collateralAssets,
+        amounts_: collateralAmounts,
+      });
+    });
+
+    it('works as expected when called to addCollateral by a Fund (weth)', async () => {
+      const [fundOwner] = fork.accounts;
+
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
+
+      const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);
+      const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
+      const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
+
+      // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
+      expect(debtPositionBalanceAfter.sub(debtPositionBalanceBefore)).toEqBigNumber(collateralAmounts[0]);
+      expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
+
+      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
+      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: collateralAssets,
+        amounts_: collateralAmounts,
+      });
     });
   });
 
-  it('works as expected when called to addCollateral by a Fund (weth)', async () => {
-    const [fundOwner] = fork.accounts;
+  // HAPPY PATHS
+  describe('removeCollateralAssets', () => {
+    it('works as expected when called to remove collateral by a Fund', async () => {
+      const [fundOwner] = fork.accounts;
 
-    const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [ceth.address];
+      const collateralAmounts = [BigNumber.from('1000')];
+      const collateralAssets = [cdai.address];
 
-    const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);
-    const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
+      // Remove a relatively small amount
+      const collateralAssetsToBeRemoved = [cdai.address];
+      const collateralAmountsToBeRemoved = [BigNumber.from('10')];
 
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const debtPositionBalanceBefore = await cdai.balanceOf(compoundDebtPosition);
+      const vaultBalanceBefore = await cdai.balanceOf(vaultProxyUsed);
+
+      const removeCollateralReceipt = await removeCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssetsToBeRemoved,
+        amounts: collateralAmountsToBeRemoved,
+        cTokens: collateralAssets,
+      });
+
+      const debtPositionBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
+      const vaultBalanceAfter = await cdai.balanceOf(vaultProxyUsed);
+
+      // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
+      expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+      expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+
+      // Rounding up from 255121
+      expect(removeCollateralReceipt).toCostLessThan('256000');
+
+      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
+      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: collateralAssets,
+        amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
+      });
     });
 
-    const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
-    const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
+    it('works as expected when called to remove collateral by a Fund (weth)', async () => {
+      const [fundOwner] = fork.accounts;
 
-    // Assert the correct balance of collateral was moved from the vaultProxy to the debtPosition
-    expect(debtPositionBalanceAfter.sub(debtPositionBalanceBefore)).toEqBigNumber(collateralAmounts[0]);
-    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
+      const collateralAmounts = [BigNumber.from('1000')];
+      const collateralAssets = [ceth.address];
 
-    const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-    expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: collateralAssets,
-      amounts_: collateralAmounts,
-    });
-  });
-});
+      const collateralAssetsToBeRemoved = [ceth.address];
+      const collateralAmountsToBeRemoved = [BigNumber.from('10')];
 
-// HAPPY PATHS
-describe('removeCollateralAssets', () => {
-  it('works as expected when called to remove collateral by a Fund', async () => {
-    const [fundOwner] = fork.accounts;
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-    const collateralAmounts = [BigNumber.from('1000')];
-    const collateralAssets = [cdai.address];
+      const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition);
+      const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
 
-    // Remove a relatively small amount
-    const collateralAssetsToBeRemoved = [cdai.address];
-    const collateralAmountsToBeRemoved = [BigNumber.from('10')];
+      await removeCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssetsToBeRemoved,
+        amounts: collateralAmountsToBeRemoved,
+        cTokens: collateralAssets,
+      });
 
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
+      const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
+      const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
 
-    const debtPositionBalanceBefore = await cdai.balanceOf(compoundDebtPosition);
-    const vaultBalanceBefore = await cdai.balanceOf(vaultProxyUsed);
+      // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
+      expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+      expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-    const removeCollateralReceipt = await removeCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssetsToBeRemoved,
-      amounts: collateralAmountsToBeRemoved,
-      cTokens: collateralAssets,
+      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
+      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: collateralAssets,
+        amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
+      });
     });
 
-    const debtPositionBalanceAfter = await cdai.balanceOf(compoundDebtPosition);
-    const vaultBalanceAfter = await cdai.balanceOf(vaultProxyUsed);
+    it('removes asset from collateralAssets when the full collateralAmount is removed', async () => {
+      const [fundOwner] = fork.accounts;
 
-    // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
-    expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
-    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+      const collateralAmounts = [BigNumber.from('1000')];
+      const collateralAssets = [cdai.address];
 
-    // Rounding up from 246552
-    expect(removeCollateralReceipt).toCostLessThan('247000');
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-    const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-    expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: collateralAssets,
-      amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
-    });
-  });
+      const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
-  it('works as expected when called to remove collateral by a Fund (weth)', async () => {
-    const [fundOwner] = fork.accounts;
+      await removeCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-    const collateralAmounts = [BigNumber.from('1000')];
-    const collateralAssets = [ceth.address];
-
-    const collateralAssetsToBeRemoved = [ceth.address];
-    const collateralAmountsToBeRemoved = [BigNumber.from('10')];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
+      const collateralAssetsStoredAfter = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      expect(collateralAssetsStoredAfter.length).toStrictEqual(0);
     });
 
-    const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition);
-    const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
+    it('reverts when the removed asset has not been added as collateral', async () => {
+      const [fundOwner] = fork.accounts;
 
-    await removeCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssetsToBeRemoved,
-      amounts: collateralAmountsToBeRemoved,
-      cTokens: collateralAssets,
-    });
+      const collateralAmounts = [BigNumber.from('1000')];
+      const collateralAssets = [cdai.address];
+      const unaddedCollateralAssets = [weth.address];
 
-    const debtPositionBalanceAfter = await ceth.balanceOf(compoundDebtPosition);
-    const vaultBalanceAfter = await ceth.balanceOf(vaultProxyUsed);
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-    // Assert the correct balance of collateral was moved from the debtPosition to the vaultProxy
-    expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
-    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+      const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
-    const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-    expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: collateralAssets,
-      amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
-    });
-  });
+      const removeCollateralTx = removeCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: unaddedCollateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-  it('removes asset from collateralAssets when the full collateralAmount is removed', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [BigNumber.from('1000')];
-    const collateralAssets = [cdai.address];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
-    expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
-
-    await removeCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const collateralAssetsStoredAfter = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
-    expect(collateralAssetsStoredAfter.length).toStrictEqual(0);
-  });
-
-  it('reverts when the removed asset has not been added as collateral', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [BigNumber.from('1000')];
-    const collateralAssets = [cdai.address];
-    const unaddedCollateralAssets = [weth.address];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
-    expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
-
-    const removeCollateralTx = removeCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: unaddedCollateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    await expect(removeCollateralTx).rejects.toBeRevertedWith('Asset is not collateral');
-  });
-});
-
-describe('borrowAssets', () => {
-  it('works as expected when called for borrowing by a fund', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [cdai.address];
-
-    const borrowedAssets = [dai.address];
-
-    // Ensure the amount borrowed is much lower than collateral
-    const borrowedAmounts = [lentAmount.div(10)];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
-
-    const borrowReceipt = await borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
-
-    // Assert the correct balance of asset was received at the vaultProxy
-    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
-
-    // Rounding up from 376360
-    expect(borrowReceipt).toCostLessThan('377000');
-
-    const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
-    expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: borrowedAssets,
-      amounts_: borrowedAmounts,
+      await expect(removeCollateralTx).rejects.toBeRevertedWith('Asset is not collateral');
     });
   });
 
-  it('works as expected when called for borrowing by a fund (weth)', async () => {
-    const [fundOwner] = fork.accounts;
+  describe('borrowAssets', () => {
+    it('works as expected when called for borrowing by a fund', async () => {
+      const [fundOwner] = fork.accounts;
 
-    const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [ceth.address];
+      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [cdai.address];
 
-    const borrowedAssets = [weth.address];
-    const borrowedAmounts = [lentAmount.div(10)];
+      const borrowedAssets = [dai.address];
 
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
+      // Ensure the amount borrowed is much lower than collateral
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
+
+      const borrowReceipt = await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
+
+      // Assert the correct balance of asset was received at the vaultProxy
+      expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+
+      // Rounding up from 382117
+      expect(borrowReceipt).toCostLessThan('383000');
+
+      const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
+      expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: borrowedAssets,
+        amounts_: borrowedAmounts,
+      });
     });
 
-    const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
+    it('works as expected when called for borrowing by a fund (weth)', async () => {
+      const [fundOwner] = fork.accounts;
 
-    const borrowReceipt = await borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: collateralAssets,
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
+
+      const borrowedAssets = [weth.address];
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
+
+      const borrowReceipt = await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
+
+      // Assert the correct balance of asset was received at the vaultProxy
+      expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+
+      // Rounding up from 389230
+      expect(borrowReceipt).toCostLessThan('390000');
+
+      const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
+      expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+        assets_: borrowedAssets,
+        amounts_: borrowedAmounts,
+      });
     });
 
-    const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
+    it('does not allow an invalid cToken address as an input ', async () => {
+      const [fundOwner] = fork.accounts;
 
-    // Assert the correct balance of asset was received at the vaultProxy
-    expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+      // addCollateral
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
 
-    // Rounding up from 383473
-    expect(borrowReceipt).toCostLessThan('384000');
+      const borrowedAssets = [weth.address];
 
-    const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
-    expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
-      assets_: borrowedAssets,
-      amounts_: borrowedAmounts,
+      // Ensure the amount borrowed is much lower than collateral
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: [randomAddress()],
+      });
+
+      const borrowTx = borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: [randomAddress()],
+      });
+
+      await expect(borrowTx).rejects.toBeRevertedWith('Bad token cToken pair');
+    });
+
+    it('does not allow an incorrect token/cToken pair as an input ', async () => {
+      const [fundOwner] = fork.accounts;
+
+      // addCollateral
+      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [cdai.address];
+
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: [randomAddress()],
+      });
+
+      const borrowTx = borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: [fork.config.primitives.bat],
+        amounts: borrowedAmounts,
+        cTokens: [cdai.address],
+      });
+
+      await expect(borrowTx).rejects.toBeRevertedWith('Bad token cToken pair');
     });
   });
 
-  it('does not allow an invalid cToken address as an input ', async () => {
-    const [fundOwner] = fork.accounts;
+  describe('repayBorrowedAssets', () => {
+    it('works as expected when called to repay borrow by a fund', async () => {
+      const [fundOwner] = fork.accounts;
 
-    // addCollateral
-    const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [ceth.address];
+      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [cdai.address];
 
-    const borrowedAssets = [weth.address];
+      const borrowedAssets = [dai.address];
+      const borrowedAmounts = [lentAmount.div(10)];
 
-    // Ensure the amount borrowed is much lower than collateral
-    const borrowedAmounts = [lentAmount.div(10)];
+      const borrowedAssetsToBeRepaid = [dai.address];
+      const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
 
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: [randomAddress()],
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
+
+      const repayBorrowReceipt = await repayBorrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssetsToBeRepaid,
+        amounts: borrowedAmountsToBeRepaid,
+        cTokens: collateralAssets,
+      });
+
+      const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
+
+      // Assert the correct balance of asset was removed from the VaultProxy
+      expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
+
+      // Accept a small deviation from the expected value, given that borrow balance changes each block
+      const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
+      const maxBorrowedExpectedValue = borrowedBalancesBefore
+        .sub(borrowedAmountsToBeRepaid[0])
+        .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
+        .div(BigNumber.from('10000'));
+
+      // Rounding up from 311904
+      expect(repayBorrowReceipt).toCostLessThan('312000');
+
+      expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
+      expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
     });
 
-    const borrowTx = borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: [randomAddress()],
+    it('works as expected when called to repay borrow by a fund (weth)', async () => {
+      const [fundOwner] = fork.accounts;
+
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
+
+      const borrowedAssets = [weth.address];
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      const borrowedAssetsToBeRepaid = [weth.address];
+      const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
+
+      const repayBorrowReceipt = await repayBorrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssetsToBeRepaid,
+        amounts: borrowedAmountsToBeRepaid,
+        cTokens: collateralAssets,
+      });
+
+      const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
+      const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+
+      // Assert the correct balance of asset was removed from the VaultProxy
+      expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
+
+      // Accept a small deviation from the expected value, given that borrow balance changes each block
+      const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
+      const maxBorrowedExpectedValue = borrowedBalancesBefore
+        .sub(borrowedAmountsToBeRepaid[0])
+        .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
+        .div(BigNumber.from('10000'));
+
+      // Rounding up from 304472
+      expect(repayBorrowReceipt).toCostLessThan('305000');
+
+      expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
+      expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
     });
 
-    await expect(borrowTx).rejects.toBeRevertedWith('Bad token cToken pair');
-  });
+    it('removes asset from borrowedAssets when the full borrowedAmount is repaid', async () => {
+      const [fundOwner] = fork.accounts;
+      // addCollateral
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
 
-  it('does not allow an incorrect token/cToken pair as an input ', async () => {
-    const [fundOwner] = fork.accounts;
+      const borrowedAssets = [weth.address];
+      const borrowedAmounts = [lentAmount.div(10)];
 
-    // addCollateral
-    const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [cdai.address];
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
 
-    const borrowedAmounts = [lentAmount.div(10)];
+      await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
 
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: [randomAddress()],
+      // Send some extra weth to pay interests
+      await weth.transfer(vaultProxyUsed, lentAmount);
+
+      const borrowedAssetsStoredBefore = await compoundDebtPosition.getBorrowedAssets.call();
+      const repayAmounts = [borrowedAmounts[0].mul(BigNumber.from('2'))];
+
+      expect(borrowedAssetsStoredBefore.assets_.length).toStrictEqual(1);
+
+      const tokenFromCBorrowedAssetBefore = await compoundDebtPosition.getCTokenFromBorrowedAsset
+        .args(borrowedAssets[0])
+        .call();
+      expect(tokenFromCBorrowedAssetBefore).toMatchAddress(collateralAssets[0]);
+
+      await repayBorrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        debtPositionManager: fork.deployment.debtPositionManager,
+        fundOwner,
+        debtPosition: compoundDebtPosition,
+        assets: borrowedAssets,
+        amounts: repayAmounts,
+        cTokens: collateralAssets,
+      });
+
+      const borrowedAssetsStoredAfter = (await compoundDebtPosition.getBorrowedAssets.call()).assets_;
+      expect(borrowedAssetsStoredAfter.length).toStrictEqual(0);
+
+      const tokenFromCBorrowedAssetAfter = await compoundDebtPosition.getCTokenFromBorrowedAsset
+        .args(borrowedAssets[0])
+        .call();
+      expect(tokenFromCBorrowedAssetAfter).toMatchAddress(constants.AddressZero);
     });
-
-    const borrowTx = borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: [fork.config.primitives.bat],
-      amounts: borrowedAmounts,
-      cTokens: [cdai.address],
-    });
-
-    await expect(borrowTx).rejects.toBeRevertedWith('Bad token cToken pair');
-  });
-});
-
-describe('repayBorrowedAssets', () => {
-  it('works as expected when called to repay borrow by a fund', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [cdai.address];
-
-    const borrowedAssets = [dai.address];
-    const borrowedAmounts = [lentAmount.div(10)];
-
-    const borrowedAssetsToBeRepaid = [dai.address];
-    const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    await borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
-    const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
-
-    const repayBorrowReceipt = await repayBorrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssetsToBeRepaid,
-      amounts: borrowedAmountsToBeRepaid,
-      cTokens: collateralAssets,
-    });
-
-    const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
-    const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
-
-    // Assert the correct balance of asset was removed from the VaultProxy
-    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
-
-    // Accept a small deviation from the expected value, given that borrow balance changes each block
-    const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
-    const maxBorrowedExpectedValue = borrowedBalancesBefore
-      .sub(borrowedAmountsToBeRepaid[0])
-      .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    // Rounding up from 311904
-    expect(repayBorrowReceipt).toCostLessThan('312000');
-
-    expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
-    expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
-  });
-
-  it('works as expected when called to repay borrow by a fund (weth)', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [ceth.address];
-
-    const borrowedAssets = [weth.address];
-    const borrowedAmounts = [lentAmount.div(10)];
-
-    const borrowedAssetsToBeRepaid = [weth.address];
-    const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    await borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
-    const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
-
-    const repayBorrowReceipt = await repayBorrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssetsToBeRepaid,
-      amounts: borrowedAmountsToBeRepaid,
-      cTokens: collateralAssets,
-    });
-
-    const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
-    const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
-
-    // Assert the correct balance of asset was removed from the VaultProxy
-    expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
-
-    // Accept a small deviation from the expected value, given that borrow balance changes each block
-    const minBorrowedExpectedValue = borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]);
-    const maxBorrowedExpectedValue = borrowedBalancesBefore
-      .sub(borrowedAmountsToBeRepaid[0])
-      .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
-      .div(BigNumber.from('10000'));
-
-    // Rounding up from 300912
-    expect(repayBorrowReceipt).toCostLessThan('301000');
-
-    expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
-    expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
-  });
-
-  it('removes asset from borrowedAssets when the full borrowedAmount is repaid', async () => {
-    const [fundOwner] = fork.accounts;
-    // addCollateral
-    const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-    const collateralAssets = [ceth.address];
-
-    const borrowedAssets = [weth.address];
-    const borrowedAmounts = [lentAmount.div(10)];
-
-    await addCollateral({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: collateralAssets,
-      amounts: collateralAmounts,
-      cTokens: collateralAssets,
-    });
-
-    await borrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      vaultProxy: vaultProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: borrowedAmounts,
-      cTokens: collateralAssets,
-    });
-
-    // Send some extra weth to pay interests
-    await weth.transfer(vaultProxyUsed, lentAmount);
-
-    const borrowedAssetsStoredBefore = await compoundDebtPosition.getBorrowedAssets.call();
-    const repayAmounts = [borrowedAmounts[0].mul(BigNumber.from('2'))];
-
-    expect(borrowedAssetsStoredBefore.assets_.length).toStrictEqual(1);
-
-    const tokenFromCBorrowedAssetBefore = await compoundDebtPosition.getCTokenFromBorrowedAsset
-      .args(borrowedAssets[0])
-      .call();
-    expect(tokenFromCBorrowedAssetBefore).toMatchAddress(collateralAssets[0]);
-
-    await repayBorrow({
-      comptrollerProxy: comptrollerProxyUsed,
-      debtPositionManager: fork.deployment.debtPositionManager,
-      fundOwner,
-      debtPosition: compoundDebtPosition,
-      assets: borrowedAssets,
-      amounts: repayAmounts,
-      cTokens: collateralAssets,
-    });
-
-    const borrowedAssetsStoredAfter = (await compoundDebtPosition.getBorrowedAssets.call()).assets_;
-    expect(borrowedAssetsStoredAfter.length).toStrictEqual(0);
-
-    const tokenFromCBorrowedAssetAfter = await compoundDebtPosition.getCTokenFromBorrowedAsset
-      .args(borrowedAssets[0])
-      .call();
-    expect(tokenFromCBorrowedAssetAfter).toMatchAddress(constants.AddressZero);
   });
 });

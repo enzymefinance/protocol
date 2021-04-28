@@ -282,28 +282,22 @@ contract ComptrollerLib is IComptroller {
     {
         __assertPermissionedVaultAction(msg.sender, _action);
 
-        if (_action == VaultAction.AddCollateralAsset) {
-            __vaultActionAddCollateralAssets(_actionData);
-        } else if (_action == VaultAction.AddDebtPosition) {
+        if (_action == VaultAction.AddDebtPosition) {
             __vaultActionAddDebtPosition(_actionData);
         } else if (_action == VaultAction.AddTrackedAsset) {
             __vaultActionAddTrackedAsset(_actionData);
         } else if (_action == VaultAction.ApproveAssetSpender) {
             __vaultActionApproveAssetSpender(_actionData);
-        } else if (_action == VaultAction.BorrowAsset) {
-            __vaultActionBorrowAsset(_actionData);
         } else if (_action == VaultAction.BurnShares) {
             __vaultActionBurnShares(_actionData);
+        } else if (_action == VaultAction.CallOnDebtPosition) {
+            __vaultActionCallOnDebtPosition(_actionData);
         } else if (_action == VaultAction.MintShares) {
             __vaultActionMintShares(_actionData);
-        } else if (_action == VaultAction.RemoveCollateralAsset) {
-            __vaultActionRemoveCollateralAsset(_actionData);
         } else if (_action == VaultAction.RemoveDebtPosition) {
             __vaultActionRemoveDebtPosition(_actionData);
         } else if (_action == VaultAction.RemoveTrackedAsset) {
             __vaultActionRemoveTrackedAsset(_actionData);
-        } else if (_action == VaultAction.RepayBorrowedAsset) {
-            __vaultActionRepayBorrowedAsset(_actionData);
         } else if (_action == VaultAction.TransferShares) {
             __vaultActionTransferShares(_actionData);
         } else if (_action == VaultAction.WithdrawAssetTo) {
@@ -335,29 +329,15 @@ contract ComptrollerLib is IComptroller {
             );
         } else if (_caller == DEBT_POSITION_MANAGER) {
             require(
-                _action == VaultAction.AddCollateralAsset ||
-                    _action == VaultAction.AddDebtPosition ||
+                _action == VaultAction.AddDebtPosition ||
                     _action == VaultAction.AddTrackedAsset ||
-                    _action == VaultAction.BorrowAsset ||
-                    _action == VaultAction.RemoveCollateralAsset ||
-                    _action == VaultAction.RemoveDebtPosition ||
-                    _action == VaultAction.RepayBorrowedAsset,
+                    _action == VaultAction.CallOnDebtPosition ||
+                    _action == VaultAction.RemoveDebtPosition,
                 "__assertPermissionedVaultAction: Not allowed"
             );
         } else {
             revert("__assertPermissionedVaultAction: Not a valid actor");
         }
-    }
-
-    /// @dev Helper to add an asset as collateral to a particular debt position
-    function __vaultActionAddCollateralAssets(bytes memory _actionData) private {
-        (
-            address debtPosition,
-            address[] memory assets,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(_actionData, (address, address[], uint256[], bytes));
-        IVault(vaultProxy).addCollateralAssets(debtPosition, assets, amounts, data);
     }
 
     /// @dev Helper to add a new debt position to the fund
@@ -381,38 +361,35 @@ contract ComptrollerLib is IComptroller {
         IVault(vaultProxy).approveAssetSpender(asset, target, amount);
     }
 
-    /// @dev Helper to borrow an asset on a particular debt position
-    function __vaultActionBorrowAsset(bytes memory _actionData) private {
-        (
-            address debtPosition,
-            address[] memory assets,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(_actionData, (address, address[], uint256[], bytes));
-        IVault(vaultProxy).borrowAssets(debtPosition, assets, amounts, data);
-    }
-
     /// @dev Helper to burn fund shares for a particular account
     function __vaultActionBurnShares(bytes memory _actionData) private {
         (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
         IVault(vaultProxy).burnShares(target, amount);
     }
 
+    /// @dev Helper to make a call on a debt position
+    function __vaultActionCallOnDebtPosition(bytes memory _actionData) private {
+        (
+            address debtPosition,
+            bytes memory actionData,
+            address[] memory assetsToTransfer,
+            uint256[] memory amountsToTransfer,
+            address[] memory assetsToReceive
+        ) = abi.decode(_actionData, (address, bytes, address[], uint256[], address[]));
+
+        IVault(vaultProxy).callOnDebtPosition(
+            debtPosition,
+            actionData,
+            assetsToTransfer,
+            amountsToTransfer,
+            assetsToReceive
+        );
+    }
+
     /// @dev Helper to mint fund shares to a particular account
     function __vaultActionMintShares(bytes memory _actionData) private {
         (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
         IVault(vaultProxy).mintShares(target, amount);
-    }
-
-    /// @dev Helper to remove a collateral asset from a particular debt position
-    function __vaultActionRemoveCollateralAsset(bytes memory _actionData) private {
-        (
-            address debtPosition,
-            address[] memory assets,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(_actionData, (address, address[], uint256[], bytes));
-        IVault(vaultProxy).removeCollateralAssets(debtPosition, assets, amounts, data);
     }
 
     /// @dev Helper to remove a debt position from the vault
@@ -429,17 +406,6 @@ contract ComptrollerLib is IComptroller {
         if (asset != denominationAsset) {
             IVault(vaultProxy).removeTrackedAsset(asset);
         }
-    }
-
-    /// @dev Helper to repay an already borrowed asset from a particular debt position
-    function __vaultActionRepayBorrowedAsset(bytes memory _actionData) private {
-        (
-            address debtPosition,
-            address[] memory assets,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(_actionData, (address, address[], uint256[], bytes));
-        IVault(vaultProxy).repayBorrowedAssets(debtPosition, assets, amounts, data);
     }
 
     /// @dev Helper to transfer fund shares from one account to another

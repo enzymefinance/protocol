@@ -17,25 +17,6 @@ import "../../core/fund/comptroller/IComptroller.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for extensions that can make permissioned vault calls
 abstract contract PermissionedVaultActionMixin {
-    /// @notice Adds an amount of collateral to a specific debt position
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The debt position to receive collateral
-    /// @param _assets The assets to add as collateral
-    /// @param _amounts The amounts to be added as collateral
-    /// @param _data Additional data field to be used by the debt position
-    function __addCollateralAssets(
-        address _comptrollerProxy,
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.AddCollateralAsset,
-            abi.encode(_debtPosition, _assets, _amounts, _data)
-        );
-    }
-
     /// @notice Adds a new debt position
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _debtPosition The debt position to be added
@@ -73,25 +54,6 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Borrows an array of assets from a specific debt position
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The debt position to borrow the asset
-    /// @param _assets The assets to borrow
-    /// @param _amounts The amounts to be borrowed
-    /// @param _data Additional data field to be used by the debt position
-    function __borrowAssets(
-        address _comptrollerProxy,
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.BorrowAsset,
-            abi.encode(_debtPosition, _assets, _amounts, _data)
-        );
-    }
-
     /// @notice Burns fund shares for a particular account
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _target The account for which to burn shares
@@ -107,6 +69,16 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
+    /// @notice Executes a callOnDebtPosition
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _data The enconded data for the call
+    function __callOnDebtPosition(address _comptrollerProxy, bytes memory _data) internal {
+        IComptroller(_comptrollerProxy).permissionedVaultAction(
+            IComptroller.VaultAction.CallOnDebtPosition,
+            _data
+        );
+    }
+
     /// @notice Mints fund shares to a particular account
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _target The account to which to mint shares
@@ -119,25 +91,6 @@ abstract contract PermissionedVaultActionMixin {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
             IComptroller.VaultAction.MintShares,
             abi.encode(_target, _amount)
-        );
-    }
-
-    /// @notice Removes an amount of collateral asset from a specific debt position
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The debt position to remove the collateral
-    /// @param _assets The assets to remove as collateral
-    /// @param _amounts The amounts to be removed from collateral
-    /// @param _data Additional data field to be used by the debt position
-    function __removeCollateralAssets(
-        address _comptrollerProxy,
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.RemoveCollateralAsset,
-            abi.encode(_debtPosition, _assets, _amounts, _data)
         );
     }
 
@@ -158,25 +111,6 @@ abstract contract PermissionedVaultActionMixin {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
             IComptroller.VaultAction.RemoveTrackedAsset,
             abi.encode(_asset)
-        );
-    }
-
-    /// @notice Repays an amount of previously borrowed assets on a specific debt position
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The debt position to receive collateral
-    /// @param _assets The assets to repay
-    /// @param _amounts The amounts to be repaid
-    /// @param _data Additional data field to be used by the debt position
-    function __repayBorrowedAssets(
-        address _comptrollerProxy,
-        address _debtPosition,
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.RepayBorrowedAsset,
-            abi.encode(_debtPosition, _assets, _amounts, _data)
         );
     }
 

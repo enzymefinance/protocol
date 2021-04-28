@@ -61,13 +61,30 @@ contract CompoundDebtPosition is IDebtPosition {
         WETH_TOKEN = _weth;
     }
 
-    /// @notice Adds assets as collateral
-    /// @param _assets The asset to be added as collateral
-    function addCollateralAssets(
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory
-    ) external override onlyVault {
+    /// @notice Receives and executes a call from the Vault
+    /// @param _actionData Encoded data to execute the action.
+    function receiveCallFromVault(bytes memory _actionData) external override onlyVault {
+        (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
+
+        (address[] memory assets, uint256[] memory amounts, bytes memory data) = abi.decode(
+            actionArgs,
+            (address[], uint256[], bytes)
+        );
+        if (actionId == uint256(DebtPositionActions.AddCollateral)) {
+            __addCollateralAssets(assets, amounts);
+        } else if (actionId == uint256(DebtPositionActions.RemoveCollateral)) {
+            __removeCollateralAssets(assets, amounts);
+        } else if (actionId == uint256(DebtPositionActions.Borrow)) {
+            __borrowAssets(assets, amounts, data);
+        } else if (actionId == uint256(DebtPositionActions.RepayBorrow)) {
+            __repayBorrowedAssets(assets, amounts, data);
+        } else {
+            revert("receiveCallFromVault: Invalid actionId");
+        }
+    }
+
+    /// @dev Adds assets as collateral
+    function __addCollateralAssets(address[] memory _assets, uint256[] memory _amounts) private {
         uint256[] memory enterMarketErrorCodes = ICompoundComptroller(COMPOUND_COMPTROLLER)
             .enterMarkets(_assets);
 
@@ -84,29 +101,26 @@ contract CompoundDebtPosition is IDebtPosition {
 
             require(
                 enterMarketErrorCodes[i] == 0,
-                "addCollateralAssets: Error while calling enterMarkets on Compound"
+                "__addCollateralAssets: Error while calling enterMarkets on Compound"
             );
 
             emit CollateralAssetAdded(_assets[i], _amounts[i], "");
         }
     }
 
-    /// @notice Borrows assets using the available collateral
-    /// @param _assets The assets to be borrowed
-    /// @param _amounts The amounts of assets to be borrowed
-    /// @param _data The array of cTokens encoded in the data field
-    function borrowAssets(
+    /// @dev Borrows assets using the available collateral
+    function __borrowAssets(
         address[] memory _assets,
         uint256[] memory _amounts,
         bytes memory _data
-    ) external override onlyVault {
+    ) private {
         address[] memory cTokens = abi.decode(_data, (address[]));
 
         for (uint256 i; i < _assets.length; i++) {
             // Once verified, cache the pair if it has not been done yet
             require(
                 ICERC20(cTokens[i]).borrow(_amounts[i]) == 0,
-                "borrowAssets: Problem while borrowing from Compound"
+                "__borrowAssets: Problem while borrowing from Compound"
             );
 
             if (_assets[i] == WETH_TOKEN) {
@@ -125,18 +139,14 @@ contract CompoundDebtPosition is IDebtPosition {
         }
     }
 
-    /// @notice Removes assets from collateral
-    /// @param _assets The assets to be removed from collateral
-    /// @param _amounts The amounts of assets to be removed from collateral
-    function removeCollateralAssets(
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory
-    ) external override onlyVault {
+    /// @dev Removes assets from collateral
+    function __removeCollateralAssets(address[] memory _assets, uint256[] memory _amounts)
+        private
+    {
         for (uint256 i; i < _assets.length; i++) {
             require(
                 assetToIsCollateral[_assets[i]],
-                "removeCollateralAssets: Asset is not collateral"
+                "__removeCollateralAssets: Asset is not collateral"
             );
 
             if (ERC20(_assets[i]).balanceOf(address(this)) == _amounts[i]) {
@@ -153,25 +163,22 @@ contract CompoundDebtPosition is IDebtPosition {
     }
 
     /// @notice Repays borrowed assets, reducing the borrow balance
-    /// @param _assets The assets to repay debt
-    /// @param _amounts The amounts of underlying assets to be repaid
-    /// @param _data The array of cTokens encoded in the data field
-    function repayBorrowedAssets(
+    function __repayBorrowedAssets(
         address[] memory _assets,
         uint256[] memory _amounts,
         bytes memory _data
-    ) external override onlyVault {
+    ) private {
         address[] memory cTokens = abi.decode(_data, (address[]));
 
         for (uint256 i; i < _assets.length; i++) {
             require(
                 getCTokenFromBorrowedAsset(_assets[i]) != address(0),
-                "repayBorrowedAssets: Asset has not been borrowed"
+                "__repayBorrowedAssets: Asset has not been borrowed"
             );
 
             require(
                 ERC20(_assets[i]).balanceOf(address(this)) >= _amounts[i],
-                "repayBorrowedAssets: Insufficient balance"
+                "__repayBorrowedAssets: Insufficient balance"
             );
 
             // Accrue interest to get the current borrow balance

@@ -7,8 +7,9 @@ import {
   VaultLib,
   debtPositionCallArgs,
   debtPositionActionArgs,
-  debtPositionRemoveArgs,
   DebtPositionManagerActionId,
+  DebtPositionActionId,
+  debtPositionRemoveArgs,
 } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
 
@@ -18,19 +19,14 @@ export async function createDebtPosition({
   comptrollerProxy,
   debtPositionManager,
   fundOwner,
-  protocol,
 }: {
   comptrollerProxy: ComptrollerLib;
   debtPositionManager: DebtPositionManager;
   fundOwner: SignerWithAddress;
-  protocol: Number;
 }) {
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: '0x00' });
-
   const createDebtPositionTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, callArgs);
-
+    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, '0x00');
   return createDebtPositionTx;
 }
 
@@ -54,17 +50,21 @@ export async function addCollateral({
   const protocol = 0;
 
   const actionArgs = debtPositionActionArgs({
-    debtPosition,
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: actionArgs });
+  const callArgs = debtPositionCallArgs({
+    debtPosition,
+    protocol,
+    actionId: DebtPositionActionId.AddCollateralAssets,
+    encodedCallArgs: actionArgs,
+  });
 
   const addCollateralTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.AddCollateralAssets, callArgs);
+    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CallOnDebtPosition, callArgs);
 
   return addCollateralTx;
 }
@@ -87,17 +87,21 @@ export async function removeCollateral({
   cTokens: AddressLike[];
 }) {
   const actionArgs = debtPositionActionArgs({
-    debtPosition,
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: actionArgs });
+  const callArgs = debtPositionCallArgs({
+    debtPosition,
+    protocol,
+    actionId: DebtPositionActionId.RemoveCollateralAssets,
+    encodedCallArgs: actionArgs,
+  });
 
   const removeCollateralTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.RemoveCollateralAssets, callArgs);
+    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CallOnDebtPosition, callArgs);
 
   return removeCollateralTx;
 }
@@ -121,17 +125,21 @@ export async function borrow({
   cTokens: AddressLike[];
 }) {
   const actionArgs = debtPositionActionArgs({
-    debtPosition,
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: actionArgs });
+  const callArgs = debtPositionCallArgs({
+    debtPosition,
+    protocol,
+    actionId: DebtPositionActionId.BorrowAsset,
+    encodedCallArgs: actionArgs,
+  });
 
   const borrowTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.BorrowAsset, callArgs);
+    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CallOnDebtPosition, callArgs);
 
   return borrowTx;
 }
@@ -154,17 +162,21 @@ export async function repayBorrow({
   cTokens: AddressLike[];
 }) {
   const actionArgs = debtPositionActionArgs({
-    debtPosition,
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: actionArgs });
+  const callArgs = debtPositionCallArgs({
+    debtPosition,
+    protocol,
+    actionId: DebtPositionActionId.RepayBorrowedAssets,
+    encodedCallArgs: actionArgs,
+  });
 
   const repayTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.RepayBorrowedAssets, callArgs);
+    .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CallOnDebtPosition, callArgs);
 
   return repayTx;
 }
@@ -184,7 +196,7 @@ export async function removeDebtPosition({
     debtPosition,
   });
 
-  const callArgs = debtPositionCallArgs({ protocol, encodedCallArgs: actionArgs });
+  const callArgs = debtPositionCallArgs({ debtPosition, protocol, encodedCallArgs: actionArgs });
 
   const removeDebtPositionTx = comptrollerProxy
     .connect(fundOwner)

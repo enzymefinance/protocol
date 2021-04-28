@@ -47,7 +47,7 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
     address private immutable WETH_TOKEN;
 
-    enum DebtPositionActions {Create, Remove, AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
+    enum DebtPositionManagerActions {CreateDebtPosition, CallOnDebtPosition, RemoveDebtPosition}
 
     constructor(
         address _derivativePriceFeed,
@@ -96,92 +96,76 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         __validateIsFundOwner(vaultProxy, _caller);
 
         // Dispatch the action
-        if (_actionId == uint256(DebtPositionActions.Create)) {
-            __createDebtPosition(vaultProxy, _callArgs);
-        } else if (_actionId == uint256(DebtPositionActions.Remove)) {
+        if (_actionId == uint256(DebtPositionManagerActions.CreateDebtPosition)) {
+            __createDebtPosition(vaultProxy);
+        } else if (_actionId == uint256(DebtPositionManagerActions.CallOnDebtPosition)) {
+            __executeCallOnDebtPosition(vaultProxy, _callArgs);
+        } else if (_actionId == uint256(DebtPositionManagerActions.RemoveDebtPosition)) {
             __removeDebtPosition(vaultProxy, _callArgs);
         } else {
-            __callOnDebtPosition(vaultProxy, _actionId, _callArgs);
+            revert("receiveCallFromComptroller: Invalid _actionId");
         }
     }
 
     // PRIVATE FUNCTIONS
 
     // Performs an action on a specific debt position, validating the incoming arguments and the final result
-    function __callOnDebtPosition(
-        address _vaultProxy,
-        uint256 _actionId,
-        bytes memory _callArgs
-    ) private {
-        (uint256 protocol, bytes memory actionArgs) = abi.decode(_callArgs, (uint256, bytes));
+    function __executeCallOnDebtPosition(address _vaultProxy, bytes memory _callArgs) private {
+        (address debtPosition, uint256 protocol, uint256 actionId, bytes memory actionArgs) = abi
+            .decode(_callArgs, (address, uint256, uint256, bytes));
 
         // Validate incoming arguments, and decode them if valid
-        __preCallOnDebtPosition(_vaultProxy, protocol, _actionId, actionArgs);
+        __preCallOnDebtPosition(_vaultProxy, debtPosition, protocol, actionId, actionArgs);
 
-        (
-            address debtPosition,
-            address[] memory assets,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(actionArgs, (address, address[], uint256[], bytes));
+        (address[] memory assets, uint256[] memory amounts, ) = abi.decode(
+            actionArgs,
+            (address[], uint256[], bytes)
+        );
 
-        __executeCallOnDebtPosition(_actionId, debtPosition, assets, amounts, data);
+        // Prepare arguments for the callOnDebtPosition
+        bytes memory actionData = abi.encode(actionId, actionArgs);
+
+        address[] memory assetsToTransfer;
+        uint256[] memory amountsToTransfer;
+        address[] memory assetsToReceive;
+
+        if (
+            actionId == uint256(IDebtPosition.DebtPositionActions.AddCollateral) ||
+            actionId == uint256(IDebtPosition.DebtPositionActions.RepayBorrow)
+        ) {
+            assetsToTransfer = assets;
+            amountsToTransfer = amounts;
+        } else if (
+            actionId == uint256(IDebtPosition.DebtPositionActions.Borrow) ||
+            actionId == uint256(IDebtPosition.DebtPositionActions.RemoveCollateral)
+        ) {
+            assetsToReceive = assets;
+        }
+
+        // Execute callOnDebtPosition
+        __callOnDebtPosition(
+            msg.sender,
+            abi.encode(
+                debtPosition,
+                actionData,
+                assetsToTransfer,
+                amountsToTransfer,
+                assetsToReceive
+            )
+        );
     }
 
-    /// @dev Creates a new compound debt position and links it to the vaultProxy
-    function __createCompoundDebtPosition(address _vaultProxy)
-        private
-        returns (address debtPosition_)
-    {
-        debtPosition_ = address(
+    /// @dev Creates a new debt position and links it to the _vaultProxy.
+    /// Currently only handles the logic for Compound.
+    /// Can be extended through an additional _callArgs param to support more protocols.
+    function __createDebtPosition(address _vaultProxy) private {
+        address debtPosition = address(
             new CompoundDebtPosition(_vaultProxy, COMPOUND_COMPTROLLER, WETH_TOKEN)
         );
 
-        emit DebtPositionDeployed(
-            msg.sender,
-            _vaultProxy,
-            debtPosition_,
-            COMPOUND_PROTOCOL_ID,
-            ""
-        );
-
-        return debtPosition_;
-    }
-
-    /// @dev Creates a new debt position and links it to the vaultProxy
-    function __createDebtPosition(address _vaultProxy, bytes memory _callArgs) private {
-        (uint256 protocol, ) = abi.decode(_callArgs, (uint256, bytes));
-
-        address debtPosition;
-
-        if (protocol == COMPOUND_PROTOCOL_ID) {
-            debtPosition = __createCompoundDebtPosition(_vaultProxy);
-        } else {
-            revert("__createDebtPosition: Protocol non supported");
-        }
+        emit DebtPositionDeployed(msg.sender, _vaultProxy, debtPosition, COMPOUND_PROTOCOL_ID, "");
 
         __addDebtPosition(msg.sender, debtPosition);
-    }
-
-    /// @dev Performs a specific action on a debt position
-    function __executeCallOnDebtPosition(
-        uint256 _actionId,
-        address _debtPosition,
-        address[] memory assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) private {
-        if (_actionId == uint256(DebtPositionActions.AddCollateral)) {
-            __addCollateralAssets(msg.sender, _debtPosition, assets, _amounts, _data);
-        } else if (_actionId == uint256(DebtPositionActions.RemoveCollateral)) {
-            __removeCollateralAssets(msg.sender, _debtPosition, assets, _amounts, _data);
-        } else if (_actionId == uint256(DebtPositionActions.Borrow)) {
-            __borrowAssets(msg.sender, _debtPosition, assets, _amounts, _data);
-        } else if (_actionId == uint256(DebtPositionActions.RepayBorrow)) {
-            __repayBorrowedAssets(msg.sender, _debtPosition, assets, _amounts, _data);
-        } else {
-            revert("__executeCallOnDebtPosition: Invalid _actionId");
-        }
     }
 
     /// @dev Helper to check if an asset is supported
@@ -194,13 +178,14 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
     /// @dev Runs previous validations before running a call on debt position
     function __preCallOnDebtPosition(
         address _vaultProxy,
+        address _debtPosition,
         uint256 _protocol,
         uint256 _actionId,
         bytes memory _actionArgs
     ) private view {
-        (address debtPosition, address[] memory assets, uint256[] memory amounts, ) = abi.decode(
+        (address[] memory assets, uint256[] memory amounts, ) = abi.decode(
             _actionArgs,
-            (address, address[], uint256[], bytes)
+            (address[], uint256[], bytes)
         );
 
         require(
@@ -210,7 +195,7 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
         require(assets.isUniqueSet(), "__preCallOnDebtPosition: Duplicate asset");
 
-        __validateDebtPosition(_vaultProxy, debtPosition);
+        __validateDebtPosition(_vaultProxy, _debtPosition);
 
         for (uint256 i; i < assets.length; i++) {
             require(assets[i] != address(0), "__preCallOnDebtPosition: Empty asset included");
@@ -245,9 +230,9 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
     /// @dev Validates the `data` field of a compound debt position
     function __validateCompoundData(uint256 _actionId, bytes memory _actionArgs) private view {
-        (, address[] memory assets, , bytes memory data) = abi.decode(
+        (address[] memory assets, , bytes memory data) = abi.decode(
             _actionArgs,
-            (address, address[], uint256[], bytes)
+            (address[], uint256[], bytes)
         );
 
         address[] memory cTokens = abi.decode(data, (address[]));
@@ -258,12 +243,11 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         );
 
         if (
-            _actionId == uint256(DebtPositionActions.Borrow) ||
-            _actionId == uint256(DebtPositionActions.RepayBorrow)
+            _actionId == uint256(IDebtPosition.DebtPositionActions.Borrow) ||
+            _actionId == uint256(IDebtPosition.DebtPositionActions.RepayBorrow)
         ) {
             for (uint256 i; i < cTokens.length; i++) {
                 // No need to assert from an address(0) tokenFromCToken since assets[i] cannot be '0' at this point.
-
                 require(
                     CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cTokens[i]) ==
                         assets[i],

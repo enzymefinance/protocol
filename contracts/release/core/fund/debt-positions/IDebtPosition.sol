@@ -10,31 +10,11 @@
 pragma solidity 0.6.12;
 
 interface IDebtPosition {
-    function addCollateralAssets(
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
-
-    function borrowAssets(
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
+    enum DebtPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
 
     function getCollateralAssets() external returns (address[] memory, uint256[] memory);
 
     function getBorrowedAssets() external returns (address[] memory, uint256[] memory);
 
-    function removeCollateralAssets(
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
-
-    function repayBorrowedAssets(
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
+    function receiveCallFromVault(bytes memory) external;
 }

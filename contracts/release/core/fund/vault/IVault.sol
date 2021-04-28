@@ -16,13 +16,6 @@ import "../../../../persistent/utils/IMigratableVault.sol";
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IVault is IMigratableVault {
-    function addCollateralAssets(
-        address,
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
-
     function addDebtPosition(address) external;
 
     function addTrackedAsset(address) external;
@@ -33,16 +26,17 @@ interface IVault is IMigratableVault {
         uint256
     ) external;
 
-    function borrowAssets(
-        address,
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
-
     function burnShares(address, uint256) external;
 
     function callOnContract(address, bytes calldata) external;
+
+    function callOnDebtPosition(
+        address,
+        bytes calldata,
+        address[] memory,
+        uint256[] memory,
+        address[] memory
+    ) external;
 
     function getAccessor() external view returns (address);
 
@@ -58,23 +52,9 @@ interface IVault is IMigratableVault {
 
     function mintShares(address, uint256) external;
 
-    function removeCollateralAssets(
-        address,
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
-
     function removeDebtPosition(address) external;
 
     function removeTrackedAsset(address) external;
-
-    function repayBorrowedAssets(
-        address,
-        address[] memory,
-        uint256[] memory,
-        bytes memory
-    ) external;
 
     function transferShares(
         address,

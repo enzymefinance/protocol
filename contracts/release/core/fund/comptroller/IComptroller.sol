@@ -22,12 +22,9 @@ interface IComptroller {
         ApproveAssetSpender,
         WithdrawAssetTo,
         AddTrackedAsset,
+        CallOnDebtPosition,
         RemoveTrackedAsset,
-        RemoveCollateralAsset,
         RemoveDebtPosition,
-        RepayBorrowedAsset,
-        AddCollateralAsset,
-        BorrowAsset,
         AddDebtPosition
     }
 
