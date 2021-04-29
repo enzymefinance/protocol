@@ -170,21 +170,6 @@ describe('debt position actions', () => {
           .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, callArgs),
       ).rejects.toBeRevertedWith('Only the fund owner can call this function');
     });
-
-    it('reverts if the input protocol id does not exist', async () => {
-      const {
-        deployment: { debtPositionManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      const callArgs = debtPositionCallArgs({ protocol: 1000, encodedCallArgs: '0x' });
-
-      await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, callArgs),
-      ).rejects.toBeRevertedWith('Protocol non supported');
-    });
   });
 
   describe('removeDebtPosition', () => {

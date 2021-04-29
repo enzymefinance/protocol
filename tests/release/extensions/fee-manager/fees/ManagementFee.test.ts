@@ -20,7 +20,7 @@ import {
   createMigratedFundConfig,
   createNewFund,
   deployProtocolFixture,
-  redeemShares,
+  redeemSharesInKind,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
@@ -507,7 +507,7 @@ describe('integration', () => {
     await provider.send('evm_mine', []);
 
     // Redeem all fundInvestor shares
-    const redeemSharesReceipt = await redeemShares({
+    const redeemSharesReceipt = await redeemSharesInKind({
       comptrollerProxy,
       signer: fundInvestor,
     });

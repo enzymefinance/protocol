@@ -28,7 +28,12 @@ contract MockReentrancyToken is MockToken("Mock Reentrancy Token", "MRT", 18) {
 
     function transfer(address recipient, uint256 amount) public override returns (bool) {
         if (bad) {
-            ComptrollerLib(comptrollerProxy).redeemShares();
+            ComptrollerLib(comptrollerProxy).redeemSharesInKind(
+                address(this),
+                amount,
+                new address[](0),
+                new address[](0)
+            );
         } else {
             _transfer(_msgSender(), recipient, amount);
         }

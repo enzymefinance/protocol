@@ -1,7 +1,7 @@
 import { AddressLike } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ComptrollerLib, StandardToken } from '@enzymefinance/protocol';
-import { BigNumberish, utils } from 'ethers';
+import { BigNumberish, constants, utils } from 'ethers';
 
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;
@@ -12,7 +12,7 @@ export interface BuySharesParams {
   seedBuyer?: boolean;
 }
 
-export interface RedeemSharesParams {
+export interface RedeemSharesInKindParams {
   comptrollerProxy: ComptrollerLib;
   signer: SignerWithAddress;
   recipient?: AddressLike;
@@ -41,20 +41,13 @@ export async function buyShares({
   return comptrollerProxy.connect(buyer).buyShares(investmentAmount, minSharesQuantity);
 }
 
-export async function redeemShares({
+export async function redeemSharesInKind({
   comptrollerProxy,
   signer,
   recipient = signer,
-  quantity,
+  quantity = constants.MaxUint256,
   additionalAssets = [],
   assetsToSkip = [],
-}: RedeemSharesParams) {
-  if (quantity == undefined) {
-    if (additionalAssets.length > 0 || assetsToSkip.length > 0) {
-      throw 'Must specify shares quantity if specifying additional assets or assets to skip';
-    }
-    return comptrollerProxy.connect(signer).redeemShares();
-  } else {
-    return comptrollerProxy.connect(signer).redeemSharesDetailed(recipient, quantity, additionalAssets, assetsToSkip);
-  }
+}: RedeemSharesInKindParams) {
+  return comptrollerProxy.connect(signer).redeemSharesInKind(recipient, quantity, additionalAssets, assetsToSkip);
 }

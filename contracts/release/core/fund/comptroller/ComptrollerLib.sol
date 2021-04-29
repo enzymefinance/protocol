@@ -42,7 +42,7 @@ contract ComptrollerLib is IComptroller {
     event PreRedeemSharesHookFailed(
         bytes failureReturnData,
         address redeemer,
-        uint256 sharesQuantity
+        uint256 sharesAmount
     );
 
     event SharesBought(
@@ -55,9 +55,9 @@ contract ComptrollerLib is IComptroller {
     event SharesRedeemed(
         address indexed redeemer,
         address indexed recipient,
-        uint256 sharesQuantity,
+        uint256 sharesAmount,
         address[] receivedAssets,
-        uint256[] receivedAssetQuantities
+        uint256[] receivedAssetAmounts
     );
 
     event VaultProxySet(address vaultProxy);
@@ -769,49 +769,102 @@ contract ComptrollerLib is IComptroller {
 
     // REDEEM SHARES
 
-    /// @notice Redeems all of the sender's shares and returns a proportionate slice of
-    /// the vault's tracked assets to the sender
-    /// @return payoutAssets_ The assets paid out to the redeemer
-    /// @return payoutAmounts_ The amount of each asset paid out to the redeemer
-    /// @dev See __redeemShares() for further detail
-    function redeemShares()
-        external
-        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
-    {
-        return
-            __redeemShares(
-                msg.sender,
-                msg.sender,
-                ERC20(vaultProxy).balanceOf(msg.sender),
-                new address[](0),
-                new address[](0)
-            );
-    }
-
-    /// @notice Redeems some of the sender's shares for a proportionate slice of
-    /// the vault's assets, with detailed configuration options
+    /// @notice Redeems a specified amount of the sender's shares
+    /// for a proportionate slice of the vault's assets
     /// @param _recipient The account that will receive the proportionate slice of assets
     /// @param _sharesQuantity The quantity of shares to redeem
     /// @param _additionalAssets Additional (non-tracked) assets to claim
     /// @param _assetsToSkip Tracked assets to forfeit
-    /// @return payoutAssets_ The assets paid out to the redeemer
-    /// @return payoutAmounts_ The amount of each asset paid out to the redeemer
-    /// @dev Any claim to passed _assetsToSkip will be forfeited entirely. This should generally
+    /// @return payoutAssets_ The assets paid out to the _recipient
+    /// @return payoutAmounts_ The amount of each asset paid out to the _recipient
+    /// @dev Redeem all shares of the sender by setting _sharesQuantity to the max uint value.
+    /// Any claim to passed _assetsToSkip will be forfeited entirely. This should generally
     /// only be exercised if a bad asset is causing redemption to fail.
-    function redeemSharesDetailed(
+    /// This function should never fail without a way to bypass the failure, which is assured
+    /// through two mechanisms:
+    /// 1. The FeeManager is called with the try/catch pattern to assure that calls to it
+    /// can never block redemption.
+    /// 2. If a token fails upon transfer(), that token can be skipped (and its balance forfeited)
+    /// by explicitly specifying _assetsToSkip.
+    /// Because of these assurances, shares should always be redeemable, with the exception
+    /// of the timelock period on shares actions that must be respected.
+    function redeemSharesInKind(
         address _recipient,
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
-    ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
-        return
-            __redeemShares(
-                msg.sender,
-                _recipient,
-                _sharesQuantity,
-                _additionalAssets,
-                _assetsToSkip
-            );
+    )
+        external
+        locksReentrance
+        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
+    {
+        require(
+            _additionalAssets.isUniqueSet(),
+            "redeemSharesInKind: _additionalAssets contains duplicates"
+        );
+        require(
+            _assetsToSkip.isUniqueSet(),
+            "redeemSharesInKind: _assetsToSkip contains duplicates"
+        );
+
+        IVault vaultProxyContract = IVault(vaultProxy);
+        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
+            vaultProxyContract,
+            msg.sender,
+            _sharesQuantity
+        );
+
+        // Parse the payout assets given optional params to add or skip assets.
+        // Note that there is no validation that the _additionalAssets are known assets to
+        // the protocol. This means that the redeemer could specify a malicious asset,
+        // but since all state-changing, user-callable functions on this contract share the
+        // non-reentrant modifier, there is nowhere to perform a reentrancy attack.
+        payoutAssets_ = __parseRedemptionPayoutAssets(
+            vaultProxyContract.getTrackedAssets(),
+            _additionalAssets,
+            _assetsToSkip
+        );
+        require(payoutAssets_.length > 0, "redeemSharesInKind: No payout assets");
+
+        // Calculate and transfer payout asset amounts due to _recipient
+        payoutAmounts_ = new uint256[](payoutAssets_.length);
+        address denominationAssetCopy = denominationAsset;
+
+        // Resolve finality of all assets as needed
+        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            address(vaultProxyContract),
+            payoutAssets_,
+            true
+        );
+
+        for (uint256 i; i < payoutAssets_.length; i++) {
+            // If all remaining shares are being redeemed, the logic changes slightly
+            if (sharesToRedeem == sharesSupply) {
+                payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
+                // Remove every tracked asset, except the denomination asset
+                if (payoutAssets_[i] != denominationAssetCopy) {
+                    vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
+                }
+            } else {
+                payoutAmounts_[i] = ERC20(payoutAssets_[i])
+                    .balanceOf(address(vaultProxyContract))
+                    .mul(sharesToRedeem)
+                    .div(sharesSupply);
+            }
+
+            // Transfer payout asset to _recipient
+            if (payoutAmounts_[i] > 0) {
+                vaultProxyContract.withdrawAssetTo(
+                    payoutAssets_[i],
+                    _recipient,
+                    payoutAmounts_[i]
+                );
+            }
+        }
+
+        emit SharesRedeemed(msg.sender, _recipient, sharesToRedeem, payoutAssets_, payoutAmounts_);
+
+        return (payoutAssets_, payoutAmounts_);
     }
 
     /// @dev Helper to parse an array of payout assets during redemption, taking into account
@@ -857,122 +910,64 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper for system actions immediately prior to redeeming shares.
     /// Policy validation is not currently allowed on redemption, to ensure continuous redeemability.
-    function __preRedeemSharesHook(address _redeemer, uint256 _sharesQuantity)
+    function __preRedeemSharesHook(address _redeemer, uint256 _sharesToRedeem)
         private
         allowsPermissionedVaultAction
     {
         try
             IFeeManager(FEE_MANAGER).invokeHook(
                 IFeeManager.FeeHook.PreRedeemShares,
-                abi.encode(_redeemer, _sharesQuantity),
+                abi.encode(_redeemer, _sharesToRedeem),
                 0
             )
          {} catch (bytes memory reason) {
-            emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesQuantity);
+            emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
         }
     }
 
-    /// @dev Helper to redeem shares.
-    /// This function should never fail without a way to bypass the failure, which is assured
-    /// through two mechanisms:
-    /// 1. The FeeManager is called with the try/catch pattern to assure that calls to it
-    /// can never block redemption.
-    /// 2. If a token fails upon transfer(), that token can be skipped (and its balance forfeited)
-    /// by explicitly specifying _assetsToSkip.
-    /// Because of these assurances, shares should always be redeemable, with the exception
-    /// of the timelock period on shares actions that must be respected.
-    function __redeemShares(
+    /// @dev Helper to execute common pre-shares redemption logic
+    function __redeemSharesSetup(
+        IVault vaultProxyContract,
         address _redeemer,
-        address _recipient,
-        uint256 _sharesQuantity,
-        address[] memory _additionalAssets,
-        address[] memory _assetsToSkip
-    )
-        private
-        locksReentrance
-        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
-    {
-        require(_sharesQuantity > 0, "__redeemShares: _sharesQuantity must be >0");
-        require(
-            _additionalAssets.isUniqueSet(),
-            "__redeemShares: _additionalAssets contains duplicates"
-        );
-        require(_assetsToSkip.isUniqueSet(), "__redeemShares: _assetsToSkip contains duplicates");
-
-        IVault vaultProxyContract = IVault(vaultProxy);
-
+        uint256 _sharesQuantityInput
+    ) private returns (uint256 sharesToRedeem_, uint256 sharesSupply_) {
         __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
+
+        ERC20 sharesContract = ERC20(address(vaultProxyContract));
+
+        if (_sharesQuantityInput == type(uint256).max) {
+            sharesToRedeem_ = sharesContract.balanceOf(_redeemer);
+        } else {
+            sharesToRedeem_ = _sharesQuantityInput;
+        }
+        require(sharesToRedeem_ > 0, "__redeemSharesSetup: No shares to redeem");
 
         // When a fund is paused, settling fees will be skipped
         if (!__fundIsPaused()) {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
             // then those fee shares will be transferred from the user's balance rather
-            // than reallocated from the sharesQuantity being redeemed.
-            __preRedeemSharesHook(_redeemer, _sharesQuantity);
+            // than reallocated from the sharesToRedeem_.
+            __preRedeemSharesHook(_redeemer, sharesToRedeem_);
         }
 
-        // Check the shares quantity against the user's balance after settling fees
-        ERC20 sharesContract = ERC20(address(vaultProxyContract));
-        require(
-            _sharesQuantity <= sharesContract.balanceOf(_redeemer),
-            "__redeemShares: Insufficient shares"
-        );
-
-        // Parse the payout assets given optional params to add or skip assets.
-        // Note that there is no validation that the _additionalAssets are known assets to
-        // the protocol. This means that the redeemer could specify a malicious asset,
-        // but since all state-changing, user-callable functions on this contract share the
-        // non-reentrant modifier, there is nowhere to perform a reentrancy attack.
-        payoutAssets_ = __parseRedemptionPayoutAssets(
-            vaultProxyContract.getTrackedAssets(),
-            _additionalAssets,
-            _assetsToSkip
-        );
-        require(payoutAssets_.length > 0, "__redeemShares: No payout assets");
-
-        // Destroy the shares.
-        // Must get the shares supply before doing so.
-        uint256 sharesSupply = sharesContract.totalSupply();
-        vaultProxyContract.burnShares(_redeemer, _sharesQuantity);
-
-        // Calculate and transfer payout asset amounts due to _recipient
-        payoutAmounts_ = new uint256[](payoutAssets_.length);
-        address denominationAssetCopy = denominationAsset;
-
-        // Resolve finality of all assets as needed
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
-            address(vaultProxyContract),
-            payoutAssets_,
-            true
-        );
-
-        for (uint256 i; i < payoutAssets_.length; i++) {
-            uint256 assetBalance = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
-
-            // If all remaining shares are being redeemed, the logic changes slightly
-            if (_sharesQuantity == sharesSupply) {
-                payoutAmounts_[i] = assetBalance;
-                // Remove every tracked asset, except the denomination asset
-                if (payoutAssets_[i] != denominationAssetCopy) {
-                    vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
-                }
-            } else {
-                payoutAmounts_[i] = assetBalance.mul(_sharesQuantity).div(sharesSupply);
-            }
-
-            // Transfer payout asset to _recipient
-            if (payoutAmounts_[i] > 0) {
-                vaultProxyContract.withdrawAssetTo(
-                    payoutAssets_[i],
-                    _recipient,
-                    payoutAmounts_[i]
-                );
-            }
+        uint256 postHookSharesBalance = sharesContract.balanceOf(_redeemer);
+        if (_sharesQuantityInput == type(uint256).max) {
+            // If the user is redeeming all of their shares (i.e., max uint), then their sharesToRedeem
+            // is reassigned to their current full balance
+            sharesToRedeem_ = postHookSharesBalance;
+        } else {
+            // Check sharesToRedeem_ against the user's balance after settling fees
+            require(
+                sharesToRedeem_ <= postHookSharesBalance,
+                "__redeemSharesSetup: Insufficient shares"
+            );
         }
 
-        emit SharesRedeemed(_redeemer, _recipient, _sharesQuantity, payoutAssets_, payoutAmounts_);
+        // Destroy the shares after getting the shares supply
+        sharesSupply_ = sharesContract.totalSupply();
+        vaultProxyContract.burnShares(_redeemer, sharesToRedeem_);
 
-        return (payoutAssets_, payoutAmounts_);
+        return (sharesToRedeem_, sharesSupply_);
     }
 
     // TRANSFER SHARES

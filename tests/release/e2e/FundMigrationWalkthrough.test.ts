@@ -23,7 +23,7 @@ import {
   // Deployment,
   // DeploymentHandlers,
   // deployRelease,
-  redeemShares,
+  redeemSharesInKind,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
 } from '@enzymefinance/testutils';
@@ -164,7 +164,7 @@ describe('Walkthrough a fund migration', () => {
     const balance = await vaultProxy.balanceOf(investor);
     const redeemQuantity = balance.div(2);
 
-    await redeemShares({
+    await redeemSharesInKind({
       comptrollerProxy,
       signer: investor,
       quantity: redeemQuantity,

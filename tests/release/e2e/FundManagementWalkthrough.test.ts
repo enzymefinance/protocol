@@ -22,7 +22,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   ProtocolDeployment,
-  redeemShares,
+  redeemSharesInKind,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
@@ -323,7 +323,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const balance = await vaultProxy.balanceOf(investor);
       const redeemQuantity = balance.div(2);
 
-      const redeemed = await redeemShares({
+      const redeemed = await redeemSharesInKind({
         comptrollerProxy,
         signer: investor,
         quantity: redeemQuantity,
@@ -388,7 +388,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('redeems all remaining shares of the first investor', async () => {
-      await redeemShares({
+      await redeemSharesInKind({
         comptrollerProxy,
         signer: investor,
       });
@@ -397,7 +397,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('redeems all remaining shares of the other investor', async () => {
-      const redeemed = await redeemShares({
+      const redeemed = await redeemSharesInKind({
         comptrollerProxy,
         signer: anotherInvestor,
       });

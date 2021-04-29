@@ -13,7 +13,7 @@ import {
   createNewFund,
   getAssetBalances,
   getAssetUnit,
-  redeemShares,
+  redeemSharesInKind,
   synthetixAssignExchangeDelegate,
   synthetixResolveAddress,
   synthetixTakeOrder,
@@ -281,7 +281,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
   it('investor attempts (and fails) to redeem shares immediately after the Synthetix trade', async () => {
     await expect(
-      redeemShares({
+      redeemSharesInKind({
         comptrollerProxy,
         signer: investor,
       }),
@@ -291,7 +291,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('investor redeems all shares after the waiting period', async () => {
     await warpBeyondWaitingPeriod();
 
-    await redeemShares({
+    await redeemSharesInKind({
       comptrollerProxy,
       signer: investor,
     });
