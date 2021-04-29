@@ -589,5 +589,3 @@ describe('calcLatestRedemptionWindowStart', () => {
     expect(latestStartTimestamp).toEqBigNumber(startTimestamp.add(twoDays));
   });
 });
-
-// TODO integration tests

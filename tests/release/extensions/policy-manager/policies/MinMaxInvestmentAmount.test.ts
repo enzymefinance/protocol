@@ -3,17 +3,10 @@ import {
   MinMaxInvestment,
   minMaxInvestmentArgs,
   PolicyHook,
-  policyManagerConfigArgs,
   validateRulePreBuySharesArgs,
   WETH,
 } from '@enzymefinance/protocol';
-import {
-  assertEvent,
-  createNewFund,
-  createFundDeployer,
-  createMigratedFundConfig,
-  deployProtocolFixture,
-} from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
 
 async function snapshot() {
@@ -368,146 +361,5 @@ describe('validateRule', () => {
       .call();
 
     expect(validateRuleCall).toBe(true);
-  });
-});
-
-describe('integration tests', () => {
-  it('can create a new fund with this policy, and it can disable and re-enable the policy for that fund', async () => {
-    const {
-      denominationAsset,
-      accounts: [fundOwner],
-      deployment: { fundDeployer, minMaxInvestment, policyManager },
-    } = await provider.snapshot(snapshot);
-
-    // declare variables for policy config
-    const minMaxInvestmentSettings = minMaxInvestmentArgs({
-      minInvestmentAmount: utils.parseEther('1'),
-      maxInvestmentAmount: utils.parseEther('2'),
-    });
-    const policyManagerConfig = policyManagerConfigArgs({
-      policies: [minMaxInvestment],
-      settings: [minMaxInvestmentSettings],
-    });
-
-    // create new fund with policy as above
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      denominationAsset,
-      fundOwner,
-      fundName: 'Test Fund!',
-      policyManagerConfig,
-    });
-
-    // confirm the policy has been enabled on fund creation
-    const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
-    expect(confirmEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [minMaxInvestment]);
-
-    await policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, minMaxInvestment);
-    const confirmDisabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
-    expect(confirmDisabledPolicies).toHaveLength(0);
-
-    // re-enable policy with empty settingsData
-    const reEnableMinMaxInvestmentConfig = minMaxInvestmentArgs({
-      minInvestmentAmount: utils.parseEther('3'),
-      maxInvestmentAmount: utils.parseEther('4'),
-    });
-
-    await policyManager
-      .connect(fundOwner)
-      .enablePolicyForFund(comptrollerProxy, minMaxInvestment, reEnableMinMaxInvestmentConfig);
-
-    // confirm that the policy has been re-enabled for fund
-    const confirmReEnabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
-    expect(confirmReEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [minMaxInvestment]);
-
-    const confirmFundSettings = await minMaxInvestment.getFundSettings(comptrollerProxy);
-    expect(confirmFundSettings).toMatchFunctionOutput(minMaxInvestment.getFundSettings, {
-      minInvestmentAmount: utils.parseEther('3'),
-      maxInvestmentAmount: utils.parseEther('4'),
-    });
-  });
-
-  it('can create a migrated fund with this policy', async () => {
-    const {
-      accounts: [fundOwner],
-      deployer,
-      denominationAsset,
-      config: {
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
-      deployment: {
-        assetFinalityResolver,
-        chainlinkPriceFeed,
-        debtPositionManager,
-        dispatcher,
-        feeManager,
-        fundDeployer,
-        integrationManager,
-        policyManager,
-        synthetixPriceFeed,
-        valueInterpreter,
-        vaultLib,
-        minMaxInvestment,
-      },
-    } = await provider.snapshot(snapshot);
-
-    // declare variables for policy config
-    const minMaxInvestmentSettings = minMaxInvestmentArgs({
-      minInvestmentAmount: utils.parseEther('1'),
-      maxInvestmentAmount: utils.parseEther('2'),
-    });
-
-    const policyManagerConfig = policyManagerConfigArgs({
-      policies: [minMaxInvestment],
-      settings: [minMaxInvestmentSettings],
-    });
-
-    // create new fund with policy as above
-    const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      denominationAsset,
-      fundOwner,
-      fundName: 'Test Fund!',
-      policyManagerConfig,
-    });
-
-    // migrate fund
-    const nextFundDeployer = await createFundDeployer({
-      deployer,
-      assetFinalityResolver,
-      chainlinkPriceFeed,
-      debtPositionManager,
-      dispatcher,
-      feeManager,
-      integrationManager,
-      policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
-      valueInterpreter,
-      vaultLib,
-    });
-
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      denominationAsset,
-      policyManagerConfigData: policyManagerConfig,
-    });
-
-    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-
-    // Warp to migratable time
-    const migrationTimelock = await dispatcher.getMigrationTimelock();
-    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
-
-    // Migration execution settles the accrued fee
-    await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    // confirm policy exists on migrated fund
-    const confirmEnabledPolicies = await policyManager.getEnabledPoliciesForFund(nextComptrollerProxy);
-    expect(confirmEnabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [minMaxInvestment]);
   });
 });

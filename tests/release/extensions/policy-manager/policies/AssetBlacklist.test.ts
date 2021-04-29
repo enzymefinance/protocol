@@ -1,26 +1,13 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  addTrackedAssetsArgs,
-  addTrackedAssetsSelector,
   AssetBlacklist,
   assetBlacklistArgs,
-  callOnIntegrationArgs,
   ComptrollerLib,
-  IntegrationManagerActionId,
   PolicyHook,
-  policyManagerConfigArgs,
-  StandardToken,
   validateRulePostCoIArgs,
   VaultLib,
-  WETH,
 } from '@enzymefinance/protocol';
-import {
-  assertEvent,
-  createNewFund,
-  createMigratedFundConfig,
-  createFundDeployer,
-  deployProtocolFixture,
-} from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils, constants } from 'ethers';
 
 async function snapshot() {
@@ -201,161 +188,5 @@ describe('validateRule', () => {
       .call();
 
     expect(validateRuleResult).toBeTruthy();
-  });
-});
-
-describe('integration tests', () => {
-  it('can create a new fund with this policy, and it works correctly during callOnIntegration', async () => {
-    const {
-      accounts: [fundOwner],
-      config: {
-        weth,
-        primitives: { mln },
-      },
-      deployment: { trackedAssetsAdapter, fundDeployer, assetBlacklist, integrationManager },
-    } = await provider.snapshot(snapshot);
-
-    const denominationAsset = new WETH(weth, whales.weth);
-    const incomingAsset = new StandardToken(mln, whales.mln);
-
-    // declare variables for policy config
-    const assetBlacklistAddresses = [incomingAsset.address];
-    const assetBlacklistSettings = assetBlacklistArgs(assetBlacklistAddresses);
-    const policyManagerConfig = policyManagerConfigArgs({
-      policies: [assetBlacklist.address],
-      settings: [assetBlacklistSettings],
-    });
-
-    // create new fund with policy as above
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      denominationAsset,
-      fundOwner,
-      fundName: 'Test Fund!',
-      policyManagerConfig,
-    });
-
-    // confirm a blacklisted asset is not allowed
-    const incomingAssetAmount = utils.parseEther('50');
-    // Send incomingAsset to vault
-    await incomingAsset.transfer(vaultProxy.address, incomingAssetAmount);
-
-    // track it and expect to fail
-    const trackedAssetArgs = addTrackedAssetsArgs([incomingAsset]);
-    const trackedAssetCallArgs = callOnIntegrationArgs({
-      adapter: trackedAssetsAdapter,
-      selector: addTrackedAssetsSelector,
-      encodedCallArgs: trackedAssetArgs,
-    });
-
-    const addTrackedAssetsTx = comptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
-
-    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_BLACKLIST',
-    );
-  });
-
-  it('can create a migrated fund with this policy', async () => {
-    const {
-      accounts: [fundOwner],
-      deployer,
-      config: {
-        weth,
-        primitives: { mln },
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
-      deployment: {
-        assetFinalityResolver,
-        chainlinkPriceFeed,
-        debtPositionManager,
-        dispatcher,
-        feeManager,
-        fundDeployer,
-        integrationManager,
-        policyManager,
-        synthetixPriceFeed,
-        valueInterpreter,
-        vaultLib,
-        assetBlacklist,
-        trackedAssetsAdapter,
-      },
-    } = await provider.snapshot(snapshot);
-
-    const denominationAsset = new WETH(weth, whales.weth);
-    const incomingAsset = new StandardToken(mln, whales.mln);
-
-    const assetBlacklistAddresses = [incomingAsset.address];
-    const assetBlacklistSettings = assetBlacklistArgs(assetBlacklistAddresses);
-    const policyManagerConfig = policyManagerConfigArgs({
-      policies: [assetBlacklist.address],
-      settings: [assetBlacklistSettings],
-    });
-
-    // create new fund with policy as above
-    const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      denominationAsset,
-      fundOwner,
-      fundName: 'Test Fund!',
-      policyManagerConfig,
-    });
-
-    // migrate fund
-    const nextFundDeployer = await createFundDeployer({
-      deployer,
-      assetFinalityResolver,
-      chainlinkPriceFeed,
-      debtPositionManager,
-      dispatcher,
-      feeManager,
-      integrationManager,
-      policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
-      valueInterpreter,
-      vaultLib,
-    });
-
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      denominationAsset,
-      policyManagerConfigData: policyManagerConfig,
-    });
-
-    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-
-    // Warp to migratable time
-    const migrationTimelock = await dispatcher.getMigrationTimelock();
-    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
-
-    // Migration execution settles the accrued fee
-    await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    // confirm a blacklisted asset is not allowed
-    const incomingAssetAmount = utils.parseEther('50');
-    // Send incomingAsset to vault
-    await incomingAsset.transfer(vaultProxy.address, incomingAssetAmount);
-
-    // track it and expect to fail
-    const trackedAssetArgs = addTrackedAssetsArgs([incomingAsset]);
-    const trackedAssetCallArgs = callOnIntegrationArgs({
-      adapter: trackedAssetsAdapter,
-      selector: addTrackedAssetsSelector,
-      encodedCallArgs: trackedAssetArgs,
-    });
-
-    const addTrackedAssetsTx = nextComptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
-
-    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_BLACKLIST',
-    );
   });
 });
