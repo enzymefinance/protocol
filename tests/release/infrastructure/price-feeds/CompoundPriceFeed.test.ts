@@ -59,7 +59,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(59000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(83100));
   });
 });
 
@@ -167,8 +167,8 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(dai);
 
-    // Rounding up from 38938
-    expect(getRatesReceipt).toCostLessThan('39000');
+    // Rounding up from 51839
+    expect(getRatesReceipt).toCostLessThan('51900');
   });
 
   it('returns rate for underlying token (cETH)', async () => {
@@ -186,8 +186,8 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(weth);
 
-    // Rounding up from 30991
-    expect(getRatesReceipt).toCostLessThan('32000');
+    // Rounding up from 36339
+    expect(getRatesReceipt).toCostLessThan('37000');
   });
 });
 

@@ -54,7 +54,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(39000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(64100));
   });
 });
 
