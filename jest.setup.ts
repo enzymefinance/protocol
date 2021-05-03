@@ -1,7 +1,8 @@
-import { setGasCostAssertionTolerance } from '@enzymefinance/hardhat';
+import { setBeAroundBigNumberAssertionTolerance, setGasCostAssertionTolerance } from '@enzymefinance/hardhat';
 import { deployProtocolFixture, unlockAllWhales } from '@enzymefinance/testutils';
 
-setGasCostAssertionTolerance(0.03);
+setBeAroundBigNumberAssertionTolerance(0.01); // 1%
+setGasCostAssertionTolerance(0.03); // 3%
 
 beforeAll(async () => {
   global.whales = await unlockAllWhales();

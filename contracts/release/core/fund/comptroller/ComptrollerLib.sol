@@ -63,6 +63,7 @@ contract ComptrollerLib is IComptroller {
     event VaultProxySet(address vaultProxy);
 
     // Constants and immutables - shared by all proxies
+    uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DEBT_POSITION_MANAGER;
@@ -766,6 +767,57 @@ contract ComptrollerLib is IComptroller {
 
     // REDEEM SHARES
 
+    /// @notice Redeems a specified amount of the sender's shares for specified asset proportions
+    /// @param _recipient The account that will receive the specified assets
+    /// @param _sharesQuantity The quantity of shares to redeem
+    /// @param _payoutAssets The assets to payout
+    /// @param _payoutAssetPercentages The percentage of the owed amount to pay out in each asset
+    /// @return payoutAmounts_ The amount of each asset paid out to the _recipient
+    /// @dev Redeem all shares of the sender by setting _sharesQuantity to the max uint value.
+    /// _payoutAssetPercentages must total exactly 100%. In order to specify less and forgo the
+    /// remaining gav owed on the redeemed shares, pass in address(0) with the percentage to forego.
+    /// Unlike redeemSharesInKind(), this function allows policies to run and prevent redemption.
+    function redeemSharesForSpecificAssets(
+        address _recipient,
+        uint256 _sharesQuantity,
+        address[] calldata _payoutAssets,
+        uint256[] calldata _payoutAssetPercentages
+    ) external locksReentrance returns (uint256[] memory payoutAmounts_) {
+        require(
+            _payoutAssets.length == _payoutAssetPercentages.length,
+            "redeemSharesForSpecificAssets: Unequal arrays"
+        );
+        require(
+            _payoutAssets.isUniqueSet(),
+            "redeemSharesForSpecificAssets: Duplicate payout asset"
+        );
+
+        (uint256 gav, bool gavIsValid) = calcGav(true);
+        require(gavIsValid, "redeemSharesForSpecificAssets: Invalid GAV");
+
+        IVault vaultProxyContract = IVault(vaultProxy);
+        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
+            vaultProxyContract,
+            msg.sender,
+            _sharesQuantity,
+            gav
+        );
+
+        // TODO: Add new policy hook here
+
+        payoutAmounts_ = __payoutSpecifiedAssetPercentages(
+            vaultProxyContract,
+            _recipient,
+            _payoutAssets,
+            _payoutAssetPercentages,
+            gav.mul(sharesToRedeem).div(sharesSupply)
+        );
+
+        emit SharesRedeemed(msg.sender, _recipient, sharesToRedeem, _payoutAssets, payoutAmounts_);
+
+        return payoutAmounts_;
+    }
+
     /// @notice Redeems a specified amount of the sender's shares
     /// for a proportionate slice of the vault's assets
     /// @param _recipient The account that will receive the proportionate slice of assets
@@ -808,7 +860,8 @@ contract ComptrollerLib is IComptroller {
         (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
             vaultProxyContract,
             msg.sender,
-            _sharesQuantity
+            _sharesQuantity,
+            0
         );
 
         // Parse the payout assets given optional params to add or skip assets.
@@ -905,17 +958,60 @@ contract ComptrollerLib is IComptroller {
         return payoutAssets_;
     }
 
+    /// @dev Helper to payout specified asset percentages during redeemSharesForSpecificAssets()
+    function __payoutSpecifiedAssetPercentages(
+        IVault vaultProxyContract,
+        address _recipient,
+        address[] calldata _payoutAssets,
+        uint256[] calldata _payoutAssetPercentages,
+        uint256 _owedGav
+    ) private returns (uint256[] memory payoutAmounts_) {
+        address denominationAssetCopy = denominationAsset;
+        uint256 percentagesTotal;
+        payoutAmounts_ = new uint256[](_payoutAssets.length);
+        for (uint256 i; i < _payoutAssets.length; i++) {
+            percentagesTotal = percentagesTotal.add(_payoutAssetPercentages[i]);
+
+            // Used to explicitly specify less than 100% in total _payoutAssetPercentages
+            if (_payoutAssets[i] == address(0)) {
+                continue;
+            }
+
+            bool payoutAssetRateIsValid;
+            (payoutAmounts_[i], payoutAssetRateIsValid) = IValueInterpreter(VALUE_INTERPRETER)
+                .calcCanonicalAssetValue(
+                denominationAssetCopy,
+                _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
+                _payoutAssets[i]
+            );
+            require(
+                payoutAssetRateIsValid,
+                "__payoutSpecifiedAssetPercentages: Invalid asset rate"
+            );
+
+            vaultProxyContract.withdrawAssetTo(_payoutAssets[i], _recipient, payoutAmounts_[i]);
+        }
+
+        require(
+            percentagesTotal == ONE_HUNDRED_PERCENT,
+            "__payoutSpecifiedAssetPercentages: Percents must total 100%"
+        );
+
+        return payoutAmounts_;
+    }
+
     /// @dev Helper for system actions immediately prior to redeeming shares.
     /// Policy validation is not currently allowed on redemption, to ensure continuous redeemability.
-    function __preRedeemSharesHook(address _redeemer, uint256 _sharesToRedeem)
-        private
-        allowsPermissionedVaultAction
-    {
+    function __preRedeemSharesHook(
+        address _redeemer,
+        uint256 _sharesToRedeem,
+        uint256 _gavIfCalculated
+    ) private allowsPermissionedVaultAction {
         try
             IFeeManager(FEE_MANAGER).invokeHook(
                 IFeeManager.FeeHook.PreRedeemShares,
                 abi.encode(_redeemer, _sharesToRedeem),
-                0
+                _gavIfCalculated
             )
          {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
@@ -926,7 +1022,8 @@ contract ComptrollerLib is IComptroller {
     function __redeemSharesSetup(
         IVault vaultProxyContract,
         address _redeemer,
-        uint256 _sharesQuantityInput
+        uint256 _sharesQuantityInput,
+        uint256 _gavIfCalculated
     ) private returns (uint256 sharesToRedeem_, uint256 sharesSupply_) {
         __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
 
@@ -944,7 +1041,7 @@ contract ComptrollerLib is IComptroller {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
             // then those fee shares will be transferred from the user's balance rather
             // than reallocated from the sharesToRedeem_.
-            __preRedeemSharesHook(_redeemer, sharesToRedeem_);
+            __preRedeemSharesHook(_redeemer, sharesToRedeem_, _gavIfCalculated);
         }
 
         uint256 postHookSharesBalance = sharesContract.balanceOf(_redeemer);

@@ -12,6 +12,15 @@ export interface BuySharesParams {
   seedBuyer?: boolean;
 }
 
+export interface RedeemSharesForSpecificAssetsParams {
+  comptrollerProxy: ComptrollerLib;
+  signer: SignerWithAddress;
+  recipient?: AddressLike;
+  quantity?: BigNumberish;
+  payoutAssets: AddressLike[];
+  payoutAssetPercentages: BigNumberish[];
+}
+
 export interface RedeemSharesInKindParams {
   comptrollerProxy: ComptrollerLib;
   signer: SignerWithAddress;
@@ -39,6 +48,19 @@ export async function buyShares({
   await denominationAsset.connect(buyer).approve(comptrollerProxy, investmentAmount);
 
   return comptrollerProxy.connect(buyer).buyShares(investmentAmount, minSharesQuantity);
+}
+
+export async function redeemSharesForSpecificAssets({
+  comptrollerProxy,
+  signer,
+  recipient = signer,
+  quantity = constants.MaxUint256,
+  payoutAssets,
+  payoutAssetPercentages,
+}: RedeemSharesForSpecificAssetsParams) {
+  return comptrollerProxy
+    .connect(signer)
+    .redeemSharesForSpecificAssets(recipient, quantity, payoutAssets, payoutAssetPercentages);
 }
 
 export async function redeemSharesInKind({

@@ -17,6 +17,7 @@ import {
   generateRegisteredMockFees,
   getAssetBalances,
   getAssetUnit,
+  redeemSharesForSpecificAssets,
   redeemSharesInKind,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -313,384 +314,663 @@ describe('buyShares', () => {
   });
 });
 
-describe('redeemSharesInKind', () => {
-  it('cannot be re-entered', async () => {
-    const {
-      deployment: { fundDeployer },
-      accounts: [fundManager, investor],
-      reentrancyToken: denominationAsset,
-    } = await provider.snapshot(snapshot);
+describe('redeem', () => {
+  describe('__redeemSharesSetup', () => {
+    it('does not allow a _sharesQuantity of 0', async () => {
+      const {
+        accounts: [investor],
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
 
-    const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
-    await denominationAsset.mintFor(fundManager, investmentAmount);
-    await denominationAsset.mintFor(investor, investmentAmount);
+      await expect(
+        redeemSharesInKind({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
+      ).rejects.toBeRevertedWith('No shares to redeem');
+    });
 
-    // Create a new fund, and invested in equally by the fund manager and an investor
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
-      denominationAsset,
-      investment: {
-        buyer: fundManager,
+    it('does not allow a _sharesQuantity greater than the redeemer balance', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundManager, investor],
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, and invested in equally by the fund manager and an investor
+      const investmentAmount = await getAssetUnit(denominationAsset);
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundManager,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundManager,
+          investmentAmount,
+        },
+      });
+
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
         investmentAmount,
-      },
+      });
+
+      const redeemQuantity = investmentAmount.add(1);
+
+      await expect(
+        redeemSharesInKind({
+          comptrollerProxy,
+          signer: investor,
+          quantity: redeemQuantity,
+        }),
+      ).rejects.toBeRevertedWith('Insufficient shares');
+    });
+  });
+
+  describe('redeemSharesForSpecificAssets', () => {
+    it.todo('cannot be re-entered');
+
+    it('does not allow unequal arrays of assets and asset percentages', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundOwner, investor],
+      } = await provider.snapshot(snapshot);
+
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+      });
+
+      await expect(
+        redeemSharesForSpecificAssets({
+          comptrollerProxy,
+          signer: investor,
+          payoutAssets: [],
+          payoutAssetPercentages: [1],
+        }),
+      ).rejects.toBeRevertedWith('Unequal arrays');
     });
 
-    await buyShares({
-      comptrollerProxy,
-      denominationAsset,
-      buyer: investor,
-      investmentAmount,
+    it('does not allow duplicate payoutAssets', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundOwner, investor],
+      } = await provider.snapshot(snapshot);
+
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+      });
+
+      await expect(
+        redeemSharesForSpecificAssets({
+          comptrollerProxy,
+          signer: investor,
+          payoutAssets: [constants.AddressZero, constants.AddressZero],
+          payoutAssetPercentages: [50, 50],
+        }),
+      ).rejects.toBeRevertedWith('Duplicate payout asset');
     });
 
-    const redeemQuantity = investmentAmount;
+    it.todo('does not allow an invalid GAV');
 
-    await denominationAsset.makeItReentracyToken(comptrollerProxy);
+    it.todo('does not allow an invalid rate for a specified asset');
 
-    await expect(
-      redeemSharesInKind({
+    it('does not allow the aggregate asset percentages to be greater or less than 100%', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundOwner, investor],
+        config: {
+          primitives: { mln },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: investor,
+        },
+      });
+
+      // Send second asset to the fund
+      const secondAsset = new StandardToken(mln, whales.mln);
+      const secondAssetTransferAmount = await getAssetUnit(secondAsset);
+      await secondAsset.transfer(vaultProxy, secondAssetTransferAmount);
+
+      await expect(
+        redeemSharesForSpecificAssets({
+          comptrollerProxy,
+          signer: investor,
+          payoutAssets: [denominationAsset, secondAsset],
+          payoutAssetPercentages: [10000, 1],
+        }),
+      ).rejects.toBeRevertedWith('Percents must total 100%');
+
+      await expect(
+        redeemSharesForSpecificAssets({
+          comptrollerProxy,
+          signer: investor,
+          payoutAssets: [denominationAsset],
+          payoutAssetPercentages: [9999],
+        }),
+      ).rejects.toBeRevertedWith('Percents must total 100%');
+    });
+
+    it('handles a valid call: full shares balance', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer, integrationManager, trackedAssetsAdapter, valueInterpreter },
+        accounts: [fundOwner, investor],
+        config: {
+          primitives: { dai, mln },
+        },
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, invested in by the fund manager and an investor
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundOwner,
+        },
+      });
+
+      // Buy a relatively small amount of shares for the investor to guarantee they can redeem the specified asset balances
+      const investorInvestmentAmount = (await getAssetUnit(denominationAsset)).div(10);
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        investmentAmount: investorInvestmentAmount,
+      });
+
+      // Define the redemption parameters
+      const recipient = randomAddress();
+      const payoutAssets = [new StandardToken(mln, whales.mln), new StandardToken(dai, whales.dai)];
+      const oneHundredPercent = 10000;
+      const payoutAssetPercentages = [3000, 7000]; // 30% and 70%
+
+      // Send and track the redemption assets with the equivalent values as the denomination asset balance
+      const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
+      await addNewAssetsToFund({
+        comptrollerProxy,
+        vaultProxy,
+        fundOwner,
+        integrationManager,
+        trackedAssetsAdapter,
+        assets: payoutAssets,
+        amounts: await Promise.all(
+          payoutAssets.map(
+            async (asset) =>
+              (
+                await valueInterpreter.calcCanonicalAssetValue
+                  .args(denominationAsset, preTxVaultDenominationAssetBalance, asset)
+                  .call()
+              ).value_,
+          ),
+        ),
+      });
+
+      // Calculate the expected shares redeemed and gav owed prior to redemption
+      const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
+      const preTxGav = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+      const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
+
+      // Redeem all of the investor's shares
+      const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
         signer: investor,
-        quantity: redeemQuantity,
-      }),
-    ).rejects.toBeRevertedWith('Re-entrance');
-  });
+        recipient,
+        quantity: constants.MaxUint256, // unnecessary, but explicit
+        payoutAssets,
+        payoutAssetPercentages,
+      });
 
-  it('does not allow a _sharesQuantity of 0', async () => {
-    const {
-      accounts: [investor],
-      fund: { comptrollerProxy },
-    } = await provider.snapshot(snapshot);
+      // Calculate the expected payout amounts
+      const expectedPayoutAmounts = await Promise.all(
+        payoutAssets.map(
+          async (asset, i) =>
+            (
+              await valueInterpreter.calcCanonicalAssetValue
+                .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[i]).div(oneHundredPercent), asset)
+                .call()
+            ).value_,
+        ),
+      );
 
-    await expect(
-      redeemSharesInKind({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
-    ).rejects.toBeRevertedWith('No shares to redeem');
-  });
+      // Assert that the new GAV is roughly the old gav minus gav owed
+      expect((await comptrollerProxy.calcGav.args(true).call()).gav_).toBeAroundBigNumber(preTxGav.sub(gavOwed));
 
-  it('does not allow duplicate _additionalAssets', async () => {
-    const {
-      weth,
-      accounts: [investor],
-      fund: { comptrollerProxy },
-    } = await provider.snapshot(snapshot);
+      // Assert the redeemer has redeemed all shares
+      expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
 
-    await expect(
-      redeemSharesInKind({
+      // Assert the recipient has received the expected assets and balances
+      for (const i in payoutAssets) {
+        expect(await payoutAssets[i].balanceOf(recipient)).toEqBigNumber(expectedPayoutAmounts[i]);
+      }
+
+      // Assert the correct event was emitted
+      assertEvent(receipt, 'SharesRedeemed', {
+        redeemer: investor,
+        recipient,
+        sharesAmount: expectedSharesRedeemed,
+        receivedAssets: payoutAssets,
+        receivedAssetAmounts: expectedPayoutAmounts,
+      });
+    });
+
+    it('handles a valid call: explicitly claim less than 100% of owed gav', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer, valueInterpreter },
+        accounts: [fundOwner, investor],
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, invested in by the fund manager
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: investor,
+        },
+      });
+
+      // Define the redemption parameters
+      const payoutAssets = [denominationAsset, constants.AddressZero];
+      const oneHundredPercent = 10000;
+      const payoutAssetPercentages = [9000, 1000]; // 90% and 10%
+
+      // Calculate the expected shares redeemed and gav owed prior to redemption
+      const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(4);
+      const preTxGav = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+      const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
+
+      // Redeem part of the investor's shares
+      const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
         signer: investor,
-        quantity: utils.parseEther('1'),
-        additionalAssets: [weth, weth],
-      }),
-    ).rejects.toBeRevertedWith('_additionalAssets contains duplicates');
+        quantity: expectedSharesRedeemed,
+        payoutAssets,
+        payoutAssetPercentages,
+      });
+
+      // Calculate the expected payout amount and expect 0 for the empty asset
+      const expectedPayoutAmounts = [
+        (
+          await valueInterpreter.calcCanonicalAssetValue
+            .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[0]).div(oneHundredPercent), denominationAsset)
+            .call()
+        ).value_,
+        0,
+      ];
+
+      // Assert the correct event was emitted
+      assertEvent(receipt, 'SharesRedeemed', {
+        redeemer: investor,
+        recipient: investor,
+        sharesAmount: expectedSharesRedeemed,
+        receivedAssets: payoutAssets,
+        receivedAssetAmounts: expectedPayoutAmounts,
+      });
+
+      // Other assertions are the same as the main happy path test
+    });
   });
 
-  it('does not allow duplicate _assetsToSkip', async () => {
-    const {
-      weth,
-      accounts: [investor],
-      fund: { comptrollerProxy },
-    } = await provider.snapshot(snapshot);
+  describe('redeemSharesInKind', () => {
+    it('cannot be re-entered', async () => {
+      const {
+        deployment: { fundDeployer },
+        accounts: [fundManager, investor],
+        reentrancyToken: denominationAsset,
+      } = await provider.snapshot(snapshot);
 
-    await expect(
-      redeemSharesInKind({
+      const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
+      await denominationAsset.mintFor(fundManager, investmentAmount);
+      await denominationAsset.mintFor(investor, investmentAmount);
+
+      // Create a new fund, and invested in equally by the fund manager and an investor
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundManager,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundManager,
+          investmentAmount,
+        },
+      });
+
+      await buyShares({
         comptrollerProxy,
-        signer: investor,
-        quantity: utils.parseEther('1'),
-        assetsToSkip: [weth, weth],
-      }),
-    ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
-  });
-
-  it('does not allow a _sharesQuantity greater than the redeemer balance', async () => {
-    const {
-      fund: { denominationAsset },
-      deployment: { fundDeployer },
-      accounts: [fundManager, investor],
-    } = await provider.snapshot(snapshot);
-
-    // Create a new fund, and invested in equally by the fund manager and an investor
-    const investmentAmount = await getAssetUnit(denominationAsset);
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
-      denominationAsset,
-      investment: {
-        buyer: fundManager,
-        investmentAmount,
-      },
-    });
-
-    await buyShares({
-      comptrollerProxy,
-      buyer: investor,
-      denominationAsset,
-      investmentAmount,
-    });
-
-    const redeemQuantity = investmentAmount.add(1);
-
-    await expect(
-      redeemSharesInKind({
-        comptrollerProxy,
-        signer: investor,
-        quantity: redeemQuantity,
-      }),
-    ).rejects.toBeRevertedWith('Insufficient shares');
-  });
-
-  it('does not allow a redemption if there are no payoutAssets', async () => {
-    const {
-      fund: { denominationAsset },
-      deployment: { fundDeployer },
-      accounts: [fundManager, investor],
-    } = await provider.snapshot(snapshot);
-
-    // Create a new fund, and invested in equally by the fund manager and an investor
-    const investmentAmount = await getAssetUnit(denominationAsset);
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
-      denominationAsset,
-      investment: {
-        buyer: fundManager,
-        investmentAmount,
-      },
-    });
-
-    await buyShares({
-      comptrollerProxy,
-      buyer: investor,
-      denominationAsset,
-      investmentAmount,
-    });
-
-    // // Redeem half of investor's shares
-    await expect(
-      redeemSharesInKind({
-        comptrollerProxy,
-        signer: investor,
-        quantity: investmentAmount.div(2),
-        assetsToSkip: [denominationAsset],
-      }),
-    ).rejects.toBeRevertedWith('No payout assets');
-  });
-
-  it('handles a valid call: full shares balance, no additional config', async () => {
-    const {
-      fund: { denominationAsset },
-      deployment: { fundDeployer, integrationManager, trackedAssetsAdapter },
-      accounts: [fundOwner, investor],
-      config: {
-        primitives: { mln },
-      },
-    } = await provider.snapshot(snapshot);
-
-    // Create a new fund, and invested in equally by the fund manager and an investor
-    const investmentAmount = await getAssetUnit(denominationAsset);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      investment: {
-        buyer: fundOwner,
-        investmentAmount,
-      },
-    });
-
-    await buyShares({
-      comptrollerProxy,
-      buyer: investor,
-      denominationAsset,
-      investmentAmount,
-    });
-
-    // Send and track a second asset in the vault
-    const secondAsset = new StandardToken(mln, whales.mln);
-    await addNewAssetsToFund({
-      comptrollerProxy,
-      vaultProxy,
-      fundOwner,
-      integrationManager,
-      trackedAssetsAdapter,
-      assets: [secondAsset],
-      amounts: [(await getAssetUnit(secondAsset)).mul(3)],
-    });
-
-    // Define the expected payout assets
-    const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
-    const expectedPayoutAssets = [denominationAsset, secondAsset];
-    const totalShares = await vaultProxy.totalSupply();
-    const expectedPayoutAmounts = await Promise.all(
-      expectedPayoutAssets.map(async (asset) =>
-        (await asset.balanceOf(vaultProxy)).mul(expectedSharesRedeemed).div(totalShares),
-      ),
-    );
-
-    // Record the investor's pre-redemption balance
-    const preInvestorExpectedPayoutAssetBalances = await getAssetBalances({
-      account: investor,
-      assets: expectedPayoutAssets,
-    });
-
-    // Redeem all of investor's shares
-    const receipt = await redeemSharesInKind({
-      comptrollerProxy,
-      signer: investor,
-      quantity: constants.MaxUint256, // unnecessary, but explicit
-    });
-
-    assertEvent(receipt, 'SharesRedeemed', {
-      redeemer: investor,
-      recipient: investor,
-      sharesAmount: expectedSharesRedeemed,
-      receivedAssets: expectedPayoutAssets,
-      receivedAssetAmounts: expectedPayoutAmounts,
-    });
-
-    const postInvestorExpectedPayoutAssetBalances = await getAssetBalances({
-      account: investor,
-      assets: expectedPayoutAssets,
-    });
-
-    // Assert the redeemer has redeemed all shares and received the expected assets and balances
-    expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
-
-    for (const key in expectedPayoutAssets) {
-      const expectedBalance = preInvestorExpectedPayoutAssetBalances[key].add(expectedPayoutAmounts[key]);
-      expect(postInvestorExpectedPayoutAssetBalances[key]).toEqBigNumber(expectedBalance);
-    }
-  });
-
-  it('handles a valid call: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {
-    const {
-      fund: { denominationAsset },
-      deployment: { fundDeployer },
-      accounts: [fundManager, investor],
-      config: {
-        primitives: { mln },
-      },
-    } = await provider.snapshot(snapshot);
-
-    // Create a new fund, and invested in equally by the fund manager and an investor
-    const investmentAmount = await getAssetUnit(denominationAsset);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
-      denominationAsset,
-      investment: {
-        buyer: fundManager,
-        investmentAmount,
-      },
-    });
-
-    await buyShares({
-      comptrollerProxy,
-      buyer: investor,
-      denominationAsset,
-      investmentAmount,
-    });
-
-    // Send untracked asset directly to fund
-    const untrackedAsset = new StandardToken(mln, whales.mln);
-    const untrackedAssetBalance = utils.parseEther('2');
-    await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
-
-    // Assert the asset is not tracked
-    const isTrackedAssetCall = await vaultProxy.isTrackedAsset(untrackedAsset);
-    expect(isTrackedAssetCall).toBe(false);
-
-    // Define the redemption params and the expected payout assets
-    const recipient = randomAddress();
-    const redeemQuantity = investmentAmount.div(2);
-    const additionalAssets = [untrackedAsset];
-    const assetsToSkip = [denominationAsset];
-    const expectedPayoutAssets = [untrackedAsset];
-    const expectedPayoutAmounts = [untrackedAssetBalance.div(4)];
-
-    // Record the investor's pre-redemption balances
-    const [preExpectedPayoutAssetBalance, preAssetToSkipBalance] = await getAssetBalances({
-      account: recipient,
-      assets: [untrackedAsset, denominationAsset],
-    });
-
-    // Redeem half of investor's shares
-    const receipt = await redeemSharesInKind({
-      comptrollerProxy,
-      signer: investor,
-      recipient,
-      quantity: redeemQuantity,
-      additionalAssets,
-      assetsToSkip,
-    });
-
-    // Assert the event
-    assertEvent(receipt, 'SharesRedeemed', {
-      redeemer: investor,
-      recipient,
-      sharesAmount: redeemQuantity,
-      receivedAssets: expectedPayoutAssets,
-      receivedAssetAmounts: expectedPayoutAmounts,
-    });
-
-    const [postExpectedPayoutAssetBalance, postAssetToSkipBalance] = await getAssetBalances({
-      account: recipient,
-      assets: [untrackedAsset, denominationAsset],
-    });
-
-    // Assert the redeemer has redeemed the correct shares quantity and that the recipient received the expected assets and balances
-    const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
-    expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
-    expect(postExpectedPayoutAssetBalance).toEqBigNumber(preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]));
-    expect(postAssetToSkipBalance).toEqBigNumber(preAssetToSkipBalance);
-  });
-
-  it.todo('handles a valid call: full shares balance with fee that reduces the number of sender shares');
-
-  it('handles a preRedeemSharesHook failure', async () => {
-    const {
-      accounts: [fundManager, investor],
-      fund: { denominationAsset },
-      deployment: { fundDeployer },
-      fees: { mockContinuousFeeSettleOnly },
-    } = await provider.snapshot(snapshot);
-
-    const fees = [mockContinuousFeeSettleOnly];
-    const feesSettingsData = [utils.randomBytes(10)];
-
-    const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
-      settings: feesSettingsData,
-    });
-
-    const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
-      denominationAsset,
-      investment: {
+        denominationAsset,
         buyer: investor,
         investmentAmount,
-      },
-      feeManagerConfig,
+      });
+
+      const redeemQuantity = investmentAmount;
+
+      await denominationAsset.makeItReentracyToken(comptrollerProxy);
+
+      await expect(
+        redeemSharesInKind({
+          comptrollerProxy,
+          signer: investor,
+          quantity: redeemQuantity,
+        }),
+      ).rejects.toBeRevertedWith('Re-entrance');
     });
 
-    const invalidFeeSettlementType = 100;
-    await mockContinuousFeeSettleOnly.settle.returns(
-      invalidFeeSettlementType,
-      constants.AddressZero,
-      utils.parseEther('0.5'),
-    );
+    it('does not allow a _sharesQuantity of 0', async () => {
+      const {
+        accounts: [investor],
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
 
-    const receipt = await redeemSharesInKind({
-      comptrollerProxy,
-      signer: investor,
+      await expect(
+        redeemSharesInKind({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
+      ).rejects.toBeRevertedWith('No shares to redeem');
     });
 
-    assertEvent(receipt, 'PreRedeemSharesHookFailed', {
-      failureReturnData: expect.any(String),
-      redeemer: investor,
-      sharesAmount: investmentAmount,
+    it('does not allow duplicate _additionalAssets', async () => {
+      const {
+        weth,
+        accounts: [investor],
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      await expect(
+        redeemSharesInKind({
+          comptrollerProxy,
+          signer: investor,
+          quantity: utils.parseEther('1'),
+          additionalAssets: [weth, weth],
+        }),
+      ).rejects.toBeRevertedWith('_additionalAssets contains duplicates');
+    });
+
+    it('does not allow duplicate _assetsToSkip', async () => {
+      const {
+        weth,
+        accounts: [investor],
+        fund: { comptrollerProxy },
+      } = await provider.snapshot(snapshot);
+
+      await expect(
+        redeemSharesInKind({
+          comptrollerProxy,
+          signer: investor,
+          quantity: utils.parseEther('1'),
+          assetsToSkip: [weth, weth],
+        }),
+      ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
+    });
+
+    it('does not allow a redemption if there are no payoutAssets', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundManager, investor],
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, and invested in equally by the fund manager and an investor
+      const investmentAmount = await getAssetUnit(denominationAsset);
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundManager,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundManager,
+          investmentAmount,
+        },
+      });
+
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        investmentAmount,
+      });
+
+      // // Redeem half of investor's shares
+      await expect(
+        redeemSharesInKind({
+          comptrollerProxy,
+          signer: investor,
+          quantity: investmentAmount.div(2),
+          assetsToSkip: [denominationAsset],
+        }),
+      ).rejects.toBeRevertedWith('No payout assets');
+    });
+
+    it('handles a valid call: full shares balance, no additional config', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer, integrationManager, trackedAssetsAdapter },
+        accounts: [fundOwner, investor],
+        config: {
+          primitives: { mln },
+        },
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, and invested in equally by the fund manager and an investor
+      const investmentAmount = await getAssetUnit(denominationAsset);
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundOwner,
+          investmentAmount,
+        },
+      });
+
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        investmentAmount,
+      });
+
+      // Send and track a second asset in the vault
+      const secondAsset = new StandardToken(mln, whales.mln);
+      await addNewAssetsToFund({
+        comptrollerProxy,
+        vaultProxy,
+        fundOwner,
+        integrationManager,
+        trackedAssetsAdapter,
+        assets: [secondAsset],
+        amounts: [(await getAssetUnit(secondAsset)).mul(3)],
+      });
+
+      // Define the expected payout assets
+      const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
+      const expectedPayoutAssets = [denominationAsset, secondAsset];
+      const totalShares = await vaultProxy.totalSupply();
+      const expectedPayoutAmounts = await Promise.all(
+        expectedPayoutAssets.map(async (asset) =>
+          (await asset.balanceOf(vaultProxy)).mul(expectedSharesRedeemed).div(totalShares),
+        ),
+      );
+
+      // Record the investor's pre-redemption balance
+      const preInvestorExpectedPayoutAssetBalances = await getAssetBalances({
+        account: investor,
+        assets: expectedPayoutAssets,
+      });
+
+      // Redeem all of investor's shares
+      const receipt = await redeemSharesInKind({
+        comptrollerProxy,
+        signer: investor,
+        quantity: constants.MaxUint256, // unnecessary, but explicit
+      });
+
+      assertEvent(receipt, 'SharesRedeemed', {
+        redeemer: investor,
+        recipient: investor,
+        sharesAmount: expectedSharesRedeemed,
+        receivedAssets: expectedPayoutAssets,
+        receivedAssetAmounts: expectedPayoutAmounts,
+      });
+
+      const postInvestorExpectedPayoutAssetBalances = await getAssetBalances({
+        account: investor,
+        assets: expectedPayoutAssets,
+      });
+
+      // Assert the redeemer has redeemed all shares and received the expected assets and balances
+      expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
+
+      for (const key in expectedPayoutAssets) {
+        const expectedBalance = preInvestorExpectedPayoutAssetBalances[key].add(expectedPayoutAmounts[key]);
+        expect(postInvestorExpectedPayoutAssetBalances[key]).toEqBigNumber(expectedBalance);
+      }
+    });
+
+    it('handles a valid call: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundManager, investor],
+        config: {
+          primitives: { mln },
+        },
+      } = await provider.snapshot(snapshot);
+
+      // Create a new fund, and invested in equally by the fund manager and an investor
+      const investmentAmount = await getAssetUnit(denominationAsset);
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundManager,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundManager,
+          investmentAmount,
+        },
+      });
+
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        investmentAmount,
+      });
+
+      // Send untracked asset directly to fund
+      const untrackedAsset = new StandardToken(mln, whales.mln);
+      const untrackedAssetBalance = utils.parseEther('2');
+      await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
+
+      // Assert the asset is not tracked
+      const isTrackedAssetCall = await vaultProxy.isTrackedAsset(untrackedAsset);
+      expect(isTrackedAssetCall).toBe(false);
+
+      // Define the redemption params and the expected payout assets
+      const recipient = randomAddress();
+      const redeemQuantity = investmentAmount.div(2);
+      const additionalAssets = [untrackedAsset];
+      const assetsToSkip = [denominationAsset];
+      const expectedPayoutAssets = [untrackedAsset];
+      const expectedPayoutAmounts = [untrackedAssetBalance.div(4)];
+
+      // Record the investor's pre-redemption balances
+      const [preExpectedPayoutAssetBalance, preAssetToSkipBalance] = await getAssetBalances({
+        account: recipient,
+        assets: [untrackedAsset, denominationAsset],
+      });
+
+      // Redeem half of investor's shares
+      const receipt = await redeemSharesInKind({
+        comptrollerProxy,
+        signer: investor,
+        recipient,
+        quantity: redeemQuantity,
+        additionalAssets,
+        assetsToSkip,
+      });
+
+      // Assert the event
+      assertEvent(receipt, 'SharesRedeemed', {
+        redeemer: investor,
+        recipient,
+        sharesAmount: redeemQuantity,
+        receivedAssets: expectedPayoutAssets,
+        receivedAssetAmounts: expectedPayoutAmounts,
+      });
+
+      const [postExpectedPayoutAssetBalance, postAssetToSkipBalance] = await getAssetBalances({
+        account: recipient,
+        assets: [untrackedAsset, denominationAsset],
+      });
+
+      // Assert the redeemer has redeemed the correct shares quantity and that the recipient received the expected assets and balances
+      const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
+      expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
+      expect(postExpectedPayoutAssetBalance).toEqBigNumber(preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]));
+      expect(postAssetToSkipBalance).toEqBigNumber(preAssetToSkipBalance);
+    });
+
+    it.todo('handles a valid call: full shares balance with fee that reduces the number of sender shares');
+
+    it('handles a preRedeemSharesHook failure', async () => {
+      const {
+        accounts: [fundManager, investor],
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        fees: { mockContinuousFeeSettleOnly },
+      } = await provider.snapshot(snapshot);
+
+      const fees = [mockContinuousFeeSettleOnly];
+      const feesSettingsData = [utils.randomBytes(10)];
+
+      const feeManagerConfig = feeManagerConfigArgs({
+        fees: fees,
+        settings: feesSettingsData,
+      });
+
+      const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
+      const { comptrollerProxy } = await createNewFund({
+        signer: fundManager,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: investor,
+          investmentAmount,
+        },
+        feeManagerConfig,
+      });
+
+      const invalidFeeSettlementType = 100;
+      await mockContinuousFeeSettleOnly.settle.returns(
+        invalidFeeSettlementType,
+        constants.AddressZero,
+        utils.parseEther('0.5'),
+      );
+
+      const receipt = await redeemSharesInKind({
+        comptrollerProxy,
+        signer: investor,
+      });
+
+      assertEvent(receipt, 'PreRedeemSharesHookFailed', {
+        failureReturnData: expect.any(String),
+        redeemer: investor,
+        sharesAmount: investmentAmount,
+      });
     });
   });
 });
