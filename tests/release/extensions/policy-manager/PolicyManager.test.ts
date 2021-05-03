@@ -72,13 +72,9 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const {
       deployment: {
-        adapterBlacklist,
-        adapterWhitelist,
-        assetBlacklist,
         assetWhitelist,
         fundDeployer,
         guaranteedRedemption,
-        maxConcentration,
         policyManager,
         investorWhitelist,
         minMaxInvestment,
@@ -88,13 +84,9 @@ describe('constructor', () => {
 
     const result = await policyManager.getRegisteredPolicies();
     expect(result).toMatchFunctionOutput(policyManager.getRegisteredPolicies, [
-      adapterBlacklist,
-      adapterWhitelist,
-      assetBlacklist,
       assetWhitelist,
       guaranteedRedemption,
       investorWhitelist,
-      maxConcentration,
       minMaxInvestment,
       ...Object.values(policies),
     ]);
@@ -104,18 +96,6 @@ describe('constructor', () => {
     expect(policyManagerOwner).toMatchAddress(fundDeployerOwner);
 
     // Check that all policies implements the proper hooks with policyImplementsHook
-    const adapterBlacklistImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
-      adapterBlacklist,
-      PolicyHook.PreCallOnIntegration,
-    );
-    const adapterWhitelistImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
-      adapterWhitelist,
-      PolicyHook.PreCallOnIntegration,
-    );
-    const assetBlacklistImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
-      assetBlacklist,
-      PolicyHook.PostCallOnIntegration,
-    );
     const assetWhitelistImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
       assetWhitelist,
       PolicyHook.PostCallOnIntegration,
@@ -124,10 +104,6 @@ describe('constructor', () => {
     const guaranteedRedemptionImplementsPreCallOnIntegration = await policyManager.policyImplementsHook(
       guaranteedRedemption,
       PolicyHook.PreCallOnIntegration,
-    );
-    const maxConcentrationImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
-      maxConcentration,
-      PolicyHook.PostCallOnIntegration,
     );
 
     const investorsWhitelistImplementsPreBuyShares = await policyManager.policyImplementsHook(
@@ -140,12 +116,8 @@ describe('constructor', () => {
       PolicyHook.PreBuyShares,
     );
 
-    expect(adapterBlacklistImplementsPreCallOnIntegration).toBe(true);
-    expect(adapterWhitelistImplementsPreCallOnIntegration).toBe(true);
-    expect(assetBlacklistImplementsPostCallOnIntegration).toBe(true);
     expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
     expect(guaranteedRedemptionImplementsPreCallOnIntegration).toBe(true);
-    expect(maxConcentrationImplementsPostCallOnIntegration).toBe(true);
     expect(investorsWhitelistImplementsPreBuyShares).toBe(true);
     expect(minMaxInvestmentImplementsPreBuyShares).toBe(true);
   });

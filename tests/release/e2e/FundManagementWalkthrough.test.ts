@@ -1,18 +1,13 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  adapterBlacklistArgs,
-  adapterWhitelistArgs,
-  assetBlacklistArgs,
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   investorWhitelistArgs,
   managementFeeConfigArgs,
-  maxConcentrationArgs,
   performanceFeeConfigArgs,
-  policyManagerConfigArgs,
   StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -29,12 +24,12 @@ import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 427000,
-    weth: 409000,
+    usdc: 389000,
+    weth: 367000,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 382000,
-    weth: 359400,
+    usdc: 342000,
+    weth: 326000,
   },
   'buy shares: max assets': {
     usdc: 1514000,
@@ -50,8 +45,8 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 1495000,
-    weth: 1484000,
+    usdc: 941000,
+    weth: 931000,
   },
 
   'redeem all shares: max assets: all remaining': {
@@ -65,8 +60,8 @@ const expectedGasCosts = {
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 1453000,
-    weth: 1376000,
+    usdc: 302000,
+    weth: 276000,
   },
 } as const;
 
@@ -119,29 +114,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
       });
 
-      // policies
-      const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-      const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
-      const adapterWhitelistSettings = adapterWhitelistArgs([
-        fork.deployment.uniswapV2Adapter,
-        fork.deployment.trackedAssetsAdapter,
-      ]);
-      const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
-
-      const policyManagerConfig = policyManagerConfigArgs({
-        policies: [
-          fork.deployment.maxConcentration,
-          fork.deployment.adapterBlacklist,
-          fork.deployment.adapterWhitelist,
-          fork.deployment.assetBlacklist,
-        ],
-        settings: [
-          maxConcentrationSettings,
-          adapterBlacklistSettings,
-          adapterWhitelistSettings,
-          assetBlacklistSettings,
-        ],
-      });
+      // TODO: add policies
 
       const createFundTx = await createNewFund({
         signer: manager,
@@ -149,7 +122,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
         fundOwner: manager,
         denominationAsset,
         feeManagerConfig,
-        policyManagerConfig,
       });
 
       comptrollerProxy = createFundTx.comptrollerProxy;

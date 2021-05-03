@@ -1,16 +1,11 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  adapterBlacklistArgs,
-  adapterWhitelistArgs,
-  assetBlacklistArgs,
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
   entranceRateFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
-  maxConcentrationArgs,
   performanceFeeConfigArgs,
-  policyManagerConfigArgs,
   // ReleaseStatusTypes,
   StandardToken,
   VaultLib,
@@ -69,24 +64,7 @@ describe('Walkthrough a fund migration', () => {
       settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
     });
 
-    // policies
-    const maxConcentrationSettings = maxConcentrationArgs(utils.parseEther('1'));
-    const adapterBlacklistSettings = adapterBlacklistArgs([fork.deployment.compoundAdapter]);
-    const adapterWhitelistSettings = adapterWhitelistArgs([
-      fork.deployment.uniswapV2Adapter,
-      fork.deployment.trackedAssetsAdapter,
-    ]);
-    const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
-
-    const policyManagerConfig = policyManagerConfigArgs({
-      policies: [
-        fork.deployment.maxConcentration,
-        fork.deployment.adapterBlacklist,
-        fork.deployment.adapterWhitelist,
-        fork.deployment.assetBlacklist,
-      ],
-      settings: [maxConcentrationSettings, adapterBlacklistSettings, adapterWhitelistSettings, assetBlacklistSettings],
-    });
+    // TODO: add policies
 
     const createFundTx = await createNewFund({
       signer: manager,
@@ -94,7 +72,6 @@ describe('Walkthrough a fund migration', () => {
       fundOwner: manager,
       denominationAsset,
       feeManagerConfig,
-      policyManagerConfig,
     });
 
     comptrollerProxy = createFundTx.comptrollerProxy;
