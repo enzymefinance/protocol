@@ -126,26 +126,6 @@ describe('activateForFund', () => {
   });
 });
 
-describe('deactivateForFund', () => {
-  it('correctly handles a valid call', async () => {
-    const {
-      deployment: { debtPositionManager },
-      mockComptrollerProxy,
-    } = await provider.snapshot(snapshot);
-
-    // Activate the fund
-    await mockComptrollerProxy.forward(debtPositionManager.activateForFund, false);
-
-    // Deactivate the fund
-    await mockComptrollerProxy.forward(debtPositionManager.deactivateForFund);
-
-    // The ComptrollerProxy-VaultProxy pairing should be deleted
-    const getVaultProxyForFundCall = await debtPositionManager.getVaultProxyForFund(mockComptrollerProxy);
-
-    expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
-  });
-});
-
 describe('debt position actions', () => {
   describe('createDebtPosition', () => {
     it('only allows authorized users', async () => {

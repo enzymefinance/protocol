@@ -23,7 +23,7 @@ import {
   createMigratedFundConfig,
   deployProtocolFixture,
 } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -223,82 +223,6 @@ describe('activateForFund', () => {
     for (const key in orderedPolicies) {
       expect(orderedPolicies[key].activateForFund).toHaveBeenCalledOnContract();
     }
-  });
-});
-
-describe('deactivateForFund', () => {
-  it('removes VaultProxy and all policies from local storage', async () => {
-    const {
-      deployer,
-      config: {
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
-      deployment: {
-        assetFinalityResolver,
-        fundDeployer,
-        chainlinkPriceFeed,
-        debtPositionManager,
-        dispatcher,
-        feeManager,
-        integrationManager,
-        policyManager,
-        synthetixPriceFeed,
-        valueInterpreter,
-        vaultLib,
-      },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    // create new fund
-    const { vaultProxy, comptrollerProxy: oldComptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    const nextFundDeployer = await createFundDeployer({
-      deployer,
-      assetFinalityResolver,
-      chainlinkPriceFeed,
-      debtPositionManager,
-      dispatcher,
-      feeManager,
-      integrationManager,
-      policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
-      valueInterpreter,
-      vaultLib,
-    });
-
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      denominationAsset,
-      policyManagerConfigData: policyManagerConfig,
-    });
-
-    const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
-
-    // Warp to migratable time
-    const migrationTimelock = await dispatcher.getMigrationTimelock();
-    await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
-
-    // Migration execution settles the accrued fee
-    await signedNextFundDeployer.executeMigration(vaultProxy);
-
-    // check old comptrollerProxy to make sure vaultProxy has been deleted
-    const getVaultProxyForFundCall = await policyManager.getVaultProxyForFund(oldComptrollerProxy);
-    expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
-
-    // check old comptrollerProxy to make sure various policies have been deleted
-    const getPoliciesForFundCall = await policyManager.getEnabledPoliciesForFund(oldComptrollerProxy);
-    expect(getPoliciesForFundCall).toMatchObject([]);
   });
 });
 

@@ -102,11 +102,6 @@ contract IntegrationManager is
         emit AuthUserAddedForFund(_comptrollerProxy, _who);
     }
 
-    /// @notice Deactivate the extension by destroying storage
-    function deactivateForFund() external override {
-        delete comptrollerProxyToVaultProxy[msg.sender];
-    }
-
     /// @notice Removes an authorized user from the IntegrationManager for the given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _who The authorized user to remove

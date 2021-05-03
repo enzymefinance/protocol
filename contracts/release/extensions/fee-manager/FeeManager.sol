@@ -113,9 +113,6 @@ contract FeeManager is
 
         // Force payout of remaining shares outstanding
         __forcePayoutAllSharesOutstanding(msg.sender);
-
-        // Clean up storage
-        __deleteFundStorage(msg.sender);
     }
 
     /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
@@ -184,13 +181,6 @@ contract FeeManager is
     }
 
     // PRIVATE FUNCTIONS
-
-    /// @dev Helper to destroy local storage to get gas refund,
-    /// and to prevent further calls to fee manager
-    function __deleteFundStorage(address _comptrollerProxy) private {
-        delete comptrollerProxyToFees[_comptrollerProxy];
-        delete comptrollerProxyToVaultProxy[_comptrollerProxy];
-    }
 
     /// @dev Helper to force the payout of shares outstanding across all fees.
     /// For the current release, all shares in the VaultProxy are assumed to be

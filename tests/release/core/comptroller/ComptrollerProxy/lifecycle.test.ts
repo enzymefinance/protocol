@@ -32,15 +32,12 @@ async function snapshot() {
 
   await Promise.all([
     mockDebtPositionManager.activateForFund.returns(undefined),
-    mockDebtPositionManager.deactivateForFund.returns(undefined),
     mockFeeManager.setConfigForFund.returns(undefined),
     mockFeeManager.activateForFund.returns(undefined),
     mockFeeManager.deactivateForFund.returns(undefined),
     mockIntegrationManager.activateForFund.returns(undefined),
-    mockIntegrationManager.deactivateForFund.returns(undefined),
     mockPolicyManager.setConfigForFund.returns(undefined),
     mockPolicyManager.activateForFund.returns(undefined),
-    mockPolicyManager.deactivateForFund.returns(undefined),
   ]);
 
   const comptrollerLib = await ComptrollerLib.deploy(
@@ -297,13 +294,7 @@ describe('destruct', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      comptrollerProxy,
-      mockFeeManager,
-      mockFundDeployer,
-      mockIntegrationManager,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { comptrollerProxy, mockFeeManager, mockFundDeployer, mockVaultProxy } = await provider.snapshot(snapshot);
 
     // Activate fund
     await mockFundDeployer.forward(comptrollerProxy.activate, mockVaultProxy, false);
@@ -320,6 +311,5 @@ describe('destruct', () => {
 
     // Assert expected calls
     expect(mockFeeManager.deactivateForFund).toHaveBeenCalledOnContract();
-    expect(mockIntegrationManager.deactivateForFund).toHaveBeenCalledOnContract();
   });
 });

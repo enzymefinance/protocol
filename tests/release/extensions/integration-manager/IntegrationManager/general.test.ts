@@ -138,26 +138,6 @@ describe('activateForFund', () => {
   });
 });
 
-describe('deactivateForFund', () => {
-  it('correctly handles a valid call', async () => {
-    const {
-      deployment: { integrationManager },
-      mockComptrollerProxy,
-    } = await provider.snapshot(snapshot);
-
-    // Activate the fund
-    await mockComptrollerProxy.forward(integrationManager.activateForFund, false);
-
-    // Deactivate the fund
-    await mockComptrollerProxy.forward(integrationManager.deactivateForFund);
-
-    // The ComptrollerProxy-VaultProxy pairing should be deleted
-    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(mockComptrollerProxy);
-
-    expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
-  });
-});
-
 describe('auth users', () => {
   describe('addAuthUserForFund', () => {
     it('does not allow an already-added auth user', async () => {

@@ -514,19 +514,16 @@ contract ComptrollerLib is IComptroller {
         onlyNotPaused
         allowsPermissionedVaultAction
     {
-        // Failsafe to protect the libs against selfdestruct
+        // Failsafe to protect the lib against selfdestruct
         require(!isLib, "destruct: Only delegate callable");
 
-        // Deactivate the extensions
-        IExtension(DEBT_POSITION_MANAGER).deactivateForFund();
+        // Deactivate extensions as-necessary
         IExtension(FEE_MANAGER).deactivateForFund();
-        IExtension(INTEGRATION_MANAGER).deactivateForFund();
-        IExtension(POLICY_MANAGER).deactivateForFund();
 
         // Delete storage of ComptrollerProxy
         // There should never be ETH in the ComptrollerLib, so no need to waste gas
         // to get the fund owner
-        selfdestruct(address(0));
+        selfdestruct(payable(address(this)));
     }
 
     ////////////////

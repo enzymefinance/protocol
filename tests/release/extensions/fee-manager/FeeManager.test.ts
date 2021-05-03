@@ -194,13 +194,6 @@ describe('deactivateForFund', () => {
     const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
     expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall.add(expectedPayoutAmount));
     expect(postSharesOutstandingCall).toEqBigNumber(preSharesOutstandingCall);
-
-    // Fund config should be deleted
-    const enabledFeesCall = await feeManager.getEnabledFeesForFund(comptrollerProxy);
-    expect(enabledFeesCall).toMatchObject([]);
-
-    const getVaultProxyForFundCall = await feeManager.getVaultProxyForFund(comptrollerProxy);
-    expect(getVaultProxyForFundCall).toMatchAddress(constants.AddressZero);
   });
 });
 

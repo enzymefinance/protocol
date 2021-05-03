@@ -72,11 +72,6 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         __setValidatedVaultProxy(msg.sender);
     }
 
-    /// @notice Deactivate the extension by destroying storage
-    function deactivateForFund() external override {
-        delete comptrollerProxyToVaultProxy[msg.sender];
-    }
-
     ////////////////////////////////////
     // CALL-ON-DEBT-POSITION ACTIONS //
     //////////////////////////////////
