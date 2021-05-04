@@ -853,7 +853,6 @@ contract ComptrollerLib is IComptroller {
             _additionalAssets,
             _assetsToSkip
         );
-        require(payoutAssets_.length > 0, "redeemSharesInKind: No payout assets");
 
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);

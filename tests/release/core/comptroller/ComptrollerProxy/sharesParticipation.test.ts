@@ -717,43 +717,6 @@ describe('redeem', () => {
       ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
     });
 
-    it('does not allow a redemption if there are no payoutAssets', async () => {
-      const {
-        fund: { denominationAsset },
-        deployment: { fundDeployer },
-        accounts: [fundManager, investor],
-      } = await provider.snapshot(snapshot);
-
-      // Create a new fund, and invested in equally by the fund manager and an investor
-      const investmentAmount = await getAssetUnit(denominationAsset);
-      const { comptrollerProxy } = await createNewFund({
-        signer: fundManager,
-        fundDeployer,
-        denominationAsset,
-        investment: {
-          buyer: fundManager,
-          investmentAmount,
-        },
-      });
-
-      await buyShares({
-        comptrollerProxy,
-        buyer: investor,
-        denominationAsset,
-        investmentAmount,
-      });
-
-      // // Redeem half of investor's shares
-      await expect(
-        redeemSharesInKind({
-          comptrollerProxy,
-          signer: investor,
-          quantity: investmentAmount.div(2),
-          assetsToSkip: [denominationAsset],
-        }),
-      ).rejects.toBeRevertedWith('No payout assets');
-    });
-
     it('handles a valid call: full shares balance, no additional config', async () => {
       const {
         fund: { denominationAsset },
