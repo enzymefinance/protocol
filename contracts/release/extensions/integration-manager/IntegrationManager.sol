@@ -19,6 +19,7 @@ import "../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
+import "../../utils/AssetHelpers.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
@@ -33,7 +34,8 @@ contract IntegrationManager is
     IIntegrationManager,
     ExtensionBase,
     FundDeployerOwnerMixin,
-    PermissionedVaultActionMixin
+    PermissionedVaultActionMixin,
+    AssetHelpers
 {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -185,52 +187,60 @@ contract IntegrationManager is
         if (_actionId == 0) {
             __callOnIntegration(_caller, vaultProxy, _callArgs);
         } else if (_actionId == 1) {
-            __addZeroBalanceTrackedAssets(vaultProxy, _callArgs);
+            __addTrackedAssetsToVault(vaultProxy, _callArgs);
         } else if (_actionId == 2) {
-            __removeZeroBalanceTrackedAssets(vaultProxy, _callArgs);
+            __removeTrackedAssetsFromVault(vaultProxy, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
     }
 
-    /// @dev Adds assets with a zero balance as tracked assets of the fund
-    function __addZeroBalanceTrackedAssets(address _vaultProxy, bytes memory _callArgs) private {
-        address[] memory assets = abi.decode(_callArgs, (address[]));
+    /// @dev Adds assets as tracked assets of the fund and optionally sets them as persistently tracked
+    function __addTrackedAssetsToVault(address _vaultProxy, bytes memory _callArgs) private {
+        (address[] memory assets, bool[] memory setAsPersistentlyTracked) = abi.decode(
+            _callArgs,
+            (address[], bool[])
+        );
 
         // Resolve finality of all assets as needed
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
 
-        for (uint256 i; i < assets.length; i++) {
-            require(
-                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
-                "__addZeroBalanceTrackedAssets: Balance is not zero"
-            );
+        // TODO: should we spoof a selector for policy management? or create a distinct hook?
+        // Not specifying incoming asset balances is not technically correct, but it depends on
+        // whether or not the asset is already tracked, and it does not add enough correctness value
+        // to justify gas of balance lookups.
+        __postCoIHook(
+            address(0), // no adapter
+            "", // no selector
+            assets,
+            new uint256[](assets.length), // no incoming asset balances
+            new address[](0), // no outgoing assets
+            new uint256[](0) // no outgoing asset balances
+        );
 
-            __addTrackedAsset(msg.sender, assets[i]);
+        for (uint256 i; i < assets.length; i++) {
+            require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
+            __addTrackedAsset(msg.sender, assets[i], setAsPersistentlyTracked[i]);
         }
     }
 
-    /// @dev Removes assets with a zero balance from tracked assets of the fund
-    function __removeZeroBalanceTrackedAssets(address _vaultProxy, bytes memory _callArgs)
-        private
-    {
+    /// @dev Removes assets from the tracked assets of the vault.
+    /// Can only be used on assets with a 0-balance or unsupported assets.
+    function __removeTrackedAssetsFromVault(address _vaultProxy, bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
         // Resolve finality of all assets as needed
+        // TODO: return to ordering if we can't remove this
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
 
-        address denominationAsset = IComptroller(msg.sender).getDenominationAsset();
         for (uint256 i; i < assets.length; i++) {
             require(
-                assets[i] != denominationAsset,
-                "__removeZeroBalanceTrackedAssets: Cannot remove denomination asset"
-            );
-            require(
-                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
-                "__removeZeroBalanceTrackedAssets: Balance is not zero"
+                !__isSupportedAsset(assets[i]) ||
+                    __getVaultAssetBalance(_vaultProxy, assets[i]) == 0,
+                "__removeTrackedAssetsFromVault: Not allowed"
             );
 
-            __removeTrackedAsset(msg.sender, assets[i]);
+            __removeTrackedAsset(msg.sender, assets[i], true);
         }
     }
 
@@ -561,7 +571,7 @@ contract IntegrationManager is
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
                 __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, maxSpendAssetAmounts_[i]);
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Remove) {
-                __removeTrackedAsset(msg.sender, spendAssets_[i]);
+                __removeTrackedAsset(msg.sender, spendAssets_[i], true);
             }
         }
     }
@@ -662,7 +672,7 @@ contract IntegrationManager is
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
-            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i]);
+            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i], false);
 
             incomingAssets_[i] = _expectedIncomingAssets[i];
             incomingAssetAmounts_[i] = balanceDiff;
@@ -752,7 +762,7 @@ contract IntegrationManager is
             // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
             if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
                 if (postCallSpendAssetBalances[i] == 0) {
-                    __removeTrackedAsset(msg.sender, _spendAssets[i]);
+                    __removeTrackedAsset(msg.sender, _spendAssets[i], false);
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i];
                 } else {
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i].sub(

@@ -7,12 +7,13 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import {
-  ProtocolDeployment,
-  addTrackedAssets,
+  addNewAssetsToFund,
   assertEvent,
   buyShares,
   createNewFund,
   deployProtocolFixture,
+  getAssetUnit,
+  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, Signer, utils } from 'ethers';
 
@@ -64,7 +65,7 @@ describe('primitives gas costs', () => {
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
+    const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
@@ -85,15 +86,13 @@ describe('primitives gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Send dai to fund and add as tracked asset
-    const daiAmount = utils.parseUnits('1', await dai.decimals());
-    await dai.transfer(vaultProxy, daiAmount);
-    await addTrackedAssets({
+    // Seed fund with dai and add it to tracked assets
+    await addNewAssetsToFund({
+      signer: fundOwner,
       comptrollerProxy,
       integrationManager,
-      fundOwner,
-      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-      incomingAssets: [dai],
+      assets: [dai],
+      amounts: [await getAssetUnit(dai)],
     });
 
     // Get the calcGav() cost including dai
@@ -117,7 +116,7 @@ describe('primitives gas costs', () => {
       dai,
     });
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
+    const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
@@ -138,15 +137,13 @@ describe('primitives gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Send dai to fund and add as tracked asset
-    const daiAmount = utils.parseUnits('1', await dai.decimals());
-    await dai.transfer(vaultProxy, daiAmount);
-    await addTrackedAssets({
+    // Seed fund with dai and add it to tracked assets
+    await addNewAssetsToFund({
+      signer: fundOwner,
       comptrollerProxy,
       integrationManager,
-      fundOwner,
-      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-      incomingAssets: [dai],
+      assets: [dai],
+      amounts: [await getAssetUnit(dai)],
     });
 
     // Get the calcGav() cost including dai

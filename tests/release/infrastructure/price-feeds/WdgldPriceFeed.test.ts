@@ -1,10 +1,11 @@
 import { IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
 import {
-  ProtocolDeployment,
-  addTrackedAssets,
+  addNewAssetsToFund,
   buyShares,
   createNewFund,
   deployProtocolFixture,
+  getAssetUnit,
+  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -21,7 +22,7 @@ describe('derivative gas costs', () => {
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
+    const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
@@ -39,15 +40,13 @@ describe('derivative gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
 
-    // Seed fund and manually addTrackedAssets
-    const wdgldUnit = utils.parseUnits('1', await wdgld.decimals());
-    await wdgld.transfer(vaultProxy, wdgldUnit);
-    await addTrackedAssets({
+    // Seed fund with wdgld and add it to tracked assets
+    await addNewAssetsToFund({
+      signer: fundOwner,
       comptrollerProxy,
       integrationManager,
-      fundOwner,
-      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-      incomingAssets: [wdgld],
+      assets: [wdgld],
+      amounts: [await getAssetUnit(wdgld)],
     });
 
     // Get the calcGav() cost including wdgld

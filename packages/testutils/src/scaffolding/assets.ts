@@ -1,39 +1,39 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  ComptrollerLib,
-  IntegrationManager,
-  StandardToken,
-  TrackedAssetsAdapter,
-  VaultLib,
-} from '@enzymefinance/protocol';
+import { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
-import { addTrackedAssets } from './extensions/integrations/trackedAssets';
+import { addTrackedAssetsToVault } from './extensions/integrations/trackedAssets';
 
 export async function addNewAssetsToFund({
-  fundOwner,
+  signer,
   comptrollerProxy,
-  vaultProxy,
   integrationManager,
-  trackedAssetsAdapter,
   assets,
   amounts = new Array(assets.length).fill(1),
+  setAsPersistentlyTracked,
 }: {
-  fundOwner: SignerWithAddress;
+  signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
-  trackedAssetsAdapter: TrackedAssetsAdapter;
   assets: StandardToken[];
   amounts?: BigNumberish[];
+  setAsPersistentlyTracked?: boolean[];
 }) {
-  for (const i in assets) {
-    await assets[i].transfer(vaultProxy, amounts[i]);
-  }
-  return addTrackedAssets({
+  // First, add tracked assets while their balances are 0
+  const receipt = addTrackedAssetsToVault({
+    signer,
     comptrollerProxy,
     integrationManager,
-    fundOwner,
-    trackedAssetsAdapter,
-    incomingAssets: assets,
+    assets,
+    setAsPersistentlyTracked,
   });
+
+  // Then seed the vault with balances
+  const vaultProxy = await comptrollerProxy.getVaultProxy();
+  for (const i in assets) {
+    if (amounts[i] > 0) {
+      await assets[i].transfer(vaultProxy, amounts[i]);
+    }
+  }
+
+  return receipt;
 }

@@ -28,10 +28,14 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event NominatedOwnerSet(address indexed nominatedOwner);
 
+    event PersistentlyTrackedAssetAdded(address asset);
+
+    event PersistentlyTrackedAssetRemoved(address asset);
+
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
     address internal nominatedOwner;
     address[] internal activeDebtPositions;
-
+    mapping(address => bool) internal assetToIsPersistentlyTracked;
     mapping(address => bool) internal debtPositionToIsActive;
 }

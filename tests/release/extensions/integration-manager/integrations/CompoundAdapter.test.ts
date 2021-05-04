@@ -303,8 +303,8 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    // Rounded up from 427782
-    expect(lendReceipt).toCostLessThan('428000');
+    // Rounded up from 431383
+    expect(lendReceipt).toCostLessThan('432000');
   });
 });
 
@@ -329,8 +329,8 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
     });
 
-    // Rounded up from 515009
-    expect(redeemReceipt).toCostLessThan('461000');
+    // Rounded up from 464573
+    expect(redeemReceipt).toCostLessThan('466000');
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {

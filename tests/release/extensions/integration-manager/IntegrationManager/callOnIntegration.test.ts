@@ -17,7 +17,7 @@ import {
   WETH,
 } from '@enzymefinance/protocol';
 import {
-  addTrackedAssets,
+  addNewAssetsToFund,
   assertEvent,
   createNewFund,
   deployProtocolFixture,
@@ -969,7 +969,7 @@ describe('valid calls', () => {
     const {
       mockGenericAdapter,
       tokens: { mln: spendAsset },
-      deployment: { integrationManager, policyManager, trackedAssetsAdapter },
+      deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -977,13 +977,12 @@ describe('valid calls', () => {
     const spendAssetRebate = utils.parseEther('0.1');
 
     // Seed and track the spend asset in the VaultProxy
-    spendAsset.transfer(vaultProxy, spendAssetAmount);
-    await addTrackedAssets({
+    await addNewAssetsToFund({
+      signer: fundOwner,
       comptrollerProxy,
       integrationManager,
-      fundOwner,
-      trackedAssetsAdapter,
-      incomingAssets: [spendAsset],
+      assets: [spendAsset],
+      amounts: [spendAssetAmount],
     });
 
     // Seed the adapter with the spend asset amount to refund
@@ -1205,6 +1204,30 @@ describe('valid calls', () => {
     expect(incomingAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
     expect(postTxGetTrackedAssetsCall).toEqual([denominationAsset.address]);
+  });
+
+  it('tracks an untracked incoming asset but does not set it as permanently tracked', async () => {
+    const {
+      mockGenericAdapter,
+      tokens: { mln },
+      deployment: { integrationManager },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
+    } = await provider.snapshot(snapshot);
+
+    expect(await vaultProxy.isTrackedAsset(mln)).toBe(false);
+
+    await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      incomingAssets: [mln],
+      actualIncomingAssetAmounts: [1],
+    });
+
+    expect(await vaultProxy.isTrackedAsset(mln)).toBe(true);
+    expect(await vaultProxy.isPersistentlyTrackedAsset(mln)).toBe(false);
   });
 
   it.todo(

@@ -101,8 +101,8 @@ describe('redeem', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    // Rounding up from 511396
-    expect(redeemReceipt).toCostLessThan('512000');
+    // Rounding up from 514631
+    expect(redeemReceipt).toCostLessThan('516000');
   });
 });
 

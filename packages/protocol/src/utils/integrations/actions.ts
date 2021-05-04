@@ -4,12 +4,18 @@ import { encodeArgs } from '../encoding';
 
 export enum IntegrationManagerActionId {
   CallOnIntegration,
-  AddZeroBalanceTrackedAssets,
-  RemoveZeroBalanceTrackedAssets,
+  AddTrackedAssetsToVault,
+  RemoveTrackedAssetsFromVault,
 }
 
-export function addZeroBalanceTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
-  return encodeArgs(['address[]'], [assets]);
+export function addTrackedAssetsToVaultArgs({
+  assets,
+  setAsPersistentlyTracked,
+}: {
+  assets: AddressLike[];
+  setAsPersistentlyTracked: boolean[];
+}) {
+  return encodeArgs(['address[]', 'bool[]'], [assets, setAsPersistentlyTracked]);
 }
 
 export function callOnIntegrationArgs({
@@ -24,6 +30,6 @@ export function callOnIntegrationArgs({
   return encodeArgs(['address', 'bytes4', 'bytes'], [adapter, selector, encodedCallArgs]);
 }
 
-export function removeZeroBalanceTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
+export function removeTrackedAssetsFromVaultArgs({ assets }: { assets: AddressLike[] }) {
   return encodeArgs(['address[]'], [assets]);
 }

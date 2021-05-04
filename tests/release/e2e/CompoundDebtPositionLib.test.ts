@@ -70,16 +70,14 @@ beforeEach(async () => {
   dai = new StandardToken(fork.config.primitives.dai, whales.dai);
   weth = new StandardToken(fork.config.weth, whales.weth);
 
+  // This will skip re-adding the denomination asset but will seed the vaultProxy
   await addNewAssetsToFund({
-    fundOwner,
+    signer: fundOwner,
     comptrollerProxy,
-    vaultProxy,
     integrationManager: fork.deployment.integrationManager,
-    trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-    assets: [dai],
+    assets: [weth, dai],
+    amounts: [lentAmount, lentAmount],
   });
-  await dai.transfer(vaultProxy, lentAmount);
-  await weth.transfer(vaultProxy, lentAmount);
 
   // Lend assets to Compound, receive cTokens at VaultProxy
   await compoundLend({
@@ -164,8 +162,8 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 216013
-      expect(addCollateralReceipt).toCostLessThan('217000');
+      // Rounding up from 222604
+      expect(addCollateralReceipt).toCostLessThan('224000');
 
       const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
       expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -413,8 +411,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 404271
-      expect(borrowReceipt).toCostLessThan('405000');
+      // Rounding up from 420929
+      expect(borrowReceipt).toCostLessThan('422000');
 
       const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
       expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -600,8 +598,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 294689
-      expect(repayBorrowReceipt).toCostLessThan('295000');
+      // Rounding up from 297420
+      expect(repayBorrowReceipt).toCostLessThan('299000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -666,8 +664,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 283479
-      expect(repayBorrowReceipt).toCostLessThan('284000');
+      // Rounding up from 286164
+      expect(repayBorrowReceipt).toCostLessThan('287000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

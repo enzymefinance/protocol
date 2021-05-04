@@ -255,6 +255,20 @@ contract ComptrollerLib is IComptroller {
     // PERMISSIONED VAULT ACTIONS //
     ////////////////////////////////
 
+    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
+    /// @param _assets The asset to allow to untrack
+    /// @dev No need to check onlyNotPaused as there is no risk of value loss
+    function allowUntrackingAssets(address[] memory _assets) external onlyOwner {
+        for (uint256 i; i < _assets.length; i++) {
+            require(
+                _assets[i] != denominationAsset,
+                "allowUntrackingAssets: denominationAsset not allowed"
+            );
+        }
+
+        IVault(vaultProxy).allowUntrackingAssets(_assets);
+    }
+
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
@@ -313,7 +327,6 @@ contract ComptrollerLib is IComptroller {
         } else if (_caller == DEBT_POSITION_MANAGER) {
             require(
                 _action == VaultAction.AddDebtPosition ||
-                    _action == VaultAction.AddTrackedAsset ||
                     _action == VaultAction.CallOnDebtPosition ||
                     _action == VaultAction.RemoveDebtPosition,
                 "__assertPermissionedVaultAction: Not allowed"
@@ -331,8 +344,8 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper to add a tracked asset to the fund
     function __vaultActionAddTrackedAsset(bytes memory _actionData) private {
-        address asset = abi.decode(_actionData, (address));
-        IVault(vaultProxy).addTrackedAsset(asset);
+        (address asset, bool setAsPersistentlyTracked) = abi.decode(_actionData, (address, bool));
+        IVault(vaultProxy).addTrackedAsset(asset, setAsPersistentlyTracked);
     }
 
     /// @dev Helper to grant a spender an allowance for a fund's asset
@@ -382,13 +395,17 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper to remove a tracked asset from the fund
     function __vaultActionRemoveTrackedAsset(bytes memory _actionData) private {
-        address asset = abi.decode(_actionData, (address));
+        (address asset, bool unsetAsPersistentlyTracked) = abi.decode(
+            _actionData,
+            (address, bool)
+        );
 
-        // Allowing this to fail silently makes it cheaper and simpler
-        // for Extensions to not query for the denomination asset
-        if (asset != denominationAsset) {
-            IVault(vaultProxy).removeTrackedAsset(asset);
-        }
+        require(
+            !unsetAsPersistentlyTracked || asset != denominationAsset,
+            "__vaultActionRemoveTrackedAsset: Cannot untrack denomination asset"
+        );
+
+        IVault(vaultProxy).removeTrackedAsset(asset, unsetAsPersistentlyTracked);
     }
 
     /// @dev Helper to transfer fund shares from one account to another
@@ -474,10 +491,9 @@ contract ComptrollerLib is IComptroller {
             }
         }
 
-        // Note: a future release could consider forcing the adding of a tracked asset here,
-        // just in case a fund is migrating from an old configuration where they are not able
-        // to remove an asset to get under the tracked assets limit
-        IVault(_vaultProxy).addTrackedAsset(denominationAsset);
+        // TODO: do we want to handle a corner case of a fund that is at the max assets limit
+        // but does already track the denominationAsset?
+        IVault(_vaultProxy).addTrackedAsset(denominationAsset, true);
 
         // Activate extensions
         IExtension(DEBT_POSITION_MANAGER).activateForFund(_isMigration);
@@ -854,10 +870,6 @@ contract ComptrollerLib is IComptroller {
             _assetsToSkip
         );
 
-        // Calculate and transfer payout asset amounts due to _recipient
-        payoutAmounts_ = new uint256[](payoutAssets_.length);
-        address denominationAssetCopy = denominationAsset;
-
         // Resolve finality of all assets as needed
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
             address(vaultProxyContract),
@@ -865,14 +877,14 @@ contract ComptrollerLib is IComptroller {
             true
         );
 
+        // Calculate and transfer payout asset amounts due to _recipient
+        payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
             // If all remaining shares are being redeemed, the logic changes slightly
             if (sharesToRedeem == sharesSupply) {
                 payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
-                // Remove every tracked asset, except the denomination asset
-                if (payoutAssets_[i] != denominationAssetCopy) {
-                    vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
-                }
+                // Will not remove assets that are marked to not be untracked
+                vaultProxyContract.removeTrackedAsset(payoutAssets_[i], false);
             } else {
                 payoutAmounts_[i] = ERC20(payoutAssets_[i])
                     .balanceOf(address(vaultProxyContract))

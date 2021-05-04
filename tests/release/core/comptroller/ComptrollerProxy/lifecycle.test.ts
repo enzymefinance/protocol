@@ -201,6 +201,7 @@ describe('activate', () => {
     // Assert expected calls
     expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
       await comptrollerProxy.getDenominationAsset(),
+      true,
     );
 
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(false);
@@ -253,6 +254,7 @@ describe('activate', () => {
 
     expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
       await comptrollerProxy.getDenominationAsset(),
+      true,
     );
 
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(true);

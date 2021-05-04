@@ -18,7 +18,9 @@ import "../../../../persistent/utils/IMigratableVault.sol";
 interface IVault is IMigratableVault {
     function addDebtPosition(address) external;
 
-    function addTrackedAsset(address) external;
+    function addTrackedAsset(address, bool) external;
+
+    function allowUntrackingAssets(address[] memory) external;
 
     function approveAssetSpender(
         address,
@@ -54,7 +56,7 @@ interface IVault is IMigratableVault {
 
     function removeDebtPosition(address) external;
 
-    function removeTrackedAsset(address) external;
+    function removeTrackedAsset(address, bool) external;
 
     function transferShares(
         address,

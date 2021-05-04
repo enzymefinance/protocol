@@ -56,7 +56,6 @@ export * from './codegen/CurveLiquidityStethAdapter';
 export * from './codegen/IdleAdapter';
 export * from './codegen/ParaSwapV4Adapter';
 export * from './codegen/SynthetixAdapter';
-export * from './codegen/TrackedAssetsAdapter';
 export * from './codegen/UniswapV2Adapter';
 export * from './codegen/ZeroExV2Adapter';
 

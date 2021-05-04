@@ -27,13 +27,18 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Adds a tracked asset to the fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @notice Adds a tracked asset and optionally specifies if it should be persistently tracked,
+    /// i.e., that it cannot be untracked
     /// @param _asset The asset to add
-    function __addTrackedAsset(address _comptrollerProxy, address _asset) internal {
+    /// @param _setAsPersistentlyTracked True if the asset should be set as persistently tracked
+    function __addTrackedAsset(
+        address _comptrollerProxy,
+        address _asset,
+        bool _setAsPersistentlyTracked
+    ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
             IComptroller.VaultAction.AddTrackedAsset,
-            abi.encode(_asset)
+            abi.encode(_asset, _setAsPersistentlyTracked)
         );
     }
 
@@ -104,13 +109,19 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Removes a tracked asset from the fund
+    /// @notice Removes a tracked asset and optionally specifies whether it should be unset
+    /// as a persistently tracked asset
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _asset The asset to remove
-    function __removeTrackedAsset(address _comptrollerProxy, address _asset) internal {
+    /// @param _unsetAsPersistentlyTracked True if the asset should be unset as persistently tracked
+    function __removeTrackedAsset(
+        address _comptrollerProxy,
+        address _asset,
+        bool _unsetAsPersistentlyTracked
+    ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
             IComptroller.VaultAction.RemoveTrackedAsset,
-            abi.encode(_asset)
+            abi.encode(_asset, _unsetAsPersistentlyTracked)
         );
     }
 

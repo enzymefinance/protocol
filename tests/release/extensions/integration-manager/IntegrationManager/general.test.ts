@@ -1,14 +1,20 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
-  addZeroBalanceTrackedAssetsArgs,
   ComptrollerLib,
-  IntegrationManagerActionId,
-  removeZeroBalanceTrackedAssetsArgs,
+  PolicyHook,
   StandardToken,
+  validateRulePostCoIArgs,
   VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
-import { addNewAssetsToFund, assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  addNewAssetsToFund,
+  addTrackedAssetsToVault,
+  assertEvent,
+  createNewFund,
+  deployProtocolFixture,
+  removeTrackedAssetsFromVault,
+} from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 async function snapshot() {
@@ -268,8 +274,8 @@ describe('auth users', () => {
 });
 
 describe('callOnExtension actions', () => {
-  describe('__addZeroBalanceTrackedAssets', () => {
-    it('only allows authorized users', async () => {
+  describe('__addTrackedAssetsToVault', () => {
+    it('only allows the owner and authorized users', async () => {
       const {
         accounts: [newAuthUser],
         deployment: { integrationManager },
@@ -281,24 +287,22 @@ describe('callOnExtension actions', () => {
 
       // Call should be allowed by the fund owner
       await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-            addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd1] }),
-          ),
+        addTrackedAssetsToVault({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToAdd1],
+        }),
       ).resolves.toBeReceipt();
 
       // Call not allowed by the yet-to-be authorized user
       await expect(
-        comptrollerProxy
-          .connect(newAuthUser)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-            addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd2] }),
-          ),
+        addTrackedAssetsToVault({
+          signer: newAuthUser,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToAdd2],
+        }),
       ).rejects.toBeRevertedWith('Not an authorized user');
 
       // Set the new auth user
@@ -306,70 +310,82 @@ describe('callOnExtension actions', () => {
 
       // Call should be allowed for the authorized user
       await expect(
-        comptrollerProxy
-          .connect(newAuthUser)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-            addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd2] }),
-          ),
+        addTrackedAssetsToVault({
+          signer: newAuthUser,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToAdd2],
+        }),
       ).resolves.toBeReceipt();
     });
 
-    it('does not allow an asset with a non-zero balance', async () => {
+    it('does not allow an unsupported asset', async () => {
       const {
         deployment: { integrationManager },
-        config: {
-          primitives: { mln },
-        },
-        fund: { comptrollerProxy, fundOwner, vaultProxy },
+        fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
-
-      // Give the asset to add a non-zero vault balance
-      const assetToAdd = new StandardToken(mln, whales.mln);
-      await assetToAdd.transfer(vaultProxy, 1);
 
       await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-            addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd] }),
-          ),
-      ).rejects.toBeRevertedWith('Balance is not zero');
+        addTrackedAssetsToVault({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager,
+          assets: [randomAddress()],
+        }),
+      ).rejects.toBeRevertedWith('Unsupported asset');
     });
 
-    it('successfully adds each asset to tracked assets', async () => {
+    it('successfully adds each asset to tracked assets, optionally marks them as non-untrackable, and correctly calls the policy manager', async () => {
       const {
-        deployment: { integrationManager },
+        deployment: { integrationManager, policyManager },
         config: {
-          primitives: { mln: assetToAdd1, dai: assetToAdd2 },
+          primitives: { mln, dai },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
+      // Define assets and whether they should be set as persistently tracked
+      const assets = [mln, dai];
+      const setAsPersistentlyTracked = [true, false];
+
       // Neither asset to add should be tracked
-      expect(await vaultProxy.isTrackedAsset(assetToAdd1)).toBe(false);
-      expect(await vaultProxy.isTrackedAsset(assetToAdd2)).toBe(false);
+      for (const asset of assets) {
+        expect(await vaultProxy.isTrackedAsset(asset)).toBe(false);
+      }
 
       // Add the assets
-      await comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-          addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd1, assetToAdd2] }),
-        );
+      await addTrackedAssetsToVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets,
+        setAsPersistentlyTracked,
+      });
 
-      // Both assets should now be tracked
-      expect(await vaultProxy.isTrackedAsset(assetToAdd1)).toBe(true);
-      expect(await vaultProxy.isTrackedAsset(assetToAdd2)).toBe(true);
+      // Both assets should now be tracked, and optionally set as persistently tracked
+      for (const i in assets) {
+        expect(await vaultProxy.isTrackedAsset(assets[i])).toBe(true);
+        expect(await vaultProxy.isPersistentlyTrackedAsset(assets[i])).toBe(setAsPersistentlyTracked[i]);
+      }
+
+      // Assert that the PolicyManager hook was called correctly
+      expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.PostCallOnIntegration,
+        validateRulePostCoIArgs({
+          adapter: constants.AddressZero,
+          selector: utils.hexDataSlice(constants.HashZero, 0, 4),
+          incomingAssets: assets,
+          incomingAssetAmounts: new Array(assets.length).fill(0),
+          outgoingAssets: [],
+          outgoingAssetAmounts: [],
+        }),
+      );
     });
   });
 
-  describe('__removeZeroBalanceTrackedAssets', () => {
-    it('only allows authorized users', async () => {
+  describe('__removeTrackedAssetsFromVault', () => {
+    it('only allows the owner and authorized users', async () => {
       const {
         accounts: [newAuthUser],
         deployment: { integrationManager },
@@ -379,100 +395,120 @@ describe('callOnExtension actions', () => {
         fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
 
-      // Add zero-balance assets to the fund
-      await comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-          addZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove1, assetToRemove2] }),
-        );
+      // Add assets to the fund with no balances
+      await addTrackedAssetsToVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets: [assetToRemove1, assetToRemove2],
+      });
 
-      // Call should be allowed by the fund owner
+      // Call to remove an asset should be allowed by the fund owner
       await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-            removeZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove1] }),
-          ),
+        removeTrackedAssetsFromVault({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToRemove1],
+        }),
       ).resolves.toBeReceipt();
 
-      // Call not allowed by the yet-to-be authorized user
+      // Call to remove an asset should not be allowed by the yet-to-be authorized user
       await expect(
-        comptrollerProxy
-          .connect(newAuthUser)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-            removeZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove2] }),
-          ),
+        removeTrackedAssetsFromVault({
+          signer: newAuthUser,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToRemove2],
+        }),
       ).rejects.toBeRevertedWith('Not an authorized user');
 
       // Set the new auth user
       await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newAuthUser);
 
-      // Call should be allowed for the authorized user
+      // Call to remove an asset should now be allowed for the authorized user
       await expect(
-        comptrollerProxy
-          .connect(newAuthUser)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-            removeZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove2] }),
-          ),
+        removeTrackedAssetsFromVault({
+          signer: newAuthUser,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetToRemove2],
+        }),
       ).resolves.toBeReceipt();
     });
 
-    it('does not allow removing the denomination asset', async () => {
+    it('does not allow specifying a denomination asset with a balance of 0', async () => {
       const {
         deployment: { integrationManager },
+
         fund: { comptrollerProxy, denominationAsset, fundOwner },
       } = await provider.snapshot(snapshot);
 
       await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-            removeZeroBalanceTrackedAssetsArgs({ assets: [denominationAsset] }),
-          ),
-      ).rejects.toBeRevertedWith('Cannot remove denomination asset');
+        removeTrackedAssetsFromVault({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager,
+          assets: [denominationAsset],
+        }),
+      ).rejects.toBeRevertedWith('Cannot untrack denomination asset');
     });
 
-    it('does not allow an asset with a non-zero balance', async () => {
+    it('untracks assets that are either unsupported or has a balance of 0', async () => {
       const {
-        deployment: { integrationManager, trackedAssetsAdapter },
+        deployment: { chainlinkPriceFeed, integrationManager },
         config: {
-          primitives: { mln },
+          primitives: { dai, mln },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
-      const assetToRemove = new StandardToken(mln, whales.mln);
+      const assetWithPositiveBalance = new StandardToken(dai, whales.dai);
+      const assetWithZeroBalance = new StandardToken(mln, whales.mln);
 
-      // Track the asset to remove and give it a non-zero vault balance
+      // Seed vault with the tracked assets
       await addNewAssetsToFund({
-        fundOwner,
+        signer: fundOwner,
         comptrollerProxy,
-        vaultProxy,
         integrationManager,
-        trackedAssetsAdapter,
-        assets: [assetToRemove],
-        amounts: [1],
+        assets: [assetWithPositiveBalance, assetWithZeroBalance],
+        amounts: [1, 0],
       });
 
+      // Both assets should be tracked
+      expect(await vaultProxy.isTrackedAsset(assetWithPositiveBalance)).toBe(true);
+      expect(await vaultProxy.isTrackedAsset(assetWithZeroBalance)).toBe(true);
+
+      // Removing the asset with a zero balance should succeed
+      await removeTrackedAssetsFromVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets: [assetWithZeroBalance],
+      });
+      expect(await vaultProxy.isTrackedAsset(assetWithZeroBalance)).toBe(false);
+
+      // Attempting to remove the asset with a positive balance should fail
       await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(
-            integrationManager,
-            IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-            removeZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove] }),
-          ),
-      ).rejects.toBeRevertedWith('Balance is not zero');
+        removeTrackedAssetsFromVault({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager,
+          assets: [assetWithPositiveBalance],
+        }),
+      ).rejects.toBeRevertedWith('Not allowed');
+
+      // Remove support for the asset with a positive balance
+      await chainlinkPriceFeed.removePrimitives([assetWithPositiveBalance]);
+
+      // Removing the unsupported asset with a positive balance should succeed
+      await removeTrackedAssetsFromVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets: [assetWithPositiveBalance],
+      });
+      expect(await vaultProxy.isTrackedAsset(assetWithPositiveBalance)).toBe(false);
     });
 
     it('successfully removes each asset from tracked assets', async () => {
@@ -487,27 +523,21 @@ describe('callOnExtension actions', () => {
       const assetToRemove1 = new StandardToken(mln, whales.mln);
       const assetToRemove2 = new StandardToken(dai, whales.dai);
 
-      // Add zero-balance assets to the fund
-      await comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
-          addZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove1, assetToRemove2] }),
-        );
-
-      // Both assets should be tracked
-      expect(await vaultProxy.isTrackedAsset(assetToRemove1)).toBe(true);
-      expect(await vaultProxy.isTrackedAsset(assetToRemove2)).toBe(true);
+      // Add assets to the fund with no balances
+      await addTrackedAssetsToVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets: [assetToRemove1, assetToRemove2],
+      });
 
       // Remove the assets
-      await comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(
-          integrationManager,
-          IntegrationManagerActionId.RemoveZeroBalanceTrackedAssets,
-          removeZeroBalanceTrackedAssetsArgs({ assets: [assetToRemove1, assetToRemove2] }),
-        );
+      removeTrackedAssetsFromVault({
+        signer: fundOwner,
+        comptrollerProxy,
+        integrationManager,
+        assets: [assetToRemove1, assetToRemove2],
+      });
 
       // Both assets should no longer be tracked
       expect(await vaultProxy.isTrackedAsset(assetToRemove1)).toBe(false);

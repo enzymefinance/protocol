@@ -9,7 +9,6 @@ export enum SpendAssetsHandleType {
   Transfer,
 }
 
-export const addTrackedAssetsFragment = utils.FunctionFragment.fromString('addTrackedAssets(address,bytes,bytes)');
 export const approveAssetsFragment = utils.FunctionFragment.fromString('approveAssets(address,bytes,bytes)');
 export const claimRewardsAndReinvestFragment = utils.FunctionFragment.fromString(
   'claimRewardsAndReinvest(address,bytes,bytes)',
@@ -26,7 +25,6 @@ export const takeOrderFragment = utils.FunctionFragment.fromString('takeOrder(ad
 export const unstakeFragment = utils.FunctionFragment.fromString('unstake(address,bytes,bytes)');
 export const unstakeAndRedeemFragment = utils.FunctionFragment.fromString('unstakeAndRedeem(address,bytes,bytes)');
 
-export const addTrackedAssetsSelector = sighash(addTrackedAssetsFragment);
 export const approveAssetsSelector = sighash(approveAssetsFragment);
 export const claimRewardsAndReinvestSelector = sighash(claimRewardsAndReinvestFragment);
 export const claimRewardsAndSwapSelector = sighash(claimRewardsAndSwapFragment);

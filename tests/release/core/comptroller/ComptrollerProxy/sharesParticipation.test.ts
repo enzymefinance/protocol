@@ -467,7 +467,7 @@ describe('redeem', () => {
     it('handles a valid call: full shares balance', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, trackedAssetsAdapter, valueInterpreter },
+        deployment: { fundDeployer, integrationManager, valueInterpreter },
         accounts: [fundOwner, investor],
         config: {
           primitives: { dai, mln },
@@ -504,10 +504,8 @@ describe('redeem', () => {
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
       await addNewAssetsToFund({
         comptrollerProxy,
-        vaultProxy,
-        fundOwner,
+        signer: fundOwner,
         integrationManager,
-        trackedAssetsAdapter,
         assets: payoutAssets,
         amounts: await Promise.all(
           payoutAssets.map(
@@ -720,57 +718,49 @@ describe('redeem', () => {
     it('handles a valid call: full shares balance, no additional config', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, trackedAssetsAdapter },
+        deployment: { fundDeployer, integrationManager },
         accounts: [fundOwner, investor],
         config: {
           primitives: { mln },
         },
       } = await provider.snapshot(snapshot);
 
-      // Create a new fund, and invested in equally by the fund manager and an investor
-      const investmentAmount = await getAssetUnit(denominationAsset);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         signer: fundOwner,
         fundOwner,
         fundDeployer,
         denominationAsset,
-        investment: {
-          buyer: fundOwner,
-          investmentAmount,
-        },
       });
 
       await buyShares({
         comptrollerProxy,
         buyer: investor,
         denominationAsset,
-        investmentAmount,
       });
+
+      // Seed the vault with the denomination asset
+      await denominationAsset.transfer(vaultProxy, 1);
 
       // Send and track a second asset in the vault
       const secondAsset = new StandardToken(mln, whales.mln);
       await addNewAssetsToFund({
+        signer: fundOwner,
         comptrollerProxy,
-        vaultProxy,
-        fundOwner,
         integrationManager,
-        trackedAssetsAdapter,
         assets: [secondAsset],
         amounts: [(await getAssetUnit(secondAsset)).mul(3)],
+        setAsPersistentlyTracked: [false], // Allow untracking to test auto-removal
       });
 
       // Define the expected payout assets
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
       const expectedPayoutAssets = [denominationAsset, secondAsset];
-      const totalShares = await vaultProxy.totalSupply();
       const expectedPayoutAmounts = await Promise.all(
-        expectedPayoutAssets.map(async (asset) =>
-          (await asset.balanceOf(vaultProxy)).mul(expectedSharesRedeemed).div(totalShares),
-        ),
+        expectedPayoutAssets.map(async (asset) => await asset.balanceOf(vaultProxy)),
       );
 
-      // Record the investor's pre-redemption balance
-      const preInvestorExpectedPayoutAssetBalances = await getAssetBalances({
+      // Record the investor's pre-redemption balances
+      const preTxInvestorExpectedAssetsBalances = await getAssetBalances({
         account: investor,
         assets: expectedPayoutAssets,
       });
@@ -790,18 +780,18 @@ describe('redeem', () => {
         receivedAssetAmounts: expectedPayoutAmounts,
       });
 
-      const postInvestorExpectedPayoutAssetBalances = await getAssetBalances({
-        account: investor,
-        assets: expectedPayoutAssets,
-      });
-
-      // Assert the redeemer has redeemed all shares and received the expected assets and balances
+      // Assert the redeemer has redeemed all shares and received the expected assets and full balances
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
-
-      for (const key in expectedPayoutAssets) {
-        const expectedBalance = preInvestorExpectedPayoutAssetBalances[key].add(expectedPayoutAmounts[key]);
-        expect(postInvestorExpectedPayoutAssetBalances[key]).toEqBigNumber(expectedBalance);
+      for (const i in expectedPayoutAssets) {
+        expect(await expectedPayoutAssets[i].balanceOf(investor)).toEqBigNumber(
+          preTxInvestorExpectedAssetsBalances[i].add(expectedPayoutAmounts[i]),
+        );
       }
+
+      // Assert that the denomination asset is the only remaining tracked asset
+      expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [
+        denominationAsset,
+      ]);
     });
 
     it('handles a valid call: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {

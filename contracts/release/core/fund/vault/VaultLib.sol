@@ -134,26 +134,9 @@ contract VaultLib is VaultLibBase2, IVault {
     // VAULT //
     ///////////
 
-    /// @notice Adds a tracked asset to the fund
-    /// @param _asset The asset to add
-    /// @dev Allows addition of already tracked assets to fail silently.
-    function addTrackedAsset(address _asset) public override onlyAccessor notShares(_asset) {
-        if (!isTrackedAsset(_asset)) {
-            require(
-                trackedAssets.length < TRACKED_ASSETS_LIMIT,
-                "addTrackedAsset: Limit exceeded"
-            );
-
-            assetToIsTracked[_asset] = true;
-            trackedAssets.push(_asset);
-
-            emit TrackedAssetAdded(_asset);
-        }
-    }
-
     /// @notice Adds a new debt position to the fund
     /// @param _debtPosition The debt position to add
-    /// TODO: Decide whether or not it makes sense to impose a debt position limit
+    // TODO: Decide whether or not it makes sense to impose a debt position limit
     function addDebtPosition(address _debtPosition) external override onlyAccessor {
         if (!isActiveDebtPosition(_debtPosition)) {
             debtPositionToIsActive[_debtPosition] = true;
@@ -161,6 +144,34 @@ contract VaultLib is VaultLibBase2, IVault {
         }
 
         emit DebtPositionAdded(_debtPosition);
+    }
+
+    /// @notice Adds a tracked asset and optionally specifies if it should be persistently tracked,
+    /// i.e., that it cannot be untracked
+    /// @param _asset The asset to add
+    /// @param _setAsPersistentlyTracked True if the asset should be set as persistently tracked
+    function addTrackedAsset(address _asset, bool _setAsPersistentlyTracked)
+        external
+        override
+        onlyAccessor
+        notShares(_asset)
+    {
+        if (_setAsPersistentlyTracked && !isPersistentlyTrackedAsset(_asset)) {
+            assetToIsPersistentlyTracked[_asset] = true;
+
+            emit PersistentlyTrackedAssetAdded(_asset);
+        }
+
+        __addTrackedAsset(_asset);
+    }
+
+    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
+    /// @param _assets The asset to allow to untrack
+    /// @dev Generally unnecessary to call directly, but closes a potential griefing attack
+    function allowUntrackingAssets(address[] memory _assets) external override onlyAccessor {
+        for (uint256 i; i < _assets.length; i++) {
+            __unsetPersistentlyTrackedAsset(_assets[i]);
+        }
     }
 
     /// @notice Grants an allowance to a spender to use the fund's asset
@@ -191,8 +202,11 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @param _debtPosition The debt position to call
     /// @param _actionData The action data for the call
     /// @param _assetsToTransfer The assets to transfer to the debt position
-    /// @param _amountsToTransfer The amount of assets to be transfered to the debt position
+    /// @param _amountsToTransfer The amount of assets to be transferred to the debt position
     /// @param _assetsToReceive The assets that will be received from the call
+    /// @dev Even though the DebtPositionManager validates and formats the assets,
+    /// it's nice and inexpensive for the VaultLib to ensure its own security by
+    /// validating that its shares holdings are not affected.
     function callOnDebtPosition(
         address _debtPosition,
         bytes calldata _actionData,
@@ -201,20 +215,16 @@ contract VaultLib is VaultLibBase2, IVault {
         address[] memory _assetsToReceive
     ) external override onlyAccessor {
         for (uint256 i; i < _assetsToTransfer.length; i++) {
-            ERC20(_assetsToTransfer[i]).safeTransfer(_debtPosition, _amountsToTransfer[i]);
+            __assertNotShares(_assetsToTransfer[i]);
+            __withdrawAssetTo(_assetsToTransfer[i], _debtPosition, _amountsToTransfer[i]);
         }
 
         IDebtPosition(_debtPosition).receiveCallFromVault(_actionData);
 
         for (uint256 i; i < _assetsToReceive.length; i++) {
-            addTrackedAsset(_assetsToReceive[i]);
+            __assertNotShares(_assetsToReceive[i]);
+            __addTrackedAsset(_assetsToReceive[i]);
         }
-    }
-
-    /// @notice Removes a tracked asset from the fund
-    /// @param _asset The asset to remove
-    function removeTrackedAsset(address _asset) external override onlyAccessor {
-        __removeTrackedAsset(_asset);
     }
 
     /// @notice Removes a debt position from the fund
@@ -238,6 +248,18 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
+    /// @notice Removes a tracked asset and optionally specifies whether it should be unset
+    /// as a persistently tracked asset
+    /// @param _asset The asset to add
+    /// @param _unsetAsPersistentlyTracked True if the asset should be unset as persistently tracked
+    function removeTrackedAsset(address _asset, bool _unsetAsPersistentlyTracked)
+        external
+        override
+        onlyAccessor
+    {
+        __removeTrackedAsset(_asset, _unsetAsPersistentlyTracked);
+    }
+
     /// @notice Withdraws an asset from the VaultProxy to a given account
     /// @param _asset The asset to withdraw
     /// @param _target The account to which to withdraw the asset
@@ -247,9 +269,24 @@ contract VaultLib is VaultLibBase2, IVault {
         address _target,
         uint256 _amount
     ) external override onlyAccessor notShares(_asset) {
-        ERC20(_asset).safeTransfer(_target, _amount);
+        __withdrawAssetTo(_asset, _target, _amount);
+    }
 
-        emit AssetWithdrawn(_asset, _target, _amount);
+    // PRIVATE FUNCTIONS
+
+    /// @dev Helper to add a tracked asset
+    function __addTrackedAsset(address _asset) private {
+        if (!isTrackedAsset(_asset)) {
+            require(
+                trackedAssets.length < TRACKED_ASSETS_LIMIT,
+                "__addTrackedAsset: Limit exceeded"
+            );
+
+            assetToIsTracked[_asset] = true;
+            trackedAssets.push(_asset);
+
+            emit TrackedAssetAdded(_asset);
+        }
     }
 
     /// @dev Helper to the get the Vault's balance of a given asset
@@ -257,10 +294,24 @@ contract VaultLib is VaultLibBase2, IVault {
         return ERC20(_asset).balanceOf(address(this));
     }
 
+    /// @dev Helper to remove assets from the list of assets that cannot be untracked
+    function __unsetPersistentlyTrackedAsset(address _asset) private {
+        if (isPersistentlyTrackedAsset(_asset)) {
+            assetToIsPersistentlyTracked[_asset] = false;
+
+            emit PersistentlyTrackedAssetRemoved(_asset);
+        }
+    }
+
     /// @dev Helper to remove an asset from a fund's tracked assets.
     /// Allows removal of non-tracked asset to fail silently.
-    function __removeTrackedAsset(address _asset) private {
-        if (isTrackedAsset(_asset)) {
+    /// _unsetPersistentlyTracked acts as an override when true.
+    function __removeTrackedAsset(address _asset, bool _unsetAsPersistentlyTracked) private {
+        if (_unsetAsPersistentlyTracked && isPersistentlyTrackedAsset(_asset)) {
+            __unsetPersistentlyTrackedAsset(_asset);
+        }
+
+        if (isTrackedAsset(_asset) && !isPersistentlyTrackedAsset(_asset)) {
             assetToIsTracked[_asset] = false;
 
             uint256 trackedAssetsCount = trackedAssets.length;
@@ -275,6 +326,21 @@ contract VaultLib is VaultLibBase2, IVault {
             }
 
             emit TrackedAssetRemoved(_asset);
+        }
+    }
+
+    /// @dev Helper to withdraw an asset from the vault to a specified recipient
+    function __withdrawAssetTo(
+        address _asset,
+        address _target,
+        uint256 _amount
+    ) private {
+        ERC20(_asset).safeTransfer(_target, _amount);
+
+        emit AssetWithdrawn(_asset, _target, _amount);
+
+        if (__getAssetBalance(_asset) == 0) {
+            __removeTrackedAsset(_asset, false);
         }
     }
 
@@ -413,9 +479,22 @@ contract VaultLib is VaultLibBase2, IVault {
         return WETH_TOKEN;
     }
 
-    /// @notice Check whether an address is a tracked asset of the fund
+    // PUBLIC FUNCTIONS
+
+    /// @notice Checks whether an asset is persistently tracked (i.e., it cannot be untracked)
     /// @param _asset The address to check
-    /// @return isTrackedAsset_ True if the address is a tracked asset of the fund
+    /// @return isPersistentlyTrackedAsset_ True if the asset is persistently tracked
+    function isPersistentlyTrackedAsset(address _asset)
+        public
+        view
+        returns (bool isPersistentlyTrackedAsset_)
+    {
+        return assetToIsPersistentlyTracked[_asset];
+    }
+
+    /// @notice Checks whether an address is a tracked asset of the vault
+    /// @param _asset The address to check
+    /// @return isTrackedAsset_ True if the address is a tracked asset
     function isTrackedAsset(address _asset) public view override returns (bool isTrackedAsset_) {
         return assetToIsTracked[_asset];
     }

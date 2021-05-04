@@ -11,7 +11,7 @@ import {
   VaultLib,
 } from '@enzymefinance/protocol';
 import {
-  addTrackedAssets,
+  addTrackedAssetsToVault,
   buyShares,
   // createMigratedFundConfig,
   createNewFund,
@@ -117,7 +117,16 @@ describe('Walkthrough a fund migration', () => {
       new StandardToken(fork.config.compound.ctokens.cuni, whales.cuni),
     ];
 
-    for (const asset of Object.values(assets)) {
+    await addTrackedAssetsToVault({
+      signer: manager,
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      assets,
+    });
+
+    // Use this loop instead of addNewAssetsToFund() to make debugging easier
+    // when a whale changes.
+    for (const asset of assets) {
       const decimals = await asset.decimals();
       const transferAmount = utils.parseUnits('1', decimals);
       await asset.transfer.args(vaultProxy, transferAmount).send();
@@ -125,14 +134,6 @@ describe('Walkthrough a fund migration', () => {
       const balance = await asset.balanceOf(vaultProxy);
       expect(balance).toBeGteBigNumber(transferAmount);
     }
-
-    await addTrackedAssets({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner: manager,
-      trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-      incomingAssets: Object.values(assets),
-    });
 
     expect((await vaultProxy.getTrackedAssets()).length).toBe(20);
   });

@@ -1,40 +1,51 @@
 import { AddressLike } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  addTrackedAssetsArgs,
-  addTrackedAssetsSelector,
-  callOnIntegrationArgs,
+  addTrackedAssetsToVaultArgs,
   ComptrollerLib,
   IntegrationManager,
   IntegrationManagerActionId,
-  TrackedAssetsAdapter,
+  removeTrackedAssetsFromVaultArgs,
 } from '@enzymefinance/protocol';
 
-export async function addTrackedAssets({
+export function addTrackedAssetsToVault({
+  signer,
   comptrollerProxy,
   integrationManager,
-  fundOwner,
-  trackedAssetsAdapter,
-  incomingAssets,
+  assets,
+  setAsPersistentlyTracked = new Array(assets.length).fill(true),
 }: {
+  signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  trackedAssetsAdapter: TrackedAssetsAdapter;
-  incomingAssets: AddressLike[];
+  assets: AddressLike[];
+  setAsPersistentlyTracked?: boolean[];
 }) {
-  const args = addTrackedAssetsArgs(incomingAssets);
-  const callArgs = callOnIntegrationArgs({
-    adapter: trackedAssetsAdapter,
-    selector: addTrackedAssetsSelector,
-    encodedCallArgs: args,
-  });
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(
+      integrationManager,
+      IntegrationManagerActionId.AddTrackedAssetsToVault,
+      addTrackedAssetsToVaultArgs({ assets, setAsPersistentlyTracked }),
+    );
+}
 
-  const addTrackedAssetsTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-
-  await expect(addTrackedAssetsTx).resolves.toBeReceipt();
-
-  return addTrackedAssetsTx;
+export function removeTrackedAssetsFromVault({
+  signer,
+  comptrollerProxy,
+  integrationManager,
+  assets,
+}: {
+  signer: SignerWithAddress;
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  assets: AddressLike[];
+}) {
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(
+      integrationManager,
+      IntegrationManagerActionId.RemoveTrackedAssetsFromVault,
+      removeTrackedAssetsFromVaultArgs({ assets }),
+    );
 }

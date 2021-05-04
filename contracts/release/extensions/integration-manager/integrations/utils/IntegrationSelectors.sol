@@ -16,10 +16,6 @@ pragma solidity 0.6.12;
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 abstract contract IntegrationSelectors {
-    bytes4 public constant ADD_TRACKED_ASSETS_SELECTOR = bytes4(
-        keccak256("addTrackedAssets(address,bytes,bytes)")
-    );
-
     // Asset approval
     bytes4 public constant APPROVE_ASSETS_SELECTOR = bytes4(
         keccak256("approveAssets(address,bytes,bytes)")

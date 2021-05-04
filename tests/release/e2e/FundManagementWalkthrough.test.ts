@@ -12,7 +12,7 @@ import {
   VaultLib,
 } from '@enzymefinance/protocol';
 import {
-  addTrackedAssets,
+  addTrackedAssetsToVault,
   buyShares,
   createNewFund,
   deployProtocolFixture,
@@ -41,27 +41,27 @@ const expectedGasCosts = {
   },
   'calc gav: denomination asset only': {
     usdc: 84400,
-    weth: 74900,
+    weth: 76000,
   },
 
   'create fund': {
-    usdc: 941000,
-    weth: 931000,
+    usdc: 966000,
+    weth: 955000,
   },
 
   'redeem all shares: max assets: all remaining': {
-    usdc: 2463000,
-    weth: 2451000,
+    usdc: 2502000,
+    weth: 2489000,
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2598000,
-    weth: 2536000,
+    usdc: 2637000,
+    weth: 2575000,
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 302000,
-    weth: 276000,
+    usdc: 304000,
+    weth: 277000,
   },
 } as const;
 
@@ -206,7 +206,16 @@ describe.each([['weth' as const], ['usdc' as const]])(
         new StandardToken(fork.config.primitives.zrx, whales.zrx),
       ];
 
-      for (const asset of Object.values(assets)) {
+      await addTrackedAssetsToVault({
+        signer: manager,
+        comptrollerProxy,
+        integrationManager: fork.deployment.integrationManager,
+        assets,
+      });
+
+      // Use this loop instead of addNewAssetsToFund() to make debugging easier
+      // when a whale changes.
+      for (const asset of assets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
         await asset.transfer.args(vaultProxy, transferAmount).send();
@@ -214,14 +223,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);
       }
-
-      await addTrackedAssets({
-        comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-        incomingAssets: Object.values(assets),
-      });
     });
 
     it('seeds the fund with cTokens', async () => {
@@ -233,7 +234,16 @@ describe.each([['weth' as const], ['usdc' as const]])(
         new StandardToken(fork.config.compound.ctokens.cuni, whales.cuni),
       ];
 
-      for (const asset of Object.values(compoundAssets)) {
+      await addTrackedAssetsToVault({
+        signer: manager,
+        comptrollerProxy,
+        integrationManager: fork.deployment.integrationManager,
+        assets: compoundAssets,
+      });
+
+      // Use this loop instead of addNewAssetsToFund() to make debugging easier
+      // when a whale changes.
+      for (const asset of compoundAssets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
 
@@ -242,14 +252,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);
       }
-
-      await addTrackedAssets({
-        comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        trackedAssetsAdapter: fork.deployment.trackedAssetsAdapter,
-        incomingAssets: Object.values(compoundAssets),
-      });
     });
 
     it('calculates the GAV of the fund with 20 assets', async () => {
