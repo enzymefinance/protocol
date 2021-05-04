@@ -21,7 +21,7 @@ import "./IDebtPosition.sol";
 /// @title CompoundDebtPosition Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A Debt Position smart contract for Compound
-contract CompoundDebtPosition is IDebtPosition {
+contract CompoundDebtPositionLib is IDebtPosition {
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
@@ -34,11 +34,12 @@ contract CompoundDebtPosition is IDebtPosition {
     event CollateralAssetRemoved(address indexed asset, uint256 amount, bytes data);
 
     address private immutable COMPOUND_COMPTROLLER;
-    address private immutable VAULT_PROXY;
     address private immutable WETH_TOKEN;
 
+    address private vaultProxy;
+
     modifier onlyVault() {
-        require(msg.sender == VAULT_PROXY, "Only the vault can make this call");
+        require(msg.sender == vaultProxy, "Only the vault can make this call");
         _;
     }
 
@@ -51,14 +52,18 @@ contract CompoundDebtPosition is IDebtPosition {
     /// @dev Needed to receive ETH during cEther borrow and to unwrap WETH
     receive() external payable {}
 
-    constructor(
-        address _vaultProxy,
-        address _compoundComptroller,
-        address _weth
-    ) public {
-        VAULT_PROXY = _vaultProxy;
+    constructor(address _compoundComptroller, address _weth) public {
         COMPOUND_COMPTROLLER = _compoundComptroller;
         WETH_TOKEN = _weth;
+    }
+
+    /// @notice Initializes the debt position
+    /// @param _initData Data params to initialize the debt position
+    /// No need to assert access because this is called atomically from the debt position manager,
+    /// and once it's called, it cannot be called again.
+    function init(bytes memory _initData) external override {
+        require(vaultProxy == address(0), "init: Already initialized");
+        vaultProxy = abi.decode(_initData, (address));
     }
 
     /// @notice Receives and executes a call from the Vault
@@ -305,10 +310,10 @@ contract CompoundDebtPosition is IDebtPosition {
         return borrowedAssetToCToken[_borrowedAsset];
     }
 
-    /// @notice Gets the `VAULT_PROXY` variable
-    /// @return vaultProxy_ The `VAULT_PROXY` variable value
+    /// @notice Gets the `vaultProxy` variable
+    /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() external view returns (address vaultProxy_) {
-        return VAULT_PROXY;
+        return vaultProxy;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable

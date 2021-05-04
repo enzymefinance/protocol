@@ -32,19 +32,22 @@ export function debtPositionActionArgs({
 }
 
 export function debtPositionCallArgs({
-  debtPosition = randomAddress(),
+  debtPositionProxy = randomAddress(),
   protocol,
   actionId = 0,
   encodedCallArgs,
 }: {
-  debtPosition?: AddressLike;
+  debtPositionProxy?: AddressLike;
   protocol: Number;
   actionId?: Number;
   encodedCallArgs: BytesLike;
 }) {
-  return encodeArgs(['address', 'uint256', 'uint256', 'bytes'], [debtPosition, protocol, actionId, encodedCallArgs]);
+  return encodeArgs(
+    ['address', 'uint256', 'uint256', 'bytes'],
+    [debtPositionProxy, protocol, actionId, encodedCallArgs],
+  );
 }
 
-export function debtPositionRemoveArgs({ debtPosition }: { debtPosition: AddressLike }) {
-  return encodeArgs(['address'], [debtPosition]);
+export function debtPositionRemoveArgs({ debtPositionProxy }: { debtPositionProxy: AddressLike }) {
+  return encodeArgs(['address'], [debtPositionProxy]);
 }

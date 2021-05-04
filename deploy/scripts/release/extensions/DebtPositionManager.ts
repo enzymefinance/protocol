@@ -13,6 +13,7 @@ const fn: DeployFunction = async function (hre) {
   const aggregatedDerivativePriceFeed = await get('AggregatedDerivativePriceFeed');
   const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
   const compoundPriceFeed = await get('CompoundPriceFeed');
+  const compoundDebtPositionLib = await get('CompoundDebtPositionLib');
 
   await deploy('DebtPositionManager', {
     args: [
@@ -21,6 +22,7 @@ const fn: DeployFunction = async function (hre) {
       config.weth,
       compoundPriceFeed.address,
       config.compound.comptroller,
+      compoundDebtPositionLib.address,
     ],
     from: deployer.address,
     log: true,
@@ -29,6 +31,12 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'DebtPositionManager'];
-fn.dependencies = ['Config', 'AggregatedDerivativePriceFeed', 'CompoundPriceFeed', 'ChainlinkPriceFeed'];
+fn.dependencies = [
+  'Config',
+  'AggregatedDerivativePriceFeed',
+  'CompoundPriceFeed',
+  'CompoundDebtPositionLib',
+  'ChainlinkPriceFeed',
+];
 
 export default fn;

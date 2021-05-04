@@ -1,6 +1,13 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { CompoundDebtPosition, ComptrollerLib, ICERC20, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import {
+  CompoundDebtPositionLib,
+  ComptrollerLib,
+  encodeArgs,
+  ICERC20,
+  StandardToken,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
   compoundLend,
@@ -17,11 +24,11 @@ import {
   createDebtPosition,
   removeCollateral,
   repayBorrow,
-} from '../../../packages/testutils/src/scaffolding/extensions/debt-positions';
+} from '@enzymefinance/testutils/src/scaffolding/extensions/debt-positions';
 
 let vaultProxyUsed: VaultLib;
 let comptrollerProxyUsed: ComptrollerLib;
-let compoundDebtPosition: CompoundDebtPosition;
+let compoundDebtPosition: CompoundDebtPositionLib;
 let dai: StandardToken;
 let weth: StandardToken;
 let cdai: ICERC20;
@@ -54,8 +61,8 @@ beforeEach(async () => {
     fundOwner,
   });
 
-  const compoundDebtPositionAddress = (await vaultUsed.getActiveDebtPositions.call())[0];
-  compoundDebtPosition = new CompoundDebtPosition(compoundDebtPositionAddress, whales.dai);
+  const compoundDebtPositionProxyAddress = (await vaultUsed.getActiveDebtPositions.call())[0];
+  compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, whales.dai);
 
   cdai = new ICERC20(fork.config.compound.ctokens.cdai, whales.cdai);
   ceth = new ICERC20(fork.config.compound.ceth, whales.ceth);
@@ -96,6 +103,18 @@ beforeEach(async () => {
   });
 });
 
+describe('init', () => {
+  it('initializes the vaultProxy variable', async () => {
+    expect(await compoundDebtPosition.getVaultProxy.call()).toMatchAddress(vaultProxyUsed);
+  });
+
+  it('can only be initialized once', async () => {
+    await expect(compoundDebtPosition.init(encodeArgs(['address'], [randomAddress()]))).rejects.toBeRevertedWith(
+      'Already initialized',
+    );
+  });
+});
+
 describe('receiveCallFromVault', () => {
   it('reverts when it is called from an acount different than vault', async () => {
     await expect(compoundDebtPosition.receiveCallFromVault(utils.randomBytes(0))).rejects.toBeRevertedWith(
@@ -118,7 +137,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: [collateralAmounts[0].div(2)],
         cTokens: collateralAssets,
@@ -128,7 +147,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: [collateralAmounts[0].div(2)],
         cTokens: collateralAssets,
@@ -145,8 +164,8 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 208946
-      expect(addCollateralReceipt).toCostLessThan('209000');
+      // Rounding up from 216013
+      expect(addCollateralReceipt).toCostLessThan('217000');
 
       const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
       expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -168,7 +187,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -205,7 +224,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -218,7 +237,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition,
         assets: collateralAssetsToBeRemoved,
         amounts: collateralAmountsToBeRemoved,
         cTokens: collateralAssets,
@@ -231,8 +250,8 @@ describe('receiveCallFromVault', () => {
       expect(debtPositionBalanceBefore.sub(debtPositionBalanceAfter)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      // Rounding up from 268459
-      expect(removeCollateralReceipt).toCostLessThan('270000');
+      // Rounding up from 275470
+      expect(removeCollateralReceipt).toCostLessThan('276000');
 
       const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
       expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -254,7 +273,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -267,7 +286,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssetsToBeRemoved,
         amounts: collateralAmountsToBeRemoved,
         cTokens: collateralAssets,
@@ -297,7 +316,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -310,7 +329,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -331,7 +350,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -344,7 +363,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: unaddedCollateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -370,7 +389,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -383,7 +402,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: collateralAssets,
@@ -394,8 +413,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 397260
-      expect(borrowReceipt).toCostLessThan('398000');
+      // Rounding up from 404271
+      expect(borrowReceipt).toCostLessThan('405000');
 
       const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
       expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -417,7 +436,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -430,7 +449,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: collateralAssets,
@@ -441,8 +460,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 404773
-      expect(borrowReceipt).toCostLessThan('405000');
+      // Rounding up from 412080
+      expect(borrowReceipt).toCostLessThan('413000');
 
       const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
       expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -467,7 +486,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: [randomAddress()],
@@ -478,7 +497,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: [randomAddress()],
@@ -500,7 +519,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: [randomAddress()],
@@ -511,7 +530,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: [fork.config.primitives.bat],
         amounts: borrowedAmounts,
         cTokens: [cdai.address],
@@ -538,7 +557,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -549,7 +568,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: collateralAssets,
@@ -562,7 +581,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssetsToBeRepaid,
         amounts: borrowedAmountsToBeRepaid,
         cTokens: collateralAssets,
@@ -581,8 +600,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 287678
-      expect(repayBorrowReceipt).toCostLessThan('288000');
+      // Rounding up from 294689
+      expect(repayBorrowReceipt).toCostLessThan('295000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -604,7 +623,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -615,7 +634,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: collateralAssets,
@@ -628,7 +647,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssetsToBeRepaid,
         amounts: borrowedAmountsToBeRepaid,
         cTokens: collateralAssets,
@@ -647,8 +666,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 276172
-      expect(repayBorrowReceipt).toCostLessThan('277000');
+      // Rounding up from 283479
+      expect(repayBorrowReceipt).toCostLessThan('284000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -667,7 +686,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: collateralAssets,
         amounts: collateralAmounts,
         cTokens: collateralAssets,
@@ -678,7 +697,7 @@ describe('receiveCallFromVault', () => {
         vaultProxy: vaultProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: borrowedAmounts,
         cTokens: collateralAssets,
@@ -701,7 +720,7 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy: comptrollerProxyUsed,
         debtPositionManager: fork.deployment.debtPositionManager,
         fundOwner,
-        debtPosition: compoundDebtPosition,
+        debtPositionProxy: compoundDebtPosition.address,
         assets: borrowedAssets,
         amounts: repayAmounts,
         cTokens: collateralAssets,

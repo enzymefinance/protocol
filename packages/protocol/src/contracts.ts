@@ -61,7 +61,7 @@ export * from './codegen/UniswapV2Adapter';
 export * from './codegen/ZeroExV2Adapter';
 
 // Debt positions
-export * from './codegen/CompoundDebtPosition';
+export * from './codegen/CompoundDebtPositionLib';
 
 // Fees
 export * from './codegen/IFee';

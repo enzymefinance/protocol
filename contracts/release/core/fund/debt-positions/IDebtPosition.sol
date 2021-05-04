@@ -16,5 +16,7 @@ interface IDebtPosition {
 
     function getBorrowedAssets() external returns (address[] memory, uint256[] memory);
 
+    function init(bytes memory) external;
+
     function receiveCallFromVault(bytes memory) external;
 }

@@ -169,7 +169,7 @@ describe('debt position actions', () => {
 
       const activeDebtPositionsBefore = await vaultProxy.getActiveDebtPositions.call();
 
-      const removePositionCallArgs = debtPositionRemoveArgs({ debtPosition: activeDebtPositionsBefore[0] });
+      const removePositionCallArgs = debtPositionRemoveArgs({ debtPositionProxy: activeDebtPositionsBefore[0] });
 
       await expect(
         comptrollerProxy

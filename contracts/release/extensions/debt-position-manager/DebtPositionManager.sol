@@ -12,7 +12,8 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../core/fund/debt-positions/CompoundDebtPosition.sol";
+import "../../core/fund/debt-positions/CompoundDebtPositionLib.sol";
+import "../../core/fund/debt-positions/DebtPositionProxy.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
@@ -43,6 +44,7 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
     // Compound specific params
     address private immutable COMPOUND_COMPTROLLER;
+    address private immutable COMPOUND_DEBT_POSITION_LIB;
     address private immutable COMPOUND_PRICE_FEED;
 
     address private immutable WETH_TOKEN;
@@ -54,9 +56,11 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         address _primitivePriceFeed,
         address _weth,
         address _compoundPriceFeed,
-        address _compoundComptroller
+        address _compoundComptroller,
+        address _compoundDebtPositionLib
     ) public {
         COMPOUND_COMPTROLLER = _compoundComptroller;
+        COMPOUND_DEBT_POSITION_LIB = _compoundDebtPositionLib;
         COMPOUND_PRICE_FEED = _compoundPriceFeed;
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -154,8 +158,15 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
     /// Currently only handles the logic for Compound.
     /// Can be extended through an additional _callArgs param to support more protocols.
     function __createDebtPosition(address _vaultProxy) private {
+        bytes memory initData = abi.encode(_vaultProxy);
+
+        bytes memory constructData = abi.encodeWithSelector(
+            CompoundDebtPositionLib.init.selector,
+            initData
+        );
+
         address debtPosition = address(
-            new CompoundDebtPosition(_vaultProxy, COMPOUND_COMPTROLLER, WETH_TOKEN)
+            new DebtPositionProxy(constructData, COMPOUND_DEBT_POSITION_LIB, COMPOUND_PROTOCOL_ID)
         );
 
         emit DebtPositionDeployed(msg.sender, _vaultProxy, debtPosition, COMPOUND_PROTOCOL_ID, "");
