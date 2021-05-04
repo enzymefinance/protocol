@@ -113,11 +113,6 @@ contract ComptrollerLib is IComptroller {
         reentranceLocked = false;
     }
 
-    modifier onlyActive() {
-        __assertIsActive(vaultProxy);
-        _;
-    }
-
     modifier onlyNotPaused() {
         __assertNotPaused();
         _;
@@ -138,22 +133,12 @@ contract ComptrollerLib is IComptroller {
     // Modifiers are inefficient in terms of contract size,
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
-    /// @dev Since vaultProxy is set during activate(),
-    /// we can check that var rather than storing additional state
-    function __assertIsActive(address _vaultProxy) private pure {
-        require(_vaultProxy != address(0), "Fund not active");
-    }
-
     function __assertIsFundDeployer(address _who) private view {
         require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
     }
 
     function __assertIsOwner(address _who) private view {
         require(_who == IVault(vaultProxy).getOwner(), "Only fund owner callable");
-    }
-
-    function __assertLowLevelCall(bool _success, bytes memory _returnData) private pure {
-        require(_success, string(_returnData));
     }
 
     function __assertNotPaused() private view {
@@ -218,7 +203,7 @@ contract ComptrollerLib is IComptroller {
         address _extension,
         uint256 _actionId,
         bytes calldata _callArgs
-    ) external override onlyNotPaused onlyActive locksReentrance allowsPermissionedVaultAction {
+    ) external override onlyNotPaused locksReentrance allowsPermissionedVaultAction {
         require(
             _extension == FEE_MANAGER ||
                 _extension == INTEGRATION_MANAGER ||
@@ -232,8 +217,6 @@ contract ComptrollerLib is IComptroller {
     /// @notice Sets or unsets an override on a release-wide pause
     /// @param _nextOverridePause True if the pause should be overrode
     function setOverridePause(bool _nextOverridePause) external onlyOwner {
-        require(_nextOverridePause != overridePause, "setOverridePause: Value already set");
-
         overridePause = _nextOverridePause;
 
         emit OverridePauseSet(_nextOverridePause);
@@ -247,7 +230,7 @@ contract ComptrollerLib is IComptroller {
         address _contract,
         bytes4 _selector,
         bytes calldata _encodedArgs
-    ) external onlyNotPaused onlyActive onlyOwner {
+    ) external onlyNotPaused onlyOwner {
         require(
             IFundDeployer(FUND_DEPLOYER).isAllowedVaultCall(
                 _contract,
@@ -279,7 +262,6 @@ contract ComptrollerLib is IComptroller {
         external
         override
         onlyNotPaused
-        onlyActive
     {
         __assertPermissionedVaultAction(msg.sender, _action);
 
@@ -664,10 +646,7 @@ contract ComptrollerLib is IComptroller {
         allowsPermissionedVaultAction
         returns (uint256 sharesReceived_)
     {
-        require(_investmentAmount > 0, "buyShares: Empty _investmentAmount");
-
         address vaultProxyCopy = vaultProxy;
-        __assertIsActive(vaultProxyCopy);
         require(
             !IDispatcher(DISPATCHER).hasMigrationRequest(vaultProxyCopy),
             "buyShares: Pending migration"
