@@ -1,51 +1,22 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { EthereumTestnetProvider } from '@enzymefinance/hardhat';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  Dispatcher,
   GuaranteedRedemption,
   guaranteedRedemptionArgs,
   PolicyHook,
   validateRulePreCoIArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
-
-async function snapshot() {
-  const { deployer, accounts, deployment, config } = await deployProtocolFixture();
-
-  const [EOAPolicyManager, ...remainingAccounts] = accounts;
-  const comptrollerProxy = randomAddress();
-
-  const standaloneGuaranteedRedemption = await GuaranteedRedemption.deploy(
-    deployer,
-    EOAPolicyManager,
-    deployment.fundDeployer,
-    config.policies.guaranteedRedemption.redemptionWindowBuffer,
-    [],
-  );
-
-  return {
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    comptrollerProxy,
-    standaloneGuaranteedRedemption: standaloneGuaranteedRedemption.connect(EOAPolicyManager),
-  };
-}
-
-async function getFundDeployerOwner(dispatcher: AddressLike, provider: EthereumTestnetProvider) {
-  const dispatcherContract = new Dispatcher(dispatcher, provider);
-  return dispatcherContract.getOwner();
-}
 
 async function addFundSettings({
   comptrollerProxy,
-  standaloneGuaranteedRedemption,
+  guaranteedRedemption,
   startTimestamp,
   duration,
 }: {
   comptrollerProxy: AddressLike;
-  standaloneGuaranteedRedemption: GuaranteedRedemption;
+  guaranteedRedemption: GuaranteedRedemption;
   startTimestamp: BigNumberish;
   duration: BigNumberish;
 }) {
@@ -54,42 +25,57 @@ async function addFundSettings({
     duration,
   });
 
-  await standaloneGuaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig);
+  await guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig);
+}
+
+async function deployStandaloneGuaranteedRedemption(fork: ProtocolDeployment, signer?: SignerWithAddress) {
+  const [EOAPolicyManager] = fork.accounts.slice(-1);
+
+  const guaranteedRedemption = await GuaranteedRedemption.deploy(
+    fork.deployer,
+    EOAPolicyManager,
+    fork.deployment.fundDeployer,
+    fork.config.policies.guaranteedRedemption.redemptionWindowBuffer,
+    [],
+  );
+  return guaranteedRedemption.connect(signer ? signer : EOAPolicyManager);
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      config: {
-        policies: {
-          guaranteedRedemption: { redemptionWindowBuffer },
-        },
-      },
-      deployment: { policyManager, fundDeployer, guaranteedRedemption, synthetixAdapter },
-    } = await provider.snapshot(snapshot);
+    const guaranteedRedemption = fork.deployment.guaranteedRedemption;
 
     const policyManagerResult = await guaranteedRedemption.getPolicyManager();
-    expect(policyManagerResult).toMatchAddress(policyManager);
+    expect(policyManagerResult).toMatchAddress(fork.deployment.policyManager);
 
     const fundDeployerResult = await guaranteedRedemption.getFundDeployer();
-    expect(fundDeployerResult).toMatchAddress(fundDeployer);
+    expect(fundDeployerResult).toMatchAddress(fork.deployment.fundDeployer);
 
     const redemptionWindowBufferResult = await guaranteedRedemption.getRedemptionWindowBuffer();
-    expect(redemptionWindowBufferResult).toEqBigNumber(redemptionWindowBuffer);
+    expect(redemptionWindowBufferResult).toEqBigNumber(
+      fork.config.policies.guaranteedRedemption.redemptionWindowBuffer,
+    );
 
     const implementedHooksResult = await guaranteedRedemption.implementedHooks();
     expect(implementedHooksResult).toMatchObject([PolicyHook.PreCallOnIntegration]);
 
-    expect(await guaranteedRedemption.adapterCanBlockRedemption(synthetixAdapter)).toBe(true);
+    expect(await guaranteedRedemption.adapterCanBlockRedemption(fork.deployment.synthetixAdapter)).toBe(true);
   });
 });
 
 describe('addFundSettings', () => {
+  let fork: ProtocolDeployment;
+  let comptrollerProxy: AddressLike;
+  let guaranteedRedemption: GuaranteedRedemption;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    comptrollerProxy = randomAddress();
+    guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork);
+  });
+
   it('can only be called by the PolicyManager', async () => {
-    const {
-      deployment: { guaranteedRedemption },
-      comptrollerProxy,
-    } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     const guaranteedRedemptionConfig = guaranteedRedemptionArgs({
       startTimestamp: constants.Zero,
@@ -97,54 +83,46 @@ describe('addFundSettings', () => {
     });
 
     await expect(
-      guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
+      guaranteedRedemption.connect(randomUser).addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('does not allow startTimestamp to be 0 if duration is not 0', async () => {
-    const { standaloneGuaranteedRedemption, comptrollerProxy } = await provider.snapshot(snapshot);
-
     const guaranteedRedemptionConfig = guaranteedRedemptionArgs({
       startTimestamp: constants.Zero,
       duration: constants.One,
     });
     await expect(
-      standaloneGuaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
+      guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
     ).rejects.toBeRevertedWith('duration must be 0 if startTimestamp is 0');
   });
 
   it('does not allow duration to be 0 if startTimestamp is not 0', async () => {
-    const { standaloneGuaranteedRedemption, comptrollerProxy } = await provider.snapshot(snapshot);
-
     const guaranteedRedemptionConfig = guaranteedRedemptionArgs({
       startTimestamp: constants.One,
       duration: constants.Zero,
     });
     await expect(
-      standaloneGuaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
+      guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
     ).rejects.toBeRevertedWith('duration must be between 1 second and 23 hours');
   });
 
   it('does not allow duration to be >23 hours', async () => {
-    const { standaloneGuaranteedRedemption, comptrollerProxy } = await provider.snapshot(snapshot);
-
     const guaranteedRedemptionConfig = guaranteedRedemptionArgs({
       startTimestamp: constants.One,
       duration: 23 * 60 * 60 + 1, // 23 hours and 1 second
     });
     await expect(
-      standaloneGuaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
+      guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig),
     ).rejects.toBeRevertedWith('duration must be between 1 second and 23 hours');
   });
 
   it('sets initial config values for fund and fires event', async () => {
-    const { standaloneGuaranteedRedemption, comptrollerProxy } = await provider.snapshot(snapshot);
-
     const startTimestamp = BigNumber.from(1000);
     const duration = BigNumber.from(2000);
 
     const guaranteedRedemptionConfig = guaranteedRedemptionArgs({ startTimestamp, duration });
-    const receipt = await standaloneGuaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig);
+    const receipt = await guaranteedRedemption.addFundSettings(comptrollerProxy, guaranteedRedemptionConfig);
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
@@ -152,8 +130,8 @@ describe('addFundSettings', () => {
       duration,
     });
 
-    const redemptionWindow = await standaloneGuaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy);
-    expect(redemptionWindow).toMatchFunctionOutput(standaloneGuaranteedRedemption.getRedemptionWindowForFund, {
+    const redemptionWindow = await guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy);
+    expect(redemptionWindow).toMatchFunctionOutput(guaranteedRedemption.getRedemptionWindowForFund, {
       startTimestamp,
       duration,
     });
@@ -161,57 +139,35 @@ describe('addFundSettings', () => {
 });
 
 describe('addRedemptionBlockingAdapters', () => {
-  it('can only be called by fundDeployerOwner', async () => {
-    const { standaloneGuaranteedRedemption } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let guaranteedRedemption: GuaranteedRedemption;
 
-    await expect(standaloneGuaranteedRedemption.addRedemptionBlockingAdapters([])).rejects.toBeRevertedWith(
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork, fork.deployer);
+  });
+
+  it('can only be called by fundDeployerOwner', async () => {
+    const [randomUser] = fork.accounts;
+
+    await expect(guaranteedRedemption.connect(randomUser).addRedemptionBlockingAdapters([])).rejects.toBeRevertedWith(
       'Only the FundDeployer owner can call this function',
     );
   });
 
   it('does not allow adapters to be empty', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     await expect(guaranteedRedemption.addRedemptionBlockingAdapters([])).rejects.toBeRevertedWith(
       '_adapters cannot be empty',
     );
   });
 
   it('does not allow adapters to contain address 0', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     await expect(guaranteedRedemption.addRedemptionBlockingAdapters([constants.AddressZero])).rejects.toBeRevertedWith(
       'adapter cannot be empty',
     );
   });
 
   it('does not allow adding an already added adapter', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
     const receipt = await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
@@ -223,78 +179,46 @@ describe('addRedemptionBlockingAdapters', () => {
   });
 
   it('correctly handles adding an adapter and fires an event', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
     const receipt = await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
 
     assertEvent(receipt, 'AdapterAdded', { adapter });
 
-    expect(await standaloneGuaranteedRedemption.adapterCanBlockRedemption(adapter)).toBe(true);
+    expect(await guaranteedRedemption.adapterCanBlockRedemption(adapter)).toBe(true);
   });
 });
 
 describe('removeRedemptionBlockingAdapters', () => {
-  it('can only be called by fundDeployerOwner', async () => {
-    const { standaloneGuaranteedRedemption } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let guaranteedRedemption: GuaranteedRedemption;
 
-    await expect(standaloneGuaranteedRedemption.removeRedemptionBlockingAdapters([])).rejects.toBeRevertedWith(
-      'Only the FundDeployer owner can call this function',
-    );
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork, fork.deployer);
+  });
+
+  it('can only be called by fundDeployerOwner', async () => {
+    const [randomUser] = fork.accounts;
+
+    await expect(
+      guaranteedRedemption.connect(randomUser).removeRedemptionBlockingAdapters([]),
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
   });
 
   it('does not allow adapters to be empty', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     await expect(guaranteedRedemption.removeRedemptionBlockingAdapters([])).rejects.toBeRevertedWith(
       '_adapters cannot be empty',
     );
   });
 
   it('does not allow removing an adapter which is not added yet', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     await expect(guaranteedRedemption.removeRedemptionBlockingAdapters([randomAddress()])).rejects.toBeRevertedWith(
       'adapter is not added',
     );
   });
 
   it('correctly handles removing adapters and fires events', async () => {
-    const {
-      deployment: { dispatcher },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
     await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
@@ -303,56 +227,35 @@ describe('removeRedemptionBlockingAdapters', () => {
 
     assertEvent(receipt, 'AdapterRemoved', { adapter });
 
-    expect(await standaloneGuaranteedRedemption.adapterCanBlockRedemption(adapter)).toBe(false);
+    expect(await guaranteedRedemption.adapterCanBlockRedemption(adapter)).toBe(false);
   });
 });
 
 describe('setRedemptionWindowBuffer', () => {
-  it('can only be called by fundDeployerOwner', async () => {
-    const { standaloneGuaranteedRedemption } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let guaranteedRedemption: GuaranteedRedemption;
 
-    await expect(standaloneGuaranteedRedemption.setRedemptionWindowBuffer(0)).rejects.toBeRevertedWith(
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork, fork.deployer);
+  });
+
+  it('can only be called by fundDeployerOwner', async () => {
+    const [randomUser] = fork.accounts;
+
+    await expect(guaranteedRedemption.connect(randomUser).setRedemptionWindowBuffer(0)).rejects.toBeRevertedWith(
       'Only the FundDeployer owner can call this function',
     );
   });
 
   it('does not allow new redemptionWindowBuffer to be the current redemptionWindowBuffer', async () => {
-    const {
-      deployment: { dispatcher },
-      config: {
-        policies: {
-          guaranteedRedemption: { redemptionWindowBuffer },
-        },
-      },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
-    await expect(guaranteedRedemption.setRedemptionWindowBuffer(redemptionWindowBuffer)).rejects.toBeRevertedWith(
-      'Value already set',
-    );
+    await expect(
+      guaranteedRedemption.setRedemptionWindowBuffer(fork.config.policies.guaranteedRedemption.redemptionWindowBuffer),
+    ).rejects.toBeRevertedWith('Value already set');
   });
 
   it('correctly sets the redemptionWindowBuffer and fires an event', async () => {
-    const {
-      deployment: { dispatcher },
-      config: {
-        policies: {
-          guaranteedRedemption: { redemptionWindowBuffer: prevBuffer },
-        },
-      },
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
+    const prevBuffer = fork.config.policies.guaranteedRedemption.redemptionWindowBuffer;
     const nextBuffer = BigNumber.from(100);
 
     const receipt = await guaranteedRedemption.setRedemptionWindowBuffer(nextBuffer);
@@ -364,16 +267,24 @@ describe('setRedemptionWindowBuffer', () => {
 });
 
 describe('validateRule', () => {
-  it('returns true if there is no adapter in the policy', async () => {
-    const { comptrollerProxy, standaloneGuaranteedRedemption } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let comptrollerProxy: AddressLike;
+  let guaranteedRedemption: GuaranteedRedemption;
 
+  beforeEach(async () => {
+    fork = await deployProtocolFixture();
+    comptrollerProxy = randomAddress();
+    guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork);
+  });
+
+  it('returns true if there is no adapter in the policy', async () => {
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
       adapter: randomAddress(),
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
@@ -381,36 +292,20 @@ describe('validateRule', () => {
   });
 
   it('returns true if the adapter is listed and the current time is before the first redemption window', async () => {
-    const {
-      deployment: { dispatcher },
-      config: {
-        policies: {
-          guaranteedRedemption: { redemptionWindowBuffer },
-        },
-      },
-      comptrollerProxy,
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
 
     // Approximate the difference between now and the block.timestamp in validateRule by adding 5 seconds
     await addFundSettings({
       comptrollerProxy,
-      standaloneGuaranteedRedemption,
-      startTimestamp: now.add(redemptionWindowBuffer).add(BigNumber.from(5)),
+      guaranteedRedemption,
+      startTimestamp: now.add(fork.config.policies.guaranteedRedemption.redemptionWindowBuffer).add(BigNumber.from(5)),
       duration: 300,
     });
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
-    await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
+    await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -418,39 +313,28 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
   });
 
-  it('returns true if the adapter is listed and current time is beyond the lst redemption window', async () => {
-    const {
-      deployment: { dispatcher },
-      comptrollerProxy,
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
+  it('returns true if the adapter is listed and current time is beyond the last redemption window', async () => {
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
     const duration = BigNumber.from(300);
 
     await addFundSettings({
       comptrollerProxy,
-      standaloneGuaranteedRedemption,
+      guaranteedRedemption,
       startTimestamp: now.sub(duration),
       duration: 300,
     });
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
-    await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
+    await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -458,7 +342,7 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
@@ -466,20 +350,9 @@ describe('validateRule', () => {
   });
 
   it('returns false if the adapter is listed and the redemption window is not defined', async () => {
-    const {
-      deployment: { dispatcher },
-      comptrollerProxy,
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
-    await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
+    await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -487,7 +360,7 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
@@ -495,31 +368,20 @@ describe('validateRule', () => {
   });
 
   it('returns false if the adapter is listed and current time is within the redemption window', async () => {
-    const {
-      deployment: { dispatcher },
-      comptrollerProxy,
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
     const duration = BigNumber.from(300);
 
     await addFundSettings({
       comptrollerProxy,
-      standaloneGuaranteedRedemption,
+      guaranteedRedemption,
       startTimestamp: now.add(duration),
       duration,
     });
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
-    await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
+    await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -527,7 +389,7 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
@@ -535,31 +397,20 @@ describe('validateRule', () => {
   });
 
   it('returns false if the adapter is listed and current time is within the redemption window buffer', async () => {
-    const {
-      deployment: { dispatcher },
-      comptrollerProxy,
-      standaloneGuaranteedRedemption,
-    } = await provider.snapshot(snapshot);
-
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
     const duration = BigNumber.from(300);
 
     await addFundSettings({
       comptrollerProxy,
-      standaloneGuaranteedRedemption,
+      guaranteedRedemption,
       startTimestamp: now.add(BigNumber.from(10)), // approximate to block.timestamp in validateRule by adding 10 seconds
       duration,
     });
 
-    const fundDeployerOwner = await getFundDeployerOwner(dispatcher, provider);
-    const guaranteedRedemption = standaloneGuaranteedRedemption.connect(
-      await provider.getSignerWithAddress(fundDeployerOwner),
-    );
-
     const adapter = randomAddress();
 
-    await guaranteedRedemption.addRedemptionBlockingAdapters([adapter]);
+    await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
     const preCoIArgs = validateRulePreCoIArgs({
@@ -567,7 +418,7 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
     });
 
-    const validateRuleResult = await standaloneGuaranteedRedemption.validateRule
+    const validateRuleResult = await guaranteedRedemption.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
       .call();
 
@@ -577,14 +428,15 @@ describe('validateRule', () => {
 
 describe('calcLatestRedemptionWindowStart', () => {
   it('returns correct latest startTimestamp after several days', async () => {
-    const { standaloneGuaranteedRedemption } = await provider.snapshot(snapshot);
+    const fork = await deployProtocolFixture();
+    const guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork);
 
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
     const twoDays = 172800;
     const startTimestamp = now.sub(twoDays).sub(3);
 
-    const latestStartTimestamp = await standaloneGuaranteedRedemption.calcLatestRedemptionWindowStart(startTimestamp);
+    const latestStartTimestamp = await guaranteedRedemption.calcLatestRedemptionWindowStart(startTimestamp);
 
     expect(latestStartTimestamp).toEqBigNumber(startTimestamp.add(twoDays));
   });

@@ -4,42 +4,18 @@ import {
   minMaxInvestmentArgs,
   PolicyHook,
   validateRulePreBuySharesArgs,
-  WETH,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
-
-async function snapshot() {
-  const {
-    deployer,
-    deployment,
-    config,
-    accounts: [EOAPolicyManager, ...remainingAccounts],
-  } = await deployProtocolFixture();
-
-  const minMaxInvestment = await MinMaxInvestment.deploy(deployer, EOAPolicyManager);
-  const permissionedMinMaxInvestment = minMaxInvestment.connect(EOAPolicyManager);
-  const denominationAsset = new WETH(config.weth, whales.weth);
-
-  return {
-    deployer,
-    denominationAsset,
-    accounts: remainingAccounts,
-    deployment,
-    config,
-    comptrollerProxy: randomAddress(),
-    permissionedMinMaxInvestment,
-  };
-}
 
 async function addFundSettings({
   comptrollerProxy,
-  permissionedMinMaxInvestment,
+  minMaxInvestment,
   minInvestmentAmount,
   maxInvestmentAmount,
 }: {
   comptrollerProxy: AddressLike;
-  permissionedMinMaxInvestment: MinMaxInvestment;
+  minMaxInvestment: MinMaxInvestment;
   minInvestmentAmount: BigNumberish;
   maxInvestmentAmount: BigNumberish;
 }) {
@@ -48,17 +24,62 @@ async function addFundSettings({
     maxInvestmentAmount,
   });
 
-  await permissionedMinMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig);
+  await minMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig);
+}
+
+async function updateFundSettings({
+  comptrollerProxy,
+  minMaxInvestment,
+  minInvestmentAmount,
+  maxInvestmentAmount,
+}: {
+  comptrollerProxy: AddressLike;
+  minMaxInvestment: MinMaxInvestment;
+  minInvestmentAmount: BigNumberish;
+  maxInvestmentAmount: BigNumberish;
+}) {
+  const minMaxInvestmentConfig = minMaxInvestmentArgs({
+    minInvestmentAmount,
+    maxInvestmentAmount,
+  });
+
+  await minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig);
+}
+
+async function deployAndConfigureStandaloneMinMaxInvestment(
+  fork: ProtocolDeployment,
+  {
+    comptrollerProxy = '0x',
+    minInvestmentAmount = 0,
+    maxInvestmentAmount = 0,
+  }: {
+    comptrollerProxy?: AddressLike;
+    minInvestmentAmount?: BigNumberish;
+    maxInvestmentAmount?: BigNumberish;
+  },
+) {
+  const [EOAPolicyManager] = fork.accounts.slice(-1);
+
+  let minMaxInvestment = await MinMaxInvestment.deploy(fork.deployer, EOAPolicyManager);
+  minMaxInvestment = minMaxInvestment.connect(EOAPolicyManager);
+
+  if (comptrollerProxy != '0x') {
+    await addFundSettings({
+      comptrollerProxy,
+      minMaxInvestment,
+      minInvestmentAmount,
+      maxInvestmentAmount,
+    });
+  }
+  return minMaxInvestment;
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { policyManager, minMaxInvestment },
-    } = await provider.snapshot(snapshot);
+    const minMaxInvestment = fork.deployment.minMaxInvestment;
 
     const getPolicyManagerCall = await minMaxInvestment.getPolicyManager();
-    expect(getPolicyManagerCall).toMatchAddress(policyManager);
+    expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await minMaxInvestment.implementedHooks();
     expect(implementedHooksCall).toMatchObject([PolicyHook.PreBuyShares]);
@@ -66,34 +87,39 @@ describe('constructor', () => {
 });
 
 describe('addFundSettings', () => {
+  let fork: ProtocolDeployment;
+  let comptrollerProxy: AddressLike;
+  let minMaxInvestment: MinMaxInvestment;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    comptrollerProxy = randomAddress();
+    minMaxInvestment = await deployAndConfigureStandaloneMinMaxInvestment(fork, {});
+  });
+
   it('can only be called by the PolicyManager', async () => {
-    const {
-      deployment: { minMaxInvestment },
-      comptrollerProxy,
-    } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     const minMaxInvestmentConfig = minMaxInvestmentArgs({
       minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
     });
 
-    await expect(minMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig)).rejects.toBeRevertedWith(
-      'Only the PolicyManager can make this call',
-    );
+    await expect(
+      minMaxInvestment.connect(randomUser).addFundSettings(comptrollerProxy, minMaxInvestmentConfig),
+    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('does not allow minInvestmentAmount to be greater than or equal to maxInvestmentAmount unless maxInvestmentAmount is 0', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
     {
       const minMaxInvestmentConfig = minMaxInvestmentArgs({
         minInvestmentAmount: utils.parseEther('1'),
         maxInvestmentAmount: utils.parseEther('1'),
       });
 
-      await expect(
-        permissionedMinMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig),
-      ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
+      await expect(minMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig)).rejects.toBeRevertedWith(
+        'minInvestmentAmount must be less than maxInvestmentAmount',
+      );
     }
 
     const minMaxInvestmentConfig = minMaxInvestmentArgs({
@@ -101,14 +127,12 @@ describe('addFundSettings', () => {
       maxInvestmentAmount: utils.parseEther('1'),
     });
 
-    await expect(
-      permissionedMinMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig),
-    ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
+    await expect(minMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig)).rejects.toBeRevertedWith(
+      'minInvestmentAmount must be less than maxInvestmentAmount',
+    );
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
     const minInvestmentAmount = utils.parseEther('1');
     const maxInvestmentAmount = utils.parseEther('2');
 
@@ -117,7 +141,7 @@ describe('addFundSettings', () => {
       maxInvestmentAmount,
     });
 
-    const receipt = await permissionedMinMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig);
+    const receipt = await minMaxInvestment.addFundSettings(comptrollerProxy, minMaxInvestmentConfig);
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
@@ -125,9 +149,9 @@ describe('addFundSettings', () => {
       maxInvestmentAmount,
     });
 
-    const fundSettings = await permissionedMinMaxInvestment.getFundSettings(comptrollerProxy);
+    const fundSettings = await minMaxInvestment.getFundSettings(comptrollerProxy);
 
-    expect(fundSettings).toMatchFunctionOutput(permissionedMinMaxInvestment.getFundSettings, {
+    expect(fundSettings).toMatchFunctionOutput(minMaxInvestment.getFundSettings, {
       minInvestmentAmount,
       maxInvestmentAmount,
     });
@@ -135,11 +159,18 @@ describe('addFundSettings', () => {
 });
 
 describe('updateFundSettings', () => {
+  let fork: ProtocolDeployment;
+  let comptrollerProxy: AddressLike;
+  let minMaxInvestment: MinMaxInvestment;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    comptrollerProxy = randomAddress();
+    minMaxInvestment = await deployAndConfigureStandaloneMinMaxInvestment(fork, {});
+  });
+
   it('can only be called by the policy manager', async () => {
-    const {
-      deployment: { minMaxInvestment },
-      comptrollerProxy,
-    } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     const minMaxInvestmentConfig = minMaxInvestmentArgs({
       minInvestmentAmount: utils.parseEther('1'),
@@ -147,13 +178,13 @@ describe('updateFundSettings', () => {
     });
 
     await expect(
-      minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+      minMaxInvestment
+        .connect(randomUser)
+        .updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('does not allow minInvestmentAmount to be greater than or equal to maxInvestmentAmount unless maxInvestmentAmount is 0', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
     {
       const minMaxInvestmentConfig = minMaxInvestmentArgs({
         minInvestmentAmount: utils.parseEther('1'),
@@ -161,7 +192,7 @@ describe('updateFundSettings', () => {
       });
 
       await expect(
-        permissionedMinMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+        minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
       ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
     }
     const minMaxInvestmentConfig = minMaxInvestmentArgs({
@@ -170,13 +201,11 @@ describe('updateFundSettings', () => {
     });
 
     await expect(
-      permissionedMinMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+      minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
     ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
   });
 
   it('updates config values for fund and fires events', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
     const minInvestmentAmount = utils.parseEther('3');
     const maxInvestmentAmount = utils.parseEther('4');
 
@@ -185,7 +214,7 @@ describe('updateFundSettings', () => {
       maxInvestmentAmount,
     });
 
-    const receipt = await permissionedMinMaxInvestment.updateFundSettings(
+    const receipt = await minMaxInvestment.updateFundSettings(
       comptrollerProxy,
       randomAddress(),
       minMaxInvestmentConfig,
@@ -197,8 +226,8 @@ describe('updateFundSettings', () => {
       maxInvestmentAmount,
     });
 
-    const fundSettings = await permissionedMinMaxInvestment.getFundSettings(comptrollerProxy);
-    expect(fundSettings).toMatchFunctionOutput(permissionedMinMaxInvestment.getFundSettings, {
+    const fundSettings = await minMaxInvestment.getFundSettings(comptrollerProxy);
+    expect(fundSettings).toMatchFunctionOutput(minMaxInvestment.getFundSettings, {
       minInvestmentAmount,
       maxInvestmentAmount,
     });
@@ -206,16 +235,21 @@ describe('updateFundSettings', () => {
 });
 
 describe('validateRule', () => {
-  it('returns true if the investmentAmount is within bounds', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let comptrollerProxy: AddressLike;
+  let minMaxInvestment: MinMaxInvestment;
 
-    await addFundSettings({
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    comptrollerProxy = randomAddress();
+    minMaxInvestment = await deployAndConfigureStandaloneMinMaxInvestment(fork, {
       comptrollerProxy,
-      permissionedMinMaxInvestment,
       minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
     });
+  });
 
+  it('returns true if the investmentAmount is within bounds', async () => {
     // Only the investmentAmount arg matters for this policy
     const preBuySharesArgs = validateRulePreBuySharesArgs({
       buyer: randomAddress(),
@@ -224,7 +258,7 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+    const validateRuleCall = await minMaxInvestment.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
@@ -232,15 +266,6 @@ describe('validateRule', () => {
   });
 
   it('returns false if the investmentAmount is out of bounds', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
-    await addFundSettings({
-      comptrollerProxy,
-      permissionedMinMaxInvestment,
-      minInvestmentAmount: utils.parseEther('1'),
-      maxInvestmentAmount: utils.parseEther('2'),
-    });
-
     // Only the investmentAmount arg matters for this policy
     const preBuySharesArgs = validateRulePreBuySharesArgs({
       buyer: randomAddress(),
@@ -249,7 +274,7 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+    const validateRuleCall = await minMaxInvestment.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
@@ -257,11 +282,9 @@ describe('validateRule', () => {
   });
 
   it('returns false if both the minInvestmentAmount and maxInvestmentAmount equal to 0 (can be used to temporarily close the fund) unless investmentAmount is 0', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
-    await addFundSettings({
+    await updateFundSettings({
       comptrollerProxy,
-      permissionedMinMaxInvestment,
+      minMaxInvestment,
       minInvestmentAmount: utils.parseEther('0'),
       maxInvestmentAmount: utils.parseEther('0'),
     });
@@ -274,7 +297,7 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+    const validateRuleCall = await minMaxInvestment.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
@@ -282,11 +305,9 @@ describe('validateRule', () => {
   });
 
   it('correctly handles when minInvestmentAmount equals to 0', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
-    await addFundSettings({
+    await updateFundSettings({
       comptrollerProxy,
-      permissionedMinMaxInvestment,
+      minMaxInvestment,
       minInvestmentAmount: utils.parseEther('0'),
       maxInvestmentAmount: utils.parseEther('1'),
     });
@@ -300,7 +321,7 @@ describe('validateRule', () => {
         minSharesQuantity: 1,
       });
 
-      const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+      const validateRuleCall = await minMaxInvestment.validateRule
         .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
         .call();
 
@@ -315,7 +336,7 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+    const validateRuleCall = await minMaxInvestment.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
@@ -323,11 +344,9 @@ describe('validateRule', () => {
   });
 
   it('correctly handles when maxInvestmentAmount equals to 0', async () => {
-    const { comptrollerProxy, permissionedMinMaxInvestment } = await provider.snapshot(snapshot);
-
     await addFundSettings({
       comptrollerProxy,
-      permissionedMinMaxInvestment,
+      minMaxInvestment,
       minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('0'),
     });
@@ -341,7 +360,7 @@ describe('validateRule', () => {
         minSharesQuantity: 1,
       });
 
-      const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+      const validateRuleCall = await minMaxInvestment.validateRule
         .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
         .call();
 
@@ -356,7 +375,7 @@ describe('validateRule', () => {
       minSharesQuantity: 1,
     });
 
-    const validateRuleCall = await permissionedMinMaxInvestment.validateRule
+    const validateRuleCall = await minMaxInvestment.validateRule
       .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
       .call();
 
