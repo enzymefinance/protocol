@@ -380,11 +380,7 @@ contract PerformanceFee is FeeBase {
             }
 
             // Assets have not yet been withdrawn
-            uint256 gavDecrease = sharesDecrease
-                .mul(_gav)
-                .mul(SHARE_UNIT)
-                .div(totalSharesSupply)
-                .div(denominationAssetUnit);
+            uint256 gavDecrease = _gav.mul(sharesDecrease).div(totalSharesSupply);
 
             nextGav = nextGav.sub(gavDecrease);
             if (nextGav == 0) {
