@@ -40,8 +40,8 @@ const expectedGasCosts = {
     weth: 450000,
   },
   'buy shares: max assets': {
-    usdc: 1449000,
-    weth: 1244000,
+    usdc: 1450000,
+    weth: 1245000,
   },
   'calc gav: 20 assets': {
     usdc: 977000,
@@ -63,7 +63,7 @@ const expectedGasCosts = {
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2868000,
+    usdc: 2869000,
     weth: 2664000,
   },
   // Kyber is used here because it is one of the most expensive.

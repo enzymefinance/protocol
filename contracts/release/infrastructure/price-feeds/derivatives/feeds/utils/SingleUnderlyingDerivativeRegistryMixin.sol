@@ -11,20 +11,20 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../utils/DispatcherOwnerMixin.sol";
+import "../../../../../extensions/utils/FundDeployerOwnerMixin.sol";
 
 /// @title SingleUnderlyingDerivativeRegistryMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Mixin for derivative price feeds that handle multiple derivatives
 /// that each have a single underlying asset
-abstract contract SingleUnderlyingDerivativeRegistryMixin is DispatcherOwnerMixin {
+abstract contract SingleUnderlyingDerivativeRegistryMixin is FundDeployerOwnerMixin {
     event DerivativeAdded(address indexed derivative, address indexed underlying);
 
     event DerivativeRemoved(address indexed derivative);
 
     mapping(address => address) private derivativeToUnderlying;
 
-    constructor(address _dispatcher) public DispatcherOwnerMixin(_dispatcher) {}
+    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     /// @notice Adds derivatives with corresponding underlyings to the price feed
     /// @param _derivatives The derivatives to add
@@ -32,7 +32,7 @@ abstract contract SingleUnderlyingDerivativeRegistryMixin is DispatcherOwnerMixi
     function addDerivatives(address[] memory _derivatives, address[] memory _underlyings)
         external
         virtual
-        onlyDispatcherOwner
+        onlyFundDeployerOwner
     {
         require(_derivatives.length > 0, "addDerivatives: Empty _derivatives");
         require(_derivatives.length == _underlyings.length, "addDerivatives: Unequal arrays");
@@ -55,7 +55,7 @@ abstract contract SingleUnderlyingDerivativeRegistryMixin is DispatcherOwnerMixi
 
     /// @notice Removes derivatives from the price feed
     /// @param _derivatives The derivatives to remove
-    function removeDerivatives(address[] memory _derivatives) external onlyDispatcherOwner {
+    function removeDerivatives(address[] memory _derivatives) external onlyFundDeployerOwner {
         require(_derivatives.length > 0, "removeDerivatives: Empty _derivatives");
 
         for (uint256 i; i < _derivatives.length; i++) {

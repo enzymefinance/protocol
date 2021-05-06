@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
   const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
   const valueInterpreter = await get('ValueInterpreter');
   const derivativePriceFeed = await get('AggregatedDerivativePriceFeed');
@@ -19,7 +19,7 @@ const fn: DeployFunction = async function (hre) {
   const pools = Object.values(config.uniswap.pools);
   const uniswapPoolPriceFeed = await deploy('UniswapV2PoolPriceFeed', {
     args: [
-      dispatcher.address,
+      fundDeployer.address,
       derivativePriceFeed.address,
       chainlinkPriceFeed.address,
       valueInterpreter.address,
@@ -46,6 +46,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'UniswapV2PoolPriceFeed'];
-fn.dependencies = ['Config', 'Dispatcher', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed', 'ValueInterpreter'];
+fn.dependencies = ['Config', 'FundDeployer', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed', 'ValueInterpreter'];
 
 export default fn;

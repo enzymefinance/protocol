@@ -11,11 +11,11 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
 
   const ctokens = Object.values(config.compound.ctokens);
   await deploy('CompoundPriceFeed', {
-    args: [dispatcher.address, config.weth, config.compound.ceth, ctokens] as CompoundPriceFeedArgs,
+    args: [fundDeployer.address, config.weth, config.compound.ceth, ctokens] as CompoundPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -23,6 +23,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'CompoundPriceFeed'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Config', 'FundDeployer'];
 
 export default fn;

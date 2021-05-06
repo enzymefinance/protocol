@@ -6,42 +6,37 @@ import { constants } from 'ethers';
 async function snapshot() {
   const {
     deployer,
-    accounts: [dispatcherOwner],
-    deployment: { dispatcher },
+    deployment: { fundDeployer },
+    accounts: [randomUser],
   } = await deployProtocolFixture();
-
-  // Update the dispatcher so that the deployer is no longer the owner
-  await dispatcher.setNominatedOwner(dispatcherOwner);
-  await dispatcher.connect(dispatcherOwner).claimOwnership();
 
   const testSingleUnderlyingDerivativeRegistry = await TestSingleUnderlyingDerivativeRegistry.deploy(
     deployer,
-    dispatcher,
+    fundDeployer,
   );
 
   return {
-    deployer,
-    dispatcher,
-    dispatcherOwner,
-    testSingleUnderlyingDerivativeRegistry: testSingleUnderlyingDerivativeRegistry.connect(dispatcherOwner),
+    fundDeployer,
+    randomUser,
+    testSingleUnderlyingDerivativeRegistry,
   };
 }
 
 describe('constructor', () => {
   it('sets initial storage vars', async () => {
-    const { dispatcher, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
+    const { fundDeployer, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
-    expect(await testSingleUnderlyingDerivativeRegistry.getDispatcher()).toMatchAddress(dispatcher);
+    expect(await testSingleUnderlyingDerivativeRegistry.getFundDeployer()).toMatchAddress(fundDeployer);
   });
 });
 
 describe('addDerivatives', () => {
-  it('does not allow a non-Dispatcher owner', async () => {
-    const { deployer, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
+  it('does not allow a non-FundDeployer owner', async () => {
+    const { randomUser, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     await expect(
-      testSingleUnderlyingDerivativeRegistry.connect(deployer).addDerivatives([randomAddress()], [randomAddress()]),
-    ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+      testSingleUnderlyingDerivativeRegistry.connect(randomUser).addDerivatives([randomAddress()], [randomAddress()]),
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
   });
 
   it('does not allow an empty _derivatives array', async () => {
@@ -118,12 +113,12 @@ describe('addDerivatives', () => {
 });
 
 describe('removeDerivatives', () => {
-  it('does not allow a non-Dispatcher owner', async () => {
-    const { deployer, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
+  it('does not allow a non-FundDeployer owner', async () => {
+    const { randomUser, testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     await expect(
-      testSingleUnderlyingDerivativeRegistry.connect(deployer).removeDerivatives([randomAddress()]),
-    ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+      testSingleUnderlyingDerivativeRegistry.connect(randomUser).removeDerivatives([randomAddress()]),
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
   });
 
   it('does not allow an empty _derivatives array', async () => {

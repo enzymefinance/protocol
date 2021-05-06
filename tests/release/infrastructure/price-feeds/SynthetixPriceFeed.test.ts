@@ -155,7 +155,7 @@ describe('synths registry', () => {
 
       await expect(
         synthetixPriceFeed.connect(arbitraryUser).addSynths([newSynth1, newSynth2]),
-      ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
     it('does not allow an empty _synths param', async () => {

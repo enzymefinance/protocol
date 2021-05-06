@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
 
   const assets = Object.keys(config.primitives).map((key) => {
     if (!config.chainlink.aggregators[key]) {
@@ -29,7 +29,7 @@ const fn: DeployFunction = async function (hre) {
 
   await deploy('ChainlinkPriceFeed', {
     args: [
-      dispatcher.address,
+      fundDeployer.address,
       config.weth,
       config.chainlink.ethusd,
       primitives,
@@ -43,6 +43,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'ChainlinkPriceFeed'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Config', 'FundDeployer'];
 
 export default fn;

@@ -11,10 +11,10 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
 
   const curvePriceFeed = await deploy('CurvePriceFeed', {
-    args: [dispatcher.address, config.curve.addressProvider] as CurvePriceFeedArgs,
+    args: [fundDeployer.address, config.curve.addressProvider] as CurvePriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -41,6 +41,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'CurvePriceFeed'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Config', 'FundDeployer'];
 
 export default fn;

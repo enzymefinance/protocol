@@ -13,7 +13,7 @@ describe('constructor', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
 
     expect(await curvePriceFeed.getAddressProvider()).toMatchAddress(fork.config.curve.addressProvider);
-    expect(await curvePriceFeed.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
+    expect(await curvePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 

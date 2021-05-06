@@ -102,7 +102,7 @@ describe('addPoolTokens', () => {
     } = await provider.snapshot(snapshot);
 
     await expect(uniswapV2PoolPriceFeed.connect(randomUser).addPoolTokens([randomAddress()])).rejects.toBeRevertedWith(
-      'Only the Dispatcher owner can call this function',
+      'Only the FundDeployer owner can call this function',
     );
   });
 

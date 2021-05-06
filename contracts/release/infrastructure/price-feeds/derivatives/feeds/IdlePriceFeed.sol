@@ -24,7 +24,10 @@ contract IdlePriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivativeRegist
 
     uint256 private constant IDLE_TOKEN_UNIT = 10**18;
 
-    constructor(address _dispatcher) public SingleUnderlyingDerivativeRegistryMixin(_dispatcher) {}
+    constructor(address _fundDeployer)
+        public
+        SingleUnderlyingDerivativeRegistryMixin(_fundDeployer)
+    {}
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
     /// @param _derivative The derivative to convert

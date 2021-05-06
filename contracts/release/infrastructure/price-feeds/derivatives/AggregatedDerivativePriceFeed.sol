@@ -11,14 +11,14 @@
 
 pragma solidity 0.6.12;
 
-import "../../utils/DispatcherOwnerMixin.sol";
+import "../../../extensions/utils/FundDeployerOwnerMixin.sol";
 import "./IAggregatedDerivativePriceFeed.sol";
 
 /// @title AggregatedDerivativePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Aggregates multiple derivative price feeds (e.g., Compound, Chai) and dispatches
 /// rate requests to the appropriate feed
-contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, DispatcherOwnerMixin {
+contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, FundDeployerOwnerMixin {
     event DerivativeAdded(address indexed derivative, address priceFeed);
 
     event DerivativeRemoved(address indexed derivative);
@@ -32,10 +32,10 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
     mapping(address => address) private derivativeToPriceFeed;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address[] memory _derivatives,
         address[] memory _priceFeeds
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         if (_derivatives.length > 0) {
             __addDerivatives(_derivatives, _priceFeeds);
         }
@@ -80,7 +80,7 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
     /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
     function addDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
         external
-        onlyDispatcherOwner
+        onlyFundDeployerOwner
     {
         require(_derivatives.length > 0, "addDerivatives: _derivatives cannot be empty");
 
@@ -89,7 +89,7 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
 
     /// @notice Removes a list of derivatives
     /// @param _derivatives The derivatives to remove
-    function removeDerivatives(address[] calldata _derivatives) external onlyDispatcherOwner {
+    function removeDerivatives(address[] calldata _derivatives) external onlyFundDeployerOwner {
         require(_derivatives.length > 0, "removeDerivatives: _derivatives cannot be empty");
 
         for (uint256 i = 0; i < _derivatives.length; i++) {
@@ -109,7 +109,7 @@ contract AggregatedDerivativePriceFeed is IAggregatedDerivativePriceFeed, Dispat
     /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
     function updateDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
         external
-        onlyDispatcherOwner
+        onlyFundDeployerOwner
     {
         require(_derivatives.length > 0, "updateDerivatives: _derivatives cannot be empty");
         require(

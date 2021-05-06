@@ -76,7 +76,7 @@ describe('addCTokens', () => {
 
     await expect(
       compoundPriceFeed.connect(arbitraryUser).addCTokens([newCToken1, newCToken2]),
-    ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
   });
 
   it('does not allow an empty _cTokens param', async () => {

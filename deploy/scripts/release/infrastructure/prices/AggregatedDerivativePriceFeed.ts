@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
   const aavePriceFeed = await get('AavePriceFeed');
   const alphaHomoraV1PriceFeed = await get('AlphaHomoraV1PriceFeed');
   const chaiPriceFeed = await get('ChaiPriceFeed');
@@ -44,7 +44,7 @@ const fn: DeployFunction = async function (hre) {
   const feeds = derivativePairs.map(([, feed]) => feed);
 
   await deploy('AggregatedDerivativePriceFeed', {
-    args: [dispatcher.address, derivatives, feeds] as AggregatedDerivativePriceFeedArgs,
+    args: [fundDeployer.address, derivatives, feeds] as AggregatedDerivativePriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -54,7 +54,7 @@ const fn: DeployFunction = async function (hre) {
 fn.tags = ['Release', 'AggregatedDerivativePriceFeed'];
 fn.dependencies = [
   'Config',
-  'Dispatcher',
+  'FundDeployer',
   'AavePriceFeed',
   'AlphaHomoraV1PriceFeed',
   'CurvePriceFeed',

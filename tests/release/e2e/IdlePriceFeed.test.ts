@@ -27,7 +27,7 @@ describe('constructor', () => {
     }
 
     // SingleUnderlyingDerivativeRegistryMixin
-    expect(await idlePriceFeed.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
+    expect(await idlePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 

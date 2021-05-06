@@ -12,14 +12,14 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../extensions/utils/FundDeployerOwnerMixin.sol";
 import "../../../../interfaces/ICERC20.sol";
-import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CompoundPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Compound Tokens (cTokens)
-contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event CTokenAdded(address indexed cToken, address indexed token);
@@ -29,11 +29,11 @@ contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     mapping(address => address) private cTokenToToken;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address _weth,
         address _ceth,
         address[] memory cERC20Tokens
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         // Set cEth
         cTokenToToken[_ceth] = _weth;
         emit CTokenAdded(_ceth, _weth);
@@ -81,7 +81,7 @@ contract CompoundPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     /// @notice Adds cTokens to the price feed
     /// @param _cTokens cTokens to add
     /// @dev Only allows CERC20 tokens. CEther is set in the constructor.
-    function addCTokens(address[] calldata _cTokens) external onlyDispatcherOwner {
+    function addCTokens(address[] calldata _cTokens) external onlyFundDeployerOwner {
         __addCERC20Tokens(_cTokens);
     }
 

@@ -7,7 +7,7 @@ async function snapshot() {
   const {
     accounts: [arbitraryUser],
     deployer,
-    deployment: { dispatcher, chainlinkPriceFeed },
+    deployment: { chainlinkPriceFeed, fundDeployer },
     config: {
       weth,
       primitives,
@@ -34,7 +34,7 @@ async function snapshot() {
     primitives,
     weth,
     deployer,
-    dispatcher,
+    fundDeployer,
     chainlinkPriceFeed,
     aggregatorMocks,
     primitiveMocks,
@@ -44,14 +44,16 @@ async function snapshot() {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const { dispatcher, chainlinkPriceFeed, weth, primitives, aggregators, ethusd } = await provider.snapshot(snapshot);
+    const { fundDeployer, chainlinkPriceFeed, weth, primitives, aggregators, ethusd } = await provider.snapshot(
+      snapshot,
+    );
 
-    const storedDispatcher = await chainlinkPriceFeed.getDispatcher();
+    const storedFundDeployer = await chainlinkPriceFeed.getFundDeployer();
     const storedWeth = await chainlinkPriceFeed.getWethToken();
     const storedEthUsdAggregator = await chainlinkPriceFeed.getEthUsdAggregator();
 
     // Check variables
-    expect(storedDispatcher).toMatchAddress(dispatcher);
+    expect(storedFundDeployer).toMatchAddress(fundDeployer);
     expect(storedWeth).toMatchAddress(weth);
     expect(storedEthUsdAggregator).toMatchAddress(ethusd);
 

@@ -12,18 +12,18 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../extensions/utils/FundDeployerOwnerMixin.sol";
 import "../../../../interfaces/ISynthetix.sol";
 import "../../../../interfaces/ISynthetixAddressResolver.sol";
 import "../../../../interfaces/ISynthetixExchangeRates.sol";
 import "../../../../interfaces/ISynthetixProxyERC20.sol";
 import "../../../../interfaces/ISynthetixSynth.sol";
-import "../../../utils/DispatcherOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title SynthetixPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Synthetix oracles as price sources
-contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+contract SynthetixPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event SynthAdded(address indexed synth, bytes32 currencyKey);
@@ -41,11 +41,11 @@ contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     mapping(address => bytes32) private synthToCurrencyKey;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address _addressResolver,
         address _sUSD,
         address[] memory _synths
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         ADDRESS_RESOLVER = _addressResolver;
         SUSD = _sUSD;
 
@@ -101,7 +101,7 @@ contract SynthetixPriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Adds Synths to the price feed
     /// @param _synths Synths to add
-    function addSynths(address[] calldata _synths) external onlyDispatcherOwner {
+    function addSynths(address[] calldata _synths) external onlyFundDeployerOwner {
         require(_synths.length > 0, "addSynths: Empty _synths");
 
         __addSynths(_synths);
