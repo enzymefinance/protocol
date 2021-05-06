@@ -940,7 +940,7 @@ contract CurveLiquidityAaveAdapter is
 
     /// @notice Gets the `LP_TOKEN` variable
     /// @return lpToken_ The `LP_TOKEN` variable value
-    function getLPToken() external view returns (address lpToken_) {
+    function getLpToken() external view returns (address lpToken_) {
         return LP_TOKEN;
     }
 
