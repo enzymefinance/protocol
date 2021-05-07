@@ -16,7 +16,6 @@ import {
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
-  sighash,
   SpendAssetsHandleType,
   stakeSelector,
   StandardToken,
@@ -40,7 +39,6 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   ProtocolDeployment,
-  vaultCallApproveAsset,
   vaultCallCurveMinterMint,
   vaultCallCurveMinterMintMany,
   vaultCallCurveMinterToggleApproveMint,
@@ -51,13 +49,7 @@ let ldo: StandardToken;
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
-
-  // quick fix to allow LDO.approve() to pass in claimRewards tests
   ldo = new StandardToken('0x5a98fcbea516cf06857215779fd812ca3bef1b32', whales.ldo);
-  await fork.deployment.fundDeployer.registerVaultCalls(
-    [ldo],
-    [sighash(utils.FunctionFragment.fromString('approve(address, uint)'))],
-  );
 });
 
 describe('constructor', () => {
@@ -1369,20 +1361,13 @@ describe('claimRewardsAndReinvest', () => {
       account: curveLiquidityStethAdapter,
     });
 
-    // Approve the adapter to use the fund's $LDO
-    await vaultCallApproveAsset({
-      comptrollerProxy,
-      asset: ldo,
-      spender: curveLiquidityStethAdapter,
-    });
-
-    // Approve the adapter to use CRV
+    // Approve the adapter to use CRV and LDO
     await curveApproveAssets({
       comptrollerProxy,
       integrationManager,
       fundOwner,
       adapter: curveLiquidityStethAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, ldo],
     });
 
     // Claim all earned rewards
@@ -1470,20 +1455,13 @@ describe('claimRewardsAndReinvest', () => {
       account: curveLiquidityStethAdapter,
     });
 
-    // Approve the adapter to use the fund's $LDO
-    await vaultCallApproveAsset({
-      comptrollerProxy,
-      asset: ldo,
-      spender: curveLiquidityStethAdapter,
-    });
-
-    // Approve the adapter to use CRV
+    // Approve the adapter to use CRV and LDO
     await curveApproveAssets({
       comptrollerProxy,
       integrationManager,
       fundOwner,
       adapter: curveLiquidityStethAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, ldo],
     });
 
     // Claim all earned rewards
@@ -1573,20 +1551,13 @@ describe('claimRewardsAndSwap', () => {
       account: curveLiquidityStethAdapter,
     });
 
-    // Approve the adapter to use the fund's $LDO
-    await vaultCallApproveAsset({
-      comptrollerProxy,
-      asset: ldo,
-      spender: curveLiquidityStethAdapter,
-    });
-
-    // Approve the adapter to use CRV
+    // Approve the adapter to use CRV and LDO
     await curveApproveAssets({
       comptrollerProxy,
       integrationManager,
       fundOwner,
       adapter: curveLiquidityStethAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, ldo],
     });
 
     // Claim all earned rewards and swap for the specified incoming asset
@@ -1675,20 +1646,13 @@ describe('claimRewardsAndSwap', () => {
       account: curveLiquidityStethAdapter,
     });
 
-    // Approve the adapter to use the fund's $LDO
-    await vaultCallApproveAsset({
-      comptrollerProxy,
-      asset: ldo,
-      spender: curveLiquidityStethAdapter,
-    });
-
-    // Approve the adapter to use CRV
+    // Approve the adapter to use CRV and LDO
     await curveApproveAssets({
       comptrollerProxy,
       integrationManager,
       fundOwner,
       adapter: curveLiquidityStethAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, ldo],
     });
 
     // Claim all earned rewards and swap for the specified incoming asset

@@ -5,28 +5,8 @@ import {
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
   encodeArgs,
-  sighash,
-  StandardToken,
 } from '@enzymefinance/protocol';
-import { BigNumberish, constants } from 'ethers';
-
-export function vaultCallApproveAsset({
-  comptrollerProxy,
-  asset,
-  spender,
-  amount = constants.MaxUint256,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  asset: StandardToken;
-  spender: AddressLike;
-  amount?: BigNumberish;
-}) {
-  return comptrollerProxy.vaultCallOnContract(
-    asset,
-    sighash(asset.approve.fragment),
-    encodeArgs(['address', 'uint256'], [spender, amount]),
-  );
-}
+import { constants } from 'ethers';
 
 export function vaultCallCurveMinterMint({
   comptrollerProxy,

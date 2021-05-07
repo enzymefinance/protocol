@@ -13,7 +13,6 @@ import {
   IIdleTokenV4,
   lendSelector,
   redeemSelector,
-  sighash,
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -21,13 +20,13 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  idleApproveAssets,
   idleClaimRewards,
   idleClaimRewardsAndReinvest,
   idleClaimRewardsAndSwap,
   idleLend,
   idleRedeem,
   ProtocolDeployment,
-  vaultCallApproveAsset,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -36,12 +35,7 @@ let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
-  // quick fix to allow IDLE.approve() to pass in claimRewards tests
   idleGov = new StandardToken('0x875773784af8135ea0ef43b5a374aad105c5d39e', whales.idle);
-  await fork.deployment.fundDeployer.registerVaultCalls(
-    [idleGov],
-    [sighash(utils.FunctionFragment.fromString('approve(address, uint)'))],
-  );
 });
 
 describe('constructor', () => {
@@ -578,10 +572,14 @@ describe('claimRewardsAndReinvest', () => {
     expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
 
     // Approve the adapter to use the fund's $IDLE
-    await vaultCallApproveAsset({
+    await idleApproveAssets({
       comptrollerProxy,
-      asset: idleGov,
-      spender: idleAdapter,
+      integrationManager,
+      fundOwner,
+      idleAdapter,
+      idleToken: idleTokenERC20,
+      assets: [idleGov],
+      amounts: [constants.MaxUint256],
     });
 
     await idleClaimRewardsAndReinvest({
@@ -719,10 +717,14 @@ describe('claimRewardsAndSwap', () => {
     expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
 
     // Approve the adapter to use the fund's $IDLE
-    await vaultCallApproveAsset({
+    await idleApproveAssets({
       comptrollerProxy,
-      asset: idleGov,
-      spender: idleAdapter,
+      integrationManager,
+      fundOwner,
+      idleAdapter,
+      idleToken: idleTokenERC20,
+      assets: [idleGov],
+      amounts: [constants.MaxUint256],
     });
 
     await idleClaimRewardsAndSwap({
