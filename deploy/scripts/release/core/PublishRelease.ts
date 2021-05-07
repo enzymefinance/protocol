@@ -11,11 +11,11 @@ const fn: DeployFunction = async function (hre) {
   const dispatcher = await get('Dispatcher');
   const fundDeployer = await get('FundDeployer');
 
-  const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
-  await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
-
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
   await fundDeployerInstance.setReleaseStatus(ReleaseStatusTypes.Live);
+
+  const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
+  await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
 };
 
 fn.tags = ['Release'];
