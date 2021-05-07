@@ -18,7 +18,6 @@ import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
-import "../../utils/AssetFinalityResolver.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/FundDeployerOwnerMixin.sol";
@@ -33,8 +32,7 @@ contract IntegrationManager is
     IIntegrationManager,
     ExtensionBase,
     FundDeployerOwnerMixin,
-    PermissionedVaultActionMixin,
-    AssetFinalityResolver
+    PermissionedVaultActionMixin
 {
     using AddressArrayLib for address[];
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -73,14 +71,8 @@ contract IntegrationManager is
         address _fundDeployer,
         address _policyManager,
         address _derivativePriceFeed,
-        address _primitivePriceFeed,
-        address _synthetixPriceFeed,
-        address _synthetixAddressResolver
-    )
-        public
-        FundDeployerOwnerMixin(_fundDeployer)
-        AssetFinalityResolver(_synthetixPriceFeed, _synthetixAddressResolver)
-    {
+        address _primitivePriceFeed
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -207,7 +199,11 @@ contract IntegrationManager is
         address[] memory assets = abi.decode(_callArgs, (address[]));
         for (uint256 i; i < assets.length; i++) {
             require(
-                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                __isSupportedAsset(assets[i]),
+                "__addZeroBalanceTrackedAssets: Unsupported asset"
+            );
+            require(
+                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
                 "__addZeroBalanceTrackedAssets: Balance is not zero"
             );
 
@@ -227,7 +223,7 @@ contract IntegrationManager is
                 "__removeZeroBalanceTrackedAssets: Cannot remove denomination asset"
             );
             require(
-                __finalizeIfSynthAndGetAssetBalance(_vaultProxy, assets[i], true) == 0,
+                ERC20(assets[i]).balanceOf(_vaultProxy) == 0,
                 "__removeZeroBalanceTrackedAssets: Balance is not zero"
             );
 
@@ -495,13 +491,8 @@ contract IntegrationManager is
             // Get pre-call balance of each incoming asset.
             // If the asset is not tracked by the fund, allow the balance to default to 0.
             if (vaultProxyContract.isTrackedAsset(expectedIncomingAssets_[i])) {
-                // We do not require incoming asset finality, but we attempt to finalize so that
-                // the final incoming asset amount is more accurate. There is no need to finalize
-                // post-tx.
-                preCallIncomingAssetBalances_[i] = __finalizeIfSynthAndGetAssetBalance(
-                    _vaultProxy,
-                    expectedIncomingAssets_[i],
-                    false
+                preCallIncomingAssetBalances_[i] = ERC20(expectedIncomingAssets_[i]).balanceOf(
+                    _vaultProxy
                 );
             }
         }
@@ -514,14 +505,7 @@ contract IntegrationManager is
 
             // If spend asset is also an incoming asset, no need to record its balance
             if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
-                // By requiring spend asset finality before CoI, we will know whether or
-                // not the asset balance was entirely spent during the call. There is no need
-                // to finalize post-tx.
-                preCallSpendAssetBalances_[i] = __finalizeIfSynthAndGetAssetBalance(
-                    _vaultProxy,
-                    spendAssets_[i],
-                    true
-                );
+                preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
             }
 
             // Grant spend assets access to the adapter.

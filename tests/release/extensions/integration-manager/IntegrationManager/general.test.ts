@@ -51,14 +51,12 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      config: { synthetix },
       deployment: {
         aggregatedDerivativePriceFeed,
         chainlinkPriceFeed,
         integrationManager,
         fundDeployer,
         policyManager,
-        synthetixPriceFeed,
       },
     } = await provider.snapshot(snapshot);
 
@@ -73,13 +71,6 @@ describe('constructor', () => {
 
     const getPrimitivePriceFeedCall = await integrationManager.getPrimitivePriceFeed();
     expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
-
-    // AssetFinalityResolver
-    const getSynthetixAddressResolverCall = await integrationManager.getSynthetixAddressResolver();
-    expect(getSynthetixAddressResolverCall).toMatchAddress(synthetix.addressResolver);
-
-    const getSynthetixPriceFeedCall = await integrationManager.getSynthetixPriceFeed();
-    expect(getSynthetixPriceFeedCall).toMatchAddress(synthetixPriceFeed);
   });
 });
 
@@ -340,6 +331,23 @@ describe('callOnExtension actions', () => {
             addZeroBalanceTrackedAssetsArgs({ assets: [assetToAdd2] }),
           ),
       ).resolves.toBeReceipt();
+    });
+
+    it('does not allow an unsupported asset', async () => {
+      const {
+        deployment: { integrationManager },
+        fund: { comptrollerProxy, fundOwner },
+      } = await provider.snapshot(snapshot);
+
+      await expect(
+        comptrollerProxy
+          .connect(fundOwner)
+          .callOnExtension(
+            integrationManager,
+            IntegrationManagerActionId.AddZeroBalanceTrackedAssets,
+            addZeroBalanceTrackedAssetsArgs({ assets: [randomAddress()] }),
+          ),
+      ).rejects.toBeRevertedWith('Unsupported asset');
     });
 
     it('does not allow an asset with a non-zero balance', async () => {

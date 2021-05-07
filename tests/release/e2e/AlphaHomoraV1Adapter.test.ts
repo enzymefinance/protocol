@@ -151,8 +151,8 @@ describe('redeem', () => {
     expect(receivedWethAmount.sub(approxIncomingWethAmount)).toBeLteBigNumber(approxIncomingWethAmount.div(100000000));
 
     // Assert gas cost of redeem tx
-    // Rounding up from 253489
-    expect(redeemReceipt).toCostLessThan(254000);
+    // Rounding up from 243318
+    expect(redeemReceipt).toCostLessThan(244000);
   });
 });
 

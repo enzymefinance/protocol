@@ -238,7 +238,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
         incomingAsset,
         minIncomingAssetAmount: expectedIncomingAssetAmount,
       }),
-    ).rejects.toBeRevertedWith('Cannot settle Synth');
+    ).rejects.toBeRevertedWith('Cannot settle during waiting period');
   });
 
   it('warps beyond the waiting period and trades on Synthetix with the same assets in reverse', async () => {

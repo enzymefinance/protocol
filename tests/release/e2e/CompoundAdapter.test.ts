@@ -239,7 +239,7 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
     });
 
-    expect(redeemReceipt).toCostLessThan('418000');
+    expect(redeemReceipt).toCostLessThan('402000');
   });
 });
 

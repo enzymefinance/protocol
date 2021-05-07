@@ -1,8 +1,6 @@
 import type { IntegrationManagerArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { loadConfig } from '../../../utils/config';
-
 const fn: DeployFunction = async function (hre) {
   const {
     deployments: { deploy, get },
@@ -10,12 +8,10 @@ const fn: DeployFunction = async function (hre) {
   } = hre;
 
   const deployer = (await getSigners())[0];
-  const config = await loadConfig(hre);
   const fundDeployer = await get('FundDeployer');
   const policyManager = await get('PolicyManager');
   const aggregatedDerivativePriceFeed = await get('AggregatedDerivativePriceFeed');
   const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
-  const synthetixPriceFeed = await get('SynthetixPriceFeed');
 
   await deploy('IntegrationManager', {
     args: [
@@ -23,8 +19,6 @@ const fn: DeployFunction = async function (hre) {
       policyManager.address,
       aggregatedDerivativePriceFeed.address,
       chainlinkPriceFeed.address,
-      synthetixPriceFeed.address,
-      config.synthetix.addressResolver,
     ] as IntegrationManagerArgs,
     from: deployer.address,
     log: true,
@@ -33,13 +27,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'IntegrationManager'];
-fn.dependencies = [
-  'Config',
-  'FundDeployer',
-  'PolicyManager',
-  'AggregatedDerivativePriceFeed',
-  'ChainlinkPriceFeed',
-  'SynthetixPriceFeed',
-];
+fn.dependencies = ['FundDeployer', 'PolicyManager', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed'];
 
 export default fn;
