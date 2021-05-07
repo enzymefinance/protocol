@@ -85,7 +85,11 @@ contract VaultLib is VaultLibBase1, IVault {
         address _target,
         uint256 _amount
     ) external override onlyAccessor {
-        ERC20(_asset).approve(_target, _amount);
+        ERC20 assetContract = ERC20(_asset);
+        if (assetContract.balanceOf(_target) > 0) {
+            assetContract.safeApprove(_target, 0);
+        }
+        assetContract.safeApprove(_target, _amount);
     }
 
     /// @notice Makes an arbitrary call with this contract as the sender
