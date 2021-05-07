@@ -71,6 +71,7 @@ const ctokens = {
 
 const atokens = {} as const;
 const pools = {} as const;
+const idle = {} as const;
 
 const ethUsdAggregator = '0x9326bfa02add2366b30bacb125260af641031331';
 const xauUsdAggregator = '0x0000000000000000000000000000000000000000';
@@ -120,17 +121,7 @@ const mainnetConfig: DeploymentConfig = {
       },
     },
   },
-  idle: {
-    bestYieldIdleDai: '0x0000000000000000000000000000000000000000',
-    bestYieldIdleUsdc: '0x0000000000000000000000000000000000000000',
-    bestYieldIdleUsdt: '0x0000000000000000000000000000000000000000',
-    bestYieldIdleSusd: '0x0000000000000000000000000000000000000000',
-    bestYieldIdleTusd: '0x0000000000000000000000000000000000000000',
-    bestYieldIdleWbtc: '0x0000000000000000000000000000000000000000',
-    riskAdjustedIdleDai: '0x0000000000000000000000000000000000000000',
-    riskAdjustedIdleUsdc: '0x0000000000000000000000000000000000000000',
-    riskAdjustedIdleUsdt: '0x0000000000000000000000000000000000000000',
-  },
+  idle,
   kyber: {
     networkProxy: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   },

@@ -58,17 +58,7 @@ export interface DeploymentConfig {
     ceth: string;
     ctokens: Record<string, string>;
   };
-  idle: {
-    bestYieldIdleDai: string;
-    bestYieldIdleUsdc: string;
-    bestYieldIdleUsdt: string;
-    bestYieldIdleSusd: string;
-    bestYieldIdleTusd: string;
-    bestYieldIdleWbtc: string;
-    riskAdjustedIdleDai: string;
-    riskAdjustedIdleUsdc: string;
-    riskAdjustedIdleUsdt: string;
-  };
+  idle: Record<string, string>;
   kyber: {
     networkProxy: string;
   };

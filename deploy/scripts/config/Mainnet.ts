@@ -266,6 +266,18 @@ const pools = {
   yfiWeth: '0x2fdbadf3c4d5a8666bc06645b8358ab803996e28',
 } as const;
 
+const idle = {
+  bestYieldIdleDai: '0x3fe7940616e5bc47b0775a0dccf6237893353bb4',
+  bestYieldIdleSusd: '0xf52cdcd458bf455aed77751743180ec4a595fd3f',
+  bestYieldIdleUsdc: '0x5274891bec421b39d23760c04a6755ecb444797c',
+  bestYieldIdleUsdt: '0xf34842d05a1c888ca02769a633df37177415c2f8',
+  bestYieldIdleWbtc: '0x8c81121b15197fa0eeaee1dc75533419dcfd3151',
+  bestYieldIdleWeth: '0xc8e6ca6e96a326dc448307a5fde90a0b21fd7f80',
+  riskAdjustedIdleDai: '0xa14ea0e11121e6e951e87c66afe460a00bcd6a16',
+  riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
+  riskAdjustedIdleUsdt: '0x28fac5334c9f7262b3a3fe707e250e01053e07b5',
+} as const;
+
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
@@ -314,17 +326,7 @@ const mainnetConfig: DeploymentConfig = {
       },
     },
   },
-  idle: {
-    bestYieldIdleDai: '0x3fE7940616e5Bc47b0775a0dccf6237893353bB4',
-    bestYieldIdleUsdc: '0x5274891bEC421B39D23760c04A6755eCB444797C',
-    bestYieldIdleUsdt: '0xF34842d05A1c888Ca02769A633DF37177415C2f8',
-    bestYieldIdleSusd: '0xf52cdcd458bf455aed77751743180ec4a595fd3f',
-    bestYieldIdleTusd: '0xc278041fDD8249FE4c1Aad1193876857EEa3D68c',
-    bestYieldIdleWbtc: '0x8C81121B15197fA0eEaEE1DC75533419DcfD3151',
-    riskAdjustedIdleDai: '0xa14eA0E11121e6E951E87c66AFe460A00BCD6A16',
-    riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
-    riskAdjustedIdleUsdt: '0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5',
-  },
+  idle,
   kyber: {
     networkProxy: '0x9AAb3f75489902f3a48495025729a0AF77d4b11e',
   },
