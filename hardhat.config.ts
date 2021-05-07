@@ -57,7 +57,6 @@ const config: HardhatUserConfig = {
       'IKyberNetworkProxy',
       'ICERC20',
       'ICEther',
-      'IChai',
       'ISynthetix',
       'ISynthetixAddressResolver',
       'ISynthetixDelegateApprovals',
@@ -93,8 +92,8 @@ const config: HardhatUserConfig = {
         mnemonic,
       },
       forking: {
-        blockNumber: 11662542,
-        url: node('mainnet'), // Jan 15, 2021
+        blockNumber: 12382575, // May 6, 2021
+        url: node('mainnet'),
       },
       gas: 9500000,
       gasPrice: 0, // TODO: Consider removing this again.

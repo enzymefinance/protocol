@@ -32,7 +32,6 @@ export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
 export * from './codegen/AggregatedDerivativePriceFeed';
 export * from './codegen/AlphaHomoraV1PriceFeed';
-export * from './codegen/ChaiPriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/IdlePriceFeed';
@@ -45,7 +44,6 @@ export * from './codegen/WdgldPriceFeed';
 // Integration adapters
 export * from './codegen/AaveAdapter';
 export * from './codegen/AlphaHomoraV1Adapter';
-export * from './codegen/ChaiAdapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAaveAdapter';
@@ -92,9 +90,7 @@ export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
 // Mocks
 
 export * from './codegen/MockVaultLib';
-export * from './codegen/MockChaiIntegratee';
 export * from './codegen/CentralizedRateProvider';
-export * from './codegen/MockChaiPriceSource';
 export * from './codegen/MockCEtherIntegratee';
 export * from './codegen/MockCTokenIntegratee';
 export * from './codegen/MockGenericAdapter';
@@ -115,7 +111,6 @@ export * from './codegen/WETH';
 export * from './codegen/IAlphaHomoraV1Bank';
 export * from './codegen/ICERC20';
 export * from './codegen/ICEther';
-export * from './codegen/IChai';
 export * from './codegen/IChainlinkAggregator';
 export * from './codegen/ICurveAddressProvider';
 export * from './codegen/ICurveLiquidityGaugeV2';

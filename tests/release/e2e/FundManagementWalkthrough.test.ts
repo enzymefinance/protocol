@@ -19,8 +19,6 @@ import {
 import {
   addTrackedAssets,
   buyShares,
-  chaiLend,
-  chaiRedeem,
   createNewFund,
   ProtocolDeployment,
   KyberNetworkProxy,
@@ -40,8 +38,8 @@ const expectedGasCosts = {
     weth: 450000,
   },
   'buy shares: max assets': {
-    usdc: 1450000,
-    weth: 1245000,
+    usdc: 1451000,
+    weth: 1246000,
   },
   'calc gav: 20 assets': {
     usdc: 977000,
@@ -53,8 +51,8 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 1508000,
-    weth: 1501000,
+    usdc: 1463000,
+    weth: 1456000,
   },
 
   'redeem all shares: max assets: all remaining': {
@@ -70,7 +68,7 @@ const expectedGasCosts = {
   // If another adapter is significantly more expensive, we should use that one.
   'trade on Kyber: max assets': {
     usdc: 2435000,
-    weth: 1656000,
+    weth: 1662000,
   },
 } as const;
 
@@ -130,7 +128,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
         fork.deployment.kyberAdapter,
         fork.deployment.uniswapV2Adapter,
         fork.deployment.trackedAssetsAdapter,
-        fork.deployment.chaiAdapter,
       ]);
       const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
@@ -262,36 +259,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(balance).toBeGteBigNumber(minIncomingAssetAmount);
     });
 
-    xit('lends and redeems Chai', async () => {
-      const dai = new StandardToken(fork.config.primitives.dai, provider);
-      const chai = new StandardToken(fork.config.chai.chai, provider);
-      const daiAmount = await dai.balanceOf(vaultProxy);
-
-      await chaiLend({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        chaiAdapter: fork.deployment.chaiAdapter,
-        dai: new StandardToken(fork.config.primitives.dai, provider),
-        daiAmount,
-        minChaiAmount: daiAmount.mul(90).div(100),
-      });
-
-      const chaiAmount = await chai.balanceOf(vaultProxy);
-
-      await chaiRedeem({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        chai,
-        chaiAdapter: fork.deployment.chaiAdapter,
-        chaiAmount,
-        minDaiAmount: chaiAmount.mul(90).div(100),
-      });
-    });
-
     it('seeds the fund with all more assets', async () => {
       const assets = [
         new StandardToken(fork.config.primitives.bat, whales.bat),
@@ -302,7 +269,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         new StandardToken(fork.config.primitives.mana, whales.mana),
         new StandardToken(fork.config.primitives.mln, whales.mln),
         new StandardToken(fork.config.primitives.ren, whales.ren),
-        new StandardToken(fork.config.primitives.rep, whales.rep),
+        new StandardToken(fork.config.primitives.repv2, whales.repv2),
         new StandardToken(fork.config.primitives.susd, whales.susd),
         new StandardToken(fork.config.primitives.uni, whales.uni),
         new StandardToken(fork.config.primitives.usdt, whales.usdt),

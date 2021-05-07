@@ -140,7 +140,7 @@ describe('addTrackedAsset', () => {
       new StandardToken(config.primitives.link, whales.link),
       new StandardToken(config.primitives.mana, whales.mana),
       new StandardToken(config.primitives.mln, whales.mln),
-      new StandardToken(config.primitives.rep, whales.rep),
+      new StandardToken(config.primitives.repv2, whales.repv2),
       new StandardToken(config.primitives.ren, whales.ren),
       new StandardToken(config.primitives.uni, whales.uni),
       new StandardToken(config.primitives.usdc, whales.usdc),

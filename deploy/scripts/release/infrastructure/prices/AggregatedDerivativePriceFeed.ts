@@ -14,7 +14,6 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
   const aavePriceFeed = await get('AavePriceFeed');
   const alphaHomoraV1PriceFeed = await get('AlphaHomoraV1PriceFeed');
-  const chaiPriceFeed = await get('ChaiPriceFeed');
   const curvePriceFeed = await get('CurvePriceFeed');
   const compoundPriceFeed = await get('CompoundPriceFeed');
   const idlePriceFeed = await get('IdlePriceFeed');
@@ -26,7 +25,6 @@ const fn: DeployFunction = async function (hre) {
   const derivativePairs: [string, string][] = [
     [config.alphaHomoraV1.ibeth, alphaHomoraV1PriceFeed.address],
     [config.wdgld.wdgld, wdgldPriceFeed.address],
-    [config.chai.chai, chaiPriceFeed.address],
     [config.compound.ceth, compoundPriceFeed.address],
     [config.lido.steth, lidoStethPriceFeed.address],
     [config.stakehound.steth, stakehoundEthPriceFeed.address],
@@ -58,7 +56,6 @@ fn.dependencies = [
   'AavePriceFeed',
   'AlphaHomoraV1PriceFeed',
   'CurvePriceFeed',
-  'ChaiPriceFeed',
   'CompoundPriceFeed',
   'IdlePriceFeed',
   'LidoStethPriceFeed',

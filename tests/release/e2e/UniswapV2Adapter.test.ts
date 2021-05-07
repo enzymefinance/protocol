@@ -20,7 +20,7 @@ describe('lend', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
+    const poolToken = new StandardToken(fork.config.uniswap.pools.wethMln, provider);
     const uniswapPair = new IUniswapV2Pair(poolToken.address, provider);
     const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
@@ -89,7 +89,7 @@ describe('redeem', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
+    const poolToken = new StandardToken(fork.config.uniswap.pools.wethMln, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

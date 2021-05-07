@@ -1,6 +1,5 @@
 export * from './aave';
 export * from './alpha';
-export * from './chai';
 export * from './compound';
 export * from './curve';
 export * from './idle';

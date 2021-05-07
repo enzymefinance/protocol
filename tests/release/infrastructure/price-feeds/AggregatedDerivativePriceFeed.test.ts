@@ -6,13 +6,12 @@ import { constants } from 'ethers';
 async function snapshot() {
   const {
     deployer,
-    deployment: { aggregatedDerivativePriceFeed, chaiPriceFeed, compoundPriceFeed, uniswapV2PoolPriceFeed },
+    deployment: { aggregatedDerivativePriceFeed, compoundPriceFeed, uniswapV2PoolPriceFeed },
     config,
   } = await deployProtocolFixture();
 
   const uniswapV2PoolTokens = config.uniswap.pools;
   const compoundTokens = config.compound.ctokens;
-  const chai = config.chai.chai;
 
   const mockDerivative1 = await MockToken.deploy(deployer, 'Mock Derivative 1', 'MCKD001', 18);
   const mockDerivative2 = await MockToken.deploy(deployer, 'Mock Derivative 2', 'MCKD002', 18);
@@ -24,11 +23,9 @@ async function snapshot() {
   await mockDerivativePriceFeed2.isSupportedAsset.returns(false);
 
   return {
-    chai,
     compoundTokens,
     uniswapV2PoolTokens,
     aggregatedDerivativePriceFeed,
-    chaiPriceFeed,
     compoundPriceFeed,
     uniswapV2PoolPriceFeed,
     mockDerivative1,
@@ -42,17 +39,11 @@ describe('constructor', () => {
   it('sets initial storage vars', async () => {
     const {
       aggregatedDerivativePriceFeed,
-      chaiPriceFeed,
       compoundPriceFeed,
       uniswapV2PoolPriceFeed,
       uniswapV2PoolTokens,
       compoundTokens,
-      chai,
     } = await provider.snapshot(snapshot);
-
-    // Check chai
-    const storedPriceFeed = await aggregatedDerivativePriceFeed.getPriceFeedForDerivative(chai);
-    expect(storedPriceFeed).toMatchAddress(chaiPriceFeed);
 
     // Check compound
     for (const cToken of Object.values(compoundTokens)) {

@@ -76,7 +76,6 @@ describe('Walkthrough a fund migration', () => {
       fork.deployment.kyberAdapter,
       fork.deployment.uniswapV2Adapter,
       fork.deployment.trackedAssetsAdapter,
-      fork.deployment.chaiAdapter,
     ]);
     const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 
@@ -132,7 +131,7 @@ describe('Walkthrough a fund migration', () => {
       new StandardToken(fork.config.primitives.mana, whales.mana),
       new StandardToken(fork.config.primitives.mln, whales.mln),
       new StandardToken(fork.config.primitives.ren, whales.ren),
-      new StandardToken(fork.config.primitives.rep, whales.rep),
+      new StandardToken(fork.config.primitives.repv2, whales.repv2),
       new StandardToken(fork.config.primitives.susd, whales.susd),
       new StandardToken(fork.config.primitives.uni, whales.uni),
       new StandardToken(fork.config.primitives.usdt, whales.usdt),
@@ -205,7 +204,6 @@ describe('Walkthrough a fund migration', () => {
   //     newRelease.kyberAdapter,
   //     newRelease.uniswapV2Adapter,
   //     newRelease.trackedAssetsAdapter,
-  //     newRelease.chaiAdapter,
   //   ]);
   //   const assetBlacklistSettings = assetBlacklistArgs([fork.config.primitives.knc]);
 

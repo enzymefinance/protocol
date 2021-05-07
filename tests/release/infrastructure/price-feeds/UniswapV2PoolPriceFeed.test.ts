@@ -50,12 +50,12 @@ describe('calcUnderlyingValues', () => {
     const {
       config: {
         uniswap: {
-          pools: { mlnWeth },
+          pools: { wethMln },
         },
       },
       deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
-    const poolToken = new IUniswapV2Pair(mlnWeth, provider);
+    const poolToken = new IUniswapV2Pair(wethMln, provider);
     const token0Address = await poolToken.token0();
     const token1Address = await poolToken.token1();
 
@@ -64,7 +64,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['247050525008990036', '8120369388601496194'],
+      underlyingAmounts_: ['285277730414437132', '8524145600790813971'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -88,7 +88,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['46228706552089', '39452063369591764460002'],
+      underlyingAmounts_: ['90919024093010', '26381686638222141236527'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -118,13 +118,13 @@ describe('addPoolTokens', () => {
     const {
       config: {
         uniswap: {
-          pools: { kncWeth },
+          pools: { wethKnc },
         },
       },
       deployment: { uniswapV2PoolPriceFeed },
     } = await provider.snapshot(snapshot);
 
-    await expect(uniswapV2PoolPriceFeed.addPoolTokens([kncWeth])).rejects.toBeRevertedWith('Value already set');
+    await expect(uniswapV2PoolPriceFeed.addPoolTokens([wethKnc])).rejects.toBeRevertedWith('Value already set');
   });
 
   it('does not allow unsupportable pool tokens', async () => {

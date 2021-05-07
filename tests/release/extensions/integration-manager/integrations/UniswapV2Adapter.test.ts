@@ -110,7 +110,7 @@ describe('parseAssetsForMethod', () => {
         primitives: { mln: tokenA },
         weth: tokenB,
         uniswap: {
-          pools: { mlnWeth: poolToken },
+          pools: { wethMln: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
@@ -150,7 +150,7 @@ describe('parseAssetsForMethod', () => {
         primitives: { mln: tokenA },
         weth: tokenB,
         uniswap: {
-          pools: { mlnWeth: poolToken },
+          pools: { wethMln: poolToken },
         },
       },
       deployment: { uniswapV2Adapter },
@@ -220,7 +220,7 @@ describe('lend', () => {
         weth,
         uniswap: {
           router,
-          pools: { mlnWeth },
+          pools: { wethMln },
         },
       },
       deployment: { uniswapV2Adapter, integrationManager },
@@ -229,7 +229,7 @@ describe('lend', () => {
 
     const tokenA = new StandardToken(mln, whales.mln);
     const tokenB = new StandardToken(weth, whales.weth);
-    const poolToken = new StandardToken(mlnWeth, provider);
+    const poolToken = new StandardToken(wethMln, provider);
 
     const uniswapPair = new IUniswapV2Pair(poolToken, provider);
     const uniswapRouter = new UniswapV2Router(router, provider);
@@ -338,7 +338,7 @@ describe('redeem', () => {
         primitives: { mln },
         weth,
         uniswap: {
-          pools: { mlnWeth },
+          pools: { wethMln },
         },
       },
       deployment: { uniswapV2Adapter, integrationManager },
@@ -347,7 +347,7 @@ describe('redeem', () => {
 
     const tokenA = new StandardToken(mln, whales.mln);
     const tokenB = new StandardToken(weth, whales.weth);
-    const poolToken = new StandardToken(mlnWeth, provider);
+    const poolToken = new StandardToken(wethMln, provider);
 
     // Seed fund and lend arbitrary amounts of tokens for an arbitrary amount of pool tokens
     const amountADesired = utils.parseEther('1');

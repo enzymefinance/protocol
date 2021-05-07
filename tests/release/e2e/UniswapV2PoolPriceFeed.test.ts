@@ -63,7 +63,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(92000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(90000));
   });
 });
 
@@ -71,7 +71,7 @@ describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
     const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
+    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.wethMln, provider);
 
     const token0Address = await uniswapPair.token0();
     const token0RatioAmount = utils.parseEther('1');
@@ -108,7 +108,7 @@ describe('calcUnderlyingValues', () => {
 
     // Final canonical rate should be pushed towards the trusted rate ratio
     if (poolRateRatio > trustedUnderlyingsRateRatio) {
-      expect(canonicalUnderlyingsRateRatio).toBeLtBigNumber(poolRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeLteBigNumber(poolRateRatio);
       expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(trustedUnderlyingsRateRatio);
     } else if (poolRateRatio < trustedUnderlyingsRateRatio) {
       expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(poolRateRatio);
@@ -134,33 +134,29 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on Jan 17, 2021 was worth about $93M
-      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
         isValid_: true,
-        value_: 92446608602898,
+        value_: 181565315299274,
       });
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
       const dai = new StandardToken(fork.config.primitives.dai, provider);
-      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, provider);
+      const wethKnc = new StandardToken(fork.config.uniswap.pools.wethKnc, provider);
 
-      const baseDecimals = await kncWeth.decimals();
+      const baseDecimals = await wethKnc.decimals();
       const quoteDecimals = await dai.decimals();
 
       expect(baseDecimals).toEqBigNumber(18);
       expect(quoteDecimals).toEqBigNumber(18);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-        .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
+        .args(wethKnc, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on Jan 17, 2021 was worth about $90
-      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('88913536813954309095'),
+        value_: BigNumber.from('279529172705717512177'),
         isValid_: true,
       });
     });

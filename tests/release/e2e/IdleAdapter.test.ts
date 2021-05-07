@@ -13,6 +13,7 @@ import {
   IIdleTokenV4,
   lendSelector,
   redeemSelector,
+  sighash,
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -30,9 +31,17 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
+let idleGov: StandardToken;
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+
+  // quick fix to allow IDLE.approve() to pass in claimRewards tests
+  idleGov = new StandardToken('0x875773784af8135ea0ef43b5a374aad105c5d39e', whales.idle);
+  await fork.deployment.fundDeployer.registerVaultCalls(
+    [idleGov],
+    [sighash(utils.FunctionFragment.fromString('approve(address, uint)'))],
+  );
 });
 
 describe('constructor', () => {
@@ -101,7 +110,7 @@ describe('parseAssetsForMethod', () => {
       const idleAdapter = fork.deployment.idleAdapter;
 
       // Random address should be allowed since amount is 0
-      const assets = [fork.config.unsupportedRewardsTokens.idle, randomAddress()];
+      const assets = [idleGov, randomAddress()];
       const amounts = [1, 0];
       const result = await idleAdapter.parseAssetsForMethod(
         approveAssetsSelector,
@@ -470,7 +479,6 @@ describe('claimRewardsAndReinvest', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
@@ -535,7 +543,6 @@ describe('claimRewardsAndReinvest', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
@@ -609,7 +616,6 @@ describe('claimRewardsAndSwap', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const incomingAsset = weth;
 
@@ -677,7 +683,6 @@ describe('claimRewardsAndSwap', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
     const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -787,8 +792,8 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    // Rounding up from 743465
-    expect(lendReceipt).toCostLessThan('744000');
+    // Rounding up from 783108
+    expect(lendReceipt).toCostLessThan('784000');
   });
 });
 
@@ -864,8 +869,8 @@ describe('redeem', () => {
       expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
     }
 
-    // Rounding up from 735270
-    expect(redeemReceipt).toCostLessThan('736000');
+    // Rounding up from 771310
+    expect(redeemReceipt).toCostLessThan('772000');
   });
 });
 

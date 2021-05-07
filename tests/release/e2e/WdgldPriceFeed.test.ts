@@ -39,13 +39,12 @@ describe('calcUnderlyingValues', () => {
     const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
     const usdc = new StandardToken(fork.config.primitives.usdc, provider);
 
-    // XAU/USD price at Jan 17, 2021 had a rate of 1849 USD. Given an approximate GTR of 0.0988xx gives a value around 182 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(wdgld, utils.parseUnits('1', 8), usdc)
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: 180795013,
+      value_: 177754470,
       isValid_: true,
     });
   });

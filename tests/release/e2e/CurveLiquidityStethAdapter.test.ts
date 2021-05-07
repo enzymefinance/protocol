@@ -16,6 +16,7 @@ import {
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
+  sighash,
   SpendAssetsHandleType,
   stakeSelector,
   StandardToken,
@@ -46,9 +47,17 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
+let ldo: StandardToken;
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+
+  // quick fix to allow LDO.approve() to pass in claimRewards tests
+  ldo = new StandardToken('0x5a98fcbea516cf06857215779fd812ca3bef1b32', whales.ldo);
+  await fork.deployment.fundDeployer.registerVaultCalls(
+    [ldo],
+    [sighash(utils.FunctionFragment.fromString('approve(address, uint)'))],
+  );
 });
 
 describe('constructor', () => {
@@ -1246,7 +1255,6 @@ describe('claimRewards', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
     const crv = new StandardToken(fork.config.primitives.crv, provider);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -1312,7 +1320,6 @@ describe('claimRewardsAndReinvest', () => {
     const integrationManager = fork.deployment.integrationManager;
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
     const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, whales.ldo);
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -1414,7 +1421,6 @@ describe('claimRewardsAndReinvest', () => {
     const integrationManager = fork.deployment.integrationManager;
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
     const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, whales.ldo);
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -1517,7 +1523,6 @@ describe('claimRewardsAndSwap', () => {
     const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
     const integrationManager = fork.deployment.integrationManager;
     const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, whales.ldo);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const incomingAsset = weth;
 
@@ -1620,7 +1625,6 @@ describe('claimRewardsAndSwap', () => {
     const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
     const integrationManager = fork.deployment.integrationManager;
     const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, whales.ldo);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
 
@@ -1724,7 +1728,6 @@ describe('claim rewards (manually)', () => {
     const [fundOwner, approvedMintForCaller, randomUser] = fork.accounts;
     const curveLiquidityStethAdapter = fork.deployment.curveLiquidityStethAdapter;
     const crv = new StandardToken(fork.config.primitives.crv, provider);
-    const ldo = new StandardToken(fork.config.unsupportedRewardsTokens.ldo, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const gauge = new CurveLiquidityGaugeV2(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
     const minter = new CurveMinter(fork.config.curve.minter, provider);

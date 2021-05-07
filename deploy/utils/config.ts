@@ -23,7 +23,6 @@ export async function hasConfig(hre: HardhatRuntimeEnvironment): Promise<boolean
 export interface DeploymentConfig {
   weth: string;
   primitives: Record<string, string>;
-  unsupportedRewardsTokens: Record<string, string>;
   chainlink: {
     ethusd: string;
     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
@@ -50,7 +49,7 @@ export interface DeploymentConfig {
   aave: {
     lendingPoolAddressProvider: string;
     protocolDataProvider: string;
-    atokens: Record<string, [string, string]>;
+    atokens: Record<string, readonly [string, string]>;
   };
   alphaHomoraV1: {
     ibeth: string;
@@ -58,11 +57,6 @@ export interface DeploymentConfig {
   compound: {
     ceth: string;
     ctokens: Record<string, string>;
-  };
-  chai: {
-    dai: string;
-    chai: string;
-    pot: string;
   };
   idle: {
     bestYieldIdleDai: string;
