@@ -26,5 +26,10 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'AlphaHomoraV1Adapter'];
 fn.dependencies = ['Config', 'IntegrationManager'];
+fn.skip = async (hre) => {
+  // Skip this on kovan.
+  const chain = parseInt(await hre.getChainId());
+  return chain === 42;
+};
 
 export default fn;

@@ -31,5 +31,10 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'AaveAdapter'];
 fn.dependencies = ['Config', 'IntegrationManager', 'AavePriceFeed'];
+fn.skip = async (hre) => {
+  // Skip this on kovan.
+  const chain = parseInt(await hre.getChainId());
+  return chain === 42;
+};
 
 export default fn;
