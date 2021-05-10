@@ -4,7 +4,6 @@ import {
   claimRewardsAndReinvestSelector,
   claimRewardsAndSwapSelector,
   claimRewardsSelector,
-  encodeArgs,
   idleApproveAssetsArgs,
   idleClaimRewardsAndReinvestArgs,
   idleClaimRewardsAndSwapArgs,
@@ -14,7 +13,6 @@ import {
   IIdleTokenV4,
   lendSelector,
   redeemSelector,
-  sighash,
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -22,26 +20,22 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  idleApproveAssets,
   idleClaimRewards,
   idleClaimRewardsAndReinvest,
   idleClaimRewardsAndSwap,
   idleLend,
   idleRedeem,
   ProtocolDeployment,
-  vaultCallApproveAsset,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
+let idleGov: StandardToken;
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
-  // Register the specific vault call for IDLE.approve() with this adapter and max uint
-  await fork.deployment.fundDeployer.registerVaultCalls(
-    [fork.config.unsupportedRewardsTokens.idle],
-    [sighash(utils.FunctionFragment.fromString('approve(address,uint)'))],
-    [utils.keccak256(encodeArgs(['address', 'uint'], [fork.deployment.idleAdapter, constants.MaxUint256]))],
-  );
+  idleGov = new StandardToken('0x875773784af8135ea0ef43b5a374aad105c5d39e', whales.idle);
 });
 
 describe('constructor', () => {
@@ -113,7 +107,7 @@ describe('parseAssetsForMethod', () => {
       const idleAdapter = fork.deployment.idleAdapter;
 
       // Random address should be allowed since amount is 0
-      const assets = [fork.config.unsupportedRewardsTokens.idle, randomAddress()];
+      const assets = [idleGov, randomAddress()];
       const amounts = [1, 0];
       const result = await idleAdapter.parseAssetsForMethod(
         randomAddress(),
@@ -485,7 +479,6 @@ describe('claimRewardsAndReinvest', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
@@ -550,7 +543,6 @@ describe('claimRewardsAndReinvest', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
@@ -586,10 +578,14 @@ describe('claimRewardsAndReinvest', () => {
     expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
 
     // Approve the adapter to use the fund's $IDLE
-    await vaultCallApproveAsset({
+    await idleApproveAssets({
       comptrollerProxy,
-      asset: idleGov,
-      spender: idleAdapter,
+      integrationManager,
+      fundOwner,
+      idleAdapter,
+      idleToken: idleTokenERC20,
+      assets: [idleGov],
+      amounts: [constants.MaxUint256],
     });
 
     await idleClaimRewardsAndReinvest({
@@ -624,7 +620,6 @@ describe('claimRewardsAndSwap', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const incomingAsset = weth;
 
@@ -692,7 +687,6 @@ describe('claimRewardsAndSwap', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const idleGov = new StandardToken(fork.config.unsupportedRewardsTokens.idle, whales.idle);
     const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -729,10 +723,14 @@ describe('claimRewardsAndSwap', () => {
     expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
 
     // Approve the adapter to use the fund's $IDLE
-    await vaultCallApproveAsset({
+    await idleApproveAssets({
       comptrollerProxy,
-      asset: idleGov,
-      spender: idleAdapter,
+      integrationManager,
+      fundOwner,
+      idleAdapter,
+      idleToken: idleTokenERC20,
+      assets: [idleGov],
+      amounts: [constants.MaxUint256],
     });
 
     await idleClaimRewardsAndSwap({

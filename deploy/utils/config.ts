@@ -23,7 +23,6 @@ export async function hasConfig(hre: HardhatRuntimeEnvironment): Promise<boolean
 export interface DeploymentConfig {
   weth: string;
   primitives: Record<string, string>;
-  unsupportedRewardsTokens: Record<string, string>;
   chainlink: {
     ethusd: string;
     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;

@@ -540,14 +540,6 @@ contract IntegrationManager is
         for (uint256 i = 0; i < spendAssets_.length; i++) {
             require(spendAssets_[i] != address(0), "__preProcessCoI: Empty spend asset");
             require(maxSpendAssetAmounts_[i] > 0, "__preProcessCoI: Empty max spend asset amount");
-            // A spend asset must either be a tracked asset of the fund or a supported asset,
-            // in order to prevent seeding the fund with a malicious token and performing arbitrary
-            // actions within an adapter.
-            require(
-                vaultProxyContract.isTrackedAsset(spendAssets_[i]) ||
-                    __isSupportedAsset(spendAssets_[i]),
-                "__preProcessCoI: Non-spendable spend asset"
-            );
 
             // If spend asset is also an incoming asset, no need to record its balance
             if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
