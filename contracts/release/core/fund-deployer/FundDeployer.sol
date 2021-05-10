@@ -138,8 +138,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _nextStatus The next status state to set
     function setReleaseStatus(ReleaseStatus _nextStatus) external {
         require(
-            msg.sender == IDispatcher(DISPATCHER).getOwner(),
-            "setReleaseStatus: Only the Dispatcher owner can call this function"
+            msg.sender == getOwner(),
+            "setReleaseStatus: Only the owner can call this function"
         );
         require(
             _nextStatus != ReleaseStatus.PreLaunch,
