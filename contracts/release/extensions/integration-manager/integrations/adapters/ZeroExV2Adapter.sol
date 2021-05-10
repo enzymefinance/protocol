@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/actions/ZeroExV2ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 

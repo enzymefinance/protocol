@@ -157,15 +157,12 @@ describe('primitives gas costs', () => {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const chainlinkPriceFeed = fork.deployment.chainlinkPriceFeed;
-    const dispatcher = fork.deployment.dispatcher;
     const weth = fork.config.weth;
 
-    const storedDispatcher = await chainlinkPriceFeed.getDispatcher();
     const storedWeth = await chainlinkPriceFeed.getWethToken();
     const storedEthUsdAggregator = await chainlinkPriceFeed.getEthUsdAggregator();
 
     // Check variables
-    expect(storedDispatcher).toMatchAddress(dispatcher);
     expect(storedWeth).toMatchAddress(weth);
     expect(storedEthUsdAggregator).toMatchAddress(fork.config.chainlink.ethusd);
 
@@ -181,6 +178,9 @@ describe('constructor', () => {
         rateAsset: fork.config.chainlink.aggregators[symbol][1],
       });
     }
+
+    // FundDeployerOwnerMixin
+    expect(await chainlinkPriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 

@@ -14,8 +14,8 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
+import "../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/ExtensionBase.sol";
-import "../utils/FundDeployerOwnerMixin.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
 

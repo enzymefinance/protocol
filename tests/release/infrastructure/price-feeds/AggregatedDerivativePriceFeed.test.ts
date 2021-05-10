@@ -6,7 +6,7 @@ import { constants } from 'ethers';
 async function snapshot() {
   const {
     deployer,
-    deployment: { aggregatedDerivativePriceFeed, compoundPriceFeed, uniswapV2PoolPriceFeed },
+    deployment: { aggregatedDerivativePriceFeed, compoundPriceFeed, fundDeployer, uniswapV2PoolPriceFeed },
     config,
   } = await deployProtocolFixture();
 
@@ -23,6 +23,7 @@ async function snapshot() {
   await mockDerivativePriceFeed2.isSupportedAsset.returns(false);
 
   return {
+    fundDeployer,
     compoundTokens,
     uniswapV2PoolTokens,
     aggregatedDerivativePriceFeed,
@@ -40,6 +41,7 @@ describe('constructor', () => {
     const {
       aggregatedDerivativePriceFeed,
       compoundPriceFeed,
+      fundDeployer,
       uniswapV2PoolPriceFeed,
       uniswapV2PoolTokens,
       compoundTokens,
@@ -58,6 +60,9 @@ describe('constructor', () => {
     }
 
     // TODO: add other derivatives
+
+    // FundDeployerOwnerMixin
+    expect(await aggregatedDerivativePriceFeed.getFundDeployer()).toMatchAddress(fundDeployer);
   });
 });
 

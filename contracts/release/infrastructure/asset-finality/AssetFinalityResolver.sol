@@ -13,14 +13,14 @@ pragma solidity 0.6.12;
 
 import "../../interfaces/ISynthetixAddressResolver.sol";
 import "../../interfaces/ISynthetixExchanger.sol";
+import "../../utils/FundDeployerOwnerMixin.sol";
 import "../price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
-import "../utils/DispatcherOwnerMixin.sol";
 import "./IAssetFinalityResolver.sol";
 
 /// @title AssetFinalityResolver Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract that helps achieve asset finality
-contract AssetFinalityResolver is IAssetFinalityResolver, DispatcherOwnerMixin {
+contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin {
     event SynthetixPriceFeedSet(address nextSynthetixPriceFeed);
 
     address private immutable SYNTHETIX_ADDRESS_RESOLVER;
@@ -28,10 +28,10 @@ contract AssetFinalityResolver is IAssetFinalityResolver, DispatcherOwnerMixin {
     address private synthetixPriceFeed;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address _synthetixPriceFeed,
         address _synthetixAddressResolver
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         SYNTHETIX_ADDRESS_RESOLVER = _synthetixAddressResolver;
         __setSynthetixPriceFeed(_synthetixPriceFeed);
     }
@@ -75,7 +75,10 @@ contract AssetFinalityResolver is IAssetFinalityResolver, DispatcherOwnerMixin {
 
     /// @notice Sets a new SynthetixPriceFeed for use within the contract
     /// @param _nextSynthetixPriceFeed The address of the SynthetixPriceFeed contract
-    function setSynthetixPriceFeed(address _nextSynthetixPriceFeed) external onlyDispatcherOwner {
+    function setSynthetixPriceFeed(address _nextSynthetixPriceFeed)
+        external
+        onlyFundDeployerOwner
+    {
         __setSynthetixPriceFeed(_nextSynthetixPriceFeed);
     }
 

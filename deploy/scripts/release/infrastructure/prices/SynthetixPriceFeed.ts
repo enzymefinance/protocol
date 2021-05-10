@@ -11,11 +11,11 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
 
   await deploy('SynthetixPriceFeed', {
     args: [
-      dispatcher.address,
+      fundDeployer.address,
       config.synthetix.addressResolver,
       config.synthetix.susd,
       Object.values(config.synthetix.synths),
@@ -27,6 +27,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'SynthetixPriceFeed'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Config', 'FundDeployer'];
 
 export default fn;

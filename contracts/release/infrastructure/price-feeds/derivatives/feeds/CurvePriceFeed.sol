@@ -18,13 +18,13 @@ import "../../../../interfaces/ICurveAddressProvider.sol";
 import "../../../../interfaces/ICurveLiquidityGaugeToken.sol";
 import "../../../../interfaces/ICurveLiquidityPool.sol";
 import "../../../../interfaces/ICurveRegistry.sol";
-import "../../../utils/DispatcherOwnerMixin.sol";
+import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CurvePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed for Curve pool tokens
-contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
+contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event DerivativeAdded(
@@ -50,9 +50,9 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
 
     mapping(address => DerivativeInfo) private derivativeToInfo;
 
-    constructor(address _dispatcher, address _addressProvider)
+    constructor(address _fundDeployer, address _addressProvider)
         public
-        DispatcherOwnerMixin(_dispatcher)
+        FundDeployerOwnerMixin(_fundDeployer)
     {
         ADDRESS_PROVIDER = _addressProvider;
     }
@@ -110,7 +110,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
     function addDerivatives(
         address[] calldata _derivatives,
         address[] calldata _invariantProxyAssets
-    ) external onlyDispatcherOwner {
+    ) external onlyFundDeployerOwner {
         require(_derivatives.length > 0, "addDerivatives: Empty _derivatives");
         require(
             _derivatives.length == _invariantProxyAssets.length,
@@ -173,7 +173,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Removes Curve LP and/or liquidity gauge tokens from the price feed
     /// @param _derivatives Curve LP and/or liquidity gauge tokens to add
-    function removeDerivatives(address[] calldata _derivatives) external onlyDispatcherOwner {
+    function removeDerivatives(address[] calldata _derivatives) external onlyFundDeployerOwner {
         require(_derivatives.length > 0, "removeDerivatives: Empty _derivatives");
         for (uint256 i; i < _derivatives.length; i++) {
             require(_derivatives[i] != address(0), "removeDerivatives: Empty derivative");

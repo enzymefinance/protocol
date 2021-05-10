@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title GuaranteedRedemption Contract

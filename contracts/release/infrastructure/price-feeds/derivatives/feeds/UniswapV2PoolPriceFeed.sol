@@ -14,8 +14,8 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../../interfaces/IUniswapV2Pair.sol";
+import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../../../../utils/MathHelpers.sol";
-import "../../../utils/DispatcherOwnerMixin.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
 import "../../primitives/IPrimitivePriceFeed.sol";
 import "../../utils/UniswapV2PoolTokenValueCalculator.sol";
@@ -26,7 +26,7 @@ import "../IDerivativePriceFeed.sol";
 /// @notice Price feed for Uniswap lending pool tokens
 contract UniswapV2PoolPriceFeed is
     IDerivativePriceFeed,
-    DispatcherOwnerMixin,
+    FundDeployerOwnerMixin,
     MathHelpers,
     UniswapV2PoolTokenValueCalculator
 {
@@ -48,13 +48,13 @@ contract UniswapV2PoolPriceFeed is
     mapping(address => PoolTokenInfo) private poolTokenToInfo;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address _derivativePriceFeed,
         address _primitivePriceFeed,
         address _valueInterpreter,
         address _factory,
         address[] memory _poolTokens
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         FACTORY = _factory;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -148,7 +148,7 @@ contract UniswapV2PoolPriceFeed is
 
     /// @notice Adds Uniswap pool tokens to the price feed
     /// @param _poolTokens Uniswap pool tokens to add
-    function addPoolTokens(address[] calldata _poolTokens) external onlyDispatcherOwner {
+    function addPoolTokens(address[] calldata _poolTokens) external onlyFundDeployerOwner {
         require(_poolTokens.length > 0, "addPoolTokens: Empty _poolTokens");
 
         __addPoolTokens(_poolTokens, DERIVATIVE_PRICE_FEED, PRIMITIVE_PRICE_FEED);

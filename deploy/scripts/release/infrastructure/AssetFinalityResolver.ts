@@ -14,12 +14,12 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
   const synthetixPriceFeed = await get('SynthetixPriceFeed');
 
   const assetFinalityResolver = await deploy('AssetFinalityResolver', {
     args: [
-      dispatcher.address,
+      fundDeployer.address,
       synthetixPriceFeed.address,
       config.synthetix.addressResolver,
     ] as AssetFinalityResolverArgs,
@@ -38,6 +38,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'AssetFinalityResolver'];
-fn.dependencies = ['Config', 'Dispatcher', 'SynthetixPriceFeed'];
+fn.dependencies = ['Config', 'FundDeployer', 'SynthetixPriceFeed'];
 
 export default fn;

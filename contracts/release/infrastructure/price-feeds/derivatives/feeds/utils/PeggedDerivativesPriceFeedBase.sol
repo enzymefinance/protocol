@@ -23,7 +23,10 @@ abstract contract PeggedDerivativesPriceFeedBase is
     IDerivativePriceFeed,
     SingleUnderlyingDerivativeRegistryMixin
 {
-    constructor(address _dispatcher) public SingleUnderlyingDerivativeRegistryMixin(_dispatcher) {}
+    constructor(address _fundDeployer)
+        public
+        SingleUnderlyingDerivativeRegistryMixin(_fundDeployer)
+    {}
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
     /// @param _derivative The derivative to convert

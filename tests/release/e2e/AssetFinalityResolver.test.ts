@@ -14,8 +14,8 @@ describe('constructor', () => {
     );
     expect(await assetFinalityResolver.getSynthetixPriceFeed()).toMatchAddress(fork.deployment.synthetixPriceFeed);
 
-    // DispatcherOwnerMixin
-    expect(await assetFinalityResolver.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
+    // FundDeployerOwnerMixin
+    expect(await assetFinalityResolver.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 

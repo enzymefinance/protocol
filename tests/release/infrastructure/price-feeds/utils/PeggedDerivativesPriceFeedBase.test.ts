@@ -5,10 +5,10 @@ import { deployProtocolFixture } from '@enzymefinance/testutils';
 async function snapshot() {
   const {
     deployer,
-    deployment: { dispatcher },
+    deployment: { fundDeployer },
   } = await deployProtocolFixture();
 
-  const testPeggedDerivativesPriceFeed = await TestPeggedDerivativesPriceFeed.deploy(deployer, dispatcher);
+  const testPeggedDerivativesPriceFeed = await TestPeggedDerivativesPriceFeed.deploy(deployer, fundDeployer);
 
   // Deploy mock derivative and mock underlying with same decimals
   const mockDerivative = await MockToken.deploy(deployer, 'Mock Derivative', 'MOCK_D', 18);

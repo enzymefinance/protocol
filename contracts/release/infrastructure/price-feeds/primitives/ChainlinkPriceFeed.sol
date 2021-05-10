@@ -15,13 +15,13 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../interfaces/IChainlinkAggregator.sol";
-import "../../utils/DispatcherOwnerMixin.sol";
+import "../../../utils/FundDeployerOwnerMixin.sol";
 import "./IPrimitivePriceFeed.sol";
 
 /// @title ChainlinkPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Chainlink oracles as price sources
-contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
+contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
@@ -61,13 +61,13 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     mapping(address => uint256) private primitiveToUnit;
 
     constructor(
-        address _dispatcher,
+        address _fundDeployer,
         address _wethToken,
         address _ethUsdAggregator,
         address[] memory _primitives,
         address[] memory _aggregators,
         RateAsset[] memory _rateAssets
-    ) public DispatcherOwnerMixin(_dispatcher) {
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
         WETH_TOKEN = _wethToken;
         staleRateThreshold = 25 hours; // 24 hour heartbeat + 1hr buffer
         __setEthUsdAggregator(_ethUsdAggregator);
@@ -136,7 +136,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Sets the `ehUsdAggregator` variable value
     /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
-    function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyDispatcherOwner {
+    function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyFundDeployerOwner {
         __setEthUsdAggregator(_nextEthUsdAggregator);
     }
 
@@ -293,7 +293,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
         address[] calldata _primitives,
         address[] calldata _aggregators,
         RateAsset[] calldata _rateAssets
-    ) external onlyDispatcherOwner {
+    ) external onlyFundDeployerOwner {
         require(_primitives.length > 0, "addPrimitives: _primitives cannot be empty");
 
         __addPrimitives(_primitives, _aggregators, _rateAssets);
@@ -301,7 +301,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Removes a list of primitives from the feed
     /// @param _primitives The primitives to remove
-    function removePrimitives(address[] calldata _primitives) external onlyDispatcherOwner {
+    function removePrimitives(address[] calldata _primitives) external onlyFundDeployerOwner {
         require(_primitives.length > 0, "removePrimitives: _primitives cannot be empty");
 
         for (uint256 i; i < _primitives.length; i++) {
@@ -337,7 +337,10 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
 
     /// @notice Sets the `staleRateThreshold` variable
     /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
-    function setStaleRateThreshold(uint256 _nextStaleRateThreshold) external onlyDispatcherOwner {
+    function setStaleRateThreshold(uint256 _nextStaleRateThreshold)
+        external
+        onlyFundDeployerOwner
+    {
         uint256 prevStaleRateThreshold = staleRateThreshold;
         require(
             _nextStaleRateThreshold != prevStaleRateThreshold,
@@ -354,7 +357,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, DispatcherOwnerMixin {
     /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
     function updatePrimitives(address[] calldata _primitives, address[] calldata _aggregators)
         external
-        onlyDispatcherOwner
+        onlyFundDeployerOwner
     {
         require(_primitives.length > 0, "updatePrimitives: _primitives cannot be empty");
         require(

@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../persistent/dispatcher/IDispatcher.sol";
+import "../../persistent/dispatcher/IDispatcher.sol";
 
 /// @title DispatcherOwnerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

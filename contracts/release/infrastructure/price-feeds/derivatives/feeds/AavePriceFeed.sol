@@ -20,9 +20,9 @@ import "./utils/PeggedDerivativesPriceFeedBase.sol";
 contract AavePriceFeed is PeggedDerivativesPriceFeedBase {
     address private immutable PROTOCOL_DATA_PROVIDER;
 
-    constructor(address _dispatcher, address _protocolDataProvider)
+    constructor(address _fundDeployer, address _protocolDataProvider)
         public
-        PeggedDerivativesPriceFeedBase(_dispatcher)
+        PeggedDerivativesPriceFeedBase(_fundDeployer)
     {
         PROTOCOL_DATA_PROVIDER = _protocolDataProvider;
     }

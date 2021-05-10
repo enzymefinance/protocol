@@ -59,7 +59,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(83100));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(84000));
   });
 });
 
@@ -80,6 +80,9 @@ describe('constructor', () => {
     expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ctokens.czrx)).toMatchAddress(
       fork.config.primitives.zrx,
     );
+
+    // FundDeployerOwnerMixin
+    expect(await compoundPriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 
@@ -90,7 +93,7 @@ describe('addCTokens', () => {
 
     await expect(
       compoundPriceFeed.connect(arbitraryUser).addCTokens([randomAddress(), randomAddress()]),
-    ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
   });
 
   it('does not allow an empty _cTokens param', async () => {

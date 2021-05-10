@@ -36,8 +36,8 @@ const expectedGasCosts = {
     weth: 1397000,
   },
   'calc gav: 20 assets': {
-    usdc: 1125000,
-    weth: 1071000,
+    usdc: 1126000,
+    weth: 1072000,
   },
   'calc gav: denomination asset only': {
     usdc: 84400,
@@ -51,11 +51,11 @@ const expectedGasCosts = {
 
   'redeem all shares: max assets: all remaining': {
     usdc: 2529000,
-    weth: 2489000,
+    weth: 2490000,
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2637000,
+    usdc: 2638000,
     weth: 2575000,
   },
 

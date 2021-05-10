@@ -57,6 +57,13 @@ describe('derivative gas costs', () => {
   });
 });
 
+describe('constructor', () => {
+  it('sets state vars', async () => {
+    // FundDeployerOwnerMixin
+    expect(await fork.deployment.aavePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
+  });
+});
+
 describe('addDerivatives', () => {
   it('correctly adds an existing aToken to the derivativeRegistry', async () => {
     const aavePriceFeed = fork.deployment.aavePriceFeed;

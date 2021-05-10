@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../core/fund-deployer/IFundDeployer.sol";
+import "../core/fund-deployer/IFundDeployer.sol";
 
 /// @title FundDeployerOwnerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

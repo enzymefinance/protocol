@@ -107,6 +107,9 @@ describe('constructor', () => {
     for (const synth of Object.values(fork.config.synthetix.synths)) {
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(synth)).not.toBe(constants.HashZero);
     }
+
+    // FundDeployerOwnerMixin
+    expect(await synthetixPriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 
@@ -201,7 +204,7 @@ describe('synths registry', () => {
         synthetixPriceFeed
           .connect(arbitraryUser)
           .addSynths([fork.config.synthetix.synths.sbnb, fork.config.synthetix.synths.seth]),
-      ).rejects.toBeRevertedWith('Only the Dispatcher owner can call this function');
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
     it('does not allow an empty _synths param', async () => {

@@ -62,7 +62,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(95100));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(96000));
   });
 });
 
@@ -91,6 +91,9 @@ describe('constructor', () => {
         },
       );
     }
+
+    // FundDeployerOwnerMixin
+    expect(await uniswapV2PoolPriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
 });
 
