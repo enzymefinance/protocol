@@ -23,6 +23,8 @@ import "./utils/FeeBase.sol";
 contract ManagementFee is FeeBase, MakerDaoMath {
     using SafeMath for uint256;
 
+    event ActivatedForMigratedFund(address indexed comptrollerProxy);
+
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 scaledPerSecondRate);
 
     event Settled(
@@ -55,6 +57,8 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         // It is only necessary to set `lastSettled` for a migrated fund
         if (VaultLib(payable(_vaultProxy)).totalSupply() > 0) {
             comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
+
+            emit ActivatedForMigratedFund(_comptrollerProxy);
         }
     }
 

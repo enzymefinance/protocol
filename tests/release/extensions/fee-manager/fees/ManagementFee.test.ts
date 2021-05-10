@@ -1,3 +1,4 @@
+import { extractEvent } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
@@ -96,7 +97,9 @@ describe('activateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Activate fund
-    await standaloneManagementFee.connect(EOAFeeManager).activateForFund(mockComptrollerProxy, mockVaultProxy);
+    const receipt = await standaloneManagementFee
+      .connect(EOAFeeManager)
+      .activateForFund(mockComptrollerProxy, mockVaultProxy);
 
     // Assert lastSettled has not been set
     const getFeeInfoForFundCall = await standaloneManagementFee.getFeeInfoForFund(mockComptrollerProxy);
@@ -104,6 +107,10 @@ describe('activateForFund', () => {
       lastSettled: 0,
       scaledPerSecondRate,
     });
+
+    // Assert no event emitted
+    const events = extractEvent(receipt, 'ActivatedForMigratedFund');
+    expect(events.length).toBe(0);
   });
 
   // i.e., a migrated fund
@@ -130,6 +137,11 @@ describe('activateForFund', () => {
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(standaloneManagementFee.getFeeInfoForFund, {
       lastSettled: activationTimestamp,
       scaledPerSecondRate,
+    });
+
+    // Assert correct event emitted
+    assertEvent(receipt, 'ActivatedForMigratedFund', {
+      comptrollerProxy: mockComptrollerProxy,
     });
   });
 });
