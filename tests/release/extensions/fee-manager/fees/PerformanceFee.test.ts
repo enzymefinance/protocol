@@ -1,8 +1,10 @@
+import { extractEvent } from '@enzymefinance/ethers';
 import { MockContract } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   FeeHook,
   FeeManager,
+  feeManagerConfigArgs,
   FeeSettlementType,
   PerformanceFee,
   performanceFeeConfigArgs,
@@ -10,7 +12,15 @@ import {
   StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { assertEvent, assertNoEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
+import {
+  assertEvent,
+  assertNoEvent,
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  redeemSharesInKind,
+  transactionTimestamp,
+} from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 
 async function snapshot() {
@@ -24,8 +34,9 @@ async function snapshot() {
   const standalonePerformanceFee = await PerformanceFee.deploy(deployer, mockFeeManager);
 
   // Mock a denomination asset
+  const mockDenominationAssetDecimals = 8;
   const mockDenominationAsset = await StandardToken.mock(deployer);
-  await mockDenominationAsset.decimals.returns(18);
+  await mockDenominationAsset.decimals.returns(mockDenominationAssetDecimals);
 
   // Mock a VaultProxy
   const mockVaultProxy = await VaultLib.mock(deployer);
@@ -35,7 +46,7 @@ async function snapshot() {
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   await mockComptrollerProxy.calcGav.returns(0, false);
-  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseEther('1'), true);
+  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseUnits('1', mockDenominationAssetDecimals), true);
   await mockComptrollerProxy.getDenominationAsset.returns(mockDenominationAsset);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
@@ -57,6 +68,7 @@ async function snapshot() {
     performanceFeeRate,
     performanceFeePeriod,
     mockComptrollerProxy,
+    mockDenominationAsset,
     mockFeeManager,
     mockVaultProxy,
     standalonePerformanceFee,
@@ -68,14 +80,14 @@ async function activateWithInitialValues({
   mockComptrollerProxy,
   mockVaultProxy,
   performanceFee,
-  gav = utils.parseEther('1'),
+  gav,
   totalSharesSupply = utils.parseEther('1'),
 }: {
   mockFeeManager: MockContract<FeeManager>;
   mockComptrollerProxy: MockContract<ComptrollerLib>;
   mockVaultProxy: MockContract<VaultLib>;
   performanceFee: PerformanceFee;
-  gav?: BigNumberish;
+  gav: BigNumberish;
   totalSharesSupply?: BigNumberish;
 }) {
   await mockComptrollerProxy.calcGav.returns(gav, true);
@@ -332,6 +344,7 @@ describe('activateForFund', () => {
   it('correctly handles valid call', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       performanceFeePeriod,
@@ -340,7 +353,7 @@ describe('activateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     // Set grossShareValue to an arbitrary value
-    const grossShareValue = utils.parseEther('5');
+    const grossShareValue = utils.parseUnits('5', await mockDenominationAsset.decimals());
     await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue, true);
 
     // Activate fund
@@ -383,6 +396,7 @@ describe('payout', () => {
   it('correctly handles a valid call (HWM has not increased)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       performanceFeePeriod,
@@ -394,6 +408,7 @@ describe('payout', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     const feeInfoPrePayout = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
@@ -439,6 +454,7 @@ describe('payout', () => {
   it('correctly handles a valid call (HWM has increased)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       performanceFeePeriod,
@@ -450,6 +466,7 @@ describe('payout', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     const initialSharePrice = (await mockComptrollerProxy.calcGrossShareValue.call()).grossShareValue_;
@@ -459,7 +476,7 @@ describe('payout', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('1.1'),
+      nextGav: utils.parseUnits('1.1', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -507,6 +524,7 @@ describe('payoutAllowed', () => {
   it('requires one full period to have passed since activation', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       performanceFeePeriod,
@@ -518,6 +536,7 @@ describe('payoutAllowed', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // payoutAllowed should be false
@@ -542,6 +561,7 @@ describe('payoutAllowed', () => {
   it('requires a subsequent period to pass after a previous payout', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       performanceFeePeriod,
@@ -553,6 +573,7 @@ describe('payoutAllowed', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // Raise next high water mark by increasing price
@@ -560,7 +581,7 @@ describe('payoutAllowed', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('1.1'),
+      nextGav: utils.parseUnits('1.1', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -612,6 +633,7 @@ describe('settle', () => {
   it('correctly handles valid call (no change in share price)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       standalonePerformanceFee: performanceFee,
@@ -622,6 +644,7 @@ describe('settle', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     const feeHook = FeeHook.Continuous;
@@ -656,6 +679,7 @@ describe('settle', () => {
   it('correctly handles valid call (positive value change with no shares outstanding)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       standalonePerformanceFee: performanceFee,
@@ -666,6 +690,7 @@ describe('settle', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // Increase performance
@@ -673,7 +698,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('2'),
+      nextGav: utils.parseUnits('2', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -683,6 +708,7 @@ describe('settle', () => {
   it('correctly handles valid call (positive value change with shares outstanding)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       standalonePerformanceFee: performanceFee,
@@ -693,6 +719,7 @@ describe('settle', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // Increase performance
@@ -700,7 +727,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('2'),
+      nextGav: utils.parseUnits('2', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -709,7 +736,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('3'),
+      nextGav: utils.parseUnits('3', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -719,6 +746,7 @@ describe('settle', () => {
   it('correctly handles valid call (negative value change less than shares outstanding)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       standalonePerformanceFee: performanceFee,
@@ -729,6 +757,7 @@ describe('settle', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // Increase performance
@@ -736,7 +765,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('2'),
+      nextGav: utils.parseUnits('2', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -745,7 +774,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('1.5'),
+      nextGav: utils.parseUnits('1.5', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -755,6 +784,7 @@ describe('settle', () => {
   it('correctly handles valid call (negative value change greater than shares outstanding)', async () => {
     const {
       mockComptrollerProxy,
+      mockDenominationAsset,
       mockFeeManager,
       mockVaultProxy,
       standalonePerformanceFee: performanceFee,
@@ -765,6 +795,7 @@ describe('settle', () => {
       mockComptrollerProxy,
       mockVaultProxy,
       performanceFee,
+      gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
     // Increase performance
@@ -772,7 +803,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('2'),
+      nextGav: utils.parseUnits('2', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -781,7 +812,7 @@ describe('settle', () => {
       mockFeeManager,
       mockComptrollerProxy,
       mockVaultProxy,
-      nextGav: utils.parseEther('0.5'),
+      nextGav: utils.parseUnits('0.5', await mockDenominationAsset.decimals()),
       performanceFee,
     });
 
@@ -789,5 +820,97 @@ describe('settle', () => {
 
     // Outstanding shares should be back to 0
     await expect(mockVaultProxy.balanceOf(mockVaultProxy)).resolves.toEqBigNumber(0);
+  });
+});
+
+describe('integration', () => {
+  it('works correctly upon shares redemption for a non 18-decimal asset', async () => {
+    const {
+      accounts: [fundOwner, investor],
+      config: {
+        primitives: { usdc },
+      },
+      deployment: { performanceFee, fundDeployer },
+    } = await provider.snapshot(snapshot);
+
+    const denominationAsset = new StandardToken(usdc, whales.usdc);
+    const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      fundOwner: fundOwner,
+      fundName: 'TestFund',
+      feeManagerConfig: feeManagerConfigArgs({
+        fees: [performanceFee],
+        settings: [
+          performanceFeeConfigArgs({
+            rate: utils.parseEther('.05'),
+            period: BigNumber.from(60 * 60 * 24 * 365), // 365 days
+          }),
+        ],
+      }),
+    });
+
+    const initialInvestmentAmount = utils.parseUnits('2', await denominationAsset.decimals());
+    await denominationAsset.transfer(investor, initialInvestmentAmount);
+    await buyShares({
+      comptrollerProxy,
+      buyer: investor,
+      denominationAsset,
+      investmentAmount: initialInvestmentAmount,
+    });
+
+    // Performance fee state should be in expected initial configuration
+    const initialFeeInfo = await performanceFee.getFeeInfoForFund(comptrollerProxy);
+    expect(initialFeeInfo.lastSharePrice).toEqBigNumber(denominationAssetUnit);
+    expect(initialFeeInfo.aggregateValueDue).toEqBigNumber(0);
+
+    // Redeem small amount of shares
+    const redeemTx1 = await redeemSharesInKind({
+      comptrollerProxy,
+      signer: investor,
+      quantity: initialInvestmentAmount.div(4),
+    });
+
+    // The fees should not have emitted a failure event
+    const failureEvents1 = extractEvent(redeemTx1 as any, 'PreRedeemSharesHookFailed');
+    expect(failureEvents1.length).toBe(0);
+
+    // Performance fee state should be exactly the same
+    const feeInfo2 = await performanceFee.getFeeInfoForFund(comptrollerProxy);
+    expect(feeInfo2.lastSharePrice).toEqBigNumber(initialFeeInfo.lastSharePrice);
+    expect(feeInfo2.aggregateValueDue).toEqBigNumber(initialFeeInfo.aggregateValueDue);
+
+    // Bump performance by sending denomination asset to the vault
+    const gavIncreaseAmount = utils.parseUnits('0.5', await denominationAsset.decimals());
+    await denominationAsset.transfer(vaultProxy, gavIncreaseAmount);
+
+    // Redeem more of remaining shares
+    const redeemAmount2 = (await vaultProxy.balanceOf(investor)).div(4);
+    const redeemTx2 = await redeemSharesInKind({
+      comptrollerProxy,
+      signer: investor,
+      quantity: redeemAmount2,
+    });
+
+    // The fees should not have emitted a failure event
+    const failureEvents2 = extractEvent(redeemTx2 as any, 'PreRedeemSharesHookFailed');
+    expect(failureEvents2.length).toBe(0);
+
+    // Performance fee state should have updated correctly
+    const gavPostRedeem2 = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+    const sharesSupplyNetSharesOutstanding = (await vaultProxy.totalSupply()).sub(
+      await vaultProxy.balanceOf(vaultProxy),
+    );
+    const feeInfo3 = await performanceFee.getFeeInfoForFund(comptrollerProxy);
+    expect(feeInfo3.lastSharePrice).toEqBigNumber(
+      gavPostRedeem2.mul(utils.parseEther('1')).div(sharesSupplyNetSharesOutstanding),
+    );
+    // This is 1 wei less than expected
+    expect(feeInfo3.aggregateValueDue).toEqBigNumber(
+      feeInfo3.rate.mul(gavIncreaseAmount).div(utils.parseEther('1')).sub(1),
+    );
   });
 });

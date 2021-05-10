@@ -1,4 +1,4 @@
-import { randomAddress } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
@@ -32,7 +32,7 @@ const expectedGasCosts = {
     weth: 326000,
   },
   'buy shares: max assets': {
-    usdc: 1514000,
+    usdc: 1429000,
     weth: 1397000,
   },
   'calc gav: 20 assets': {
@@ -50,7 +50,7 @@ const expectedGasCosts = {
   },
 
   'redeem all shares: max assets: all remaining': {
-    usdc: 2502000,
+    usdc: 2529000,
     weth: 2489000,
   },
 
@@ -293,7 +293,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(grossShareValueAfter.grossShareValue_).toBeGtBigNumber(grossShareValueBefore.grossShareValue_);
     });
 
-    it('redeems some shares of the investor', async () => {
+    it('redeems some shares of the investor (without fees failure)', async () => {
       const balance = await vaultProxy.balanceOf(investor);
       const redeemQuantity = balance.div(2);
 
@@ -302,6 +302,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
         signer: investor,
         quantity: redeemQuantity,
       });
+
+      const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
+      expect(failureEvents.length).toBe(0);
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
 
@@ -361,20 +364,26 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(buySharesTx).toCostLessThan(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
     });
 
-    it('redeems all remaining shares of the first investor', async () => {
-      await redeemSharesInKind({
+    it('redeems all remaining shares of the first investor (without fees failure)', async () => {
+      const redeemed = await redeemSharesInKind({
         comptrollerProxy,
         signer: investor,
       });
 
+      const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
+      expect(failureEvents.length).toBe(0);
+
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
     });
 
-    it('redeems all remaining shares of the other investor', async () => {
+    it('redeems all remaining shares of the other investor (without fees failure)', async () => {
       const redeemed = await redeemSharesInKind({
         comptrollerProxy,
         signer: anotherInvestor,
       });
+
+      const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
+      expect(failureEvents.length).toBe(0);
 
       expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
 

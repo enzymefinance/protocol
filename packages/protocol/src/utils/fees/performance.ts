@@ -94,11 +94,7 @@ export function performanceFeeSharesDue({
       const sharesDecrease = settlementInfo!.redeemSharesSharesAmount!;
       nextNetSharesSupply = netSharesSupply.sub(sharesDecrease);
 
-      const gavDecrease = BigNumber.from(sharesDecrease)
-        .mul(gav)
-        .mul(shareUnit)
-        .div(sharesSupplyWithSharesDue)
-        .div(denominationAssetUnit);
+      const gavDecrease = BigNumber.from(gav).mul(sharesDecrease).div(sharesSupplyWithSharesDue);
 
       nextGav = BigNumber.from(gav).sub(gavDecrease);
     } else {
