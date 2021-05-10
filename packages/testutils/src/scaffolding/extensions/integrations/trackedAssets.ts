@@ -13,20 +13,18 @@ export function addTrackedAssetsToVault({
   comptrollerProxy,
   integrationManager,
   assets,
-  setAsPersistentlyTracked = new Array(assets.length).fill(true),
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   assets: AddressLike[];
-  setAsPersistentlyTracked?: boolean[];
 }) {
   return comptrollerProxy
     .connect(signer)
     .callOnExtension(
       integrationManager,
       IntegrationManagerActionId.AddTrackedAssetsToVault,
-      addTrackedAssetsToVaultArgs({ assets, setAsPersistentlyTracked }),
+      addTrackedAssetsToVaultArgs({ assets }),
     );
 }
 

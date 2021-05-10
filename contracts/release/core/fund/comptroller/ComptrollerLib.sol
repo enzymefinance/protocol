@@ -272,158 +272,62 @@ contract ComptrollerLib is IComptroller {
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
-    function permissionedVaultAction(VaultAction _action, bytes calldata _actionData)
+    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData)
         external
         override
         onlyNotPaused
     {
         __assertPermissionedVaultAction(msg.sender, _action);
 
-        if (_action == VaultAction.AddDebtPosition) {
-            __vaultActionAddDebtPosition(_actionData);
-        } else if (_action == VaultAction.AddTrackedAsset) {
-            __vaultActionAddTrackedAsset(_actionData);
-        } else if (_action == VaultAction.ApproveAssetSpender) {
-            __vaultActionApproveAssetSpender(_actionData);
-        } else if (_action == VaultAction.BurnShares) {
-            __vaultActionBurnShares(_actionData);
-        } else if (_action == VaultAction.CallOnDebtPosition) {
-            __vaultActionCallOnDebtPosition(_actionData);
-        } else if (_action == VaultAction.MintShares) {
-            __vaultActionMintShares(_actionData);
-        } else if (_action == VaultAction.RemoveDebtPosition) {
-            __vaultActionRemoveDebtPosition(_actionData);
-        } else if (_action == VaultAction.RemoveTrackedAsset) {
-            __vaultActionRemoveTrackedAsset(_actionData);
-        } else if (_action == VaultAction.TransferShares) {
-            __vaultActionTransferShares(_actionData);
-        } else if (_action == VaultAction.WithdrawAssetTo) {
-            __vaultActionWithdrawAssetTo(_actionData);
+        // Validate action as needed
+        if (_action == IVault.VaultAction.RemovePersistentlyTrackedAsset) {
+            require(
+                abi.decode(_actionData, (address)) != denominationAsset,
+                "permissionedVaultAction: Cannot untrack denomination asset"
+            );
         }
+
+        IVault(vaultProxy).receiveValidatedVaultAction(_action, _actionData);
     }
 
     /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction
-    function __assertPermissionedVaultAction(address _caller, VaultAction _action) private view {
+    function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action)
+        private
+        view
+    {
         require(
             permissionedVaultActionAllowed,
             "__assertPermissionedVaultAction: No action allowed"
         );
 
+        // Calls are roughly ordered by likely frequency
         if (_caller == INTEGRATION_MANAGER) {
             require(
-                _action == VaultAction.ApproveAssetSpender ||
-                    _action == VaultAction.AddTrackedAsset ||
-                    _action == VaultAction.RemoveTrackedAsset ||
-                    _action == VaultAction.WithdrawAssetTo,
+                _action == IVault.VaultAction.AddTrackedAsset ||
+                    _action == IVault.VaultAction.RemoveTrackedAsset ||
+                    _action == IVault.VaultAction.WithdrawAssetTo ||
+                    _action == IVault.VaultAction.ApproveAssetSpender ||
+                    _action == IVault.VaultAction.AddPersistentlyTrackedAsset ||
+                    _action == IVault.VaultAction.RemovePersistentlyTrackedAsset,
                 "__assertPermissionedVaultAction: Not allowed"
             );
         } else if (_caller == FEE_MANAGER) {
             require(
-                _action == VaultAction.BurnShares ||
-                    _action == VaultAction.MintShares ||
-                    _action == VaultAction.TransferShares,
+                _action == IVault.VaultAction.MintShares ||
+                    _action == IVault.VaultAction.BurnShares ||
+                    _action == IVault.VaultAction.TransferShares,
                 "__assertPermissionedVaultAction: Not allowed"
             );
         } else if (_caller == DEBT_POSITION_MANAGER) {
             require(
-                _action == VaultAction.AddDebtPosition ||
-                    _action == VaultAction.CallOnDebtPosition ||
-                    _action == VaultAction.RemoveDebtPosition,
+                _action == IVault.VaultAction.CallOnDebtPosition ||
+                    _action == IVault.VaultAction.AddDebtPosition ||
+                    _action == IVault.VaultAction.RemoveDebtPosition,
                 "__assertPermissionedVaultAction: Not allowed"
             );
         } else {
             revert("__assertPermissionedVaultAction: Not a valid actor");
         }
-    }
-
-    /// @dev Helper to add a new debt position to the fund
-    function __vaultActionAddDebtPosition(bytes memory _actionData) private {
-        address debtPosition = abi.decode(_actionData, (address));
-        IVault(vaultProxy).addDebtPosition(debtPosition);
-    }
-
-    /// @dev Helper to add a tracked asset to the fund
-    function __vaultActionAddTrackedAsset(bytes memory _actionData) private {
-        (address asset, bool setAsPersistentlyTracked) = abi.decode(_actionData, (address, bool));
-        IVault(vaultProxy).addTrackedAsset(asset, setAsPersistentlyTracked);
-    }
-
-    /// @dev Helper to grant a spender an allowance for a fund's asset
-    function __vaultActionApproveAssetSpender(bytes memory _actionData) private {
-        (address asset, address target, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
-        IVault(vaultProxy).approveAssetSpender(asset, target, amount);
-    }
-
-    /// @dev Helper to burn fund shares for a particular account
-    function __vaultActionBurnShares(bytes memory _actionData) private {
-        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
-        IVault(vaultProxy).burnShares(target, amount);
-    }
-
-    /// @dev Helper to make a call on a debt position
-    function __vaultActionCallOnDebtPosition(bytes memory _actionData) private {
-        (
-            address debtPosition,
-            bytes memory actionData,
-            address[] memory assetsToTransfer,
-            uint256[] memory amountsToTransfer,
-            address[] memory assetsToReceive
-        ) = abi.decode(_actionData, (address, bytes, address[], uint256[], address[]));
-
-        IVault(vaultProxy).callOnDebtPosition(
-            debtPosition,
-            actionData,
-            assetsToTransfer,
-            amountsToTransfer,
-            assetsToReceive
-        );
-    }
-
-    /// @dev Helper to mint fund shares to a particular account
-    function __vaultActionMintShares(bytes memory _actionData) private {
-        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
-        IVault(vaultProxy).mintShares(target, amount);
-    }
-
-    /// @dev Helper to remove a debt position from the vault
-    function __vaultActionRemoveDebtPosition(bytes memory _actionData) private {
-        IVault(vaultProxy).removeDebtPosition(abi.decode(_actionData, (address)));
-    }
-
-    /// @dev Helper to remove a tracked asset from the fund
-    function __vaultActionRemoveTrackedAsset(bytes memory _actionData) private {
-        (address asset, bool unsetAsPersistentlyTracked) = abi.decode(
-            _actionData,
-            (address, bool)
-        );
-
-        require(
-            !unsetAsPersistentlyTracked || asset != denominationAsset,
-            "__vaultActionRemoveTrackedAsset: Cannot untrack denomination asset"
-        );
-
-        IVault(vaultProxy).removeTrackedAsset(asset, unsetAsPersistentlyTracked);
-    }
-
-    /// @dev Helper to transfer fund shares from one account to another
-    function __vaultActionTransferShares(bytes memory _actionData) private {
-        (address from, address to, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
-        IVault(vaultProxy).transferShares(from, to, amount);
-    }
-
-    /// @dev Helper to withdraw an asset from the VaultProxy to a given account
-    function __vaultActionWithdrawAssetTo(bytes memory _actionData) private {
-        (address asset, address target, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
-        IVault(vaultProxy).withdrawAssetTo(asset, target, amount);
     }
 
     ///////////////
@@ -493,7 +397,7 @@ contract ComptrollerLib is IComptroller {
 
         // TODO: do we want to handle a corner case of a fund that is at the max assets limit
         // but does already track the denominationAsset?
-        IVault(_vaultProxy).addTrackedAsset(denominationAsset, true);
+        IVault(_vaultProxy).addPersistentlyTrackedAsset(denominationAsset);
 
         // Activate extensions
         IExtension(DEBT_POSITION_MANAGER).activateForFund(_isMigration);
@@ -884,7 +788,7 @@ contract ComptrollerLib is IComptroller {
             if (sharesToRedeem == sharesSupply) {
                 payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
                 // Will not remove assets that are marked to not be untracked
-                vaultProxyContract.removeTrackedAsset(payoutAssets_[i], false);
+                vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
             } else {
                 payoutAmounts_[i] = ERC20(payoutAssets_[i])
                     .balanceOf(address(vaultProxyContract))

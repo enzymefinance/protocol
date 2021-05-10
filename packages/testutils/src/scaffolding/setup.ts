@@ -7,6 +7,7 @@ import {
   FundDeployer,
   StandardToken,
   VaultLib,
+  VaultProxy,
 } from '@enzymefinance/protocol';
 import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
 import { assertEvent } from '../assertions';
@@ -139,4 +140,24 @@ export async function createNewFund({
     receipt,
     vaultProxy,
   };
+}
+
+export async function createVaultProxy({
+  signer,
+  vaultLib,
+  fundOwner,
+  fundAccessor,
+  fundName = 'My Fund',
+}: {
+  signer: SignerWithAddress;
+  vaultLib: VaultLib;
+  fundOwner: AddressLike;
+  fundAccessor: SignerWithAddress;
+  fundName?: string;
+}) {
+  const constructData = encodeFunctionData(vaultLib.init.fragment, [fundOwner, fundAccessor, fundName]);
+
+  const vaultProxyContract = await VaultProxy.deploy(signer, constructData, vaultLib);
+
+  return new VaultLib(vaultProxyContract, fundAccessor);
 }

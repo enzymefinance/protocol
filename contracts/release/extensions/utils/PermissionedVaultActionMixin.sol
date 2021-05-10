@@ -12,6 +12,7 @@
 pragma solidity 0.6.12;
 
 import "../../core/fund/comptroller/IComptroller.sol";
+import "../../core/fund/vault/IVault.sol";
 
 /// @title PermissionedVaultActionMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -22,23 +23,28 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _debtPosition The debt position to be added
     function __addDebtPosition(address _comptrollerProxy, address _debtPosition) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.AddDebtPosition,
+            IVault.VaultAction.AddDebtPosition,
             abi.encode(_debtPosition)
         );
     }
 
-    /// @notice Adds a tracked asset and optionally specifies if it should be persistently tracked,
-    /// i.e., that it cannot be untracked
-    /// @param _asset The asset to add
-    /// @param _setAsPersistentlyTracked True if the asset should be set as persistently tracked
-    function __addTrackedAsset(
-        address _comptrollerProxy,
-        address _asset,
-        bool _setAsPersistentlyTracked
-    ) internal {
+    /// @notice Adds a tracked asset and sets it as persistently tracked
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _asset The asset to add and set as persistently tracked
+    function __addPersistentlyTrackedAsset(address _comptrollerProxy, address _asset) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.AddTrackedAsset,
-            abi.encode(_asset, _setAsPersistentlyTracked)
+            IVault.VaultAction.AddPersistentlyTrackedAsset,
+            abi.encode(_asset)
+        );
+    }
+
+    /// @notice Adds a tracked asset
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _asset The asset to add
+    function __addTrackedAsset(address _comptrollerProxy, address _asset) internal {
+        IComptroller(_comptrollerProxy).permissionedVaultAction(
+            IVault.VaultAction.AddTrackedAsset,
+            abi.encode(_asset)
         );
     }
 
@@ -54,7 +60,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.ApproveAssetSpender,
+            IVault.VaultAction.ApproveAssetSpender,
             abi.encode(_asset, _target, _amount)
         );
     }
@@ -69,17 +75,17 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.BurnShares,
+            IVault.VaultAction.BurnShares,
             abi.encode(_target, _amount)
         );
     }
 
     /// @notice Executes a callOnDebtPosition
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _data The enconded data for the call
+    /// @param _data The encoded data for the call
     function __callOnDebtPosition(address _comptrollerProxy, bytes memory _data) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.CallOnDebtPosition,
+            IVault.VaultAction.CallOnDebtPosition,
             _data
         );
     }
@@ -94,34 +100,38 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.MintShares,
+            IVault.VaultAction.MintShares,
             abi.encode(_target, _amount)
         );
     }
 
-    /// @notice Removes a debt posiition from the vaultProxy
+    /// @notice Removes a debt position from the vaultProxy
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _debtPosition The DebtPosition to remove
     function __removeDebtPosition(address _comptrollerProxy, address _debtPosition) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.RemoveDebtPosition,
+            IVault.VaultAction.RemoveDebtPosition,
             abi.encode(_debtPosition)
         );
     }
 
-    /// @notice Removes a tracked asset and optionally specifies whether it should be unset
-    /// as a persistently tracked asset
+    /// @notice Removes a tracked asset and unsets it as persistently tracked
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _asset The asset to remove and unset as persistently tracked
+    function __removePersistentlyTrackedAsset(address _comptrollerProxy, address _asset) internal {
+        IComptroller(_comptrollerProxy).permissionedVaultAction(
+            IVault.VaultAction.RemovePersistentlyTrackedAsset,
+            abi.encode(_asset)
+        );
+    }
+
+    /// @notice Removes a tracked asset
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _asset The asset to remove
-    /// @param _unsetAsPersistentlyTracked True if the asset should be unset as persistently tracked
-    function __removeTrackedAsset(
-        address _comptrollerProxy,
-        address _asset,
-        bool _unsetAsPersistentlyTracked
-    ) internal {
+    function __removeTrackedAsset(address _comptrollerProxy, address _asset) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.RemoveTrackedAsset,
-            abi.encode(_asset, _unsetAsPersistentlyTracked)
+            IVault.VaultAction.RemoveTrackedAsset,
+            abi.encode(_asset)
         );
     }
 
@@ -137,7 +147,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.TransferShares,
+            IVault.VaultAction.TransferShares,
             abi.encode(_from, _to, _amount)
         );
     }
@@ -154,7 +164,7 @@ abstract contract PermissionedVaultActionMixin {
         uint256 _amount
     ) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IComptroller.VaultAction.WithdrawAssetTo,
+            IVault.VaultAction.WithdrawAssetTo,
             abi.encode(_asset, _target, _amount)
         );
     }

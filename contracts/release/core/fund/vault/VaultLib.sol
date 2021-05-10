@@ -39,7 +39,7 @@ contract VaultLib is VaultLibBase2, IVault {
     address private immutable WETH_TOKEN;
 
     modifier notShares(address _asset) {
-        __assertNotShares(_asset);
+        require(_asset != address(this), "Cannot act on shares");
         _;
     }
 
@@ -63,9 +63,9 @@ contract VaultLib is VaultLibBase2, IVault {
         IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
     }
 
-    /////////////
-    // GENERAL //
-    /////////////
+    ////////////////////////
+    // PERMISSIONED ROLES //
+    ////////////////////////
 
     /// @notice Claim ownership of the contract
     function claimOwnership() external {
@@ -130,39 +130,14 @@ contract VaultLib is VaultLibBase2, IVault {
         emit NominatedOwnerSet(_nextNominatedOwner);
     }
 
-    ///////////
-    // VAULT //
-    ///////////
+    ///////////////////////////////////////
+    // ACCESSOR (COMPTROLLER PROXY) ONLY //
+    ///////////////////////////////////////
 
-    /// @notice Adds a new debt position to the fund
-    /// @param _debtPosition The debt position to add
-    // TODO: Decide whether or not it makes sense to impose a debt position limit
-    function addDebtPosition(address _debtPosition) external override onlyAccessor {
-        if (!isActiveDebtPosition(_debtPosition)) {
-            debtPositionToIsActive[_debtPosition] = true;
-            activeDebtPositions.push(_debtPosition);
-        }
-
-        emit DebtPositionAdded(_debtPosition);
-    }
-
-    /// @notice Adds a tracked asset and optionally specifies if it should be persistently tracked,
-    /// i.e., that it cannot be untracked
-    /// @param _asset The asset to add
-    /// @param _setAsPersistentlyTracked True if the asset should be set as persistently tracked
-    function addTrackedAsset(address _asset, bool _setAsPersistentlyTracked)
-        external
-        override
-        onlyAccessor
-        notShares(_asset)
-    {
-        if (_setAsPersistentlyTracked && !isPersistentlyTrackedAsset(_asset)) {
-            assetToIsPersistentlyTracked[_asset] = true;
-
-            emit PersistentlyTrackedAssetAdded(_asset);
-        }
-
-        __addTrackedAsset(_asset);
+    /// @notice Adds a tracked asset and sets it as persistently tracked
+    /// @param _asset The asset to add and set as persistently tracked
+    function addPersistentlyTrackedAsset(address _asset) external override onlyAccessor {
+        __addPersistentlyTrackedAsset(_asset);
     }
 
     /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
@@ -174,16 +149,11 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
-    /// @notice Grants an allowance to a spender to use the fund's asset
-    /// @param _asset The asset for which to grant an allowance
-    /// @param _target The spender of the allowance
-    /// @param _amount The amount of the allowance
-    function approveAssetSpender(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) external override onlyAccessor notShares(_asset) {
-        ERC20(_asset).approve(_target, _amount);
+    /// @notice Burns fund shares from a particular account
+    /// @param _target The account for which to burn shares
+    /// @param _amount The amount of shares to burn
+    function burnShares(address _target, uint256 _amount) external override onlyAccessor {
+        __burn(_target, _amount);
     }
 
     /// @notice Makes an arbitrary call with this contract as the sender
@@ -198,38 +168,253 @@ contract VaultLib is VaultLibBase2, IVault {
         require(success, string(returnData));
     }
 
-    /// @notice Makes a call on a debt position
+    /// @notice Mints fund shares to a particular account
+    /// @param _target The account for which to burn shares
+    /// @param _amount The amount of shares to mint
+    function mintShares(address _target, uint256 _amount) external override onlyAccessor {
+        __mint(_target, _amount);
+    }
+
+    /// @notice Removes a tracked asset
+    /// @param _asset The asset to remove as a tracked asset
+    function removeTrackedAsset(address _asset) external override onlyAccessor {
+        __removeTrackedAsset(_asset);
+    }
+
+    /// @notice Transfers fund shares from one account to another
+    /// @param _from The account from which to transfer shares
+    /// @param _to The account to which to transfer shares
+    /// @param _amount The amount of shares to transfer
+    /// @dev For protocol use only, all other transfers should operate
+    /// via standard ERC20 functions
+    function transferShares(
+        address _from,
+        address _to,
+        uint256 _amount
+    ) external override onlyAccessor {
+        __transfer(_from, _to, _amount);
+    }
+
+    /// @notice Withdraws an asset from the VaultProxy to a given account
+    /// @param _asset The asset to withdraw
+    /// @param _target The account to which to withdraw the asset
+    /// @param _amount The amount of asset to withdraw
+    function withdrawAssetTo(
+        address _asset,
+        address _target,
+        uint256 _amount
+    ) external override onlyAccessor {
+        __withdrawAssetTo(_asset, _target, _amount);
+    }
+
+    ///////////////////////////
+    // VAULT ACTION DISPATCH //
+    ///////////////////////////
+
+    /// @notice Dispatches a call initiated from an Extension, validated by the ComptrollerProxy
+    /// @param _action The VaultAction to perform
+    /// @param _actionData The call data for the action to perform
+    function receiveValidatedVaultAction(VaultAction _action, bytes calldata _actionData)
+        external
+        override
+        onlyAccessor
+    {
+        if (_action == VaultAction.AddDebtPosition) {
+            __executeVaultActionAddDebtPosition(_actionData);
+        } else if (_action == VaultAction.AddPersistentlyTrackedAsset) {
+            __executeVaultActionAddPersistentlyTrackedAsset(_actionData);
+        } else if (_action == VaultAction.AddTrackedAsset) {
+            __executeVaultActionAddTrackedAsset(_actionData);
+        } else if (_action == VaultAction.ApproveAssetSpender) {
+            __executeVaultActionApproveAssetSpender(_actionData);
+        } else if (_action == VaultAction.BurnShares) {
+            __executeVaultActionBurnShares(_actionData);
+        } else if (_action == VaultAction.CallOnDebtPosition) {
+            __executeVaultActionCallOnDebtPosition(_actionData);
+        } else if (_action == VaultAction.MintShares) {
+            __executeVaultActionMintShares(_actionData);
+        } else if (_action == VaultAction.RemoveDebtPosition) {
+            __executeVaultActionRemoveDebtPosition(_actionData);
+        } else if (_action == VaultAction.RemovePersistentlyTrackedAsset) {
+            __executeVaultActionRemovePersistentlyTrackedAsset(_actionData);
+        } else if (_action == VaultAction.RemoveTrackedAsset) {
+            __executeVaultActionRemoveTrackedAsset(_actionData);
+        } else if (_action == VaultAction.TransferShares) {
+            __executeVaultActionTransferShares(_actionData);
+        } else if (_action == VaultAction.WithdrawAssetTo) {
+            __executeVaultActionWithdrawAssetTo(_actionData);
+        }
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.AddDebtPosition
+    function __executeVaultActionAddDebtPosition(bytes memory _actionData) private {
+        __addDebtPosition(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.AddPersistentlyTrackedAsset
+    function __executeVaultActionAddPersistentlyTrackedAsset(bytes memory _actionData) private {
+        __addPersistentlyTrackedAsset(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.AddTrackedAsset
+    function __executeVaultActionAddTrackedAsset(bytes memory _actionData) private {
+        __addTrackedAsset(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.ApproveAssetSpender
+    function __executeVaultActionApproveAssetSpender(bytes memory _actionData) private {
+        (address asset, address target, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+
+        __approveAssetSpender(asset, target, amount);
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.BurnShares
+    function __executeVaultActionBurnShares(bytes memory _actionData) private {
+        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
+
+        __burn(target, amount);
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.CallOnDebtPosition
+    function __executeVaultActionCallOnDebtPosition(bytes memory _actionData) private {
+        (
+            address debtPosition,
+            bytes memory callOnDebtPositionActionData,
+            address[] memory assetsToTransfer,
+            uint256[] memory amountsToTransfer,
+            address[] memory assetsToReceive
+        ) = abi.decode(_actionData, (address, bytes, address[], uint256[], address[]));
+
+        __callOnDebtPosition(
+            debtPosition,
+            callOnDebtPositionActionData,
+            assetsToTransfer,
+            amountsToTransfer,
+            assetsToReceive
+        );
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.MintShares
+    function __executeVaultActionMintShares(bytes memory _actionData) private {
+        (address target, uint256 amount) = abi.decode(_actionData, (address, uint256));
+
+        __mint(target, amount);
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.RemoveDebtPosition
+    function __executeVaultActionRemoveDebtPosition(bytes memory _actionData) private {
+        __removeDebtPosition(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.RemovePersistentlyTrackedAsset
+    function __executeVaultActionRemovePersistentlyTrackedAsset(bytes memory _actionData) private {
+        __removePersistentlyTrackedAsset(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.RemoveTrackedAsset
+    function __executeVaultActionRemoveTrackedAsset(bytes memory _actionData) private {
+        __removeTrackedAsset(abi.decode(_actionData, (address)));
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.TransferShares
+    function __executeVaultActionTransferShares(bytes memory _actionData) private {
+        (address from, address to, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+
+        __transfer(from, to, amount);
+    }
+
+    /// @dev Helper to decode actionData and execute VaultAction.WithdrawAssetTo
+    function __executeVaultActionWithdrawAssetTo(bytes memory _actionData) private {
+        (address asset, address target, uint256 amount) = abi.decode(
+            _actionData,
+            (address, address, uint256)
+        );
+
+        __withdrawAssetTo(asset, target, amount);
+    }
+
+    ///////////////////
+    // VAULT ACTIONS //
+    ///////////////////
+
+    /// @dev Helper to track a new active debt position
+    // TODO: Decide whether or not it makes sense to impose a debt position limit
+    function __addDebtPosition(address _debtPosition) private {
+        if (!isActiveDebtPosition(_debtPosition)) {
+            debtPositionToIsActive[_debtPosition] = true;
+            activeDebtPositions.push(_debtPosition);
+        }
+
+        emit DebtPositionAdded(_debtPosition);
+    }
+
+    /// @dev Helper to add and persistently track an asset
+    function __addPersistentlyTrackedAsset(address _asset) private {
+        __setPersistentlyTrackedAsset(_asset);
+        __addTrackedAsset(_asset);
+    }
+
+    /// @dev Helper to add a tracked asset
+    function __addTrackedAsset(address _asset) private notShares(_asset) {
+        if (!isTrackedAsset(_asset)) {
+            require(
+                trackedAssets.length < TRACKED_ASSETS_LIMIT,
+                "__addTrackedAsset: Limit exceeded"
+            );
+
+            assetToIsTracked[_asset] = true;
+            trackedAssets.push(_asset);
+
+            emit TrackedAssetAdded(_asset);
+        }
+    }
+
+    /// @dev Helper to grant an allowance to a spender to use a vault asset
+    function __approveAssetSpender(
+        address _asset,
+        address _target,
+        uint256 _amount
+    ) private notShares(_asset) {
+        ERC20(_asset).approve(_target, _amount);
+    }
+
+    /// @dev Helper to make a call on a debt position contract
     /// @param _debtPosition The debt position to call
     /// @param _actionData The action data for the call
     /// @param _assetsToTransfer The assets to transfer to the debt position
     /// @param _amountsToTransfer The amount of assets to be transferred to the debt position
     /// @param _assetsToReceive The assets that will be received from the call
-    /// @dev Even though the DebtPositionManager validates and formats the assets,
-    /// it's nice and inexpensive for the VaultLib to ensure its own security by
-    /// validating that its shares holdings are not affected.
-    function callOnDebtPosition(
+    function __callOnDebtPosition(
         address _debtPosition,
-        bytes calldata _actionData,
+        bytes memory _actionData,
         address[] memory _assetsToTransfer,
         uint256[] memory _amountsToTransfer,
         address[] memory _assetsToReceive
-    ) external override onlyAccessor {
+    ) private {
         for (uint256 i; i < _assetsToTransfer.length; i++) {
-            __assertNotShares(_assetsToTransfer[i]);
             __withdrawAssetTo(_assetsToTransfer[i], _debtPosition, _amountsToTransfer[i]);
         }
 
         IDebtPosition(_debtPosition).receiveCallFromVault(_actionData);
 
         for (uint256 i; i < _assetsToReceive.length; i++) {
-            __assertNotShares(_assetsToReceive[i]);
             __addTrackedAsset(_assetsToReceive[i]);
         }
     }
 
-    /// @notice Removes a debt position from the fund
-    /// @param _debtPosition The debt position to remove
-    function removeDebtPosition(address _debtPosition) external override onlyAccessor {
+    /// @dev Helper to the get the Vault's balance of a given asset
+    function __getAssetBalance(address _asset) private view returns (uint256 balance_) {
+        return ERC20(_asset).balanceOf(address(this));
+    }
+
+    /// @dev Helper to remove a debt position from the vault
+    function __removeDebtPosition(address _debtPosition) private {
         if (isActiveDebtPosition(_debtPosition)) {
             debtPositionToIsActive[_debtPosition] = false;
 
@@ -248,69 +433,14 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
-    /// @notice Removes a tracked asset and optionally specifies whether it should be unset
-    /// as a persistently tracked asset
-    /// @param _asset The asset to add
-    /// @param _unsetAsPersistentlyTracked True if the asset should be unset as persistently tracked
-    function removeTrackedAsset(address _asset, bool _unsetAsPersistentlyTracked)
-        external
-        override
-        onlyAccessor
-    {
-        __removeTrackedAsset(_asset, _unsetAsPersistentlyTracked);
+    /// @dev Helper to unset and remove a persistently tracked asset
+    function __removePersistentlyTrackedAsset(address _asset) private {
+        __unsetPersistentlyTrackedAsset(_asset);
+        __removeTrackedAsset(_asset);
     }
 
-    /// @notice Withdraws an asset from the VaultProxy to a given account
-    /// @param _asset The asset to withdraw
-    /// @param _target The account to which to withdraw the asset
-    /// @param _amount The amount of asset to withdraw
-    function withdrawAssetTo(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) external override onlyAccessor notShares(_asset) {
-        __withdrawAssetTo(_asset, _target, _amount);
-    }
-
-    // PRIVATE FUNCTIONS
-
-    /// @dev Helper to add a tracked asset
-    function __addTrackedAsset(address _asset) private {
-        if (!isTrackedAsset(_asset)) {
-            require(
-                trackedAssets.length < TRACKED_ASSETS_LIMIT,
-                "__addTrackedAsset: Limit exceeded"
-            );
-
-            assetToIsTracked[_asset] = true;
-            trackedAssets.push(_asset);
-
-            emit TrackedAssetAdded(_asset);
-        }
-    }
-
-    /// @dev Helper to the get the Vault's balance of a given asset
-    function __getAssetBalance(address _asset) private view returns (uint256 balance_) {
-        return ERC20(_asset).balanceOf(address(this));
-    }
-
-    /// @dev Helper to remove assets from the list of assets that cannot be untracked
-    function __unsetPersistentlyTrackedAsset(address _asset) private {
-        if (isPersistentlyTrackedAsset(_asset)) {
-            assetToIsPersistentlyTracked[_asset] = false;
-
-            emit PersistentlyTrackedAssetRemoved(_asset);
-        }
-    }
-
-    /// @dev Helper to remove an asset from a fund's tracked assets.
-    /// Allows removal of non-tracked asset to fail silently.
-    /// _unsetPersistentlyTracked acts as an override when true.
-    function __removeTrackedAsset(address _asset, bool _unsetAsPersistentlyTracked) private {
-        if (_unsetAsPersistentlyTracked && isPersistentlyTrackedAsset(_asset)) {
-            __unsetPersistentlyTrackedAsset(_asset);
-        }
-
+    /// @dev Helper to remove a tracked asset
+    function __removeTrackedAsset(address _asset) private {
         if (isTrackedAsset(_asset) && !isPersistentlyTrackedAsset(_asset)) {
             assetToIsTracked[_asset] = false;
 
@@ -329,54 +459,42 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
+    /// @dev Helper to add asset to the list of assets that cannot be untracked
+    function __setPersistentlyTrackedAsset(address _asset) private {
+        if (!isPersistentlyTrackedAsset(_asset)) {
+            assetToIsPersistentlyTracked[_asset] = true;
+
+            emit PersistentlyTrackedAssetAdded(_asset);
+        }
+    }
+
+    /// @dev Helper to remove assets from the list of assets that cannot be untracked
+    function __unsetPersistentlyTrackedAsset(address _asset) private {
+        if (isPersistentlyTrackedAsset(_asset)) {
+            assetToIsPersistentlyTracked[_asset] = false;
+
+            emit PersistentlyTrackedAssetRemoved(_asset);
+        }
+    }
+
     /// @dev Helper to withdraw an asset from the vault to a specified recipient
     function __withdrawAssetTo(
         address _asset,
         address _target,
         uint256 _amount
-    ) private {
+    ) private notShares(_asset) {
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
 
         if (__getAssetBalance(_asset) == 0) {
-            __removeTrackedAsset(_asset, false);
+            __removeTrackedAsset(_asset);
         }
     }
 
-    ////////////
-    // SHARES //
-    ////////////
-
-    /// @notice Burns fund shares from a particular account
-    /// @param _target The account for which to burn shares
-    /// @param _amount The amount of shares to burn
-    function burnShares(address _target, uint256 _amount) external override onlyAccessor {
-        __burn(_target, _amount);
-    }
-
-    /// @notice Mints fund shares to a particular account
-    /// @param _target The account for which to burn shares
-    /// @param _amount The amount of shares to mint
-    function mintShares(address _target, uint256 _amount) external override onlyAccessor {
-        __mint(_target, _amount);
-    }
-
-    /// @notice Transfers fund shares from one account to another
-    /// @param _from The account from which to transfer shares
-    /// @param _to The account to which to transfer shares
-    /// @param _amount The amount of shares to transfer
-    /// @dev For protocol use only, all other transfers should operate
-    /// via standard ERC20 functions
-    function transferShares(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) external override onlyAccessor {
-        __transfer(_from, _to, _amount);
-    }
-
-    // ERC20 overrides
+    ////////////////////////////
+    // SHARES ERC20 OVERRIDES //
+    ////////////////////////////
 
     /// @notice Gets the `symbol` value of the shares token
     /// @return symbol_ The `symbol` value
@@ -403,11 +521,6 @@ contract VaultLib is VaultLibBase2, IVault {
         IComptroller(accessor).preTransferSharesHook(_sender, _recipient, _amount);
 
         return super.transferFrom(_sender, _recipient, _amount);
-    }
-
-    /// @dev Checks that assets are not shares
-    function __assertNotShares(address _asset) private view {
-        require(_asset != address(this), "Cannot act on shares");
     }
 
     ///////////////////

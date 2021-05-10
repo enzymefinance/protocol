@@ -125,6 +125,14 @@ describe('callOnExtension', () => {
   it.todo('does not allow re-entrance');
 });
 
+describe('permissionedVaultAction', () => {
+  it.todo('onlyNotPaused test');
+
+  it.todo('access control tests');
+
+  it.todo('RemovePersistentlyTrackedAsset: does not allow the denomination asset');
+});
+
 describe('setOverridePause', () => {
   it('cannot be called by a random user', async () => {
     const { fundDeployer } = fork.deployment;

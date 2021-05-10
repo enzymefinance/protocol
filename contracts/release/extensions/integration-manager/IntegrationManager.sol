@@ -195,12 +195,9 @@ contract IntegrationManager is
         }
     }
 
-    /// @dev Adds assets as tracked assets of the fund and optionally sets them as persistently tracked
+    /// @dev Adds assets as persistently tracked assets of the vault
     function __addTrackedAssetsToVault(address _vaultProxy, bytes memory _callArgs) private {
-        (address[] memory assets, bool[] memory setAsPersistentlyTracked) = abi.decode(
-            _callArgs,
-            (address[], bool[])
-        );
+        address[] memory assets = abi.decode(_callArgs, (address[]));
 
         // Resolve finality of all assets as needed
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
@@ -220,7 +217,7 @@ contract IntegrationManager is
 
         for (uint256 i; i < assets.length; i++) {
             require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
-            __addTrackedAsset(msg.sender, assets[i], setAsPersistentlyTracked[i]);
+            __addPersistentlyTrackedAsset(msg.sender, assets[i]);
         }
     }
 
@@ -240,7 +237,7 @@ contract IntegrationManager is
                 "__removeTrackedAssetsFromVault: Not allowed"
             );
 
-            __removeTrackedAsset(msg.sender, assets[i], true);
+            __removePersistentlyTrackedAsset(msg.sender, assets[i]);
         }
     }
 
@@ -571,7 +568,7 @@ contract IntegrationManager is
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
                 __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, maxSpendAssetAmounts_[i]);
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Remove) {
-                __removeTrackedAsset(msg.sender, spendAssets_[i], true);
+                __removePersistentlyTrackedAsset(msg.sender, spendAssets_[i]);
             }
         }
     }
@@ -672,7 +669,7 @@ contract IntegrationManager is
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
-            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i], false);
+            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i]);
 
             incomingAssets_[i] = _expectedIncomingAssets[i];
             incomingAssetAmounts_[i] = balanceDiff;
@@ -762,7 +759,7 @@ contract IntegrationManager is
             // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
             if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
                 if (postCallSpendAssetBalances[i] == 0) {
-                    __removeTrackedAsset(msg.sender, _spendAssets[i], false);
+                    __removeTrackedAsset(msg.sender, _spendAssets[i]);
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i];
                 } else {
                     outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i].sub(

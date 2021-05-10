@@ -16,29 +16,32 @@ import "../../../../persistent/utils/IMigratableVault.sol";
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IVault is IMigratableVault {
-    function addDebtPosition(address) external;
+    enum VaultAction {
+        None,
+        // Shares management
+        BurnShares,
+        MintShares,
+        TransferShares,
+        // Asset management
+        AddPersistentlyTrackedAsset,
+        AddTrackedAsset,
+        ApproveAssetSpender,
+        RemovePersistentlyTrackedAsset,
+        RemoveTrackedAsset,
+        WithdrawAssetTo,
+        // Debt position management
+        AddDebtPosition,
+        CallOnDebtPosition,
+        RemoveDebtPosition
+    }
 
-    function addTrackedAsset(address, bool) external;
+    function addPersistentlyTrackedAsset(address) external;
 
     function allowUntrackingAssets(address[] memory) external;
-
-    function approveAssetSpender(
-        address,
-        address,
-        uint256
-    ) external;
 
     function burnShares(address, uint256) external;
 
     function callOnContract(address, bytes calldata) external;
-
-    function callOnDebtPosition(
-        address,
-        bytes calldata,
-        address[] memory,
-        uint256[] memory,
-        address[] memory
-    ) external;
 
     function getAccessor() external view returns (address);
 
@@ -54,9 +57,9 @@ interface IVault is IMigratableVault {
 
     function mintShares(address, uint256) external;
 
-    function removeDebtPosition(address) external;
+    function receiveValidatedVaultAction(VaultAction, bytes calldata) external;
 
-    function removeTrackedAsset(address, bool) external;
+    function removeTrackedAsset(address) external;
 
     function transferShares(
         address,

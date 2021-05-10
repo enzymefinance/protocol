@@ -8,14 +8,8 @@ export enum IntegrationManagerActionId {
   RemoveTrackedAssetsFromVault,
 }
 
-export function addTrackedAssetsToVaultArgs({
-  assets,
-  setAsPersistentlyTracked,
-}: {
-  assets: AddressLike[];
-  setAsPersistentlyTracked: boolean[];
-}) {
-  return encodeArgs(['address[]', 'bool[]'], [assets, setAsPersistentlyTracked]);
+export function addTrackedAssetsToVaultArgs({ assets }: { assets: AddressLike[] }) {
+  return encodeArgs(['address[]'], [assets]);
 }
 
 export function callOnIntegrationArgs({

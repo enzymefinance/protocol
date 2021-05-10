@@ -9,7 +9,7 @@ export async function addNewAssetsToFund({
   integrationManager,
   assets,
   amounts = new Array(assets.length).fill(1),
-  setAsPersistentlyTracked,
+  setAsPersistentlyTracked = new Array(assets.length).fill(true),
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
@@ -24,14 +24,16 @@ export async function addNewAssetsToFund({
     comptrollerProxy,
     integrationManager,
     assets,
-    setAsPersistentlyTracked,
   });
 
-  // Then seed the vault with balances
+  // Then seed the vault with balances and unset persistently tracked assets as necessary
   const vaultProxy = await comptrollerProxy.getVaultProxy();
   for (const i in assets) {
     if (amounts[i] > 0) {
       await assets[i].transfer(vaultProxy, amounts[i]);
+    }
+    if (!setAsPersistentlyTracked[i]) {
+      await comptrollerProxy.allowUntrackingAssets([assets[i]]);
     }
   }
 
