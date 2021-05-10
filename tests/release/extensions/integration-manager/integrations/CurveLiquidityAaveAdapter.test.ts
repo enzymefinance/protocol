@@ -52,7 +52,7 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
 
-    expect(await curveLiquidityAaveAdapter.getLPToken()).toMatchAddress(fork.config.curve.pools.aave.lpToken);
+    expect(await curveLiquidityAaveAdapter.getLpToken()).toMatchAddress(fork.config.curve.pools.aave.lpToken);
     expect(await curveLiquidityAaveAdapter.getLiquidityGaugeToken()).toMatchAddress(
       fork.config.curve.pools.aave.liquidityGaugeToken,
     );
