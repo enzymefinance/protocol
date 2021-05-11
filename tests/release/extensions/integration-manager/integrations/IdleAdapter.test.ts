@@ -800,8 +800,8 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    // Rounding up from 830913
-    expect(lendReceipt).toCostLessThan('832000');
+    // Rounding up from 805831
+    expect(lendReceipt).toCostLessThan('807000');
   });
 });
 

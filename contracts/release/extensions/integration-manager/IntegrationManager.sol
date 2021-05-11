@@ -15,7 +15,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../utils/AddressArrayLib.sol";
@@ -62,7 +61,6 @@ contract IntegrationManager is
         uint256[] outgoingAssetAmounts
     );
 
-    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
@@ -75,10 +73,8 @@ contract IntegrationManager is
         address _fundDeployer,
         address _policyManager,
         address _derivativePriceFeed,
-        address _primitivePriceFeed,
-        address _assetFinalityResolver
+        address _primitivePriceFeed
     ) public FundDeployerOwnerMixin(_fundDeployer) {
-        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
@@ -187,7 +183,7 @@ contract IntegrationManager is
         if (_actionId == 0) {
             __callOnIntegration(_caller, vaultProxy, _callArgs);
         } else if (_actionId == 1) {
-            __addTrackedAssetsToVault(vaultProxy, _callArgs);
+            __addTrackedAssetsToVault(_callArgs);
         } else if (_actionId == 2) {
             __removeTrackedAssetsFromVault(vaultProxy, _callArgs);
         } else {
@@ -196,11 +192,8 @@ contract IntegrationManager is
     }
 
     /// @dev Adds assets as persistently tracked assets of the vault
-    function __addTrackedAssetsToVault(address _vaultProxy, bytes memory _callArgs) private {
+    function __addTrackedAssetsToVault(bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
-
-        // Resolve finality of all assets as needed
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
 
         // TODO: should we spoof a selector for policy management? or create a distinct hook?
         // Not specifying incoming asset balances is not technically correct, but it depends on
@@ -225,10 +218,6 @@ contract IntegrationManager is
     /// Can only be used on assets with a 0-balance or unsupported assets.
     function __removeTrackedAssetsFromVault(address _vaultProxy, bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
-
-        // Resolve finality of all assets as needed
-        // TODO: return to ordering if we can't remove this
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(_vaultProxy, assets, true);
 
         for (uint256 i; i < assets.length; i++) {
             require(
@@ -489,16 +478,6 @@ contract IntegrationManager is
 
         // INCOMING ASSETS
 
-        // We do not require incoming asset finality, but we attempt to finalize so that
-        // the final incoming asset amount is more accurate. There is no need to finalize
-        // post-tx.
-        // TODO: test gas and consider removing, as unnecessary unless policies implement this
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
-            _vaultProxy,
-            expectedIncomingAssets_,
-            false
-        );
-
         preCallIncomingAssetBalances_ = new uint256[](expectedIncomingAssets_.length);
         for (uint256 i = 0; i < expectedIncomingAssets_.length; i++) {
             require(
@@ -524,16 +503,6 @@ contract IntegrationManager is
         }
 
         // SPEND ASSETS
-
-        // By requiring spend asset finality before CoI, we will know whether or
-        // not the asset balance was entirely spent during the call. There is no need
-        // to finalize post-tx.
-        // TODO: test gas and consider removing... might be unnecessary if we no longer auto-remove assets with zero-balances
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
-            _vaultProxy,
-            spendAssets_,
-            true
-        );
 
         // Get pre-call balances of spend assets and grant approvals to adapter
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
@@ -830,12 +799,6 @@ contract IntegrationManager is
     /// @return isRegistered_ True if the adapter is registered
     function adapterIsRegistered(address _adapter) public view returns (bool isRegistered_) {
         return registeredAdapters.contains(_adapter);
-    }
-
-    /// @notice Gets the `ASSET_FINALITY_RESOLVER` variable
-    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
-    function getAssetFinalityResolver() external view returns (address assetFinalityResolver_) {
-        return ASSET_FINALITY_RESOLVER;
     }
 
     /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable

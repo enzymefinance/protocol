@@ -12,7 +12,6 @@ const fn: DeployFunction = async function (hre) {
   const policyManager = await get('PolicyManager');
   const aggregatedDerivativePriceFeed = await get('AggregatedDerivativePriceFeed');
   const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
-  const assetFinalityResolver = await get('AssetFinalityResolver');
 
   await deploy('IntegrationManager', {
     args: [
@@ -20,7 +19,6 @@ const fn: DeployFunction = async function (hre) {
       policyManager.address,
       aggregatedDerivativePriceFeed.address,
       chainlinkPriceFeed.address,
-      assetFinalityResolver.address,
     ] as IntegrationManagerArgs,
     from: deployer.address,
     log: true,
@@ -29,12 +27,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'IntegrationManager'];
-fn.dependencies = [
-  'FundDeployer',
-  'PolicyManager',
-  'AggregatedDerivativePriceFeed',
-  'ChainlinkPriceFeed',
-  'AssetFinalityResolver',
-];
+fn.dependencies = ['FundDeployer', 'PolicyManager', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed'];
 
 export default fn;

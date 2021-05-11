@@ -481,8 +481,6 @@ describe('callOnIntegration', () => {
       }),
     ).rejects.toBeRevertedWith('Empty max spend asset amount');
   });
-
-  it.todo('does not allow a spendAsset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 });
 
 describe('valid calls', () => {
@@ -1229,10 +1227,6 @@ describe('valid calls', () => {
     expect(await vaultProxy.isTrackedAsset(mln)).toBe(true);
     expect(await vaultProxy.isPersistentlyTrackedAsset(mln)).toBe(false);
   });
-
-  it.todo(
-    'attempts to reach finality for an incomingAsset, but does not fail if it cannot settle (e.g., an unsettleable Synth)',
-  );
 });
 
 describe('SpendAssetsHandleType', () => {

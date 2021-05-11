@@ -57,8 +57,8 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    // Rounding up from 496046
-    expect(lendReceipt).toCostLessThan('475000');
+    // Rounding up from 451395
+    expect(lendReceipt).toCostLessThan('452000');
   });
 });
 
@@ -101,8 +101,8 @@ describe('redeem', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    // Rounding up from 514631
-    expect(redeemReceipt).toCostLessThan('516000');
+    // Rounding up from 486161
+    expect(redeemReceipt).toCostLessThan('487000');
   });
 });
 

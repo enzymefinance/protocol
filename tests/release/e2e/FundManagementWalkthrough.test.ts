@@ -60,8 +60,8 @@ const expectedGasCosts = {
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 304000,
-    weth: 277000,
+    usdc: 282000,
+    weth: 257000,
   },
 } as const;
 

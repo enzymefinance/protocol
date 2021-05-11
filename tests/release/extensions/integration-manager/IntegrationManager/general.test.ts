@@ -63,7 +63,6 @@ describe('constructor', () => {
         integrationManager,
         fundDeployer,
         policyManager,
-        assetFinalityResolver,
       },
     } = await provider.snapshot(snapshot);
 
@@ -78,8 +77,6 @@ describe('constructor', () => {
 
     const getPrimitivePriceFeedCall = await integrationManager.getPrimitivePriceFeed();
     expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
-
-    expect(await integrationManager.getAssetFinalityResolver()).toMatchAddress(assetFinalityResolver);
   });
 });
 
