@@ -382,7 +382,7 @@ contract VaultLib is VaultLibBase2, IVault {
         uint256 _amount
     ) private notShares(_asset) {
         ERC20 assetContract = ERC20(_asset);
-        if (assetContract.balanceOf(_target) > 0) {
+        if (assetContract.allowance(address(this), _target) > 0) {
             assetContract.safeApprove(_target, 0);
         }
         assetContract.safeApprove(_target, _amount);

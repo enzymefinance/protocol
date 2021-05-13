@@ -174,6 +174,7 @@ describe('ApproveAssetSpender', () => {
     ).rejects.toBeRevertedWith('Cannot act on shares');
   });
 
+  // Use USDT, as the function works with its idiosyncrasies
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
@@ -186,7 +187,7 @@ describe('ApproveAssetSpender', () => {
     });
 
     const spender = randomAddress();
-    const asset = new StandardToken(fork.config.weth, provider);
+    const asset = new StandardToken(fork.config.primitives.usdt, provider);
     const amount = utils.parseEther('1');
 
     const receipt = await vaultProxy.receiveValidatedVaultAction(
@@ -203,6 +204,14 @@ describe('ApproveAssetSpender', () => {
       spender,
       value: amount,
     });
+
+    // Granting a second approval should succeed and the allowance updated
+    const newAmount = amount.add(1);
+    await vaultProxy.receiveValidatedVaultAction(
+      VaultAction.ApproveAssetSpender,
+      encodeArgs(['address', 'address', 'uint256'], [asset, spender, newAmount]),
+    );
+    expect(await asset.allowance(vaultProxy, spender)).toEqBigNumber(newAmount);
   });
 });
 
