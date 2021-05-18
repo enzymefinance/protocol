@@ -1,5 +1,4 @@
-import { extractEvent } from '@enzymefinance/ethers';
-import { MockContract } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, MockContract } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   FeeHook,
@@ -18,20 +17,17 @@ import {
   buyShares,
   createNewFund,
   deployProtocolFixture,
+  ProtocolDeployment,
   redeemSharesInKind,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 
-async function snapshot() {
-  const { accounts, deployment, config, deployer } = await deployProtocolFixture();
-
+async function createMocksForPerformanceFeeConfig(fork: ProtocolDeployment) {
+  const deployer = fork.deployer;
   // Mock a FeeManager
   const mockFeeManager = await FeeManager.mock(deployer);
   await mockFeeManager.getFeeSharesOutstandingForFund.returns(0);
-
-  // Create standalone PerformanceFee
-  const standalonePerformanceFee = await PerformanceFee.deploy(deployer, mockFeeManager);
 
   // Mock a denomination asset
   const mockDenominationAssetDecimals = 8;
@@ -50,29 +46,36 @@ async function snapshot() {
   await mockComptrollerProxy.getDenominationAsset.returns(mockDenominationAsset);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
-  // Add fee settings for ComptrollerProxy
-  const performanceFeeRate = utils.parseEther('.1'); // 10%
-  const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
-  const performanceFeeConfig = performanceFeeConfigArgs({
-    rate: performanceFeeRate,
-    period: performanceFeePeriod,
-  });
+  return { mockComptrollerProxy, mockVaultProxy, mockFeeManager, mockDenominationAsset };
+}
 
-  await mockFeeManager.forward(standalonePerformanceFee.addFundSettings, mockComptrollerProxy, performanceFeeConfig);
-
-  return {
-    deployer,
-    accounts,
-    config,
-    deployment,
-    performanceFeeRate,
-    performanceFeePeriod,
-    mockComptrollerProxy,
-    mockDenominationAsset,
+async function deployAndConfigureStandalonePerformanceFee(
+  fork: ProtocolDeployment,
+  {
+    mockComptrollerProxy = '0x',
     mockFeeManager,
-    mockVaultProxy,
-    standalonePerformanceFee,
-  };
+    performanceFeeRate = 0,
+    performanceFeePeriod = 0,
+  }: {
+    mockComptrollerProxy?: AddressLike;
+    mockFeeManager: MockContract<FeeManager>;
+    performanceFeeRate?: BigNumberish;
+    performanceFeePeriod?: BigNumberish;
+  },
+) {
+  const performanceFee = await PerformanceFee.deploy(fork.deployer, mockFeeManager);
+
+  if (mockComptrollerProxy != '0x') {
+    // Add fee settings for ComptrollerProxy
+    const performanceFeeConfig = performanceFeeConfigArgs({
+      rate: performanceFeeRate,
+      period: performanceFeePeriod,
+    });
+
+    await mockFeeManager.forward(performanceFee.addFundSettings, mockComptrollerProxy, performanceFeeConfig);
+  }
+
+  return performanceFee;
 }
 
 async function activateWithInitialValues({
@@ -210,10 +213,8 @@ async function assertAdjustedPerformance({
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { feeManager, performanceFee },
-    } = await provider.snapshot(snapshot);
-
+    const performanceFee = fork.deployment.performanceFee;
+    const feeManager = fork.deployment.feeManager;
     const getFeeManagerCall = await performanceFee.getFeeManager();
     expect(getFeeManagerCall).toMatchAddress(feeManager);
 
@@ -272,13 +273,26 @@ describe('constructor', () => {
 });
 
 describe('addFundSettings', () => {
+  let fork: ProtocolDeployment;
+  let performanceFee: PerformanceFee;
+  let performanceFeeRate: BigNumberish;
+  let performanceFeePeriod: BigNumberish;
+  let mockComptrollerProxy: MockContract<ComptrollerLib>;
+  let mockFeeManager: MockContract<FeeManager>;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    const mocks = await createMocksForPerformanceFeeConfig(fork);
+    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockFeeManager = mocks.mockFeeManager;
+
+    performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+    performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, { mockFeeManager });
+  });
+
   it('can only be called by the FeeManager', async () => {
-    const {
-      performanceFeePeriod,
-      performanceFeeRate,
-      mockComptrollerProxy,
-      standalonePerformanceFee,
-    } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
@@ -286,26 +300,18 @@ describe('addFundSettings', () => {
     });
 
     await expect(
-      standalonePerformanceFee.addFundSettings(mockComptrollerProxy, performanceFeeConfig),
+      performanceFee.connect(randomUser).addFundSettings(mockComptrollerProxy, performanceFeeConfig),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      performanceFeePeriod,
-      performanceFeeRate,
-      mockComptrollerProxy,
-      mockFeeManager,
-      standalonePerformanceFee,
-    } = await provider.snapshot(snapshot);
-
     const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,
     });
 
     const receipt = await mockFeeManager.forward(
-      standalonePerformanceFee.addFundSettings,
+      performanceFee.addFundSettings,
       mockComptrollerProxy,
       performanceFeeConfig,
     );
@@ -318,9 +324,9 @@ describe('addFundSettings', () => {
     });
 
     // Assert state
-    const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(mockComptrollerProxy);
+    const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
 
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
       rate: performanceFeeRate,
       period: performanceFeePeriod,
       activated: BigNumber.from(0),
@@ -333,35 +339,48 @@ describe('addFundSettings', () => {
 });
 
 describe('activateForFund', () => {
+  let fork: ProtocolDeployment;
+  let performanceFee: PerformanceFee;
+  let performanceFeeRate: BigNumberish;
+  let performanceFeePeriod: BigNumberish;
+  let mockComptrollerProxy: MockContract<ComptrollerLib>;
+  let mockVaultProxy: MockContract<VaultLib>;
+  let mockFeeManager: MockContract<FeeManager>;
+  let mockDenominationAsset: MockContract<StandardToken>;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    const mocks = await createMocksForPerformanceFeeConfig(fork);
+    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockFeeManager = mocks.mockFeeManager;
+    mockVaultProxy = mocks.mockVaultProxy;
+    mockDenominationAsset = mocks.mockDenominationAsset;
+
+    performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+    performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
+      mockComptrollerProxy,
+      mockFeeManager,
+      performanceFeeRate,
+      performanceFeePeriod,
+    });
+  });
+
   it('can only be called by the FeeManager', async () => {
-    const { mockComptrollerProxy, mockVaultProxy, standalonePerformanceFee } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     await expect(
-      standalonePerformanceFee.activateForFund(mockComptrollerProxy, mockVaultProxy),
+      performanceFee.connect(randomUser).activateForFund(mockComptrollerProxy, mockVaultProxy),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      performanceFeePeriod,
-      performanceFeeRate,
-      standalonePerformanceFee,
-    } = await provider.snapshot(snapshot);
-
     // Set grossShareValue to an arbitrary value
     const grossShareValue = utils.parseUnits('5', await mockDenominationAsset.decimals());
     await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue, true);
 
     // Activate fund
-    const receipt = await mockFeeManager.forward(
-      standalonePerformanceFee.activateForFund,
-      mockComptrollerProxy,
-      mockVaultProxy,
-    );
+    const receipt = await mockFeeManager.forward(performanceFee.activateForFund, mockComptrollerProxy, mockVaultProxy);
 
     // Assert event
     assertEvent(receipt, 'ActivatedForFund', {
@@ -370,9 +389,9 @@ describe('activateForFund', () => {
     });
 
     // Assert state
-    const getFeeInfoForFundCall = await standalonePerformanceFee.getFeeInfoForFund(mockComptrollerProxy);
+    const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
     const activationTimestamp = await transactionTimestamp(receipt);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(standalonePerformanceFee.getFeeInfoForFund, {
+    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
       rate: performanceFeeRate,
       period: performanceFeePeriod,
       activated: BigNumber.from(activationTimestamp),
@@ -385,24 +404,41 @@ describe('activateForFund', () => {
 });
 
 describe('payout', () => {
-  it('can only be called by the FeeManager', async () => {
-    const { mockComptrollerProxy, mockVaultProxy, standalonePerformanceFee } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let performanceFee: PerformanceFee;
+  let performanceFeePeriod: BigNumber;
+  let mockComptrollerProxy: MockContract<ComptrollerLib>;
+  let mockVaultProxy: MockContract<VaultLib>;
+  let mockFeeManager: MockContract<FeeManager>;
+  let mockDenominationAsset: MockContract<StandardToken>;
 
-    await expect(standalonePerformanceFee.payout(mockComptrollerProxy, mockVaultProxy)).rejects.toBeRevertedWith(
-      'Only the FeeManger can make this call',
-    );
+  beforeEach(async () => {
+    fork = await deployProtocolFixture();
+    const mocks = await createMocksForPerformanceFeeConfig(fork);
+    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockFeeManager = mocks.mockFeeManager;
+    mockVaultProxy = mocks.mockVaultProxy;
+    mockDenominationAsset = mocks.mockDenominationAsset;
+
+    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+    performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
+      mockComptrollerProxy,
+      mockFeeManager,
+      performanceFeeRate,
+      performanceFeePeriod,
+    });
+  });
+
+  it('can only be called by the FeeManager', async () => {
+    const [randomUser] = fork.accounts;
+
+    await expect(
+      performanceFee.connect(randomUser).payout(mockComptrollerProxy, mockVaultProxy),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles a valid call (HWM has not increased)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      performanceFeePeriod,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -452,15 +488,6 @@ describe('payout', () => {
   });
 
   it('correctly handles a valid call (HWM has increased)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      performanceFeePeriod,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -521,16 +548,33 @@ describe('payout', () => {
 });
 
 describe('payoutAllowed', () => {
-  it('requires one full period to have passed since activation', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      performanceFeePeriod,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
+  let fork: ProtocolDeployment;
+  let performanceFee: PerformanceFee;
+  let performanceFeePeriod: BigNumber;
+  let mockComptrollerProxy: MockContract<ComptrollerLib>;
+  let mockVaultProxy: MockContract<VaultLib>;
+  let mockFeeManager: MockContract<FeeManager>;
+  let mockDenominationAsset: MockContract<StandardToken>;
 
+  beforeEach(async () => {
+    fork = await deployProtocolFixture();
+    const mocks = await createMocksForPerformanceFeeConfig(fork);
+    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockVaultProxy = mocks.mockVaultProxy;
+    mockFeeManager = mocks.mockFeeManager;
+    mockDenominationAsset = mocks.mockDenominationAsset;
+
+    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+    performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
+      mockComptrollerProxy,
+      mockFeeManager,
+      performanceFeeRate,
+      performanceFeePeriod,
+    });
+  });
+
+  it('requires one full period to have passed since activation', async () => {
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -559,15 +603,6 @@ describe('payoutAllowed', () => {
   });
 
   it('requires a subsequent period to pass after a previous payout', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      performanceFeePeriod,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -622,23 +657,40 @@ describe('payoutAllowed', () => {
 });
 
 describe('settle', () => {
+  let fork: ProtocolDeployment;
+  let performanceFee: PerformanceFee;
+  let mockComptrollerProxy: MockContract<ComptrollerLib>;
+  let mockVaultProxy: MockContract<VaultLib>;
+  let mockFeeManager: MockContract<FeeManager>;
+  let mockDenominationAsset: MockContract<StandardToken>;
+
+  beforeEach(async () => {
+    fork = await deployProtocolFixture();
+    const mocks = await createMocksForPerformanceFeeConfig(fork);
+    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockVaultProxy = mocks.mockVaultProxy;
+    mockFeeManager = mocks.mockFeeManager;
+    mockDenominationAsset = mocks.mockDenominationAsset;
+
+    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
+    performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
+      mockComptrollerProxy,
+      mockFeeManager,
+      performanceFeeRate,
+      performanceFeePeriod,
+    });
+  });
+
   it('can only be called by the FeeManager', async () => {
-    const { mockComptrollerProxy, mockVaultProxy, standalonePerformanceFee } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
 
     await expect(
-      standalonePerformanceFee.settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0),
+      performanceFee.connect(randomUser).settle(mockComptrollerProxy, mockVaultProxy, FeeHook.Continuous, '0x', 0),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call (no change in share price)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -677,14 +729,6 @@ describe('settle', () => {
   });
 
   it('correctly handles valid call (positive value change with no shares outstanding)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -706,14 +750,6 @@ describe('settle', () => {
   });
 
   it('correctly handles valid call (positive value change with shares outstanding)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -744,14 +780,6 @@ describe('settle', () => {
   });
 
   it('correctly handles valid call (negative value change less than shares outstanding)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -782,14 +810,6 @@ describe('settle', () => {
   });
 
   it('correctly handles valid call (negative value change greater than shares outstanding)', async () => {
-    const {
-      mockComptrollerProxy,
-      mockDenominationAsset,
-      mockFeeManager,
-      mockVaultProxy,
-      standalonePerformanceFee: performanceFee,
-    } = await provider.snapshot(snapshot);
-
     await activateWithInitialValues({
       mockFeeManager,
       mockComptrollerProxy,
@@ -825,20 +845,15 @@ describe('settle', () => {
 
 describe('integration', () => {
   it('works correctly upon shares redemption for a non 18-decimal asset', async () => {
-    const {
-      accounts: [fundOwner, investor],
-      config: {
-        primitives: { usdc },
-      },
-      deployment: { performanceFee, fundDeployer },
-    } = await provider.snapshot(snapshot);
+    const [fundOwner, investor] = fork.accounts;
+    const performanceFee = fork.deployment.performanceFee;
 
-    const denominationAsset = new StandardToken(usdc, whales.usdc);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
     const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       signer: fundOwner,
-      fundDeployer,
+      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
       fundOwner: fundOwner,
       fundName: 'TestFund',

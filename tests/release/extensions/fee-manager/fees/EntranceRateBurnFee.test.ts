@@ -11,48 +11,22 @@ import {
   entranceRateFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot() {
-  const {
-    accounts: [EOAFeeManager, ...remainingAccounts],
-    deployment,
-    config,
-    deployer,
-  } = await deployProtocolFixture();
-
-  // Create standalone EntranceRateBurnFee
-  const standaloneEntranceRateFee = await EntranceRateBurnFee.deploy(deployer, EOAFeeManager);
-  const denominationAsset = new WETH(config.weth, whales.weth);
-
-  return {
-    deployer,
-    denominationAsset,
-    accounts: remainingAccounts,
-    config,
-    deployment,
-    EOAFeeManager,
-    standaloneEntranceRateFee,
-  };
-}
-
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { entranceRateBurnFee },
-    } = await provider.snapshot(snapshot);
-
-    const getSettlementTypeCall = await entranceRateBurnFee.getSettlementType();
+    const getSettlementTypeCall = await fork.deployment.entranceRateBurnFee.getSettlementType();
     expect(getSettlementTypeCall).toBe(FeeSettlementType.Burn);
   });
 });
 
 describe('settle', () => {
   it('correctly handles valid call', async () => {
-    const { EOAFeeManager, standaloneEntranceRateFee } = await provider.snapshot(snapshot);
+    const fork = await deployProtocolFixture();
+    const [EOAFeeManager] = fork.accounts;
+    const standaloneEntranceRateFee = await EntranceRateBurnFee.deploy(fork.deployer, EOAFeeManager);
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();

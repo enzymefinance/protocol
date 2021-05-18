@@ -10,69 +10,61 @@ import {
   FeeHook,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-async function snapshot() {
-  const {
-    accounts: [EOAFeeManager, ...remainingAccounts],
-    deployment,
-    config,
-    deployer,
-  } = await deployProtocolFixture();
+async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
+  const [EOAFeeManager] = fork.accounts.slice(-1);
 
-  // Create standalone EntranceRateDirectFee
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(deployer, EOAFeeManager);
+  let entranceRateFee = await EntranceRateDirectFee.deploy(fork.deployer, EOAFeeManager);
+  entranceRateFee = entranceRateFee.connect(EOAFeeManager);
 
-  return {
-    accounts: remainingAccounts,
-    config,
-    deployment,
-    EOAFeeManager,
-    standaloneEntranceRateFee,
-  };
+  return entranceRateFee;
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { feeManager, entranceRateDirectFee },
-    } = await provider.snapshot(snapshot);
-
-    const getFeeManagerCall = await entranceRateDirectFee.getFeeManager();
-    expect(getFeeManagerCall).toMatchAddress(feeManager);
+    const getFeeManagerCall = await fork.deployment.entranceRateDirectFee.getFeeManager();
+    expect(getFeeManagerCall).toMatchAddress(fork.deployment.feeManager);
 
     // Implements expected hooks
-    const implementedHooksCall = await entranceRateDirectFee.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(entranceRateDirectFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.PostBuyShares],
-      implementedHooksForUpdate_: [],
-      usesGavOnSettle_: false,
-      usesGavOnUpdate_: false,
-    });
+    const implementedHooksCall = await fork.deployment.entranceRateDirectFee.implementedHooks();
+    expect(implementedHooksCall).toMatchFunctionOutput(
+      fork.deployment.entranceRateDirectFee.implementedHooks.fragment,
+      {
+        implementedHooksForSettle_: [FeeHook.PostBuyShares],
+        implementedHooksForUpdate_: [],
+        usesGavOnSettle_: false,
+        usesGavOnUpdate_: false,
+      },
+    );
   });
 });
 
 describe('addFundSettings', () => {
+  let fork: ProtocolDeployment;
+  let entranceRateFee: EntranceRateDirectFee;
+
+  beforeAll(async () => {
+    fork = await deployProtocolFixture();
+    entranceRateFee = await deployStandaloneEntranceRateFee(fork);
+  });
+
   it('can only be called by the FeeManager', async () => {
-    const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
+    const [randomUser] = fork.accounts;
     const entranceRateFeeConfig = await entranceRateFeeConfigArgs(1);
 
     await expect(
-      standaloneEntranceRateFee.addFundSettings(randomAddress(), entranceRateFeeConfig),
+      entranceRateFee.connect(randomUser).addFundSettings(randomAddress(), entranceRateFeeConfig),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 
   it('correctly handles valid call', async () => {
-    const { EOAFeeManager, standaloneEntranceRateFee } = await provider.snapshot(snapshot);
-
     // Add fee config for a random comptrollerProxyAddress
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('1');
     const entranceRateFeeConfig = await entranceRateFeeConfigArgs(rate);
-    const receipt = await standaloneEntranceRateFee
-      .connect(EOAFeeManager)
-      .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
+    const receipt = await entranceRateFee.addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
 
     // Assert the FundSettingsAdded event was emitted
     assertEvent(receipt, 'FundSettingsAdded', {
@@ -81,15 +73,16 @@ describe('addFundSettings', () => {
     });
 
     // Assert state has been set
-    const getRateForFundCall = await standaloneEntranceRateFee.getRateForFund(comptrollerProxyAddress);
+    const getRateForFundCall = await entranceRateFee.getRateForFund(comptrollerProxyAddress);
     expect(getRateForFundCall).toEqBigNumber(rate);
   });
 });
 
 describe('payout', () => {
   it('returns false', async () => {
-    const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
-    const payoutCall = await standaloneEntranceRateFee.payout.args(randomAddress(), randomAddress()).call();
+    const fork = await deployProtocolFixture();
+    const entranceRateFee = await deployStandaloneEntranceRateFee(fork);
+    const payoutCall = await entranceRateFee.payout.args(randomAddress(), randomAddress()).call();
 
     expect(payoutCall).toBe(false);
   });
@@ -97,7 +90,9 @@ describe('payout', () => {
 
 describe('settle', () => {
   it('can only be called by the FeeManager', async () => {
-    const { standaloneEntranceRateFee } = await provider.snapshot(snapshot);
+    const fork = await deployProtocolFixture();
+    const entranceRateFee = await deployStandaloneEntranceRateFee(fork);
+    const [randomUser] = fork.accounts;
 
     const settlementData = await settlePostBuySharesArgs({
       buyer: randomAddress(),
@@ -106,7 +101,9 @@ describe('settle', () => {
     });
 
     await expect(
-      standaloneEntranceRateFee.settle(randomAddress(), randomAddress(), FeeHook.PostBuyShares, settlementData, 0),
+      entranceRateFee
+        .connect(randomUser)
+        .settle(randomAddress(), randomAddress(), FeeHook.PostBuyShares, settlementData, 0),
     ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
   });
 });

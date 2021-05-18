@@ -11,48 +11,22 @@ import {
   entranceRateFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-async function snapshot() {
-  const {
-    accounts: [EOAFeeManager, ...remainingAccounts],
-    deployment,
-    deployer,
-    config,
-  } = await deployProtocolFixture();
-
-  // Create standalone EntranceRateDirectFee
-  const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(deployer, EOAFeeManager);
-  const denominationAsset = new WETH(config.weth, whales.weth);
-
-  return {
-    deployer,
-    denominationAsset,
-    accounts: remainingAccounts,
-    config,
-    deployment,
-    EOAFeeManager,
-    standaloneEntranceRateFee,
-  };
-}
-
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const {
-      deployment: { entranceRateDirectFee },
-    } = await provider.snapshot(snapshot);
-
-    const getSettlementTypeCall = await entranceRateDirectFee.getSettlementType();
+    const getSettlementTypeCall = await fork.deployment.entranceRateDirectFee.getSettlementType();
     expect(getSettlementTypeCall).toBe(FeeSettlementType.Direct);
   });
 });
 
 describe('settle', () => {
   it('correctly handles valid call', async () => {
-    const { EOAFeeManager, standaloneEntranceRateFee } = await provider.snapshot(snapshot);
+    const fork = await deployProtocolFixture();
+    const [EOAFeeManager] = fork.accounts;
+    const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(fork.deployer, EOAFeeManager);
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
