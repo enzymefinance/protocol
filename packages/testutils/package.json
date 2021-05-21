@@ -12,7 +12,7 @@
     "@babel/runtime": "^7.13.10",
     "@enzymefinance/ethers": "^0.0.4",
     "@enzymefinance/hardhat": "^0.0.7",
-    "@enzymefinance/protocol": "^2.0.5",
+    "@enzymefinance/protocol": "^2.0.6",
     "ethers": "^5.1.0",
     "ethers-eip712": "^0.2.0"
   }

@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.6
+
+### Patch Changes
+
+- 5a3c0716: Re-publishing after new release deployment.
+
 ## 2.0.5
 
 ### Patch Changes
