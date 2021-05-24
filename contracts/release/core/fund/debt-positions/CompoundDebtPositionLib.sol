@@ -16,12 +16,14 @@ import "../../../interfaces/ICERC20.sol";
 import "../../../interfaces/ICEther.sol";
 import "../../../interfaces/ICompoundComptroller.sol";
 import "../../../interfaces/IWETH.sol";
+import "../../../utils/AddressArrayLib.sol";
 import "./IDebtPosition.sol";
 
 /// @title CompoundDebtPosition Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A Debt Position smart contract for Compound
 contract CompoundDebtPositionLib is IDebtPosition {
+    using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
@@ -158,7 +160,7 @@ contract CompoundDebtPositionLib is IDebtPosition {
                 // If the full collateral of an asset is removed, it can be removed from collateral assets
                 assetToIsCollateral[_assets[i]] = false;
 
-                __removeAddressFromArray(_assets[i], collateralAssets);
+                collateralAssets.removeStorageItem(_assets[i]);
             }
 
             ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
@@ -200,7 +202,7 @@ contract CompoundDebtPositionLib is IDebtPosition {
 
                 // Reset borrowed asset cToken and remove it from the list of borrowed assets
                 borrowedAssetToCToken[_assets[i]] = address(0);
-                __removeAddressFromArray(_assets[i], borrowedAssets);
+                borrowedAssets.removeStorageItem(_assets[i]);
 
                 // Send back the remaining token amount after paying the loan
                 if (_amounts[i] > borrowBalance) {
@@ -228,21 +230,6 @@ contract CompoundDebtPositionLib is IDebtPosition {
                 ICERC20(_cToken).repayBorrow(_amount) == 0,
                 "__repayBorrowedAsset: Error while repaying borrow"
             );
-        }
-    }
-
-    /// @dev Helper used to remove an asset from an array on collateral and borrowed assets
-    function __removeAddressFromArray(address _addressToRemove, address[] storage _addressArray)
-        internal
-    {
-        for (uint256 i; i < _addressArray.length; i++) {
-            if (_addressArray[i] == _addressToRemove) {
-                if (i < _addressArray.length - 1) {
-                    _addressArray[i] = _addressArray[_addressArray.length - 1];
-                }
-                _addressArray.pop();
-                break;
-            }
         }
     }
 

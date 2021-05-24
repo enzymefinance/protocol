@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
 import "../../../interfaces/IWETH.sol";
+import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
 import "../debt-positions/IDebtPosition.sol";
 import "./IVault.sol";
@@ -29,6 +30,7 @@ import "./IVault.sol";
 /// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
 /// from SharesTokenBase via VaultLibBase2
 contract VaultLib is VaultLibBase2, IVault {
+    using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
     // Before updating TRACKED_ASSETS_LIMIT in the future, it is important to consider:
@@ -422,16 +424,7 @@ contract VaultLib is VaultLibBase2, IVault {
         if (isActiveDebtPosition(_debtPosition)) {
             debtPositionToIsActive[_debtPosition] = false;
 
-            uint256 debtPositionsCount = activeDebtPositions.length;
-            for (uint256 i; i < debtPositionsCount; i++) {
-                if (activeDebtPositions[i] == _debtPosition) {
-                    if (i < debtPositionsCount - 1) {
-                        activeDebtPositions[i] = activeDebtPositions[debtPositionsCount - 1];
-                    }
-                    activeDebtPositions.pop();
-                    break;
-                }
-            }
+            activeDebtPositions.removeStorageItem(_debtPosition);
 
             emit DebtPositionRemoved(_debtPosition);
         }
@@ -448,16 +441,7 @@ contract VaultLib is VaultLibBase2, IVault {
         if (isTrackedAsset(_asset) && !isPersistentlyTrackedAsset(_asset)) {
             assetToIsTracked[_asset] = false;
 
-            uint256 trackedAssetsCount = trackedAssets.length;
-            for (uint256 i; i < trackedAssetsCount; i++) {
-                if (trackedAssets[i] == _asset) {
-                    if (i < trackedAssetsCount - 1) {
-                        trackedAssets[i] = trackedAssets[trackedAssetsCount - 1];
-                    }
-                    trackedAssets.pop();
-                    break;
-                }
-            }
+            trackedAssets.removeStorageItem(_asset);
 
             emit TrackedAssetRemoved(_asset);
         }

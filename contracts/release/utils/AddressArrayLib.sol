@@ -15,6 +15,34 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library to extend the address array data type
 library AddressArrayLib {
+    /////////////
+    // STORAGE //
+    /////////////
+
+    /// @dev Helper to remove an item from a storage array
+    function removeStorageItem(address[] storage _self, address _itemToRemove)
+        internal
+        returns (bool removed_)
+    {
+        uint256 itemCount = _self.length;
+        for (uint256 i; i < itemCount; i++) {
+            if (_self[i] == _itemToRemove) {
+                if (i < itemCount - 1) {
+                    _self[i] = _self[itemCount - 1];
+                }
+                _self.pop();
+                removed_ = true;
+                break;
+            }
+        }
+
+        return removed_;
+    }
+
+    ////////////
+    // MEMORY //
+    ////////////
+
     /// @dev Helper to add an item to an array. Does not assert uniqueness of the new item.
     function addItem(address[] memory _self, address _itemToAdd)
         internal
