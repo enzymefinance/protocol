@@ -278,6 +278,10 @@ const idle = {
   riskAdjustedIdleUsdt: '0x28fac5334c9f7262b3a3fe707e250e01053e07b5',
 } as const;
 
+const unsupportedAssets = {
+  eurs: '0xdb25f211ab05b1c97d595516f45794528a807ad8',
+};
+
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
@@ -311,6 +315,12 @@ const mainnetConfig: DeploymentConfig = {
         liquidityGaugeToken: '0xd662908ADA2Ea1916B3318327A97eB18aD588b5d',
         lpToken: '0xFd2a8fA60Abd58Efe3EeE34dd494cD491dC14900',
         pool: '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE'
+      },
+      eurs: {
+        invariantProxyAsset: synths.seur,
+        liquidityGaugeToken: '0x90Bb609649E0451E5aD952683D64BD2d1f245840',
+        lpToken: '0x194eBd173F6cDacE046C53eACcE9B953F28411d1',
+        pool: '0x0Ce6a5fF5217e38315f87032CF90686C96627CAA'
       },
       seth: {
         invariantProxyAsset: weth,
@@ -360,6 +370,7 @@ const mainnetConfig: DeploymentConfig = {
     pools,
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   },
+  unsupportedAssets,
   wdgld: {
     ethusd: ethUsdAggregator,
     wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',

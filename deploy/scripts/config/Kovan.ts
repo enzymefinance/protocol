@@ -155,6 +155,7 @@ const mainnetConfig: DeploymentConfig = {
     pools,
     router: '0x0022B151B637722757852Ef64c57c982277203fF',
   },
+  unsupportedAssets: {},
   wdgld: {
     ethusd: ethUsdAggregator,
     wdgld: '0x23993cA98c63F1f8de457C271f8ceFD9076A42f4',
