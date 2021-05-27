@@ -80,6 +80,7 @@ export interface DeploymentConfig {
   stakehound: {
     steth: string;
   };
+  unsupportedAssets: Record<string, string>;
   uniswap: {
     factory: string;
     router: string;

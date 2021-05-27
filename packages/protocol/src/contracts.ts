@@ -51,6 +51,7 @@ export * from './codegen/AlphaHomoraV1Adapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAaveAdapter';
+export * from './codegen/CurveLiquidityEursAdapter';
 export * from './codegen/CurveLiquiditySethAdapter';
 export * from './codegen/CurveLiquidityStethAdapter';
 export * from './codegen/IdleAdapter';

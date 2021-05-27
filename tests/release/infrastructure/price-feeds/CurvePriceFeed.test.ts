@@ -220,10 +220,10 @@ describe('derivatives registry', () => {
     it('adds multiple derivatives (both LP and liquidity gauge) and emits an event for each', async () => {
       const curvePriceFeed = fork.deployment.curvePriceFeed;
 
-      // Curve pool: eurs
-      const curvePool = '0x0Ce6a5fF5217e38315f87032CF90686C96627CAA';
-      const curveLPToken = '0x194eBd173F6cDacE046C53eACcE9B953F28411d1';
-      const curveLiquidityGaugeToken = '0x90Bb609649E0451E5aD952683D64BD2d1f245840';
+      // Curve pool: bBTC
+      const curvePool = '0x071c661B4DeefB59E2a3DdB20Db036821eeE8F4b';
+      const curveLPToken = '0x410e3E86ef427e30B9235497143881f717d93c2A';
+      const curveLiquidityGaugeToken = '0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE';
 
       const newDerivatives = [curveLPToken, curveLiquidityGaugeToken];
       const invariantProxyAsset = new StandardToken(fork.config.weth, provider);

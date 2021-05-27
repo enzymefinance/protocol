@@ -32,8 +32,10 @@ const whales = {
   cusdc: '0x926e78b8df67e129011750dd7b975f8e50d3d7ad',
   czrx: '0x57ca561798413a20508b6bc997481e784f3e6e5f',
   seth: '0x27cc4d6bc95b55a3a981bf1f1c7261cda7bb0931',
+  seur: '0xca17ef1925d49931918e3fde7aa4516a3a4958c4',
   susd: '0x49BE88F0fcC3A8393a59d3688480d7D253C37D2A',
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
+  eurs: '0x98ed26de6451db36246672df78ae7c50f2c76f6d',
   idle: '0x34aaa3d5a73d6f9594326d0422ce69748f09b14f',
 } as const;
 
