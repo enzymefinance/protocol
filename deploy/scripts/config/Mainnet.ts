@@ -278,6 +278,12 @@ const idle = {
   riskAdjustedIdleUsdt: '0x28fac5334c9f7262b3a3fe707e250e01053e07b5',
 } as const;
 
+const yVaultsV2 = {
+  yCrvSteth: '0xdCD90C7f6324cfa40d7169ef80b12031770B4325',
+  yDai: '0x19D3364A399d251E894aC732651be8B0E4e85001',
+  yUsdc: '0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9',
+};
+
 const unsupportedAssets = {
   eurs: '0xdb25f211ab05b1c97d595516f45794528a807ad8',
 };
@@ -377,6 +383,12 @@ const mainnetConfig: DeploymentConfig = {
     xauusd: xauUsdAggregator,
   },
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  yearn: {
+    vaultV2: {
+      registry: '0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804',
+      yVaults: yVaultsV2
+    }
+  },
   zeroex: {
     allowedMakers: [
       '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',

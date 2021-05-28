@@ -162,6 +162,12 @@ const mainnetConfig: DeploymentConfig = {
     xauusd: xauUsdAggregator,
   },
   weth: '0xd0a1e359811322d97991e03f863a0c30c2cf029c',
+  yearn: {
+    vaultV2: {
+      registry: '0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804',
+      yVaults: {}
+    }
+  },
   zeroex: {
     allowedMakers: [],
     exchange: '0x6Ffa4088e56986E25e65d73657C23D3A869EE570',

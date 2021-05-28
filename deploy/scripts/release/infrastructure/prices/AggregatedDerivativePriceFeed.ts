@@ -21,6 +21,7 @@ const fn: DeployFunction = async function (hre) {
   const stakehoundEthPriceFeed = await getOrNull('StakehoundEthPriceFeed');
   const synthetixPriceFeed = await getOrNull('SynthetixPriceFeed');
   const wdgldPriceFeed = await getOrNull('WdgldPriceFeed');
+  const yearnVaultV2PriceFeed = await get('YearnVaultV2PriceFeed');
 
   const derivativePairs: [string, string][] = [];
   if (alphaHomoraV1PriceFeed != null) {
@@ -80,6 +81,14 @@ const fn: DeployFunction = async function (hre) {
     );
   }
 
+  if (yearnVaultV2PriceFeed != null) {
+    derivativePairs.push(
+      ...Object.values(config.yearn.vaultV2.yVaults).map(
+        (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
+      ),
+    );
+  }
+
   const derivatives = derivativePairs.map(([derivative]) => derivative);
   const feeds = derivativePairs.map(([, feed]) => feed);
 
@@ -104,6 +113,7 @@ fn.dependencies = [
   'StakehoundEthPriceFeed',
   'SynthetixPriceFeed',
   'WdgldPriceFeed',
+  'YearnVaultV2PriceFeed',
 ];
 
 export default fn;

@@ -69,6 +69,7 @@ const config: HardhatUserConfig = {
       'ICurveLiquidityPool',
       'ICurveRegistry',
       'ICurveStableSwapSteth',
+      'IYearnVaultV2',
     ],
     options: {
       ignoreContractsWithoutAbi: true,
