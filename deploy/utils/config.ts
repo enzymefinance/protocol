@@ -86,6 +86,12 @@ export interface DeploymentConfig {
     router: string;
     pools: Record<string, string>;
   };
+  yearn: {
+    vaultV2: {
+      registry: string;
+      yVaults: Record<string, string>;
+    };
+  };
   zeroex: {
     exchange: string;
     allowedMakers: string[];

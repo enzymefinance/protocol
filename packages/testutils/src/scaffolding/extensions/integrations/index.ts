@@ -8,4 +8,5 @@ export * from './paraSwapV4';
 export * from './synthetix';
 export * from './trackedAssets';
 export * from './uniswapV2';
+export * from './yearn';
 export * from './zeroExV2';

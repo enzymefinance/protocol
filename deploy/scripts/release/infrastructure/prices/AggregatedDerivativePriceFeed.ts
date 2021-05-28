@@ -21,6 +21,7 @@ const fn: DeployFunction = async function (hre) {
   const stakehoundEthPriceFeed = await get('StakehoundEthPriceFeed');
   const synthetixPriceFeed = await get('SynthetixPriceFeed');
   const wdgldPriceFeed = await get('WdgldPriceFeed');
+  const yearnVaultV2PriceFeed = await get('YearnVaultV2PriceFeed');
 
   const derivativePairs: [string, string][] = [
     [config.alphaHomoraV1.ibeth, alphaHomoraV1PriceFeed.address],
@@ -36,6 +37,9 @@ const fn: DeployFunction = async function (hre) {
     ),
     ...Object.values(config.idle).map((idleToken) => [idleToken, idlePriceFeed.address] as [string, string]),
     ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
+    ...Object.values(config.yearn.vaultV2.yVaults).map(
+      (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
+    ),
   ];
 
   const derivatives = derivativePairs.map(([derivative]) => derivative);
@@ -62,6 +66,7 @@ fn.dependencies = [
   'StakehoundEthPriceFeed',
   'SynthetixPriceFeed',
   'WdgldPriceFeed',
+  'YearnVaultV2PriceFeed',
 ];
 
 export default fn;
