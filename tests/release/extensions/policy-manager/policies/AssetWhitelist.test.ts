@@ -108,8 +108,17 @@ describe('addFundSettings', () => {
   });
 });
 
+describe('canDisable', () => {
+  it('returns false', async () => {
+    const fork = await deployProtocolFixture();
+    const assetWhitelist = await deployAndConfigureStandaloneAssetWhitelist(fork, {});
+
+    expect(await assetWhitelist.canDisable()).toBe(false);
+  });
+});
+
 describe('updateFundSettings', () => {
-  it('can only be called by the PolicyManager', async () => {
+  it('does not allow updates', async () => {
     const fork = await deployProtocolFixture();
     const assetWhitelist = await deployAndConfigureStandaloneAssetWhitelist(fork, {});
 

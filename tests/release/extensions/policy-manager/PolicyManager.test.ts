@@ -224,57 +224,7 @@ describe('disablePolicyForFund', () => {
     await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
   });
 
-  it('does not allow an already disabled policy', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostBuySharesPolicy },
-      fundOwner,
-      denominationAsset,
-    } = await provider.snapshot(snapshot);
-
-    // Create fund without policy config
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-    });
-
-    // Attempt to disable a policy that's not in the fund
-    const disablePolicyForFundCall = policyManager
-      .connect(fundOwner)
-      .disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy);
-
-    await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Policy not enabled');
-  });
-
-  it('does not allow a policy that implements a non-BuyShares hook', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostCoIPolicy },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    // Create fund without policy config
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    // Attempt to disable a non-BuyShares hook policy
-    const disablePolicyForFundCall = policyManager
-      .connect(fundOwner)
-      .disablePolicyForFund(comptrollerProxy, mockPostCoIPolicy);
-
-    await expect(disablePolicyForFundCall).rejects.toBeRevertedWith('Disallowed hook');
-  });
-
-  it('removes specified policy and emits event', async () => {
+  it('removes specified policy and emits event if the policy allows disabling', async () => {
     const {
       deployment: { fundDeployer, policyManager },
       policies: { mockPostBuySharesPolicy },
@@ -295,7 +245,15 @@ describe('disablePolicyForFund', () => {
     // Assert that the policy enabled on the fund
     expect(await policyManager.policyIsEnabledForFund(comptrollerProxy, mockPostBuySharesPolicy)).toBe(true);
 
-    // Disable one of the fund's policies
+    // Attempting to disable a policy that cannot be disabled should fail
+    await expect(
+      policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy),
+    ).rejects.toBeRevertedWith('_policy cannot be disabled');
+
+    // Change the policy settings to allow disabling
+    await mockPostBuySharesPolicy.canDisable.returns(true);
+
+    // Disabling the policy should now succeed
     const receipt = await policyManager
       .connect(fundOwner)
       .disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy);
@@ -678,59 +636,6 @@ describe('updatePolicySettingsForFund', () => {
       .updatePolicySettingsForFund(comptrollerProxy, mockPostBuySharesPolicy, utils.randomBytes(10));
 
     await expect(updatePolicyCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
-  });
-
-  it('does not allow a policy that implements a non-BuyShares hook', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostCoIPolicy },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    // Attempt to update a non-buyShares hook
-    const updatePolicyCall = policyManager
-      .connect(fundOwner)
-      .updatePolicySettingsForFund(comptrollerProxy, mockPostCoIPolicy, utils.randomBytes(10));
-
-    await expect(updatePolicyCall).rejects.toBeRevertedWith('Disallowed hook');
-  });
-
-  it('does not allow an un-enabled policy', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostBuySharesPolicy },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    // Disable mockPostBuySharesPolicy
-    await policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy);
-
-    // Attempt to update mockPostBuySharesPolicy settings
-    const updatePolicyCall = policyManager
-      .connect(fundOwner)
-      .updatePolicySettingsForFund(comptrollerProxy, mockPostBuySharesPolicy, utils.randomBytes(10));
-
-    await expect(updatePolicyCall).rejects.toBeRevertedWith('Policy not enabled');
   });
 
   it('calls `updateFundSettings` on the policy with the correct params', async () => {

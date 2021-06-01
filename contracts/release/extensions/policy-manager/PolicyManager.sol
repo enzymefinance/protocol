@@ -83,12 +83,9 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @notice Disables a policy for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _policy The policy address to disable
-    function disablePolicyForFund(address _comptrollerProxy, address _policy)
-        external
-        onlyBuySharesHooks(_policy)
-        onlyEnabledPolicyForFund(_comptrollerProxy, _policy)
-    {
+    function disablePolicyForFund(address _comptrollerProxy, address _policy) external {
         __validateIsFundOwner(getVaultProxyForFund(_comptrollerProxy), msg.sender);
+        require(IPolicy(_policy).canDisable(), "disablePolicyForFund: _policy cannot be disabled");
 
         comptrollerProxyToPolicies[_comptrollerProxy].remove(_policy);
 
@@ -144,7 +141,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _comptrollerProxy,
         address _policy,
         bytes calldata _settingsData
-    ) external onlyBuySharesHooks(_policy) onlyEnabledPolicyForFund(_comptrollerProxy, _policy) {
+    ) external {
         address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
         __validateIsFundOwner(vaultProxy, msg.sender);
 

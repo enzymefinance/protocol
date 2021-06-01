@@ -158,6 +158,15 @@ describe('addFundSettings', () => {
   });
 });
 
+describe('canDisable', () => {
+  it('returns true', async () => {
+    const fork = await deployProtocolFixture();
+    const minMaxInvestment = await deployAndConfigureStandaloneMinMaxInvestment(fork, {});
+
+    expect(await minMaxInvestment.canDisable()).toBe(true);
+  });
+});
+
 describe('updateFundSettings', () => {
   let fork: ProtocolDeployment;
   let comptrollerProxy: AddressLike;

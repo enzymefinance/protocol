@@ -20,6 +20,8 @@ interface IPolicy {
 
     function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings) external;
 
+    function canDisable() external pure returns (bool canDisable_);
+
     function identifier() external pure returns (string memory identifier_);
 
     function implementedHooks()

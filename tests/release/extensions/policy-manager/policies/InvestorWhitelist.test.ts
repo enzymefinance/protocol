@@ -108,6 +108,15 @@ describe('addFundSettings', () => {
   it.todo('handles a valid call (re-enabled policy)');
 });
 
+describe('canDisable', () => {
+  it('returns true', async () => {
+    const fork = await deployProtocolFixture();
+    const investorWhitelist = await deployAndConfigureStandaloneInvestorWhitelist(fork, {});
+
+    expect(await investorWhitelist.canDisable()).toBe(true);
+  });
+});
+
 describe('updateFundSettings', () => {
   let fork: ProtocolDeployment;
   let comptrollerProxy: AddressLike;

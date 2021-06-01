@@ -31,6 +31,12 @@ contract InvestorWhitelist is PostBuySharesValidatePolicyBase, AddressListPolicy
         __updateList(_comptrollerProxy, _encodedSettings);
     }
 
+    /// @notice Whether or not the policy can be disabled
+    /// @return canDisable_ True if the policy can be disabled
+    function canDisable() external pure virtual override returns (bool canDisable_) {
+        return true;
+    }
+
     /// @notice Provides a constant string identifier for a policy
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {

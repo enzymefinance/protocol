@@ -34,6 +34,13 @@ abstract contract PolicyBase is IPolicy {
         return;
     }
 
+    /// @notice Whether or not the policy can be disabled
+    /// @return canDisable_ True if the policy can be disabled
+    /// @dev False by default, can be overridden by the policy
+    function canDisable() external pure virtual override returns (bool canDisable_) {
+        return false;
+    }
+
     /// @notice Updates the policy settings for a fund
     /// @dev Disallowed by default, can be overridden by the policy
     function updateFundSettings(

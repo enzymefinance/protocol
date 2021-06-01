@@ -189,6 +189,15 @@ describe('addRedemptionBlockingAdapters', () => {
   });
 });
 
+describe('canDisable', () => {
+  it('returns false', async () => {
+    const fork = await deployProtocolFixture();
+    const guaranteedRedemption = await deployStandaloneGuaranteedRedemption(fork, fork.deployer);
+
+    expect(await guaranteedRedemption.canDisable()).toBe(false);
+  });
+});
+
 describe('removeRedemptionBlockingAdapters', () => {
   let fork: ProtocolDeployment;
   let guaranteedRedemption: GuaranteedRedemption;
