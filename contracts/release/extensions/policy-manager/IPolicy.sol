@@ -26,7 +26,7 @@ interface IPolicy {
 
     function implementedHooks()
         external
-        view
+        pure
         returns (IPolicyManager.PolicyHook[] memory implementedHooks_);
 
     function updateFundSettings(

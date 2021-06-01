@@ -83,6 +83,7 @@ export * from './codegen/InvestorWhitelist';
 export * from './codegen/FundActionsWrapper';
 
 // Test contracts
+export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
 export * from './codegen/TestSingleUnderlyingDerivativeRegistry';

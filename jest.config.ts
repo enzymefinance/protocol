@@ -22,6 +22,7 @@ const projects = [
   project('debt', ['tests/release/extensions/debt-position-manager']),
   project('fee', ['tests/release/extensions/fee-manager']),
   project('peripheral', ['tests/release/peripheral']),
+  project('utils', ['tests/release/utils']),
   project('e2e', ['tests/release/e2e']),
 ].filter((project) => !!project);
 

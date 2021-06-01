@@ -21,7 +21,7 @@ abstract contract PostBuySharesValidatePolicyBase is PolicyBase {
     /// @return implementedHooks_ The implemented PolicyHooks
     function implementedHooks()
         external
-        view
+        pure
         override
         returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
     {

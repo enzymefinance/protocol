@@ -89,35 +89,7 @@ describe('constructor', () => {
       ...Object.values(policies),
     ]);
 
-    const policyManagerOwner = await policyManager.getOwner();
-    const fundDeployerOwner = await fundDeployer.getOwner();
-    expect(policyManagerOwner).toMatchAddress(fundDeployerOwner);
-
-    // Check that all policies implements the proper hooks with policyImplementsHook
-    const assetWhitelistImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
-      assetWhitelist,
-      PolicyHook.PostCallOnIntegration,
-    );
-
-    const guaranteedRedemptionImplementsPostCallOnIntegration = await policyManager.policyImplementsHook(
-      guaranteedRedemption,
-      PolicyHook.PostCallOnIntegration,
-    );
-
-    const investorsWhitelistImplementsPostBuyShares = await policyManager.policyImplementsHook(
-      investorWhitelist,
-      PolicyHook.PostBuyShares,
-    );
-
-    const minMaxInvestmentImplementsPostBuyShares = await policyManager.policyImplementsHook(
-      minMaxInvestment,
-      PolicyHook.PostBuyShares,
-    );
-
-    expect(assetWhitelistImplementsPostCallOnIntegration).toBe(true);
-    expect(guaranteedRedemptionImplementsPostCallOnIntegration).toBe(true);
-    expect(investorsWhitelistImplementsPostBuyShares).toBe(true);
-    expect(minMaxInvestmentImplementsPostBuyShares).toBe(true);
+    expect(await policyManager.getOwner()).toMatchAddress(await fundDeployer.getOwner());
   });
 });
 
@@ -242,9 +214,6 @@ describe('disablePolicyForFund', () => {
       policyManagerConfig,
     });
 
-    // Assert that the policy enabled on the fund
-    expect(await policyManager.policyIsEnabledForFund(comptrollerProxy, mockPostBuySharesPolicy)).toBe(true);
-
     // Attempting to disable a policy that cannot be disabled should fail
     await expect(
       policyManager.connect(fundOwner).disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy),
@@ -259,11 +228,14 @@ describe('disablePolicyForFund', () => {
       .disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy);
 
     // Assert that the policy is disabled for the fund
-    const postMockPostBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
-      comptrollerProxy,
-      mockPostBuySharesPolicy,
+    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+      expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
+        false,
+      );
+    }
+    expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).not.toEqual(
+      expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
-    expect(postMockPostBuySharesPolicyIsEnabled).toBe(false);
 
     // Assert that the proper event has been emitted
     const disablePolicyEvent = policyManager.abi.getEvent('PolicyDisabledForFund');
@@ -318,7 +290,7 @@ describe('enablePolicyForFund', () => {
       .connect(fundOwner)
       .enablePolicyForFund(comptrollerProxy, mockPostCoIPolicy, '0x');
 
-    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Disallowed hook');
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy cannot be enabled');
   });
 
   it('does not allow an already enabled policy', async () => {
@@ -344,7 +316,7 @@ describe('enablePolicyForFund', () => {
       .connect(fundOwner)
       .enablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy, utils.randomBytes(10));
 
-    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('policy already enabled');
+    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy is already enabled');
   });
 
   it('does not allow an unregistered policy', async () => {
@@ -395,7 +367,14 @@ describe('enablePolicyForFund', () => {
     });
 
     // Assert that the policy disabled on the fund
-    expect(await policyManager.policyIsEnabledForFund(comptrollerProxy, mockPostBuySharesPolicy)).toBe(false);
+    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+      expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
+        false,
+      );
+    }
+    expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).not.toEqual(
+      expect.arrayContaining([mockPostBuySharesPolicy.address]),
+    );
 
     // Enable the mockPostBuySharesPolicy
     const policySettings = utils.randomBytes(10);
@@ -404,11 +383,14 @@ describe('enablePolicyForFund', () => {
       .enablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy, policySettings);
 
     // Assert that the policy is enabled for the fund
-    const postMockPostBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
-      comptrollerProxy,
-      mockPostBuySharesPolicy,
+    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+      expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
+        true,
+      );
+    }
+    expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toEqual(
+      expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
-    expect(postMockPostBuySharesPolicyIsEnabled).toBe(true);
 
     // Assert that the proper event has been emitted
     const enablePolicyEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
@@ -441,11 +423,14 @@ describe('enablePolicyForFund', () => {
       .enablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy, '0x');
 
     // Check that the policy has been added
-    const mockPostBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
-      comptrollerProxy,
-      mockPostBuySharesPolicy,
+    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+      expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
+        true,
+      );
+    }
+    expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toEqual(
+      expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
-    expect(mockPostBuySharesPolicyIsEnabled).toBe(true);
 
     // Assert that the event has been emitted
     const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
@@ -492,7 +477,7 @@ describe('setConfigForFund', () => {
 
     // Call the setConfigForFund with this new config
     const newSetConfigForFundCall = policyManager.setConfigForFund(newPolicyManagerConfig);
-    await expect(newSetConfigForFundCall).rejects.toBeRevertedWith('policy already enabled');
+    await expect(newSetConfigForFundCall).rejects.toBeRevertedWith('Policy is already enabled');
   });
 
   it('does not allow unregistered policies', async () => {
@@ -596,11 +581,11 @@ describe('setConfigForFund', () => {
     });
 
     // Check that the policy has been added
-    const mockPostBuySharesPolicyIsEnabled = await policyManager.policyIsEnabledForFund(
-      comptrollerProxy,
-      mockPostBuySharesPolicy,
-    );
-    expect(mockPostBuySharesPolicyIsEnabled).toBe(true);
+    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+      expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
+        true,
+      );
+    }
 
     // Assert that the event has been emitted
     const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
@@ -932,26 +917,22 @@ describe('policy registry', () => {
       await expect(registerPoliciesCall).rejects.toBeRevertedWith('policy already registered');
     });
 
-    it('successfully registers a policy with multiple implemented hooks and emits the correct event', async () => {
+    it('successfully registers a policy and emits the correct event', async () => {
       const {
         deployer,
         deployment: { policyManager },
       } = await provider.snapshot(snapshot);
 
-      // Setup a mock policy that implements multiple hooks
+      // Setup a mock policy
       const identifier = `MOCK_POLICY`;
-      const hooks = [PolicyHook.PostBuyShares, PolicyHook.PostCallOnIntegration];
-      const notIncludedHooks = [PolicyHook.PreTransferShares];
       const mockPolicy = await IPolicy.mock(deployer);
       await mockPolicy.identifier.returns(identifier);
-      await mockPolicy.implementedHooks.returns(hooks);
 
       const receipt = await policyManager.registerPolicies([mockPolicy]);
 
       // Assert event
       assertEvent(receipt, 'PolicyRegistered', {
         policy: mockPolicy,
-        implementedHooks: hooks,
         // TODO: Improve param matching to automatically derive the sighash for indexed event args.
         identifier: expect.objectContaining({
           hash: utils.id(identifier),
@@ -964,19 +945,6 @@ describe('policy registry', () => {
         policyManager.getRegisteredPolicies,
         expect.arrayContaining([mockPolicy.address]),
       );
-
-      // Policy hooks should be stored
-      for (const hook of hooks) {
-        const goodPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
-
-        expect(goodPolicyImplementsHookCall).toBe(true);
-      }
-
-      for (const hook of notIncludedHooks) {
-        const badPolicyImplementsHookCall = await policyManager.policyImplementsHook(mockPolicy, hook);
-
-        expect(badPolicyImplementsHookCall).toBe(false);
-      }
     });
   });
 });

@@ -99,6 +99,40 @@ library AddressArrayLib {
         return nextArray_;
     }
 
+    /// @dev Helper to merge the unique items of a second array.
+    /// Does not consider uniqueness of either array, only relative uniqueness.
+    /// Preserves ordering.
+    function mergeArray(address[] memory _self, address[] memory _arrayToMerge)
+        internal
+        pure
+        returns (address[] memory nextArray_)
+    {
+        uint256 newUniqueItemCount;
+        for (uint256 i; i < _arrayToMerge.length; i++) {
+            if (!contains(_self, _arrayToMerge[i])) {
+                newUniqueItemCount++;
+            }
+        }
+
+        if (newUniqueItemCount == 0) {
+            return _self;
+        }
+
+        nextArray_ = new address[](_self.length + newUniqueItemCount);
+        for (uint256 i; i < _self.length; i++) {
+            nextArray_[i] = _self[i];
+        }
+        uint256 nextArrayIndex = _self.length;
+        for (uint256 i; i < _arrayToMerge.length; i++) {
+            if (!contains(_self, _arrayToMerge[i])) {
+                nextArray_[nextArrayIndex] = _arrayToMerge[i];
+                nextArrayIndex++;
+            }
+        }
+
+        return nextArray_;
+    }
+
     /// @dev Helper to verify if array is a set of unique values.
     /// Does not assert length > 0.
     function isUniqueSet(address[] memory _self) internal pure returns (bool isUnique_) {
