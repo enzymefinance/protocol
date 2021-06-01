@@ -12,12 +12,12 @@
 pragma solidity 0.6.12;
 
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/PreBuySharesValidatePolicyBase.sol";
+import "./utils/PostBuySharesValidatePolicyBase.sol";
 
 /// @title InvestorWhitelist Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of investors to buy shares in a fund
-contract InvestorWhitelist is PreBuySharesValidatePolicyBase, AddressListPolicyMixin {
+contract InvestorWhitelist is PostBuySharesValidatePolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Adds the initial policy settings for a fund

@@ -3,7 +3,7 @@ import {
   MinMaxInvestment,
   minMaxInvestmentArgs,
   PolicyHook,
-  validateRulePreBuySharesArgs,
+  validateRulePostBuySharesArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { BigNumberish, utils } from 'ethers';
@@ -82,7 +82,7 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await minMaxInvestment.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([PolicyHook.PreBuyShares]);
+    expect(implementedHooksCall).toMatchObject([PolicyHook.PostBuyShares]);
   });
 });
 
@@ -251,15 +251,15 @@ describe('validateRule', () => {
 
   it('returns true if the investmentAmount is within bounds', async () => {
     // Only the investmentAmount arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(),
       fundGav: 0,
       investmentAmount: utils.parseEther('1'),
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -267,15 +267,15 @@ describe('validateRule', () => {
 
   it('returns false if the investmentAmount is out of bounds', async () => {
     // Only the investmentAmount arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(),
       fundGav: 0,
       investmentAmount: utils.parseEther('3'),
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);
@@ -290,15 +290,15 @@ describe('validateRule', () => {
     });
 
     // Only the investmentAmount arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(),
       fundGav: 0,
       investmentAmount: utils.parseEther('1'),
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);
@@ -314,30 +314,30 @@ describe('validateRule', () => {
 
     {
       // Only the investmentAmount arg matters for this policy
-      const preBuySharesArgs = validateRulePreBuySharesArgs({
+      const postBuySharesArgs = validateRulePostBuySharesArgs({
         buyer: randomAddress(),
         fundGav: 0,
         investmentAmount: utils.parseEther('1.5'),
-        minSharesQuantity: 1,
+        sharesIssued: 1,
       });
 
       const validateRuleCall = await minMaxInvestment.validateRule
-        .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+        .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
         .call();
 
       expect(validateRuleCall).toBe(false);
     }
 
     // Only the investmentAmount arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(),
       fundGav: 0,
       investmentAmount: utils.parseEther('0.5'),
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -353,30 +353,30 @@ describe('validateRule', () => {
 
     {
       // Only the investmentAmount arg matters for this policy
-      const preBuySharesArgs = validateRulePreBuySharesArgs({
+      const postBuySharesArgs = validateRulePostBuySharesArgs({
         buyer: randomAddress(),
         fundGav: 0,
         investmentAmount: utils.parseEther('0.5'),
-        minSharesQuantity: 1,
+        sharesIssued: 1,
       });
 
       const validateRuleCall = await minMaxInvestment.validateRule
-        .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+        .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
         .call();
 
       expect(validateRuleCall).toBe(false);
     }
 
     // Only the investmentAmount arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(),
       fundGav: 0,
       investmentAmount: utils.parseEther('1.5'),
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);

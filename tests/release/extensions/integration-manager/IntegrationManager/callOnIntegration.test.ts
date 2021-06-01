@@ -12,7 +12,6 @@ import {
   sighash,
   StandardToken,
   validateRulePostCoIArgs,
-  validateRulePreCoIArgs,
   VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
@@ -535,15 +534,6 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
         adapter: mockGenericAdapter,
@@ -620,15 +610,6 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
         adapter: mockGenericAdapter,
@@ -696,15 +677,6 @@ describe('valid calls', () => {
       integrationData,
       vaultProxy,
     });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -782,15 +754,6 @@ describe('valid calls', () => {
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
         adapter: mockGenericAdapter,
@@ -854,15 +817,6 @@ describe('valid calls', () => {
       integrationData,
       vaultProxy,
     });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -933,15 +887,6 @@ describe('valid calls', () => {
       integrationData,
       vaultProxy,
     });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -1024,16 +969,6 @@ describe('valid calls', () => {
       vaultProxy,
     });
 
-    // Assert expected calls to PolicyManager
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
-
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
@@ -1087,15 +1022,6 @@ describe('valid calls', () => {
       integrationData,
       vaultProxy,
     });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -1166,15 +1092,6 @@ describe('valid calls', () => {
       integrationData,
       vaultProxy,
     });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PreCallOnIntegration,
-      validateRulePreCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-      }),
-    );
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,

@@ -95,28 +95,6 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     });
   });
 
-  it('attempts to trade on Synthetix within the redemption window', async () => {
-    await expect(
-      synthetixTakeOrder({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner: manager,
-        synthetixAdapter: fork.deployment.synthetixAdapter,
-        outgoingAsset: susd,
-        outgoingAssetAmount: utils.parseEther('10'),
-        incomingAsset: sbtc,
-        minIncomingAssetAmount: '1',
-      }),
-    ).rejects.toBeRevertedWith('Rule evaluated to false: GUARANTEED_REDEMPTION');
-  });
-
-  it('warps beyond the redemption window', async () => {
-    const duration = (await fork.deployment.guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
-    await provider.send('evm_increaseTime', [duration.toNumber()]);
-    await provider.send('evm_mine', []);
-  });
-
   it('attempts to trade on Synthetix without delegating the SynthetixAdapter to exchangeOnBehalf of VaultProxy', async () => {
     await expect(
       synthetixTakeOrder({
@@ -140,6 +118,28 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
       fundOwner: manager,
       delegate: fork.deployment.synthetixAdapter,
     });
+  });
+
+  it('attempts to trade on Synthetix within the redemption window', async () => {
+    await expect(
+      synthetixTakeOrder({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager: fork.deployment.integrationManager,
+        fundOwner: manager,
+        synthetixAdapter: fork.deployment.synthetixAdapter,
+        outgoingAsset: susd,
+        outgoingAssetAmount: utils.parseEther('10'),
+        incomingAsset: sbtc,
+        minIncomingAssetAmount: '1',
+      }),
+    ).rejects.toBeRevertedWith('Rule evaluated to false: GUARANTEED_REDEMPTION');
+  });
+
+  it('warps beyond the redemption window', async () => {
+    const duration = (await fork.deployment.guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
+    await provider.send('evm_increaseTime', [duration.toNumber()]);
+    await provider.send('evm_mine', []);
   });
 
   it('trades on Synthetix after the redemption window has elapsed', async () => {

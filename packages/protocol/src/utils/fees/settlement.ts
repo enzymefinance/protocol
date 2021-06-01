@@ -6,13 +6,11 @@ import { sighash } from '../sighash';
 export function settlePreBuySharesArgs({
   buyer,
   investmentAmount,
-  minSharesQuantity,
 }: {
   buyer: AddressLike;
   investmentAmount: BigNumberish;
-  minSharesQuantity: BigNumberish;
 }) {
-  return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, minSharesQuantity]);
+  return encodeArgs(['address', 'uint256'], [buyer, investmentAmount]);
 }
 
 export function settlePostBuySharesArgs({

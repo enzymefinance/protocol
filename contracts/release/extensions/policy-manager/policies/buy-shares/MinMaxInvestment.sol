@@ -12,13 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./utils/PreBuySharesValidatePolicyBase.sol";
+import "./utils/PostBuySharesValidatePolicyBase.sol";
 
 /// @title MinMaxInvestment Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that restricts the amount of the fund's denomination asset that a user can
 /// send in a single call to buy shares in a fund
-contract MinMaxInvestment is PreBuySharesValidatePolicyBase {
+contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
     event FundSettingsSet(
         address indexed comptrollerProxy,
         uint256 minInvestmentAmount,

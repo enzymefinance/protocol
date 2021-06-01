@@ -878,7 +878,6 @@ describe('invokeHook', () => {
     } = await provider.snapshot(snapshot);
 
     const investmentAmount = utils.parseEther('2');
-    const minSharesQuantity = 123;
 
     const gav = investmentAmount;
 
@@ -889,7 +888,6 @@ describe('invokeHook', () => {
       buyer,
       denominationAsset,
       investmentAmount,
-      minSharesQuantity,
       seedBuyer: true,
     });
 
@@ -897,7 +895,6 @@ describe('invokeHook', () => {
     const preBuySharesArgs = settlePreBuySharesArgs({
       buyer,
       investmentAmount,
-      minSharesQuantity,
     });
 
     // Actual gav is 0 at time of call, so both fees should be called with 0 gav

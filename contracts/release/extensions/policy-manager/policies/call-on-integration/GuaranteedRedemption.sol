@@ -14,13 +14,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
-import "./utils/PreCallOnIntegrationValidatePolicyBase.sol";
+import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
 
 /// @title GuaranteedRedemption Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that guarantees that shares will either be continuously redeemable or
 /// redeemable within a predictable daily window by preventing trading during a configurable daily period
-contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDeployerOwnerMixin {
+contract GuaranteedRedemption is PostCallOnIntegrationValidatePolicyBase, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event AdapterAdded(address adapter);
@@ -164,7 +164,7 @@ contract GuaranteedRedemption is PreCallOnIntegrationValidatePolicyBase, FundDep
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (address adapter, ) = __decodeRuleArgs(_encodedArgs);
+        (address adapter, , , , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, adapter);
     }

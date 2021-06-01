@@ -4,7 +4,7 @@ import {
   GuaranteedRedemption,
   guaranteedRedemptionArgs,
   PolicyHook,
-  validateRulePreCoIArgs,
+  validateRulePostCoIArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, constants, utils } from 'ethers';
@@ -57,7 +57,7 @@ describe('constructor', () => {
     );
 
     const implementedHooksResult = await guaranteedRedemption.implementedHooks();
-    expect(implementedHooksResult).toMatchObject([PolicyHook.PreCallOnIntegration]);
+    expect(implementedHooksResult).toMatchObject([PolicyHook.PostCallOnIntegration]);
 
     expect(await guaranteedRedemption.adapterCanBlockRedemption(fork.deployment.synthetixAdapter)).toBe(true);
   });
@@ -279,13 +279,17 @@ describe('validateRule', () => {
 
   it('returns true if there is no adapter in the policy', async () => {
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter: randomAddress(),
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -308,13 +312,17 @@ describe('validateRule', () => {
     await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter,
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -337,13 +345,17 @@ describe('validateRule', () => {
     await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter,
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -355,13 +367,17 @@ describe('validateRule', () => {
     await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter,
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);
@@ -384,13 +400,17 @@ describe('validateRule', () => {
     await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter,
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);
@@ -413,13 +433,17 @@ describe('validateRule', () => {
     await guaranteedRedemption.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
 
     // Only the adapter arg matters for this policy
-    const preCoIArgs = validateRulePreCoIArgs({
+    const postCoIArgs = validateRulePostCoIArgs({
       adapter,
       selector: utils.randomBytes(4),
+      incomingAssets: [randomAddress()],
+      incomingAssetAmounts: [1],
+      outgoingAssets: [randomAddress()],
+      outgoingAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreCallOnIntegration, preCoIArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);

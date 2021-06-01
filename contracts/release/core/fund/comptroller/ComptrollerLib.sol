@@ -583,7 +583,7 @@ contract ComptrollerLib is IComptroller {
         );
 
         // Gives Extensions a chance to run logic prior to the minting of bought shares
-        __preBuySharesHook(msg.sender, _investmentAmount, _minSharesQuantity, gav);
+        __preBuySharesHook(msg.sender, _investmentAmount, gav);
 
         // Calculate the amount of shares to issue with the investment amount
         uint256 sharesIssued = _investmentAmount.mul(SHARES_UNIT).div(sharePrice);
@@ -619,31 +619,23 @@ contract ComptrollerLib is IComptroller {
         return sharesReceived_;
     }
 
-    /// @dev Helper for Extension actions immediately prior to issuing shares.
-    /// This could be cleaned up so both Extensions take the same encoded args and handle GAV
-    /// in the same way, but there is not the obvious need for gas savings of recycling
-    /// the GAV value for the current policies as there is for the fees.
+    /// @dev Helper for Extension actions immediately prior to issuing shares
     function __preBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _minSharesQuantity,
         uint256 _gav
     ) private {
         IFeeManager(FEE_MANAGER).invokeHook(
             IFeeManager.FeeHook.PreBuyShares,
-            abi.encode(_buyer, _investmentAmount, _minSharesQuantity),
+            abi.encode(_buyer, _investmentAmount),
             _gav
-        );
-
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.PreBuyShares,
-            abi.encode(_buyer, _investmentAmount, _minSharesQuantity, _gav)
         );
     }
 
     /// @dev Helper for Extension actions immediately after issuing shares.
-    /// Same comment applies from __preBuySharesHook() above.
+    /// This could be cleaned up so both Extensions take the same encoded args and handle GAV
+    /// in the same way, but there is not the obvious need for gas savings of recycling
+    /// the GAV value for the current policies as there is for the fees.
     function __postBuySharesHook(
         address _buyer,
         uint256 _investmentAmount,

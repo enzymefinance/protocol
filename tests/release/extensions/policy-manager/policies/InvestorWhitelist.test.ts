@@ -3,7 +3,7 @@ import {
   InvestorWhitelist,
   investorWhitelistArgs,
   PolicyHook,
-  validateRulePreBuySharesArgs,
+  validateRulePostBuySharesArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 
@@ -57,7 +57,7 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await investorWhitelist.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([PolicyHook.PreBuyShares]);
+    expect(implementedHooksCall).toMatchObject([PolicyHook.PostBuyShares]);
   });
 });
 
@@ -236,15 +236,15 @@ describe('validateRule', () => {
 
   it('returns true if an investor is in the whitelist', async () => {
     // Only the buyer arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: whitelistedInvestors[0], // good buyer
       fundGav: 0,
       investmentAmount: 1,
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await investorWhitelist.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -252,15 +252,15 @@ describe('validateRule', () => {
 
   it('returns false if an investor is not in the whitelist', async () => {
     // Only the buyer arg matters for this policy
-    const preBuySharesArgs = validateRulePreBuySharesArgs({
+    const postBuySharesArgs = validateRulePostBuySharesArgs({
       buyer: randomAddress(), // bad buyer
       fundGav: 0,
       investmentAmount: 1,
-      minSharesQuantity: 1,
+      sharesIssued: 1,
     });
 
     const validateRuleCall = await investorWhitelist.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PreBuyShares, preBuySharesArgs)
+      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);

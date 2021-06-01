@@ -50,7 +50,7 @@ const expectedGasCosts = {
   },
 
   'redeem all shares: max assets: all remaining': {
-    usdc: 2529000,
+    usdc: 2530000,
     weth: 2490000,
   },
 

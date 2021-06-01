@@ -47,8 +47,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
     modifier onlyBuySharesHooks(address _policy) {
         require(
-            !policyImplementsHook(_policy, PolicyHook.PreCallOnIntegration) &&
-                !policyImplementsHook(_policy, PolicyHook.PostCallOnIntegration),
+            !policyImplementsHook(_policy, PolicyHook.PostCallOnIntegration),
             "onlyBuySharesHooks: Disallowed hook"
         );
         _;

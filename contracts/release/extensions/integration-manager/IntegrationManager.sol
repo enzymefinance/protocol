@@ -254,8 +254,6 @@ contract IntegrationManager is
             bytes memory integrationData
         ) = __decodeCallOnIntegrationArgs(_callArgs);
 
-        __preCoIHook(adapter, selector);
-
         /// Passing decoded _callArgs leads to stack-too-deep error
         (
             address[] memory incomingAssets,
@@ -415,15 +413,6 @@ contract IntegrationManager is
         return
             IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
-    }
-
-    /// @dev Helper for the actions to take on external contracts prior to executing CoI
-    function __preCoIHook(address _adapter, bytes4 _selector) private {
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
-            msg.sender,
-            IPolicyManager.PolicyHook.PreCallOnIntegration,
-            abi.encode(_adapter, _selector)
-        );
     }
 
     /// @dev Helper for the internal actions to take prior to executing CoI

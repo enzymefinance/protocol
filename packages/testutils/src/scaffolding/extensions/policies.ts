@@ -15,7 +15,7 @@ export async function generatePolicyManagerConfigWithMockPolicies({
     policyManager,
   });
 
-  const policiesSettingsData = [utils.randomBytes(10), constants.HashZero, constants.HashZero, utils.randomBytes(2)];
+  const policiesSettingsData = [utils.randomBytes(10), constants.HashZero];
 
   return policyManagerConfigArgs({
     policies: Object.values(policies),
@@ -31,20 +31,11 @@ export async function generateRegisteredMockPolicies({
   policyManager: PolicyManager;
 }) {
   // Create mock policies
-  const mockPreBuySharesPolicy = await IPolicy.mock(deployer);
   const mockPostBuySharesPolicy = await IPolicy.mock(deployer);
-  const mockPreCoIPolicy = await IPolicy.mock(deployer);
   const mockPostCoIPolicy = await IPolicy.mock(deployer);
 
   // Initialize mock policy return values
   await Promise.all([
-    // PreBuyShares
-    mockPreBuySharesPolicy.identifier.returns(`MOCK_PRE_BUY_SHARES`),
-    mockPreBuySharesPolicy.addFundSettings.returns(undefined),
-    mockPreBuySharesPolicy.activateForFund.returns(undefined),
-    mockPreBuySharesPolicy.validateRule.returns(true),
-    mockPreBuySharesPolicy.implementedHooks.returns([PolicyHook.PreBuyShares]),
-    mockPreBuySharesPolicy.updateFundSettings.returns(undefined),
     // PostBuyShares
     mockPostBuySharesPolicy.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesPolicy.addFundSettings.returns(undefined),
@@ -52,13 +43,6 @@ export async function generateRegisteredMockPolicies({
     mockPostBuySharesPolicy.validateRule.returns(true),
     mockPostBuySharesPolicy.implementedHooks.returns([PolicyHook.PostBuyShares]),
     mockPostBuySharesPolicy.updateFundSettings.returns(undefined),
-    // PreCallOnIntegration
-    mockPreCoIPolicy.identifier.returns(`MOCK_PRE_CALL_ON_INTEGRATION`),
-    mockPreCoIPolicy.addFundSettings.returns(undefined),
-    mockPreCoIPolicy.activateForFund.returns(undefined),
-    mockPreCoIPolicy.validateRule.returns(true),
-    mockPreCoIPolicy.implementedHooks.returns([PolicyHook.PreCallOnIntegration]),
-    mockPreCoIPolicy.updateFundSettings.returns(undefined),
     // PostCallOnIntegration
     mockPostCoIPolicy.identifier.returns(`MOCK_POST_CALL_ON_INTEGRATION`),
     mockPostCoIPolicy.addFundSettings.returns(undefined),
@@ -69,17 +53,10 @@ export async function generateRegisteredMockPolicies({
   ]);
 
   // Register all mock policies
-  await policyManager.registerPolicies([
-    mockPreBuySharesPolicy,
-    mockPostBuySharesPolicy,
-    mockPreCoIPolicy,
-    mockPostCoIPolicy,
-  ]);
+  await policyManager.registerPolicies([mockPostBuySharesPolicy, mockPostCoIPolicy]);
 
   return {
-    mockPreBuySharesPolicy,
     mockPostBuySharesPolicy,
-    mockPreCoIPolicy,
     mockPostCoIPolicy,
   };
 }

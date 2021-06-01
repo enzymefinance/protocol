@@ -2,51 +2,18 @@ import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../encoding';
 
-export function validateRuleBuySharesSetupArgs({
-  caller,
-  investmentAmounts,
-  fundGav,
-}: {
-  caller: AddressLike;
-  investmentAmounts: BigNumberish[];
-  fundGav: BigNumberish;
-}) {
-  return encodeArgs(['address', 'uint256[]', 'uint256'], [caller, investmentAmounts, fundGav]);
-}
-
-export function validateRulePreBuySharesArgs({
-  buyer,
-  investmentAmount,
-  minSharesQuantity,
-  fundGav,
-}: {
-  buyer: AddressLike;
-  investmentAmount: BigNumberish;
-  minSharesQuantity: BigNumberish;
-  fundGav: BigNumberish;
-}) {
-  return encodeArgs(
-    ['address', 'uint256', 'uint256', 'uint256'],
-    [buyer, investmentAmount, minSharesQuantity, fundGav],
-  );
-}
-
 export function validateRulePostBuySharesArgs({
   buyer,
   investmentAmount,
-  sharesBought,
+  sharesIssued,
   fundGav,
 }: {
   buyer: AddressLike;
   investmentAmount: BigNumberish;
-  sharesBought: BigNumberish;
+  sharesIssued: BigNumberish;
   fundGav: BigNumberish;
 }) {
-  return encodeArgs(['address', 'uint256', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought, fundGav]);
-}
-
-export function validateRulePreCoIArgs({ adapter, selector }: { adapter: AddressLike; selector: BytesLike }) {
-  return encodeArgs(['address', 'bytes4'], [adapter, selector]);
+  return encodeArgs(['address', 'uint256', 'uint256', 'uint256'], [buyer, investmentAmount, sharesIssued, fundGav]);
 }
 
 export function validateRulePostCoIArgs({

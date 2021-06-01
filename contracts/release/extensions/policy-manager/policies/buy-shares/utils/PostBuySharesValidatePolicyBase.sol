@@ -15,8 +15,8 @@ import "../../utils/PolicyBase.sol";
 
 /// @title BuySharesPolicyMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A mixin contract for policies that only implement the PreBuyShares policy hook
-abstract contract PreBuySharesValidatePolicyBase is PolicyBase {
+/// @notice A mixin contract for policies that only implement the PostBuyShares policy hook
+abstract contract PostBuySharesValidatePolicyBase is PolicyBase {
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
     function implementedHooks()
@@ -26,7 +26,7 @@ abstract contract PreBuySharesValidatePolicyBase is PolicyBase {
         returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
     {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
-        implementedHooks_[0] = IPolicyManager.PolicyHook.PreBuyShares;
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostBuyShares;
 
         return implementedHooks_;
     }
@@ -38,7 +38,7 @@ abstract contract PreBuySharesValidatePolicyBase is PolicyBase {
         returns (
             address buyer_,
             uint256 investmentAmount_,
-            uint256 minSharesQuantity_,
+            uint256 sharesIssued_,
             uint256 gav_
         )
     {

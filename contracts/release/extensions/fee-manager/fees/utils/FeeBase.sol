@@ -56,13 +56,9 @@ abstract contract FeeBase is IFee {
     function __decodePreBuySharesSettlementData(bytes memory _settlementData)
         internal
         pure
-        returns (
-            address buyer_,
-            uint256 investmentAmount_,
-            uint256 minSharesQuantity_
-        )
+        returns (address buyer_, uint256 investmentAmount_)
     {
-        return abi.decode(_settlementData, (address, uint256, uint256));
+        return abi.decode(_settlementData, (address, uint256));
     }
 
     /// @notice Helper to parse settlement arguments from encoded data for PreRedeemShares fee hook
