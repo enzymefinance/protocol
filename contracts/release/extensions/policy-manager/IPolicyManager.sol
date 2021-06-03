@@ -22,7 +22,8 @@ interface IPolicyManager {
         PostCallOnIntegration,
         PreTransferShares,
         RedeemSharesForSpecificAssets,
-        AddTrackedAssets
+        AddTrackedAssets,
+        RemoveTrackedAssets
     }
 
     function validatePolicies(

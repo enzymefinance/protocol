@@ -125,9 +125,6 @@ contract MockGenericAdapter is AdapterBase {
         pure
         returns (IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_)
     {
-        if (_selector == bytes4(keccak256("removeOnly(address,bytes,bytes)"))) {
-            return IIntegrationManager.SpendAssetsHandleType.Remove;
-        }
         if (_selector == bytes4(keccak256("swapDirectFromVault(address,bytes,bytes)"))) {
             return IIntegrationManager.SpendAssetsHandleType.None;
         }

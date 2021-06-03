@@ -15,5 +15,5 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the IntegrationManager
 interface IIntegrationManager {
-    enum SpendAssetsHandleType {None, Approve, Transfer, Remove}
+    enum SpendAssetsHandleType {None, Approve, Transfer}
 }

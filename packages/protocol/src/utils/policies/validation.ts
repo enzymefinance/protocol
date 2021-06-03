@@ -61,3 +61,7 @@ export function validateRuleRedeemSharesForSpecificAssetsArgs({
     [redeemer, recipient, sharesToRedeemPostFees, assets, assetAmounts, gavPreRedeem],
   );
 }
+
+export function validateRuleRemoveTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
+  return encodeArgs(['address[]'], [assets]);
+}

@@ -4,11 +4,11 @@ import {
   PolicyHook,
   StandardToken,
   validateRuleAddTrackedAssetsArgs,
+  validateRuleRemoveTrackedAssetsArgs,
   VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
 import {
-  addNewAssetsToFund,
   addTrackedAssetsToVault,
   assertEvent,
   createNewFund,
@@ -427,98 +427,23 @@ describe('callOnExtension actions', () => {
       ).resolves.toBeReceipt();
     });
 
-    it('does not allow specifying a denomination asset with a balance of 0', async () => {
+    it('successfully removes each asset from tracked assets and correctly calls policy validation', async () => {
       const {
-        deployment: { integrationManager },
-
-        fund: { comptrollerProxy, denominationAsset, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      await expect(
-        removeTrackedAssetsFromVault({
-          signer: fundOwner,
-          comptrollerProxy,
-          integrationManager,
-          assets: [denominationAsset],
-        }),
-      ).rejects.toBeRevertedWith('Cannot untrack denomination asset');
-    });
-
-    it('untracks assets that are either unsupported or has a balance of 0', async () => {
-      const {
-        deployment: { chainlinkPriceFeed, integrationManager },
-        config: {
-          primitives: { dai, mln },
-        },
-        fund: { comptrollerProxy, fundOwner, vaultProxy },
-      } = await provider.snapshot(snapshot);
-
-      const assetWithPositiveBalance = new StandardToken(dai, whales.dai);
-      const assetWithZeroBalance = new StandardToken(mln, whales.mln);
-
-      // Seed vault with the tracked assets
-      await addNewAssetsToFund({
-        signer: fundOwner,
-        comptrollerProxy,
-        integrationManager,
-        assets: [assetWithPositiveBalance, assetWithZeroBalance],
-        amounts: [1, 0],
-      });
-
-      // Both assets should be tracked
-      expect(await vaultProxy.isTrackedAsset(assetWithPositiveBalance)).toBe(true);
-      expect(await vaultProxy.isTrackedAsset(assetWithZeroBalance)).toBe(true);
-
-      // Removing the asset with a zero balance should succeed
-      await removeTrackedAssetsFromVault({
-        signer: fundOwner,
-        comptrollerProxy,
-        integrationManager,
-        assets: [assetWithZeroBalance],
-      });
-      expect(await vaultProxy.isTrackedAsset(assetWithZeroBalance)).toBe(false);
-
-      // Attempting to remove the asset with a positive balance should fail
-      await expect(
-        removeTrackedAssetsFromVault({
-          signer: fundOwner,
-          comptrollerProxy,
-          integrationManager,
-          assets: [assetWithPositiveBalance],
-        }),
-      ).rejects.toBeRevertedWith('Not allowed');
-
-      // Remove support for the asset with a positive balance
-      await chainlinkPriceFeed.removePrimitives([assetWithPositiveBalance]);
-
-      // Removing the unsupported asset with a positive balance should succeed
-      await removeTrackedAssetsFromVault({
-        signer: fundOwner,
-        comptrollerProxy,
-        integrationManager,
-        assets: [assetWithPositiveBalance],
-      });
-      expect(await vaultProxy.isTrackedAsset(assetWithPositiveBalance)).toBe(false);
-    });
-
-    it('successfully removes each asset from tracked assets', async () => {
-      const {
-        deployment: { integrationManager },
+        deployment: { integrationManager, policyManager },
         config: {
           primitives: { mln, dai },
         },
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
-      const assetToRemove1 = new StandardToken(mln, whales.mln);
-      const assetToRemove2 = new StandardToken(dai, whales.dai);
+      const assetsToRemove = [new StandardToken(mln, whales.mln), new StandardToken(dai, whales.dai)];
 
       // Add assets to the fund with no balances
       await addTrackedAssetsToVault({
         signer: fundOwner,
         comptrollerProxy,
         integrationManager,
-        assets: [assetToRemove1, assetToRemove2],
+        assets: assetsToRemove,
       });
 
       // Remove the assets
@@ -526,12 +451,22 @@ describe('callOnExtension actions', () => {
         signer: fundOwner,
         comptrollerProxy,
         integrationManager,
-        assets: [assetToRemove1, assetToRemove2],
+        assets: assetsToRemove,
       });
 
       // Both assets should no longer be tracked
-      expect(await vaultProxy.isTrackedAsset(assetToRemove1)).toBe(false);
-      expect(await vaultProxy.isTrackedAsset(assetToRemove2)).toBe(false);
+      for (const asset of assetsToRemove) {
+        expect(await vaultProxy.isTrackedAsset(asset)).toBe(false);
+      }
+
+      // Assert that the PolicyManager hook was called correctly
+      expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.RemoveTrackedAssets,
+        validateRuleRemoveTrackedAssetsArgs({
+          assets: assetsToRemove,
+        }),
+      );
     });
   });
 });

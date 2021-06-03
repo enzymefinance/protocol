@@ -4,4 +4,5 @@ export enum PolicyHook {
   PreTransferShares,
   RedeemSharesForSpecificAssets,
   AddTrackedAssets,
+  RemoveTrackedAssets,
 }
