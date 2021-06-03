@@ -3,7 +3,7 @@ import {
   ComptrollerLib,
   PolicyHook,
   StandardToken,
-  validateRulePostCoIArgs,
+  validateRuleAddTrackedAssetsArgs,
   VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
@@ -366,14 +366,9 @@ describe('callOnExtension actions', () => {
       // Assert that the PolicyManager hook was called correctly
       expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
         comptrollerProxy,
-        PolicyHook.PostCallOnIntegration,
-        validateRulePostCoIArgs({
-          adapter: constants.AddressZero,
-          selector: utils.hexDataSlice(constants.HashZero, 0, 4),
-          incomingAssets: assets,
-          incomingAssetAmounts: new Array(assets.length).fill(0),
-          outgoingAssets: [],
-          outgoingAssetAmounts: [],
+        PolicyHook.AddTrackedAssets,
+        validateRuleAddTrackedAssetsArgs({
+          assets,
         }),
       );
     });

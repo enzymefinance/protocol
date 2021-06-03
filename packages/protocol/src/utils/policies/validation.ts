@@ -2,6 +2,10 @@ import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../encoding';
 
+export function validateRuleAddTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
+  return encodeArgs(['address[]'], [assets]);
+}
+
 export function validateRulePostBuySharesArgs({
   buyer,
   investmentAmount,

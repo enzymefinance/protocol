@@ -283,10 +283,11 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         view
         returns (address[] memory enabledPolicies_)
     {
-        PolicyHook[3] memory hooks = [
+        PolicyHook[4] memory hooks = [
             PolicyHook.PostBuyShares,
             PolicyHook.PostCallOnIntegration,
-            PolicyHook.PreTransferShares
+            PolicyHook.PreTransferShares,
+            PolicyHook.AddTrackedAssets
         ];
         for (uint256 i; i < hooks.length; i++) {
             enabledPolicies_ = enabledPolicies_.mergeArray(

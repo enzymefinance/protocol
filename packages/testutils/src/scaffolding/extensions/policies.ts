@@ -10,15 +10,18 @@ export async function generatePolicyManagerConfigWithMockPolicies({
   deployer: Signer;
   policyManager: PolicyManager;
 }) {
-  const policies = await generateRegisteredMockPolicies({
-    deployer,
-    policyManager,
-  });
+  const policies = Object.values(
+    await generateRegisteredMockPolicies({
+      deployer,
+      policyManager,
+    }),
+  );
 
-  const policiesSettingsData = [utils.randomBytes(10), constants.HashZero];
+  // Guarantees one policy has settings data
+  const policiesSettingsData = [...new Array(policies.length - 1).fill(constants.HashZero), utils.randomBytes(10)];
 
   return policyManagerConfigArgs({
-    policies: Object.values(policies),
+    policies,
     settings: policiesSettingsData,
   });
 }
@@ -31,11 +34,20 @@ export async function generateRegisteredMockPolicies({
   policyManager: PolicyManager;
 }) {
   // Create mock policies
+  const mockAddTrackedAssetsPolicy = await IPolicy.mock(deployer);
   const mockPostBuySharesPolicy = await IPolicy.mock(deployer);
   const mockPostCoIPolicy = await IPolicy.mock(deployer);
 
   // Initialize mock policy return values
   await Promise.all([
+    // AddTrackedAssets
+    mockAddTrackedAssetsPolicy.identifier.returns(`MOCK_ADD_TRACKED_ASSETS`),
+    mockAddTrackedAssetsPolicy.addFundSettings.returns(undefined),
+    mockAddTrackedAssetsPolicy.activateForFund.returns(undefined),
+    mockAddTrackedAssetsPolicy.canDisable.returns(false),
+    mockAddTrackedAssetsPolicy.validateRule.returns(true),
+    mockAddTrackedAssetsPolicy.implementedHooks.returns([PolicyHook.AddTrackedAssets]),
+    mockAddTrackedAssetsPolicy.updateFundSettings.returns(undefined),
     // PostBuyShares
     mockPostBuySharesPolicy.identifier.returns(`MOCK_POST_BUY_SHARES`),
     mockPostBuySharesPolicy.addFundSettings.returns(undefined),
@@ -55,9 +67,10 @@ export async function generateRegisteredMockPolicies({
   ]);
 
   // Register all mock policies
-  await policyManager.registerPolicies([mockPostBuySharesPolicy, mockPostCoIPolicy]);
+  await policyManager.registerPolicies([mockAddTrackedAssetsPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy]);
 
   return {
+    mockAddTrackedAssetsPolicy,
     mockPostBuySharesPolicy,
     mockPostCoIPolicy,
   };

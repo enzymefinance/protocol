@@ -6,6 +6,7 @@ import {
   PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
+  validateRuleAddTrackedAssetsArgs,
   validateRulePostBuySharesArgs,
   validateRulePostCoIArgs,
   WETH,
@@ -20,8 +21,9 @@ import {
   createFundDeployer,
   createMigratedFundConfig,
   deployProtocolFixture,
+  addTrackedAssetsToVault,
 } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { constants, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -41,7 +43,10 @@ async function snapshot() {
   await deployment.integrationManager.registerAdapters([mockGenericAdapter]);
 
   const orderedPolicies = Object.values(policies);
-  const policiesSettingsData = [utils.randomBytes(10), '0x'];
+  const policiesSettingsData = [
+    ...new Array(orderedPolicies.length - 1).fill(constants.HashZero),
+    utils.randomBytes(10),
+  ];
 
   const policyManagerConfig = policyManagerConfigArgs({
     policies: orderedPolicies,
@@ -529,8 +534,11 @@ describe('setConfigForFund', () => {
     });
 
     // Assert state for fund
-    const enabledPolicies = await policyManager.getEnabledPoliciesForFund(comptrollerProxy);
-    expect(enabledPolicies).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, orderedPolicies);
+    for (const policy of orderedPolicies) {
+      for (const hook of await policy.implementedHooks()) {
+        expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, policy)).toBe(true);
+      }
+    }
 
     // Assert addFundSettings was called on each policy with its settingsData,
     // only if settingsData was passed
@@ -656,6 +664,45 @@ describe('updatePolicySettingsForFund', () => {
 });
 
 describe('validatePolicies', () => {
+  it('correctly handles a AddTrackedAssets PolicyHook', async () => {
+    const {
+      policies: { mockAddTrackedAssetsPolicy },
+      deployment: { fundDeployer, integrationManager },
+      fundOwner,
+      denominationAsset,
+      policyManagerConfig,
+      config: {
+        primitives: { dai, mln },
+      },
+    } = await provider.snapshot(snapshot);
+
+    const { comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset,
+      policyManagerConfig,
+    });
+
+    const assetsToAdd = [dai, mln];
+
+    await addTrackedAssetsToVault({
+      signer: fundOwner,
+      comptrollerProxy,
+      integrationManager,
+      assets: assetsToAdd,
+    });
+
+    const ruleArgs = validateRuleAddTrackedAssetsArgs({
+      assets: assetsToAdd,
+    });
+    expect(mockAddTrackedAssetsPolicy.validateRule).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.AddTrackedAssets,
+      ruleArgs,
+    );
+  });
+
   it('correctly handles a BuyShares PolicyHook', async () => {
     const {
       accounts: [buyer],

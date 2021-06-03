@@ -195,21 +195,15 @@ contract IntegrationManager is
     function __addTrackedAssetsToVault(bytes memory _callArgs) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
-        // TODO: should we spoof a selector for policy management? or create a distinct hook?
-        // Not specifying incoming asset balances is not technically correct, but it depends on
-        // whether or not the asset is already tracked, and it does not add enough correctness value
-        // to justify gas of balance lookups.
-        __postCoIHook(
-            address(0), // no adapter
-            "", // no selector
-            assets,
-            new uint256[](assets.length), // no incoming asset balances
-            new address[](0), // no outgoing assets
-            new uint256[](0) // no outgoing asset balances
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            msg.sender,
+            IPolicyManager.PolicyHook.AddTrackedAssets,
+            abi.encode(assets)
         );
 
         for (uint256 i; i < assets.length; i++) {
             require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
+
             __addPersistentlyTrackedAsset(msg.sender, assets[i]);
         }
     }
