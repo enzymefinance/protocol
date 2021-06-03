@@ -122,7 +122,7 @@ describe('updateFundSettings', () => {
     const fork = await deployProtocolFixture();
     const assetWhitelist = await deployAndConfigureStandaloneAssetWhitelist(fork, {});
 
-    await expect(assetWhitelist.updateFundSettings(randomAddress(), randomAddress(), '0x')).rejects.toBeRevertedWith(
+    await expect(assetWhitelist.updateFundSettings(randomAddress(), '0x')).rejects.toBeRevertedWith(
       'Updates not allowed for this policy',
     );
   });
@@ -145,11 +145,11 @@ describe('activateForFund', () => {
 
     // Activation should pass if trackedAssets are only whitelisted assets
     await mockVaultProxy.getTrackedAssets.returns(whitelistedAssets);
-    await expect(assetWhitelist.activateForFund(mockComptrollerProxy, mockVaultProxy)).resolves.toBeReceipt();
+    await expect(assetWhitelist.activateForFund(mockComptrollerProxy)).resolves.toBeReceipt();
 
     // Setting a non-whitelisted asset as a trackedAsset should make activation fail
     await mockVaultProxy.getTrackedAssets.returns([whitelistedAssets[0], randomAddress()]);
-    await expect(assetWhitelist.activateForFund(mockComptrollerProxy, mockVaultProxy)).rejects.toBeRevertedWith(
+    await expect(assetWhitelist.activateForFund(mockComptrollerProxy)).rejects.toBeRevertedWith(
       'Non-whitelisted asset detected',
     );
   });
@@ -158,7 +158,6 @@ describe('activateForFund', () => {
 describe('validateRule', () => {
   let fork: ProtocolDeployment;
   let mockComptrollerProxy: MockContract<ComptrollerLib>;
-  let mockVaultProxy: MockContract<VaultLib>;
   let whitelistedAssets: AddressLike[];
   let assetWhitelist: AssetWhitelist;
   let denominationAsset: AddressLike;
@@ -170,7 +169,6 @@ describe('validateRule', () => {
 
     const mocks = await createMocksForAssetWhitelistConfig(fork, denominationAsset);
     mockComptrollerProxy = mocks.mockComptrollerProxy;
-    mockVaultProxy = mocks.mockVaultProxy;
 
     assetWhitelist = await deployAndConfigureStandaloneAssetWhitelist(fork, {
       comptrollerProxy: mockComptrollerProxy,
@@ -190,7 +188,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await assetWhitelist.validateRule
-      .args(mockComptrollerProxy, mockVaultProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(mockComptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -208,7 +206,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await assetWhitelist.validateRule
-      .args(mockComptrollerProxy, mockVaultProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(mockComptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);

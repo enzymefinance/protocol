@@ -666,7 +666,7 @@ describe('validatePolicies', () => {
       policyManagerConfig,
     } = await provider.snapshot(snapshot);
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
+    const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer,
@@ -694,7 +694,6 @@ describe('validatePolicies', () => {
     });
     expect(mockPostBuySharesPolicy.validateRule).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      vaultProxy,
       PolicyHook.PostBuyShares,
       postRuleArgs,
     );
@@ -762,7 +761,6 @@ describe('validatePolicies', () => {
 
     expect(mockPostCoIPolicy.validateRule).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
-      vaultProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
         adapter: mockGenericAdapter,

@@ -16,7 +16,7 @@ import "./IPolicyManager.sol";
 /// @title Policy Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IPolicy {
-    function activateForFund(address _comptrollerProxy, address _vaultProxy) external;
+    function activateForFund(address _comptrollerProxy) external;
 
     function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings) external;
 
@@ -29,15 +29,11 @@ interface IPolicy {
         pure
         returns (IPolicyManager.PolicyHook[] memory implementedHooks_);
 
-    function updateFundSettings(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        bytes calldata _encodedSettings
-    ) external;
+    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
+        external;
 
     function validateRule(
         address _comptrollerProxy,
-        address _vaultProxy,
         IPolicyManager.PolicyHook _hook,
         bytes calldata _encodedArgs
     ) external returns (bool isValid_);

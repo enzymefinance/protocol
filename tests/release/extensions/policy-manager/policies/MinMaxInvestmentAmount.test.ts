@@ -43,7 +43,7 @@ async function updateFundSettings({
     maxInvestmentAmount,
   });
 
-  await minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig);
+  await minMaxInvestment.updateFundSettings(comptrollerProxy, minMaxInvestmentConfig);
 }
 
 async function deployAndConfigureStandaloneMinMaxInvestment(
@@ -187,9 +187,7 @@ describe('updateFundSettings', () => {
     });
 
     await expect(
-      minMaxInvestment
-        .connect(randomUser)
-        .updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+      minMaxInvestment.connect(randomUser).updateFundSettings(comptrollerProxy, minMaxInvestmentConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
@@ -201,7 +199,7 @@ describe('updateFundSettings', () => {
       });
 
       await expect(
-        minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+        minMaxInvestment.updateFundSettings(comptrollerProxy, minMaxInvestmentConfig),
       ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
     }
     const minMaxInvestmentConfig = minMaxInvestmentArgs({
@@ -210,7 +208,7 @@ describe('updateFundSettings', () => {
     });
 
     await expect(
-      minMaxInvestment.updateFundSettings(comptrollerProxy, randomAddress(), minMaxInvestmentConfig),
+      minMaxInvestment.updateFundSettings(comptrollerProxy, minMaxInvestmentConfig),
     ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
   });
 
@@ -223,11 +221,7 @@ describe('updateFundSettings', () => {
       maxInvestmentAmount,
     });
 
-    const receipt = await minMaxInvestment.updateFundSettings(
-      comptrollerProxy,
-      randomAddress(),
-      minMaxInvestmentConfig,
-    );
+    const receipt = await minMaxInvestment.updateFundSettings(comptrollerProxy, minMaxInvestmentConfig);
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
@@ -268,7 +262,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -284,7 +278,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);
@@ -307,7 +301,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);
@@ -331,7 +325,7 @@ describe('validateRule', () => {
       });
 
       const validateRuleCall = await minMaxInvestment.validateRule
-        .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+        .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
         .call();
 
       expect(validateRuleCall).toBe(false);
@@ -346,7 +340,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -370,7 +364,7 @@ describe('validateRule', () => {
       });
 
       const validateRuleCall = await minMaxInvestment.validateRule
-        .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+        .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
         .call();
 
       expect(validateRuleCall).toBe(false);
@@ -385,7 +379,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await minMaxInvestment.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);

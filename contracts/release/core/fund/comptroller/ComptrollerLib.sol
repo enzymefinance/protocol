@@ -1005,6 +1005,7 @@ contract ComptrollerLib is IComptroller {
     function getLibRoutes()
         external
         view
+        override
         returns (
             address assetFinalityResolver_,
             address dispatcher_,

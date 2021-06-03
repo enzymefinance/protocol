@@ -298,7 +298,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -331,7 +331,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -364,7 +364,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(true);
@@ -386,7 +386,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);
@@ -419,7 +419,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);
@@ -452,7 +452,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostCallOnIntegration, postCoIArgs)
+      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
       .call();
 
     expect(validateRuleResult).toBe(false);

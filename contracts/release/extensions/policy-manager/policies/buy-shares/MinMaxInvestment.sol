@@ -60,11 +60,11 @@ contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
     /// @notice Updates the policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
-    function updateFundSettings(
-        address _comptrollerProxy,
-        address,
-        bytes calldata _encodedSettings
-    ) external override onlyPolicyManager {
+    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
+        external
+        override
+        onlyPolicyManager
+    {
         __setFundSettings(_comptrollerProxy, _encodedSettings);
     }
 
@@ -99,7 +99,6 @@ contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
     /// @return isValid_ True if the rule passes
     function validateRule(
         address _comptrollerProxy,
-        address,
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {

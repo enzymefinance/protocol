@@ -30,7 +30,7 @@ abstract contract PolicyBase is IPolicy {
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @dev Unimplemented by default, can be overridden by the policy
-    function activateForFund(address, address) external virtual override {
+    function activateForFund(address) external virtual override {
         return;
     }
 
@@ -43,11 +43,7 @@ abstract contract PolicyBase is IPolicy {
 
     /// @notice Updates the policy settings for a fund
     /// @dev Disallowed by default, can be overridden by the policy
-    function updateFundSettings(
-        address,
-        address,
-        bytes calldata
-    ) external virtual override {
+    function updateFundSettings(address, bytes calldata) external virtual override {
         revert("updateFundSettings: Updates not allowed for this policy");
     }
 

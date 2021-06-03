@@ -24,12 +24,12 @@ import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 389000,
-    weth: 367000,
+    usdc: 377000,
+    weth: 356000,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 342000,
-    weth: 326000,
+    usdc: 330000,
+    weth: 315000,
   },
   'buy shares: max assets': {
     usdc: 1429000,
@@ -60,7 +60,7 @@ const expectedGasCosts = {
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 278000,
+    usdc: 269000,
     weth: 245000,
   },
 } as const;

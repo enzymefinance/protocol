@@ -27,14 +27,13 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
 
     /// @notice Validates and initializes a policy as necessary prior to fund activation
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _vaultProxy The fund's VaultProxy address
-    function activateForFund(address _comptrollerProxy, address _vaultProxy)
-        external
-        override
-        onlyPolicyManager
-    {
+    function activateForFund(address _comptrollerProxy) external override onlyPolicyManager {
         require(
-            passesRule(_comptrollerProxy, VaultLib(payable(_vaultProxy)).getTrackedAssets()),
+            passesRule(
+                _comptrollerProxy,
+                VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy()))
+                    .getTrackedAssets()
+            ),
             "activateForFund: Non-whitelisted asset detected"
         );
     }
@@ -86,7 +85,6 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
     /// @return isValid_ True if the rule passes
     function validateRule(
         address _comptrollerProxy,
-        address,
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {

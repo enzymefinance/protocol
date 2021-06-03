@@ -142,9 +142,7 @@ describe('updateFundSettings', () => {
     });
 
     await expect(
-      investorWhitelist
-        .connect(randomUser)
-        .updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig),
+      investorWhitelist.connect(randomUser).updateFundSettings(comptrollerProxy, investorWhitelistConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
@@ -155,11 +153,7 @@ describe('updateFundSettings', () => {
       investorsToAdd,
     });
 
-    const receipt = await investorWhitelist.updateFundSettings(
-      comptrollerProxy,
-      randomAddress(),
-      investorWhitelistConfig,
-    );
+    const receipt = await investorWhitelist.updateFundSettings(comptrollerProxy, investorWhitelistConfig);
 
     currentWhitelistedInvestors = currentWhitelistedInvestors.concat(investorsToAdd);
 
@@ -181,11 +175,7 @@ describe('updateFundSettings', () => {
       investorsToRemove: [investorToRemove],
     });
 
-    const receipt = await investorWhitelist.updateFundSettings(
-      comptrollerProxy,
-      randomAddress(),
-      investorWhitelistConfig,
-    );
+    const receipt = await investorWhitelist.updateFundSettings(comptrollerProxy, investorWhitelistConfig);
 
     currentWhitelistedInvestors[0] = currentWhitelistedInvestors[currentWhitelistedInvestors.length - 1];
     currentWhitelistedInvestors = currentWhitelistedInvestors.slice(0, -1);
@@ -216,7 +206,7 @@ describe('updateFundSettings', () => {
       investorsToRemove,
     });
 
-    await investorWhitelist.updateFundSettings(comptrollerProxy, randomAddress(), investorWhitelistConfig);
+    await investorWhitelist.updateFundSettings(comptrollerProxy, investorWhitelistConfig);
 
     currentWhitelistedInvestors = [newInvestor, ...remainingInvestors];
 
@@ -253,7 +243,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await investorWhitelist.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(true);
@@ -269,7 +259,7 @@ describe('validateRule', () => {
     });
 
     const validateRuleCall = await investorWhitelist.validateRule
-      .args(comptrollerProxy, randomAddress(), PolicyHook.PostBuyShares, postBuySharesArgs)
+      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
     expect(validateRuleCall).toBe(false);

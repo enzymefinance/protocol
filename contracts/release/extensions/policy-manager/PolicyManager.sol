@@ -42,6 +42,14 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     EnumerableSet.AddressSet private registeredPolicies;
     mapping(address => mapping(PolicyHook => address[])) private comptrollerProxyToHookToPolicies;
 
+    modifier onlyFundOwner(address _comptrollerProxy) {
+        require(
+            msg.sender == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
+            "Only the fund owner can call this function"
+        );
+        _;
+    }
+
     constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
@@ -50,13 +58,11 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @param _isMigratedFund True if the fund is migrating to this release
     /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
     function activateForFund(bool _isMigratedFund) external override {
-        address vaultProxy = __setValidatedVaultProxy(msg.sender);
-
         // Policies must assert that they are congruent with migrated vault state
         if (_isMigratedFund) {
             address[] memory enabledPolicies = getEnabledPoliciesForFund(msg.sender);
             for (uint256 i; i < enabledPolicies.length; i++) {
-                __activatePolicyForFund(msg.sender, vaultProxy, enabledPolicies[i]);
+                __activatePolicyForFund(msg.sender, enabledPolicies[i]);
             }
         }
     }
@@ -64,8 +70,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @notice Disables a policy for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _policy The policy address to disable
-    function disablePolicyForFund(address _comptrollerProxy, address _policy) external {
-        __validateIsFundOwner(getVaultProxyForFund(_comptrollerProxy), msg.sender);
+    function disablePolicyForFund(address _comptrollerProxy, address _policy)
+        external
+        onlyFundOwner(_comptrollerProxy)
+    {
         require(IPolicy(_policy).canDisable(), "disablePolicyForFund: _policy cannot be disabled");
 
         // TODO: if we have untrusted policies, could consider looping through all hooks
@@ -91,10 +99,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _comptrollerProxy,
         address _policy,
         bytes calldata _settingsData
-    ) external {
-        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
-        __validateIsFundOwner(vaultProxy, msg.sender);
-
+    ) external onlyFundOwner(_comptrollerProxy) {
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
             require(
@@ -105,7 +110,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
         __enablePolicyForFund(_comptrollerProxy, _policy, _settingsData, implementedHooks);
 
-        __activatePolicyForFund(_comptrollerProxy, vaultProxy, _policy);
+        __activatePolicyForFund(_comptrollerProxy, _policy);
     }
 
     /// @notice Enable policies for use in a fund
@@ -142,11 +147,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _comptrollerProxy,
         address _policy,
         bytes calldata _settingsData
-    ) external {
-        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
-        __validateIsFundOwner(vaultProxy, msg.sender);
-
-        IPolicy(_policy).updateFundSettings(_comptrollerProxy, vaultProxy, _settingsData);
+    ) external onlyFundOwner(_comptrollerProxy) {
+        IPolicy(_policy).updateFundSettings(_comptrollerProxy, _settingsData);
     }
 
     /// @notice Validates all policies that apply to a given hook for a fund
@@ -158,16 +160,23 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         PolicyHook _hook,
         bytes calldata _validationData
     ) external override {
-        address vaultProxy = getVaultProxyForFund(_comptrollerProxy);
+        // Return as quickly as possible if no policies to run
         address[] memory policies = getEnabledPoliciesOnHookForFund(_comptrollerProxy, _hook);
+        if (policies.length == 0) {
+            return;
+        }
+
+        // Limit calls to trusted components, in case policies update local storage upon runs
+        if (msg.sender != _comptrollerProxy) {
+            (, , , , address integrationManager, , , ) = IComptroller(_comptrollerProxy)
+                .getLibRoutes();
+
+            require(msg.sender == integrationManager, "validatePolicies: Caller not allowed");
+        }
+
         for (uint256 i; i < policies.length; i++) {
             require(
-                IPolicy(policies[i]).validateRule(
-                    _comptrollerProxy,
-                    vaultProxy,
-                    _hook,
-                    _validationData
-                ),
+                IPolicy(policies[i]).validateRule(_comptrollerProxy, _hook, _validationData),
                 string(
                     abi.encodePacked(
                         "Rule evaluated to false: ",
@@ -181,12 +190,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to activate a policy for a fund
-    function __activatePolicyForFund(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        address _policy
-    ) private {
-        IPolicy(_policy).activateForFund(_comptrollerProxy, _vaultProxy);
+    function __activatePolicyForFund(address _comptrollerProxy, address _policy) private {
+        IPolicy(_policy).activateForFund(_comptrollerProxy);
     }
 
     /// @dev Helper to set config and enable policies for a fund
@@ -213,15 +218,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         }
 
         emit PolicyEnabledForFund(_comptrollerProxy, _policy, _settingsData);
-    }
-
-    /// @dev Helper to validate fund owner.
-    /// Preferred to a modifier because allows gas savings if re-using _vaultProxy.
-    function __validateIsFundOwner(address _vaultProxy, address _who) private view {
-        require(
-            _who == IVault(_vaultProxy).getOwner(),
-            "Only the fund owner can call this function"
-        );
     }
 
     ///////////////////////
