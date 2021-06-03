@@ -460,15 +460,18 @@ describe('claimRewards', () => {
     // Assert that the rewards wind up in the VaultProxy
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
     expect(govTokensLength).toBeGreaterThan(0);
+    let totalGovTokenVaultBalances = BigNumber.from('0');
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);
 
-      // The vault should have positive reward token balances
-      expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
+      totalGovTokenVaultBalances = totalGovTokenVaultBalances.add(await govToken.balanceOf(vaultProxy));
     }
+
+    // Assert the absolute amount of tokens received at the vault is > 0, given that a particular reward could be zero
+    expect(totalGovTokenVaultBalances).toBeGtBigNumber(0);
   });
 });
 
@@ -800,8 +803,8 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    // Rounding up from 805831
-    expect(lendReceipt).toCostLessThan('807000');
+    // Rounding up from 859408
+    expect(lendReceipt).toCostLessThan('860000');
   });
 });
 
@@ -867,18 +870,22 @@ describe('redeem', () => {
     // Assert that the rewards wind up in the VaultProxy
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
     expect(govTokensLength).toBeGreaterThan(0);
+
+    let totalGovTokenVaultBalances = BigNumber.from('0');
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);
 
-      // The vault should have positive reward token balances
-      expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
+      totalGovTokenVaultBalances = totalGovTokenVaultBalances.add(await govToken.balanceOf(vaultProxy));
     }
 
-    // Rounding up from 728833
-    expect(redeemReceipt).toCostLessThan('730000');
+    // Assert the absolute amount of govTokensEarned, since some individual rewards could be 0.
+    expect(totalGovTokenVaultBalances).toBeGtBigNumber(0);
+
+    // Rounding up from 760403
+    expect(redeemReceipt).toCostLessThan('761000');
   });
 });
 
@@ -918,9 +925,15 @@ describe('rewards behavior', () => {
 
     // Rewards should have accrued to the vaultProxy and not to the adapter
     const preRedeemVaultProxyGovTokensEarned = await idleToken.getGovTokensAmounts(vaultProxy);
+    let preRedeemTotalVaultProxyGovTokensEarned = BigNumber.from('0');
+
+    // Assert the absolute amount of govTokensEarned, since some individual rewards could be 0.
     for (const amountEarned of preRedeemVaultProxyGovTokensEarned) {
-      expect(amountEarned).toBeGtBigNumber(0);
+      preRedeemTotalVaultProxyGovTokensEarned = preRedeemTotalVaultProxyGovTokensEarned.add(amountEarned);
     }
+
+    expect(preRedeemTotalVaultProxyGovTokensEarned).toBeGtBigNumber(0);
+
     const preRedeemAdapterGovTokenEarned = await idleToken.getGovTokensAmounts(idleAdapter);
     for (const amountEarned of preRedeemAdapterGovTokenEarned) {
       expect(amountEarned).toEqBigNumber(0);
@@ -943,10 +956,18 @@ describe('rewards behavior', () => {
 
     // The VaultProxy should still have rewards unclaimed
     const postRedeemVaultProxyGovTokensEarned = await idleToken.getGovTokensAmounts(vaultProxy);
+    let postRedeemTotalVaultProxyGovTokens = BigNumber.from('0');
+
     for (const i in postRedeemVaultProxyGovTokensEarned) {
-      expect(postRedeemVaultProxyGovTokensEarned[i]).toBeGtBigNumber(0);
+      postRedeemTotalVaultProxyGovTokens = postRedeemTotalVaultProxyGovTokens.add(
+        postRedeemVaultProxyGovTokensEarned[i],
+      );
       expect(postRedeemVaultProxyGovTokensEarned[i]).toBeLteBigNumber(preRedeemVaultProxyGovTokensEarned[i]);
     }
+
+    // Assert the absolute amount of govTokensEarned, since some individual rewards could be 0.
+    expect(postRedeemTotalVaultProxyGovTokens).toBeGtBigNumber(0);
+
     // The adapter should still have no rewards unclaimed
     const postRedeemAdapterGovTokensEarned = await idleToken.getGovTokensAmounts(idleAdapter);
     for (const amountEarned of postRedeemAdapterGovTokensEarned) {
@@ -961,9 +982,6 @@ describe('rewards behavior', () => {
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);
-
-      // The vault should have positive reward token balances
-      expect(await govToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
     }
   });
 });

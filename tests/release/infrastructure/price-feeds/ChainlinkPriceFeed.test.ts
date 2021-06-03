@@ -615,7 +615,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1003800'),
+        value_: BigNumber.from('1003473'),
         isValid_: true,
       });
     });
@@ -636,7 +636,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1012401'),
+        value_: BigNumber.from('1001862'),
         isValid_: true,
       });
     });
@@ -655,18 +655,18 @@ describe('expected values', () => {
       const quoteDecimals = await ren.decimals();
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // bnb/usd on Jan 17, 2021 was about $367
-      // ren/usd on Jan 17, 2021 was about $1.04
-      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06>
-      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06>
-      // 1 bnb was about 353 REN
+      // bnb/usd on May 31, 2021 was about $325
+      // ren/usd on May 31, 2021 was about $0.45
+      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31>
+      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2021-03-31&end_date=2021-05-31>
+      // 1 bnb was about 722 REN
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('344659804853993121741'),
+        value_: BigNumber.from('702415059660165691536'),
         isValid_: true,
       });
     });
@@ -696,7 +696,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1012914460946194007'),
+        value_: BigNumber.from('1010460668047292019'),
         isValid_: true,
       });
     });
@@ -724,7 +724,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1000506838535155199'),
+        value_: BigNumber.from('1008581931722281053'),
         isValid_: true,
       });
     });
@@ -754,7 +754,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('987250195900915247'),
+        value_: BigNumber.from('989647624714075031'),
         isValid_: true,
       });
     });
@@ -782,7 +782,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('999493'),
+        value_: BigNumber.from('991491'),
         isValid_: true,
       });
     });

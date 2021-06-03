@@ -209,7 +209,7 @@ describe('lend', () => {
       amountBDesired.mul(poolTokensSupply).div(tokenBReserve),
     );
 
-    const expectedIncomingAmount = BigNumber.from('140881238184881644');
+    const expectedIncomingAmount = BigNumber.from('108789251673036848');
 
     // Seed fund with tokens and lend
     await tokenA.transfer(vaultProxy, amountADesired);

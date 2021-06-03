@@ -105,7 +105,7 @@ describe('expected values', () => {
 
     // Value should be a small percentage above 1 unit of the underlying
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1030621652248771030'),
+      value_: BigNumber.from('1047318861730262692'),
       isValid_: true,
     });
   });
@@ -125,7 +125,7 @@ describe('expected values', () => {
 
     // Value should be a small percentage above 1 unit of the underlying
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1036494'),
+      value_: BigNumber.from('1057405'),
       isValid_: true,
     });
   });

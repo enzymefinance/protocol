@@ -92,7 +92,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(210000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(186000));
   });
 });
 
@@ -170,9 +170,9 @@ describe('calcUnderlyingValues', () => {
     });
 
     // Assert gas
-    // Rounded up from 99876
+    // Rounded up from 96624
     const calcUnderlyingValuesTx = await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
-    expect(calcUnderlyingValuesTx).toCostLessThan(99900);
+    expect(calcUnderlyingValuesTx).toCostLessThan(97000);
   });
 });
 
@@ -361,8 +361,8 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // sbtc/usd price at Apr 6, 2020 had a price of $59,000
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06#panel>
+    // sbtc/usd price at May 31, 2020 had a price of $35800
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
@@ -370,7 +370,7 @@ describe('expected values', () => {
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: BigNumber.from('59031011334570209829948'),
+      value_: BigNumber.from('35096271489172293976414'),
     });
   });
 
@@ -385,15 +385,15 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // sbtc/usd price at Apr 6, 2020 had a price of $59,000
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-04-06&end_date=2021-04-06#panel>
+    // sbtc/usd price at May 31, 2020 had a price of $35,800
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('58891891970'),
+      value_: BigNumber.from('34925293202'),
       isValid_: true,
     });
   });

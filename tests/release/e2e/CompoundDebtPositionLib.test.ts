@@ -124,7 +124,7 @@ describe('receiveCallFromVault', () => {
     it('works as expected when called to addCollateral by a Fund', async () => {
       const [fundOwner] = fork.accounts;
 
-      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAmounts = [BigNumber.from('1000')];
       const collateralAssets = [cdai.address];
 
       const debtPositionCollateralBalanceBefore = await cdai.balanceOf(compoundDebtPosition.address);
@@ -162,8 +162,8 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 222604
-      expect(addCollateralReceipt).toCostLessThan('224000');
+      // Rounding up from 236428
+      expect(addCollateralReceipt).toCostLessThan('237000');
 
       const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
       expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
@@ -175,7 +175,7 @@ describe('receiveCallFromVault', () => {
     it('works as expected when called to addCollateral by a Fund (weth)', async () => {
       const [fundOwner] = fork.accounts;
 
-      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAmounts = [BigNumber.from('1000')];
       const collateralAssets = [ceth.address];
 
       const debtPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);

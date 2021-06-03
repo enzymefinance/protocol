@@ -110,7 +110,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['68482961567867', '32564716289027301249863'],
+      underlyingAmounts_: ['79567669895365', '33866575594579201734267'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -181,11 +181,11 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on Apr 6, 2021 was worth about $137M
+      // usdc/weth on May 31, 2021 was worth about $167M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
         isValid_: true,
-        value_: 136924790907934,
+        value_: 158897255870290,
       });
     });
 
@@ -204,10 +204,10 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on Apr 6, 2021 was worth about $220
+      // knc/weth on May 31, 2021 was worth about $160
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('220264591769758477782'),
+        value_: BigNumber.from('158937723230135855509'),
         isValid_: true,
       });
     });

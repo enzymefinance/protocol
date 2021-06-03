@@ -145,7 +145,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of WETH (10^18)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1008079019022234643',
+      value_: '1013484504166049619',
     });
   });
 
@@ -171,7 +171,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of USDC (10^6)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1015133',
+      value_: '1017331',
     });
   });
 });

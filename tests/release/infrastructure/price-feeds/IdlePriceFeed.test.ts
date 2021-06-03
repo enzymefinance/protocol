@@ -127,7 +127,7 @@ describe('expected values', () => {
 
     // Value should be a small percentage above 1 unit of the underlying
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1047003'),
+      value_: BigNumber.from('1059179'),
       isValid_: true,
     });
   });
@@ -175,6 +175,6 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(253000));
+    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(228000));
   });
 });
