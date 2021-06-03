@@ -38,6 +38,7 @@ export async function generateRegisteredMockPolicies({
   const mockPostBuySharesPolicy = await IPolicy.mock(deployer);
   const mockPostCoIPolicy = await IPolicy.mock(deployer);
   const mockRedeemSharesForSpecificAssetsPolicy = await IPolicy.mock(deployer);
+  const mockPreTransferSharesPolicy = await IPolicy.mock(deployer);
 
   // Initialize mock policy return values
   await Promise.all([
@@ -73,6 +74,14 @@ export async function generateRegisteredMockPolicies({
     mockRedeemSharesForSpecificAssetsPolicy.validateRule.returns(true),
     mockRedeemSharesForSpecificAssetsPolicy.implementedHooks.returns([PolicyHook.RedeemSharesForSpecificAssets]),
     mockRedeemSharesForSpecificAssetsPolicy.updateFundSettings.returns(undefined),
+    // PreTransferSharesPolicy
+    mockPreTransferSharesPolicy.identifier.returns(`MOCK_PRE_TRANSFER_SHARES`),
+    mockPreTransferSharesPolicy.addFundSettings.returns(undefined),
+    mockPreTransferSharesPolicy.activateForFund.returns(undefined),
+    mockPreTransferSharesPolicy.canDisable.returns(false),
+    mockPreTransferSharesPolicy.validateRule.returns(true),
+    mockPreTransferSharesPolicy.implementedHooks.returns([PolicyHook.PreTransferShares]),
+    mockPreTransferSharesPolicy.updateFundSettings.returns(undefined),
   ]);
 
   // Register all mock policies
@@ -81,6 +90,7 @@ export async function generateRegisteredMockPolicies({
     mockPostBuySharesPolicy,
     mockPostCoIPolicy,
     mockRedeemSharesForSpecificAssetsPolicy,
+    mockPreTransferSharesPolicy,
   ]);
 
   return {
@@ -88,5 +98,6 @@ export async function generateRegisteredMockPolicies({
     mockPostBuySharesPolicy,
     mockPostCoIPolicy,
     mockRedeemSharesForSpecificAssetsPolicy,
+    mockPreTransferSharesPolicy,
   };
 }

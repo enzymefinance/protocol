@@ -16,7 +16,9 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the PolicyManager
 interface IPolicyManager {
-    // When updating PolicyHook, also update PolicyManager.__getAllPolicyHooks()
+    // When updating PolicyHook, also update these functions in PolicyManager:
+    // 1. __getAllPolicyHooks()
+    // 2. __policyHookRestrictsCurrentInvestorActions()
     enum PolicyHook {
         PostBuyShares,
         PostCallOnIntegration,

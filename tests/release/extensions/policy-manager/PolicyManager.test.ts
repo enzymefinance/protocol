@@ -269,10 +269,10 @@ describe('enablePolicyForFund', () => {
     await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Only the fund owner can call this function');
   });
 
-  it('does not allow a policy that implements a non-BuyShares hook', async () => {
+  it('does not allow a policy with a hook that potentially restricts the actions of current investors', async () => {
     const {
       deployment: { fundDeployer, policyManager },
-      policies: { mockPostCoIPolicy },
+      policies: { mockPreTransferSharesPolicy, mockRedeemSharesForSpecificAssetsPolicy },
       fundOwner,
       denominationAsset,
     } = await provider.snapshot(snapshot);
@@ -285,12 +285,19 @@ describe('enablePolicyForFund', () => {
       denominationAsset,
     });
 
-    // Attempt to add a non-BuyShares hook policy with addFundSettings
-    const enablePolicyForFundCall = policyManager
-      .connect(fundOwner)
-      .enablePolicyForFund(comptrollerProxy, mockPostCoIPolicy, '0x');
+    const revertReason = '_policy restricts actions of current investors';
 
-    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy cannot be enabled');
+    // Attempting to enable a policy that implements PolicyHook.PreTransferShares should fail
+    await expect(
+      policyManager.connect(fundOwner).enablePolicyForFund(comptrollerProxy, mockPreTransferSharesPolicy, '0x'),
+    ).rejects.toBeRevertedWith(revertReason);
+
+    // Attempting to enable a policy that implements PolicyHook.RedeemSharesForSpecificAssetsPolicy should fail
+    await expect(
+      policyManager
+        .connect(fundOwner)
+        .enablePolicyForFund(comptrollerProxy, mockRedeemSharesForSpecificAssetsPolicy, '0x'),
+    ).rejects.toBeRevertedWith(revertReason);
   });
 
   it('does not allow an already enabled policy', async () => {

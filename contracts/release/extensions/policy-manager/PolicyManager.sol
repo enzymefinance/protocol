@@ -103,8 +103,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
             require(
-                implementedHooks[i] == PolicyHook.PostBuyShares,
-                "enablePolicyForFund: Policy cannot be enabled"
+                !__policyHookRestrictsCurrentInvestorActions(implementedHooks[i]),
+                "enablePolicyForFund: _policy restricts actions of current investors"
             );
         }
 
@@ -230,6 +230,18 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
             PolicyHook.AddTrackedAssets,
             PolicyHook.RemoveTrackedAssets
         ];
+    }
+
+    /// @dev Helper to check if a policy hook restricts the actions of current investors.
+    /// These hooks should not allow policy additions post-deployment or post-migration.
+    function __policyHookRestrictsCurrentInvestorActions(PolicyHook _hook)
+        private
+        pure
+        returns (bool restrictsActions_)
+    {
+        return
+            _hook == PolicyHook.PreTransferShares ||
+            _hook == PolicyHook.RedeemSharesForSpecificAssets;
     }
 
     ///////////////////////
