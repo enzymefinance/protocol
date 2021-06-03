@@ -220,6 +220,17 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         emit PolicyEnabledForFund(_comptrollerProxy, _policy, _settingsData);
     }
 
+    /// @dev Helper to get all the hooks available to policies
+    function __getAllPolicyHooks() private pure returns (PolicyHook[5] memory hooks_) {
+        return [
+            PolicyHook.PostBuyShares,
+            PolicyHook.PostCallOnIntegration,
+            PolicyHook.PreTransferShares,
+            PolicyHook.AddTrackedAssets,
+            PolicyHook.RedeemSharesForSpecificAssets
+        ];
+    }
+
     ///////////////////////
     // POLICIES REGISTRY //
     ///////////////////////
@@ -283,12 +294,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         view
         returns (address[] memory enabledPolicies_)
     {
-        PolicyHook[4] memory hooks = [
-            PolicyHook.PostBuyShares,
-            PolicyHook.PostCallOnIntegration,
-            PolicyHook.PreTransferShares,
-            PolicyHook.AddTrackedAssets
-        ];
+        PolicyHook[5] memory hooks = __getAllPolicyHooks();
+
         for (uint256 i; i < hooks.length; i++) {
             enabledPolicies_ = enabledPolicies_.mergeArray(
                 getEnabledPoliciesOnHookForFund(_comptrollerProxy, hooks[i])

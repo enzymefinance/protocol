@@ -2,8 +2,11 @@ import { randomAddress } from '@enzymefinance/ethers';
 import {
   feeManagerConfigArgs,
   MockReentrancyToken,
+  PolicyHook,
   ReleaseStatusTypes,
   StandardToken,
+  validateRulePostBuySharesArgs,
+  validateRuleRedeemSharesForSpecificAssetsArgs,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -172,7 +175,7 @@ describe('buyShares', () => {
   it('works for a fund with no extensions', async () => {
     const {
       fund: { denominationAsset },
-      deployment: { fundDeployer },
+      deployment: { fundDeployer, policyManager },
       accounts: [fundOwner, buyer],
     } = await provider.snapshot(snapshot);
 
@@ -190,18 +193,23 @@ describe('buyShares', () => {
       investmentAmount,
     });
 
+    // Expected values
+    const expectedGav = investmentAmount;
+    const expectedSharesIssued = investmentAmount;
+    const expectedSharesReceived = investmentAmount;
+
     // Assert Events
     assertEvent(receipt, 'SharesBought', {
       buyer: await buyer.getAddress(),
       investmentAmount,
-      sharesIssued: investmentAmount,
-      sharesReceived: investmentAmount,
+      sharesIssued: expectedSharesIssued,
+      sharesReceived: expectedSharesReceived,
     });
 
     // Assert calls on ComptrollerProxy
     const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
     expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
-      gav_: investmentAmount,
+      gav_: expectedGav,
       isValid_: true,
     });
 
@@ -211,10 +219,22 @@ describe('buyShares', () => {
       isValid_: true,
     });
 
+    // Assert the PolicyManager was called with the correct data
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PostBuyShares,
+      validateRulePostBuySharesArgs({
+        buyer,
+        investmentAmount,
+        sharesIssued: expectedSharesIssued,
+        fundGav: expectedGav,
+      }),
+    );
+
     // Assert calls on VaultProxy
     // TODO: does this belong here?
     const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
-    expect(sharesBuyerBalanceCall).toEqBigNumber(investmentAmount);
+    expect(sharesBuyerBalanceCall).toEqBigNumber(expectedSharesReceived);
     const sharesTotalSupplyCall = await vaultProxy.totalSupply();
     expect(sharesTotalSupplyCall).toEqBigNumber(sharesBuyerBalanceCall);
     const trackedAssetsCall = await vaultProxy.getTrackedAssets();
@@ -467,7 +487,7 @@ describe('redeem', () => {
     it('handles a valid call: full shares balance', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, valueInterpreter },
+        deployment: { fundDeployer, integrationManager, policyManager, valueInterpreter },
         accounts: [fundOwner, investor],
         config: {
           primitives: { dai, mln },
@@ -565,6 +585,20 @@ describe('redeem', () => {
         receivedAssets: payoutAssets,
         receivedAssetAmounts: expectedPayoutAmounts,
       });
+
+      // Assert the Policy Manager was called correctly
+      expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.RedeemSharesForSpecificAssets,
+        validateRuleRedeemSharesForSpecificAssetsArgs({
+          redeemer: investor,
+          recipient,
+          sharesToRedeemPostFees: expectedSharesRedeemed,
+          assets: payoutAssets,
+          assetAmounts: expectedPayoutAmounts,
+          gavPreRedeem: preTxGav,
+        }),
+      );
     });
 
     it('handles a valid call: explicitly claim less than 100% of owed gav', async () => {

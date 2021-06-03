@@ -694,14 +694,22 @@ contract ComptrollerLib is IComptroller {
             gav
         );
 
-        // TODO: Add new policy hook here
-
         payoutAmounts_ = __payoutSpecifiedAssetPercentages(
             vaultProxyContract,
             _recipient,
             _payoutAssets,
             _payoutAssetPercentages,
             gav.mul(sharesToRedeem).div(sharesSupply)
+        );
+
+        // Run post-redemption in order to have access to the payoutAmounts
+        __postRedeemSharesForSpecificAssetsHook(
+            msg.sender,
+            _recipient,
+            sharesToRedeem,
+            _payoutAssets,
+            payoutAmounts_,
+            gav
         );
 
         emit SharesRedeemed(msg.sender, _recipient, sharesToRedeem, _payoutAssets, payoutAmounts_);
@@ -902,6 +910,30 @@ contract ComptrollerLib is IComptroller {
          {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
         }
+    }
+
+    /// @dev Helper to run policy validation after other logic for redeeming shares for specific assets.
+    /// Avoids stack-too-deep error.
+    function __postRedeemSharesForSpecificAssetsHook(
+        address _redeemer,
+        address _recipient,
+        uint256 _sharesToRedeemPostFees,
+        address[] memory _assets,
+        uint256[] memory _assetAmounts,
+        uint256 _gavPreRedeem
+    ) private {
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            address(this),
+            IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets,
+            abi.encode(
+                _redeemer,
+                _recipient,
+                _sharesToRedeemPostFees,
+                _assets,
+                _assetAmounts,
+                _gavPreRedeem
+            )
+        );
     }
 
     /// @dev Helper to execute common pre-shares redemption logic

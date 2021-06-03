@@ -37,6 +37,7 @@ export async function generateRegisteredMockPolicies({
   const mockAddTrackedAssetsPolicy = await IPolicy.mock(deployer);
   const mockPostBuySharesPolicy = await IPolicy.mock(deployer);
   const mockPostCoIPolicy = await IPolicy.mock(deployer);
+  const mockRedeemSharesForSpecificAssetsPolicy = await IPolicy.mock(deployer);
 
   // Initialize mock policy return values
   await Promise.all([
@@ -64,14 +65,28 @@ export async function generateRegisteredMockPolicies({
     mockPostCoIPolicy.validateRule.returns(true),
     mockPostCoIPolicy.implementedHooks.returns([PolicyHook.PostCallOnIntegration]),
     mockPostCoIPolicy.updateFundSettings.returns(undefined),
+    // RedeemSharesForSpecificAssets
+    mockRedeemSharesForSpecificAssetsPolicy.identifier.returns(`MOCK_REDEEM_SHARES_FOR_SPECIFIC_ASSETS`),
+    mockRedeemSharesForSpecificAssetsPolicy.addFundSettings.returns(undefined),
+    mockRedeemSharesForSpecificAssetsPolicy.activateForFund.returns(undefined),
+    mockRedeemSharesForSpecificAssetsPolicy.canDisable.returns(false),
+    mockRedeemSharesForSpecificAssetsPolicy.validateRule.returns(true),
+    mockRedeemSharesForSpecificAssetsPolicy.implementedHooks.returns([PolicyHook.RedeemSharesForSpecificAssets]),
+    mockRedeemSharesForSpecificAssetsPolicy.updateFundSettings.returns(undefined),
   ]);
 
   // Register all mock policies
-  await policyManager.registerPolicies([mockAddTrackedAssetsPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy]);
+  await policyManager.registerPolicies([
+    mockAddTrackedAssetsPolicy,
+    mockPostBuySharesPolicy,
+    mockPostCoIPolicy,
+    mockRedeemSharesForSpecificAssetsPolicy,
+  ]);
 
   return {
     mockAddTrackedAssetsPolicy,
     mockPostBuySharesPolicy,
     mockPostCoIPolicy,
+    mockRedeemSharesForSpecificAssetsPolicy,
   };
 }

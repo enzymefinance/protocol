@@ -16,7 +16,14 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the PolicyManager
 interface IPolicyManager {
-    enum PolicyHook {PostBuyShares, PostCallOnIntegration, PreTransferShares, AddTrackedAssets}
+    // When updating PolicyHook, also update PolicyManager.__getAllPolicyHooks()
+    enum PolicyHook {
+        PostBuyShares,
+        PostCallOnIntegration,
+        PreTransferShares,
+        RedeemSharesForSpecificAssets,
+        AddTrackedAssets
+    }
 
     function validatePolicies(
         address,

@@ -5,18 +5,13 @@ import {
   MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
   validateRuleAddTrackedAssetsArgs,
-  validateRulePostBuySharesArgs,
-  validateRulePostCoIArgs,
   WETH,
 } from '@enzymefinance/protocol';
 import {
-  buyShares,
   createNewFund,
   generateRegisteredMockPolicies,
   mockGenericSwap,
-  mockGenericSwapASelector,
   assertEvent,
   createFundDeployer,
   createMigratedFundConfig,
@@ -664,9 +659,11 @@ describe('updatePolicySettingsForFund', () => {
 });
 
 describe('validatePolicies', () => {
-  it('correctly handles a AddTrackedAssets PolicyHook', async () => {
+  // Data passed to individual hooks are validated in the tests of their invoking functions
+
+  it('correctly handles a PolicyHook', async () => {
     const {
-      policies: { mockAddTrackedAssetsPolicy },
+      policies: { mockAddTrackedAssetsPolicy, mockPostBuySharesPolicy, mockPostCoIPolicy },
       deployment: { fundDeployer, integrationManager },
       fundOwner,
       denominationAsset,
@@ -701,126 +698,10 @@ describe('validatePolicies', () => {
       PolicyHook.AddTrackedAssets,
       ruleArgs,
     );
-  });
-
-  it('correctly handles a BuyShares PolicyHook', async () => {
-    const {
-      accounts: [buyer],
-      policies: { mockPostBuySharesPolicy, mockPostCoIPolicy },
-      deployment: { fundDeployer },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    const investmentAmount = utils.parseEther('2');
-    const minSharesQuantity = 123;
-
-    await buyShares({
-      comptrollerProxy,
-      buyer,
-      denominationAsset,
-      investmentAmount,
-      minSharesQuantity,
-      seedBuyer: true,
-    });
-
-    const postRuleArgs = validateRulePostBuySharesArgs({
-      buyer,
-      investmentAmount,
-      sharesIssued: investmentAmount,
-      fundGav: investmentAmount,
-    });
-    expect(mockPostBuySharesPolicy.validateRule).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PostBuyShares,
-      postRuleArgs,
-    );
-
-    // Assert validateRule not called on other policies
-    expect(mockPostCoIPolicy.validateRule).not.toHaveBeenCalledOnContract();
-  });
-
-  it('correctly handles a CallOnIntegration PolicyHook', async () => {
-    const {
-      mockGenericAdapter,
-      mockGenericIntegratee,
-      deployment: { fundDeployer, integrationManager },
-      policies: { mockPostBuySharesPolicy, mockPostCoIPolicy },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-      config: { primitives },
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    const dai = new StandardToken(primitives.dai, whales.dai);
-    const mln = new StandardToken(primitives.mln, whales.mln);
-
-    await dai.transfer(mockGenericIntegratee, utils.parseEther('5000'));
-    await mln.transfer(mockGenericIntegratee, utils.parseEther('5000'));
-
-    // Define complex spend and incoming asset values to ensure correct data passed to PolicyManager
-    const weth = denominationAsset;
-    const spendAssets = [weth, dai];
-    const actualSpendAssetAmounts = [utils.parseEther('1'), utils.parseEther('1')];
-    const incomingAssets = [dai, mln];
-    const minIncomingAssetAmounts = [1234, 5678];
-
-    // Since `mockGenericSwap` seeds funds by sending directly to a vault,
-    // the incoming assets are not yet tracked, meaning the final token balance
-    // will be the reported incoming asset amount
-    // (rather than the diff in token balances from start to finish)
-    const actualIncomingAssetAmounts = [utils.parseEther('10'), utils.parseEther('2')];
-
-    await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      spendAssets,
-      actualSpendAssetAmounts,
-      incomingAssets,
-      minIncomingAssetAmounts,
-      actualIncomingAssetAmounts,
-      seedFund: true,
-    });
-
-    // Outgoing assets are the spend assets that are not also incoming assets
-    const outgoingAssets = [weth];
-    const outgoingAssetAmounts = [utils.parseEther('1')];
-
-    expect(mockPostCoIPolicy.validateRule).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PostCallOnIntegration,
-      validateRulePostCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-        incomingAssets,
-        incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets,
-        outgoingAssetAmounts,
-      }),
-    );
 
     // Assert validateRule not called on other policies
     expect(mockPostBuySharesPolicy.validateRule).not.toHaveBeenCalledOnContract();
+    expect(mockPostCoIPolicy.validateRule).not.toHaveBeenCalledOnContract();
   });
 
   it('reverts if return value is false', async () => {

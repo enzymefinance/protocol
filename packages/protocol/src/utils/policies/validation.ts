@@ -40,3 +40,24 @@ export function validateRulePostCoIArgs({
     [adapter, selector, incomingAssets, incomingAssetAmounts, outgoingAssets, outgoingAssetAmounts],
   );
 }
+
+export function validateRuleRedeemSharesForSpecificAssetsArgs({
+  redeemer,
+  recipient,
+  sharesToRedeemPostFees,
+  assets,
+  assetAmounts,
+  gavPreRedeem,
+}: {
+  redeemer: AddressLike;
+  recipient: AddressLike;
+  sharesToRedeemPostFees: BigNumberish;
+  assets: AddressLike[];
+  assetAmounts: BigNumberish[];
+  gavPreRedeem: BigNumberish;
+}) {
+  return encodeArgs(
+    ['address', 'address', 'uint256', 'address[]', 'uint256[]', 'uint256'],
+    [redeemer, recipient, sharesToRedeemPostFees, assets, assetAmounts, gavPreRedeem],
+  );
+}
