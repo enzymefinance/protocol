@@ -78,6 +78,9 @@ export interface DeploymentConfig {
     router: string;
     pools: Record<string, string>;
   };
+  uniswapV3: {
+    router: string;
+  };
   yearn: {
     vaultV2: {
       registry: string;

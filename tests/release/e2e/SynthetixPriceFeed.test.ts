@@ -52,7 +52,7 @@ describe('expected values', () => {
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: BigNumber.from('57230888354311741559387'),
+      value_: BigNumber.from('35096271489172293976414'),
     });
   });
 
@@ -72,7 +72,7 @@ describe('expected values', () => {
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('56670478072'),
+      value_: BigNumber.from('34925293202'),
       isValid_: true,
     });
   });

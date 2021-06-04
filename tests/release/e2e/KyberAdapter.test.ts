@@ -74,7 +74,7 @@ beforeEach(async () => {
 
 it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
   const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-  const incomingAsset = new StandardToken(fork.config.primitives.knc, provider);
+  const incomingAsset = new StandardToken(fork.config.primitives.bat, provider);
   const kyberNetworkProxy = new KyberNetworkProxy(fork.config.kyber.networkProxy, provider);
   const [fundOwner] = fork.accounts;
 

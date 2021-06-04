@@ -236,7 +236,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1006536'),
+        value_: BigNumber.from('1003473'),
         isValid_: true,
       });
     });
@@ -257,7 +257,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1012438'),
+        value_: BigNumber.from('1001862'),
         isValid_: true,
       });
     });
@@ -281,7 +281,7 @@ describe('expected values', () => {
         .call();
 
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('653620051235448815525'),
+        value_: BigNumber.from('702415059660165691536'),
         isValid_: true,
       });
     });
@@ -311,7 +311,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1013981725571156365'),
+        value_: BigNumber.from('1010460668047292019'),
         isValid_: true,
       });
     });
@@ -339,7 +339,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1001524231515677497'),
+        value_: BigNumber.from('1008581931722281053'),
         isValid_: true,
       });
     });
@@ -369,7 +369,7 @@ describe('expected values', () => {
 
       // Should be near 1000000000000000000 (10^18)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('986211067498991928'),
+        value_: BigNumber.from('989647624714075031'),
         isValid_: true,
       });
     });
@@ -397,7 +397,7 @@ describe('expected values', () => {
 
       // Should be near 1000000 (10^6)
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('998478'),
+        value_: BigNumber.from('991491'),
         isValid_: true,
       });
     });

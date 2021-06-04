@@ -39,8 +39,8 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    // Rounding up from 61325
-    expect(calcUnderlyingValuesTx).toCostLessThan('62000');
+    // Rounding up from 62505
+    expect(calcUnderlyingValuesTx).toCostLessThan('63000');
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -69,8 +69,8 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    // Rounding up from 50051
-    expect(calcUnderlyingValuesTx).toCostLessThan('51000');
+    // Rounding up from 48078
+    expect(calcUnderlyingValuesTx).toCostLessThan('49000');
   });
 });
 
@@ -89,7 +89,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of WETH (10^18)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1011287981951992932',
+      value_: '1013484504166049619',
     });
   });
 
@@ -115,7 +115,7 @@ describe('expected values', () => {
     // Should be slightly more than 1 unit of USDC (10^6)
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
       isValid_: true,
-      value_: '1016210',
+      value_: '1017331',
     });
   });
 });

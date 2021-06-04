@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import { ChainlinkRateAsset, sighash } from '@enzymefinance/protocol';
 import { utils } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
@@ -154,6 +155,9 @@ const mainnetConfig: DeploymentConfig = {
     factory: '0x0022B151B637722757852Ef64c57c982277203fF',
     pools,
     router: '0x0022B151B637722757852Ef64c57c982277203fF',
+  },
+  uniswapV3: {
+    router: randomAddress()
   },
   unsupportedAssets: {},
   wdgld: {

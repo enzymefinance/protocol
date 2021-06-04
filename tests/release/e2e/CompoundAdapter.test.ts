@@ -216,7 +216,7 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
     });
 
-    expect(redeemReceipt).toCostLessThan('503000');
+    expect(redeemReceipt).toCostLessThan('487000');
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {

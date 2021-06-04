@@ -43,6 +43,8 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
+const stkAave = '0x4da27a545c0c5b758a6ba100e3a049001de870f5';
+
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -676,7 +678,7 @@ describe('claimRewardsAndReinvest', () => {
       integrationManager,
       fundOwner,
       adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, stkAave],
     });
 
     // Claim all earned rewards
@@ -758,7 +760,7 @@ describe('claimRewardsAndReinvest', () => {
       integrationManager,
       fundOwner,
       adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, stkAave],
     });
 
     // Claim all earned rewards
@@ -843,7 +845,7 @@ describe('claimRewardsAndSwap', () => {
       integrationManager,
       fundOwner,
       adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, stkAave],
     });
 
     // Claim all earned rewards and swap to the incoming asset
@@ -926,7 +928,7 @@ describe('claimRewardsAndSwap', () => {
       integrationManager,
       fundOwner,
       adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv],
+      assets: [fork.config.primitives.crv, stkAave],
     });
 
     // Claim all earned rewards and swap to the incoming asset

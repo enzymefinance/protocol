@@ -1,4 +1,4 @@
-import { IChainlinkAggregator } from '@enzymefinance/protocol';
+import { IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
 import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -68,5 +68,21 @@ describe('calcUnderlyingValues', () => {
 
     // Should be around 0.0904382075 (0.99)^10 with 27 decimals
     expect(finalRate).toEqBigNumber(BigNumber.from('90438207500880449001000121'));
+  });
+
+  it('returns the expected value from the valueInterpreter', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const wdgld = new StandardToken(fork.config.wdgld.wdgld, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+
+    const wdgldUnit = utils.parseUnits('1', await wdgld.decimals());
+
+    // XAU/USD price at May 31 2021 had a rate of 1850 USD. Given an approximate GTR of 0.0988 gives a value around 182.7 USD
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(wdgld, wdgldUnit, usdc).call();
+
+    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
+      value_: 171062486,
+      isValid_: true,
+    });
   });
 });

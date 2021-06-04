@@ -136,7 +136,7 @@ describe('calcUnderlyingValues', () => {
 
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
         isValid_: true,
-        value_: 181565315299274,
+        value_: 158897255870290,
       });
     });
 
@@ -156,7 +156,7 @@ describe('calcUnderlyingValues', () => {
         .call();
 
       expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('279529172705717512177'),
+        value_: BigNumber.from('158937723230135855509'),
         isValid_: true,
       });
     });

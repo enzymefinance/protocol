@@ -44,7 +44,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: 177754470,
+      value_: 185936532,
       isValid_: true,
     });
   });
