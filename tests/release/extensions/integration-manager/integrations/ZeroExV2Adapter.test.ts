@@ -297,11 +297,11 @@ describe('allowed makers', () => {
       await expect(adapter.addAllowedMakers([makerAddress, makerAddress])).rejects.toBeRevertedWith(
         'Value already set',
       );
-
-      it.todo('does not allow an empty _accountsToAdd param');
-
-      it.todo('adds accounts to allowedMakers and emits the correct event per removed account');
     });
+
+    it.todo('does not allow an empty _accountsToAdd param');
+
+    it.todo('adds accounts to allowedMakers and emits the correct event per removed account');
   });
 
   describe('removeAllowedMakers', () => {
