@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.7
+
+### Patch Changes
+
+- 9fa4342f: Re-publishing after dependency upgrades.
+
 ## 2.0.6
 
 ### Patch Changes
