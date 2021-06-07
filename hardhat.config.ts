@@ -87,6 +87,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      hardfork: 'istanbul',
       accounts: {
         accountsBalance: utils.parseUnits('1', 36).toString(),
         count: 5,
@@ -103,10 +104,12 @@ const config: HardhatUserConfig = {
       }),
     },
     kovan: {
+      hardfork: 'istanbul',
       accounts: accounts('kovan'),
       url: node('kovan'),
     },
     mainnet: {
+      hardfork: 'istanbul',
       accounts: accounts('mainnet'),
       url: node('mainnet'),
     },
