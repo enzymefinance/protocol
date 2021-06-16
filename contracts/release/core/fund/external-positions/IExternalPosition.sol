@@ -9,8 +9,8 @@
 
 pragma solidity 0.6.12;
 
-interface IDebtPosition {
-    enum DebtPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
+interface IExternalPosition {
+    enum ExternalPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
 
     function getCollateralAssets() external returns (address[] memory, uint256[] memory);
 

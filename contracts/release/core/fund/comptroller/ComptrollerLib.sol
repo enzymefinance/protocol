@@ -23,7 +23,7 @@ import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
-import "../debt-positions/IDebtPosition.sol";
+import "../external-positions/IExternalPosition.sol";
 import "../vault/IVault.sol";
 import "./IComptroller.sol";
 
@@ -66,8 +66,8 @@ contract ComptrollerLib is IComptroller {
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARES_UNIT = 10**18;
     address private immutable ASSET_FINALITY_RESOLVER;
-    address private immutable DEBT_POSITION_MANAGER;
     address private immutable DISPATCHER;
+    address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
@@ -169,7 +169,7 @@ contract ComptrollerLib is IComptroller {
         address _dispatcher,
         address _fundDeployer,
         address _valueInterpreter,
-        address _debtPositionManager,
+        address _externalPositionManager,
         address _feeManager,
         address _integrationManager,
         address _policyManager,
@@ -177,8 +177,8 @@ contract ComptrollerLib is IComptroller {
         address _assetFinalityResolver
     ) public {
         ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
-        DEBT_POSITION_MANAGER = _debtPositionManager;
         DISPATCHER = _dispatcher;
+        EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
@@ -207,7 +207,7 @@ contract ComptrollerLib is IComptroller {
         require(
             _extension == FEE_MANAGER ||
                 _extension == INTEGRATION_MANAGER ||
-                _extension == DEBT_POSITION_MANAGER,
+                _extension == EXTERNAL_POSITION_MANAGER,
             "callOnExtension: _extension invalid"
         );
 
@@ -318,11 +318,11 @@ contract ComptrollerLib is IComptroller {
                     _action == IVault.VaultAction.TransferShares,
                 "__assertPermissionedVaultAction: Not allowed"
             );
-        } else if (_caller == DEBT_POSITION_MANAGER) {
+        } else if (_caller == EXTERNAL_POSITION_MANAGER) {
             require(
-                _action == IVault.VaultAction.CallOnDebtPosition ||
-                    _action == IVault.VaultAction.AddDebtPosition ||
-                    _action == IVault.VaultAction.RemoveDebtPosition,
+                _action == IVault.VaultAction.CallOnExternalPosition ||
+                    _action == IVault.VaultAction.AddExternalPosition ||
+                    _action == IVault.VaultAction.RemoveExternalPosition,
                 "__assertPermissionedVaultAction: Not allowed"
             );
         } else {
@@ -400,7 +400,7 @@ contract ComptrollerLib is IComptroller {
         IVault(_vaultProxy).addPersistentlyTrackedAsset(denominationAsset);
 
         // Activate extensions
-        IExtension(DEBT_POSITION_MANAGER).activateForFund(_isMigration);
+        IExtension(EXTERNAL_POSITION_MANAGER).activateForFund(_isMigration);
         IExtension(FEE_MANAGER).activateForFund(_isMigration);
         IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);
         IExtension(POLICY_MANAGER).activateForFund(_isMigration);
@@ -440,9 +440,10 @@ contract ComptrollerLib is IComptroller {
     function calcGav(bool _requireFinality) public override returns (uint256 gav_, bool isValid_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
-        address[] memory debtPositions = IVault(vaultProxyAddress).getActiveDebtPositions();
+        address[] memory externalPositions = IVault(vaultProxyAddress)
+            .getActiveExternalPositions();
 
-        if (assets.length == 0 && debtPositions.length == 0) {
+        if (assets.length == 0 && externalPositions.length == 0) {
             return (0, true);
         }
 
@@ -464,15 +465,15 @@ contract ComptrollerLib is IComptroller {
             denominationAsset
         );
 
-        if (debtPositions.length > 0) {
-            for (uint256 i; i < debtPositions.length; i++) {
+        if (externalPositions.length > 0) {
+            for (uint256 i; i < externalPositions.length; i++) {
                 (
-                    uint256 debtPositionValue,
-                    bool isValidDebtPositionValue
-                ) = __calcDebtPositionValue(debtPositions[i]);
+                    uint256 externalPositionValue,
+                    bool isValidExternalPositionValue
+                ) = __calcExternalPositionValue(externalPositions[i]);
 
-                gav_ = gav_.add(debtPositionValue);
-                isValid_ = isValid_ && isValidDebtPositionValue;
+                gav_ = gav_.add(externalPositionValue);
+                isValid_ = isValid_ && isValidExternalPositionValue;
             }
         }
 
@@ -501,15 +502,15 @@ contract ComptrollerLib is IComptroller {
         return (grossShareValue_, isValid_);
     }
 
-    // @dev Helper for calculating a debt position value. Prevents from stack too deep
-    function __calcDebtPositionValue(address _debtPosition)
+    // @dev Helper for calculating a external position value. Prevents from stack too deep
+    function __calcExternalPositionValue(address _externalPosition)
         private
         returns (uint256 value_, bool isValid_)
     {
-        (address[] memory collateralAssets, uint256[] memory collateralBalances) = IDebtPosition(
-            _debtPosition
-        )
-            .getCollateralAssets();
+        (
+            address[] memory collateralAssets,
+            uint256[] memory collateralBalances
+        ) = IExternalPosition(_externalPosition).getCollateralAssets();
 
         (uint256 collateralValue, bool isValidCollateralValue) = IValueInterpreter(
             VALUE_INTERPRETER
@@ -520,8 +521,8 @@ contract ComptrollerLib is IComptroller {
             denominationAsset
         );
 
-        (address[] memory borrowedAssets, uint256[] memory borrowedBalances) = IDebtPosition(
-            _debtPosition
+        (address[] memory borrowedAssets, uint256[] memory borrowedBalances) = IExternalPosition(
+            _externalPosition
         )
             .getBorrowedAssets();
 

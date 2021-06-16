@@ -1,9 +1,9 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
-  debtPositionCallArgs,
-  debtPositionRemoveArgs,
-  DebtPositionManagerActionId,
+  externalPositionCallArgs,
+  externalPositionRemoveArgs,
+  ExternalPositionManagerActionId,
   VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
@@ -51,16 +51,16 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { aggregatedDerivativePriceFeed, chainlinkPriceFeed, compoundPriceFeed, debtPositionManager },
+      deployment: { aggregatedDerivativePriceFeed, chainlinkPriceFeed, compoundPriceFeed, externalPositionManager },
     } = await provider.snapshot(snapshot);
 
-    const getDerivativePriceFeedCall = await debtPositionManager.getDerivativePriceFeed();
+    const getDerivativePriceFeedCall = await externalPositionManager.getDerivativePriceFeed();
     expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);
 
-    const getPrimitivePriceFeedCall = await debtPositionManager.getPrimitivePriceFeed();
+    const getPrimitivePriceFeedCall = await externalPositionManager.getPrimitivePriceFeed();
     expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
 
-    const getCompoundPriceFeedCall = await debtPositionManager.getCompoundPriceFeed();
+    const getCompoundPriceFeedCall = await externalPositionManager.getCompoundPriceFeed();
     expect(getCompoundPriceFeedCall).toMatchAddress(compoundPriceFeed);
   });
 });
@@ -83,27 +83,27 @@ describe('activateForFund', () => {
 
   it('does not allow a missing vaultProxy', async () => {
     const {
-      deployment: { debtPositionManager },
+      deployment: { externalPositionManager },
       mockComptrollerProxy,
     } = await provider.snapshot(snapshot);
 
     await mockComptrollerProxy.getVaultProxy.returns(constants.AddressZero);
 
-    await expect(mockComptrollerProxy.forward(debtPositionManager.activateForFund, false)).rejects.toBeRevertedWith(
+    await expect(mockComptrollerProxy.forward(externalPositionManager.activateForFund, false)).rejects.toBeRevertedWith(
       'Missing vaultProxy',
     );
   });
 
   it('does not allow a vaultProxy for which the sender is not the accessor', async () => {
     const {
-      deployment: { debtPositionManager },
+      deployment: { externalPositionManager },
       mockComptrollerProxy,
       mockVaultProxy,
     } = await provider.snapshot(snapshot);
 
     await mockVaultProxy.getAccessor.returns(randomAddress());
 
-    await expect(mockComptrollerProxy.forward(debtPositionManager.activateForFund, false)).rejects.toBeRevertedWith(
+    await expect(mockComptrollerProxy.forward(externalPositionManager.activateForFund, false)).rejects.toBeRevertedWith(
       'Not the VaultProxy accessor',
     );
   });
@@ -126,60 +126,70 @@ describe('activateForFund', () => {
   });
 });
 
-describe('debt position actions', () => {
-  describe('createDebtPosition', () => {
+describe('external position actions', () => {
+  describe('createExternalPosition', () => {
     it('only allows authorized users', async () => {
       const {
         accounts: [newAuthUser],
-        deployment: { debtPositionManager },
+        deployment: { externalPositionManager },
         fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
 
-      const callArgs = debtPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
+      const callArgs = externalPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
 
       await expect(
         comptrollerProxy
           .connect(fundOwner)
-          .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, callArgs),
+          .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
       ).resolves.toBeReceipt();
 
       // Call not allowed by the non authorized user
       await expect(
         comptrollerProxy
           .connect(newAuthUser)
-          .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, callArgs),
+          .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
       ).rejects.toBeRevertedWith('Only the fund owner can call this function');
     });
   });
 
-  describe('removeDebtPosition', () => {
-    it('works as expected when removing a debt position', async () => {
+  describe('removeExternalPosition', () => {
+    it('works as expected when removing a external position', async () => {
       const {
-        deployment: { debtPositionManager },
+        deployment: { externalPositionManager },
         fund: { comptrollerProxy, vaultProxy, fundOwner },
       } = await provider.snapshot(snapshot);
 
-      const createPositionCallArgs = debtPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
+      const createPositionCallArgs = externalPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
 
       await expect(
         comptrollerProxy
           .connect(fundOwner)
-          .callOnExtension(debtPositionManager, DebtPositionManagerActionId.CreateDebtPosition, createPositionCallArgs),
+          .callOnExtension(
+            externalPositionManager,
+            ExternalPositionManagerActionId.CreateExternalPosition,
+            createPositionCallArgs,
+          ),
       ).resolves.toBeReceipt();
 
-      const activeDebtPositionsBefore = await vaultProxy.getActiveDebtPositions.call();
+      const activeExternalPositionsBefore = await vaultProxy.getActiveExternalPositions.call();
 
-      const removePositionCallArgs = debtPositionRemoveArgs({ debtPositionProxy: activeDebtPositionsBefore[0] });
+      const removePositionCallArgs = externalPositionRemoveArgs({
+        externalPositionProxy: activeExternalPositionsBefore[0],
+      });
 
       await expect(
         comptrollerProxy
           .connect(fundOwner)
-          .callOnExtension(debtPositionManager, DebtPositionManagerActionId.RemoveDebtPosition, removePositionCallArgs),
+          .callOnExtension(
+            externalPositionManager,
+            ExternalPositionManagerActionId.RemoveExternalPosition,
+            removePositionCallArgs,
+          ),
       ).resolves.toBeReceipt();
 
-      const activeDebtPositionsAfter = await vaultProxy.getActiveDebtPositions.call();
+      const activeExternalPositionsAfter = await vaultProxy.getActiveExternalPositions.call();
 
-      expect(activeDebtPositionsBefore.length - activeDebtPositionsAfter.length).toEqual(1);
+      expect(activeExternalPositionsBefore.length - activeExternalPositionsAfter.length).toEqual(1);
     });
   });
 });

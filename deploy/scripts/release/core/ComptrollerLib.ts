@@ -13,7 +13,7 @@ const fn: DeployFunction = async function (hre) {
   const valueInterpreter = await get('ValueInterpreter');
   const feeManager = await get('FeeManager');
   const integrationManager = await get('IntegrationManager');
-  const debtPositionManager = await get('DebtPositionManager');
+  const externalPositionManager = await get('ExternalPositionManager');
   const policyManager = await get('PolicyManager');
   const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
   const assetFinalityResolver = await get('AssetFinalityResolver');
@@ -23,7 +23,7 @@ const fn: DeployFunction = async function (hre) {
       dispatcher.address,
       fundDeployer.address,
       valueInterpreter.address,
-      debtPositionManager.address,
+      externalPositionManager.address,
       feeManager.address,
       integrationManager.address,
       policyManager.address,
@@ -45,7 +45,7 @@ const fn: DeployFunction = async function (hre) {
 fn.tags = ['Release', 'ComptrollerLib'];
 fn.dependencies = [
   'Dispatcher',
-  'DebtPositionManager',
+  'ExternalPositionManager',
   'FundDeployer',
   'ValueInterpreter',
   'FeeManager',

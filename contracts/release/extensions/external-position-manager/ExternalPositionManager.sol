@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../core/fund/debt-positions/CompoundDebtPositionLib.sol";
-import "../../core/fund/debt-positions/DebtPositionProxy.sol";
+import "../../core/fund/external-positions/CompoundDebtPositionLib.sol";
+import "../../core/fund/external-positions/ExternalPositionProxy.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
@@ -21,17 +21,17 @@ import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
 
-/// @title DebtPositionManager
+/// @title ExternalPositionManager
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Extension to handle debt position actions for funds
-contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
+/// @notice Extension to handle external position actions for funds
+contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
-    event DebtPositionDeployed(
+    event ExternalPositionDeployed(
         address indexed comptrollerProxy,
         address indexed vaultProxy,
-        address debtPosition,
+        address externalPosition,
         uint256 protocol,
         bytes data
     );
@@ -49,7 +49,11 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
     address private immutable WETH_TOKEN;
 
-    enum DebtPositionManagerActions {CreateDebtPosition, CallOnDebtPosition, RemoveDebtPosition}
+    enum ExternalPositionManagerActions {
+        CreateExternalPosition,
+        CallOnExternalPosition,
+        RemoveExternalPosition
+    }
 
     constructor(
         address _derivativePriceFeed,
@@ -77,7 +81,7 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
     }
 
     ////////////////////////////////////
-    // CALL-ON-DEBT-POSITION ACTIONS //
+    // CALL-ON-EXTERNAL-POSITION ACTIONS //
     //////////////////////////////////
 
     /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
@@ -95,12 +99,12 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         __validateIsFundOwner(vaultProxy, _caller);
 
         // Dispatch the action
-        if (_actionId == uint256(DebtPositionManagerActions.CreateDebtPosition)) {
-            __createDebtPosition(vaultProxy);
-        } else if (_actionId == uint256(DebtPositionManagerActions.CallOnDebtPosition)) {
-            __executeCallOnDebtPosition(vaultProxy, _callArgs);
-        } else if (_actionId == uint256(DebtPositionManagerActions.RemoveDebtPosition)) {
-            __removeDebtPosition(vaultProxy, _callArgs);
+        if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
+            __createExternalPosition(vaultProxy);
+        } else if (_actionId == uint256(ExternalPositionManagerActions.CallOnExternalPosition)) {
+            __executeCallOnExternalPosition(vaultProxy, _callArgs);
+        } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
+            __removeExternalPosition(vaultProxy, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
@@ -108,20 +112,24 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
     // PRIVATE FUNCTIONS
 
-    // Performs an action on a specific debt position, validating the incoming arguments and the final result
-    function __executeCallOnDebtPosition(address _vaultProxy, bytes memory _callArgs) private {
-        (address debtPosition, uint256 protocol, uint256 actionId, bytes memory actionArgs) = abi
-            .decode(_callArgs, (address, uint256, uint256, bytes));
+    // Performs an action on a specific external position, validating the incoming arguments and the final result
+    function __executeCallOnExternalPosition(address _vaultProxy, bytes memory _callArgs) private {
+        (
+            address externalPosition,
+            uint256 protocol,
+            uint256 actionId,
+            bytes memory actionArgs
+        ) = abi.decode(_callArgs, (address, uint256, uint256, bytes));
 
         // Validate incoming arguments, and decode them if valid
-        __preCallOnDebtPosition(_vaultProxy, debtPosition, protocol, actionId, actionArgs);
+        __preCallOnExternalPosition(_vaultProxy, externalPosition, protocol, actionId, actionArgs);
 
         (address[] memory assets, uint256[] memory amounts, ) = abi.decode(
             actionArgs,
             (address[], uint256[], bytes)
         );
 
-        // Prepare arguments for the callOnDebtPosition
+        // Prepare arguments for the callOnExternalPosition
         bytes memory actionData = abi.encode(actionId, actionArgs);
 
         address[] memory assetsToTransfer;
@@ -129,23 +137,23 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         address[] memory assetsToReceive;
 
         if (
-            actionId == uint256(IDebtPosition.DebtPositionActions.AddCollateral) ||
-            actionId == uint256(IDebtPosition.DebtPositionActions.RepayBorrow)
+            actionId == uint256(IExternalPosition.ExternalPositionActions.AddCollateral) ||
+            actionId == uint256(IExternalPosition.ExternalPositionActions.RepayBorrow)
         ) {
             assetsToTransfer = assets;
             amountsToTransfer = amounts;
         } else if (
-            actionId == uint256(IDebtPosition.DebtPositionActions.Borrow) ||
-            actionId == uint256(IDebtPosition.DebtPositionActions.RemoveCollateral)
+            actionId == uint256(IExternalPosition.ExternalPositionActions.Borrow) ||
+            actionId == uint256(IExternalPosition.ExternalPositionActions.RemoveCollateral)
         ) {
             assetsToReceive = assets;
         }
 
-        // Execute callOnDebtPosition
-        __callOnDebtPosition(
+        // Execute callOnExternalPosition
+        __callOnExternalPosition(
             msg.sender,
             abi.encode(
-                debtPosition,
+                externalPosition,
                 actionData,
                 assetsToTransfer,
                 amountsToTransfer,
@@ -154,10 +162,10 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         );
     }
 
-    /// @dev Creates a new debt position and links it to the _vaultProxy.
+    /// @dev Creates a new external position and links it to the _vaultProxy.
     /// Currently only handles the logic for Compound.
     /// Can be extended through an additional _callArgs param to support more protocols.
-    function __createDebtPosition(address _vaultProxy) private {
+    function __createExternalPosition(address _vaultProxy) private {
         bytes memory initData = abi.encode(_vaultProxy);
 
         bytes memory constructData = abi.encodeWithSelector(
@@ -165,13 +173,23 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
             initData
         );
 
-        address debtPosition = address(
-            new DebtPositionProxy(constructData, COMPOUND_DEBT_POSITION_LIB, COMPOUND_PROTOCOL_ID)
+        address externalPosition = address(
+            new ExternalPositionProxy(
+                constructData,
+                COMPOUND_DEBT_POSITION_LIB,
+                COMPOUND_PROTOCOL_ID
+            )
         );
 
-        emit DebtPositionDeployed(msg.sender, _vaultProxy, debtPosition, COMPOUND_PROTOCOL_ID, "");
+        emit ExternalPositionDeployed(
+            msg.sender,
+            _vaultProxy,
+            externalPosition,
+            COMPOUND_PROTOCOL_ID,
+            ""
+        );
 
-        __addDebtPosition(msg.sender, debtPosition);
+        __addExternalPosition(msg.sender, externalPosition);
     }
 
     /// @dev Helper to check if an asset is supported
@@ -181,10 +199,10 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
             IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
     }
 
-    /// @dev Runs previous validations before running a call on debt position
-    function __preCallOnDebtPosition(
+    /// @dev Runs previous validations before running a call on external position
+    function __preCallOnExternalPosition(
         address _vaultProxy,
-        address _debtPosition,
+        address _externalPosition,
         uint256 _protocol,
         uint256 _actionId,
         bytes memory _actionArgs
@@ -196,45 +214,50 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
 
         require(
             assets.length == amounts.length,
-            "__preCallOnDebtPosition: Assets and amounts arrays unequal"
+            "__preCallOnExternalPosition: Assets and amounts arrays unequal"
         );
 
-        require(assets.isUniqueSet(), "__preCallOnDebtPosition: Duplicate asset");
+        require(assets.isUniqueSet(), "__preCallOnExternalPosition: Duplicate asset");
 
-        __validateDebtPosition(_vaultProxy, _debtPosition);
+        __validateExternalPosition(_vaultProxy, _externalPosition);
 
         for (uint256 i; i < assets.length; i++) {
-            require(assets[i] != address(0), "__preCallOnDebtPosition: Empty asset included");
+            require(assets[i] != address(0), "__preCallOnExternalPosition: Empty asset included");
 
-            require(amounts[i] > 0, "__preCallOnDebtPosition: Amount must be > 0");
+            require(amounts[i] > 0, "__preCallOnExternalPosition: Amount must be > 0");
 
-            require(__isSupportedAsset(assets[i]), "__preCallOnDebtPosition: Unsupported asset");
+            require(
+                __isSupportedAsset(assets[i]),
+                "__preCallOnExternalPosition: Unsupported asset"
+            );
         }
 
         // Protocol specific validation (e.g cTokens)
         __validateProtocolData(_protocol, _actionId, _actionArgs);
     }
 
-    /// @dev Removes a debt position from the VaultProxy
-    function __removeDebtPosition(address, bytes memory _callArgs) private {
-        address debtPosition = abi.decode(_callArgs, (address));
+    /// @dev Removes a external position from the VaultProxy
+    function __removeExternalPosition(address, bytes memory _callArgs) private {
+        address externalPosition = abi.decode(_callArgs, (address));
 
-        (address[] memory collateralAssets, ) = IDebtPosition(debtPosition).getCollateralAssets();
+        (address[] memory collateralAssets, ) = IExternalPosition(externalPosition)
+            .getCollateralAssets();
         require(
             collateralAssets.length == 0,
-            "__removeDebtPosition: Debt position holds collateral assets"
+            "__removeExternalPosition: External position holds collateral assets"
         );
 
-        (address[] memory borrowedAssets, ) = IDebtPosition(debtPosition).getBorrowedAssets();
+        (address[] memory borrowedAssets, ) = IExternalPosition(externalPosition)
+            .getBorrowedAssets();
         require(
             borrowedAssets.length == 0,
-            "__removeDebtPosition: Debt position has unpaid borrowed assets"
+            "__removeExternalPosition: External position has unpaid borrowed assets"
         );
 
-        __removeDebtPosition(msg.sender, debtPosition);
+        __removeExternalPosition(msg.sender, externalPosition);
     }
 
-    /// @dev Validates the `data` field of a compound debt position
+    /// @dev Validates the `data` field of a compound external position
     function __validateCompoundData(uint256 _actionId, bytes memory _actionArgs) private view {
         (address[] memory assets, , bytes memory data) = abi.decode(
             _actionArgs,
@@ -249,8 +272,8 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         );
 
         if (
-            _actionId == uint256(IDebtPosition.DebtPositionActions.Borrow) ||
-            _actionId == uint256(IDebtPosition.DebtPositionActions.RepayBorrow)
+            _actionId == uint256(IExternalPosition.ExternalPositionActions.Borrow) ||
+            _actionId == uint256(IExternalPosition.ExternalPositionActions.RepayBorrow)
         ) {
             for (uint256 i; i < cTokens.length; i++) {
                 // No need to assert from an address(0) tokenFromCToken since assets[i] cannot be '0' at this point.
@@ -263,11 +286,14 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         }
     }
 
-    /// @dev Helper to validate a debtPosition.
-    function __validateDebtPosition(address _vaultProxy, address _debtPosition) private view {
+    /// @dev Helper to validate a externalPosition.
+    function __validateExternalPosition(address _vaultProxy, address _externalPosition)
+        private
+        view
+    {
         require(
-            IVault(_vaultProxy).isActiveDebtPosition(_debtPosition),
-            "__validateDebtPosition: Debt position is not valid"
+            IVault(_vaultProxy).isActiveExternalPosition(_externalPosition),
+            "__validateExternalPosition: External position is not valid"
         );
     }
 
@@ -280,8 +306,8 @@ contract DebtPositionManager is ExtensionBase, PermissionedVaultActionMixin {
         );
     }
 
-    /// @dev Validates the `data` field of a call on debt position. Currently used for only one protocol
-    /// Designed to scale to multiple debt position protocols
+    /// @dev Validates the `data` field of a call on external position. Currently used for only one protocol
+    /// Designed to scale to multiple external position protocols
     function __validateProtocolData(
         uint256 _protocol,
         uint256 _actionId,

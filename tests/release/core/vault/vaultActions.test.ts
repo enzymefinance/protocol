@@ -14,11 +14,11 @@ beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
 
-describe('AddDebtPosition', () => {
+describe('AddExternalPosition', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
-    const debtPosition = randomAddress();
+    const externalPosition = randomAddress();
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -28,19 +28,19 @@ describe('AddDebtPosition', () => {
     });
 
     const receipt = await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddDebtPosition,
-      encodeArgs(['address'], [debtPosition]),
+      VaultAction.AddExternalPosition,
+      encodeArgs(['address'], [externalPosition]),
     );
 
-    // The debt position should be added to active debt positions
-    expect(await vaultProxy.getActiveDebtPositions()).toMatchFunctionOutput(vaultProxy.getActiveDebtPositions, [
-      debtPosition,
+    // The external position should be added to active external positions
+    expect(await vaultProxy.getActiveExternalPositions()).toMatchFunctionOutput(vaultProxy.getActiveExternalPositions, [
+      externalPosition,
     ]);
-    expect(await vaultProxy.isActiveDebtPosition(debtPosition)).toBe(true);
+    expect(await vaultProxy.isActiveExternalPosition(externalPosition)).toBe(true);
 
     // Assert that the correct event was emitted
-    assertEvent(receipt, 'DebtPositionAdded', {
-      debtPosition,
+    assertEvent(receipt, 'ExternalPositionAdded', {
+      externalPosition,
     });
   });
 });
@@ -254,7 +254,7 @@ describe('BurnShares', () => {
   });
 });
 
-describe('CallOnDebtPosition', () => {
+describe('CallOnExternalPosition', () => {
   it.todo('write tests');
 });
 
@@ -293,7 +293,7 @@ describe('MintShares', () => {
   });
 });
 
-describe('RemoveDebtPosition', () => {
+describe('RemoveExternalPosition', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
@@ -305,37 +305,37 @@ describe('RemoveDebtPosition', () => {
       fundAccessor,
     });
 
-    const debtPositionToRemove = randomAddress();
-    const debtPositionToRemain = randomAddress();
+    const externalPositionToRemove = randomAddress();
+    const externalPositionToRemain = randomAddress();
 
-    // Add the debt position to be removed
+    // Add the external position to be removed
     await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddDebtPosition,
-      encodeArgs(['address'], [debtPositionToRemove]),
+      VaultAction.AddExternalPosition,
+      encodeArgs(['address'], [externalPositionToRemove]),
     );
-    expect(await vaultProxy.isActiveDebtPosition(debtPositionToRemove)).toBe(true);
+    expect(await vaultProxy.isActiveExternalPosition(externalPositionToRemove)).toBe(true);
 
-    // Add another debt position to remain
+    // Add another external position to remain
     await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddDebtPosition,
-      encodeArgs(['address'], [debtPositionToRemain]),
+      VaultAction.AddExternalPosition,
+      encodeArgs(['address'], [externalPositionToRemain]),
     );
 
-    // Remove the debt position
+    // Remove the external position
     const receipt = await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.RemoveDebtPosition,
-      encodeArgs(['address'], [debtPositionToRemove]),
+      VaultAction.RemoveExternalPosition,
+      encodeArgs(['address'], [externalPositionToRemove]),
     );
 
-    // The debt position should be removed from active debt position
-    expect(await vaultProxy.getActiveDebtPositions()).toMatchFunctionOutput(vaultProxy.getActiveDebtPositions, [
-      debtPositionToRemain,
+    // The external position should be removed from active external position
+    expect(await vaultProxy.getActiveExternalPositions()).toMatchFunctionOutput(vaultProxy.getActiveExternalPositions, [
+      externalPositionToRemain,
     ]);
-    expect(await vaultProxy.isActiveDebtPosition(debtPositionToRemove)).toBe(false);
+    expect(await vaultProxy.isActiveExternalPosition(externalPositionToRemove)).toBe(false);
 
     // Assert that the correct event was emitted
-    assertEvent(receipt, 'DebtPositionRemoved', {
-      debtPosition: debtPositionToRemove,
+    assertEvent(receipt, 'ExternalPositionRemoved', {
+      externalPosition: externalPositionToRemove,
     });
   });
 });

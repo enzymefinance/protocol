@@ -3,7 +3,7 @@ import {
   AssetFinalityResolver,
   ChainlinkPriceFeed,
   ComptrollerLib,
-  DebtPositionManager,
+  ExternalPositionManager,
   Dispatcher,
   FeeManager,
   FundDeployer,
@@ -20,7 +20,7 @@ export async function createFundDeployer({
   deployer,
   assetFinalityResolver,
   chainlinkPriceFeed,
-  debtPositionManager,
+  externalPositionManager,
   dispatcher,
   feeManager,
   integrationManager,
@@ -33,7 +33,7 @@ export async function createFundDeployer({
   deployer: Signer;
   assetFinalityResolver: AssetFinalityResolver;
   chainlinkPriceFeed: ChainlinkPriceFeed;
-  debtPositionManager: DebtPositionManager;
+  externalPositionManager: ExternalPositionManager;
   dispatcher: Dispatcher;
   feeManager: FeeManager;
   integrationManager: IntegrationManager;
@@ -51,7 +51,7 @@ export async function createFundDeployer({
     dispatcher,
     nextFundDeployer,
     valueInterpreter,
-    debtPositionManager,
+    externalPositionManager,
     feeManager,
     integrationManager,
     policyManager,

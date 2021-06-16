@@ -17,12 +17,12 @@ import "../../../interfaces/ICEther.sol";
 import "../../../interfaces/ICompoundComptroller.sol";
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
-import "./IDebtPosition.sol";
+import "./IExternalPosition.sol";
 
-/// @title CompoundDebtPosition Contract
+/// @title CompoundDebtPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A Debt Position smart contract for Compound
-contract CompoundDebtPositionLib is IDebtPosition {
+/// @notice An External Position library contract for Compound debt positions
+contract CompoundDebtPositionLib is IExternalPosition {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
@@ -59,9 +59,9 @@ contract CompoundDebtPositionLib is IDebtPosition {
         WETH_TOKEN = _weth;
     }
 
-    /// @notice Initializes the debt position
-    /// @param _initData Data params to initialize the debt position
-    /// No need to assert access because this is called atomically from the debt position manager,
+    /// @notice Initializes the external position
+    /// @param _initData Data params to initialize the external position
+    /// No need to assert access because this is called atomically from the external position manager,
     /// and once it's called, it cannot be called again.
     function init(bytes memory _initData) external override {
         require(vaultProxy == address(0), "init: Already initialized");
@@ -77,13 +77,13 @@ contract CompoundDebtPositionLib is IDebtPosition {
             actionArgs,
             (address[], uint256[], bytes)
         );
-        if (actionId == uint256(DebtPositionActions.AddCollateral)) {
+        if (actionId == uint256(ExternalPositionActions.AddCollateral)) {
             __addCollateralAssets(assets, amounts);
-        } else if (actionId == uint256(DebtPositionActions.RemoveCollateral)) {
+        } else if (actionId == uint256(ExternalPositionActions.RemoveCollateral)) {
             __removeCollateralAssets(assets, amounts);
-        } else if (actionId == uint256(DebtPositionActions.Borrow)) {
+        } else if (actionId == uint256(ExternalPositionActions.Borrow)) {
             __borrowAssets(assets, amounts, data);
-        } else if (actionId == uint256(DebtPositionActions.RepayBorrow)) {
+        } else if (actionId == uint256(ExternalPositionActions.RepayBorrow)) {
             __repayBorrowedAssets(assets, amounts, data);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
@@ -237,9 +237,9 @@ contract CompoundDebtPositionLib is IDebtPosition {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Retrieves the borrowed assets and balances of the current debt position
+    /// @notice Retrieves the borrowed assets and balances of the current external position
     /// @return assets_ Assets with an active loan
-    /// @return amounts_ Amount of assets in debt
+    /// @return amounts_ Amount of assets in external
     function getBorrowedAssets()
         external
         override
@@ -256,7 +256,7 @@ contract CompoundDebtPositionLib is IDebtPosition {
         return (assets_, amounts_);
     }
 
-    /// @notice Retrieves the collateral assets and balances of the current debt position
+    /// @notice Retrieves the collateral assets and balances of the current external position
     /// @return assets_ Assets with balance > 0 that are being used as collateral
     /// @return amounts_ Amount of assets being used as collateral
     function getCollateralAssets()
@@ -275,7 +275,7 @@ contract CompoundDebtPositionLib is IDebtPosition {
     }
 
     /// @notice Checks whether an asset is collateral
-    /// @return isCollateral True if the asset is part of the collateral assets of the debt position
+    /// @return isCollateral True if the asset is part of the collateral assets of the external position
     function assetIsCollateral(address _asset) external view returns (bool isCollateral) {
         return assetToIsCollateral[_asset];
     }

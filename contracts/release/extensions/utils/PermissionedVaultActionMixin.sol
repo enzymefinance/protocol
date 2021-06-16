@@ -18,13 +18,13 @@ import "../../core/fund/vault/IVault.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for extensions that can make permissioned vault calls
 abstract contract PermissionedVaultActionMixin {
-    /// @notice Adds a new debt position
+    /// @notice Adds a new external position
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The debt position to be added
-    function __addDebtPosition(address _comptrollerProxy, address _debtPosition) internal {
+    /// @param _externalPosition The external position to be added
+    function __addExternalPosition(address _comptrollerProxy, address _externalPosition) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.AddDebtPosition,
-            abi.encode(_debtPosition)
+            IVault.VaultAction.AddExternalPosition,
+            abi.encode(_externalPosition)
         );
     }
 
@@ -80,12 +80,12 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Executes a callOnDebtPosition
+    /// @notice Executes a callOnExternalPosition
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _data The encoded data for the call
-    function __callOnDebtPosition(address _comptrollerProxy, bytes memory _data) internal {
+    function __callOnExternalPosition(address _comptrollerProxy, bytes memory _data) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.CallOnDebtPosition,
+            IVault.VaultAction.CallOnExternalPosition,
             _data
         );
     }
@@ -105,13 +105,15 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Removes a debt position from the vaultProxy
+    /// @notice Removes a external position from the vaultProxy
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _debtPosition The DebtPosition to remove
-    function __removeDebtPosition(address _comptrollerProxy, address _debtPosition) internal {
+    /// @param _externalPosition The ExternalPosition to remove
+    function __removeExternalPosition(address _comptrollerProxy, address _externalPosition)
+        internal
+    {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.RemoveDebtPosition,
-            abi.encode(_debtPosition)
+            IVault.VaultAction.RemoveExternalPosition,
+            abi.encode(_externalPosition)
         );
     }
 

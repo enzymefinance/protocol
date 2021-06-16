@@ -29,10 +29,10 @@ interface IVault is IMigratableVault {
         RemovePersistentlyTrackedAsset,
         RemoveTrackedAsset,
         WithdrawAssetTo,
-        // Debt position management
-        AddDebtPosition,
-        CallOnDebtPosition,
-        RemoveDebtPosition
+        // External position management
+        AddExternalPosition,
+        CallOnExternalPosition,
+        RemoveExternalPosition
     }
 
     function addPersistentlyTrackedAsset(address) external;
@@ -47,11 +47,11 @@ interface IVault is IMigratableVault {
 
     function getOwner() external view returns (address);
 
-    function getActiveDebtPositions() external view returns (address[] memory);
+    function getActiveExternalPositions() external view returns (address[] memory);
 
     function getTrackedAssets() external view returns (address[] memory);
 
-    function isActiveDebtPosition(address _asset) external view returns (bool);
+    function isActiveExternalPosition(address _asset) external view returns (bool);
 
     function isTrackedAsset(address) external view returns (bool);
 

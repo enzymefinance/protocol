@@ -20,9 +20,9 @@ import "./VaultLibBase1.sol";
 /// e.g., `VaultLibBase2 is VaultLibBase1`
 /// DO NOT EDIT CONTRACT.
 abstract contract VaultLibBase2 is VaultLibBase1 {
-    event DebtPositionAdded(address indexed debtPosition);
+    event ExternalPositionAdded(address indexed externalPosition);
 
-    event DebtPositionRemoved(address indexed debtPosition);
+    event ExternalPositionRemoved(address indexed externalPosition);
 
     event NominatedOwnerRemoved(address indexed nominatedOwner);
 
@@ -35,7 +35,7 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
     address internal nominatedOwner;
-    address[] internal activeDebtPositions;
+    address[] internal activeExternalPositions;
     mapping(address => bool) internal assetToIsPersistentlyTracked;
-    mapping(address => bool) internal debtPositionToIsActive;
+    mapping(address => bool) internal externalPositionToIsActive;
 }

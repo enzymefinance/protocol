@@ -18,7 +18,7 @@ import "../../../../persistent/vault/VaultLibBase2.sol";
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
-import "../debt-positions/IDebtPosition.sol";
+import "../external-positions/IExternalPosition.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract
@@ -221,8 +221,8 @@ contract VaultLib is VaultLibBase2, IVault {
         override
         onlyAccessor
     {
-        if (_action == VaultAction.AddDebtPosition) {
-            __executeVaultActionAddDebtPosition(_actionData);
+        if (_action == VaultAction.AddExternalPosition) {
+            __executeVaultActionAddExternalPosition(_actionData);
         } else if (_action == VaultAction.AddPersistentlyTrackedAsset) {
             __executeVaultActionAddPersistentlyTrackedAsset(_actionData);
         } else if (_action == VaultAction.AddTrackedAsset) {
@@ -231,12 +231,12 @@ contract VaultLib is VaultLibBase2, IVault {
             __executeVaultActionApproveAssetSpender(_actionData);
         } else if (_action == VaultAction.BurnShares) {
             __executeVaultActionBurnShares(_actionData);
-        } else if (_action == VaultAction.CallOnDebtPosition) {
-            __executeVaultActionCallOnDebtPosition(_actionData);
+        } else if (_action == VaultAction.CallOnExternalPosition) {
+            __executeVaultActionCallOnExternalPosition(_actionData);
         } else if (_action == VaultAction.MintShares) {
             __executeVaultActionMintShares(_actionData);
-        } else if (_action == VaultAction.RemoveDebtPosition) {
-            __executeVaultActionRemoveDebtPosition(_actionData);
+        } else if (_action == VaultAction.RemoveExternalPosition) {
+            __executeVaultActionRemoveExternalPosition(_actionData);
         } else if (_action == VaultAction.RemovePersistentlyTrackedAsset) {
             __executeVaultActionRemovePersistentlyTrackedAsset(_actionData);
         } else if (_action == VaultAction.RemoveTrackedAsset) {
@@ -248,9 +248,9 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
-    /// @dev Helper to decode actionData and execute VaultAction.AddDebtPosition
-    function __executeVaultActionAddDebtPosition(bytes memory _actionData) private {
-        __addDebtPosition(abi.decode(_actionData, (address)));
+    /// @dev Helper to decode actionData and execute VaultAction.AddExternalPosition
+    function __executeVaultActionAddExternalPosition(bytes memory _actionData) private {
+        __addExternalPosition(abi.decode(_actionData, (address)));
     }
 
     /// @dev Helper to decode actionData and execute VaultAction.AddPersistentlyTrackedAsset
@@ -280,19 +280,19 @@ contract VaultLib is VaultLibBase2, IVault {
         __burn(target, amount);
     }
 
-    /// @dev Helper to decode actionData and execute VaultAction.CallOnDebtPosition
-    function __executeVaultActionCallOnDebtPosition(bytes memory _actionData) private {
+    /// @dev Helper to decode actionData and execute VaultAction.CallOnExternalPosition
+    function __executeVaultActionCallOnExternalPosition(bytes memory _actionData) private {
         (
-            address debtPosition,
-            bytes memory callOnDebtPositionActionData,
+            address externalPosition,
+            bytes memory callOnExternalPositionActionData,
             address[] memory assetsToTransfer,
             uint256[] memory amountsToTransfer,
             address[] memory assetsToReceive
         ) = abi.decode(_actionData, (address, bytes, address[], uint256[], address[]));
 
-        __callOnDebtPosition(
-            debtPosition,
-            callOnDebtPositionActionData,
+        __callOnExternalPosition(
+            externalPosition,
+            callOnExternalPositionActionData,
             assetsToTransfer,
             amountsToTransfer,
             assetsToReceive
@@ -306,9 +306,9 @@ contract VaultLib is VaultLibBase2, IVault {
         __mint(target, amount);
     }
 
-    /// @dev Helper to decode actionData and execute VaultAction.RemoveDebtPosition
-    function __executeVaultActionRemoveDebtPosition(bytes memory _actionData) private {
-        __removeDebtPosition(abi.decode(_actionData, (address)));
+    /// @dev Helper to decode actionData and execute VaultAction.RemoveExternalPosition
+    function __executeVaultActionRemoveExternalPosition(bytes memory _actionData) private {
+        __removeExternalPosition(abi.decode(_actionData, (address)));
     }
 
     /// @dev Helper to decode actionData and execute VaultAction.RemovePersistentlyTrackedAsset
@@ -345,15 +345,15 @@ contract VaultLib is VaultLibBase2, IVault {
     // VAULT ACTIONS //
     ///////////////////
 
-    /// @dev Helper to track a new active debt position
-    // TODO: Decide whether or not it makes sense to impose a debt position limit
-    function __addDebtPosition(address _debtPosition) private {
-        if (!isActiveDebtPosition(_debtPosition)) {
-            debtPositionToIsActive[_debtPosition] = true;
-            activeDebtPositions.push(_debtPosition);
+    /// @dev Helper to track a new active external position
+    // TODO: Decide whether or not it makes sense to impose a external position limit
+    function __addExternalPosition(address _externalPosition) private {
+        if (!isActiveExternalPosition(_externalPosition)) {
+            externalPositionToIsActive[_externalPosition] = true;
+            activeExternalPositions.push(_externalPosition);
         }
 
-        emit DebtPositionAdded(_debtPosition);
+        emit ExternalPositionAdded(_externalPosition);
     }
 
     /// @dev Helper to add and persistently track an asset
@@ -390,24 +390,24 @@ contract VaultLib is VaultLibBase2, IVault {
         assetContract.safeApprove(_target, _amount);
     }
 
-    /// @dev Helper to make a call on a debt position contract
-    /// @param _debtPosition The debt position to call
+    /// @dev Helper to make a call on a external position contract
+    /// @param _externalPosition The external position to call
     /// @param _actionData The action data for the call
-    /// @param _assetsToTransfer The assets to transfer to the debt position
-    /// @param _amountsToTransfer The amount of assets to be transferred to the debt position
+    /// @param _assetsToTransfer The assets to transfer to the external position
+    /// @param _amountsToTransfer The amount of assets to be transferred to the external position
     /// @param _assetsToReceive The assets that will be received from the call
-    function __callOnDebtPosition(
-        address _debtPosition,
+    function __callOnExternalPosition(
+        address _externalPosition,
         bytes memory _actionData,
         address[] memory _assetsToTransfer,
         uint256[] memory _amountsToTransfer,
         address[] memory _assetsToReceive
     ) private {
         for (uint256 i; i < _assetsToTransfer.length; i++) {
-            __withdrawAssetTo(_assetsToTransfer[i], _debtPosition, _amountsToTransfer[i]);
+            __withdrawAssetTo(_assetsToTransfer[i], _externalPosition, _amountsToTransfer[i]);
         }
 
-        IDebtPosition(_debtPosition).receiveCallFromVault(_actionData);
+        IExternalPosition(_externalPosition).receiveCallFromVault(_actionData);
 
         for (uint256 i; i < _assetsToReceive.length; i++) {
             __addTrackedAsset(_assetsToReceive[i]);
@@ -419,14 +419,14 @@ contract VaultLib is VaultLibBase2, IVault {
         return ERC20(_asset).balanceOf(address(this));
     }
 
-    /// @dev Helper to remove a debt position from the vault
-    function __removeDebtPosition(address _debtPosition) private {
-        if (isActiveDebtPosition(_debtPosition)) {
-            debtPositionToIsActive[_debtPosition] = false;
+    /// @dev Helper to remove a external position from the vault
+    function __removeExternalPosition(address _externalPosition) private {
+        if (isActiveExternalPosition(_externalPosition)) {
+            externalPositionToIsActive[_externalPosition] = false;
 
-            activeDebtPositions.removeStorageItem(_debtPosition);
+            activeExternalPositions.removeStorageItem(_externalPosition);
 
-            emit DebtPositionRemoved(_debtPosition);
+            emit ExternalPositionRemoved(_externalPosition);
         }
     }
 
@@ -545,15 +545,15 @@ contract VaultLib is VaultLibBase2, IVault {
         return owner;
     }
 
-    /// @notice Gets the `debtPositions` variable
-    /// @return debtPositions_ The `debtPositions` variable value
-    function getActiveDebtPositions()
+    /// @notice Gets the `externalPositions` variable
+    /// @return externalPositions_ The `externalPositions` variable value
+    function getActiveExternalPositions()
         external
         view
         override
-        returns (address[] memory debtPositions_)
+        returns (address[] memory externalPositions_)
     {
-        return activeDebtPositions;
+        return activeExternalPositions;
     }
 
     /// @notice Gets the `trackedAssets` variable
@@ -562,16 +562,16 @@ contract VaultLib is VaultLibBase2, IVault {
         return trackedAssets;
     }
 
-    /// @notice Check whether a debt position is active on the vault
-    /// @param _debtPosition The debtPosition to check
-    /// @return isActiveDebtPosition_ True if the address is an active debt position on the vault
-    function isActiveDebtPosition(address _debtPosition)
+    /// @notice Check whether a external position is active on the vault
+    /// @param _externalPosition The externalPosition to check
+    /// @return isActiveExternalPosition_ True if the address is an active external position on the vault
+    function isActiveExternalPosition(address _externalPosition)
         public
         view
         override
-        returns (bool isActiveDebtPosition_)
+        returns (bool isActiveExternalPosition_)
     {
-        return debtPositionToIsActive[_debtPosition];
+        return externalPositionToIsActive[_externalPosition];
     }
 
     /// @notice Gets the `WETH_TOKEN` variable

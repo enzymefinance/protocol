@@ -22,8 +22,8 @@ export enum VaultAction {
   RemovePersistentlyTrackedAsset,
   RemoveTrackedAsset,
   WithdrawAssetTo,
-  // Debt position management
-  AddDebtPosition,
-  CallOnDebtPosition,
-  RemoveDebtPosition,
+  // External position management
+  AddExternalPosition,
+  CallOnExternalPosition,
+  RemoveExternalPosition,
 }
