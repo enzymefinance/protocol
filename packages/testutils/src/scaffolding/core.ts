@@ -1,4 +1,3 @@
-import { AddressLike } from '@enzymefinance/ethers';
 import {
   AssetFinalityResolver,
   ChainlinkPriceFeed,
@@ -10,7 +9,6 @@ import {
   IntegrationManager,
   PolicyManager,
   ReleaseStatusTypes,
-  SynthetixPriceFeed,
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -38,8 +36,6 @@ export async function createFundDeployer({
   feeManager: FeeManager;
   integrationManager: IntegrationManager;
   policyManager: PolicyManager;
-  synthetixAddressResolverAddress: AddressLike;
-  synthetixPriceFeed: SynthetixPriceFeed;
   valueInterpreter: ValueInterpreter;
   vaultLib: VaultLib;
   setOnDispatcher?: boolean;

@@ -18,10 +18,12 @@ export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' |
 export interface CreateMigratedFundConfigParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
-  denominationAsset: StandardToken;
+  vaultProxy: AddressLike;
+  denominationAsset: AddressLike;
   sharesActionTimelock?: BigNumberish;
   feeManagerConfigData?: BytesLike;
   policyManagerConfigData?: BytesLike;
+  bypassPrevReleaseFailure?: boolean;
 }
 
 export interface CreateNewFundParams {
@@ -60,14 +62,23 @@ export async function createComptrollerProxy({
 export async function createMigratedFundConfig({
   signer,
   fundDeployer,
+  vaultProxy,
   denominationAsset,
   sharesActionTimelock = 0,
   feeManagerConfigData = '0x',
   policyManagerConfigData = '0x',
+  bypassPrevReleaseFailure = false,
 }: CreateMigratedFundConfigParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createMigratedFundConfig(denominationAsset, sharesActionTimelock, feeManagerConfigData, policyManagerConfigData);
+    .createMigratedFundConfig(
+      vaultProxy,
+      denominationAsset,
+      sharesActionTimelock,
+      feeManagerConfigData,
+      policyManagerConfigData,
+      bypassPrevReleaseFailure,
+    );
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
     creator: signer,
@@ -76,7 +87,6 @@ export async function createMigratedFundConfig({
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
     feeManagerConfigData: utils.hexlify(feeManagerConfigData),
     policyManagerConfigData: utils.hexlify(policyManagerConfigData),
-    forMigration: true,
   });
 
   return {
@@ -108,21 +118,14 @@ export async function createNewFund({
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
     feeManagerConfigData: utils.hexlify(feeManagerConfig),
     policyManagerConfigData: utils.hexlify(policyManagerConfig),
-    forMigration: false,
   });
 
   const comptrollerProxy = new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer);
 
   const newFundDeployedArgs = assertEvent(receipt, 'NewFundCreated', {
     creator: signer,
-    comptrollerProxy,
     vaultProxy: expect.any(String) as string,
-    fundOwner,
-    fundName,
-    denominationAsset,
-    sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    feeManagerConfigData: utils.hexlify(feeManagerConfig),
-    policyManagerConfigData: utils.hexlify(policyManagerConfig),
+    comptrollerProxy,
   });
 
   const vaultProxy = new VaultLib(newFundDeployedArgs.vaultProxy, signer);

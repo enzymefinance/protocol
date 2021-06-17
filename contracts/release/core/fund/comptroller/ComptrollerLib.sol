@@ -334,6 +334,8 @@ contract ComptrollerLib is IComptroller {
     // LIFECYCLE //
     ///////////////
 
+    // Ordered by execution in the lifecycle
+
     /// @notice Initializes a fund with its core config
     /// @param _denominationAsset The asset in which the fund's value should be denominated
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
@@ -370,24 +372,31 @@ contract ComptrollerLib is IComptroller {
         }
     }
 
-    /// @notice Activates the fund by attaching a VaultProxy and activating all Extensions
-    /// @param _vaultProxy The VaultProxy to attach to the fund
-    /// @param _isMigration True if a migrated fund is being activated
+    /// @notice Sets the VaultProxy
+    /// @param _vaultProxy The VaultProxy contract
     /// @dev No need to assert anything beyond FundDeployer access.
-    function activate(address _vaultProxy, bool _isMigration) external override onlyFundDeployer {
+    /// Called atomically with init(), but after ComptrollerLib and VaultLib have both been deployed.
+    function setVaultProxy(address _vaultProxy) external override onlyFundDeployer {
         vaultProxy = _vaultProxy;
 
         emit VaultProxySet(_vaultProxy);
+    }
+
+    /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`
+    /// @param _isMigration True if a migrated fund is being activated
+    /// @dev No need to assert anything beyond FundDeployer access.
+    function activate(bool _isMigration) external override onlyFundDeployer {
+        address vaultProxyCopy = vaultProxy;
 
         if (_isMigration) {
             // Distribute any shares in the VaultProxy to the fund owner.
             // This is a mechanism to ensure that even in the edge case of a fund being unable
             // to payout fee shares owed during migration, these shares are not lost.
-            uint256 sharesDue = ERC20(_vaultProxy).balanceOf(_vaultProxy);
+            uint256 sharesDue = ERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
             if (sharesDue > 0) {
-                IVault(_vaultProxy).transferShares(
-                    _vaultProxy,
-                    IVault(_vaultProxy).getOwner(),
+                IVault(vaultProxyCopy).transferShares(
+                    vaultProxyCopy,
+                    IVault(vaultProxyCopy).getOwner(),
                     sharesDue
                 );
 
@@ -397,7 +406,7 @@ contract ComptrollerLib is IComptroller {
 
         // TODO: do we want to handle a corner case of a fund that is at the max assets limit
         // but does already track the denominationAsset?
-        IVault(_vaultProxy).addPersistentlyTrackedAsset(denominationAsset);
+        IVault(vaultProxyCopy).addPersistentlyTrackedAsset(denominationAsset);
 
         // Activate extensions
         IExtension(EXTERNAL_POSITION_MANAGER).activateForFund(_isMigration);
@@ -406,26 +415,35 @@ contract ComptrollerLib is IComptroller {
         IExtension(POLICY_MANAGER).activateForFund(_isMigration);
     }
 
-    /// @notice Remove the config for a fund
+    /// @notice Wind down and destroy a ComptrollerProxy that is active
     /// @dev No need to assert anything beyond FundDeployer access.
     /// Calling onlyNotPaused here rather than in the FundDeployer allows
     /// the owner to potentially override the pause and rescue unpaid fees.
-    function destruct()
+    function destructActivated()
         external
         override
         onlyFundDeployer
         onlyNotPaused
         allowsPermissionedVaultAction
     {
-        // Failsafe to protect the lib against selfdestruct
-        require(!isLib, "destruct: Only delegate callable");
-
         // Deactivate extensions as-necessary
         IExtension(FEE_MANAGER).deactivateForFund();
 
-        // Delete storage of ComptrollerProxy
-        // There should never be ETH in the ComptrollerLib, so no need to waste gas
-        // to get the fund owner
+        __selfDestruct();
+    }
+
+    /// @notice Destroy a ComptrollerProxy that has not been activated
+    function destructUnactivated() external override onlyFundDeployer {
+        __selfDestruct();
+    }
+
+    /// @dev Helper to self-destruct the contract.
+    /// There should never be ETH in the ComptrollerLib,
+    /// so no need to waste gas to get the fund owner
+    function __selfDestruct() private {
+        // Not necessary, but failsafe to protect the lib against selfdestruct
+        require(!isLib, "__selfDestruct: Only delegate callable");
+
         selfdestruct(payable(address(this)));
     }
 

@@ -116,7 +116,7 @@ describe('implementMigrationOutHook', () => {
         mockNextAccessor,
         mockNextVaultLib,
       );
-      expect(prevComptrollerProxy.destruct).toHaveBeenCalledOnContract();
+      expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContract();
     });
   });
 });

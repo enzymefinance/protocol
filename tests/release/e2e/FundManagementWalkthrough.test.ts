@@ -45,8 +45,8 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 966000,
-    weth: 955000,
+    usdc: 931000,
+    weth: 920000,
   },
 
   'redeem all shares: max assets: all remaining': {

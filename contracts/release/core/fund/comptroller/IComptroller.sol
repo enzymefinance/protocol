@@ -16,7 +16,7 @@ import "../vault/IVault.sol";
 /// @title IComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IComptroller {
-    function activate(address, bool) external;
+    function activate(bool) external;
 
     function calcGav(bool) external returns (uint256, bool);
 
@@ -30,7 +30,9 @@ interface IComptroller {
 
     function configureExtensions(bytes calldata, bytes calldata) external;
 
-    function destruct() external;
+    function destructActivated() external;
+
+    function destructUnactivated() external;
 
     function getDenominationAsset() external view returns (address);
 
@@ -59,4 +61,6 @@ interface IComptroller {
         address,
         uint256
     ) external;
+
+    function setVaultProxy(address) external;
 }

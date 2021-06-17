@@ -98,9 +98,6 @@ describe('activateForFund', () => {
     // create fund with policies
     const {
       deployer,
-      config: {
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
       deployment: {
         assetFinalityResolver,
         fundDeployer,
@@ -110,7 +107,6 @@ describe('activateForFund', () => {
         feeManager,
         integrationManager,
         policyManager,
-        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -138,28 +134,26 @@ describe('activateForFund', () => {
       feeManager,
       integrationManager,
       policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
 
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+    await createMigratedFundConfig({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
+      vaultProxy,
       denominationAsset,
       policyManagerConfigData: policyManagerConfig,
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
-    await signedNextFundDeployer.signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Migration execution settles the accrued fee
-    await signedNextFundDeployer.executeMigration(vaultProxy);
+    await signedNextFundDeployer.executeMigration(vaultProxy, false);
 
     // check activateForFund called on each policy
     for (const key in orderedPolicies) {

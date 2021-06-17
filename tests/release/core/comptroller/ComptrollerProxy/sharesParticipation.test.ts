@@ -106,9 +106,6 @@ describe('buyShares', () => {
     const {
       deployer,
       accounts: [buyer],
-      config: {
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
@@ -117,7 +114,6 @@ describe('buyShares', () => {
         externalPositionManager,
         integrationManager,
         policyManager,
-        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -134,21 +130,17 @@ describe('buyShares', () => {
       integrationManager,
       externalPositionManager,
       policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
 
     // Create fund config on the new FundDeployer to migrate to
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+    await createMigratedFundConfig({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
+      vaultProxy,
       denominationAsset,
     });
-
-    // Signal migration
-    await nextFundDeployer.connect(fundOwner).signalMigration(vaultProxy, nextComptrollerProxy);
 
     // buyShares() should fail while migration is pending
     await expect(
@@ -160,7 +152,7 @@ describe('buyShares', () => {
     ).rejects.toBeRevertedWith('Pending migration');
 
     // If the migration is cancelled, buyShares() should succeed again
-    await nextFundDeployer.connect(fundOwner).cancelMigration(vaultProxy);
+    await nextFundDeployer.connect(fundOwner).cancelMigration(vaultProxy, false);
     await expect(
       buyShares({
         comptrollerProxy: prevComptrollerProxy,
@@ -1043,9 +1035,6 @@ describe('sharesActionTimelock', () => {
   it('is skipped when redeeming shares if there is a pending migration', async () => {
     const {
       deployer,
-      config: {
-        synthetix: { addressResolver: synthetixAddressResolverAddress },
-      },
       deployment: {
         assetFinalityResolver,
         chainlinkPriceFeed,
@@ -1055,7 +1044,6 @@ describe('sharesActionTimelock', () => {
         fundDeployer,
         integrationManager,
         policyManager,
-        synthetixPriceFeed,
         valueInterpreter,
         vaultLib,
       },
@@ -1102,21 +1090,17 @@ describe('sharesActionTimelock', () => {
       feeManager,
       integrationManager,
       policyManager,
-      synthetixPriceFeed,
-      synthetixAddressResolverAddress,
       valueInterpreter,
       vaultLib,
     });
 
     // Create fund config on the new FundDeployer to migrate to
-    const { comptrollerProxy: nextComptrollerProxy } = await createMigratedFundConfig({
+    await createMigratedFundConfig({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
+      vaultProxy,
       denominationAsset,
     });
-
-    // Signal migration
-    await nextFundDeployer.connect(fundOwner).signalMigration(vaultProxy, nextComptrollerProxy);
 
     // Redeeming shares should succeed now that the fund has a migration pending
     await expect(

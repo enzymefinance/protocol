@@ -29,7 +29,7 @@ describe('constructor', () => {
   });
 });
 
-describe('destruct', () => {
+describe('destruct calls', () => {
   it('cannot be non-delegatecalled', async () => {
     const mockFundDeployer = await FundDeployer.mock(fork.deployer);
     await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
@@ -47,7 +47,9 @@ describe('destruct', () => {
       randomAddress(),
     );
 
-    // Calling the ComptrollerLib directly should fail
-    await expect(mockFundDeployer.forward(comptrollerLib.destruct)).rejects.toBeRevertedWith('Only delegate callable');
+    // Calling the ComptrollerLib directly should fail for a destruct call
+    await expect(mockFundDeployer.forward(comptrollerLib.destructUnactivated)).rejects.toBeRevertedWith(
+      'Only delegate callable',
+    );
   });
 });

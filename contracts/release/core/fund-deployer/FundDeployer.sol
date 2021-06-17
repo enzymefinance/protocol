@@ -34,21 +34,16 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         address indexed denominationAsset,
         uint256 sharesActionTimelock,
         bytes feeManagerConfigData,
-        bytes policyManagerConfigData,
-        bool indexed forMigration
-    );
-
-    event NewFundCreated(
-        address indexed creator,
-        address comptrollerProxy,
-        address vaultProxy,
-        address indexed fundOwner,
-        string fundName,
-        address indexed denominationAsset,
-        uint256 sharesActionTimelock,
-        bytes feeManagerConfigData,
         bytes policyManagerConfigData
     );
+
+    event MigratedFundConfigCreated(
+        address indexed creator,
+        address indexed vaultProxy,
+        address comptrollerProxy
+    );
+
+    event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
 
     event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
 
@@ -75,8 +70,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // Storage
     ReleaseStatus private releaseStatus;
 
-    mapping(address => address) private pendingComptrollerProxyToCreator;
     mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
+
+    modifier onlyDispatcher() {
+        require(msg.sender == DISPATCHER, "Only Dispatcher can call this function");
+        _;
+    }
 
     modifier onlyLiveRelease() {
         require(releaseStatus == ReleaseStatus.Live, "Release is not Live");
@@ -93,14 +92,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     modifier onlyOwner() {
         require(msg.sender == getOwner(), "Only the contract owner can call this function");
-        _;
-    }
-
-    modifier onlyPendingComptrollerProxyCreator(address _comptrollerProxy) {
-        require(
-            msg.sender == pendingComptrollerProxyToCreator[_comptrollerProxy],
-            "Only the ComptrollerProxy creator can call this function"
-        );
         _;
     }
 
@@ -176,29 +167,42 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // FUND CREATION //
     ///////////////////
 
-    /// @notice Creates a fully-configured ComptrollerProxy, to which a fund from a previous
-    /// release can migrate in a subsequent step
+    /// @notice Creates a fully-configured ComptrollerProxy instance for a VaultProxy and signals the migration process
+    /// @param _vaultProxy The VaultProxy to migrate
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while signaling migration
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createMigratedFundConfig(
+        address _vaultProxy,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external onlyLiveRelease returns (address comptrollerProxy_) {
+        bytes calldata _policyManagerConfigData,
+        bool _bypassPrevReleaseFailure
+    ) external onlyLiveRelease onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
+        // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
+
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
-            _policyManagerConfigData,
-            true
+            _policyManagerConfigData
         );
 
-        pendingComptrollerProxyToCreator[comptrollerProxy_] = msg.sender;
+        IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
+
+        IDispatcher(DISPATCHER).signalMigration(
+            _vaultProxy,
+            comptrollerProxy_,
+            VAULT_LIB,
+            _bypassPrevReleaseFailure
+        );
+
+        emit MigratedFundConfigCreated(msg.sender, _vaultProxy, comptrollerProxy_);
 
         return comptrollerProxy_;
     }
@@ -220,34 +224,13 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
     ) external onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
-        return
-            __createNewFund(
-                _fundOwner,
-                _fundName,
-                _denominationAsset,
-                _sharesActionTimelock,
-                _feeManagerConfigData,
-                _policyManagerConfigData
-            );
-    }
-
-    /// @dev Helper to avoid the stack-too-deep error during createNewFund
-    function __createNewFund(
-        address _fundOwner,
-        string memory _fundName,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData
-    ) private returns (address comptrollerProxy_, address vaultProxy_) {
-        require(_fundOwner != address(0), "__createNewFund: _owner cannot be empty");
+        // _fundOwner is validated by VaultLib.__setOwner()
 
         comptrollerProxy_ = __deployComptrollerProxy(
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
-            _policyManagerConfigData,
-            false
+            _policyManagerConfigData
         );
 
         vaultProxy_ = IDispatcher(DISPATCHER).deployVaultProxy(
@@ -257,19 +240,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _fundName
         );
 
-        IComptroller(comptrollerProxy_).activate(vaultProxy_, false);
+        IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
+        comptrollerContract.setVaultProxy(vaultProxy_);
+        comptrollerContract.activate(false);
 
-        emit NewFundCreated(
-            msg.sender,
-            comptrollerProxy_,
-            vaultProxy_,
-            _fundOwner,
-            _fundName,
-            _denominationAsset,
-            _sharesActionTimelock,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
+        emit NewFundCreated(msg.sender, vaultProxy_, comptrollerProxy_);
 
         return (comptrollerProxy_, vaultProxy_);
     }
@@ -279,13 +254,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         address _denominationAsset,
         uint256 _sharesActionTimelock,
         bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData,
-        bool _forMigration
+        bytes memory _policyManagerConfigData
     ) private returns (address comptrollerProxy_) {
-        require(
-            _denominationAsset != address(0),
-            "__deployComptrollerProxy: _denominationAsset cannot be empty"
-        );
+        // _denominationAsset is validated by ComptrollerLib.init()
 
         bytes memory constructData = abi.encodeWithSelector(
             IComptroller.init.selector,
@@ -307,8 +278,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
-            _policyManagerConfigData,
-            _forMigration
+            _policyManagerConfigData
         );
 
         return comptrollerProxy_;
@@ -320,67 +290,20 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     /// @notice Cancels fund migration
     /// @param _vaultProxy The VaultProxy for which to cancel migration
-    function cancelMigration(address _vaultProxy) external {
-        __cancelMigration(_vaultProxy, false);
-    }
-
-    /// @notice Cancels fund migration, bypassing any failures.
-    /// Should be used in an emergency only.
-    /// @param _vaultProxy The VaultProxy for which to cancel migration
-    function cancelMigrationEmergency(address _vaultProxy) external {
-        __cancelMigration(_vaultProxy, true);
+    /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while canceling migration
+    function cancelMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
+        external
+        onlyLiveRelease
+        onlyMigrator(_vaultProxy)
+    {
+        IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
     }
 
     /// @notice Executes fund migration
     /// @param _vaultProxy The VaultProxy for which to execute the migration
-    function executeMigration(address _vaultProxy) external {
-        __executeMigration(_vaultProxy, false);
-    }
-
-    /// @notice Executes fund migration, bypassing any failures.
-    /// Should be used in an emergency only.
-    /// @param _vaultProxy The VaultProxy for which to execute the migration
-    function executeMigrationEmergency(address _vaultProxy) external {
-        __executeMigration(_vaultProxy, true);
-    }
-
-    /// @dev Unimplemented
-    function invokeMigrationInCancelHook(
-        address,
-        address,
-        address,
-        address
-    ) external virtual override {
-        return;
-    }
-
-    /// @notice Signal a fund migration
-    /// @param _vaultProxy The VaultProxy for which to signal the migration
-    /// @param _comptrollerProxy The ComptrollerProxy for which to signal the migration
-    function signalMigration(address _vaultProxy, address _comptrollerProxy) external {
-        __signalMigration(_vaultProxy, _comptrollerProxy, false);
-    }
-
-    /// @notice Signal a fund migration, bypassing any failures.
-    /// Should be used in an emergency only.
-    /// @param _vaultProxy The VaultProxy for which to signal the migration
-    /// @param _comptrollerProxy The ComptrollerProxy for which to signal the migration
-    function signalMigrationEmergency(address _vaultProxy, address _comptrollerProxy) external {
-        __signalMigration(_vaultProxy, _comptrollerProxy, true);
-    }
-
-    /// @dev Helper to cancel a migration
-    function __cancelMigration(address _vaultProxy, bool _bypassFailure)
-        private
-        onlyLiveRelease
-        onlyMigrator(_vaultProxy)
-    {
-        IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassFailure);
-    }
-
-    /// @dev Helper to execute a migration
-    function __executeMigration(address _vaultProxy, bool _bypassFailure)
-        private
+    /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while executing migration
+    function executeMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
+        external
         onlyLiveRelease
         onlyMigrator(_vaultProxy)
     {
@@ -389,30 +312,20 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         (, address comptrollerProxy, , ) = dispatcherContract
             .getMigrationRequestDetailsForVaultProxy(_vaultProxy);
 
-        dispatcherContract.executeMigration(_vaultProxy, _bypassFailure);
+        dispatcherContract.executeMigration(_vaultProxy, _bypassPrevReleaseFailure);
 
-        IComptroller(comptrollerProxy).activate(_vaultProxy, true);
-
-        delete pendingComptrollerProxyToCreator[comptrollerProxy];
+        IComptroller(comptrollerProxy).activate(true);
     }
 
-    /// @dev Helper to signal a migration
-    function __signalMigration(
-        address _vaultProxy,
-        address _comptrollerProxy,
-        bool _bypassFailure
-    )
-        private
-        onlyLiveRelease
-        onlyPendingComptrollerProxyCreator(_comptrollerProxy)
-        onlyMigrator(_vaultProxy)
-    {
-        IDispatcher(DISPATCHER).signalMigration(
-            _vaultProxy,
-            _comptrollerProxy,
-            VAULT_LIB,
-            _bypassFailure
-        );
+    /// @notice Executes logic when a migration is canceled on the Dispatcher
+    /// @param _nextComptrollerProxy The ComptrollerProxy created on this release
+    function invokeMigrationInCancelHook(
+        address,
+        address,
+        address _nextComptrollerProxy,
+        address
+    ) external override onlyDispatcher {
+        IComptroller(_nextComptrollerProxy).destructUnactivated();
     }
 
     ///////////////////
@@ -428,21 +341,16 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         address,
         address,
         address
-    ) external override {
+    ) external override onlyDispatcher {
         if (_hook != MigrationOutHook.PreMigrate) {
             return;
         }
-
-        require(
-            msg.sender == DISPATCHER,
-            "postMigrateOriginHook: Only Dispatcher can call this function"
-        );
 
         // Must use PreMigrate hook to get the ComptrollerProxy from the VaultProxy
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
 
         // Wind down fund and destroy its config
-        IComptroller(comptrollerProxy).destruct();
+        IComptroller(comptrollerProxy).destructActivated();
     }
 
     /////////////////////////
@@ -529,16 +437,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @return dispatcher_ The `DISPATCHER` variable value
     function getDispatcher() external view returns (address dispatcher_) {
         return DISPATCHER;
-    }
-
-    /// @notice Gets the creator of a pending ComptrollerProxy
-    /// @return pendingComptrollerProxyCreator_ The pending ComptrollerProxy creator
-    function getPendingComptrollerProxyCreator(address _comptrollerProxy)
-        external
-        view
-        returns (address pendingComptrollerProxyCreator_)
-    {
-        return pendingComptrollerProxyToCreator[_comptrollerProxy];
     }
 
     /// @notice Gets the `releaseStatus` variable value
