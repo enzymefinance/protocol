@@ -37,8 +37,8 @@
   "dependencies": {
     "@changesets/cli": "^2.16.0",
     "@enzymefinance/babel-config": "^1.0.13",
-    "@enzymefinance/ethers": "^0.0.7",
-    "@enzymefinance/hardhat": "^0.0.13",
+    "@enzymefinance/ethers": "^0.0.8",
+    "@enzymefinance/hardhat": "^0.0.15",
     "@manypkg/cli": "^0.18.0",
     "@openzeppelin/contracts": "^3.4.1",
     "@preconstruct/cli": "^2.1.0",
