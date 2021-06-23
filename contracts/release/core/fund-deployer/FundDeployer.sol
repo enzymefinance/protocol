@@ -37,18 +37,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes policyManagerConfigData
     );
 
-    event FundReconfigurationCancelled(
-        address indexed vaultProxy,
-        address indexed nextComptrollerProxy
-    );
-
-    event FundReconfigurationExecuted(
-        address indexed vaultProxy,
-        address indexed prevComptrollerProxy,
-        address indexed nextComptrollerProxy
-    );
-
-    event MigratedFundConfigCreated(
+    event MigrationRequestCreated(
         address indexed creator,
         address indexed vaultProxy,
         address comptrollerProxy
@@ -56,14 +45,25 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
 
-    event ReconfigurationTimelockSet(uint256 nextTimelock);
+    event ReconfigurationRequestCancelled(
+        address indexed vaultProxy,
+        address indexed nextComptrollerProxy
+    );
 
-    event ReconfiguredFundConfigCreated(
+    event ReconfigurationRequestCreated(
         address indexed creator,
         address indexed vaultProxy,
         address comptrollerProxy,
         uint256 executableTimestamp
     );
+
+    event ReconfigurationRequestExecuted(
+        address indexed vaultProxy,
+        address indexed prevComptrollerProxy,
+        address indexed nextComptrollerProxy
+    );
+
+    event ReconfigurationTimelockSet(uint256 nextTimelock);
 
     event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
 
@@ -205,7 +205,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while signaling migration
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
-    function createMigratedFundConfig(
+    function createMigrationRequest(
         address _vaultProxy,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
@@ -231,7 +231,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _bypassPrevReleaseFailure
         );
 
-        emit MigratedFundConfigCreated(msg.sender, _vaultProxy, comptrollerProxy_);
+        emit MigrationRequestCreated(msg.sender, _vaultProxy, comptrollerProxy_);
 
         return comptrollerProxy_;
     }
@@ -286,7 +286,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
     /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
-    function createReconfiguredFundConfig(
+    function createReconfigurationRequest(
         address _vaultProxy,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
@@ -295,11 +295,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     ) external onlyLiveRelease onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
         require(
             IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
-            "createReconfiguredFundConfig: VaultProxy not on this release"
+            "createReconfigurationRequest: VaultProxy not on this release"
         );
         require(
             !hasReconfigurationRequest(_vaultProxy),
-            "createReconfiguredFundConfig: VaultProxy has a pending reconfiguration request"
+            "createReconfigurationRequest: VaultProxy has a pending reconfiguration request"
         );
 
         comptrollerProxy_ = __deployComptrollerProxy(
@@ -317,7 +317,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             executableTimestamp: executableTimestamp
         });
 
-        emit ReconfiguredFundConfigCreated(
+        emit ReconfigurationRequestCreated(
             msg.sender,
             _vaultProxy,
             comptrollerProxy_,
@@ -386,7 +386,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
 
-        emit FundReconfigurationCancelled(_vaultProxy, nextComptrollerProxy);
+        emit ReconfigurationRequestCancelled(_vaultProxy, nextComptrollerProxy);
     }
 
     /// @notice Executes a pending reconfiguration request
@@ -427,7 +427,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
 
-        emit FundReconfigurationExecuted(
+        emit ReconfigurationRequestExecuted(
             _vaultProxy,
             prevComptrollerProxy,
             request.nextComptrollerProxy

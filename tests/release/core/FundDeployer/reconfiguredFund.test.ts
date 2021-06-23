@@ -4,9 +4,9 @@ import { ComptrollerLib, FundDeployer, ReleaseStatusTypes, StandardToken, VaultL
 import {
   assertEvent,
   createFundDeployer,
-  createMigratedFundConfig,
+  createMigrationRequest,
   createNewFund,
-  createReconfiguredFundConfig,
+  createReconfigurationRequest,
   createVaultProxy,
   deployProtocolFixture,
   ProtocolDeployment,
@@ -49,7 +49,7 @@ describe('setReconfigurationTimelock', () => {
   });
 });
 
-describe('createReconfiguredFundConfig', () => {
+describe('createReconfigurationRequest', () => {
   describe('unhappy paths', () => {
     let fork: ProtocolDeployment;
     let fundDeployer: FundDeployer;
@@ -79,7 +79,7 @@ describe('createReconfiguredFundConfig', () => {
       await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
       await expect(
-        createReconfiguredFundConfig({
+        createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -90,7 +90,7 @@ describe('createReconfiguredFundConfig', () => {
 
     it('cannot be called by a random user', async () => {
       await expect(
-        createReconfiguredFundConfig({
+        createReconfigurationRequest({
           signer: randomUser,
           fundDeployer,
           vaultProxy,
@@ -109,7 +109,7 @@ describe('createReconfiguredFundConfig', () => {
       });
 
       await expect(
-        createReconfiguredFundConfig({
+        createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy: fakeVaultProxy,
@@ -119,7 +119,7 @@ describe('createReconfiguredFundConfig', () => {
     });
 
     it('does not allow a VaultProxy that has a pending reconfiguration request', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -128,7 +128,7 @@ describe('createReconfiguredFundConfig', () => {
 
       // Creating a second reconfiguration request for the vaultProxy should fail
       await expect(
-        createReconfiguredFundConfig({
+        createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -156,7 +156,7 @@ describe('createReconfiguredFundConfig', () => {
       // Set the migrator
       await vaultProxy.setMigrator(migrator);
 
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: migrator,
         fundDeployer,
         vaultProxy,
@@ -170,7 +170,7 @@ describe('createReconfiguredFundConfig', () => {
       let fundOwner: SignerWithAddress;
       let nextComptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
       let denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
-      let createReconfiguredFundConfigReceipt: ContractReceipt<any>;
+      let createReconfigurationRequestReceipt: ContractReceipt<any>;
       let expectedExecutableTimestamp: BigNumber;
 
       beforeAll(async () => {
@@ -192,7 +192,7 @@ describe('createReconfiguredFundConfig', () => {
         sharesActionTimelock = BigNumber.from(123);
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
-        const reconfiguredFundRes = await createReconfiguredFundConfig({
+        const reconfiguredFundRes = await createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -201,10 +201,10 @@ describe('createReconfiguredFundConfig', () => {
         });
 
         nextComptrollerProxy = reconfiguredFundRes.comptrollerProxy;
-        createReconfiguredFundConfigReceipt = reconfiguredFundRes.receipt;
+        createReconfigurationRequestReceipt = reconfiguredFundRes.receipt;
 
         expectedExecutableTimestamp = (await fundDeployer.getReconfigurationTimelock()).add(
-          await transactionTimestamp(createReconfiguredFundConfigReceipt),
+          await transactionTimestamp(createReconfigurationRequestReceipt),
         );
       });
 
@@ -234,8 +234,8 @@ describe('createReconfiguredFundConfig', () => {
         expect(await nextComptrollerProxy.getVaultProxy()).toMatchAddress(vaultProxy);
       });
 
-      it('correctly emits the ReconfiguredFundConfigCreated event', async () => {
-        assertEvent(createReconfiguredFundConfigReceipt, 'ReconfiguredFundConfigCreated', {
+      it('correctly emits the ReconfigurationRequestCreated event', async () => {
+        assertEvent(createReconfigurationRequestReceipt, 'ReconfigurationRequestCreated', {
           creator: fundOwner,
           vaultProxy,
           comptrollerProxy: nextComptrollerProxy,
@@ -270,7 +270,7 @@ describe('executeReconfiguration', () => {
     });
 
     it('does not allow the release status to be Paused', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -286,7 +286,7 @@ describe('executeReconfiguration', () => {
     });
 
     it('cannot be called by a random user', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -305,7 +305,7 @@ describe('executeReconfiguration', () => {
     });
 
     it('cannot be called before the timelock expires', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -319,7 +319,7 @@ describe('executeReconfiguration', () => {
 
     it('does not allow a VaultProxy that is not on the same release as the FundDeployer', async () => {
       // Create the reconfigured ComptrollerProxy prior to migrating to a new release
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -342,7 +342,7 @@ describe('executeReconfiguration', () => {
         setOnDispatcher: true,
       });
 
-      await createMigratedFundConfig({
+      await createMigrationRequest({
         signer: fundOwner,
         fundDeployer: nextFundDeployer,
         vaultProxy,
@@ -381,7 +381,7 @@ describe('executeReconfiguration', () => {
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       });
 
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -420,7 +420,7 @@ describe('executeReconfiguration', () => {
         prevComptrollerProxy = newFundRes.comptrollerProxy;
         vaultProxy = newFundRes.vaultProxy;
 
-        const reconfiguredFundRes = await createReconfiguredFundConfig({
+        const reconfiguredFundRes = await createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -458,8 +458,8 @@ describe('executeReconfiguration', () => {
         expect(nextComptrollerProxy.activate).toHaveBeenCalledOnContractWith(true);
       });
 
-      it('correctly emits the FundReconfigurationExecuted event', async () => {
-        assertEvent(executeReconfigurationReceipt, 'FundReconfigurationExecuted', {
+      it('correctly emits the ReconfigurationRequestExecuted event', async () => {
+        assertEvent(executeReconfigurationReceipt, 'ReconfigurationRequestExecuted', {
           vaultProxy,
           prevComptrollerProxy,
           nextComptrollerProxy,
@@ -493,7 +493,7 @@ describe('cancelReconfiguration', () => {
     });
 
     it('does not allow the release status to be Paused', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -509,7 +509,7 @@ describe('cancelReconfiguration', () => {
     });
 
     it('cannot be called by a random user', async () => {
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -542,7 +542,7 @@ describe('cancelReconfiguration', () => {
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       });
 
-      await createReconfiguredFundConfig({
+      await createReconfigurationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -576,7 +576,7 @@ describe('cancelReconfiguration', () => {
 
         vaultProxy = newFundRes.vaultProxy;
 
-        const reconfiguredFundRes = await createReconfiguredFundConfig({
+        const reconfiguredFundRes = await createReconfigurationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -602,8 +602,8 @@ describe('cancelReconfiguration', () => {
         expect(nextComptrollerProxy.destructUnactivated).toHaveBeenCalledOnContract();
       });
 
-      it('correctly emits the FundReconfigurationCancelled event', async () => {
-        assertEvent(cancelReconfigurationReceipt, 'FundReconfigurationCancelled', {
+      it('correctly emits the ReconfigurationRequestCancelled event', async () => {
+        assertEvent(cancelReconfigurationReceipt, 'ReconfigurationRequestCancelled', {
           vaultProxy,
           nextComptrollerProxy,
         });

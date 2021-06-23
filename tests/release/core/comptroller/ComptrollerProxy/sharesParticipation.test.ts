@@ -14,7 +14,7 @@ import {
   assertEvent,
   buyShares,
   createFundDeployer,
-  createMigratedFundConfig,
+  createMigrationRequest,
   createNewFund,
   deployProtocolFixture,
   generateRegisteredMockFees,
@@ -135,7 +135,7 @@ describe('buyShares', () => {
     });
 
     // Create fund config on the new FundDeployer to migrate to
-    await createMigratedFundConfig({
+    await createMigrationRequest({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
       vaultProxy,
@@ -1099,7 +1099,7 @@ describe('sharesActionTimelock', () => {
     });
 
     // Create fund config on the new FundDeployer to migrate to
-    await createMigratedFundConfig({
+    await createMigrationRequest({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
       vaultProxy,

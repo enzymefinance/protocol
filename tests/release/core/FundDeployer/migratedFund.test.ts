@@ -4,7 +4,7 @@ import { ComptrollerLib, FundDeployer, ReleaseStatusTypes, StandardToken, VaultL
 import {
   assertEvent,
   createFundDeployer,
-  createMigratedFundConfig,
+  createMigrationRequest,
   createNewFund,
   deployProtocolFixture,
   ProtocolDeployment,
@@ -51,7 +51,7 @@ async function createNewFundOnPrevRelease({
   return { comptrollerProxy, vaultProxy };
 }
 
-describe('createMigratedFundConfig', () => {
+describe('createMigrationRequest', () => {
   describe('unhappy paths', () => {
     let fundDeployer: FundDeployer;
 
@@ -71,7 +71,7 @@ describe('createMigratedFundConfig', () => {
       await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
 
       await expect(
-        createMigratedFundConfig({
+        createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -86,7 +86,7 @@ describe('createMigratedFundConfig', () => {
       const { vaultProxy } = await createNewFundOnPrevRelease({ fork, fundOwner });
 
       await expect(
-        createMigratedFundConfig({
+        createMigrationRequest({
           signer: randomUser,
           fundDeployer,
           vaultProxy,
@@ -101,7 +101,7 @@ describe('createMigratedFundConfig', () => {
       let fundOwner: SignerWithAddress;
       let nextComptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
       let denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
-      let createMigratedFundConfigReceipt: ContractReceipt<any>;
+      let createMigrationRequestReceipt: ContractReceipt<any>;
 
       beforeAll(async () => {
         fork = await deployProtocolFixture();
@@ -116,7 +116,7 @@ describe('createMigratedFundConfig', () => {
         sharesActionTimelock = BigNumber.from(123);
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
-        const migratedFundRes = await createMigratedFundConfig({
+        const migratedFundRes = await createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -126,7 +126,7 @@ describe('createMigratedFundConfig', () => {
         });
 
         nextComptrollerProxy = migratedFundRes.comptrollerProxy;
-        createMigratedFundConfigReceipt = migratedFundRes.receipt;
+        createMigrationRequestReceipt = migratedFundRes.receipt;
       });
 
       it('correctly calls the lifecycle setVaultProxy() function', async () => {
@@ -143,8 +143,8 @@ describe('createMigratedFundConfig', () => {
         expect(await nextComptrollerProxy.getVaultProxy()).toMatchAddress(vaultProxy);
       });
 
-      it('correctly emits the MigratedFundConfigCreated event', async () => {
-        assertEvent(createMigratedFundConfigReceipt, 'MigratedFundConfigCreated', {
+      it('correctly emits the MigrationRequestCreated event', async () => {
+        assertEvent(createMigrationRequestReceipt, 'MigrationRequestCreated', {
           creator: fundOwner,
           vaultProxy,
           comptrollerProxy: nextComptrollerProxy,
@@ -176,7 +176,7 @@ describe('createMigratedFundConfig', () => {
         // Set the migrator
         await vaultProxy.setMigrator(migrator);
 
-        const migratedFundRes = await createMigratedFundConfig({
+        const migratedFundRes = await createMigrationRequest({
           signer: migrator,
           fundDeployer,
           vaultProxy,
@@ -214,7 +214,7 @@ describe('executeMigration', () => {
       const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
       vaultProxy = newFundRes.vaultProxy;
 
-      await createMigratedFundConfig({
+      await createMigrationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -251,7 +251,7 @@ describe('executeMigration', () => {
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
         vaultProxy = newFundRes.vaultProxy;
 
-        const migratedFundRes = await createMigratedFundConfig({
+        const migratedFundRes = await createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -292,7 +292,7 @@ describe('executeMigration', () => {
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
         vaultProxy = newFundRes.vaultProxy;
 
-        await createMigratedFundConfig({
+        await createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -331,7 +331,7 @@ describe('cancelMigration', () => {
       const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
       vaultProxy = newFundRes.vaultProxy;
 
-      await createMigratedFundConfig({
+      await createMigrationRequest({
         signer: fundOwner,
         fundDeployer,
         vaultProxy,
@@ -368,7 +368,7 @@ describe('cancelMigration', () => {
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
         vaultProxy = newFundRes.vaultProxy;
 
-        const migratedFundRes = await createMigratedFundConfig({
+        const migratedFundRes = await createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,
@@ -401,7 +401,7 @@ describe('cancelMigration', () => {
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
         vaultProxy = newFundRes.vaultProxy;
 
-        await createMigratedFundConfig({
+        await createMigrationRequest({
           signer: fundOwner,
           fundDeployer,
           vaultProxy,

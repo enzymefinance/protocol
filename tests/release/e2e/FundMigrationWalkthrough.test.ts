@@ -13,7 +13,7 @@ import {
 import {
   addTrackedAssetsToVault,
   buyShares,
-  // createMigratedFundConfig,
+  // createMigrationRequest,
   createNewFund,
   // Deployment,
   // DeploymentHandlers,
@@ -185,7 +185,7 @@ describe('Walkthrough a fund migration', () => {
   //     settings: [adapterBlacklistSettings, adapterWhitelistSettings, assetBlacklistSettings],
   //   });
 
-  //   const createMigratedFundTx = await createMigratedFundConfig({
+  //   const createMigratedFundTx = await createMigrationRequest({
   //     signer: manager,
   //     fundDeployer: newRelease.fundDeployer,
   //     denominationAsset,

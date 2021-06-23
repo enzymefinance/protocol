@@ -14,7 +14,7 @@ import {
   mockGenericSwap,
   assertEvent,
   createFundDeployer,
-  createMigratedFundConfig,
+  createMigrationRequest,
   deployProtocolFixture,
   addTrackedAssetsToVault,
 } from '@enzymefinance/testutils';
@@ -138,7 +138,7 @@ describe('activateForFund', () => {
       vaultLib,
     });
 
-    await createMigratedFundConfig({
+    await createMigrationRequest({
       signer: fundOwner,
       fundDeployer: nextFundDeployer,
       vaultProxy,

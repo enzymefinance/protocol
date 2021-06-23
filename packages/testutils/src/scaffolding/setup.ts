@@ -15,7 +15,7 @@ import { buyShares, BuySharesParams } from './shares';
 
 export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' | 'denominationAsset'>;
 
-export interface CreateMigratedFundConfigParams {
+export interface CreateMigrationRequestParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
   vaultProxy: AddressLike;
@@ -38,7 +38,7 @@ export interface CreateNewFundParams {
   investment?: InitialInvestmentParams;
 }
 
-export interface CreateReconfiguredFundConfigParams {
+export interface CreateReconfigurationRequestParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
   vaultProxy: AddressLike;
@@ -69,7 +69,7 @@ export async function createComptrollerProxy({
   };
 }
 
-export async function createMigratedFundConfig({
+export async function createMigrationRequest({
   signer,
   fundDeployer,
   vaultProxy,
@@ -78,10 +78,10 @@ export async function createMigratedFundConfig({
   feeManagerConfigData = '0x',
   policyManagerConfigData = '0x',
   bypassPrevReleaseFailure = false,
-}: CreateMigratedFundConfigParams) {
+}: CreateMigrationRequestParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createMigratedFundConfig(
+    .createMigrationRequest(
       vaultProxy,
       denominationAsset,
       sharesActionTimelock,
@@ -155,7 +155,7 @@ export async function createNewFund({
   };
 }
 
-export async function createReconfiguredFundConfig({
+export async function createReconfigurationRequest({
   signer,
   fundDeployer,
   vaultProxy,
@@ -163,10 +163,10 @@ export async function createReconfiguredFundConfig({
   sharesActionTimelock = 0,
   feeManagerConfigData = '0x',
   policyManagerConfigData = '0x',
-}: CreateMigratedFundConfigParams) {
+}: CreateReconfigurationRequestParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createReconfiguredFundConfig(
+    .createReconfigurationRequest(
       vaultProxy,
       denominationAsset,
       sharesActionTimelock,
