@@ -1,5 +1,6 @@
-import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { StandardToken, VaultLib } from '@enzymefinance/protocol';
+import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
+import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createNewFund,
@@ -76,6 +77,61 @@ describe('init', () => {
 
     const decimalsValue = await vaultProxy.decimals();
     expect(decimalsValue).toBe(18);
+  });
+});
+
+describe('setAccessorForFundReconfiguration', () => {
+  let vaultProxy: VaultLib;
+  let mockFundDeployer: MockContract<FundDeployer>;
+  let fundOwner: SignerWithAddress, mockAccessor: MockContract<ComptrollerLib>;
+  let nextAccessor: AddressLike;
+
+  beforeEach(async () => {
+    [fundOwner] = fork.accounts;
+
+    // Create the VaultProxy instance via a mockFundDeployer set as the Dispatcher.currentFundDeployer
+    // so that we can later call `setAccessorForFundReconfiguration()` directly from the mockFundDeployer.
+    // mockAccessor can be any contract, necessary because the Dispatcher validates that it is a contract.
+    const dispatcher = fork.deployment.dispatcher;
+    mockFundDeployer = await FundDeployer.mock(fork.deployer);
+    mockAccessor = await ComptrollerLib.mock(fork.deployer);
+
+    await dispatcher.setCurrentFundDeployer(mockFundDeployer);
+
+    const deployVaultProxyReceipt = await mockFundDeployer.forward(
+      dispatcher.deployVaultProxy,
+      await VaultLib.deploy(fork.deployer, fork.config.weth),
+      fundOwner,
+      mockAccessor,
+      'Test',
+    );
+    const events = extractEvent(deployVaultProxyReceipt, dispatcher.abi.getEvent('VaultProxyDeployed'));
+
+    vaultProxy = new VaultLib(events[0].args.vaultProxy, provider);
+    nextAccessor = randomAddress();
+  });
+
+  it('cannot be called by the accessor or fund owner', async () => {
+    const revertReason = 'Only the FundDeployer can make this call';
+    await expect(
+      vaultProxy.connect(fundOwner).setAccessorForFundReconfiguration(nextAccessor),
+    ).rejects.toBeRevertedWith(revertReason);
+    await expect(
+      mockAccessor.forward(vaultProxy.setAccessorForFundReconfiguration, nextAccessor),
+    ).rejects.toBeRevertedWith(revertReason);
+  });
+
+  it('correctly updates the accessor and emits the AccessorSet event', async () => {
+    const prevAccessor = await vaultProxy.getAccessor();
+
+    const receipt = await mockFundDeployer.forward(vaultProxy.setAccessorForFundReconfiguration, nextAccessor);
+
+    expect(await vaultProxy.getAccessor()).toMatchAddress(nextAccessor);
+
+    assertEvent(receipt, vaultProxy.abi.getEvent('AccessorSet'), {
+      prevAccessor,
+      nextAccessor,
+    });
   });
 });
 

@@ -160,7 +160,7 @@ contract ComptrollerLib is IComptroller {
         require(
             block.timestamp.sub(getLastSharesBoughtTimestampForAccount(_account)) >=
                 sharesActionTimelock ||
-                IDispatcher(DISPATCHER).hasMigrationRequest(_vaultProxy),
+                __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
     }
@@ -249,6 +249,17 @@ contract ComptrollerLib is IComptroller {
             IFundDeployer(FUND_DEPLOYER).getReleaseStatus() ==
             IFundDeployer.ReleaseStatus.Paused &&
             !overridePause;
+    }
+
+    /// @dev Helper to check if a VaultProxy has a pending migration or reconfiguration request
+    function __hasPendingMigrationOrReconfiguration(address _vaultProxy)
+        private
+        view
+        returns (bool hasPendingMigrationOrReconfiguration)
+    {
+        return
+            IDispatcher(DISPATCHER).hasMigrationRequest(_vaultProxy) ||
+            IFundDeployer(FUND_DEPLOYER).hasReconfigurationRequest(_vaultProxy);
     }
 
     ////////////////////////////////
@@ -587,8 +598,8 @@ contract ComptrollerLib is IComptroller {
     {
         address vaultProxyCopy = vaultProxy;
         require(
-            !IDispatcher(DISPATCHER).hasMigrationRequest(vaultProxyCopy),
-            "buyShares: Pending migration"
+            !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),
+            "buyShares: Pending migration or reconfiguration"
         );
 
         (uint256 gav, bool gavIsValid) = calcGav(true);

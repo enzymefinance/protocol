@@ -132,6 +132,21 @@ contract VaultLib is VaultLibBase2, IVault {
         emit NominatedOwnerSet(_nextNominatedOwner);
     }
 
+    ////////////////////////
+    // FUND DEPLOYER ONLY //
+    ////////////////////////
+
+    /// @notice Updates the accessor during a config change within this release
+    /// @param _nextAccessor The next accessor
+    function setAccessorForFundReconfiguration(address _nextAccessor) external override {
+        require(
+            msg.sender == IDispatcher(creator).getFundDeployerForVaultProxy(address(this)),
+            "Only the FundDeployer can make this call"
+        );
+
+        __setAccessor(_nextAccessor);
+    }
+
     ///////////////////////////////////////
     // ACCESSOR (COMPTROLLER PROXY) ONLY //
     ///////////////////////////////////////

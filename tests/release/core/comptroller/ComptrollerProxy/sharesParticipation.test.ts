@@ -162,6 +162,10 @@ describe('buyShares', () => {
     ).resolves.toBeReceipt();
   });
 
+  // This will likely be moved to a policy and should be a test in that policy.
+  // Can remove the todo here if so.
+  it.todo('does not allow a fund that is pending a reconfiguration');
+
   it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 
   it('works for a fund with no extensions', async () => {
@@ -986,7 +990,7 @@ describe('sharesActionTimelock', () => {
     });
   });
 
-  it('is respected when redeeming shares (no pending migration)', async () => {
+  it('is respected when redeeming shares (no pending migration or reconfiguration)', async () => {
     const {
       fund: { denominationAsset },
       deployment: { fundDeployer },
@@ -1110,4 +1114,8 @@ describe('sharesActionTimelock', () => {
       }),
     ).resolves.toBeReceipt();
   });
+
+  // This will likely be moved to a policy and should be a test in that policy.
+  // Can remove the todo here if so.
+  it.todo('is skipped when redeeming shares if there is a pending reconfiguration');
 });

@@ -37,6 +37,17 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes policyManagerConfigData
     );
 
+    event FundReconfigurationCancelled(
+        address indexed vaultProxy,
+        address indexed nextComptrollerProxy
+    );
+
+    event FundReconfigurationExecuted(
+        address indexed vaultProxy,
+        address indexed prevComptrollerProxy,
+        address indexed nextComptrollerProxy
+    );
+
     event MigratedFundConfigCreated(
         address indexed creator,
         address indexed vaultProxy,
@@ -44,6 +55,15 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     );
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
+
+    event ReconfigurationTimelockSet(uint256 nextTimelock);
+
+    event ReconfiguredFundConfigCreated(
+        address indexed creator,
+        address indexed vaultProxy,
+        address comptrollerProxy,
+        uint256 executableTimestamp
+    );
 
     event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
 
@@ -54,6 +74,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     );
 
     event VaultCallRegistered(address indexed contractAddress, bytes4 selector, bytes32 dataHash);
+
+    struct ReconfigurationRequest {
+        address nextComptrollerProxy;
+        uint256 executableTimestamp;
+    }
 
     // Constants
     // keccak256(abi.encodePacked("mln.vaultCall.any")
@@ -68,9 +93,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     address private comptrollerLib;
 
     // Storage
+    uint256 private reconfigurationTimelock;
     ReleaseStatus private releaseStatus;
 
     mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
+    mapping(address => ReconfigurationRequest) private vaultProxyToReconfigurationRequest;
 
     modifier onlyDispatcher() {
         require(msg.sender == DISPATCHER, "Only Dispatcher can call this function");
@@ -105,6 +132,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         CREATOR = msg.sender;
         DISPATCHER = _dispatcher;
         VAULT_LIB = _vaultLib;
+
+        reconfigurationTimelock = 2 days;
     }
 
     /////////////
@@ -249,6 +278,55 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         return (comptrollerProxy_, vaultProxy_);
     }
 
+    /// @notice Creates a fully-configured ComptrollerProxy instance for a VaultProxy and signals the reconfiguration process
+    /// @param _vaultProxy The VaultProxy to reconfigure
+    /// @param _denominationAsset The contract address of the denomination asset for the fund
+    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
+    /// (buying or selling shares) by the same user
+    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
+    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
+    function createReconfiguredFundConfig(
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external onlyLiveRelease onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
+        require(
+            IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
+            "createReconfiguredFundConfig: VaultProxy not on this release"
+        );
+        require(
+            !hasReconfigurationRequest(_vaultProxy),
+            "createReconfiguredFundConfig: VaultProxy has a pending reconfiguration request"
+        );
+
+        comptrollerProxy_ = __deployComptrollerProxy(
+            _denominationAsset,
+            _sharesActionTimelock,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
+
+        IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
+
+        uint256 executableTimestamp = block.timestamp + getReconfigurationTimelock();
+        vaultProxyToReconfigurationRequest[_vaultProxy] = ReconfigurationRequest({
+            nextComptrollerProxy: comptrollerProxy_,
+            executableTimestamp: executableTimestamp
+        });
+
+        emit ReconfiguredFundConfigCreated(
+            msg.sender,
+            _vaultProxy,
+            comptrollerProxy_,
+            executableTimestamp
+        );
+
+        return comptrollerProxy_;
+    }
+
     /// @dev Helper function to deploy a configured ComptrollerProxy
     function __deployComptrollerProxy(
         address _denominationAsset,
@@ -282,6 +360,86 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         );
 
         return comptrollerProxy_;
+    }
+
+    ///////////////////////////////////////////////
+    // RECONFIGURATION (INTRA-RELEASE MIGRATION) //
+    ///////////////////////////////////////////////
+
+    /// @notice Cancels a pending reconfiguration request
+    /// @param _vaultProxy The VaultProxy contract for which to cancel the reconfiguration request
+    function cancelReconfiguration(address _vaultProxy)
+        external
+        onlyLiveRelease
+        onlyMigrator(_vaultProxy)
+    {
+        address nextComptrollerProxy = vaultProxyToReconfigurationRequest[_vaultProxy]
+            .nextComptrollerProxy;
+        require(
+            nextComptrollerProxy != address(0),
+            "cancelReconfiguration: No reconfiguration request exists for _vaultProxy"
+        );
+
+        // Destroy the nextComptrollerProxy
+        IComptroller(nextComptrollerProxy).destructUnactivated();
+
+        // Remove the reconfiguration request
+        delete vaultProxyToReconfigurationRequest[_vaultProxy];
+
+        emit FundReconfigurationCancelled(_vaultProxy, nextComptrollerProxy);
+    }
+
+    /// @notice Executes a pending reconfiguration request
+    /// @param _vaultProxy The VaultProxy contract for which to execute the reconfiguration request
+    function executeReconfiguration(address _vaultProxy)
+        external
+        onlyLiveRelease
+        onlyMigrator(_vaultProxy)
+    {
+        ReconfigurationRequest memory request = getReconfigurationRequestForVaultProxy(
+            _vaultProxy
+        );
+        require(
+            request.nextComptrollerProxy != address(0),
+            "executeReconfiguration: No reconfiguration request exists for _vaultProxy"
+        );
+        require(
+            block.timestamp >= request.executableTimestamp,
+            "executeReconfiguration: The reconfiguration timelock has not elapsed"
+        );
+        // Not technically necessary, but a nice assurance
+        require(
+            IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
+            "executeReconfiguration: _vaultProxy is no longer on this release"
+        );
+
+        // TODO: add bypass failure option in case destruct action fails?
+        // Unwind and destroy the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
+        address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
+        IComptroller(prevComptrollerProxy).destructActivated();
+
+        // Execute the reconfiguration
+        IVault(_vaultProxy).setAccessorForFundReconfiguration(request.nextComptrollerProxy);
+
+        // Activate the new ComptrollerProxy
+        IComptroller(request.nextComptrollerProxy).activate(true);
+
+        // Remove the reconfiguration request
+        delete vaultProxyToReconfigurationRequest[_vaultProxy];
+
+        emit FundReconfigurationExecuted(
+            _vaultProxy,
+            prevComptrollerProxy,
+            request.nextComptrollerProxy
+        );
+    }
+
+    /// @notice Sets a new reconfiguration timelock
+    /// @param _nextTimelock The number of seconds for the new timelock
+    function setReconfigurationTimelock(uint256 _nextTimelock) external onlyOwner {
+        reconfigurationTimelock = _nextTimelock;
+
+        emit ReconfigurationTimelockSet(_nextTimelock);
     }
 
     //////////////////
@@ -468,6 +626,37 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         return
             vaultCallToPayloadToIsAllowed[contractFunctionHash][_dataHash] ||
             vaultCallToPayloadToIsAllowed[contractFunctionHash][ANY_VAULT_CALL];
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets the pending ReconfigurationRequest for a given VaultProxy
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return reconfigurationRequest_ The pending ReconfigurationRequest
+    function getReconfigurationRequestForVaultProxy(address _vaultProxy)
+        public
+        view
+        returns (ReconfigurationRequest memory reconfigurationRequest_)
+    {
+        return vaultProxyToReconfigurationRequest[_vaultProxy];
+    }
+
+    /// @notice Gets the amount of time that must pass before executing a ReconfigurationRequest
+    /// @return reconfigurationTimelock_ The timelock value (in seconds)
+    function getReconfigurationTimelock() public view returns (uint256 reconfigurationTimelock_) {
+        return reconfigurationTimelock;
+    }
+
+    /// @notice Checks whether a ReconfigurationRequest exists for a given VaultProxy
+    /// @param _vaultProxy The VaultProxy instance
+    /// @return hasReconfigurationRequest_ True if a ReconfigurationRequest exists
+    function hasReconfigurationRequest(address _vaultProxy)
+        public
+        view
+        override
+        returns (bool hasReconfigurationRequest_)
+    {
+        return vaultProxyToReconfigurationRequest[_vaultProxy].nextComptrollerProxy != address(0);
     }
 
     /// @notice Checks if a contract call is registered

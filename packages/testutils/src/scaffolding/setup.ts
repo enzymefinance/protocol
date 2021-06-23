@@ -38,6 +38,16 @@ export interface CreateNewFundParams {
   investment?: InitialInvestmentParams;
 }
 
+export interface CreateReconfiguredFundConfigParams {
+  signer: SignerWithAddress;
+  fundDeployer: FundDeployer;
+  vaultProxy: AddressLike;
+  denominationAsset: AddressLike;
+  sharesActionTimelock?: BigNumberish;
+  feeManagerConfigData?: BytesLike;
+  policyManagerConfigData?: BytesLike;
+}
+
 export async function createComptrollerProxy({
   signer,
   comptrollerLib,
@@ -142,6 +152,40 @@ export async function createNewFund({
     comptrollerProxy,
     receipt,
     vaultProxy,
+  };
+}
+
+export async function createReconfiguredFundConfig({
+  signer,
+  fundDeployer,
+  vaultProxy,
+  denominationAsset,
+  sharesActionTimelock = 0,
+  feeManagerConfigData = '0x',
+  policyManagerConfigData = '0x',
+}: CreateMigratedFundConfigParams) {
+  const receipt = await fundDeployer
+    .connect(signer)
+    .createReconfiguredFundConfig(
+      vaultProxy,
+      denominationAsset,
+      sharesActionTimelock,
+      feeManagerConfigData,
+      policyManagerConfigData,
+    );
+
+  const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
+    creator: signer,
+    comptrollerProxy: expect.any(String) as string,
+    denominationAsset,
+    sharesActionTimelock: BigNumber.from(sharesActionTimelock),
+    feeManagerConfigData: utils.hexlify(feeManagerConfigData),
+    policyManagerConfigData: utils.hexlify(policyManagerConfigData),
+  });
+
+  return {
+    receipt,
+    comptrollerProxy: new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer),
   };
 }
 

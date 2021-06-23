@@ -1,5 +1,5 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { ReleaseStatusTypes, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
+import { FundDeployer, ReleaseStatusTypes, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -55,7 +55,13 @@ describe('setReleaseStatus', () => {
 
   it.todo('does not allow the current status');
 
-  it.todo('can only be called when a comptroller lib is set');
+  it('cannot be called before comptrollerLib is set', async () => {
+    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher, fork.deployment.vaultLib);
+
+    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
+      'Can only set the release status when comptrollerLib is set',
+    );
+  });
 
   it('correctly handles setting the release status', async () => {
     const { fundDeployer } = fork.deployment;

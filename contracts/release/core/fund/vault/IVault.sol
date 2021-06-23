@@ -61,6 +61,8 @@ interface IVault is IMigratableVault {
 
     function removeTrackedAsset(address) external;
 
+    function setAccessorForFundReconfiguration(address) external;
+
     function transferShares(
         address,
         address,
