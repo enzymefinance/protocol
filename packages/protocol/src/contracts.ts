@@ -40,6 +40,7 @@ export * from './codegen/CompoundPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/IdlePriceFeed';
 export * from './codegen/LidoStethPriceFeed';
+export * from './codegen/RevertingPriceFeed';
 export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';
