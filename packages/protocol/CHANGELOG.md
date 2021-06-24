@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.8
+
+### Patch Changes
+
+- 511462ec: Publish packages
+
 ## 2.0.7
 
 ### Patch Changes
