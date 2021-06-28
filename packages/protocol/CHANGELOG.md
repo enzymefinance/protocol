@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.9
+
+### Patch Changes
+
+- 99999911: Publishing new tracked assets adapter
+
 ## 2.0.8
 
 ### Patch Changes
