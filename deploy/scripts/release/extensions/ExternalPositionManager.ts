@@ -1,6 +1,5 @@
+import { ExternalPositionManager } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
-
-import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -8,34 +7,27 @@ const fn: DeployFunction = async function (hre) {
     ethers: { getSigners },
   } = hre;
 
-  const deployer = (await getSigners())[0];
-  const config = await loadConfig(hre);
-  const aggregatedDerivativePriceFeed = await get('AggregatedDerivativePriceFeed');
-  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
-  const compoundPriceFeed = await get('CompoundPriceFeed');
   const compoundDebtPositionLib = await get('CompoundDebtPositionLib');
+  const compoundDebtPositionParser = await get('CompoundDebtPositionParser');
+  const deployer = (await getSigners())[0];
+  const fundDeployer = await get('FundDeployer');
 
-  await deploy('ExternalPositionManager', {
-    args: [
-      aggregatedDerivativePriceFeed.address,
-      chainlinkPriceFeed.address,
-      config.weth,
-      compoundPriceFeed.address,
-      config.compound.comptroller,
-      compoundDebtPositionLib.address,
-    ],
+  const externalPositionManager = await deploy('ExternalPositionManager', {
+    args: [fundDeployer.address],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
-};
 
+  const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
+  await externalPositionManagerInstance.addTypesInfo([compoundDebtPositionLib], [compoundDebtPositionParser]);
+};
 fn.tags = ['Release', 'ExternalPositionManager'];
 fn.dependencies = [
   'Config',
   'AggregatedDerivativePriceFeed',
-  'CompoundPriceFeed',
   'CompoundDebtPositionLib',
+  'CompoundDebtPositionParser',
   'ChainlinkPriceFeed',
 ];
 

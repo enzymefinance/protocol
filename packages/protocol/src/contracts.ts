@@ -65,6 +65,7 @@ export * from './codegen/YearnVaultV2Adapter';
 export * from './codegen/ZeroExV2Adapter';
 
 // External positions
+export * from './codegen/CompoundDebtPositionParser';
 export * from './codegen/CompoundDebtPositionLib';
 
 // Fees

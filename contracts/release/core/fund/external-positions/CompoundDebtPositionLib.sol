@@ -35,6 +35,8 @@ contract CompoundDebtPositionLib is IExternalPosition {
 
     event CollateralAssetRemoved(address indexed asset, uint256 amount, bytes data);
 
+    enum ExternalPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
+
     address private immutable COMPOUND_COMPTROLLER;
     address private immutable WETH_TOKEN;
 
@@ -240,7 +242,7 @@ contract CompoundDebtPositionLib is IExternalPosition {
     /// @notice Retrieves the borrowed assets and balances of the current external position
     /// @return assets_ Assets with an active loan
     /// @return amounts_ Amount of assets in external
-    function getBorrowedAssets()
+    function getDebtAssets()
         external
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
@@ -259,7 +261,7 @@ contract CompoundDebtPositionLib is IExternalPosition {
     /// @notice Retrieves the collateral assets and balances of the current external position
     /// @return assets_ Assets with balance > 0 that are being used as collateral
     /// @return amounts_ Amount of assets being used as collateral
-    function getCollateralAssets()
+    function getManagedAssets()
         external
         override
         returns (address[] memory assets_, uint256[] memory amounts_)

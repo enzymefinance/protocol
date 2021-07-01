@@ -2,52 +2,43 @@
 
 /*
     This file is part of the Enzyme Protocol.
-
+    
     (c) Enzyme Council <council@enzyme.finance>
-
+    
     For the full license information, please view the LICENSE
     file that was distributed with this source code.
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../core/fund/external-positions/CompoundDebtPositionLib.sol";
 import "../../core/fund/external-positions/ExternalPositionProxy.sol";
-import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
-import "../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
-import "../../utils/AddressArrayLib.sol";
+import "../../core/fund/external-positions/IExternalPosition.sol";
+import "../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
+import "./parsers/IExternalPositionParser.sol";
 
 /// @title ExternalPositionManager
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Extension to handle external position actions for funds
-contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin {
-    using AddressArrayLib for address[];
-    using SafeMath for uint256;
-
+/// @notice Extension to handle external position actions for funds.
+contract ExternalPositionManager is
+    ExtensionBase,
+    PermissionedVaultActionMixin,
+    FundDeployerOwnerMixin
+{
     event ExternalPositionDeployed(
         address indexed comptrollerProxy,
         address indexed vaultProxy,
         address externalPosition,
-        uint256 protocol,
+        uint256 externalPositionType,
         bytes data
     );
 
-    // NOTE: To be converted to an enum when more protocols are included
-    uint256 private constant COMPOUND_PROTOCOL_ID = 0;
-
-    address private immutable DERIVATIVE_PRICE_FEED;
-    address private immutable PRIMITIVE_PRICE_FEED;
-
-    // Compound specific params
-    address private immutable COMPOUND_COMPTROLLER;
-    address private immutable COMPOUND_DEBT_POSITION_LIB;
-    address private immutable COMPOUND_PRICE_FEED;
-
-    address private immutable WETH_TOKEN;
+    struct TypeInfo {
+        address parser;
+        address lib;
+    }
 
     enum ExternalPositionManagerActions {
         CreateExternalPosition,
@@ -55,21 +46,10 @@ contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin 
         RemoveExternalPosition
     }
 
-    constructor(
-        address _derivativePriceFeed,
-        address _primitivePriceFeed,
-        address _weth,
-        address _compoundPriceFeed,
-        address _compoundComptroller,
-        address _compoundDebtPositionLib
-    ) public {
-        COMPOUND_COMPTROLLER = _compoundComptroller;
-        COMPOUND_DEBT_POSITION_LIB = _compoundDebtPositionLib;
-        COMPOUND_PRICE_FEED = _compoundPriceFeed;
-        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
-        WETH_TOKEN = _weth;
-    }
+    uint256 private totalTypes;
+    mapping(uint256 => TypeInfo) private typeToTypeInfo;
+
+    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     /////////////
     // GENERAL //
@@ -79,10 +59,6 @@ contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin 
     function activateForFund(bool) external override {
         __setValidatedVaultProxy(msg.sender);
     }
-
-    ////////////////////////////////////
-    // CALL-ON-EXTERNAL-POSITION ACTIONS //
-    //////////////////////////////////
 
     /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
     /// @param _caller The user who called for this action
@@ -100,54 +76,102 @@ contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin 
 
         // Dispatch the action
         if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
-            __createExternalPosition(vaultProxy);
+            __createExternalPosition(vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.CallOnExternalPosition)) {
             __executeCallOnExternalPosition(vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
-            __removeExternalPosition(vaultProxy, _callArgs);
+            __executeRemoveExternalPosition(_callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
     }
 
+    ////////////////////
+    // TYPES REGISTRY //
+    ////////////////////
+
+    /// @notice Creates a new type id and adds the input type info to it
+    /// @param _libs Contract libs to be set for the new type id
+    /// @param _parsers Parsers to be set for the new type id
+    function addTypesInfo(address[] memory _libs, address[] memory _parsers)
+        external
+        onlyFundDeployerOwner
+    {
+        __addTypesInfo(_libs, _parsers);
+    }
+
+    /// @notice Updates the TypeInfo of the given typeIds
+    /// @param _typeIds Ids of the types to be updated
+    /// @param _libs Contract libs to be set for the type ids
+    /// @param _parsers Parsers to be set for the type ids
+    function updateTypesInfo(
+        uint256[] memory _typeIds,
+        address[] memory _libs,
+        address[] memory _parsers
+    ) external onlyFundDeployerOwner {
+        for (uint256 i; i < _typeIds.length; i++) {
+            require(_typeIds[i] < totalTypes, "__updateTypesInfo: Type id is out of range");
+            typeToTypeInfo[_typeIds[i]] = TypeInfo({lib: _libs[i], parser: _parsers[i]});
+        }
+    }
+
     // PRIVATE FUNCTIONS
+
+    /// @dev Adds new types with new typeInfo structs
+    function __addTypesInfo(address[] memory _libs, address[] memory _parsers) private {
+        for (uint256 i; i < _libs.length; i++) {
+            typeToTypeInfo[totalTypes] = TypeInfo({lib: _libs[i], parser: _parsers[i]});
+
+            totalTypes++;
+        }
+    }
+
+    /// @dev Creates a new external position and links it to the _vaultProxy.
+    function __createExternalPosition(address _vaultProxy, bytes memory _callArgs) private {
+        (uint256 typeId, bytes memory initArgs) = abi.decode(_callArgs, (uint256, bytes));
+
+        require(typeId < totalTypes, "__createExternalPosition: Invalid typeId");
+
+        TypeInfo memory typeInfo = getTypeInfo(typeId);
+
+        bytes memory initData = IExternalPositionParser(typeInfo.parser).parseInitArgs(
+            _vaultProxy,
+            initArgs
+        );
+
+        bytes memory constructData = abi.encodeWithSelector(
+            IExternalPosition.init.selector,
+            initData
+        );
+
+        address externalPosition = address(
+            new ExternalPositionProxy(constructData, typeInfo.lib, typeId)
+        );
+
+        emit ExternalPositionDeployed(msg.sender, _vaultProxy, externalPosition, typeId, initArgs);
+
+        __addExternalPosition(msg.sender, externalPosition);
+    }
 
     // Performs an action on a specific external position, validating the incoming arguments and the final result
     function __executeCallOnExternalPosition(address _vaultProxy, bytes memory _callArgs) private {
-        (
-            address externalPosition,
-            uint256 protocol,
-            uint256 actionId,
-            bytes memory actionArgs
-        ) = abi.decode(_callArgs, (address, uint256, uint256, bytes));
+        (address externalPosition, uint256 typeId, uint256 actionId, bytes memory actionArgs) = abi
+            .decode(_callArgs, (address, uint256, uint256, bytes));
 
-        // Validate incoming arguments, and decode them if valid
-        __preCallOnExternalPosition(_vaultProxy, externalPosition, protocol, actionId, actionArgs);
-
-        (address[] memory assets, uint256[] memory amounts, ) = abi.decode(
-            actionArgs,
-            (address[], uint256[], bytes)
+        require(
+            IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
+            "__executeCallOnExternalPosition: External position is not valid"
         );
 
-        // Prepare arguments for the callOnExternalPosition
+        address parser = typeToTypeInfo[typeId].parser;
+
+        (
+            address[] memory assetsToTransfer,
+            uint256[] memory amountsToTransfer,
+            address[] memory assetsToReceive
+        ) = IExternalPositionParser(parser).parseAssetsForAction(actionId, actionArgs);
+
         bytes memory actionData = abi.encode(actionId, actionArgs);
-
-        address[] memory assetsToTransfer;
-        uint256[] memory amountsToTransfer;
-        address[] memory assetsToReceive;
-
-        if (
-            actionId == uint256(IExternalPosition.ExternalPositionActions.AddCollateral) ||
-            actionId == uint256(IExternalPosition.ExternalPositionActions.RepayBorrow)
-        ) {
-            assetsToTransfer = assets;
-            amountsToTransfer = amounts;
-        } else if (
-            actionId == uint256(IExternalPosition.ExternalPositionActions.Borrow) ||
-            actionId == uint256(IExternalPosition.ExternalPositionActions.RemoveCollateral)
-        ) {
-            assetsToReceive = assets;
-        }
 
         // Execute callOnExternalPosition
         __callOnExternalPosition(
@@ -162,139 +186,11 @@ contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin 
         );
     }
 
-    /// @dev Creates a new external position and links it to the _vaultProxy.
-    /// Currently only handles the logic for Compound.
-    /// Can be extended through an additional _callArgs param to support more protocols.
-    function __createExternalPosition(address _vaultProxy) private {
-        bytes memory initData = abi.encode(_vaultProxy);
-
-        bytes memory constructData = abi.encodeWithSelector(
-            CompoundDebtPositionLib.init.selector,
-            initData
-        );
-
-        address externalPosition = address(
-            new ExternalPositionProxy(
-                constructData,
-                COMPOUND_DEBT_POSITION_LIB,
-                COMPOUND_PROTOCOL_ID
-            )
-        );
-
-        emit ExternalPositionDeployed(
-            msg.sender,
-            _vaultProxy,
-            externalPosition,
-            COMPOUND_PROTOCOL_ID,
-            ""
-        );
-
-        __addExternalPosition(msg.sender, externalPosition);
-    }
-
-    /// @dev Helper to check if an asset is supported
-    function __isSupportedAsset(address _asset) private view returns (bool isSupported_) {
-        return
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
-            IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
-    }
-
-    /// @dev Runs previous validations before running a call on external position
-    function __preCallOnExternalPosition(
-        address _vaultProxy,
-        address _externalPosition,
-        uint256 _protocol,
-        uint256 _actionId,
-        bytes memory _actionArgs
-    ) private view {
-        (address[] memory assets, uint256[] memory amounts, ) = abi.decode(
-            _actionArgs,
-            (address[], uint256[], bytes)
-        );
-
-        require(
-            assets.length == amounts.length,
-            "__preCallOnExternalPosition: Assets and amounts arrays unequal"
-        );
-
-        require(assets.isUniqueSet(), "__preCallOnExternalPosition: Duplicate asset");
-
-        __validateExternalPosition(_vaultProxy, _externalPosition);
-
-        for (uint256 i; i < assets.length; i++) {
-            require(assets[i] != address(0), "__preCallOnExternalPosition: Empty asset included");
-
-            require(amounts[i] > 0, "__preCallOnExternalPosition: Amount must be > 0");
-
-            require(
-                __isSupportedAsset(assets[i]),
-                "__preCallOnExternalPosition: Unsupported asset"
-            );
-        }
-
-        // Protocol specific validation (e.g cTokens)
-        __validateProtocolData(_protocol, _actionId, _actionArgs);
-    }
-
-    /// @dev Removes a external position from the VaultProxy
-    function __removeExternalPosition(address, bytes memory _callArgs) private {
+    /// @dev Removes an external position from the VaultProxy
+    function __executeRemoveExternalPosition(bytes memory _callArgs) private {
         address externalPosition = abi.decode(_callArgs, (address));
 
-        (address[] memory collateralAssets, ) = IExternalPosition(externalPosition)
-            .getCollateralAssets();
-        require(
-            collateralAssets.length == 0,
-            "__removeExternalPosition: External position holds collateral assets"
-        );
-
-        (address[] memory borrowedAssets, ) = IExternalPosition(externalPosition)
-            .getBorrowedAssets();
-        require(
-            borrowedAssets.length == 0,
-            "__removeExternalPosition: External position has unpaid borrowed assets"
-        );
-
         __removeExternalPosition(msg.sender, externalPosition);
-    }
-
-    /// @dev Validates the `data` field of a compound external position
-    function __validateCompoundData(uint256 _actionId, bytes memory _actionArgs) private view {
-        (address[] memory assets, , bytes memory data) = abi.decode(
-            _actionArgs,
-            (address[], uint256[], bytes)
-        );
-
-        address[] memory cTokens = abi.decode(data, (address[]));
-
-        require(
-            cTokens.length == assets.length,
-            "__validateCompoundData: Unequal token and cToken length"
-        );
-
-        if (
-            _actionId == uint256(IExternalPosition.ExternalPositionActions.Borrow) ||
-            _actionId == uint256(IExternalPosition.ExternalPositionActions.RepayBorrow)
-        ) {
-            for (uint256 i; i < cTokens.length; i++) {
-                // No need to assert from an address(0) tokenFromCToken since assets[i] cannot be '0' at this point.
-                require(
-                    CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cTokens[i]) ==
-                        assets[i],
-                    "__validateCompoundData: Bad token cToken pair"
-                );
-            }
-        }
-    }
-
-    /// @dev Helper to validate a externalPosition.
-    function __validateExternalPosition(address _vaultProxy, address _externalPosition)
-        private
-        view
-    {
-        require(
-            IVault(_vaultProxy).isActiveExternalPosition(_externalPosition),
-            "__validateExternalPosition: External position is not valid"
-        );
     }
 
     /// @dev Helper to validate fund owner.
@@ -306,57 +202,14 @@ contract ExternalPositionManager is ExtensionBase, PermissionedVaultActionMixin 
         );
     }
 
-    /// @dev Validates the `data` field of a call on external position. Currently used for only one protocol
-    /// Designed to scale to multiple external position protocols
-    function __validateProtocolData(
-        uint256 _protocol,
-        uint256 _actionId,
-        bytes memory _actionArgs
-    ) private view {
-        if (_protocol == COMPOUND_PROTOCOL_ID) {
-            __validateCompoundData(_actionId, _actionArgs);
-        } else {
-            revert("__validateProtocolData: Invalid protocol");
-        }
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `COMPOUND_PRICE_FEED` variable
-    /// @return compoundPriceFeed_ The `COMPOUND_PRICE_FEED` variable value
-    function getCompoundPriceFeed() external view returns (address compoundPriceFeed_) {
-        return COMPOUND_PRICE_FEED;
-    }
-
-    /// @notice Gets the `COMPOUND_COMPTROLLER` variable
-    /// @return compoundComptroller_ The `COMPOUND_COMPTROLLER` variable value
-    function getCompoundComptroller() external view returns (address compoundComptroller_) {
-        return COMPOUND_COMPTROLLER;
-    }
-
-    /// @notice Gets the `COMPOUND_PROTOCOL_ID` variable
-    /// @return compoundProtocolId_ The `COMPOUND_PROTOCOL_ID` variable value
-    function getCompoundProtocolId() external pure returns (uint256 compoundProtocolId_) {
-        return COMPOUND_PROTOCOL_ID;
-    }
-
-    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
-    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
-    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
-        return DERIVATIVE_PRICE_FEED;
-    }
-
-    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
-    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
-        return PRIMITIVE_PRICE_FEED;
-    }
-
-    /// @notice Gets the `WETH_TOKEN` variable
-    /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() external view returns (address wethToken_) {
-        return WETH_TOKEN;
+    /// @notice Returns the external position type info struct of a given type id
+    /// @param _typeId The procotol for which to get the external position's type info
+    /// @return typeInfo_ The external position type info struct
+    function getTypeInfo(uint256 _typeId) public view returns (TypeInfo memory typeInfo_) {
+        return typeToTypeInfo[_typeId];
     }
 }

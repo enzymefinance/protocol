@@ -1,11 +1,11 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
-  externalPositionCallArgs,
   externalPositionRemoveArgs,
   ExternalPositionManagerActionId,
   VaultLib,
   WETH,
+  encodeArgs,
 } from '@enzymefinance/protocol';
 import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
@@ -51,17 +51,12 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: { aggregatedDerivativePriceFeed, chainlinkPriceFeed, compoundPriceFeed, externalPositionManager },
+      deployment: { compoundDebtPositionParser, compoundDebtPositionLib, externalPositionManager },
     } = await provider.snapshot(snapshot);
+    const typeInfo = await externalPositionManager.getTypeInfo(0);
 
-    const getDerivativePriceFeedCall = await externalPositionManager.getDerivativePriceFeed();
-    expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);
-
-    const getPrimitivePriceFeedCall = await externalPositionManager.getPrimitivePriceFeed();
-    expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
-
-    const getCompoundPriceFeedCall = await externalPositionManager.getCompoundPriceFeed();
-    expect(getCompoundPriceFeedCall).toMatchAddress(compoundPriceFeed);
+    expect(typeInfo.parser).toMatchAddress(compoundDebtPositionParser.address);
+    expect(typeInfo.lib).toMatchAddress(compoundDebtPositionLib.address);
   });
 });
 
@@ -126,8 +121,23 @@ describe('activateForFund', () => {
   });
 });
 
-describe('external position actions', () => {
-  describe('createExternalPosition', () => {
+describe('receiveCallFromComptroller', () => {
+  it('reverts if the action received is invalid', async () => {
+    const {
+      deployment: { externalPositionManager },
+      fund: { comptrollerProxy, fundOwner },
+    } = await provider.snapshot(snapshot);
+
+    const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
+    // Call not allowed by the non authorized user
+    await expect(
+      comptrollerProxy
+        .connect(fundOwner)
+        .callOnExtension(externalPositionManager, Object.keys(ExternalPositionManagerActionId).length + 1, callArgs),
+    ).rejects.toBeRevertedWith('Invalid _actionId');
+  });
+
+  describe('action: createExternalPosition', () => {
     it('only allows authorized users', async () => {
       const {
         accounts: [newAuthUser],
@@ -135,7 +145,7 @@ describe('external position actions', () => {
         fund: { comptrollerProxy, fundOwner },
       } = await provider.snapshot(snapshot);
 
-      const callArgs = externalPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
+      const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
 
       await expect(
         comptrollerProxy
@@ -150,16 +160,32 @@ describe('external position actions', () => {
           .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
       ).rejects.toBeRevertedWith('Only the fund owner can call this function');
     });
+
+    it('reverts if it receives an invalid typeId', async () => {
+      const {
+        deployment: { externalPositionManager },
+        fund: { comptrollerProxy, fundOwner },
+      } = await provider.snapshot(snapshot);
+
+      const callArgs = encodeArgs(['uint256', 'bytes'], [1, '0x']);
+
+      // Call not allowed by the non authorized user
+      await expect(
+        comptrollerProxy
+          .connect(fundOwner)
+          .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
+      ).rejects.toBeRevertedWith('Invalid typeId');
+    });
   });
 
-  describe('removeExternalPosition', () => {
+  describe('action: removeExternalPosition', () => {
     it('works as expected when removing a external position', async () => {
       const {
         deployment: { externalPositionManager },
         fund: { comptrollerProxy, vaultProxy, fundOwner },
       } = await provider.snapshot(snapshot);
 
-      const createPositionCallArgs = externalPositionCallArgs({ protocol: 0, encodedCallArgs: '0x' });
+      const createPositionCallArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
 
       await expect(
         comptrollerProxy

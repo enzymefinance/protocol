@@ -539,7 +539,7 @@ contract ComptrollerLib is IComptroller {
         (
             address[] memory collateralAssets,
             uint256[] memory collateralBalances
-        ) = IExternalPosition(_externalPosition).getCollateralAssets();
+        ) = IExternalPosition(_externalPosition).getManagedAssets();
 
         (uint256 collateralValue, bool isValidCollateralValue) = IValueInterpreter(
             VALUE_INTERPRETER
@@ -553,7 +553,7 @@ contract ComptrollerLib is IComptroller {
         (address[] memory borrowedAssets, uint256[] memory borrowedBalances) = IExternalPosition(
             _externalPosition
         )
-            .getBorrowedAssets();
+            .getDebtAssets();
 
         (uint256 borrowedValue, bool isValidBorrowedValue) = IValueInterpreter(VALUE_INTERPRETER)
             .calcCanonicalAssetsTotalValue(borrowedAssets, borrowedBalances, denominationAsset);

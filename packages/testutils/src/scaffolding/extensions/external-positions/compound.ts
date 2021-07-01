@@ -26,7 +26,11 @@ export async function createExternalPosition({
 }) {
   const createExternalPositionTx = comptrollerProxy
     .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, '0x00');
+    .callOnExtension(
+      externalPositionManager,
+      ExternalPositionManagerActionId.CreateExternalPosition,
+      encodeArgs(['uint256', 'bytes'], [protocol, '0x']),
+    );
   return createExternalPositionTx;
 }
 

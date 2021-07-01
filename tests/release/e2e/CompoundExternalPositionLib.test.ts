@@ -162,11 +162,11 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 236428
-      expect(addCollateralReceipt).toCostLessThan('237000');
+      // Rounding up from 234952
+      expect(addCollateralReceipt).toCostLessThan('235000');
 
-      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
+      expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: collateralAssets,
         amounts_: collateralAmounts,
       });
@@ -198,8 +198,8 @@ describe('receiveCallFromVault', () => {
       expect(externalPositionBalanceAfter.sub(externalPositionBalanceBefore)).toEqBigNumber(collateralAmounts[0]);
       expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(collateralAmounts[0]);
 
-      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
+      expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: collateralAssets,
         amounts_: collateralAmounts,
       });
@@ -250,11 +250,11 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      // Rounding up from 275470
-      expect(removeCollateralReceipt).toCostLessThan('276000');
+      // Rounding up from 271808
+      expect(removeCollateralReceipt).toCostLessThan('272000');
 
-      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
+      expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: collateralAssets,
         amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
       });
@@ -301,8 +301,8 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      const getCollateralAssetsCall = await compoundDebtPosition.getCollateralAssets.call();
-      expect(getCollateralAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
+      expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: collateralAssets,
         amounts_: [collateralAmounts[0].sub(collateralAmountsToBeRemoved[0])],
       });
@@ -324,7 +324,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      const collateralAssetsStoredBefore = (await compoundDebtPosition.getManagedAssets.call()).assets_;
       expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
       await removeCollateral({
@@ -337,7 +337,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const collateralAssetsStoredAfter = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      const collateralAssetsStoredAfter = (await compoundDebtPosition.getManagedAssets.call()).assets_;
       expect(collateralAssetsStoredAfter.length).toStrictEqual(0);
     });
 
@@ -358,7 +358,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const collateralAssetsStoredBefore = (await compoundDebtPosition.getCollateralAssets.call()).assets_;
+      const collateralAssetsStoredBefore = (await compoundDebtPosition.getManagedAssets.call()).assets_;
       expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
       const removeCollateralTx = removeCollateral({
@@ -415,11 +415,11 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 420929
-      expect(borrowReceipt).toCostLessThan('422000');
+      // Rounding up from 430664
+      expect(borrowReceipt).toCostLessThan('431000');
 
-      const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
-      expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
+      expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: borrowedAssets,
         amounts_: borrowedAmounts,
       });
@@ -462,11 +462,11 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 412080
-      expect(borrowReceipt).toCostLessThan('413000');
+      // Rounding up from 424345
+      expect(borrowReceipt).toCostLessThan('425000');
 
-      const getBorrowedAssetsCall = await compoundDebtPosition.getBorrowedAssets.call();
-      expect(getBorrowedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getCollateralAssets.fragment, {
+      const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
+      expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
         assets_: borrowedAssets,
         amounts_: borrowedAmounts,
       });
@@ -576,7 +576,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const borrowedBalancesBefore = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
       const repayBorrowReceipt = await repayBorrow({
@@ -589,7 +589,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const borrowedBalancesAfter = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceAfter = await dai.balanceOf(vaultProxyUsed);
 
       // Assert the correct balance of asset was removed from the VaultProxy
@@ -602,8 +602,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 297420
-      expect(repayBorrowReceipt).toCostLessThan('299000');
+      // Rounding up from 297498
+      expect(repayBorrowReceipt).toCostLessThan('298000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -642,7 +642,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const borrowedBalancesBefore = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const borrowedBalancesBefore = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
       const repayBorrowReceipt = await repayBorrow({
@@ -656,7 +656,7 @@ describe('receiveCallFromVault', () => {
       });
 
       const vaultBalanceAfter = await weth.balanceOf(vaultProxyUsed);
-      const borrowedBalancesAfter = (await compoundDebtPosition.getBorrowedAssets.call()).amounts_[0];
+      const borrowedBalancesAfter = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
 
       // Assert the correct balance of asset was removed from the VaultProxy
       expect(vaultBalanceBefore.sub(vaultBalanceAfter)).toEqBigNumber(borrowedAmountsToBeRepaid[0]);
@@ -668,8 +668,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 286164
-      expect(repayBorrowReceipt).toCostLessThan('287000');
+      // Rounding up from 290674
+      expect(repayBorrowReceipt).toCostLessThan('291000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -708,7 +708,7 @@ describe('receiveCallFromVault', () => {
       // Send some extra weth to pay interests
       await weth.transfer(vaultProxyUsed, lentAmount);
 
-      const borrowedAssetsStoredBefore = await compoundDebtPosition.getBorrowedAssets.call();
+      const borrowedAssetsStoredBefore = await compoundDebtPosition.getDebtAssets.call();
       const repayAmounts = [borrowedAmounts[0].mul(BigNumber.from('2'))];
 
       expect(borrowedAssetsStoredBefore.assets_.length).toStrictEqual(1);
@@ -728,7 +728,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const borrowedAssetsStoredAfter = (await compoundDebtPosition.getBorrowedAssets.call()).assets_;
+      const borrowedAssetsStoredAfter = (await compoundDebtPosition.getDebtAssets.call()).assets_;
       expect(borrowedAssetsStoredAfter.length).toStrictEqual(0);
 
       const tokenFromCBorrowedAssetAfter = await compoundDebtPosition.getCTokenFromBorrowedAsset
