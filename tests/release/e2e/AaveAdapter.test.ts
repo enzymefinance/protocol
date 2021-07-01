@@ -11,12 +11,23 @@ import { createNewFund, ProtocolDeployment, getAssetBalances, deployProtocolFixt
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
 
+const roundingBuffer = BigNumber.from(2);
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
 
-// HAPPY PATHS
+describe('constructor', () => {
+  it('sets state vars', async () => {
+    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
+    const lendingPoolAddressProvider = await aaveAdapter.getLendingPoolAddressProvider();
+    expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
+
+    const referralCode = await aaveAdapter.getReferralCode();
+    expect(referralCode).toEqBigNumber(BigNumber.from('158'));
+  });
+});
+
 describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const [fundOwner] = fork.accounts;
@@ -53,7 +64,11 @@ describe('lend', () => {
       assets: [aToken, token],
     });
 
-    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
+    // aToken amount received can be a small amount less than expected
+    const expectedIncomingAssetBalance = preTxIncomingAssetBalance.add(amount);
+    expect(postTxIncomingAssetBalance).toBeLteBigNumber(expectedIncomingAssetBalance);
+    expect(postTxIncomingAssetBalance).toBeGteBigNumber(expectedIncomingAssetBalance.sub(roundingBuffer));
+
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
     // Rounding up from 540942
@@ -97,23 +112,17 @@ describe('redeem', () => {
       assets: [token, aToken],
     });
 
-    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
-    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
+    const expectedATokenAmountWithBuffer = amount.sub(roundingBuffer);
+    // Underlying token amount received might be able to be a small amount less than expected,
+    // but until that is confirmed we'll leave this test as strictly equal
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedATokenAmountWithBuffer));
+    // aToken amount spent can be a small amount more than expected
+    const expectedOutgoingAssetBalance = preTxOutgoingAssetBalance.sub(expectedATokenAmountWithBuffer);
+    expect(postTxOutgoingAssetBalance).toBeGteBigNumber(expectedOutgoingAssetBalance);
+    expect(postTxOutgoingAssetBalance).toBeLteBigNumber(expectedOutgoingAssetBalance.add(roundingBuffer));
 
-    // Rounding up from 636286
-    expect(redeemReceipt).toCostLessThan('637000');
-  });
-});
-
-// TODO: Move this assertions to unit tests
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const lendingPoolAddressProvider = await aaveAdapter.getLendingPoolAddressProvider();
-    expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
-
-    const referralCode = await aaveAdapter.getReferralCode();
-    expect(referralCode).toEqBigNumber(BigNumber.from('158'));
+    // Rounding up from 729785
+    expect(redeemReceipt).toCostLessThan('731000');
   });
 });
 
@@ -158,7 +167,7 @@ describe('parseAssetsForMethod', () => {
       incomingAssets_: [aToken.address],
       spendAssets_: [outgoingToken],
       spendAssetAmounts_: [amount],
-      minIncomingAssetAmounts_: [amount],
+      minIncomingAssetAmounts_: [amount.sub(roundingBuffer)],
     });
   });
 
@@ -180,7 +189,7 @@ describe('parseAssetsForMethod', () => {
       incomingAssets_: [token],
       spendAssets_: [aToken],
       spendAssetAmounts_: [amount],
-      minIncomingAssetAmounts_: [amount],
+      minIncomingAssetAmounts_: [amount.sub(roundingBuffer.add(1))],
     });
   });
 });

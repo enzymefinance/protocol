@@ -11,24 +11,35 @@
 
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../infrastructure/price-feeds/derivatives/feeds/AavePriceFeed.sol";
 import "../../../../interfaces/IAaveLendingPool.sol";
 import "../../../../interfaces/IAaveLendingPoolAddressProvider.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/AdapterBase2.sol";
 
 /// @title AaveAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Aave Lending <https://aave.com/>
-contract AaveAdapter is AdapterBase {
+/// @dev When lending and redeeming, a small `ROUNDING_BUFFER` is subtracted from the expected
+/// `aToken` values. This is a workaround for problematic quirks in `aToken` balance rounding
+/// (due to RayMath and rebasing logic), which sometimes leads to tx failures due to strict
+/// validation in the IntegrationManager of the incoming and outgoing asset amounts used in the tx.
+/// Due to this workaround, an `aToken` value <= the `ROUNDING_BUFFER` is not usable in this adapter,
+/// which is fine because those values would not make sense (gas-wise) to lend or redeem.
+contract AaveAdapter is AdapterBase2 {
+    using SafeMath for uint256;
+
+    uint256 private constant ROUNDING_BUFFER = 2;
+    uint16 private constant REFERRAL_CODE = 158;
+
     address private immutable AAVE_PRICE_FEED;
     address private immutable LENDING_POOL_ADDRESS_PROVIDER;
-    uint16 private constant REFERRAL_CODE = 158;
 
     constructor(
         address _integrationManager,
         address _lendingPoolAddressProvider,
         address _aavePriceFeed
-    ) public AdapterBase(_integrationManager) {
+    ) public AdapterBase2(_integrationManager) {
         LENDING_POOL_ADDRESS_PROVIDER = _lendingPoolAddressProvider;
         AAVE_PRICE_FEED = _aavePriceFeed;
     }
@@ -75,7 +86,8 @@ contract AaveAdapter is AdapterBase {
             incomingAssets_ = new address[](1);
             incomingAssets_[0] = aToken;
             minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = amount;
+            // See file @dev tag explanation of `ROUNDING_BUFFER`
+            minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
         } else if (_selector == REDEEM_SELECTOR) {
             (address aToken, uint256 amount) = __decodeCallArgs(_encodedCallArgs);
 
@@ -91,7 +103,11 @@ contract AaveAdapter is AdapterBase {
             incomingAssets_ = new address[](1);
             incomingAssets_[0] = token;
             minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = amount;
+            // See file @dev tag explanation of `ROUNDING_BUFFER`.
+            // Since `ROUNDING_BUFFER` is subtracted from spendAssetAmounts_[0]
+            // in redeem(), we must also subtract it from the min incoming amount.
+            // The extra `1` added to the buffer is just extra cautious.
+            minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER + 1);
         } else {
             revert("parseAssetsForMethod: _selector invalid");
         }
@@ -140,7 +156,11 @@ contract AaveAdapter is AdapterBase {
         address _vaultProxy,
         bytes calldata,
         bytes calldata _encodedAssetTransferArgs
-    ) external onlyIntegrationManager {
+    )
+        external
+        onlyIntegrationManager
+        postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+    {
         (
             ,
             address[] memory spendAssets,
@@ -151,11 +171,17 @@ contract AaveAdapter is AdapterBase {
         address lendingPoolAddress = IAaveLendingPoolAddressProvider(LENDING_POOL_ADDRESS_PROVIDER)
             .getLendingPool();
 
-        __approveMaxAsNeeded(spendAssets[0], lendingPoolAddress, spendAssetAmounts[0]);
+        // See file @dev tag explanation of `ROUNDING_BUFFER`.
+        // The surplus amount of the spendAsset `aToken` is sent back to the _vaultProxy
+        // via `postActionSpendAssetsTransferHandler` to ensure that the IntegrationManager
+        // validation of spendAssetAmounts passes.
+        uint256 actualSpendAmount = spendAssetAmounts[0].sub(ROUNDING_BUFFER);
+
+        __approveMaxAsNeeded(spendAssets[0], lendingPoolAddress, actualSpendAmount);
 
         IAaveLendingPool(lendingPoolAddress).withdraw(
             incomingAssets[0],
-            spendAssetAmounts[0],
+            actualSpendAmount,
             _vaultProxy
         );
     }
