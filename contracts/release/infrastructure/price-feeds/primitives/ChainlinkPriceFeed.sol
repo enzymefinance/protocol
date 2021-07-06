@@ -83,33 +83,27 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
     /// @param _baseAssetAmount The base asset amount to convert
     /// @param _quoteAsset The quote asset
     /// @return quoteAssetAmount_ The equivalent quote asset amount
-    /// @return isValid_ True if the rates used in calculations are deemed valid
     function calcCanonicalValue(
         address _baseAsset,
         uint256 _baseAssetAmount,
         address _quoteAsset
-    ) external view override returns (uint256 quoteAssetAmount_, bool isValid_) {
+    ) external view override returns (uint256 quoteAssetAmount_) {
         // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
-        if (baseAssetRate <= 0) {
-            return (0, false);
-        }
+        require(baseAssetRate > 0, "calcCanonicalValue: Invalid base asset rate");
 
         int256 quoteAssetRate = __getLatestRateData(_quoteAsset);
-        if (quoteAssetRate <= 0) {
-            return (0, false);
-        }
+        require(quoteAssetRate > 0, "calcCanonicalValue: Invalid quote asset rate");
 
-        (quoteAssetAmount_, isValid_) = __calcConversionAmount(
-            _baseAsset,
-            _baseAssetAmount,
-            uint256(baseAssetRate),
-            _quoteAsset,
-            uint256(quoteAssetRate)
-        );
-
-        return (quoteAssetAmount_, isValid_);
+        return
+            __calcConversionAmount(
+                _baseAsset,
+                _baseAssetAmount,
+                uint256(baseAssetRate),
+                _quoteAsset,
+                uint256(quoteAssetRate)
+            );
     }
 
     /// @notice Checks whether an asset is a supported primitive of the price feed
@@ -134,7 +128,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         uint256 _baseAssetRate,
         address _quoteAsset,
         uint256 _quoteAssetRate
-    ) private view returns (uint256 quoteAssetAmount_, bool isValid_) {
+    ) private view returns (uint256 quoteAssetAmount_) {
         RateAsset baseAssetRateAsset = getRateAssetForPrimitive(_baseAsset);
         RateAsset quoteAssetRateAsset = getRateAssetForPrimitive(_quoteAsset);
         uint256 baseAssetUnit = getUnitForPrimitive(_baseAsset);
@@ -142,26 +136,22 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
 
         // If rates are both in ETH or both in USD
         if (baseAssetRateAsset == quoteAssetRateAsset) {
-            return (
+            return
                 __calcConversionAmountSameRateAsset(
                     _baseAssetAmount,
                     baseAssetUnit,
                     _baseAssetRate,
                     quoteAssetUnit,
                     _quoteAssetRate
-                ),
-                true
-            );
+                );
         }
 
         int256 ethPerUsdRate = IChainlinkAggregator(ethUsdAggregator).latestAnswer();
-        if (ethPerUsdRate <= 0) {
-            return (0, false);
-        }
+        require(ethPerUsdRate > 0, "__calcConversionAmount: Bad ethUsd rate");
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
         if (baseAssetRateAsset == RateAsset.ETH) {
-            return (
+            return
                 __calcConversionAmountEthRateAssetToUsdRateAsset(
                     _baseAssetAmount,
                     baseAssetUnit,
@@ -169,13 +159,11 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
                     quoteAssetUnit,
                     _quoteAssetRate,
                     uint256(ethPerUsdRate)
-                ),
-                true
-            );
+                );
         }
 
         // If _baseAsset's rate is in USD and _quoteAsset's rate is in ETH
-        return (
+        return
             __calcConversionAmountUsdRateAssetToEthRateAsset(
                 _baseAssetAmount,
                 baseAssetUnit,
@@ -183,9 +171,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
                 quoteAssetUnit,
                 _quoteAssetRate,
                 uint256(ethPerUsdRate)
-            ),
-            true
-        );
+            );
     }
 
     /// @dev Helper to convert amounts where the base asset has an ETH rate and the quote asset has a USD rate

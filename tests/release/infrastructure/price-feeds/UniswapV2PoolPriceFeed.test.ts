@@ -6,7 +6,7 @@ import {
   deployProtocolFixture,
   uniswapV2Lend,
 } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -141,12 +141,10 @@ describe('calcUnderlyingValues', () => {
     const poolRateRatio = getReservesRes[0].mul(utils.parseEther('1')).div(getReservesRes[1]);
 
     // Get the trusted rate ratio based on trusted prices
-    const calcCanonicalAssetValueRes = await valueInterpreter.calcCanonicalAssetValue
+    const token1RatioAmount = await valueInterpreter.calcCanonicalAssetValue
       .args(token0Address, token0RatioAmount, token1Address)
       .call();
-    const trustedUnderlyingsRateRatio = token0RatioAmount
-      .mul(utils.parseEther('1'))
-      .div(calcCanonicalAssetValueRes.value_);
+    const trustedUnderlyingsRateRatio = token0RatioAmount.mul(utils.parseEther('1')).div(token1RatioAmount);
 
     // Get the final calculated canonical rate
     const canonicalUnderlyingsRateRatio = calcUnderlyingValuesRes.underlyingAmounts_[0]
@@ -183,10 +181,7 @@ describe('calcUnderlyingValues', () => {
 
       // usdc/weth on May 31, 2021 was worth about $167M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        isValid_: true,
-        value_: 158897255870290,
-      });
+      expect(canonicalAssetValue).toEqBigNumber(158897255870290);
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -206,10 +201,7 @@ describe('calcUnderlyingValues', () => {
 
       // knc/weth on May 31, 2021 was worth about $160
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('158937723230135855509'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('158937723230135855509');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

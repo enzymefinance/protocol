@@ -82,9 +82,7 @@ contract PerformanceFee is FeeBase {
         // would be susceptible to a DoS attack when attempting to migrate to a release that uses
         // this fee: an attacker trades a negligible amount of a tracked Synth with the VaultProxy
         // as the recipient, thus causing `calcGrossShareValue(true)` to fail.
-        (uint256 grossSharePrice, bool sharePriceIsValid) = ComptrollerLib(_comptrollerProxy)
-            .calcGrossShareValue(false);
-        require(sharePriceIsValid, "activateForFund: Invalid share price");
+        uint256 grossSharePrice = ComptrollerLib(_comptrollerProxy).calcGrossShareValue(false);
 
         feeInfo.highWaterMark = grossSharePrice;
         feeInfo.lastSharePrice = grossSharePrice;

@@ -19,11 +19,11 @@ interface IValueInterpreter {
         address,
         uint256,
         address
-    ) external returns (uint256, bool);
+    ) external returns (uint256);
 
     function calcCanonicalAssetsTotalValue(
         address[] calldata,
         uint256[] calldata,
         address
-    ) external returns (uint256, bool);
+    ) external returns (uint256);
 }

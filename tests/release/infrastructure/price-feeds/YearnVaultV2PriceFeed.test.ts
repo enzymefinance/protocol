@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { IYearnVaultV2, StandardToken } from '@enzymefinance/protocol';
 import { deployProtocolFixture, getAssetUnit, ProtocolDeployment } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -104,10 +104,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1047318861730262692'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber('1047318861730262692');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
@@ -124,10 +121,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1057405'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber('1057405');
   });
 });
 

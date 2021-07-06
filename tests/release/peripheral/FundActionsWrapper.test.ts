@@ -50,6 +50,6 @@ describe('calcNetShareValueForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const netShareValue = await fundActionsWrapper.calcNetShareValueForFund.args(comptrollerProxy).call();
-    expect(netShareValue.netShareValue_).toEqBigNumber(utils.parseEther('1'));
+    expect(netShareValue).toEqBigNumber(utils.parseEther('1'));
   });
 });

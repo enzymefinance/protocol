@@ -465,15 +465,14 @@ contract ComptrollerLib is IComptroller {
     /// @notice Calculates the gross asset value (GAV) of the fund
     /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return gav_ The fund GAV
-    /// @return isValid_ True if the conversion rates used to derive the GAV are all valid
-    function calcGav(bool _requireFinality) public override returns (uint256 gav_, bool isValid_) {
+    function calcGav(bool _requireFinality) public override returns (uint256 gav_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         address[] memory externalPositions = IVault(vaultProxyAddress)
             .getActiveExternalPositions();
 
         if (assets.length == 0 && externalPositions.length == 0) {
-            return (0, true);
+            return 0;
         }
 
         // Resolve finality of all assets as needed
@@ -488,7 +487,7 @@ contract ComptrollerLib is IComptroller {
             balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
-        (gav_, isValid_) = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+        gav_ = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
             assets,
             balances,
             denominationAsset
@@ -496,31 +495,25 @@ contract ComptrollerLib is IComptroller {
 
         if (externalPositions.length > 0) {
             for (uint256 i; i < externalPositions.length; i++) {
-                (
-                    uint256 externalPositionValue,
-                    bool isValidExternalPositionValue
-                ) = __calcExternalPositionValue(externalPositions[i]);
+                uint256 externalPositionValue = __calcExternalPositionValue(externalPositions[i]);
 
                 gav_ = gav_.add(externalPositionValue);
-                isValid_ = isValid_ && isValidExternalPositionValue;
             }
         }
 
-        return (gav_, isValid_);
+        return gav_;
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
     /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return grossShareValue_ The amount of the denomination asset per share
-    /// @return isValid_ True if the conversion rates to derive the value are all valid
     /// @dev Does not account for any fees outstanding.
     function calcGrossShareValue(bool _requireFinality)
         external
         override
-        returns (uint256 grossShareValue_, bool isValid_)
+        returns (uint256 grossShareValue_)
     {
-        uint256 gav;
-        (gav, isValid_) = calcGav(_requireFinality);
+        uint256 gav = calcGav(_requireFinality);
 
         grossShareValue_ = __calcGrossShareValue(
             gav,
@@ -528,22 +521,20 @@ contract ComptrollerLib is IComptroller {
             10**uint256(ERC20(denominationAsset).decimals())
         );
 
-        return (grossShareValue_, isValid_);
+        return grossShareValue_;
     }
 
     // @dev Helper for calculating a external position value. Prevents from stack too deep
     function __calcExternalPositionValue(address _externalPosition)
         private
-        returns (uint256 value_, bool isValid_)
+        returns (uint256 value_)
     {
         (
             address[] memory collateralAssets,
             uint256[] memory collateralBalances
         ) = IExternalPosition(_externalPosition).getManagedAssets();
 
-        (uint256 collateralValue, bool isValidCollateralValue) = IValueInterpreter(
-            VALUE_INTERPRETER
-        )
+        uint256 collateralValue = IValueInterpreter(VALUE_INTERPRETER)
             .calcCanonicalAssetsTotalValue(
             collateralAssets,
             collateralBalances,
@@ -555,14 +546,17 @@ contract ComptrollerLib is IComptroller {
         )
             .getDebtAssets();
 
-        (uint256 borrowedValue, bool isValidBorrowedValue) = IValueInterpreter(VALUE_INTERPRETER)
-            .calcCanonicalAssetsTotalValue(borrowedAssets, borrowedBalances, denominationAsset);
+        uint256 borrowedValue = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+            borrowedAssets,
+            borrowedBalances,
+            denominationAsset
+        );
 
         if (collateralValue > borrowedValue) {
             value_ = collateralValue.sub(borrowedValue);
         }
 
-        return (value_, isValidCollateralValue && isValidBorrowedValue);
+        return value_;
     }
 
     /// @dev Helper for calculating the gross share value
@@ -602,8 +596,7 @@ contract ComptrollerLib is IComptroller {
             "buyShares: Pending migration or reconfiguration"
         );
 
-        (uint256 gav, bool gavIsValid) = calcGav(true);
-        require(gavIsValid, "buyShares: Invalid GAV");
+        uint256 gav = calcGav(true);
 
         address denominationAssetCopy = denominationAsset;
         uint256 sharePrice = __calcGrossShareValue(
@@ -713,8 +706,7 @@ contract ComptrollerLib is IComptroller {
             "redeemSharesForSpecificAssets: Duplicate payout asset"
         );
 
-        (uint256 gav, bool gavIsValid) = calcGav(true);
-        require(gavIsValid, "redeemSharesForSpecificAssets: Invalid GAV");
+        uint256 gav = calcGav(true);
 
         IVault vaultProxyContract = IVault(vaultProxy);
         (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
@@ -901,16 +893,10 @@ contract ComptrollerLib is IComptroller {
                 continue;
             }
 
-            bool payoutAssetRateIsValid;
-            (payoutAmounts_[i], payoutAssetRateIsValid) = IValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(
+            payoutAmounts_[i] = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
                 denominationAssetCopy,
                 _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
                 _payoutAssets[i]
-            );
-            require(
-                payoutAssetRateIsValid,
-                "__payoutSpecifiedAssetPercentages: Invalid asset rate"
             );
 
             vaultProxyContract.withdrawAssetTo(_payoutAssets[i], _recipient, payoutAmounts_[i]);

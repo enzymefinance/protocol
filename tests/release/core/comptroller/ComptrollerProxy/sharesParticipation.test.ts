@@ -204,16 +204,10 @@ describe('buyShares', () => {
 
     // Assert calls on ComptrollerProxy
     const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
-    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
-      gav_: expectedGav,
-      isValid_: true,
-    });
+    expect(calcGavCall).toEqBigNumber(expectedGav);
 
     const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue, {
-      grossShareValue_: utils.parseEther('1'),
-      isValid_: true,
-    });
+    expect(calcGrossShareValueCall).toEqBigNumber(utils.parseEther('1'));
 
     // Assert the PolicyManager was called with the correct data
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
@@ -273,17 +267,11 @@ describe('buyShares', () => {
 
     // Assert GAV is the investment amount
     const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
-    expect(calcGavCall).toMatchFunctionOutput(comptrollerProxy.calcGav, {
-      gav_: investmentAmount,
-      isValid_: true,
-    });
+    expect(calcGavCall).toEqBigNumber(investmentAmount);
 
     // Assert gross share value is the investment amount
     const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toMatchFunctionOutput(comptrollerProxy.calcGrossShareValue, {
-      grossShareValue_: investmentAmount,
-      isValid_: true,
-    });
+    expect(calcGrossShareValueCall).toEqBigNumber(investmentAmount);
 
     // Assert the correct amount of shares was minted to the buyer
     const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
@@ -526,18 +514,16 @@ describe('redeem', () => {
         amounts: await Promise.all(
           payoutAssets.map(
             async (asset) =>
-              (
-                await valueInterpreter.calcCanonicalAssetValue
-                  .args(denominationAsset, preTxVaultDenominationAssetBalance, asset)
-                  .call()
-              ).value_,
+              await valueInterpreter.calcCanonicalAssetValue
+                .args(denominationAsset, preTxVaultDenominationAssetBalance, asset)
+                .call(),
           ),
         ),
       });
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
-      const preTxGav = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
       const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
 
       // Redeem all of the investor's shares
@@ -554,16 +540,14 @@ describe('redeem', () => {
       const expectedPayoutAmounts = await Promise.all(
         payoutAssets.map(
           async (asset, i) =>
-            (
-              await valueInterpreter.calcCanonicalAssetValue
-                .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[i]).div(oneHundredPercent), asset)
-                .call()
-            ).value_,
+            await valueInterpreter.calcCanonicalAssetValue
+              .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[i]).div(oneHundredPercent), asset)
+              .call(),
         ),
       );
 
       // Assert that the new GAV is roughly the old gav minus gav owed
-      expect((await comptrollerProxy.calcGav.args(true).call()).gav_).toBeAroundBigNumber(preTxGav.sub(gavOwed));
+      expect(await comptrollerProxy.calcGav.args(true).call()).toBeAroundBigNumber(preTxGav.sub(gavOwed));
 
       // Assert the redeemer has redeemed all shares
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
@@ -622,7 +606,7 @@ describe('redeem', () => {
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(4);
-      const preTxGav = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
       const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
 
       // Redeem part of the investor's shares
@@ -636,11 +620,9 @@ describe('redeem', () => {
 
       // Calculate the expected payout amount and expect 0 for the empty asset
       const expectedPayoutAmounts = [
-        (
-          await valueInterpreter.calcCanonicalAssetValue
-            .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[0]).div(oneHundredPercent), denominationAsset)
-            .call()
-        ).value_,
+        await valueInterpreter.calcCanonicalAssetValue
+          .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[0]).div(oneHundredPercent), denominationAsset)
+          .call(),
         0,
       ];
 

@@ -7,7 +7,7 @@ import {
   ProtocolDeployment,
   deployProtocolFixture,
 } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -62,10 +62,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(ibeth, utils.parseUnits('1', await ibeth.decimals()), weth)
       .call();
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1063397516312767510'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber('1063397516312767510');
   });
 });
 

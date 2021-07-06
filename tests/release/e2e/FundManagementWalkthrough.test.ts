@@ -289,8 +289,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavAfter = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
-      expect(gavAfter.gav_).toBeGtBigNumber(gavBefore.gav_);
-      expect(grossShareValueAfter.grossShareValue_).toBeGtBigNumber(grossShareValueBefore.grossShareValue_);
+      expect(gavAfter).toBeGtBigNumber(gavBefore);
+      expect(grossShareValueAfter).toBeGtBigNumber(grossShareValueBefore);
     });
 
     it('redeems some shares of the investor (without fees failure)', async () => {
@@ -323,8 +323,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavAfter = await comptrollerProxy.calcGav.args(true).call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
-      expect(gavAfter.gav_).toBeGtBigNumber(gavBefore.gav_);
-      expect(grossShareValueAfter.grossShareValue_).toBeGtBigNumber(grossShareValueBefore.grossShareValue_);
+      expect(gavAfter).toBeGtBigNumber(gavBefore);
+      expect(grossShareValueAfter).toBeGtBigNumber(grossShareValueBefore);
     });
 
     it('changes the InvestorWhitelist', async () => {
@@ -347,7 +347,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const grossShareValue = await comptrollerProxy.calcGrossShareValue.call();
       const minSharesQuantity = investmentAmount
         .mul(utils.parseEther('1'))
-        .div(grossShareValue.grossShareValue_)
+        .div(grossShareValue)
         .mul(95) // deduct 5% for safety
         .div(100);
 

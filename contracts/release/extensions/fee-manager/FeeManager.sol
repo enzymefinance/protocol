@@ -219,10 +219,8 @@ contract FeeManager is
         uint256 _gavOrZero
     ) private returns (uint256 gav_) {
         if (_gavOrZero == 0 && feeUsesGavOnUpdate(_fee)) {
-            // Assumes that any fee that requires GAV would need to revert if invalid or not final
-            bool gavIsValid;
-            (gav_, gavIsValid) = IComptroller(_comptrollerProxy).calcGav(true);
-            require(gavIsValid, "__getGavAsNecessary: Invalid GAV");
+            // Assumes that any fee that requires GAV would need to revert if not final
+            gav_ = IComptroller(_comptrollerProxy).calcGav(true);
         } else {
             gav_ = _gavOrZero;
         }

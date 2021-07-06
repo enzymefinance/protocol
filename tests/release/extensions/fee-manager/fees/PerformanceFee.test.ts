@@ -41,8 +41,8 @@ async function createMocksForPerformanceFeeConfig(fork: ProtocolDeployment) {
 
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
-  await mockComptrollerProxy.calcGav.returns(0, false);
-  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseUnits('1', mockDenominationAssetDecimals), true);
+  await mockComptrollerProxy.calcGav.returns(0);
+  await mockComptrollerProxy.calcGrossShareValue.returns(utils.parseUnits('1', mockDenominationAssetDecimals));
   await mockComptrollerProxy.getDenominationAsset.returns(mockDenominationAsset);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
@@ -93,11 +93,10 @@ async function activateWithInitialValues({
   gav: BigNumberish;
   totalSharesSupply?: BigNumberish;
 }) {
-  await mockComptrollerProxy.calcGav.returns(gav, true);
+  await mockComptrollerProxy.calcGav.returns(gav);
   await mockVaultProxy.totalSupply.returns(totalSharesSupply);
   await mockComptrollerProxy.calcGrossShareValue.returns(
     BigNumber.from(gav).mul(utils.parseEther('1')).div(totalSharesSupply),
-    true,
   );
 
   return mockFeeManager.forward(performanceFee.activateForFund, mockComptrollerProxy, mockVaultProxy);
@@ -122,10 +121,9 @@ async function assertAdjustedPerformance({
 }) {
   // Change the share price by altering the gav
   const prevTotalSharesSupply = await mockVaultProxy.totalSupply();
-  await mockComptrollerProxy.calcGav.returns(nextGav, true);
+  await mockComptrollerProxy.calcGav.returns(nextGav);
   await mockComptrollerProxy.calcGrossShareValue.returns(
     BigNumber.from(nextGav).mul(utils.parseEther('1')).div(prevTotalSharesSupply),
-    true,
   );
 
   // Calculate expected performance results for next settlement
@@ -377,7 +375,7 @@ describe('activateForFund', () => {
   it('correctly handles valid call', async () => {
     // Set grossShareValue to an arbitrary value
     const grossShareValue = utils.parseUnits('5', await mockDenominationAsset.decimals());
-    await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue, true);
+    await mockComptrollerProxy.calcGrossShareValue.returns(grossShareValue);
 
     // Activate fund
     const receipt = await mockFeeManager.forward(performanceFee.activateForFund, mockComptrollerProxy, mockVaultProxy);
@@ -496,7 +494,7 @@ describe('payout', () => {
       gav: utils.parseUnits('1', await mockDenominationAsset.decimals()),
     });
 
-    const initialSharePrice = (await mockComptrollerProxy.calcGrossShareValue.call()).grossShareValue_;
+    const initialSharePrice = await mockComptrollerProxy.calcGrossShareValue.call();
 
     // Raise next high water mark by increasing price
     await assertAdjustedPerformance({
@@ -703,7 +701,7 @@ describe('settle', () => {
     const settlementData = constants.HashZero;
 
     // settle.call() to assert return values and get the sharesOutstanding
-    const gav = (await mockComptrollerProxy.calcGav.args(true).call()).gav_;
+    const gav = await mockComptrollerProxy.calcGav.args(true).call();
     const settleCall = await performanceFee.settle
       .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData, gav)
       .from(mockFeeManager)
@@ -915,7 +913,7 @@ describe('integration', () => {
     expect(failureEvents2.length).toBe(0);
 
     // Performance fee state should have updated correctly
-    const gavPostRedeem2 = (await comptrollerProxy.calcGav.args(true).call()).gav_;
+    const gavPostRedeem2 = await comptrollerProxy.calcGav.args(true).call();
     const sharesSupplyNetSharesOutstanding = (await vaultProxy.totalSupply()).sub(
       await vaultProxy.balanceOf(vaultProxy),
     );

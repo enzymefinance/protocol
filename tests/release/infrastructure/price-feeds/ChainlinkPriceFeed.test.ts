@@ -15,7 +15,7 @@ import {
   getAssetUnit,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
-import { BigNumber, constants, Signer, utils } from 'ethers';
+import { constants, Signer, utils } from 'ethers';
 
 // Unused chf/usd aggregator
 const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
@@ -466,24 +466,11 @@ describe('setEthUsdAggregator', () => {
 
 // NOTE: Behaviour tests included under e2e tests
 describe('getCanonicalRate', () => {
-  xit('reverts when it receives a negative or zero value', async () => {
-    /*
-    const { chainlinkPriceFeed, aggregatorMocks, primitiveMocks } = await provider.snapshot(snapshot);
+  it.todo('reverts when there is a negative or zero value for the base asset aggregator');
 
-    // Create aggreagator mocks with negative (-1) and 0 values
-    const latestTimestamp = (await provider.getBlock('latest')).timestamp;
-    await aggregatorMocks[0].setLatestAnswer(-1, latestTimestamp);
-    await aggregatorMocks[1].setLatestAnswer(constants.Zero, latestTimestamp);
+  it.todo('reverts when there is a negative or zero value for the quote asset aggregator');
 
-    // Check both revert
-    await expect(
-      chainlinkPriceFeed.addPrimitives([primitiveMocks[0]], [aggregatorMocks[0]], [0]),
-    ).rejects.toBeRevertedWith('No rate detected');
-    await expect(
-      chainlinkPriceFeed.addPrimitives([primitiveMocks[1]], [aggregatorMocks[1]], [0]),
-    ).rejects.toBeRevertedWith('No rate detected');
-    */
-  });
+  it.todo('reverts when there is a negative or zero value for the intermediary asset (ETH/USD)');
 
   // USDC/ETH and WETH/ETH
   it('works as expected when calling getCanonicalRate (equal rate asset)', async () => {
@@ -506,10 +493,7 @@ describe('getCanonicalRate', () => {
     // Base: weth |  Quote: usdc
     const expectedRate = wethUnit.mul(ethRate).div(wethUnit).mul(usdcUnit).div(usdcRate);
     const rate = await chainlinkPriceFeed.calcCanonicalValue(weth, wethUnit, usdc);
-    expect(rate).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
-      quoteAssetAmount_: expectedRate,
-      isValid_: true,
-    });
+    expect(rate).toEqBigNumber(expectedRate);
   });
 
   // DAI/USD and USDC/ETH
@@ -543,10 +527,7 @@ describe('getCanonicalRate', () => {
     const expectedRateDaiUsdc = daiUnit.mul(daiRate).mul(usdcUnit).div(ethRate).mul(ethUnit).div(daiUnit).div(usdcRate);
     const canonicalRateDaiUsdc = await chainlinkPriceFeed.calcCanonicalValue(dai, daiUnit, usdc);
 
-    expect(canonicalRateDaiUsdc).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
-      quoteAssetAmount_: expectedRateDaiUsdc,
-      isValid_: true,
-    });
+    expect(canonicalRateDaiUsdc).toEqBigNumber(expectedRateDaiUsdc);
 
     // ETH rate to USD rate
     // Base: usdc, quote: dai
@@ -558,10 +539,7 @@ describe('getCanonicalRate', () => {
       .div(usdcUnit)
       .div(daiRate);
     const canonicalRateUsdcDai = await chainlinkPriceFeed.calcCanonicalValue(usdc, usdcUnit, dai);
-    expect(canonicalRateUsdcDai).toMatchFunctionOutput(chainlinkPriceFeed.calcCanonicalValue, {
-      quoteAssetAmount_: expectedRateUsdcDai,
-      isValid_: true,
-    });
+    expect(canonicalRateUsdcDai).toEqBigNumber(expectedRateUsdcDai);
   });
 });
 
@@ -614,10 +592,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1003473'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('1003473');
     });
 
     // SUSD/ETH and USDC/ETH
@@ -635,10 +610,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1001862'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('1001862');
     });
   });
 
@@ -665,10 +637,7 @@ describe('expected values', () => {
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('702415059660165691536'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('702415059660165691536');
     });
   });
 
@@ -695,10 +664,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1010460668047292019'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('1010460668047292019');
     });
 
     // USDC/ETH and DAI/USD
@@ -723,10 +689,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('1008581931722281053'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('1008581931722281053');
     });
   });
 
@@ -753,10 +716,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('989647624714075031'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('989647624714075031');
     });
 
     // DAI/USD and USDC/ETH
@@ -781,10 +741,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-        value_: BigNumber.from('991491'),
-        isValid_: true,
-      });
+      expect(canonicalAssetValue).toEqBigNumber('991491');
     });
   });
 });

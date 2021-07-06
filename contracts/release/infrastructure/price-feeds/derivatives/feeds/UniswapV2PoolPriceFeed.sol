@@ -123,21 +123,24 @@ contract UniswapV2PoolPriceFeed is
         uint256 _token0Decimals,
         uint256 _token1Decimals
     ) private returns (uint256 token0RateAmount_, uint256 token1RateAmount_) {
-        bool rateIsValid;
         // The quote asset of the value lookup must be a supported primitive asset,
         // so we cycle through the tokens until reaching a primitive.
         // If neither is a primitive, will revert at the ValueInterpreter
         if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_token0)) {
             token1RateAmount_ = 10**_token1Decimals;
-            (token0RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(_token1, token1RateAmount_, _token0);
+            token0RateAmount_ = ValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+                _token1,
+                token1RateAmount_,
+                _token0
+            );
         } else {
             token0RateAmount_ = 10**_token0Decimals;
-            (token1RateAmount_, rateIsValid) = ValueInterpreter(VALUE_INTERPRETER)
-                .calcCanonicalAssetValue(_token0, token0RateAmount_, _token1);
+            token1RateAmount_ = ValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+                _token0,
+                token0RateAmount_,
+                _token1
+            );
         }
-
-        require(rateIsValid, "__calcTrustedRate: Invalid rate");
 
         return (token0RateAmount_, token1RateAmount_);
     }

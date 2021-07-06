@@ -93,10 +93,7 @@ describe('calcCanonicalAssetValue', () => {
       .args(mockPrimitive1, utils.parseEther('1'), mockPrimitive2)
       .call();
 
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
-      value_: utils.parseEther('1'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber(utils.parseEther('1'));
   });
 
   it('returns the correct value for a derivative base asset', async () => {
@@ -129,10 +126,7 @@ describe('calcCanonicalAssetValue', () => {
     // Calculate expected value
     const expectedValue = mockPrimitive1Amount.add(mockPrimitive2Amount);
 
-    expect(calculatedCanonicalAssetValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
-      value_: expectedValue,
-      isValid_: true,
-    });
+    expect(calculatedCanonicalAssetValue).toEqBigNumber(expectedValue);
   });
 
   it('does not allow a derivative with an unsupported underlying asset', async () => {
@@ -203,10 +197,7 @@ describe('calcCanonicalAssetsTotalValue', () => {
 
     // Expect to have the sum of both units in base 18
     const expectedValue = amount.add(mockPrimitive2Value).add(mockDerivativeValue);
-    expect(calcCanonicalAssetsTotalValue).toMatchFunctionOutput(valueInterpreterWithMocks.calcCanonicalAssetValue, {
-      value_: expectedValue,
-      isValid_: true,
-    });
+    expect(calcCanonicalAssetsTotalValue).toEqBigNumber(expectedValue);
   });
 
   it('does not allow to input unequal argument array lengths', async () => {

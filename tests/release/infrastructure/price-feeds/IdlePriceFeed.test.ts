@@ -7,7 +7,7 @@ import {
   idleLend,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 
 const idleTokenUnit = utils.parseEther('1');
 let fork: ProtocolDeployment;
@@ -108,10 +108,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(idleDai, idleTokenUnit, dai).call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1043195920281923431'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber('1043195920281923431');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
@@ -126,10 +123,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toMatchFunctionOutput(valueInterpreter.calcCanonicalAssetValue, {
-      value_: BigNumber.from('1059179'),
-      isValid_: true,
-    });
+    expect(canonicalAssetValue).toEqBigNumber('1059179');
   });
 });
 

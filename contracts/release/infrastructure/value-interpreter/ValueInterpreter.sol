@@ -43,14 +43,13 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _amounts The amounts of the _baseAssets to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The sum value of _baseAssets, denominated in the _quoteAsset
-    /// @return isValid_ True if the price feed rates used to derive value are all valid
     /// @dev Does not alter protocol state,
     /// but not a view because calls to price feeds can potentially update third party state
     function calcCanonicalAssetsTotalValue(
         address[] memory _baseAssets,
         uint256[] memory _amounts,
         address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
+    ) external override returns (uint256 value_) {
         require(
             _baseAssets.length == _amounts.length,
             "calcCanonicalAssetsTotalValue: Arrays unequal lengths"
@@ -60,20 +59,12 @@ contract ValueInterpreter is IValueInterpreter {
             "calcCanonicalAssetsTotalValue: Unsupported _quoteAsset"
         );
 
-        isValid_ = true;
         for (uint256 i; i < _baseAssets.length; i++) {
-            (uint256 assetValue, bool assetValueIsValid) = __calcAssetValue(
-                _baseAssets[i],
-                _amounts[i],
-                _quoteAsset
-            );
+            uint256 assetValue = __calcAssetValue(_baseAssets[i], _amounts[i], _quoteAsset);
             value_ = value_.add(assetValue);
-            if (!assetValueIsValid) {
-                isValid_ = false;
-            }
         }
 
-        return (value_, isValid_);
+        return value_;
     }
 
     /// @notice Calculates the value of a given amount of one asset in terms of another asset
@@ -81,16 +72,15 @@ contract ValueInterpreter is IValueInterpreter {
     /// @param _amount The amount of the _baseAsset to convert
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
-    /// @return isValid_ True if the price feed rates used to derive value are all valid
     /// @dev Does not alter protocol state,
     /// but not a view because calls to price feeds can potentially update third party state
     function calcCanonicalAssetValue(
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
+    ) external override returns (uint256 value_) {
         if (_baseAsset == _quoteAsset || _amount == 0) {
-            return (_amount, true);
+            return _amount;
         }
 
         require(
@@ -109,9 +99,9 @@ contract ValueInterpreter is IValueInterpreter {
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    ) private returns (uint256 value_, bool isValid_) {
+    ) private returns (uint256 value_) {
         if (_baseAsset == _quoteAsset || _amount == 0) {
-            return (_amount, true);
+            return _amount;
         }
 
         // Handle case that asset is a primitive
@@ -144,7 +134,7 @@ contract ValueInterpreter is IValueInterpreter {
         address _derivative,
         uint256 _amount,
         address _quoteAsset
-    ) private returns (uint256 value_, bool isValid_) {
+    ) private returns (uint256 value_) {
         (address[] memory underlyings, uint256[] memory underlyingAmounts) = IDerivativePriceFeed(
             _derivativePriceFeed
         )
@@ -156,18 +146,13 @@ contract ValueInterpreter is IValueInterpreter {
             "__calcDerivativeValue: Arrays unequal lengths"
         );
 
-        // Let validity be negated if any of the underlying value calculations are invalid
-        isValid_ = true;
         for (uint256 i = 0; i < underlyings.length; i++) {
-            (uint256 underlyingValue, bool underlyingValueIsValid) = __calcAssetValue(
+            uint256 underlyingValue = __calcAssetValue(
                 underlyings[i],
                 underlyingAmounts[i],
                 _quoteAsset
             );
 
-            if (!underlyingValueIsValid) {
-                isValid_ = false;
-            }
             value_ = value_.add(underlyingValue);
         }
     }
