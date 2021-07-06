@@ -26,16 +26,4 @@ interface IValueInterpreter {
         uint256[] calldata,
         address
     ) external returns (uint256, bool);
-
-    function calcLiveAssetValue(
-        address,
-        uint256,
-        address
-    ) external returns (uint256, bool);
-
-    function calcLiveAssetsTotalValue(
-        address[] calldata,
-        uint256[] calldata,
-        address
-    ) external returns (uint256, bool);
 }

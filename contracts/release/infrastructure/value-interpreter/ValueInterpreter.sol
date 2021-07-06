@@ -38,26 +38,6 @@ contract ValueInterpreter is IValueInterpreter {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice An alias of calcCanonicalAssetsTotalValue
-    function calcLiveAssetsTotalValue(
-        address[] calldata _baseAssets,
-        uint256[] calldata _amounts,
-        address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
-        return calcCanonicalAssetsTotalValue(_baseAssets, _amounts, _quoteAsset);
-    }
-
-    /// @notice An alias of calcCanonicalAssetValue
-    function calcLiveAssetValue(
-        address _baseAsset,
-        uint256 _amount,
-        address _quoteAsset
-    ) external override returns (uint256 value_, bool isValid_) {
-        return calcCanonicalAssetValue(_baseAsset, _amount, _quoteAsset);
-    }
-
-    // PUBLIC FUNCTIONS
-
     /// @notice Calculates the total value of given amounts of assets in a single quote asset
     /// @param _baseAssets The assets to convert
     /// @param _amounts The amounts of the _baseAssets to convert
@@ -70,7 +50,7 @@ contract ValueInterpreter is IValueInterpreter {
         address[] memory _baseAssets,
         uint256[] memory _amounts,
         address _quoteAsset
-    ) public override returns (uint256 value_, bool isValid_) {
+    ) external override returns (uint256 value_, bool isValid_) {
         require(
             _baseAssets.length == _amounts.length,
             "calcCanonicalAssetsTotalValue: Arrays unequal lengths"
@@ -108,7 +88,7 @@ contract ValueInterpreter is IValueInterpreter {
         address _baseAsset,
         uint256 _amount,
         address _quoteAsset
-    ) public override returns (uint256 value_, bool isValid_) {
+    ) external override returns (uint256 value_, bool isValid_) {
         if (_baseAsset == _quoteAsset || _amount == 0) {
             return (_amount, true);
         }

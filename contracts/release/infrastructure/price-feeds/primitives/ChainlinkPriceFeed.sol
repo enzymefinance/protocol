@@ -88,7 +88,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         address _baseAsset,
         uint256 _baseAssetAmount,
         address _quoteAsset
-    ) public view override returns (uint256 quoteAssetAmount_, bool isValid_) {
+    ) external view override returns (uint256 quoteAssetAmount_, bool isValid_) {
         // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
@@ -110,21 +110,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         );
 
         return (quoteAssetAmount_, isValid_);
-    }
-
-    /// @notice Calculates the value of a base asset in terms of a quote asset (using a live rate)
-    /// @param _baseAsset The base asset
-    /// @param _baseAssetAmount The base asset amount to convert
-    /// @param _quoteAsset The quote asset
-    /// @return quoteAssetAmount_ The equivalent quote asset amount
-    /// @return isValid_ True if the rates used in calculations are deemed valid
-    /// @dev Live and canonical values are the same for Chainlink
-    function calcLiveValue(
-        address _baseAsset,
-        uint256 _baseAssetAmount,
-        address _quoteAsset
-    ) external view override returns (uint256 quoteAssetAmount_, bool isValid_) {
-        return calcCanonicalValue(_baseAsset, _baseAssetAmount, _quoteAsset);
     }
 
     /// @notice Checks whether an asset is a supported primitive of the price feed
