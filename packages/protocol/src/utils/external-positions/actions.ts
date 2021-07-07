@@ -33,19 +33,14 @@ export function externalPositionActionArgs({
 
 export function externalPositionCallArgs({
   externalPositionProxy = randomAddress(),
-  protocol,
   actionId = 0,
   encodedCallArgs,
 }: {
   externalPositionProxy?: AddressLike;
-  protocol: Number;
   actionId?: Number;
   encodedCallArgs: BytesLike;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'uint256', 'bytes'],
-    [externalPositionProxy, protocol, actionId, encodedCallArgs],
-  );
+  return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, encodedCallArgs]);
 }
 
 export function externalPositionRemoveArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {

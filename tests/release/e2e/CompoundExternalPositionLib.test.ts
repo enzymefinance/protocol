@@ -668,8 +668,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 290674
-      expect(repayBorrowReceipt).toCostLessThan('291000');
+      // Rounding up from 291253
+      expect(repayBorrowReceipt).toCostLessThan('292000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

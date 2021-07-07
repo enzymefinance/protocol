@@ -51,8 +51,6 @@ export async function addCollateral({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const protocol = 0;
-
   const actionArgs = externalPositionActionArgs({
     assets,
     amounts,
@@ -61,7 +59,6 @@ export async function addCollateral({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    protocol,
     actionId: ExternalPositionActionId.AddCollateralAssets,
     encodedCallArgs: actionArgs,
   });
@@ -98,7 +95,6 @@ export async function removeCollateral({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    protocol,
     actionId: ExternalPositionActionId.RemoveCollateralAssets,
     encodedCallArgs: actionArgs,
   });
@@ -136,7 +132,6 @@ export async function borrow({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    protocol,
     actionId: ExternalPositionActionId.BorrowAsset,
     encodedCallArgs: actionArgs,
   });
@@ -173,7 +168,6 @@ export async function repayBorrow({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    protocol,
     actionId: ExternalPositionActionId.RepayBorrowedAssets,
     encodedCallArgs: actionArgs,
   });
@@ -200,7 +194,7 @@ export async function removeExternalPosition({
     externalPositionProxy,
   });
 
-  const callArgs = externalPositionCallArgs({ externalPositionProxy, protocol, encodedCallArgs: actionArgs });
+  const callArgs = externalPositionCallArgs({ externalPositionProxy, encodedCallArgs: actionArgs });
 
   const removeExternalPositionTx = comptrollerProxy
     .connect(fundOwner)

@@ -155,8 +155,12 @@ contract ExternalPositionManager is
 
     // Performs an action on a specific external position, validating the incoming arguments and the final result
     function __executeCallOnExternalPosition(address _vaultProxy, bytes memory _callArgs) private {
-        (address externalPosition, uint256 typeId, uint256 actionId, bytes memory actionArgs) = abi
-            .decode(_callArgs, (address, uint256, uint256, bytes));
+        (address payable externalPosition, uint256 actionId, bytes memory actionArgs) = abi.decode(
+            _callArgs,
+            (address, uint256, bytes)
+        );
+
+        uint256 typeId = ExternalPositionProxy(externalPosition).getExternalPositionType();
 
         require(
             IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
