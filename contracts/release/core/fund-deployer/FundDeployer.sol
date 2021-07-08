@@ -75,6 +75,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     event VaultCallRegistered(address indexed contractAddress, bytes4 selector, bytes32 dataHash);
 
+    event VaultLibSet(address vaultLib);
+
     struct ReconfigurationRequest {
         address nextComptrollerProxy;
         uint256 executableTimestamp;
@@ -87,10 +89,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     address private immutable CREATOR;
     address private immutable DISPATCHER;
-    address private immutable VAULT_LIB;
 
     // Pseudo-constants (can only be set once)
     address private comptrollerLib;
+    address private vaultLib;
 
     // Storage
     uint256 private reconfigurationTimelock;
@@ -122,7 +124,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         _;
     }
 
-    constructor(address _dispatcher, address _vaultLib) public {
+    modifier pseudoConstant(address _storageValue) {
+        require(_storageValue == address(0), "This value can only be set once");
+        _;
+    }
+
+    constructor(address _dispatcher) public {
         // Validate constants
         require(
             ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")),
@@ -131,28 +138,37 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         CREATOR = msg.sender;
         DISPATCHER = _dispatcher;
-        VAULT_LIB = _vaultLib;
 
         reconfigurationTimelock = 2 days;
+    }
+
+    //////////////////////////////////////
+    // PSEUDO-CONSTANTS (only set once) //
+    //////////////////////////////////////
+
+    /// @notice Sets the comptrollerLib
+    /// @param _comptrollerLib The ComptrollerLib contract address
+    function setComptrollerLib(address _comptrollerLib)
+        external
+        onlyOwner
+        pseudoConstant(getComptrollerLib())
+    {
+        comptrollerLib = _comptrollerLib;
+
+        emit ComptrollerLibSet(_comptrollerLib);
+    }
+
+    /// @notice Sets the VaultLib
+    /// @param _vaultLib The VaultLib contract address
+    function setVaultLib(address _vaultLib) external onlyOwner pseudoConstant(getVaultLib()) {
+        vaultLib = _vaultLib;
+
+        emit VaultLibSet(_vaultLib);
     }
 
     /////////////
     // GENERAL //
     /////////////
-
-    /// @notice Sets the comptrollerLib
-    /// @param _comptrollerLib The ComptrollerLib contract address
-    /// @dev Can only be set once
-    function setComptrollerLib(address _comptrollerLib) external onlyOwner {
-        require(
-            comptrollerLib == address(0),
-            "setComptrollerLib: This value can only be set once"
-        );
-
-        comptrollerLib = _comptrollerLib;
-
-        emit ComptrollerLibSet(_comptrollerLib);
-    }
 
     /// @notice Sets the status of the protocol to a new state
     /// @param _nextStatus The next status state to set
@@ -165,13 +181,20 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _nextStatus != ReleaseStatus.PreLaunch,
             "setReleaseStatus: Cannot return to PreLaunch status"
         );
-        require(
-            comptrollerLib != address(0),
-            "setReleaseStatus: Can only set the release status when comptrollerLib is set"
-        );
 
         ReleaseStatus prevStatus = releaseStatus;
         require(_nextStatus != prevStatus, "setReleaseStatus: _nextStatus is the current status");
+
+        if (prevStatus == ReleaseStatus.PreLaunch) {
+            require(
+                getComptrollerLib() != address(0),
+                "setReleaseStatus: Can only set the release status when comptrollerLib is set"
+            );
+            require(
+                getVaultLib() != address(0),
+                "setReleaseStatus: Can only set the release status when vaultLib is set"
+            );
+        }
 
         releaseStatus = _nextStatus;
 
@@ -227,7 +250,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         IDispatcher(DISPATCHER).signalMigration(
             _vaultProxy,
             comptrollerProxy_,
-            VAULT_LIB,
+            getVaultLib(),
             _bypassPrevReleaseFailure
         );
 
@@ -263,7 +286,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         );
 
         vaultProxy_ = IDispatcher(DISPATCHER).deployVaultProxy(
-            VAULT_LIB,
+            getVaultLib(),
             _fundOwner,
             comptrollerProxy_,
             _fundName
@@ -341,7 +364,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _denominationAsset,
             _sharesActionTimelock
         );
-        comptrollerProxy_ = address(new ComptrollerProxy(constructData, comptrollerLib));
+        comptrollerProxy_ = address(new ComptrollerProxy(constructData, getComptrollerLib()));
 
         if (_feeManagerConfigData.length > 0 || _policyManagerConfigData.length > 0) {
             IComptroller(comptrollerProxy_).configureExtensions(
@@ -579,12 +602,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `comptrollerLib` variable value
-    /// @return comptrollerLib_ The `comptrollerLib` variable value
-    function getComptrollerLib() external view returns (address comptrollerLib_) {
-        return comptrollerLib;
-    }
-
     /// @notice Gets the `CREATOR` variable value
     /// @return creator_ The `CREATOR` variable value
     function getCreator() external view returns (address creator_) {
@@ -601,12 +618,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @return status_ The `releaseStatus` variable value
     function getReleaseStatus() external view override returns (ReleaseStatus status_) {
         return releaseStatus;
-    }
-
-    /// @notice Gets the `VAULT_LIB` variable value
-    /// @return vaultLib_ The `VAULT_LIB` variable value
-    function getVaultLib() external view returns (address vaultLib_) {
-        return VAULT_LIB;
     }
 
     /// @notice Checks if a contract call is allowed
@@ -630,6 +641,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     // PUBLIC FUNCTIONS
 
+    /// @notice Gets the `comptrollerLib` variable value
+    /// @return comptrollerLib_ The `comptrollerLib` variable value
+    function getComptrollerLib() public view returns (address comptrollerLib_) {
+        return comptrollerLib;
+    }
+
     /// @notice Gets the pending ReconfigurationRequest for a given VaultProxy
     /// @param _vaultProxy The VaultProxy instance
     /// @return reconfigurationRequest_ The pending ReconfigurationRequest
@@ -645,6 +662,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @return reconfigurationTimelock_ The timelock value (in seconds)
     function getReconfigurationTimelock() public view returns (uint256 reconfigurationTimelock_) {
         return reconfigurationTimelock;
+    }
+
+    /// @notice Gets the `vaultLib` variable value
+    /// @return vaultLib_ The `vaultLib` variable value
+    function getVaultLib() public view returns (address vaultLib_) {
+        return vaultLib;
     }
 
     /// @notice Checks whether a ReconfigurationRequest exists for a given VaultProxy

@@ -10,22 +10,16 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets initial state', async () => {
-    const { fundDeployer, vaultLib, dispatcher } = fork.deployment;
+    const { comptrollerLib, fundDeployer, vaultLib, dispatcher } = fork.deployment;
 
-    const getCreatorCall = await fundDeployer.getCreator();
-    expect(getCreatorCall).toMatchAddress(fork.deployer);
+    expect(await fundDeployer.getCreator()).toMatchAddress(fork.deployer);
+    expect(await fundDeployer.getDispatcher()).toMatchAddress(dispatcher);
+    expect(await fundDeployer.getOwner()).toMatchAddress(fork.deployer);
+    expect(await fundDeployer.getReleaseStatus()).toBe(ReleaseStatusTypes.Live);
 
-    const getDispatcherCall = await fundDeployer.getDispatcher();
-    expect(getDispatcherCall).toMatchAddress(dispatcher);
-
-    const getOwnerCall = await fundDeployer.getOwner();
-    expect(getOwnerCall).toMatchAddress(fork.deployer);
-
-    const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
-    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Live);
-
-    const getVaultLibCall = await fundDeployer.getVaultLib();
-    expect(getVaultLibCall).toMatchAddress(vaultLib);
+    // Pseudo constants
+    expect(await fundDeployer.getComptrollerLib()).toMatchAddress(comptrollerLib);
+    expect(await fundDeployer.getVaultLib()).toMatchAddress(vaultLib);
 
     for (const [contract, selector, dataHash] of fork.config.vaultCalls) {
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
@@ -33,18 +27,68 @@ describe('constructor', () => {
   });
 });
 
-describe('setComptrollerLib', () => {
-  it.todo('emits ControllerLibSet event');
+describe('pseudo-constant setters', () => {
+  let fundDeployer: FundDeployer;
 
-  it('is set during deployment and can only be set once', async () => {
-    const { fundDeployer, comptrollerLib } = fork.deployment;
+  beforeEach(async () => {
+    // Create a new FundDeployer that does not yet have pseudo-constants set
+    fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+  });
 
-    const comptrollerLibCall = await fundDeployer.getComptrollerLib();
-    expect(comptrollerLibCall).toMatchAddress(comptrollerLib);
+  describe('setComptrollerLib', () => {
+    const comptrollerLibAddress = randomAddress();
 
-    await expect(fundDeployer.setComptrollerLib(randomAddress())).rejects.toBeRevertedWith(
-      'This value can only be set once',
-    );
+    it('cannot be called by a random user', async () => {
+      const [randomUser] = fork.accounts;
+
+      await expect(fundDeployer.connect(randomUser).setComptrollerLib(comptrollerLibAddress)).rejects.toBeRevertedWith(
+        'Only the contract owner can call this function',
+      );
+    });
+
+    it('cannot be set a second time', async () => {
+      await fundDeployer.setComptrollerLib(comptrollerLibAddress);
+
+      await expect(fundDeployer.setComptrollerLib(comptrollerLibAddress)).rejects.toBeRevertedWith(
+        'This value can only be set once',
+      );
+    });
+
+    it('happy path', async () => {
+      const result = await fundDeployer.setComptrollerLib(comptrollerLibAddress);
+
+      assertEvent(result, 'ComptrollerLibSet', {
+        comptrollerLib: comptrollerLibAddress,
+      });
+    });
+  });
+
+  describe('setVaultLib', () => {
+    const vaultLibAddress = randomAddress();
+
+    it('cannot be called by a random user', async () => {
+      const [randomUser] = fork.accounts;
+
+      await expect(fundDeployer.connect(randomUser).setVaultLib(vaultLibAddress)).rejects.toBeRevertedWith(
+        'Only the contract owner can call this function',
+      );
+    });
+
+    it('cannot be set a second time', async () => {
+      await fundDeployer.setVaultLib(vaultLibAddress);
+
+      await expect(fundDeployer.setVaultLib(vaultLibAddress)).rejects.toBeRevertedWith(
+        'This value can only be set once',
+      );
+    });
+
+    it('happy path', async () => {
+      const result = await fundDeployer.setVaultLib(vaultLibAddress);
+
+      assertEvent(result, 'VaultLibSet', {
+        vaultLib: vaultLibAddress,
+      });
+    });
   });
 });
 
@@ -55,11 +99,25 @@ describe('setReleaseStatus', () => {
 
   it.todo('does not allow the current status');
 
-  it('cannot be called before comptrollerLib is set', async () => {
-    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher, fork.deployment.vaultLib);
+  it('cannot be called during PreLaunch before comptrollerLib is set', async () => {
+    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+
+    // Set other necessary vars
+    await fundDeployer.setVaultLib(randomAddress());
 
     await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
       'Can only set the release status when comptrollerLib is set',
+    );
+  });
+
+  it('cannot be called during PreLaunch before vaultLib is set', async () => {
+    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+
+    // Set other necessary vars
+    await fundDeployer.setComptrollerLib(randomAddress());
+
+    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
+      'Can only set the release status when vaultLib is set',
     );
   });
 

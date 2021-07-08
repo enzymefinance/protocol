@@ -41,7 +41,7 @@ export async function createFundDeployer({
   setOnDispatcher?: boolean;
   setReleaseStatusLive?: boolean;
 }) {
-  const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher, vaultLib);
+  const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher);
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,
@@ -55,6 +55,9 @@ export async function createFundDeployer({
     assetFinalityResolver,
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
+
+  const nextVaultLib = await VaultLib.deploy(deployer, await vaultLib.getWethToken());
+  await nextFundDeployer.setVaultLib(nextVaultLib);
 
   if (setReleaseStatusLive) {
     await nextFundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
