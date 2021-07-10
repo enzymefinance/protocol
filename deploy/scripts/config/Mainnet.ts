@@ -234,9 +234,6 @@ const mainnetConfig: DeploymentConfig = {
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d',
   },
-  alphaHomoraV1: {
-    ibeth: '0x67B66C99D3Eb37Fa76Aa3Ed1ff33E8e39F0b9c7A'
-  },
   chainlink: {
     aggregators,
     ethusd: ethUsdAggregator,

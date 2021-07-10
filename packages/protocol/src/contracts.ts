@@ -35,7 +35,6 @@ export * from './codegen/ChainlinkPriceFeed';
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
 export * from './codegen/AggregatedDerivativePriceFeed';
-export * from './codegen/AlphaHomoraV1PriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/IdlePriceFeed';
@@ -49,7 +48,6 @@ export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
 export * from './codegen/AaveAdapter';
-export * from './codegen/AlphaHomoraV1Adapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAaveAdapter';
@@ -100,7 +98,6 @@ export * from './codegen/MockReentrancyToken';
 export * from './codegen/MockChainlinkPriceSource';
 
 // External interfaces
-export * from './codegen/IAlphaHomoraV1Bank';
 export * from './codegen/ICERC20';
 export * from './codegen/ICEther';
 export * from './codegen/IChainlinkAggregator';

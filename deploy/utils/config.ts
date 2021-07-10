@@ -51,9 +51,6 @@ export interface DeploymentConfig {
     protocolDataProvider: string;
     atokens: Record<string, [string, string]>;
   };
-  alphaHomoraV1: {
-    ibeth: string;
-  };
   compound: {
     ceth: string;
     comptroller: string;
