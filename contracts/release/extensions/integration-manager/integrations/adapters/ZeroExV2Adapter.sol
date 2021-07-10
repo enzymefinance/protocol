@@ -46,12 +46,6 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ The identifer string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "ZERO_EX_V2";
-    }
-
     /// @notice Take an order on 0x
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

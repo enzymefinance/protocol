@@ -17,8 +17,6 @@ import "../IIntegrationManager.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all integration adapters
 interface IIntegrationAdapter {
-    function identifier() external pure returns (string memory identifier_);
-
     function parseAssetsForMethod(
         address _vaultProxy,
         bytes4 _selector,

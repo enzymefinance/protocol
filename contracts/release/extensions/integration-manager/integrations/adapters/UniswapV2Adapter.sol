@@ -31,12 +31,6 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ The identifer string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "UNISWAP_V2";
-    }
-
     /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

@@ -15,7 +15,7 @@ import {
   deployProtocolFixture,
   removeTrackedAssetsFromVault,
 } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { constants } from 'ethers';
 
 async function snapshot() {
   const {
@@ -506,16 +506,10 @@ describe('adapter registry', () => {
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
         adapter: uniswapV2Adapter,
-        identifier: expect.objectContaining({
-          hash: utils.id('UNISWAP_V2'),
-        }),
       });
 
       expect(events[1]).toMatchEventArgs({
         adapter: compoundAdapter,
-        identifier: expect.objectContaining({
-          hash: utils.id('COMPOUND'),
-        }),
       });
 
       const postAdapters = await integrationManager.getRegisteredAdapters();
@@ -581,16 +575,10 @@ describe('adapter registry', () => {
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
         adapter: uniswapV2Adapter,
-        identifier: expect.objectContaining({
-          hash: utils.id('UNISWAP_V2'),
-        }),
       });
 
       expect(events[1]).toMatchEventArgs({
         adapter: compoundAdapter,
-        identifier: expect.objectContaining({
-          hash: utils.id('COMPOUND'),
-        }),
       });
 
       const getRegisteredAdaptersCall = await integrationManager.getRegisteredAdapters();

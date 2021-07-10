@@ -27,12 +27,6 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "UNISWAP_V3";
-    }
-
     /// @notice Trades assets on UniswapV3
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

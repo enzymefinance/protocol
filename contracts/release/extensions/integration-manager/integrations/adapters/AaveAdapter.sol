@@ -29,12 +29,6 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
         AAVE_PRICE_FEED = _aavePriceFeed;
     }
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "AAVE";
-    }
-
     /// @notice Lends an amount of a token to AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive

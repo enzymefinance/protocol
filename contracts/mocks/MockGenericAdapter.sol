@@ -81,10 +81,6 @@ contract MockGenericAdapter is AdapterBase {
         INTEGRATEE = _integratee;
     }
 
-    function identifier() external pure override returns (string memory) {
-        return "MOCK_GENERIC";
-    }
-
     function parseAssetsForMethod(
         address,
         bytes4 _selector,

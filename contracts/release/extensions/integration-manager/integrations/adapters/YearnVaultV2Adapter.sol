@@ -28,12 +28,6 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
         YEARN_VAULT_V2_PRICE_FEED = _yearnVaultV2PriceFeed;
     }
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "YEARN_VAULT_V2";
-    }
-
     /// @notice Deposits an amount of an underlying asset into its corresponding yVault
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive

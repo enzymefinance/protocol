@@ -32,12 +32,6 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
     /// @dev Needed to receive ETH during cEther lend/redeem
     receive() external payable {}
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "COMPOUND";
-    }
-
     /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive

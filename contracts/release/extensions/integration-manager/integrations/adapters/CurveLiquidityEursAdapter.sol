@@ -49,12 +49,6 @@ contract CurveLiquidityEursAdapter is
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ The identifer string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "CURVE_LIQUIDITY_EURS";
-    }
-
     /// @notice Claims rewards from the Curve Minter as well as pool-specific rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     function claimRewards(

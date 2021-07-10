@@ -33,12 +33,6 @@ contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ The identifer string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "CURVE_EXCHANGE";
-    }
-
     /// @notice Trades assets on Curve
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

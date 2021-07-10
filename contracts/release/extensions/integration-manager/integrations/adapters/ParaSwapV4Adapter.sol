@@ -32,12 +32,6 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "PARA_SWAP_V4";
-    }
-
     /// @notice Trades assets on ParaSwap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

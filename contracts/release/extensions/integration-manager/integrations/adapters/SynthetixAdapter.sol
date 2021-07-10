@@ -32,12 +32,6 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "SYNTHETIX";
-    }
-
     /// @notice Trades assets on Synthetix
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters

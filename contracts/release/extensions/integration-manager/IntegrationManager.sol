@@ -40,9 +40,9 @@ contract IntegrationManager is
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
 
-    event AdapterDeregistered(address indexed adapter, string indexed identifier);
+    event AdapterDeregistered(address indexed adapter);
 
-    event AdapterRegistered(address indexed adapter, string indexed identifier);
+    event AdapterRegistered(address indexed adapter);
 
     event AuthUserAddedForFund(address indexed comptrollerProxy, address indexed account);
 
@@ -728,7 +728,7 @@ contract IntegrationManager is
 
             registeredAdapters.remove(_adapters[i]);
 
-            emit AdapterDeregistered(_adapters[i], IIntegrationAdapter(_adapters[i]).identifier());
+            emit AdapterDeregistered(_adapters[i]);
         }
     }
 
@@ -747,7 +747,7 @@ contract IntegrationManager is
 
             registeredAdapters.add(_adapters[i]);
 
-            emit AdapterRegistered(_adapters[i], IIntegrationAdapter(_adapters[i]).identifier());
+            emit AdapterRegistered(_adapters[i]);
         }
     }
 

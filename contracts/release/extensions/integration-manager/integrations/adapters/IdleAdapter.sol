@@ -48,12 +48,6 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin, UniswapV2ActionsMixin {
         WETH_TOKEN = _wethToken;
     }
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ An identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "IDLE";
-    }
-
     /// @notice Approves assets from the vault to be used by this contract.
     /// @dev No logic necessary. Exists only to grant adapter with necessary approvals from the vault,
     /// which takes place in the IntegrationManager.

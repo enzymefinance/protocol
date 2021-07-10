@@ -70,12 +70,6 @@ contract CurveLiquidityAaveAdapter is
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Provides a constant string identifier for an adapter
-    /// @return identifier_ The identifer string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "CURVE_LIQUIDITY_AAVE";
-    }
-
     /// @notice Approves assets from the vault to be used by this contract.
     /// @dev No logic necessary. Exists only to grant adapter with necessary approvals from the vault,
     /// which takes place in the IntegrationManager.
