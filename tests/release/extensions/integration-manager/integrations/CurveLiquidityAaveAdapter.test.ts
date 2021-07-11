@@ -1,13 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  approveAssetsSelector,
-  claimRewardsAndReinvestSelector,
-  claimRewardsAndSwapSelector,
   claimRewardsSelector,
-  CurveAavePoolAssetIndex,
-  curveApproveAssetsArgs,
-  curveAaveClaimRewardsAndReinvestArgs,
-  curveAaveClaimRewardsAndSwapArgs,
   curveAaveLendArgs,
   curveAaveLendAndStakeArgs,
   curveAaveRedeemArgs,
@@ -26,10 +19,7 @@ import {
 import {
   aaveLend,
   createNewFund,
-  curveApproveAssets,
   curveAaveClaimRewards,
-  curveAaveClaimRewardsAndReinvest,
-  curveAaveClaimRewardsAndSwap,
   curveAaveLend,
   curveAaveLendAndStake,
   curveAaveRedeem,
@@ -42,8 +32,6 @@ import {
   vaultCallCurveMinterToggleApproveMint,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-
-const stkAave = '0x4da27a545c0c5b758a6ba100e3a049001de870f5';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -58,7 +46,6 @@ describe('constructor', () => {
     expect(await curveLiquidityAaveAdapter.getLiquidityGaugeToken()).toMatchAddress(
       fork.config.curve.pools.aave.liquidityGaugeToken,
     );
-    expect(await curveLiquidityAaveAdapter.getWethToken()).toMatchAddress(fork.config.weth);
 
     // Pool tokens
     const orderedPoolTokens = [
@@ -96,9 +83,6 @@ describe('constructor', () => {
     expect(await curveLiquidityAaveAdapter.getCurveAaveLiquidityPool()).toMatchAddress(
       fork.config.curve.pools.aave.pool,
     );
-
-    // UniswapV2ActionsMixin
-    expect(await curveLiquidityAaveAdapter.getUniswapV2Router2()).toMatchAddress(fork.config.uniswap.router);
   });
 });
 
@@ -109,62 +93,6 @@ describe('parseAssetsForMethod', () => {
     await expect(
       curveLiquidityAaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
-  });
-
-  describe('approveAssets', () => {
-    it('does not allow unequal input arrays', async () => {
-      const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-
-      await expect(
-        curveLiquidityAaveAdapter.parseAssetsForMethod(
-          randomAddress(),
-          approveAssetsSelector,
-          curveApproveAssetsArgs({
-            assets: [randomAddress(), randomAddress()],
-            amounts: [1],
-          }),
-        ),
-      ).rejects.toBeRevertedWith('Unequal arrays');
-    });
-
-    it('does not allow an asset that is not a rewards token (with an amount >0)', async () => {
-      const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-
-      await expect(
-        curveLiquidityAaveAdapter.parseAssetsForMethod(
-          randomAddress(),
-          approveAssetsSelector,
-          curveApproveAssetsArgs({
-            assets: [randomAddress()],
-            amounts: [1],
-          }),
-        ),
-      ).rejects.toBeRevertedWith('Invalid reward token');
-    });
-
-    it('generates expected output', async () => {
-      const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-
-      // Random address should be allowed since amount is 0
-      const assets = [fork.config.primitives.crv, randomAddress()];
-      const amounts = [1, 0];
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
-        randomAddress(),
-        approveAssetsSelector,
-        curveApproveAssetsArgs({
-          assets,
-          amounts,
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Approve,
-        spendAssets_: assets,
-        spendAssetAmounts_: amounts,
-        incomingAssets_: [],
-        minIncomingAssetAmounts_: [],
-      });
-    });
   });
 
   describe('claimRewards', () => {
@@ -183,57 +111,6 @@ describe('parseAssetsForMethod', () => {
         spendAssetAmounts_: [],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
-      });
-    });
-  });
-
-  describe('claimRewardsAndReinvest', () => {
-    it('generates expected output', async () => {
-      const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-      const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('2');
-
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
-        randomAddress(),
-        claimRewardsAndReinvestSelector,
-        curveAaveClaimRewardsAndReinvestArgs({
-          useFullBalances: true, // Does not matter
-          minIncomingLiquidityGaugeTokenAmount,
-          intermediaryUnderlyingAssetIndex: CurveAavePoolAssetIndex.AaveUsdc, // Does not matter
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.None,
-        spendAssets_: [],
-        spendAssetAmounts_: [],
-        incomingAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
-        minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
-      });
-    });
-  });
-
-  describe('claimRewardsAndSwap', () => {
-    it('generates expected output', async () => {
-      const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-      const incomingAsset = randomAddress();
-      const minIncomingAssetAmount = utils.parseEther('2');
-
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
-        randomAddress(),
-        claimRewardsAndSwapSelector,
-        curveAaveClaimRewardsAndSwapArgs({
-          useFullBalances: true, // Does not matter
-          incomingAsset,
-          minIncomingAssetAmount,
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.None,
-        spendAssets_: [],
-        spendAssetAmounts_: [],
-        incomingAssets_: [incomingAsset],
-        minIncomingAssetAmounts_: [minIncomingAssetAmount],
       });
     });
   });
@@ -643,340 +520,6 @@ describe('claimRewards', () => {
 
     // Assert vault balances of reward tokens have increased
     expect(postClaimRewardsCrvBalance).toBeGtBigNumber(preClaimRewardsCrvBalance);
-  });
-});
-
-describe('claimRewardsAndReinvest', () => {
-  it('claimed amounts only (DAI intermediary): claim rewards and then reinvests only the amounts claimed of each reward token', async () => {
-    const [fundOwner] = fork.accounts;
-    const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-    const integrationManager = fork.deployment.integrationManager;
-    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
-    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, whales.weth),
-    });
-
-    // Lend and stake to start accruing rewards
-    const seedDaiAmount = utils.parseEther('2');
-    await dai.transfer(vaultProxy, seedDaiAmount);
-    await curveAaveLendAndStake({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      outgoingAaveDaiAmount: seedDaiAmount,
-      useUnderlyings: true,
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-
-    // Send some balances of the rewards assets to the vault
-    await crv.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preClaimRewardsCrvBalance, preClaimRewardsLiquidityGaugeTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, liquidityGaugeToken],
-    });
-
-    // Assert rewards tokens start with non-0 balances
-    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to claim $CRV rewards on behalf of the vault
-    await vaultCallCurveMinterToggleApproveMint({
-      comptrollerProxy,
-      minter: fork.config.curve.minter,
-      account: curveLiquidityAaveAdapter,
-    });
-
-    // Approve the adapter to use CRV
-    await curveApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv, stkAave],
-    });
-
-    // Claim all earned rewards
-    await curveAaveClaimRewardsAndReinvest({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      useFullBalances: false,
-      // intermediaryUnderlyingAssetIndex is DAI by default
-    });
-
-    const [postClaimRewardsCrvBalance, postClaimRewardsLiquidityGaugeTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, liquidityGaugeToken],
-    });
-
-    // Assert only the newly claimed balances of reward tokens were used
-    expect(postClaimRewardsCrvBalance).toEqBigNumber(preClaimRewardsCrvBalance);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await crv.balanceOf(curveLiquidityAaveAdapter)).toEqBigNumber(0);
-
-    // Assert the amount of liquidity gauge tokens in the vault increased
-    expect(postClaimRewardsLiquidityGaugeTokenBalance).toBeGtBigNumber(preClaimRewardsLiquidityGaugeTokenBalance);
-  });
-
-  it('full balances (USDT intermediary): claim rewards and then reinvests the full vault balances of each reward token', async () => {
-    const [fundOwner] = fork.accounts;
-    const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-    const integrationManager = fork.deployment.integrationManager;
-    const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
-    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, whales.weth),
-    });
-
-    // Lend and stake to start accruing rewards
-    const seedDaiAmount = utils.parseEther('2');
-    await dai.transfer(vaultProxy, seedDaiAmount);
-    await curveAaveLendAndStake({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      outgoingAaveDaiAmount: seedDaiAmount,
-      useUnderlyings: true,
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-
-    // Send some balances of the rewards assets to the vault
-    await crv.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preClaimRewardsCrvBalance, preClaimRewardsLiquidityGaugeTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, liquidityGaugeToken],
-    });
-
-    // Assert rewards tokens start with non-0 balances
-    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to claim $CRV rewards on behalf of the vault
-    await vaultCallCurveMinterToggleApproveMint({
-      comptrollerProxy,
-      minter: fork.config.curve.minter,
-      account: curveLiquidityAaveAdapter,
-    });
-
-    // Approve the adapter to use CRV
-    await curveApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv, stkAave],
-    });
-
-    // Claim all earned rewards
-    await curveAaveClaimRewardsAndReinvest({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      useFullBalances: true,
-      intermediaryUnderlyingAssetIndex: CurveAavePoolAssetIndex.AaveUsdt,
-    });
-
-    const [postClaimRewardsCrvBalance, postClaimRewardsLiquidityGaugeTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, liquidityGaugeToken],
-    });
-
-    // Assert entire vault balances of reward tokens were used
-    expect(postClaimRewardsCrvBalance).toEqBigNumber(0);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await crv.balanceOf(curveLiquidityAaveAdapter)).toEqBigNumber(0);
-
-    // Assert the amount of liquidity gauge tokens in the vault increased
-    expect(postClaimRewardsLiquidityGaugeTokenBalance).toBeGtBigNumber(preClaimRewardsLiquidityGaugeTokenBalance);
-  });
-});
-
-describe('claimRewardsAndSwap', () => {
-  it('claimed amounts only: claim rewards and swap only the amounts claimed of each reward token (to WETH)', async () => {
-    const [fundOwner] = fork.accounts;
-    const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-    const integrationManager = fork.deployment.integrationManager;
-    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const incomingAsset = weth;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: weth,
-    });
-
-    // Lend and stake to start accruing rewards
-    const seedDaiAmount = utils.parseEther('2');
-    await dai.transfer(vaultProxy, seedDaiAmount);
-    await curveAaveLendAndStake({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      outgoingAaveDaiAmount: seedDaiAmount,
-      useUnderlyings: true,
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-
-    // Send some balances of the rewards assets to the vault
-    await crv.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preClaimRewardsCrvBalance, preClaimRewardsIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, incomingAsset],
-    });
-
-    // Assert rewards tokens start with non-0 balances
-    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to claim $CRV rewards on behalf of the vault
-    await vaultCallCurveMinterToggleApproveMint({
-      comptrollerProxy,
-      minter: fork.config.curve.minter,
-      account: curveLiquidityAaveAdapter,
-    });
-
-    // Approve the adapter to use CRV
-    await curveApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv, stkAave],
-    });
-
-    // Claim all earned rewards and swap to the incoming asset
-    await curveAaveClaimRewardsAndSwap({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      useFullBalances: false,
-      incomingAsset,
-    });
-
-    const [postClaimRewardsCrvBalance, postClaimRewardsIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, incomingAsset],
-    });
-
-    // Assert only the newly claimed balances of reward tokens were used
-    expect(postClaimRewardsCrvBalance).toEqBigNumber(preClaimRewardsCrvBalance);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await crv.balanceOf(curveLiquidityAaveAdapter)).toEqBigNumber(0);
-
-    // Assert the amount of incoming asset in the vault increased
-    expect(postClaimRewardsIncomingAssetBalance).toBeGtBigNumber(preClaimRewardsIncomingAssetBalance);
-  });
-
-  it('full balances: claim rewards and swap the full vault balances of each reward token (to DAI)', async () => {
-    const [fundOwner] = fork.accounts;
-    const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
-    const integrationManager = fork.deployment.integrationManager;
-    const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const incomingAsset = dai;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: weth,
-    });
-
-    // Lend and stake to start accruing rewards
-    const seedDaiAmount = utils.parseEther('2');
-    await dai.transfer(vaultProxy, seedDaiAmount);
-    await curveAaveLendAndStake({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      outgoingAaveDaiAmount: seedDaiAmount,
-      useUnderlyings: true,
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-
-    // Send some balances of the rewards assets to the vault
-    await crv.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preClaimRewardsCrvBalance, preClaimRewardsIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, incomingAsset],
-    });
-
-    // Assert rewards tokens start with non-0 balances
-    expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to claim $CRV rewards on behalf of the vault
-    await vaultCallCurveMinterToggleApproveMint({
-      comptrollerProxy,
-      minter: fork.config.curve.minter,
-      account: curveLiquidityAaveAdapter,
-    });
-
-    // Approve the adapter to use CRV
-    await curveApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      adapter: curveLiquidityAaveAdapter,
-      assets: [fork.config.primitives.crv, stkAave],
-    });
-
-    // Claim all earned rewards and swap to the incoming asset
-    await curveAaveClaimRewardsAndSwap({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      curveLiquidityAaveAdapter,
-      useFullBalances: true,
-      incomingAsset,
-    });
-
-    const [postClaimRewardsCrvBalance, postClaimRewardsIncomingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, incomingAsset],
-    });
-
-    // Assert entire vault balances of reward tokens were used
-    expect(postClaimRewardsCrvBalance).toEqBigNumber(0);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await crv.balanceOf(curveLiquidityAaveAdapter)).toEqBigNumber(0);
-
-    // Assert the amount of liquidity gauge tokens in the vault increased
-    expect(postClaimRewardsIncomingAssetBalance).toBeGtBigNumber(preClaimRewardsIncomingAssetBalance);
   });
 });
 

@@ -11,10 +11,6 @@ export const curveMinterToggleApproveMintSelector = sighash(
   utils.FunctionFragment.fromString('toggle_approve_mint(address)'),
 );
 
-export function curveApproveAssetsArgs({ assets, amounts }: { assets: AddressLike[]; amounts: BigNumberish[] }) {
-  return encodeArgs(['address[]', 'uint256[]'], [assets, amounts]);
-}
-
 // exchanges
 
 export function curveTakeOrderArgs({
@@ -42,33 +38,6 @@ export enum CurveAavePoolAssetIndex {
   AaveDai,
   AaveUsdc,
   AaveUsdt,
-}
-
-export function curveAaveClaimRewardsAndReinvestArgs({
-  useFullBalances,
-  minIncomingLiquidityGaugeTokenAmount,
-  intermediaryUnderlyingAssetIndex,
-}: {
-  useFullBalances: boolean;
-  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
-  intermediaryUnderlyingAssetIndex: CurveAavePoolAssetIndex;
-}) {
-  return encodeArgs(
-    ['bool', 'uint256', 'uint8'],
-    [useFullBalances, minIncomingLiquidityGaugeTokenAmount, intermediaryUnderlyingAssetIndex],
-  );
-}
-
-export function curveAaveClaimRewardsAndSwapArgs({
-  useFullBalances,
-  incomingAsset,
-  minIncomingAssetAmount,
-}: {
-  useFullBalances: boolean;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
 }
 
 export function curveAaveLendAndStakeArgs({
@@ -257,28 +226,6 @@ export function curveEursUnstakeArgs({
 
 // sETH pool
 
-export function curveSethClaimRewardsAndReinvestArgs({
-  useFullBalances,
-  minIncomingLiquidityGaugeTokenAmount,
-}: {
-  useFullBalances: boolean;
-  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
-}) {
-  return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
-}
-
-export function curveSethClaimRewardsAndSwapArgs({
-  useFullBalances,
-  incomingAsset,
-  minIncomingAssetAmount,
-}: {
-  useFullBalances: boolean;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
-}
-
 export function curveSethLendAndStakeArgs({
   outgoingWethAmount,
   outgoingSethAmount,
@@ -356,28 +303,6 @@ export function curveSethUnstakeArgs({
 }
 
 // stETH pool
-
-export function curveStethClaimRewardsAndReinvestArgs({
-  useFullBalances,
-  minIncomingLiquidityGaugeTokenAmount,
-}: {
-  useFullBalances: boolean;
-  minIncomingLiquidityGaugeTokenAmount: BigNumberish;
-}) {
-  return encodeArgs(['bool', 'uint256'], [useFullBalances, minIncomingLiquidityGaugeTokenAmount]);
-}
-
-export function curveStethClaimRewardsAndSwapArgs({
-  useFullBalances,
-  incomingAsset,
-  minIncomingAssetAmount,
-}: {
-  useFullBalances: boolean;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['bool', 'address', 'uint256'], [useFullBalances, incomingAsset, minIncomingAssetAmount]);
-}
 
 export function curveStethLendAndStakeArgs({
   outgoingWethAmount,

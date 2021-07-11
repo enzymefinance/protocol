@@ -1,12 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  approveAssetsSelector,
-  claimRewardsAndReinvestSelector,
-  claimRewardsAndSwapSelector,
   claimRewardsSelector,
-  idleApproveAssetsArgs,
-  idleClaimRewardsAndReinvestArgs,
-  idleClaimRewardsAndSwapArgs,
   idleClaimRewardsArgs,
   idleLendArgs,
   idleRedeemArgs,
@@ -20,22 +14,16 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
-  idleApproveAssets,
   idleClaimRewards,
-  idleClaimRewardsAndReinvest,
-  idleClaimRewardsAndSwap,
   idleLend,
   idleRedeem,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-let idleGov: StandardToken;
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
-
-  idleGov = new StandardToken('0x875773784af8135ea0ef43b5a374aad105c5d39e', whales.idle);
 });
 
 describe('constructor', () => {
@@ -43,13 +31,9 @@ describe('constructor', () => {
     const idleAdapter = fork.deployment.idleAdapter;
 
     expect(await idleAdapter.getIdlePriceFeed()).toMatchAddress(fork.deployment.idlePriceFeed);
-    expect(await idleAdapter.getWethToken()).toMatchAddress(fork.config.weth);
 
     // AdapterBase
     expect(await idleAdapter.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
-
-    // UniswapV2ActionsMixin
-    expect(await idleAdapter.getUniswapV2Router2()).toMatchAddress(fork.config.uniswap.router);
   });
 });
 
@@ -58,75 +42,6 @@ describe('parseAssetsForMethod', () => {
     await expect(
       fork.deployment.idleAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
-  });
-
-  describe('approveAssets', () => {
-    it('does not allow an invalid idleToken', async () => {
-      await expect(
-        fork.deployment.idleAdapter.parseAssetsForMethod(
-          randomAddress(),
-          approveAssetsSelector,
-          idleApproveAssetsArgs({
-            idleToken: randomAddress(),
-            assets: [randomAddress(), randomAddress()],
-            amounts: [1, 2],
-          }),
-        ),
-      ).rejects.toBeReverted();
-    });
-
-    it('does not allow unequal input arrays', async () => {
-      await expect(
-        fork.deployment.idleAdapter.parseAssetsForMethod(
-          randomAddress(),
-          approveAssetsSelector,
-          idleApproveAssetsArgs({
-            idleToken: fork.config.idle.bestYieldIdleDai,
-            assets: [randomAddress(), randomAddress()],
-            amounts: [1],
-          }),
-        ),
-      ).rejects.toBeRevertedWith('Unequal arrays');
-    });
-
-    it('does not allow an asset that is not a rewards token (with an amount >0)', async () => {
-      await expect(
-        fork.deployment.idleAdapter.parseAssetsForMethod(
-          randomAddress(),
-          approveAssetsSelector,
-          idleApproveAssetsArgs({
-            idleToken: fork.config.idle.bestYieldIdleDai,
-            assets: [randomAddress()],
-            amounts: [1],
-          }),
-        ),
-      ).rejects.toBeRevertedWith('Invalid reward token');
-    });
-
-    it('generates expected output', async () => {
-      const idleAdapter = fork.deployment.idleAdapter;
-
-      // Random address should be allowed since amount is 0
-      const assets = [idleGov, randomAddress()];
-      const amounts = [1, 0];
-      const result = await idleAdapter.parseAssetsForMethod(
-        randomAddress(),
-        approveAssetsSelector,
-        idleApproveAssetsArgs({
-          idleToken: fork.config.idle.bestYieldIdleDai,
-          assets,
-          amounts,
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Approve,
-        spendAssets_: assets,
-        spendAssetAmounts_: amounts,
-        incomingAssets_: [],
-        minIncomingAssetAmounts_: [],
-      });
-    });
   });
 
   describe('claimRewards', () => {
@@ -189,129 +104,6 @@ describe('parseAssetsForMethod', () => {
         spendAssetAmounts_: [await idleToken.balanceOf(vaultProxy)],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
-      });
-    });
-  });
-
-  describe('claimRewardsAndReinvest', () => {
-    // TODO: refactor with a mock?
-    it('generates expected output', async () => {
-      const [fundOwner] = fork.accounts;
-      const idleAdapter = fork.deployment.idleAdapter;
-      const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-      const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-      // Create fund and acquire idleTokens
-      const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
-        denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-      });
-      const outgoingUnderlyingAmount = utils.parseUnits('1', await underlying.decimals());
-      await underlying.transfer(vaultProxy, outgoingUnderlyingAmount);
-      await idleLend({
-        comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
-        idleAdapter,
-        idleToken,
-        outgoingUnderlyingAmount,
-      });
-
-      const minIncomingIdleTokenAmount = utils.parseEther('2');
-
-      const result = await idleAdapter.parseAssetsForMethod(
-        vaultProxy,
-        claimRewardsAndReinvestSelector,
-        idleClaimRewardsAndReinvestArgs({
-          idleToken,
-          minIncomingIdleTokenAmount,
-          useFullBalances: false, // Not relevant here
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [idleToken],
-        spendAssetAmounts_: [await idleToken.balanceOf(vaultProxy)],
-        incomingAssets_: [idleToken],
-        minIncomingAssetAmounts_: [minIncomingIdleTokenAmount],
-      });
-    });
-  });
-
-  describe('claimRewardsAndSwap', () => {
-    it('does not allow an invalid idleToken', async () => {
-      const [fundOwner] = fork.accounts;
-
-      // Create fund to have a valid vaultProxy
-      const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
-        denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-      });
-
-      await expect(
-        fork.deployment.idleAdapter.parseAssetsForMethod(
-          vaultProxy,
-          claimRewardsAndSwapSelector,
-          idleClaimRewardsAndSwapArgs({
-            idleToken: randomAddress(),
-            incomingAsset: randomAddress(),
-            minIncomingAssetAmount: BigNumber.from(1),
-            useFullBalances: false, // Not relevant here
-          }),
-        ),
-      ).rejects.toBeReverted();
-    });
-
-    // TODO: refactor with a mock?
-    it('generates expected output', async () => {
-      const [fundOwner] = fork.accounts;
-      const idleAdapter = fork.deployment.idleAdapter;
-      const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-      const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-      // Create fund and acquire idleTokens
-      const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
-        denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-      });
-      const outgoingUnderlyingAmount = utils.parseUnits('1', await underlying.decimals());
-      await underlying.transfer(vaultProxy, outgoingUnderlyingAmount);
-      await idleLend({
-        comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
-        idleAdapter,
-        idleToken,
-        outgoingUnderlyingAmount,
-      });
-
-      const incomingAsset = randomAddress();
-      const minIncomingAssetAmount = utils.parseEther('2');
-
-      const result = await idleAdapter.parseAssetsForMethod(
-        vaultProxy,
-        claimRewardsAndSwapSelector,
-        idleClaimRewardsAndSwapArgs({
-          idleToken,
-          incomingAsset,
-          minIncomingAssetAmount,
-          useFullBalances: false, // Not relevant here
-        }),
-      );
-
-      expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForMethod, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [idleToken],
-        spendAssetAmounts_: [await idleToken.balanceOf(vaultProxy)],
-        incomingAssets_: [incomingAsset],
-        minIncomingAssetAmounts_: [minIncomingAssetAmount],
       });
     });
   });
@@ -472,293 +264,6 @@ describe('claimRewards', () => {
 
     // Assert the absolute amount of tokens received at the vault is > 0, given that a particular reward could be zero
     expect(totalGovTokenVaultBalances).toBeGtBigNumber(0);
-  });
-});
-
-describe('claimRewardsAndReinvest', () => {
-  it('claimed amounts only: claim rewards and then reinvests only the amounts claimed of each reward token', async () => {
-    const [fundOwner] = fork.accounts;
-    const integrationManager = fork.deployment.integrationManager;
-    const idleAdapter = fork.deployment.idleAdapter;
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-    });
-
-    // Acquire idleTokens to start accruing rewards
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-    await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
-    await idleLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
-      minIncomingIdleTokenAmount: BigNumber.from(1),
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-    await provider.send('evm_mine', []);
-
-    // Send some balances of the rewards assets to the vault
-    await idleGov.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preTxVaultIdleTokenBalance, preTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [idleTokenERC20, idleGov],
-    });
-    expect(preTxVaultIdleTokenBalance).toBeGtBigNumber(0);
-
-    await idleClaimRewardsAndReinvest({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      useFullBalances: false,
-    });
-
-    const [postTxVaultIdleTokenBalance, postTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [idleTokenERC20, idleGov],
-    });
-
-    // Assert only the newly claimed balances of reward tokens were used
-    expect(postTxVaultIdleGovTokenBalance).toEqBigNumber(preTxVaultIdleGovTokenBalance);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await idleGov.balanceOf(idleAdapter)).toEqBigNumber(0);
-
-    // Assert that the vault has an increased balance of idleTokens
-    expect(postTxVaultIdleTokenBalance).toBeGtBigNumber(preTxVaultIdleTokenBalance);
-  });
-
-  it('full balances: claim rewards and then reinvests the full vault balances of each reward token', async () => {
-    const [fundOwner] = fork.accounts;
-    const integrationManager = fork.deployment.integrationManager;
-    const idleAdapter = fork.deployment.idleAdapter;
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-    });
-
-    // Acquire idleTokens to start accruing rewards
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-    await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
-    await idleLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
-      minIncomingIdleTokenAmount: BigNumber.from(1),
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-    await provider.send('evm_mine', []);
-
-    // Send some balances of the rewards assets to the vault
-    await idleGov.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preTxVaultIdleTokenBalance, preTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [idleTokenERC20, idleGov],
-    });
-    expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to use the fund's $IDLE
-    await idleApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      assets: [idleGov],
-      amounts: [constants.MaxUint256],
-    });
-
-    await idleClaimRewardsAndReinvest({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      useFullBalances: true,
-    });
-
-    const [postTxVaultIdleTokenBalance, postTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [idleTokenERC20, idleGov],
-    });
-
-    // Assert entire vault balances of reward tokens were used
-    expect(postTxVaultIdleGovTokenBalance).toEqBigNumber(0);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await idleGov.balanceOf(idleAdapter)).toEqBigNumber(0);
-
-    // Assert that the vault has an increased balance of idleTokens
-    expect(postTxVaultIdleTokenBalance).toBeGtBigNumber(preTxVaultIdleTokenBalance);
-  });
-});
-
-describe('claimRewardsAndSwap', () => {
-  it('claimed amounts only: claim rewards and swap only the amounts claimed of each reward token (to WETH)', async () => {
-    const [fundOwner] = fork.accounts;
-    const integrationManager = fork.deployment.integrationManager;
-    const idleAdapter = fork.deployment.idleAdapter;
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const incomingAsset = weth;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: weth,
-    });
-
-    // Acquire idleTokens to start accruing rewards
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-    await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
-    await idleLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
-      minIncomingIdleTokenAmount: BigNumber.from(1),
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-    await provider.send('evm_mine', []);
-
-    // Send some balances of the rewards assets to the vault
-    await idleGov.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preTxVaultIncomingAssetBalance, preTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAsset, idleGov],
-    });
-    expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
-
-    await idleClaimRewardsAndSwap({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      incomingAsset,
-      idleToken: idleTokenERC20,
-      useFullBalances: false,
-    });
-
-    const [postTxVaultIncomingAssetBalance, postTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAsset, idleGov],
-    });
-
-    // Assert only the newly claimed balances of reward tokens were used
-    expect(postTxVaultIdleGovTokenBalance).toEqBigNumber(preTxVaultIdleGovTokenBalance);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await idleGov.balanceOf(idleAdapter)).toEqBigNumber(0);
-
-    // Assert that the vault has an increased balance of idleTokens
-    expect(postTxVaultIncomingAssetBalance).toBeGtBigNumber(preTxVaultIncomingAssetBalance);
-  });
-
-  it('full balances: claim rewards and swap the full vault balances of each reward token (to DAI)', async () => {
-    const [fundOwner] = fork.accounts;
-    const integrationManager = fork.deployment.integrationManager;
-    const idleAdapter = fork.deployment.idleAdapter;
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
-    });
-
-    // Acquire idleTokens to start accruing rewards
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-    await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
-    await idleLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
-      minIncomingIdleTokenAmount: BigNumber.from(1),
-    });
-
-    // Warp ahead in time to accrue rewards
-    await provider.send('evm_increaseTime', [86400]);
-    await provider.send('evm_mine', []);
-
-    // Send some balances of the rewards assets to the vault
-    await idleGov.transfer(vaultProxy, utils.parseEther('2'));
-
-    const [preTxVaultIncomingAssetBalance, preTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAsset, idleGov],
-    });
-    expect(preTxVaultIdleGovTokenBalance).toBeGtBigNumber(0);
-
-    // Approve the adapter to use the fund's $IDLE
-    await idleApproveAssets({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      idleToken: idleTokenERC20,
-      assets: [idleGov],
-      amounts: [constants.MaxUint256],
-    });
-
-    await idleClaimRewardsAndSwap({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      idleAdapter,
-      incomingAsset,
-      idleToken: idleTokenERC20,
-      useFullBalances: true,
-    });
-
-    const [postTxVaultIncomingAssetBalance, postTxVaultIdleGovTokenBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [incomingAsset, idleGov],
-    });
-
-    // Assert entire vault balances of reward tokens were used
-    expect(postTxVaultIdleGovTokenBalance).toEqBigNumber(0);
-
-    // Assert no rewards tokens are remaining in the adapter
-    expect(await idleGov.balanceOf(idleAdapter)).toEqBigNumber(0);
-
-    // Assert that the vault has an increased balance of idleTokens
-    expect(postTxVaultIncomingAssetBalance).toBeGtBigNumber(preTxVaultIncomingAssetBalance);
   });
 });
 

@@ -1,16 +1,9 @@
-import { AddressLike } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  approveAssetsSelector,
   callOnIntegrationArgs,
-  claimRewardsAndReinvestSelector,
-  claimRewardsAndSwapSelector,
   claimRewardsSelector,
   ComptrollerLib,
   IdleAdapter,
-  idleApproveAssetsArgs,
-  idleClaimRewardsAndReinvestArgs,
-  idleClaimRewardsAndSwapArgs,
   idleClaimRewardsArgs,
   idleLendArgs,
   idleRedeemArgs,
@@ -21,38 +14,6 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import { BigNumber, BigNumberish } from 'ethers';
-
-export async function idleApproveAssets({
-  comptrollerProxy,
-  integrationManager,
-  fundOwner,
-  idleAdapter,
-  idleToken,
-  assets,
-  amounts,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
-  assets: AddressLike[];
-  amounts: BigNumberish[];
-}) {
-  const callArgs = callOnIntegrationArgs({
-    adapter: idleAdapter,
-    selector: approveAssetsSelector,
-    encodedCallArgs: idleApproveAssetsArgs({
-      idleToken,
-      assets,
-      amounts,
-    }),
-  });
-
-  return comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-}
 
 export async function idleClaimRewards({
   comptrollerProxy,
@@ -72,73 +33,6 @@ export async function idleClaimRewards({
     selector: claimRewardsSelector,
     encodedCallArgs: idleClaimRewardsArgs({
       idleToken,
-    }),
-  });
-
-  return comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-}
-
-export async function idleClaimRewardsAndReinvest({
-  comptrollerProxy,
-  integrationManager,
-  fundOwner,
-  idleAdapter,
-  idleToken,
-  minIncomingIdleTokenAmount = BigNumber.from(1),
-  useFullBalances,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
-  minIncomingIdleTokenAmount?: BigNumberish;
-  useFullBalances: boolean;
-}) {
-  const callArgs = callOnIntegrationArgs({
-    adapter: idleAdapter,
-    selector: claimRewardsAndReinvestSelector,
-    encodedCallArgs: idleClaimRewardsAndReinvestArgs({
-      idleToken,
-      minIncomingIdleTokenAmount,
-      useFullBalances,
-    }),
-  });
-
-  return comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-}
-
-export async function idleClaimRewardsAndSwap({
-  comptrollerProxy,
-  integrationManager,
-  fundOwner,
-  idleAdapter,
-  idleToken,
-  incomingAsset,
-  minIncomingAssetAmount = BigNumber.from(1),
-  useFullBalances,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount?: BigNumberish;
-  useFullBalances: boolean;
-}) {
-  const callArgs = callOnIntegrationArgs({
-    adapter: idleAdapter,
-    selector: claimRewardsAndSwapSelector,
-    encodedCallArgs: idleClaimRewardsAndSwapArgs({
-      idleToken,
-      incomingAsset,
-      minIncomingAssetAmount,
-      useFullBalances,
     }),
   });
 

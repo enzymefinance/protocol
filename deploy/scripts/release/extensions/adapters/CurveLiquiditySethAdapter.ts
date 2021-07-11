@@ -23,7 +23,6 @@ const fn: DeployFunction = async function (hre) {
       config.primitives.crv,
       config.synthetix.synths.seth,
       config.weth,
-      config.uniswap.router,
     ] as CurveLiquiditySethAdapterArgs,
     from: deployer.address,
     linkedData: {

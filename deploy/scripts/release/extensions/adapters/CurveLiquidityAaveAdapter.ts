@@ -21,10 +21,8 @@ const fn: DeployFunction = async function (hre) {
       config.curve.minter,
       config.curve.pools.aave.pool,
       config.primitives.crv,
-      config.weth,
       [config.aave.atokens.adai[0], config.aave.atokens.ausdc[0], config.aave.atokens.ausdt[0]],
       [config.primitives.dai, config.primitives.usdc, config.primitives.usdt],
-      config.uniswap.router,
     ] as CurveLiquidityAaveAdapterArgs,
     from: deployer.address,
     linkedData: {

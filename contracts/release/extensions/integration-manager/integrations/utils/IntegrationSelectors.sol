@@ -16,11 +16,6 @@ pragma solidity 0.6.12;
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 abstract contract IntegrationSelectors {
-    // Asset approval
-    bytes4 public constant APPROVE_ASSETS_SELECTOR = bytes4(
-        keccak256("approveAssets(address,bytes,bytes)")
-    );
-
     // Trading
     bytes4 public constant TAKE_ORDER_SELECTOR = bytes4(
         keccak256("takeOrder(address,bytes,bytes)")
@@ -40,12 +35,6 @@ abstract contract IntegrationSelectors {
     );
 
     // Combined
-    bytes4 public constant CLAIM_REWARDS_AND_REINVEST_SELECTOR = bytes4(
-        keccak256("claimRewardsAndReinvest(address,bytes,bytes)")
-    );
-    bytes4 public constant CLAIM_REWARDS_AND_SWAP_SELECTOR = bytes4(
-        keccak256("claimRewardsAndSwap(address,bytes,bytes)")
-    );
     bytes4 public constant LEND_AND_STAKE_SELECTOR = bytes4(
         keccak256("lendAndStake(address,bytes,bytes)")
     );

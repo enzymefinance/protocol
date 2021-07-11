@@ -1,8 +1,6 @@
 import { IdleAdapterArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
-import { loadConfig } from '../../../../utils/config';
-
 const fn: DeployFunction = async function (hre) {
   const {
     deployments: { deploy, get },
@@ -10,12 +8,11 @@ const fn: DeployFunction = async function (hre) {
   } = hre;
 
   const deployer = (await getSigners())[0];
-  const config = await loadConfig(hre);
   const integrationManager = await get('IntegrationManager');
   const idlePriceFeed = await get('IdlePriceFeed');
 
   await deploy('IdleAdapter', {
-    args: [integrationManager.address, idlePriceFeed.address, config.weth, config.uniswap.router] as IdleAdapterArgs,
+    args: [integrationManager.address, idlePriceFeed.address] as IdleAdapterArgs,
     from: deployer.address,
     linkedData: {
       type: 'ADAPTER',

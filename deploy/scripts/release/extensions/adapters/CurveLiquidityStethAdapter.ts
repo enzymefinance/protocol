@@ -23,7 +23,6 @@ const fn: DeployFunction = async function (hre) {
       config.primitives.crv,
       config.lido.steth,
       config.weth,
-      config.uniswap.router,
     ] as CurveLiquidityStethAdapterArgs,
     from: deployer.address,
     linkedData: {
