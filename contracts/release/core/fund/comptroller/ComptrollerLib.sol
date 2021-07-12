@@ -157,9 +157,11 @@ contract ComptrollerLib is IComptroller {
         private
         view
     {
+        uint256 lastSharesBoughtTimestamp = getLastSharesBoughtTimestampForAccount(_account);
+
         require(
-            block.timestamp.sub(getLastSharesBoughtTimestampForAccount(_account)) >=
-                sharesActionTimelock ||
+            lastSharesBoughtTimestamp == 0 ||
+                block.timestamp.sub(lastSharesBoughtTimestamp) >= sharesActionTimelock ||
                 __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
@@ -596,7 +598,7 @@ contract ComptrollerLib is IComptroller {
 
         address vaultProxyCopy = vaultProxy;
         require(
-            !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),
+            sharesActionTimelock == 0 || !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),
             "buyShares: Pending migration or reconfiguration"
         );
 
@@ -639,7 +641,9 @@ contract ComptrollerLib is IComptroller {
             "buyShares: Shares received < _minSharesQuantity"
         );
 
-        acctToLastSharesBoughtTimestamp[msg.sender] = block.timestamp;
+        if (sharesActionTimelock > 0) {
+            acctToLastSharesBoughtTimestamp[msg.sender] = block.timestamp;
+        }
 
         emit SharesBought(msg.sender, _investmentAmount, sharesIssued, sharesReceived_);
 

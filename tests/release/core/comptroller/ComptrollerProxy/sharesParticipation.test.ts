@@ -22,6 +22,7 @@ import {
   getAssetUnit,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
+  transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -118,36 +119,35 @@ describe('buyShares', () => {
     ).rejects.toBeRevertedWith('_minSharesQuantity must be >0');
   });
 
-  it('does not allow a fund that is pending migration', async () => {
+  it('does not allow a fund (with a shares action timelock) that is pending migration', async () => {
     const {
       deployer,
       accounts: [buyer],
-      deployment: {
-        assetFinalityResolver,
-        chainlinkPriceFeed,
-        dispatcher,
-        feeManager,
-        externalPositionManager,
-        integrationManager,
-        policyManager,
-        valueInterpreter,
-        vaultLib,
-      },
-      fund: { comptrollerProxy: prevComptrollerProxy, denominationAsset, fundOwner, vaultProxy },
+      deployment,
+      fund: { denominationAsset, fundOwner },
     } = await provider.snapshot(snapshot);
+
+    // Create a new fund with a sharesActionTimelock value
+    const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: deployment.fundDeployer,
+      denominationAsset,
+      sharesActionTimelock: 1000,
+    });
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
       deployer,
-      assetFinalityResolver,
-      chainlinkPriceFeed,
-      dispatcher,
-      feeManager,
-      integrationManager,
-      externalPositionManager,
-      policyManager,
-      valueInterpreter,
-      vaultLib,
+      assetFinalityResolver: deployment.assetFinalityResolver,
+      chainlinkPriceFeed: deployment.chainlinkPriceFeed,
+      dispatcher: deployment.dispatcher,
+      feeManager: deployment.feeManager,
+      integrationManager: deployment.integrationManager,
+      externalPositionManager: deployment.externalPositionManager,
+      policyManager: deployment.policyManager,
+      valueInterpreter: deployment.valueInterpreter,
+      vaultLib: deployment.vaultLib,
     });
 
     // Create fund config on the new FundDeployer to migrate to
@@ -178,9 +178,7 @@ describe('buyShares', () => {
     ).resolves.toBeReceipt();
   });
 
-  // This will likely be moved to a policy and should be a test in that policy.
-  // Can remove the todo here if so.
-  it.todo('does not allow a fund that is pending a reconfiguration');
+  it.todo('does not allow a fund (with a shares action timelock) that is pending a reconfiguration');
 
   it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 
@@ -293,6 +291,53 @@ describe('buyShares', () => {
     const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
     expect(sharesBuyerBalanceCall).toEqBigNumber(expectedSharesAmount);
   });
+
+  it('happy path: no shares action timelock, pending migration', async () => {
+    const {
+      deployer,
+      accounts: [buyer],
+      deployment,
+      fund: { denominationAsset, fundOwner },
+    } = await provider.snapshot(snapshot);
+
+    // Create a new fund without a sharesActionTimelock value
+    const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: deployment.fundDeployer,
+      denominationAsset,
+      sharesActionTimelock: 0, // Not necessary, but explicit
+    });
+
+    const nextFundDeployer = await createFundDeployer({
+      deployer,
+      assetFinalityResolver: deployment.assetFinalityResolver,
+      chainlinkPriceFeed: deployment.chainlinkPriceFeed,
+      dispatcher: deployment.dispatcher,
+      feeManager: deployment.feeManager,
+      integrationManager: deployment.integrationManager,
+      externalPositionManager: deployment.externalPositionManager,
+      policyManager: deployment.policyManager,
+      valueInterpreter: deployment.valueInterpreter,
+      vaultLib: deployment.vaultLib,
+    });
+
+    await createMigrationRequest({
+      signer: fundOwner,
+      fundDeployer: nextFundDeployer,
+      vaultProxy,
+      denominationAsset,
+    });
+
+    // Buying shares should still work during a pending migration
+    await buyShares({
+      comptrollerProxy: prevComptrollerProxy,
+      buyer,
+      denominationAsset,
+    });
+  });
+
+  it.todo('happy path: no shares action timelock, pending reconfiguration');
 
   it('does not allow a paused release, unless overridePause is set', async () => {
     const {
@@ -981,6 +1026,9 @@ describe('sharesActionTimelock', () => {
       denominationAsset,
     });
 
+    // Assert that relevant shares action timelock state is not updated
+    expect(await comptrollerProxy.getLastSharesBoughtTimestampForAccount(investor)).toEqBigNumber(0);
+
     // Immediately redeeming shares should succeed
     await redeemSharesInKind({
       comptrollerProxy,
@@ -1007,13 +1055,16 @@ describe('sharesActionTimelock', () => {
     });
 
     // Buy shares to start the timelock
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        buyer: investor,
-        denominationAsset,
-      }),
-    ).resolves.toBeReceipt();
+    const receipt = await buyShares({
+      comptrollerProxy,
+      buyer: investor,
+      denominationAsset,
+    });
+
+    // Assert that relevant shares action timelock state is updated
+    expect(await comptrollerProxy.getLastSharesBoughtTimestampForAccount(investor)).toEqBigNumber(
+      await transactionTimestamp(receipt),
+    );
 
     // Redeeming shares for the same user should fail since the timelock has started
     await expect(
@@ -1112,8 +1163,4 @@ describe('sharesActionTimelock', () => {
       }),
     ).resolves.toBeReceipt();
   });
-
-  // This will likely be moved to a policy and should be a test in that policy.
-  // Can remove the todo here if so.
-  it.todo('is skipped when redeeming shares if there is a pending reconfiguration');
 });
