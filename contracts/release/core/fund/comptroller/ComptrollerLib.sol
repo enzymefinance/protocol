@@ -590,6 +590,10 @@ contract ComptrollerLib is IComptroller {
         allowsPermissionedVaultAction
         returns (uint256 sharesReceived_)
     {
+        // Enforcing a _minSharesQuantity also validates `_investmentAmount > 0`
+        // and guarantees the function cannot succeed while minting 0 shares
+        require(_minSharesQuantity > 0, "buyShares: _minSharesQuantity must be >0");
+
         address vaultProxyCopy = vaultProxy;
         require(
             !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),

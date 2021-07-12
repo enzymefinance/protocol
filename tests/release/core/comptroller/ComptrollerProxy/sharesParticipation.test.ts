@@ -102,6 +102,22 @@ describe('buyShares', () => {
     ).rejects.toBeRevertedWith('Re-entrance');
   });
 
+  it('does not allow a _minSharesQuantity of 0', async () => {
+    const {
+      accounts: [buyer],
+      fund: { comptrollerProxy, denominationAsset },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      buyShares({
+        comptrollerProxy,
+        buyer,
+        denominationAsset,
+        minSharesQuantity: 0,
+      }),
+    ).rejects.toBeRevertedWith('_minSharesQuantity must be >0');
+  });
+
   it('does not allow a fund that is pending migration', async () => {
     const {
       deployer,
