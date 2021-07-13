@@ -62,15 +62,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Lends assets for eurs LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lend(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             uint256 outgoingEursAmount,
@@ -88,15 +88,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Lends assets for eurs LP tokens, then stakes the received LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lendAndStake(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             uint256 outgoingEursAmount,
@@ -119,15 +119,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Redeems eurs LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             uint256 outgoingLpTokenAmount,
@@ -147,15 +147,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Stakes eurs LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function stake(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         __curveGaugeV2Stake(
             getLiquidityGaugeToken(),
@@ -167,15 +167,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Unstakes eurs LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function unstake(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         __curveGaugeV2Unstake(getLiquidityGaugeToken(), __decodeUnstakeCallArgs(_encodedCallArgs));
     }
@@ -183,15 +183,15 @@ contract CurveLiquidityEursAdapter is
     /// @notice Unstakes eurs LP tokens, then redeems them
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function unstakeAndRedeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             uint256 outgoingLiquidityGaugeTokenAmount,

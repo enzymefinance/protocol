@@ -60,11 +60,11 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
     /// @notice Redeems pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     ) external onlyIntegrationManager {
         (
             uint256 outgoingAssetAmount,
@@ -72,10 +72,8 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[2] memory minIncomingAssetAmounts
         ) = __decodeRedeemCallArgs(_encodedCallArgs);
 
-        // More efficient to parse pool token from _encodedAssetTransferArgs than external call
-        (, address[] memory spendAssets, , ) = __decodeEncodedAssetTransferArgs(
-            _encodedAssetTransferArgs
-        );
+        // More efficient to parse pool token from _assetData than external call
+        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
 
         __uniswapV2Redeem(
             _vaultProxy,

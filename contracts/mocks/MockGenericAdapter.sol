@@ -42,24 +42,20 @@ interface IMockGenericIntegratee {
 contract MockGenericAdapter is AdapterBase {
     address public immutable INTEGRATEE;
 
-    /// @dev Provides a standard implementation for transferring assets between
-    /// the fund's VaultProxy and the adapter, by wrapping the adapter action.
-    /// This modifier should be implemented in almost all adapter actions, unless they
-    /// do not move assets or can spend and receive assets directly with the VaultProxy
     modifier fundAssetsTransferHandler(
         address _vaultProxy,
-        bytes memory _encodedAssetTransferArgs
+        bytes memory _assetData,
+        IIntegrationManager.SpendAssetsHandleType _handleType
     ) {
         (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         // Take custody of spend assets (if necessary)
-        if (spendAssetsHandleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
-            for (uint256 i = 0; i < spendAssets.length; i++) {
+        if (_handleType == IIntegrationManager.SpendAssetsHandleType.Approve) {
+            for (uint256 i; i < spendAssets.length; i++) {
                 ERC20(spendAssets[i]).safeTransferFrom(
                     _vaultProxy,
                     address(this),
@@ -140,7 +136,14 @@ contract MockGenericAdapter is AdapterBase {
         address _vaultProxy,
         bytes calldata _callArgs,
         bytes calldata _assetTransferArgs
-    ) external fundAssetsTransferHandler(_vaultProxy, _assetTransferArgs) {
+    )
+        external
+        fundAssetsTransferHandler(
+            _vaultProxy,
+            _assetTransferArgs,
+            __getSpendAssetsHandleTypeForSelector(bytes4(keccak256("swapA(address,bytes,bytes)")))
+        )
+    {
         __decodeCallArgsAndSwap(_callArgs);
     }
 
@@ -148,7 +151,14 @@ contract MockGenericAdapter is AdapterBase {
         address _vaultProxy,
         bytes calldata _callArgs,
         bytes calldata _assetTransferArgs
-    ) external fundAssetsTransferHandler(_vaultProxy, _assetTransferArgs) {
+    )
+        external
+        fundAssetsTransferHandler(
+            _vaultProxy,
+            _assetTransferArgs,
+            __getSpendAssetsHandleTypeForSelector(bytes4(keccak256("swapB(address,bytes,bytes)")))
+        )
+    {
         __decodeCallArgsAndSwap(_callArgs);
     }
 
@@ -179,7 +189,16 @@ contract MockGenericAdapter is AdapterBase {
         address _vaultProxy,
         bytes calldata _callArgs,
         bytes calldata _assetTransferArgs
-    ) external fundAssetsTransferHandler(_vaultProxy, _assetTransferArgs) {
+    )
+        external
+        fundAssetsTransferHandler(
+            _vaultProxy,
+            _assetTransferArgs,
+            __getSpendAssetsHandleTypeForSelector(
+                bytes4(keccak256("swapViaApproval(address,bytes,bytes)"))
+            )
+        )
+    {
         __decodeCallArgsAndSwap(_callArgs);
     }
 

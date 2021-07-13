@@ -57,8 +57,8 @@ contract IntegrationManager is
         bytes integrationData,
         address[] incomingAssets,
         uint256[] incomingAssetAmounts,
-        address[] outgoingAssets,
-        uint256[] outgoingAssetAmounts
+        address[] spendAssets,
+        uint256[] spendAssetAmounts
     );
 
     address private immutable DERIVATIVE_PRICE_FEED;
@@ -247,21 +247,20 @@ contract IntegrationManager is
             bytes memory integrationData
         ) = __decodeCallOnIntegrationArgs(_callArgs);
 
-        /// Passing decoded _callArgs leads to stack-too-deep error
         (
             address[] memory incomingAssets,
             uint256[] memory incomingAssetAmounts,
-            address[] memory outgoingAssets,
-            uint256[] memory outgoingAssetAmounts
-        ) = __callOnIntegrationInner(_vaultProxy, _callArgs);
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts
+        ) = __callOnIntegrationInner(_vaultProxy, adapter, selector, integrationData);
 
         __postCoIHook(
             adapter,
             selector,
             incomingAssets,
             incomingAssetAmounts,
-            outgoingAssets,
-            outgoingAssetAmounts
+            spendAssets,
+            spendAssetAmounts
         );
 
         __emitCoIEvent(
@@ -272,59 +271,64 @@ contract IntegrationManager is
             integrationData,
             incomingAssets,
             incomingAssetAmounts,
-            outgoingAssets,
-            outgoingAssetAmounts
+            spendAssets,
+            spendAssetAmounts
         );
     }
 
     /// @dev Helper to execute the bulk of logic of callOnIntegration.
     /// Avoids the stack-too-deep-error.
-    function __callOnIntegrationInner(address vaultProxy, bytes memory _callArgs)
+    function __callOnIntegrationInner(
+        address _vaultProxy,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData
+    )
         private
         returns (
             address[] memory incomingAssets_,
             uint256[] memory incomingAssetAmounts_,
-            address[] memory outgoingAssets_,
-            uint256[] memory outgoingAssetAmounts_
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_
         )
     {
-        (
-            address[] memory expectedIncomingAssets,
-            uint256[] memory preCallIncomingAssetBalances,
-            uint256[] memory minIncomingAssetAmounts,
-            SpendAssetsHandleType spendAssetsHandleType,
-            address[] memory spendAssets,
-            uint256[] memory maxSpendAssetAmounts,
-            uint256[] memory preCallSpendAssetBalances
-        ) = __preProcessCoI(vaultProxy, _callArgs);
-
-        __executeCoI(
-            vaultProxy,
-            _callArgs,
-            abi.encode(
-                spendAssetsHandleType,
-                spendAssets,
-                maxSpendAssetAmounts,
-                expectedIncomingAssets
-            )
-        );
+        uint256[] memory preCallIncomingAssetBalances;
+        uint256[] memory minIncomingAssetAmounts;
+        SpendAssetsHandleType spendAssetsHandleType;
+        uint256[] memory maxSpendAssetAmounts;
+        uint256[] memory preCallSpendAssetBalances;
 
         (
             incomingAssets_,
-            incomingAssetAmounts_,
-            outgoingAssets_,
-            outgoingAssetAmounts_
-        ) = __postProcessCoI(
-            vaultProxy,
-            expectedIncomingAssets,
             preCallIncomingAssetBalances,
             minIncomingAssetAmounts,
-            spendAssets,
+            spendAssetsHandleType,
+            spendAssets_,
+            maxSpendAssetAmounts,
+            preCallSpendAssetBalances
+        ) = __preProcessCoI(_vaultProxy, _adapter, _selector, _integrationData);
+
+        __executeCoI(
+            _vaultProxy,
+            _adapter,
+            _selector,
+            _integrationData,
+            abi.encode(spendAssets_, maxSpendAssetAmounts, incomingAssets_)
+        );
+
+        (incomingAssetAmounts_, spendAssetAmounts_) = __postProcessCoI(
+            _vaultProxy,
+            _adapter,
+            incomingAssets_,
+            preCallIncomingAssetBalances,
+            minIncomingAssetAmounts,
+            spendAssetsHandleType,
+            spendAssets_,
             maxSpendAssetAmounts,
             preCallSpendAssetBalances
         );
 
-        return (incomingAssets_, incomingAssetAmounts_, outgoingAssets_, outgoingAssetAmounts_);
+        return (incomingAssets_, incomingAssetAmounts_, spendAssets_, spendAssetAmounts_);
     }
 
     /// @dev Helper to decode CoI args
@@ -350,8 +354,8 @@ contract IntegrationManager is
         bytes memory _integrationData,
         address[] memory _incomingAssets,
         uint256[] memory _incomingAssetAmounts,
-        address[] memory _outgoingAssets,
-        uint256[] memory _outgoingAssetAmounts
+        address[] memory _spendAssets,
+        uint256[] memory _spendAssetAmounts
     ) private {
         emit CallOnIntegrationExecutedForFund(
             msg.sender,
@@ -362,8 +366,8 @@ contract IntegrationManager is
             _integrationData,
             _incomingAssets,
             _incomingAssetAmounts,
-            _outgoingAssets,
-            _outgoingAssetAmounts
+            _spendAssets,
+            _spendAssetAmounts
         );
     }
 
@@ -371,22 +375,13 @@ contract IntegrationManager is
     /// @dev Avoids stack-too-deep error
     function __executeCoI(
         address _vaultProxy,
-        bytes memory _callArgs,
-        bytes memory _encodedAssetTransferArgs
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData,
+        bytes memory _assetData
     ) private {
-        (
-            address adapter,
-            bytes4 selector,
-            bytes memory integrationData
-        ) = __decodeCallOnIntegrationArgs(_callArgs);
-
-        (bool success, bytes memory returnData) = adapter.call(
-            abi.encodeWithSelector(
-                selector,
-                _vaultProxy,
-                integrationData,
-                _encodedAssetTransferArgs
-            )
+        (bool success, bytes memory returnData) = _adapter.call(
+            abi.encodeWithSelector(_selector, _vaultProxy, _integrationData, _assetData)
         );
         require(success, string(returnData));
     }
@@ -408,10 +403,15 @@ contract IntegrationManager is
     }
 
     /// @dev Helper for the internal actions to take prior to executing CoI
-    function __preProcessCoI(address _vaultProxy, bytes memory _callArgs)
+    function __preProcessCoI(
+        address _vaultProxy,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _integrationData
+    )
         private
         returns (
-            address[] memory expectedIncomingAssets_,
+            address[] memory incomingAssets_,
             uint256[] memory preCallIncomingAssetBalances_,
             uint256[] memory minIncomingAssetAmounts_,
             SpendAssetsHandleType spendAssetsHandleType_,
@@ -420,95 +420,65 @@ contract IntegrationManager is
             uint256[] memory preCallSpendAssetBalances_
         )
     {
-        (
-            address adapter,
-            bytes4 selector,
-            bytes memory integrationData
-        ) = __decodeCallOnIntegrationArgs(_callArgs);
+        require(adapterIsRegistered(_adapter), "callOnIntegration: Adapter is not registered");
 
-        require(adapterIsRegistered(adapter), "callOnIntegration: Adapter is not registered");
-
-        // Note that expected incoming and spend assets are allowed to overlap
+        // Note that incoming and spend assets are allowed to overlap
         // (e.g., a fee for the incomingAsset charged in a spend asset)
         (
             spendAssetsHandleType_,
             spendAssets_,
             maxSpendAssetAmounts_,
-            expectedIncomingAssets_,
+            incomingAssets_,
             minIncomingAssetAmounts_
-        ) = IIntegrationAdapter(adapter).parseAssetsForMethod(
+        ) = IIntegrationAdapter(_adapter).parseAssetsForMethod(
             _vaultProxy,
-            selector,
-            integrationData
+            _selector,
+            _integrationData
         );
         require(
             spendAssets_.length == maxSpendAssetAmounts_.length,
             "__preProcessCoI: Spend assets arrays unequal"
         );
         require(
-            expectedIncomingAssets_.length == minIncomingAssetAmounts_.length,
+            incomingAssets_.length == minIncomingAssetAmounts_.length,
             "__preProcessCoI: Incoming assets arrays unequal"
         );
         require(spendAssets_.isUniqueSet(), "__preProcessCoI: Duplicate spend asset");
-        require(
-            expectedIncomingAssets_.isUniqueSet(),
-            "__preProcessCoI: Duplicate incoming asset"
-        );
-
-        IVault vaultProxyContract = IVault(_vaultProxy);
+        require(incomingAssets_.isUniqueSet(), "__preProcessCoI: Duplicate incoming asset");
 
         // INCOMING ASSETS
 
-        preCallIncomingAssetBalances_ = new uint256[](expectedIncomingAssets_.length);
-        for (uint256 i = 0; i < expectedIncomingAssets_.length; i++) {
+        // Incoming asset balances must be recorded prior to spend asset balances in case there
+        // is an overlap (an asset that is both a spend asset and an incoming asset),
+        // as a spend asset can be immediately transferred after recording its balance
+        preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
+        for (uint256 i; i < incomingAssets_.length; i++) {
             require(
-                expectedIncomingAssets_[i] != address(0),
-                "__preProcessCoI: Empty incoming asset address"
-            );
-            require(
-                minIncomingAssetAmounts_[i] > 0,
-                "__preProcessCoI: minIncomingAssetAmount must be >0"
-            );
-            require(
-                __isSupportedAsset(expectedIncomingAssets_[i]),
+                __isSupportedAsset(incomingAssets_[i]),
                 "__preProcessCoI: Non-receivable incoming asset"
             );
 
-            // Get pre-call balance of each incoming asset.
-            // If the asset is not tracked by the fund, allow the balance to default to 0.
-            if (vaultProxyContract.isTrackedAsset(expectedIncomingAssets_[i])) {
-                preCallIncomingAssetBalances_[i] = ERC20(expectedIncomingAssets_[i]).balanceOf(
-                    _vaultProxy
-                );
-            }
+            preCallIncomingAssetBalances_[i] = ERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
         }
 
         // SPEND ASSETS
 
-        // Get pre-call balances of spend assets and grant approvals to adapter
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
-        for (uint256 i = 0; i < spendAssets_.length; i++) {
-            require(spendAssets_[i] != address(0), "__preProcessCoI: Empty spend asset");
-            require(maxSpendAssetAmounts_[i] > 0, "__preProcessCoI: Empty max spend asset amount");
+        for (uint256 i; i < spendAssets_.length; i++) {
+            preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
 
-            // If spend asset is also an incoming asset, no need to record its balance
-            if (!expectedIncomingAssets_.contains(spendAssets_[i])) {
-                preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
-            }
-
-            // Grant spend assets access to the adapter.
-            // Note that spendAssets_ is already asserted to a unique set.
+            // Grant adapter access to the spend assets.
+            // spendAssets_ is already asserted to be a unique set.
             if (spendAssetsHandleType_ == SpendAssetsHandleType.Approve) {
-                // Use exact approve amount rather than increasing allowances,
-                // because all adapters finish their actions atomically.
+                // Use exact approve amount, and reset afterwards
                 __approveAssetSpender(
                     msg.sender,
                     spendAssets_[i],
-                    adapter,
+                    _adapter,
                     maxSpendAssetAmounts_[i]
                 );
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
-                __withdrawAssetTo(msg.sender, spendAssets_[i], adapter, maxSpendAssetAmounts_[i]);
+                __withdrawAssetTo(msg.sender, spendAssets_[i], _adapter, maxSpendAssetAmounts_[i]);
             }
         }
     }
@@ -519,8 +489,8 @@ contract IntegrationManager is
         bytes4 _selector,
         address[] memory _incomingAssets,
         uint256[] memory _incomingAssetAmounts,
-        address[] memory _outgoingAssets,
-        uint256[] memory _outgoingAssetAmounts
+        address[] memory _spendAssets,
+        uint256[] memory _spendAssetAmounts
     ) private {
         IPolicyManager(POLICY_MANAGER).validatePolicies(
             msg.sender,
@@ -530,185 +500,78 @@ contract IntegrationManager is
                 _selector,
                 _incomingAssets,
                 _incomingAssetAmounts,
-                _outgoingAssets,
-                _outgoingAssetAmounts
+                _spendAssets,
+                _spendAssetAmounts
             )
         );
     }
 
-    /// @dev Helper to reconcile and format incoming and outgoing assets after executing CoI
+    /// @dev Helper to reconcile incoming and spend assets after executing CoI
     function __postProcessCoI(
         address _vaultProxy,
-        address[] memory _expectedIncomingAssets,
+        address _adapter,
+        address[] memory _incomingAssets,
         uint256[] memory _preCallIncomingAssetBalances,
         uint256[] memory _minIncomingAssetAmounts,
+        SpendAssetsHandleType _spendAssetsHandleType,
         address[] memory _spendAssets,
         uint256[] memory _maxSpendAssetAmounts,
         uint256[] memory _preCallSpendAssetBalances
     )
         private
-        returns (
-            address[] memory incomingAssets_,
-            uint256[] memory incomingAssetAmounts_,
-            address[] memory outgoingAssets_,
-            uint256[] memory outgoingAssetAmounts_
-        )
+        returns (uint256[] memory incomingAssetAmounts_, uint256[] memory spendAssetAmounts_)
     {
-        address[] memory increasedSpendAssets;
-        uint256[] memory increasedSpendAssetAmounts;
-        (
-            outgoingAssets_,
-            outgoingAssetAmounts_,
-            increasedSpendAssets,
-            increasedSpendAssetAmounts
-        ) = __reconcileCoISpendAssets(
-            _vaultProxy,
-            _spendAssets,
-            _maxSpendAssetAmounts,
-            _preCallSpendAssetBalances
-        );
+        // INCOMING ASSETS
 
-        (incomingAssets_, incomingAssetAmounts_) = __reconcileCoIIncomingAssets(
-            _vaultProxy,
-            _expectedIncomingAssets,
-            _preCallIncomingAssetBalances,
-            _minIncomingAssetAmounts,
-            increasedSpendAssets,
-            increasedSpendAssetAmounts
-        );
-
-        return (incomingAssets_, incomingAssetAmounts_, outgoingAssets_, outgoingAssetAmounts_);
-    }
-
-    /// @dev Helper to process incoming asset balance changes.
-    /// See __reconcileCoISpendAssets() for explanation on "increasedSpendAssets".
-    function __reconcileCoIIncomingAssets(
-        address _vaultProxy,
-        address[] memory _expectedIncomingAssets,
-        uint256[] memory _preCallIncomingAssetBalances,
-        uint256[] memory _minIncomingAssetAmounts,
-        address[] memory _increasedSpendAssets,
-        uint256[] memory _increasedSpendAssetAmounts
-    ) private returns (address[] memory incomingAssets_, uint256[] memory incomingAssetAmounts_) {
-        // Incoming assets = expected incoming assets + spend assets with increased balances
-        uint256 incomingAssetsCount = _expectedIncomingAssets.length.add(
-            _increasedSpendAssets.length
-        );
-
-        // Calculate and validate incoming asset amounts
-        incomingAssets_ = new address[](incomingAssetsCount);
-        incomingAssetAmounts_ = new uint256[](incomingAssetsCount);
-        for (uint256 i = 0; i < _expectedIncomingAssets.length; i++) {
-            uint256 balanceDiff = __getVaultAssetBalance(_vaultProxy, _expectedIncomingAssets[i])
-                .sub(_preCallIncomingAssetBalances[i]);
+        incomingAssetAmounts_ = new uint256[](_incomingAssets.length);
+        for (uint256 i; i < _incomingAssets.length; i++) {
+            incomingAssetAmounts_[i] = __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]).sub(
+                _preCallIncomingAssetBalances[i]
+            );
             require(
-                balanceDiff >= _minIncomingAssetAmounts[i],
-                "__reconcileCoIAssets: Received incoming asset less than expected"
+                incomingAssetAmounts_[i] >= _minIncomingAssetAmounts[i],
+                "__postProcessCoI: Received incoming asset less than expected"
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
-            __addTrackedAsset(msg.sender, _expectedIncomingAssets[i]);
-
-            incomingAssets_[i] = _expectedIncomingAssets[i];
-            incomingAssetAmounts_[i] = balanceDiff;
+            __addTrackedAsset(msg.sender, _incomingAssets[i]);
         }
 
-        // Append increaseSpendAssets to incomingAsset vars
-        if (_increasedSpendAssets.length > 0) {
-            uint256 incomingAssetIndex = _expectedIncomingAssets.length;
-            for (uint256 i = 0; i < _increasedSpendAssets.length; i++) {
-                incomingAssets_[incomingAssetIndex] = _increasedSpendAssets[i];
-                incomingAssetAmounts_[incomingAssetIndex] = _increasedSpendAssetAmounts[i];
-                incomingAssetIndex++;
-            }
-        }
+        // SPEND ASSETS
 
-        return (incomingAssets_, incomingAssetAmounts_);
-    }
-
-    /// @dev Helper to process spend asset balance changes.
-    /// "outgoingAssets" are the spend assets with a decrease in balance.
-    /// "increasedSpendAssets" are the spend assets with an unexpected increase in balance.
-    /// For example, "increasedSpendAssets" can occur if an adapter has a pre-balance of
-    /// the spendAsset, which would be transferred to the fund at the end of the tx.
-    function __reconcileCoISpendAssets(
-        address _vaultProxy,
-        address[] memory _spendAssets,
-        uint256[] memory _maxSpendAssetAmounts,
-        uint256[] memory _preCallSpendAssetBalances
-    )
-        private
-        returns (
-            address[] memory outgoingAssets_,
-            uint256[] memory outgoingAssetAmounts_,
-            address[] memory increasedSpendAssets_,
-            uint256[] memory increasedSpendAssetAmounts_
-        )
-    {
-        // Determine spend asset balance changes
-        uint256[] memory postCallSpendAssetBalances = new uint256[](_spendAssets.length);
-        uint256 outgoingAssetsCount;
-        uint256 increasedSpendAssetsCount;
-        for (uint256 i = 0; i < _spendAssets.length; i++) {
-            // If spend asset's initial balance is 0, then it is an incoming asset
-            if (_preCallSpendAssetBalances[i] == 0) {
-                continue;
-            }
-
-            // Determine if the asset is outgoing or incoming, and store the post-balance for later use
-            postCallSpendAssetBalances[i] = __getVaultAssetBalance(_vaultProxy, _spendAssets[i]);
-            // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
-            if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
-                outgoingAssetsCount++;
-            } else if (postCallSpendAssetBalances[i] > _preCallSpendAssetBalances[i]) {
-                increasedSpendAssetsCount++;
-            }
-        }
-
-        // Format outgoingAssets and increasedSpendAssets (spend assets with unexpected increase in balance)
-        outgoingAssets_ = new address[](outgoingAssetsCount);
-        outgoingAssetAmounts_ = new uint256[](outgoingAssetsCount);
-        increasedSpendAssets_ = new address[](increasedSpendAssetsCount);
-        increasedSpendAssetAmounts_ = new uint256[](increasedSpendAssetsCount);
-        uint256 outgoingAssetsIndex;
-        uint256 increasedSpendAssetsIndex;
-        for (uint256 i = 0; i < _spendAssets.length; i++) {
-            // If spend asset's initial balance is 0, then it is an incoming asset.
-            if (_preCallSpendAssetBalances[i] == 0) {
-                continue;
-            }
-
-            // If the pre- and post- balances are equal, then the asset is neither incoming nor outgoing
-            if (postCallSpendAssetBalances[i] < _preCallSpendAssetBalances[i]) {
-                if (postCallSpendAssetBalances[i] == 0) {
-                    __removeTrackedAsset(msg.sender, _spendAssets[i]);
-                    outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i];
-                } else {
-                    outgoingAssetAmounts_[outgoingAssetsIndex] = _preCallSpendAssetBalances[i].sub(
-                        postCallSpendAssetBalances[i]
-                    );
-                }
-                require(
-                    outgoingAssetAmounts_[outgoingAssetsIndex] <= _maxSpendAssetAmounts[i],
-                    "__reconcileCoISpendAssets: Spent amount greater than expected"
+        spendAssetAmounts_ = new uint256[](_spendAssets.length);
+        for (uint256 i; i < _spendAssets.length; i++) {
+            // Calculate the balance change of spend assets. Ignore if balance increased.
+            uint256 postCallSpendAssetBalance = __getVaultAssetBalance(
+                _vaultProxy,
+                _spendAssets[i]
+            );
+            if (postCallSpendAssetBalance == 0) {
+                __removeTrackedAsset(msg.sender, _spendAssets[i]);
+                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i];
+            } else if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
+                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i].sub(
+                    postCallSpendAssetBalance
                 );
+            }
 
-                outgoingAssets_[outgoingAssetsIndex] = _spendAssets[i];
-                outgoingAssetsIndex++;
-            } else if (postCallSpendAssetBalances[i] > _preCallSpendAssetBalances[i]) {
-                increasedSpendAssetAmounts_[increasedSpendAssetsIndex] = postCallSpendAssetBalances[i]
-                    .sub(_preCallSpendAssetBalances[i]);
-                increasedSpendAssets_[increasedSpendAssetsIndex] = _spendAssets[i];
-                increasedSpendAssetsIndex++;
+            // Reset any unused approvals
+            if (
+                _spendAssetsHandleType == SpendAssetsHandleType.Approve &&
+                ERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
+            ) {
+                __approveAssetSpender(msg.sender, _spendAssets[i], _adapter, 0);
+            } else if (_spendAssetsHandleType == SpendAssetsHandleType.None) {
+                // Only need to validate _maxSpendAssetAmounts if not SpendAssetsHandleType.Approve
+                // or SpendAssetsHandleType.Transfer, as each of those implicitly validate the max
+                require(
+                    spendAssetAmounts_[i] <= _maxSpendAssetAmounts[i],
+                    "__postProcessCoI: Spent amount greater than expected"
+                );
             }
         }
 
-        return (
-            outgoingAssets_,
-            outgoingAssetAmounts_,
-            increasedSpendAssets_,
-            increasedSpendAssetAmounts_
-        );
+        return (incomingAssetAmounts_, spendAssetAmounts_);
     }
 
     ///////////////////////////
@@ -788,7 +651,7 @@ contract IntegrationManager is
         returns (address[] memory registeredAdaptersArray_)
     {
         registeredAdaptersArray_ = new address[](registeredAdapters.length());
-        for (uint256 i = 0; i < registeredAdaptersArray_.length; i++) {
+        for (uint256 i; i < registeredAdaptersArray_.length; i++) {
             registeredAdaptersArray_[i] = registeredAdapters.at(i);
         }
 

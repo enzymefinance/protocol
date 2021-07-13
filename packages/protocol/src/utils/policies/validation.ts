@@ -58,19 +58,19 @@ export function validateRulePostCoIArgs({
   selector,
   incomingAssets,
   incomingAssetAmounts,
-  outgoingAssets,
-  outgoingAssetAmounts,
+  spendAssets,
+  spendAssetAmounts,
 }: {
   adapter: AddressLike;
   selector: BytesLike;
   incomingAssets: AddressLike[];
   incomingAssetAmounts: BigNumberish[];
-  outgoingAssets: AddressLike[];
-  outgoingAssetAmounts: BigNumberish[];
+  spendAssets: AddressLike[];
+  spendAssetAmounts: BigNumberish[];
 }) {
   return encodeArgs(
     ['address', 'bytes4', 'address[]', 'uint256[]', 'address[]', 'uint256[]'],
-    [adapter, selector, incomingAssets, incomingAssetAmounts, outgoingAssets, outgoingAssetAmounts],
+    [adapter, selector, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts],
   );
 }
 

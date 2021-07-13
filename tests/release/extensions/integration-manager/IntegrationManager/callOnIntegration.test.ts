@@ -26,7 +26,7 @@ import {
   mockGenericSwapASelector,
   mockGenericSwapDirectFromVaultSelector,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -120,8 +120,8 @@ async function seedFundByTrading({
     caller: fundOwner,
     incomingAssets: [incomingAsset],
     incomingAssetAmounts: [incomingAssetAmount],
-    outgoingAssets: [],
-    outgoingAssetAmounts: [],
+    spendAssets: [],
+    spendAssetAmounts: [],
     selector: mockGenericSwapASelector,
     integrationData,
     vaultProxy,
@@ -174,7 +174,7 @@ describe('callOnIntegration', () => {
     const {
       mockGenericAdapter,
       deployment: { integrationManager },
-      tokens: { weth: outgoingAsset, mln: incomingAsset },
+      tokens: { weth: spendAsset, mln: incomingAsset },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
@@ -187,7 +187,7 @@ describe('callOnIntegration', () => {
         integrationManager,
         fundOwner,
         mockGenericAdapter,
-        spendAssets: [outgoingAsset],
+        spendAssets: [spendAsset],
         actualSpendAssetAmounts: [0],
         incomingAssets: [incomingAsset],
         minIncomingAssetAmounts: [utils.parseEther('1')],
@@ -226,13 +226,13 @@ describe('callOnIntegration', () => {
   it('does not allow incomingAssets and incomingAssetAmounts arrays to have unequal lengths', async () => {
     const {
       mockGenericAdapter,
-      tokens: { mln: outgoingAsset, weth, dai },
+      tokens: { mln: spendAsset, weth, dai },
       deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
     const swapArgs = mockGenericSwapArgs({
-      spendAssets: [outgoingAsset],
+      spendAssets: [spendAsset],
       actualSpendAssetAmounts: [utils.parseEther('1')],
       incomingAssets: [weth, dai],
       actualIncomingAssetAmounts: [utils.parseEther('1')],
@@ -254,13 +254,13 @@ describe('callOnIntegration', () => {
   it('does not allow duplicate spend assets', async () => {
     const {
       mockGenericAdapter,
-      tokens: { mln: outgoingAsset, weth: incomingAsset },
+      tokens: { mln: spendAsset, weth: incomingAsset },
       deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
     const swapArgs = mockGenericSwapArgs({
-      spendAssets: [outgoingAsset, outgoingAsset],
+      spendAssets: [spendAsset, spendAsset],
       actualSpendAssetAmounts: Array(2).fill(utils.parseEther('1')),
       incomingAssets: [incomingAsset],
       actualIncomingAssetAmounts: [utils.parseEther('1')],
@@ -282,13 +282,13 @@ describe('callOnIntegration', () => {
   it('does not allow duplicate incoming assets', async () => {
     const {
       mockGenericAdapter,
-      tokens: { mln: outgoingAsset, weth: incomingAsset },
+      tokens: { mln: spendAsset, weth: incomingAsset },
       deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner },
     } = await provider.snapshot(snapshot);
 
     const swapArgs = mockGenericSwapArgs({
-      spendAssets: [outgoingAsset],
+      spendAssets: [spendAsset],
       actualSpendAssetAmounts: [utils.parseEther('1')],
       incomingAssets: [incomingAsset, incomingAsset],
       actualIncomingAssetAmounts: Array(2).fill(utils.parseEther('1')),
@@ -310,7 +310,7 @@ describe('callOnIntegration', () => {
   it('does not allow a non-receivable incoming asset', async () => {
     const {
       mockGenericAdapter,
-      tokens: { weth: outgoingAsset },
+      tokens: { weth: spendAsset },
       deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -323,7 +323,7 @@ describe('callOnIntegration', () => {
         integrationManager,
         fundOwner,
         mockGenericAdapter,
-        spendAssets: [outgoingAsset],
+        spendAssets: [spendAsset],
         actualSpendAssetAmounts: [utils.parseEther('1')],
         incomingAssets: [nonReceivableToken],
         minIncomingAssetAmounts: [utils.parseEther('1')],
@@ -335,7 +335,7 @@ describe('callOnIntegration', () => {
     const {
       mockGenericAdapter,
       mockGenericIntegratee,
-      tokens: { weth: outgoingAsset },
+      tokens: { weth: spendAsset },
       deployment: { integrationManager, fundDeployer },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -344,20 +344,20 @@ describe('callOnIntegration', () => {
     const actualSpendAssetAmount = maxSpendAssetAmount.add(1);
 
     // Seed fund with actualSpendAssetAmount
-    await outgoingAsset.transfer(vaultProxy, actualSpendAssetAmount);
+    await spendAsset.transfer(vaultProxy, actualSpendAssetAmount);
 
     // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
     // by registering the token's approve() function for use in vaultCallOnContract()
-    const approveSelector = sighash(outgoingAsset.approve.fragment);
+    const approveSelector = sighash(spendAsset.approve.fragment);
     await fundDeployer.registerVaultCalls(
-      [outgoingAsset],
+      [spendAsset],
       [approveSelector],
       [utils.keccak256(encodeArgs(['address', 'uint'], [mockGenericIntegratee, actualSpendAssetAmount]))],
     );
     await comptrollerProxy
       .connect(fundOwner)
       .vaultCallOnContract(
-        outgoingAsset,
+        spendAsset,
         approveSelector,
         encodeArgs(['address', 'uint256'], [mockGenericIntegratee, actualSpendAssetAmount]),
       );
@@ -370,7 +370,7 @@ describe('callOnIntegration', () => {
         fundOwner,
         mockGenericAdapter,
         selector: mockGenericSwapDirectFromVaultSelector,
-        spendAssets: [outgoingAsset],
+        spendAssets: [spendAsset],
         maxSpendAssetAmounts: [maxSpendAssetAmount],
         actualSpendAssetAmounts: [actualSpendAssetAmount],
       }),
@@ -380,7 +380,7 @@ describe('callOnIntegration', () => {
   it('does not allow incomingAsset received to be less than expected', async () => {
     const {
       mockGenericAdapter,
-      tokens: { weth: outgoingAsset, mln: incomingAsset },
+      tokens: { weth: spendAsset, mln: incomingAsset },
       deployment: { integrationManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
@@ -392,7 +392,7 @@ describe('callOnIntegration', () => {
         integrationManager,
         fundOwner,
         mockGenericAdapter,
-        spendAssets: [outgoingAsset],
+        spendAssets: [spendAsset],
         actualSpendAssetAmounts: [utils.parseEther('1')],
         incomingAssets: [incomingAsset],
         minIncomingAssetAmounts: [utils.parseEther('2')],
@@ -400,85 +400,6 @@ describe('callOnIntegration', () => {
         seedFund: true,
       }),
     ).rejects.toBeRevertedWith('Received incoming asset less than expected');
-  });
-
-  it('does not allow empty spend asset address', async () => {
-    const {
-      mockGenericAdapter,
-      tokens: { mln: incomingAsset },
-      deployment: { integrationManager },
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshot);
-
-    const swapArgs = mockGenericSwapArgs({
-      spendAssets: [constants.AddressZero],
-      actualSpendAssetAmounts: [utils.parseEther('1')],
-      incomingAssets: [incomingAsset],
-      actualIncomingAssetAmounts: [utils.parseEther('1')],
-    });
-
-    const callArgs = callOnIntegrationArgs({
-      adapter: mockGenericAdapter,
-      selector: mockGenericSwapASelector,
-      encodedCallArgs: swapArgs,
-    });
-
-    await expect(
-      comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
-    ).rejects.toBeRevertedWith('Empty spend asset');
-  });
-
-  it('does not allow empty incoming asset address', async () => {
-    const {
-      mockGenericAdapter,
-      tokens: { mln: outgoingAsset },
-      deployment: { integrationManager },
-      fund: { comptrollerProxy, fundOwner },
-    } = await provider.snapshot(snapshot);
-
-    const swapArgs = mockGenericSwapArgs({
-      spendAssets: [outgoingAsset],
-      actualSpendAssetAmounts: [utils.parseEther('1')],
-      incomingAssets: [constants.AddressZero],
-      actualIncomingAssetAmounts: [utils.parseEther('1')],
-    });
-
-    const callArgs = callOnIntegrationArgs({
-      adapter: mockGenericAdapter,
-      selector: mockGenericSwapASelector,
-      encodedCallArgs: swapArgs,
-    });
-
-    await expect(
-      comptrollerProxy
-        .connect(fundOwner)
-        .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
-    ).rejects.toBeRevertedWith('Empty incoming asset address');
-  });
-
-  it('does not allow empty spend asset amount', async () => {
-    const {
-      mockGenericAdapter,
-      tokens: { weth: outgoingAsset, mln: incomingAsset },
-      deployment: { integrationManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    await expect(
-      mockGenericSwap({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager,
-        fundOwner,
-        mockGenericAdapter,
-        spendAssets: [outgoingAsset],
-        actualSpendAssetAmounts: [0],
-        incomingAssets: [incomingAsset],
-        minIncomingAssetAmounts: [utils.parseEther('1')],
-      }),
-    ).rejects.toBeRevertedWith('Empty max spend asset amount');
   });
 });
 
@@ -525,8 +446,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets,
       incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: spendAssets,
-      outgoingAssetAmounts: actualSpendAssetAmounts,
+      spendAssets: spendAssets,
+      spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -540,8 +461,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: spendAssets,
-        outgoingAssetAmounts: actualSpendAssetAmounts,
+        spendAssets: spendAssets,
+        spendAssetAmounts: actualSpendAssetAmounts,
       }),
     );
 
@@ -575,7 +496,10 @@ describe('valid calls', () => {
     const incomingAssets = [knc];
     const actualIncomingAssetAmounts = [utils.parseEther('2')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
-    const expectedIncomingAssetAmount = actualIncomingAssetAmounts[0].add(seedFundAmount);
+
+    // If an asset is untracked with balanceA in the vault, and an adapter action adds amountB to the vault,
+    // then the actual amount accrued in the tx is amountB, even though the GAV has increased by balanceA + amountB.
+    const expectedIncomingAssetAmount = actualIncomingAssetAmounts[0];
 
     const preTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
     expect(preTxGetTrackedAssetsCall).toEqual([denominationAsset.address]);
@@ -601,8 +525,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets: incomingAssets,
       incomingAssetAmounts: [expectedIncomingAssetAmount],
-      outgoingAssets: spendAssets,
-      outgoingAssetAmounts: actualSpendAssetAmounts,
+      spendAssets: spendAssets,
+      spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -616,8 +540,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets: incomingAssets,
         incomingAssetAmounts: [expectedIncomingAssetAmount],
-        outgoingAssets: spendAssets,
-        outgoingAssetAmounts: actualSpendAssetAmounts,
+        spendAssets: spendAssets,
+        spendAssetAmounts: actualSpendAssetAmounts,
       }),
     );
 
@@ -625,7 +549,7 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: incomingAssets,
     });
-    expect(incomingAssetBalancesCall).toEqual([expectedIncomingAssetAmount]);
+    expect(incomingAssetBalancesCall).toEqual([expectedIncomingAssetAmount.add(seedFundAmount)]);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
     expect(postTxGetTrackedAssetsCall).toEqual([
       denominationAsset.address,
@@ -671,8 +595,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets,
       incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: spendAssets,
-      outgoingAssetAmounts: actualSpendAssetAmounts,
+      spendAssets: spendAssets,
+      spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -686,8 +610,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: spendAssets,
-        outgoingAssetAmounts: actualSpendAssetAmounts,
+        spendAssets: spendAssets,
+        spendAssetAmounts: actualSpendAssetAmounts,
       }),
     );
 
@@ -717,6 +641,11 @@ describe('valid calls', () => {
     const actualIncomingAssetAmounts = [utils.parseEther('2')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
 
+    // If an asset spends amountA and receives amountB of the same asset, then the incoming amount is amountB - amountA.
+    // The spend amount is 0.
+    const expectedSpendAssetAmounts = [0];
+    const expectedIncomingAssetAmounts = [actualIncomingAssetAmounts[0].sub(actualSpendAssetAmounts[0])];
+
     const swapArgs = {
       spendAssets,
       actualSpendAssetAmounts,
@@ -739,14 +668,15 @@ describe('valid calls', () => {
 
     const integrationData = mockGenericSwapArgs({ ...swapArgs });
 
+    // Though the spend amount is 0, we still expect this to be reported in the event, as 0 values are not filtered out
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
       comptrollerProxy,
       caller: fundOwner,
       incomingAssets,
-      incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
+      incomingAssetAmounts: expectedIncomingAssetAmounts,
+      spendAssets,
+      spendAssetAmounts: expectedSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -759,9 +689,9 @@ describe('valid calls', () => {
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
-        incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: [],
-        outgoingAssetAmounts: [],
+        incomingAssetAmounts: expectedIncomingAssetAmounts,
+        spendAssets,
+        spendAssetAmounts: expectedSpendAssetAmounts,
       }),
     );
 
@@ -770,72 +700,6 @@ describe('valid calls', () => {
       assets: spendAssets,
     });
     expect(spendAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
-  });
-
-  it('handles a spend asset that is also an incoming asset and decreases', async () => {
-    const {
-      tokens: { mln },
-      mockGenericAdapter,
-      deployment: { integrationManager, policyManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    // seed fund
-    const amount = utils.parseEther('75');
-    await mln.transfer(vaultProxy, amount);
-
-    const spendAssets = [mln];
-    const actualSpendAssetAmounts = [utils.parseEther('50')];
-    const incomingAssets = [mln];
-    const actualIncomingAssetAmounts = [utils.parseEther('1')];
-    const expectedSpendAssetBalance = amount.sub(actualSpendAssetAmounts[0]).add(actualIncomingAssetAmounts[0]);
-
-    const swapArgs = { spendAssets, actualSpendAssetAmounts, incomingAssets, actualIncomingAssetAmounts };
-
-    const receipt = await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      ...swapArgs,
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-    const integrationData = mockGenericSwapArgs({ ...swapArgs });
-
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      adapter: mockGenericAdapter,
-      comptrollerProxy,
-      caller: fundOwner,
-      incomingAssets,
-      incomingAssetAmounts: [expectedSpendAssetBalance],
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
-      selector: mockGenericSwapASelector,
-      integrationData,
-      vaultProxy,
-    });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PostCallOnIntegration,
-      validateRulePostCoIArgs({
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-        incomingAssets: incomingAssets,
-        incomingAssetAmounts: [expectedSpendAssetBalance],
-        outgoingAssets: [],
-        outgoingAssetAmounts: [],
-      }),
-    );
-
-    const incomingAssetBalancesCall = await getAssetBalances({
-      account: vaultProxy,
-      assets: incomingAssets,
-    });
-    expect(incomingAssetBalancesCall).toEqual([expectedSpendAssetBalance]);
   });
 
   it('handles a spend asset that is not an incoming asset and increases', async () => {
@@ -871,18 +735,16 @@ describe('valid calls', () => {
 
     const integrationData = mockGenericSwapArgs({ ...swapArgs });
 
-    // Actual incoming asset info, accounting for token balance on adapter
-    const actualIncomingAssets = spendAssets;
-    const actualIncomingAssetAmounts = [spendAssetAmountOnAdapter.sub(actualSpendAssetAmounts[0])];
-
+    // Unless specified as an incoming asset, a spend asset that increases in balance will simply
+    // show as a spend amount with a 0 balance
     assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
       adapter: mockGenericAdapter,
       comptrollerProxy: comptrollerProxy,
       caller: fundOwner,
-      incomingAssets: actualIncomingAssets,
-      incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
+      incomingAssets: [],
+      incomingAssetAmounts: [],
+      spendAssets: spendAssets,
+      spendAssetAmounts: [0],
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -894,10 +756,10 @@ describe('valid calls', () => {
       validateRulePostCoIArgs({
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
-        incomingAssets: actualIncomingAssets,
-        incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: [],
-        outgoingAssetAmounts: [],
+        incomingAssets: [],
+        incomingAssetAmounts: [],
+        spendAssets: spendAssets,
+        spendAssetAmounts: [0],
       }),
     );
 
@@ -934,8 +796,7 @@ describe('valid calls', () => {
     // Define spend assets and actual incoming assets
     const spendAssets = [spendAsset];
     const actualSpendAssetAmounts = [spendAssetAmount];
-    const outgoingAssets = spendAssets;
-    const outgoingAssetAmounts = [spendAssetAmount.sub(spendAssetRebate)];
+    const spendAssetAmounts = [spendAssetAmount.sub(spendAssetRebate)];
 
     // Swap the spend assets and receive the rebate
     const receipt = await mockGenericSwap({
@@ -959,8 +820,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets: [],
       incomingAssetAmounts: [],
-      outgoingAssets,
-      outgoingAssetAmounts,
+      spendAssets,
+      spendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData: mockGenericSwapArgs({
         spendAssets,
@@ -977,8 +838,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets: [],
         incomingAssetAmounts: [],
-        outgoingAssets,
-        outgoingAssetAmounts,
+        spendAssets,
+        spendAssetAmounts,
       }),
     );
   });
@@ -1016,8 +877,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets,
       incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: spendAssets,
-      outgoingAssetAmounts: actualSpendAssetAmounts,
+      spendAssets: spendAssets,
+      spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -1031,8 +892,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: spendAssets,
-        outgoingAssetAmounts: actualSpendAssetAmounts,
+        spendAssets: spendAssets,
+        spendAssetAmounts: actualSpendAssetAmounts,
       }),
     );
   });
@@ -1086,8 +947,8 @@ describe('valid calls', () => {
       caller: fundOwner,
       incomingAssets,
       incomingAssetAmounts: actualIncomingAssetAmounts,
-      outgoingAssets: spendAssets,
-      outgoingAssetAmounts: actualSpendAssetAmounts,
+      spendAssets: spendAssets,
+      spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
       vaultProxy,
@@ -1101,8 +962,8 @@ describe('valid calls', () => {
         selector: mockGenericSwapASelector,
         incomingAssets,
         incomingAssetAmounts: actualIncomingAssetAmounts,
-        outgoingAssets: spendAssets,
-        outgoingAssetAmounts: actualSpendAssetAmounts,
+        spendAssets: spendAssets,
+        spendAssetAmounts: actualSpendAssetAmounts,
       }),
     );
 

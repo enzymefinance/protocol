@@ -8,7 +8,6 @@ import {
 } from '@enzymefinance/protocol';
 import {
   ProtocolDeployment,
-  assertEvent,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -172,7 +171,7 @@ describe('takeOrder', () => {
     // TODO: can call multiSwap() first to get the expected amount
 
     // Trade on ParaSwap
-    const receipt = await paraSwapV4TakeOrder({
+    await paraSwapV4TakeOrder({
       comptrollerProxy,
       integrationManager,
       fundOwner,
@@ -187,20 +186,6 @@ describe('takeOrder', () => {
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],
-    });
-
-    // Assert the correct event was fired
-    assertEvent(receipt, integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund'), {
-      comptrollerProxy,
-      vaultProxy,
-      caller: fundOwner,
-      adapter: paraSwapV4Adapter,
-      selector: takeOrderSelector,
-      incomingAssets: [incomingAsset],
-      incomingAssetAmounts: [postTxIncomingAssetBalance],
-      outgoingAssets: [outgoingAsset],
-      outgoingAssetAmounts: [outgoingAssetAmount],
-      integrationData: expect.anything(),
     });
 
     expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));

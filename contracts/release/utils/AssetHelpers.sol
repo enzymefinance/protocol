@@ -53,6 +53,33 @@ abstract contract AssetHelpers {
         return balances_;
     }
 
+    /// @dev Helper to remove assets with a zero-balance from equal-length arrays of assets and balances
+    function __pruneZeroBalanceAssets(address[] memory _rawAssets, uint256[] memory _rawBalances)
+        internal
+        pure
+        returns (address[] memory prunedAssets_, uint256[] memory prunedBalances_)
+    {
+        uint256 prunedAssetsCount;
+        for (uint256 i; i < _rawBalances.length; i++) {
+            if (_rawBalances[i] > 0) {
+                prunedAssetsCount++;
+            }
+        }
+
+        prunedAssets_ = new address[](prunedAssetsCount);
+        prunedBalances_ = new uint256[](prunedAssetsCount);
+        uint256 prunedAssetsIndex;
+        for (uint256 i; i < _rawBalances.length; i++) {
+            if (_rawBalances[i] > 0) {
+                prunedAssets_[prunedAssetsIndex] = _rawAssets[i];
+                prunedBalances_[prunedAssetsIndex] = _rawBalances[i];
+                prunedAssetsIndex++;
+            }
+        }
+
+        return (prunedAssets_, prunedBalances_);
+    }
+
     /// @dev Helper to transfer full asset balances from a target to the current contract.
     /// Requires an adequate allowance for each asset granted to the current contract for the target.
     function __pullFullAssetBalances(address _target, address[] memory _assets)

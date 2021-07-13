@@ -293,8 +293,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
@@ -326,8 +326,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
@@ -359,8 +359,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
@@ -381,8 +381,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
@@ -414,8 +414,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule
@@ -447,8 +447,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
       incomingAssetAmounts: [1],
-      outgoingAssets: [randomAddress()],
-      outgoingAssetAmounts: [1],
+      spendAssets: [randomAddress()],
+      spendAssetAmounts: [1],
     });
 
     const validateRuleResult = await guaranteedRedemption.validateRule

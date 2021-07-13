@@ -183,8 +183,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [whitelistedAssets[0]], // good incoming asset
       incomingAssetAmounts: [],
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
+      spendAssets: [],
+      spendAssetAmounts: [],
     });
 
     const validateRuleCall = await assetWhitelist.validateRule
@@ -201,8 +201,8 @@ describe('validateRule', () => {
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()], // good incoming asset
       incomingAssetAmounts: [],
-      outgoingAssets: [],
-      outgoingAssetAmounts: [],
+      spendAssets: [],
+      spendAssetAmounts: [],
     });
 
     const validateRuleCall = await assetWhitelist.validateRule

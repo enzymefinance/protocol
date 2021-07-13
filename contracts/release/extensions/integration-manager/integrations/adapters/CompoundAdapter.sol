@@ -34,46 +34,44 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
 
     /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lend(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        // More efficient to parse all from _encodedAssetTransferArgs
+        // More efficient to parse all from _assetData
         (
-            ,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         __compoundLend(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
 
     /// @notice Redeems an amount of cTokens from Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        // More efficient to parse all from _encodedAssetTransferArgs
+        // More efficient to parse all from _assetData
         (
-            ,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         __compoundRedeem(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }

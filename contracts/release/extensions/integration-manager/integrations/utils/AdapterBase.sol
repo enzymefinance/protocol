@@ -27,18 +27,12 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
 
     /// @dev Provides a standard implementation for transferring incoming assets and
     /// unspent spend assets from an adapter to a VaultProxy at the end of an adapter action
-    modifier postActionAssetsTransferHandler(
-        address _vaultProxy,
-        bytes memory _encodedAssetTransferArgs
-    ) {
+    modifier postActionAssetsTransferHandler(address _vaultProxy, bytes memory _assetData) {
         _;
 
-        (
-            ,
-            address[] memory spendAssets,
-            ,
-            address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        (address[] memory spendAssets, , address[] memory incomingAssets) = __decodeAssetData(
+            _assetData
+        );
 
         __pushFullAssetBalances(_vaultProxy, incomingAssets);
         __pushFullAssetBalances(_vaultProxy, spendAssets);
@@ -48,28 +42,21 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
     /// from an adapter to a VaultProxy at the end of an adapter action
     modifier postActionIncomingAssetsTransferHandler(
         address _vaultProxy,
-        bytes memory _encodedAssetTransferArgs
+        bytes memory _assetData
     ) {
         _;
 
-        (, , , address[] memory incomingAssets) = __decodeEncodedAssetTransferArgs(
-            _encodedAssetTransferArgs
-        );
+        (, , address[] memory incomingAssets) = __decodeAssetData(_assetData);
 
         __pushFullAssetBalances(_vaultProxy, incomingAssets);
     }
 
     /// @dev Provides a standard implementation for transferring unspent spend assets
     /// from an adapter to a VaultProxy at the end of an adapter action
-    modifier postActionSpendAssetsTransferHandler(
-        address _vaultProxy,
-        bytes memory _encodedAssetTransferArgs
-    ) {
+    modifier postActionSpendAssetsTransferHandler(address _vaultProxy, bytes memory _assetData) {
         _;
 
-        (, address[] memory spendAssets, , ) = __decodeEncodedAssetTransferArgs(
-            _encodedAssetTransferArgs
-        );
+        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
 
         __pushFullAssetBalances(_vaultProxy, spendAssets);
     }
@@ -88,22 +75,17 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
 
     // INTERNAL FUNCTIONS
 
-    /// @dev Helper to decode the _encodedAssetTransferArgs param passed to adapter call
-    function __decodeEncodedAssetTransferArgs(bytes memory _encodedAssetTransferArgs)
+    /// @dev Helper to decode the _assetData param passed to adapter call
+    function __decodeAssetData(bytes memory _assetData)
         internal
         pure
         returns (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_
         )
     {
-        return
-            abi.decode(
-                _encodedAssetTransferArgs,
-                (IIntegrationManager.SpendAssetsHandleType, address[], uint256[], address[])
-            );
+        return abi.decode(_assetData, (address[], uint256[], address[]));
     }
 
     ///////////////////

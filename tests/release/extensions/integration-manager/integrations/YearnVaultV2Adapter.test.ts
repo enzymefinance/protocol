@@ -268,7 +268,7 @@ describe('redeem', () => {
       slippageToleranceBps,
     );
 
-    // Rounding up from 211815
-    expect(redeemReceipt).toCostLessThan('213000');
+    // Rounding up from 203179
+    expect(redeemReceipt).toCostLessThan('204000');
   });
 });

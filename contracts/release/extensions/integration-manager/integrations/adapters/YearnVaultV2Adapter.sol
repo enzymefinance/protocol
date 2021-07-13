@@ -30,7 +30,7 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
 
     /// @notice Deposits an amount of an underlying asset into its corresponding yVault
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     /// @dev Using postActionSpendAssetsTransferHandler is probably overkill, but since new
     /// yVault v2 contracts can update logic, this protects against a future implementation in
     /// which a partial underlying deposit amount is used if the desired amount exceeds the
@@ -38,19 +38,18 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     function lend(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        // More efficient to parse all from _encodedAssetTransferArgs
+        // More efficient to parse all from _assetData
         (
-            ,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         __yearnVaultV2Lend(_vaultProxy, incomingAssets[0], spendAssets[0], spendAssetAmounts[0]);
     }
@@ -58,18 +57,18 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     /// @notice Redeems an amount of yVault shares for its underlying asset
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     /// @dev The amount of yVault shares to be redeemed can be adjusted in yVault.withdraw()
     /// depending on the available underlying balance, so we must send unredeemed yVault shares
     /// back to the _vaultProxy
     function redeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             address yVault,

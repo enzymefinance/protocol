@@ -49,15 +49,15 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     /// @notice Take an order on 0x
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs Encoded order parameters
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function takeOrder(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (
             bytes memory encodedZeroExOrderArgs,

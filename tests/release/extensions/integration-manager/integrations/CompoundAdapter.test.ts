@@ -329,8 +329,8 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
     });
 
-    // Rounded up from 436115
-    expect(redeemReceipt).toCostLessThan('437000');
+    // Rounded up from 423779
+    expect(redeemReceipt).toCostLessThan('425000');
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -353,8 +353,8 @@ describe('redeem', () => {
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
     });
 
-    // Rounded up from 357050
-    expect(redeemReceipt).toCostLessThan('358000');
+    // Rounded up from 346518
+    expect(redeemReceipt).toCostLessThan('347000');
   });
 });
 

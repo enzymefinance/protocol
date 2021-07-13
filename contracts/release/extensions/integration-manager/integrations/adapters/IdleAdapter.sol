@@ -43,18 +43,18 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
         IDLE_PRICE_FEED = _idlePriceFeed;
     }
 
-    /// @notice Claims rewards for a givenIdleToken
+    /// @notice Claims rewards for a given IdleToken
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function claimRewards(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionSpendAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
         address idleToken = __decodeClaimRewardsCallArgs(_encodedCallArgs);
 
@@ -65,23 +65,22 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     /// @notice Lends an amount of a token for idleToken
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lend(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        // More efficient to parse all from _encodedAssetTransferArgs
+        // More efficient to parse all from _assetData
         (
-            ,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         __idleV4Lend(incomingAssets[0], spendAssets[0], spendAssetAmounts[0]);
     }
@@ -89,7 +88,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// @notice Redeems an amount of idleToken for its underlying asset
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     /// @dev This will also pay out any due gov token rewards.
     /// We use the full IdleToken balance of the current contract rather than the user input
     /// for the corner case of a prior balance existing in the current contract, which would
@@ -98,11 +97,11 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     function redeem(
         address _vaultProxy,
         bytes calldata _encodedCallArgs,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     )
         external
         onlyIntegrationManager
-        postActionIncomingAssetsTransferHandler(_vaultProxy, _encodedAssetTransferArgs)
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         (address idleToken, , ) = __decodeRedeemCallArgs(_encodedCallArgs);
 
@@ -180,10 +179,11 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             "__parseAssetsForClaimRewards: Unsupported idleToken"
         );
 
-        (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForClaimRewardsCalls(
-            _vaultProxy,
-            idleToken
-        );
+        spendAssets_ = new address[](1);
+        spendAssets_[0] = idleToken;
+
+        spendAssetAmounts_ = new uint256[](1);
+        spendAssetAmounts_[0] = ERC20(idleToken).balanceOf(_vaultProxy);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -278,21 +278,6 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_
         );
-    }
-
-    /// @dev Helper function to parse spend assets for calls to claim rewards
-    function __parseSpendAssetsForClaimRewardsCalls(address _vaultProxy, address _idleToken)
-        private
-        view
-        returns (address[] memory spendAssets_, uint256[] memory spendAssetAmounts_)
-    {
-        spendAssets_ = new address[](1);
-        spendAssets_[0] = _idleToken;
-
-        spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = ERC20(_idleToken).balanceOf(_vaultProxy);
-
-        return (spendAssets_, spendAssetAmounts_);
     }
 
     ///////////////////////

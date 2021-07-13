@@ -15,7 +15,6 @@ import {
 } from '@enzymefinance/protocol';
 import {
   ProtocolDeployment,
-  assertEvent,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -208,13 +207,12 @@ describe('lend', () => {
       amountADesired.mul(poolTokensSupply).div(tokenAReserve),
       amountBDesired.mul(poolTokensSupply).div(tokenBReserve),
     );
-
-    const expectedIncomingAmount = BigNumber.from('108789251673036848');
+    expect(expectedPoolTokens).toEqBigNumber('108789251673036848');
 
     // Seed fund with tokens and lend
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
-    const receipt = await uniswapV2Lend({
+    await uniswapV2Lend({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -227,21 +225,6 @@ describe('lend', () => {
       amountAMin,
       amountBMin,
       minPoolTokenAmount,
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy,
-      vaultProxy: vaultProxy,
-      caller: fundOwner,
-      adapter: uniswapV2Adapter,
-      selector: lendSelector,
-      incomingAssets: [poolToken],
-      incomingAssetAmounts: [expectedIncomingAmount],
-      outgoingAssets: [tokenA, tokenB],
-      outgoingAssetAmounts: [amountADesired, amountBDesired],
-      integrationData: expect.anything(),
     });
 
     // Get pre-tx balances of all tokens
@@ -343,7 +326,7 @@ describe('redeem', () => {
     const expectedTokenAAmount = redeemPoolTokenAmount.mul(poolTokenABalance).div(poolTokensSupply);
     const expectedTokenBAmount = redeemPoolTokenAmount.mul(poolTokenBBalance).div(poolTokensSupply);
 
-    const receipt = await uniswapV2Redeem({
+    await uniswapV2Redeem({
       comptrollerProxy,
       integrationManager,
       fundOwner,
@@ -353,21 +336,6 @@ describe('redeem', () => {
       tokenB,
       amountAMin: BigNumber.from(1),
       amountBMin: BigNumber.from(1),
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy,
-      vaultProxy: vaultProxy,
-      caller: fundOwner,
-      adapter: uniswapV2Adapter,
-      selector: redeemSelector,
-      incomingAssets: [tokenA, tokenB],
-      incomingAssetAmounts: [expectedTokenAAmount, expectedTokenBAmount],
-      outgoingAssets: [poolToken],
-      outgoingAssetAmounts: [redeemPoolTokenAmount],
-      integrationData: expect.anything(),
     });
 
     // Get post-redeem balances of all tokens
@@ -459,7 +427,6 @@ describe('takeOrder', () => {
     const path = [outgoingAsset, incomingAsset];
     const outgoingAssetAmount = utils.parseEther('0.1');
     const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
-    const expectedIncomingAssetAmount = amountsOut[1];
 
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -468,7 +435,7 @@ describe('takeOrder', () => {
 
     // Seed fund and take order
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
-    const receipt = await uniswapV2TakeOrder({
+    await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -477,20 +444,6 @@ describe('takeOrder', () => {
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy,
-      vaultProxy,
-      caller: fundOwner,
-      adapter: uniswapV2Adapter,
-      selector: takeOrderSelector,
-      incomingAssets: [incomingAsset],
-      incomingAssetAmounts: [expectedIncomingAssetAmount],
-      outgoingAssets: [outgoingAsset],
-      outgoingAssetAmounts: [outgoingAssetAmount],
-      integrationData: expect.anything(),
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -522,7 +475,6 @@ describe('takeOrder', () => {
     const path = [outgoingAsset, weth, incomingAsset];
     const outgoingAssetAmount = utils.parseEther('0.1');
     const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
-    const expectedIncomingAssetAmount = amountsOut[2];
 
     const [preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -531,7 +483,7 @@ describe('takeOrder', () => {
 
     // Seed fund and take order
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
-    const receipt = await uniswapV2TakeOrder({
+    await uniswapV2TakeOrder({
       comptrollerProxy,
       vaultProxy,
       integrationManager,
@@ -540,20 +492,6 @@ describe('takeOrder', () => {
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      comptrollerProxy: comptrollerProxy,
-      vaultProxy,
-      caller: fundOwner,
-      adapter: uniswapV2Adapter,
-      selector: takeOrderSelector,
-      incomingAssets: [incomingAsset],
-      incomingAssetAmounts: [expectedIncomingAssetAmount],
-      outgoingAssets: [outgoingAsset],
-      outgoingAssetAmounts: [outgoingAssetAmount],
-      integrationData: expect.anything(),
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

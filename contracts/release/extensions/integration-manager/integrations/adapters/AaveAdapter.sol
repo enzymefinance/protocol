@@ -31,36 +31,32 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
 
     /// @notice Lends an amount of a token to AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lend(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     ) external onlyIntegrationManager {
-        (
-            ,
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, ) = __decodeAssetData(
+            _assetData
+        );
 
         __aaveLend(_vaultProxy, spendAssets[0], spendAssetAmounts[0]);
     }
 
     /// @notice Redeems an amount of aTokens from AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
+    /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
         bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
+        bytes calldata _assetData
     ) external onlyIntegrationManager {
         (
-            ,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
-        ) = __decodeEncodedAssetTransferArgs(_encodedAssetTransferArgs);
+        ) = __decodeAssetData(_assetData);
 
         __aaveRedeem(_vaultProxy, spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
