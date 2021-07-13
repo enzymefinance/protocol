@@ -19,11 +19,13 @@ import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
 import "./parsers/IExternalPositionParser.sol";
+import "./IExternalPositionManager.sol";
 
 /// @title ExternalPositionManager
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Extension to handle external position actions for funds.
 contract ExternalPositionManager is
+    IExternalPositionManager,
     ExtensionBase,
     PermissionedVaultActionMixin,
     FundDeployerOwnerMixin
@@ -163,7 +165,7 @@ contract ExternalPositionManager is
         );
 
         address externalPosition = address(
-            new ExternalPositionProxy(constructData, typeInfo.lib, typeId)
+            new ExternalPositionProxy(constructData, _vaultProxy, typeId, typeInfo.lib)
         );
 
         emit ExternalPositionDeployed(msg.sender, _vaultProxy, externalPosition, typeId, initArgs);
@@ -250,6 +252,13 @@ contract ExternalPositionManager is
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    /// @notice Gets the external position library contract for a given type
+    /// @param _typeId The type for which to get the external position library
+    /// @return lib_ The external position library
+    function getLibForType(uint256 _typeId) external view override returns (address lib_) {
+        return typeToTypeInfo[_typeId].lib;
+    }
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value

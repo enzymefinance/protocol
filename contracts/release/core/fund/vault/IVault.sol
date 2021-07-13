@@ -49,6 +49,8 @@ interface IVault is IMigratableVault {
 
     function getActiveExternalPositions() external view returns (address[] memory);
 
+    function getExternalPositionLibForType(uint256) external view returns (address);
+
     function getTrackedAssets() external view returns (address[] memory);
 
     function isActiveExternalPosition(address _asset) external view returns (bool);

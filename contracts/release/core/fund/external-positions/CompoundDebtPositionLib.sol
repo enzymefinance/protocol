@@ -31,31 +31,17 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     address private immutable COMPOUND_COMPTROLLER;
     address private immutable WETH_TOKEN;
 
-    modifier onlyVault() {
-        require(msg.sender == vaultProxy, "Only the vault can make this call");
-        _;
-    }
-
-    /// @dev Needed to receive ETH during cEther borrow and to unwrap WETH
-    receive() external payable {}
-
     constructor(address _compoundComptroller, address _weth) public {
         COMPOUND_COMPTROLLER = _compoundComptroller;
         WETH_TOKEN = _weth;
     }
 
     /// @notice Initializes the external position
-    /// @param _initData Data params to initialize the external position
-    /// No need to assert access because this is called atomically from the external position manager,
-    /// and once it's called, it cannot be called again.
-    function init(bytes memory _initData) external override {
-        require(vaultProxy == address(0), "init: Already initialized");
-        vaultProxy = abi.decode(_initData, (address));
-    }
+    function init(bytes memory) external override {}
 
     /// @notice Receives and executes a call from the Vault
     /// @param _actionData Encoded data to execute the action.
-    function receiveCallFromVault(bytes memory _actionData) external override onlyVault {
+    function receiveCallFromVault(bytes memory _actionData) external override {
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
         (address[] memory assets, uint256[] memory amounts, bytes memory data) = abi.decode(
@@ -280,12 +266,6 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         returns (address cToken_)
     {
         return borrowedAssetToCToken[_borrowedAsset];
-    }
-
-    /// @notice Gets the `vaultProxy` variable
-    /// @return vaultProxy_ The `vaultProxy` variable value
-    function getVaultProxy() external view returns (address vaultProxy_) {
-        return vaultProxy;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable

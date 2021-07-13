@@ -11,10 +11,11 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
+  const externalPositionManager = await get('ExternalPositionManager');
   const fundDeployer = await get('FundDeployer');
 
   const vaultLib = await deploy('VaultLib', {
-    args: [config.weth] as VaultLibArgs,
+    args: [externalPositionManager.address, config.weth] as VaultLibArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -28,6 +29,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'VaultLib'];
-fn.dependencies = ['Config'];
+fn.dependencies = ['Config', 'ExternalPositionManager'];
 
 export default fn;

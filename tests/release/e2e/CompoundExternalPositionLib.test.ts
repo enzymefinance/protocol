@@ -1,13 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  CompoundDebtPositionLib,
-  ComptrollerLib,
-  encodeArgs,
-  ICERC20,
-  StandardToken,
-  VaultLib,
-} from '@enzymefinance/protocol';
+import { CompoundDebtPositionLib, ComptrollerLib, ICERC20, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
   compoundLend,
@@ -101,18 +94,6 @@ beforeEach(async () => {
   });
 });
 
-describe('init', () => {
-  it('initializes the vaultProxy variable', async () => {
-    expect(await compoundDebtPosition.getVaultProxy.call()).toMatchAddress(vaultProxyUsed);
-  });
-
-  it('can only be initialized once', async () => {
-    await expect(compoundDebtPosition.init(encodeArgs(['address'], [randomAddress()]))).rejects.toBeRevertedWith(
-      'Already initialized',
-    );
-  });
-});
-
 describe('receiveCallFromVault', () => {
   it('reverts when it is called from an acount different than vault', async () => {
     await expect(compoundDebtPosition.receiveCallFromVault(utils.randomBytes(0))).rejects.toBeRevertedWith(
@@ -162,8 +143,8 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 246325
-      expect(addCollateralReceipt).toCostLessThan('247000');
+      // Rounding up from 248878
+      expect(addCollateralReceipt).toCostLessThan('249000');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -250,8 +231,8 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      // Rounding up from 283117
-      expect(removeCollateralReceipt).toCostLessThan('284000');
+      // Rounding up from 285449
+      expect(removeCollateralReceipt).toCostLessThan('286000');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -415,8 +396,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 438043
-      expect(borrowReceipt).toCostLessThan('439000');
+      // Rounding up from 440375
+      expect(borrowReceipt).toCostLessThan('441000');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -462,8 +443,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 431503
-      expect(borrowReceipt).toCostLessThan('432000');
+      // Rounding up from 433738
+      expect(borrowReceipt).toCostLessThan('434000');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -602,8 +583,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 309119
-      expect(repayBorrowReceipt).toCostLessThan('310000');
+      // Rounding up from 311451
+      expect(repayBorrowReceipt).toCostLessThan('312000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -668,8 +649,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 303017
-      expect(repayBorrowReceipt).toCostLessThan('304000');
+      // Rounding up from 305031
+      expect(repayBorrowReceipt).toCostLessThan('306000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

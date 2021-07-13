@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
@@ -38,6 +39,7 @@ contract VaultLib is VaultLibBase2, IVault {
     // 2. That the next value will need to be respected by all future releases
     uint256 private constant TRACKED_ASSETS_LIMIT = 20;
 
+    address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable WETH_TOKEN;
 
     modifier notShares(address _asset) {
@@ -55,7 +57,8 @@ contract VaultLib is VaultLibBase2, IVault {
         _;
     }
 
-    constructor(address _weth) public {
+    constructor(address _externalPositionManager, address _weth) public {
+        EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         WETH_TOKEN = _weth;
     }
 
@@ -63,6 +66,22 @@ contract VaultLib is VaultLibBase2, IVault {
     /// Will not be able to receive ETH via .transfer() or .send() due to limited gas forwarding.
     receive() external payable {
         IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
+    }
+
+    /////////////
+    // GENERAL //
+    /////////////
+
+    /// @notice Gets the external position library contract for a given type
+    /// @param _typeId The type for which to get the external position library
+    /// @return externalPositionLib_ The external position library
+    function getExternalPositionLibForType(uint256 _typeId)
+        external
+        view
+        override
+        returns (address externalPositionLib_)
+    {
+        return IExternalPositionManager(getExternalPositionManager()).getLibForType(_typeId);
     }
 
     ////////////////////////
@@ -596,6 +615,12 @@ contract VaultLib is VaultLibBase2, IVault {
     }
 
     // PUBLIC FUNCTIONS
+
+    /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
+    /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
+    function getExternalPositionManager() public view returns (address externalPositionManager_) {
+        return EXTERNAL_POSITION_MANAGER;
+    }
 
     /// @notice Checks whether an asset is persistently tracked (i.e., it cannot be untracked)
     /// @param _asset The address to check

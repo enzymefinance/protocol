@@ -17,7 +17,7 @@ beforeEach(async () => {
 describe('AddExternalPosition', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
     const externalPosition = randomAddress();
 
     const vaultProxy = await createVaultProxy({
@@ -50,7 +50,7 @@ describe('AddPersistentlyTrackedAsset', () => {
 
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
     const asset = randomAddress();
 
     const vaultProxy = await createVaultProxy({
@@ -82,7 +82,7 @@ describe('AddPersistentlyTrackedAsset', () => {
 describe('AddTrackedAsset', () => {
   it('cannot specify shares as the asset', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -98,7 +98,7 @@ describe('AddTrackedAsset', () => {
 
   it('does not allow exceeding the tracked assets limit', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -126,7 +126,8 @@ describe('AddTrackedAsset', () => {
 
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+
     const asset = randomAddress();
 
     const vaultProxy = await createVaultProxy({
@@ -157,7 +158,7 @@ describe('AddTrackedAsset', () => {
 describe('ApproveAssetSpender', () => {
   it('cannot specify shares as the asset', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -177,7 +178,7 @@ describe('ApproveAssetSpender', () => {
   // Use USDT, as the function works with its idiosyncrasies
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -218,7 +219,7 @@ describe('ApproveAssetSpender', () => {
 describe('BurnShares', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -261,7 +262,7 @@ describe('CallOnExternalPosition', () => {
 describe('MintShares', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -296,7 +297,7 @@ describe('MintShares', () => {
 describe('RemoveExternalPosition', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -343,7 +344,7 @@ describe('RemoveExternalPosition', () => {
 describe('RemovePersistentlyTrackedAsset', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -384,7 +385,7 @@ describe('RemovePersistentlyTrackedAsset', () => {
 describe('RemoveTrackedAsset', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -447,7 +448,7 @@ describe('RemoveTrackedAsset', () => {
 describe('TransferShares', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor, fromAccount, toAccount] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -484,7 +485,7 @@ describe('TransferShares', () => {
 describe('WithdrawAssetTo', () => {
   it('cannot specify shares as the asset', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -503,7 +504,8 @@ describe('WithdrawAssetTo', () => {
 
   it('works as expected: partial amount with asset that can be untracked', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+
     const asset = new StandardToken(fork.config.weth, whales.weth);
 
     const vaultProxy = await createVaultProxy({
@@ -545,7 +547,8 @@ describe('WithdrawAssetTo', () => {
 
   it('works as expected: full amount with asset that can be untracked', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+
     const asset = new StandardToken(fork.config.weth, whales.weth);
 
     const vaultProxy = await createVaultProxy({
@@ -569,7 +572,8 @@ describe('WithdrawAssetTo', () => {
 
   it('works as expected: full amount with asset that can NOT be untracked', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+
     const asset = new StandardToken(fork.config.weth, whales.weth);
 
     const vaultProxy = await createVaultProxy({

@@ -56,7 +56,7 @@ export async function createFundDeployer({
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 
-  const nextVaultLib = await VaultLib.deploy(deployer, await vaultLib.getWethToken());
+  const nextVaultLib = await VaultLib.deploy(deployer, externalPositionManager, await vaultLib.getWethToken());
   await nextFundDeployer.setVaultLib(nextVaultLib);
 
   if (setReleaseStatusLive) {

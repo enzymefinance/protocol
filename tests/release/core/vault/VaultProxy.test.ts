@@ -100,7 +100,7 @@ describe('setAccessorForFundReconfiguration', () => {
 
     const deployVaultProxyReceipt = await mockFundDeployer.forward(
       dispatcher.deployVaultProxy,
-      await VaultLib.deploy(fork.deployer, fork.config.weth),
+      await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth),
       fundOwner,
       mockAccessor,
       'Test',
@@ -138,7 +138,7 @@ describe('setAccessorForFundReconfiguration', () => {
 describe('allowUntrackingAssets', () => {
   it('can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -155,7 +155,7 @@ describe('allowUntrackingAssets', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const assetsToAllowUntracking = [randomAddress(), randomAddress()];
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -399,7 +399,7 @@ describe('ownership', () => {
 describe('Comptroller calls to vault actions', () => {
   it('addPersistentlyTrackedAsset: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -415,7 +415,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('burnShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -431,7 +431,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('mintShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -447,7 +447,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('receiveValidatedVaultAction: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -463,7 +463,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('removeTrackedAsset: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -479,7 +479,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('transferShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -495,7 +495,7 @@ describe('Comptroller calls to vault actions', () => {
 
   it('withdrawAssetTo: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
