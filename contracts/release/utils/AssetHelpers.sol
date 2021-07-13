@@ -30,7 +30,11 @@ abstract contract AssetHelpers {
         address _target,
         uint256 _neededAmount
     ) internal {
-        if (ERC20(_asset).allowance(address(this), _target) < _neededAmount) {
+        uint256 allowance = ERC20(_asset).allowance(address(this), _target);
+        if (allowance < _neededAmount) {
+            if (allowance > 0) {
+                ERC20(_asset).safeApprove(_target, 0);
+            }
             ERC20(_asset).safeApprove(_target, type(uint256).max);
         }
     }
