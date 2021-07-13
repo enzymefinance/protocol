@@ -221,14 +221,17 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     }
 
     /// @dev Helper to get all the hooks available to policies
-    function __getAllPolicyHooks() private pure returns (PolicyHook[6] memory hooks_) {
+    function __getAllPolicyHooks() private pure returns (PolicyHook[9] memory hooks_) {
         return [
             PolicyHook.PostBuyShares,
             PolicyHook.PostCallOnIntegration,
             PolicyHook.PreTransferShares,
             PolicyHook.RedeemSharesForSpecificAssets,
             PolicyHook.AddTrackedAssets,
-            PolicyHook.RemoveTrackedAssets
+            PolicyHook.RemoveTrackedAssets,
+            PolicyHook.CreateExternalPosition,
+            PolicyHook.PostCallOnExternalPosition,
+            PolicyHook.RemoveExternalPosition
         ];
     }
 
@@ -307,7 +310,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         view
         returns (address[] memory enabledPolicies_)
     {
-        PolicyHook[6] memory hooks = __getAllPolicyHooks();
+        PolicyHook[9] memory hooks = __getAllPolicyHooks();
 
         for (uint256 i; i < hooks.length; i++) {
             enabledPolicies_ = enabledPolicies_.mergeArray(

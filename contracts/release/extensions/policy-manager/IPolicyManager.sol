@@ -25,7 +25,10 @@ interface IPolicyManager {
         PreTransferShares,
         RedeemSharesForSpecificAssets,
         AddTrackedAssets,
-        RemoveTrackedAssets
+        RemoveTrackedAssets,
+        CreateExternalPosition,
+        PostCallOnExternalPosition,
+        RemoveExternalPosition
     }
 
     function validatePolicies(

@@ -11,9 +11,10 @@ const fn: DeployFunction = async function (hre) {
   const compoundDebtPositionParser = await get('CompoundDebtPositionParser');
   const deployer = (await getSigners())[0];
   const fundDeployer = await get('FundDeployer');
+  const policyManager = await get('PolicyManager');
 
   const externalPositionManager = await deploy('ExternalPositionManager', {
-    args: [fundDeployer.address],
+    args: [fundDeployer.address, policyManager.address],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -29,6 +30,7 @@ fn.dependencies = [
   'CompoundDebtPositionLib',
   'CompoundDebtPositionParser',
   'ChainlinkPriceFeed',
+  'PolicyManager',
 ];
 
 export default fn;

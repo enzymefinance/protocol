@@ -162,8 +162,8 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      // Rounding up from 234952
-      expect(addCollateralReceipt).toCostLessThan('235000');
+      // Rounding up from 246325
+      expect(addCollateralReceipt).toCostLessThan('247000');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -250,8 +250,8 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      // Rounding up from 271808
-      expect(removeCollateralReceipt).toCostLessThan('272000');
+      // Rounding up from 283117
+      expect(removeCollateralReceipt).toCostLessThan('284000');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -415,8 +415,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 430664
-      expect(borrowReceipt).toCostLessThan('431000');
+      // Rounding up from 438043
+      expect(borrowReceipt).toCostLessThan('439000');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -462,8 +462,8 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      // Rounding up from 424345
-      expect(borrowReceipt).toCostLessThan('425000');
+      // Rounding up from 431503
+      expect(borrowReceipt).toCostLessThan('432000');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -602,8 +602,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 297498
-      expect(repayBorrowReceipt).toCostLessThan('298000');
+      // Rounding up from 309119
+      expect(repayBorrowReceipt).toCostLessThan('310000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -668,8 +668,8 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      // Rounding up from 291253
-      expect(repayBorrowReceipt).toCostLessThan('292000');
+      // Rounding up from 303017
+      expect(repayBorrowReceipt).toCostLessThan('304000');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

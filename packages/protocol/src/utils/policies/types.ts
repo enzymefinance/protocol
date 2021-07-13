@@ -5,4 +5,7 @@ export enum PolicyHook {
   RedeemSharesForSpecificAssets,
   AddTrackedAssets,
   RemoveTrackedAssets,
+  CreateExternalPosition,
+  PostCallOnExternalPosition,
+  RemoveExternalPosition,
 }
