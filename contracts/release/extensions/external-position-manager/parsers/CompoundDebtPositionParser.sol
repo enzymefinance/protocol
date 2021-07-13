@@ -62,14 +62,14 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
         __validateActionData(_actionId, assets, data);
 
         if (
-            _actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.AddCollateral) ||
-            _actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.RepayBorrow)
+            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.AddCollateral) ||
+            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RepayBorrow)
         ) {
             assetsToTransfer_ = assets;
             amountsToTransfer_ = amounts;
         } else if (
-            _actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.Borrow) ||
-            _actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.RemoveCollateral)
+            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.Borrow) ||
+            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RemoveCollateral)
         ) {
             assetsToReceive_ = assets;
         }
@@ -119,13 +119,13 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
         bytes memory _data
     ) private view {
         // Borrow and RepayBorrow actions make use of cTokens, that also need to be validated
-        if (_actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.Borrow)) {
+        if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.Borrow)) {
             for (uint256 i; i < _assets.length; i++) {
                 require(__isSupportedAsset(_assets[i]), "__validateActionData: Unsupported asset");
             }
             __validateCTokens(abi.decode(_data, (address[])), _assets);
         } else if (
-            _actionId == uint256(CompoundDebtPositionLib.ExternalPositionActions.RepayBorrow)
+            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RepayBorrow)
         ) {
             __validateCTokens(abi.decode(_data, (address[])), _assets);
         }

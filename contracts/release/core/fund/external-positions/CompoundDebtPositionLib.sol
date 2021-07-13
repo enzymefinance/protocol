@@ -12,46 +12,29 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "../../../../persistent/external-positions/CompoundDebtPositionLibBase1.sol";
 import "../../../interfaces/ICERC20.sol";
 import "../../../interfaces/ICEther.sol";
 import "../../../interfaces/ICompoundComptroller.sol";
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
-import "./IExternalPosition.sol";
+import "./ICompoundDebtPosition.sol";
 
 /// @title CompoundDebtPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Compound debt positions
-contract CompoundDebtPositionLib is IExternalPosition {
+contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtPosition {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
-    event BorrowedAsset(address indexed asset, uint256 amount, bytes data);
-
-    event BorrowedAssetRepaid(address indexed asset, uint256 amount, bytes data);
-
-    event CollateralAssetAdded(address indexed asset, uint256 amount, bytes data);
-
-    event CollateralAssetRemoved(address indexed asset, uint256 amount, bytes data);
-
-    enum ExternalPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow}
-
     address private immutable COMPOUND_COMPTROLLER;
     address private immutable WETH_TOKEN;
-
-    address private vaultProxy;
 
     modifier onlyVault() {
         require(msg.sender == vaultProxy, "Only the vault can make this call");
         _;
     }
-
-    address[] private borrowedAssets;
-    address[] private collateralAssets;
-
-    mapping(address => bool) private assetToIsCollateral;
-    mapping(address => address) private borrowedAssetToCToken;
 
     /// @dev Needed to receive ETH during cEther borrow and to unwrap WETH
     receive() external payable {}
