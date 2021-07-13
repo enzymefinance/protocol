@@ -11,6 +11,7 @@
 
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../infrastructure/price-feeds/derivatives/feeds/AavePriceFeed.sol";
 import "../utils/actions/AaveActionsMixin.sol";
 import "../utils/AdapterBase.sol";
@@ -18,7 +19,16 @@ import "../utils/AdapterBase.sol";
 /// @title AaveAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Aave Lending <https://aave.com/>
+/// @dev When lending and redeeming, a small `ROUNDING_BUFFER` is subtracted from the min incoming asset amount.
+/// This is a workaround for problematic quirks in `aToken` balance rounding (due to RayMath and rebasing logic),
+/// which would otherwise lead to tx failures during IntegrationManager validation of incoming asset amounts.
+/// Due to this workaround, an `aToken` value less than `ROUNDING_BUFFER` is not usable in this adapter,
+/// which is fine because those values would not make sense (gas-wise) to lend or redeem.
 contract AaveAdapter is AdapterBase, AaveActionsMixin {
+    using SafeMath for uint256;
+
+    uint256 private constant ROUNDING_BUFFER = 2;
+
     address private immutable AAVE_PRICE_FEED;
 
     constructor(
@@ -126,7 +136,7 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = aToken;
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = amount;
+        minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -164,7 +174,8 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = token;
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = amount;
+        // The `ROUNDING_BUFFER` is overly cautious in this case, but it comes at minimal expense
+        minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
