@@ -285,7 +285,7 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
         comptrollerProxy,
         signer: investor,
       }),
-    ).rejects.toBeRevertedWith('Cannot settle Synth');
+    ).rejects.toBeRevertedWith('Cannot settle during waiting period');
   });
 
   it('investor redeems all shares after the waiting period', async () => {

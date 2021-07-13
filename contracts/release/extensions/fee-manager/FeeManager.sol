@@ -219,8 +219,8 @@ contract FeeManager is
         uint256 _gavOrZero
     ) private returns (uint256 gav_) {
         if (_gavOrZero == 0 && feeUsesGavOnUpdate(_fee)) {
-            // Assumes that any fee that requires GAV would need to revert if not final
-            gav_ = IComptroller(_comptrollerProxy).calcGav(true);
+            // Do not finalize synths, as this can lead to lost fees when redeeming shares
+            gav_ = IComptroller(_comptrollerProxy).calcGav(false);
         } else {
             gav_ = _gavOrZero;
         }

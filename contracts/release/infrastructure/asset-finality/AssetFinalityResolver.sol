@@ -39,14 +39,9 @@ contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin
     /// @notice Helper to finalize asset balances according to the procedures of their protocols
     /// @param _target The account that the assets belong to
     /// @param _assets The assets to finalize
-    /// @param _requireFinality True if should revert upon failure to finalize
-    /// @dev Currently only handles Synths, and use the SynthetixPriceFeed as a shortcut
+    /// @dev Currently only handles Synths, and uses the SynthetixPriceFeed as a shortcut
     /// to validate supported Synths
-    function finalizeAssets(
-        address _target,
-        address[] memory _assets,
-        bool _requireFinality
-    ) external override {
+    function finalizeAssets(address _target, address[] memory _assets) external override {
         if (_assets.length == 0) {
             return;
         }
@@ -63,12 +58,7 @@ contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin
                         "finalizeAssets: Missing Synthetix Exchanger"
                     );
                 }
-
-                try
-                    ISynthetixExchanger(synthetixExchanger).settle(_target, currencyKeys[i])
-                 {} catch {
-                    require(!_requireFinality, "finalizeAssets: Cannot settle Synth");
-                }
+                ISynthetixExchanger(synthetixExchanger).settle(_target, currencyKeys[i]);
             }
         }
     }

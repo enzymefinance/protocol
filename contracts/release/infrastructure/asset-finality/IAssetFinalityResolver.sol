@@ -14,9 +14,5 @@ pragma solidity 0.6.12;
 /// @title IAssetFinalityResolver Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IAssetFinalityResolver {
-    function finalizeAssets(
-        address,
-        address[] calldata,
-        bool
-    ) external;
+    function finalizeAssets(address, address[] calldata) external;
 }

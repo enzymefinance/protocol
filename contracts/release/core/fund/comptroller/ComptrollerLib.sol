@@ -465,9 +465,9 @@ contract ComptrollerLib is IComptroller {
     ////////////////
 
     /// @notice Calculates the gross asset value (GAV) of the fund
-    /// @param _requireFinality True if all assets must have exact final balances settled
+    /// @param _finalizeAssets True if all assets must have exact final balances settled
     /// @return gav_ The fund GAV
-    function calcGav(bool _requireFinality) public override returns (uint256 gav_) {
+    function calcGav(bool _finalizeAssets) public override returns (uint256 gav_) {
         address vaultProxyAddress = vaultProxy;
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         address[] memory externalPositions = IVault(vaultProxyAddress)
@@ -477,12 +477,14 @@ contract ComptrollerLib is IComptroller {
             return 0;
         }
 
-        // Resolve finality of all assets as needed
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
-            vaultProxyAddress,
-            assets,
-            _requireFinality
-        );
+        // It is not necessary to finalize assets in external positions, as synths will have
+        // already been settled prior to transferring to the external position contract
+        if (_finalizeAssets) {
+            IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+                vaultProxyAddress,
+                assets
+            );
+        }
 
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
@@ -786,12 +788,6 @@ contract ComptrollerLib is IComptroller {
         );
 
         IVault vaultProxyContract = IVault(vaultProxy);
-        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
-            vaultProxyContract,
-            msg.sender,
-            _sharesQuantity,
-            0
-        );
 
         // Parse the payout assets given optional params to add or skip assets.
         // Note that there is no validation that the _additionalAssets are known assets to
@@ -804,11 +800,18 @@ contract ComptrollerLib is IComptroller {
             _assetsToSkip
         );
 
-        // Resolve finality of all assets as needed
+        // Resolve finality of all assets as needed.
+        // Run this prior to __redeemSharesSetup in order to settle synths before calculating GAV.
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
             address(vaultProxyContract),
-            payoutAssets_,
-            true
+            payoutAssets_
+        );
+
+        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
+            vaultProxyContract,
+            msg.sender,
+            _sharesQuantity,
+            0
         );
 
         // Calculate and transfer payout asset amounts due to _recipient

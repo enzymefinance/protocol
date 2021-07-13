@@ -51,12 +51,12 @@ const expectedGasCosts = {
 
   'redeem all shares: max assets: all remaining': {
     usdc: 2500000,
-    weth: 2490000,
+    weth: 2404000,
   },
 
   'redeem partial shares: max assets': {
     usdc: 2590000,
-    weth: 2575000,
+    weth: 2472000,
   },
 
   'trade on Uniswap: max assets': {
