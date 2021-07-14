@@ -55,13 +55,13 @@ const expectedGasCosts = {
   },
 
   'redeem all shares: max assets': {
-    usdc: 2075784,
+    usdc: 2069979,
     weth: 2036163,
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 262497,
-    weth: 235922,
+    usdc: 260061,
+    weth: 233486,
   },
 } as const;
 

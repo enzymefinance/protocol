@@ -10,7 +10,6 @@ import {
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVault,
-  assertEvent,
   createNewFund,
   deployProtocolFixture,
   removeTrackedAssetsFromVault,
@@ -126,160 +125,26 @@ describe('activateForFund', () => {
   it('correctly handles a valid call', async () => {
     const {
       deployment: { integrationManager },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
+      fund: { comptrollerProxy, vaultProxy },
     } = await provider.snapshot(snapshot);
 
     // Stores the ComptrollerProxy-VaultProxy pairing
     const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(comptrollerProxy);
 
     expect(getVaultProxyForFundCall).toMatchAddress(vaultProxy);
-
-    // Vault owner should be an authorized user
-    const isAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, fundOwner);
-
-    expect(isAuthUserForFundCall).toBe(true);
-  });
-});
-
-describe('auth users', () => {
-  describe('addAuthUserForFund', () => {
-    it('does not allow an already-added auth user', async () => {
-      const {
-        deployment: { integrationManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      // Set the newManager as an auth user
-      const newManager = randomAddress();
-
-      await expect(
-        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager),
-      ).resolves.toBeReceipt();
-
-      // Adding the already added manager should fail
-      await expect(
-        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager),
-      ).rejects.toBeRevertedWith('Account is already an authorized user');
-    });
-
-    it('correctly handles a valid call', async () => {
-      const {
-        deployment: { integrationManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      // isAuthUserForFund should be false for an unset manager
-      const newManager = randomAddress();
-      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
-
-      expect(preIsAuthUserForFundCall).toBe(false);
-
-      // Set the newManager as an auth user
-      const receipt = await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager);
-
-      // Assert event
-      assertEvent(receipt, 'AuthUserAddedForFund', {
-        comptrollerProxy,
-        account: newManager,
-      });
-
-      // isAuthUserForFund should now be true
-      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
-
-      expect(postIsAuthUserForFundCall).toBe(true);
-    });
-  });
-
-  describe('removeAuthUserForFund', () => {
-    it('does not allow a non-existent auth user', async () => {
-      const {
-        deployment: { integrationManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      await expect(
-        integrationManager.connect(fundOwner).removeAuthUserForFund(comptrollerProxy, randomAddress()),
-      ).rejects.toBeRevertedWith('Account is not an authorized user');
-    });
-
-    it('correctly handles a valid call', async () => {
-      const {
-        deployment: { integrationManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      // Add a new auth user
-      const newManager = randomAddress();
-      await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newManager);
-
-      // isAuthUserForFund should be true
-      const preIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
-
-      expect(preIsAuthUserForFundCall).toBe(true);
-
-      // Remove the auth user
-      const receipt = await integrationManager.connect(fundOwner).removeAuthUserForFund(comptrollerProxy, newManager);
-
-      // Assert event
-      assertEvent(receipt, 'AuthUserRemovedForFund', {
-        comptrollerProxy,
-        account: newManager,
-      });
-
-      // isAuthUserForFund should now be false
-      const postIsAuthUserForFundCall = await integrationManager.isAuthUserForFund(comptrollerProxy, newManager);
-
-      expect(postIsAuthUserForFundCall).toBe(false);
-    });
-  });
-
-  // Common validation for the above functions
-  describe('__validateSetAuthUser', () => {
-    it('does not allow a non-activated fund', async () => {
-      const {
-        deployment: { integrationManager },
-      } = await provider.snapshot(snapshot);
-
-      await expect(integrationManager.addAuthUserForFund(randomAddress(), randomAddress())).rejects.toBeRevertedWith(
-        'Fund has not been activated',
-      );
-    });
-
-    it('does not allow a random user', async () => {
-      const {
-        accounts: [randomUser],
-        deployment: { integrationManager },
-        fund: { comptrollerProxy },
-      } = await provider.snapshot(snapshot);
-
-      await expect(
-        integrationManager.connect(randomUser).addAuthUserForFund(comptrollerProxy, randomAddress()),
-      ).rejects.toBeRevertedWith('Only the fund owner can call this function');
-    });
-
-    it('does not allow inputting the fund owner as auth user', async () => {
-      const {
-        deployment: { integrationManager },
-        fund: { comptrollerProxy, fundOwner },
-      } = await provider.snapshot(snapshot);
-
-      await expect(
-        integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, fundOwner),
-      ).rejects.toBeRevertedWith('Cannot set for the fund owner');
-    });
   });
 });
 
 describe('callOnExtension actions', () => {
   describe('__addTrackedAssetsToVault', () => {
-    it('only allows the owner and authorized users', async () => {
+    it('only allows the owner and asset managers', async () => {
       const {
-        accounts: [newAuthUser],
+        accounts: [newAssetManager],
         deployment: { integrationManager },
         config: {
           primitives: { mln: assetToAdd1, dai: assetToAdd2 },
         },
-        fund: { comptrollerProxy, fundOwner },
+        fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
       // Call should be allowed by the fund owner
@@ -292,23 +157,23 @@ describe('callOnExtension actions', () => {
         }),
       ).resolves.toBeReceipt();
 
-      // Call not allowed by the yet-to-be authorized user
+      // Call not allowed by the yet-to-be added asset manager
       await expect(
         addTrackedAssetsToVault({
-          signer: newAuthUser,
+          signer: newAssetManager,
           comptrollerProxy,
           integrationManager,
           assets: [assetToAdd2],
         }),
-      ).rejects.toBeRevertedWith('Not an authorized user');
+      ).rejects.toBeRevertedWith('Unauthorized');
 
-      // Set the new auth user
-      await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newAuthUser);
+      // Set the new asset manager
+      await vaultProxy.connect(fundOwner).addAssetManagers([newAssetManager]);
 
-      // Call should be allowed for the authorized user
+      // Call should be allowed for the asset manager
       await expect(
         addTrackedAssetsToVault({
-          signer: newAuthUser,
+          signer: newAssetManager,
           comptrollerProxy,
           integrationManager,
           assets: [assetToAdd2],
@@ -375,14 +240,14 @@ describe('callOnExtension actions', () => {
   });
 
   describe('__removeTrackedAssetsFromVault', () => {
-    it('only allows the owner and authorized users', async () => {
+    it('only allows the owner and asset managers', async () => {
       const {
-        accounts: [newAuthUser],
+        accounts: [newAssetManager],
         deployment: { integrationManager },
         config: {
           primitives: { mln: assetToRemove1, dai: assetToRemove2 },
         },
-        fund: { comptrollerProxy, fundOwner },
+        fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
       // Add assets to the fund with no balances
@@ -403,23 +268,23 @@ describe('callOnExtension actions', () => {
         }),
       ).resolves.toBeReceipt();
 
-      // Call to remove an asset should not be allowed by the yet-to-be authorized user
+      // Call to remove an asset should not be allowed by the yet-to-be-added asset manager
       await expect(
         removeTrackedAssetsFromVault({
-          signer: newAuthUser,
+          signer: newAssetManager,
           comptrollerProxy,
           integrationManager,
           assets: [assetToRemove2],
         }),
-      ).rejects.toBeRevertedWith('Not an authorized user');
+      ).rejects.toBeRevertedWith('Unauthorized');
 
-      // Set the new auth user
-      await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newAuthUser);
+      // Set the new asset manager
+      await vaultProxy.connect(fundOwner).addAssetManagers([newAssetManager]);
 
-      // Call to remove an asset should now be allowed for the authorized user
+      // Call to remove an asset should now be allowed for the added asset manager
       await expect(
         removeTrackedAssetsFromVault({
-          signer: newAuthUser,
+          signer: newAssetManager,
           comptrollerProxy,
           integrationManager,
           assets: [assetToRemove2],

@@ -103,6 +103,18 @@ contract VaultLib is VaultLibBase2, IVault {
     // PERMISSIONED ROLES //
     ////////////////////////
 
+    /// @notice Registers accounts that can manage vault holdings within the protocol
+    /// @param _managers The accounts to add as asset managers
+    function addAssetManagers(address[] calldata _managers) external onlyOwner {
+        for (uint256 i; i < _managers.length; i++) {
+            require(!isAssetManager(_managers[i]), "addAssetManagers: Manager already registered");
+
+            accountToIsAssetManager[_managers[i]] = true;
+
+            emit AssetManagerAdded(_managers[i]);
+        }
+    }
+
     /// @notice Claim ownership of the contract
     function claimOwnership() external {
         address nextOwner = nominatedOwner;
@@ -117,6 +129,18 @@ contract VaultLib is VaultLibBase2, IVault {
         owner = nextOwner;
 
         emit OwnershipTransferred(prevOwner, nextOwner);
+    }
+
+    /// @notice Deregisters accounts that can manage vault holdings within the protocol
+    /// @param _managers The accounts to remove as asset managers
+    function removeAssetManagers(address[] calldata _managers) external onlyOwner {
+        for (uint256 i; i < _managers.length; i++) {
+            require(isAssetManager(_managers[i]), "removeAssetManagers: Manager not registered");
+
+            accountToIsAssetManager[_managers[i]] = false;
+
+            emit AssetManagerRemoved(_managers[i]);
+        }
     }
 
     /// @notice Revoke the nomination of a new contract owner
@@ -604,6 +628,13 @@ contract VaultLib is VaultLibBase2, IVault {
     // STATE GETTERS //
     ///////////////////
 
+    /// @notice Checks whether an account can manage assets
+    /// @param _who The account to check
+    /// @return canManageAssets_ True if the account can manage assets
+    function canManageAssets(address _who) external view override returns (bool canManageAssets_) {
+        return _who == getOwner() || isAssetManager(_who);
+    }
+
     /// @notice Gets the `accessor` variable
     /// @return accessor_ The `accessor` variable value
     function getAccessor() external view override returns (address accessor_) {
@@ -626,12 +657,6 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return nominatedOwner_ The account that is nominated to be the owner
     function getNominatedOwner() external view returns (address nominatedOwner_) {
         return nominatedOwner;
-    }
-
-    /// @notice Gets the `owner` variable
-    /// @return owner_ The `owner` variable value
-    function getOwner() external view override returns (address owner_) {
-        return owner;
     }
 
     /// @notice Gets the `externalPositions` variable
@@ -683,6 +708,12 @@ contract VaultLib is VaultLibBase2, IVault {
         return MLN_TOKEN;
     }
 
+    /// @notice Gets the `owner` variable
+    /// @return owner_ The `owner` variable value
+    function getOwner() public view override returns (address owner_) {
+        return owner;
+    }
+
     /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable
     /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
     function getProtocolFeeReserve() public view returns (address protocolFeeReserve_) {
@@ -693,6 +724,13 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return protocolFeeTracker_ The `PROTOCOL_FEE_TRACKER` variable value
     function getProtocolFeeTracker() public view returns (address protocolFeeTracker_) {
         return PROTOCOL_FEE_TRACKER;
+    }
+
+    /// @notice Checks whether an account is an allowed asset manager
+    /// @param _who The account to check
+    /// @return isAssetManager_ True if the account is an allowed asset manager
+    function isAssetManager(address _who) public view returns (bool isAssetManager_) {
+        return accountToIsAssetManager[_who];
     }
 
     /// @notice Checks whether an asset is persistently tracked (i.e., it cannot be untracked)

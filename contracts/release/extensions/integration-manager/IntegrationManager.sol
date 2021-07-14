@@ -44,10 +44,6 @@ contract IntegrationManager is
 
     event AdapterRegistered(address indexed adapter);
 
-    event AuthUserAddedForFund(address indexed comptrollerProxy, address indexed account);
-
-    event AuthUserRemovedForFund(address indexed comptrollerProxy, address indexed account);
-
     event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
         address vaultProxy,
@@ -66,8 +62,6 @@ contract IntegrationManager is
     address private immutable PRIMITIVE_PRICE_FEED;
 
     EnumerableSet.AddressSet private registeredAdapters;
-
-    mapping(address => mapping(address => bool)) private comptrollerProxyToAcctToIsAuthUser;
 
     constructor(
         address _fundDeployer,
@@ -89,73 +83,6 @@ contract IntegrationManager is
         __setValidatedVaultProxy(msg.sender);
     }
 
-    /// @notice Authorizes a user to act on behalf of a fund via the IntegrationManager
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _who The user to authorize
-    function addAuthUserForFund(address _comptrollerProxy, address _who) external {
-        __validateSetAuthUser(_comptrollerProxy, _who, true);
-
-        comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] = true;
-
-        emit AuthUserAddedForFund(_comptrollerProxy, _who);
-    }
-
-    /// @notice Removes an authorized user from the IntegrationManager for the given fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _who The authorized user to remove
-    function removeAuthUserForFund(address _comptrollerProxy, address _who) external {
-        __validateSetAuthUser(_comptrollerProxy, _who, false);
-
-        comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] = false;
-
-        emit AuthUserRemovedForFund(_comptrollerProxy, _who);
-    }
-
-    /// @notice Checks whether an account is an authorized IntegrationManager user for a given fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _who The account to check
-    /// @return isAuthUser_ True if the account is an authorized user or the fund owner
-    function isAuthUserForFund(address _comptrollerProxy, address _who)
-        public
-        view
-        returns (bool isAuthUser_)
-    {
-        return
-            comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who] ||
-            _who == IVault(comptrollerProxyToVaultProxy[_comptrollerProxy]).getOwner();
-    }
-
-    /// @dev Helper to validate calls to update comptrollerProxyToAcctToIsAuthUser
-    function __validateSetAuthUser(
-        address _comptrollerProxy,
-        address _who,
-        bool _nextIsAuthUser
-    ) private view {
-        require(
-            comptrollerProxyToVaultProxy[_comptrollerProxy] != address(0),
-            "__validateSetAuthUser: Fund has not been activated"
-        );
-
-        address fundOwner = IVault(comptrollerProxyToVaultProxy[_comptrollerProxy]).getOwner();
-        require(
-            msg.sender == fundOwner,
-            "__validateSetAuthUser: Only the fund owner can call this function"
-        );
-        require(_who != fundOwner, "__validateSetAuthUser: Cannot set for the fund owner");
-
-        if (_nextIsAuthUser) {
-            require(
-                !comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who],
-                "__validateSetAuthUser: Account is already an authorized user"
-            );
-        } else {
-            require(
-                comptrollerProxyToAcctToIsAuthUser[_comptrollerProxy][_who],
-                "__validateSetAuthUser: Account is not an authorized user"
-            );
-        }
-    }
-
     ///////////////////////////////
     // CALL-ON-EXTENSION ACTIONS //
     ///////////////////////////////
@@ -174,9 +101,10 @@ contract IntegrationManager is
         // sending ComptrollerProxy
         address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
         require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
+
         require(
-            isAuthUserForFund(msg.sender, _caller),
-            "receiveCallFromComptroller: Not an authorized user"
+            IVault(vaultProxy).canManageAssets(_caller),
+            "receiveCallFromComptroller: Unauthorized"
         );
 
         // Dispatch the action

@@ -129,11 +129,11 @@ async function seedFundByTrading({
 }
 
 describe('callOnIntegration', () => {
-  it('only allows authorized users', async () => {
+  it('only allows the owner and asset managers', async () => {
     const {
-      accounts: [newAuthUser],
+      accounts: [newAssetManager],
       deployment: { integrationManager },
-      fund: { comptrollerProxy, fundOwner },
+      fund: { comptrollerProxy, fundOwner, vaultProxy },
       mockGenericAdapter,
     } = await provider.snapshot(snapshot);
 
@@ -152,20 +152,20 @@ describe('callOnIntegration', () => {
         .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).resolves.toBeReceipt();
 
-    // Call not allowed by the yet-to-be authorized user
+    // Call not allowed by the yet-to-be added asset manager
     await expect(
       comptrollerProxy
-        .connect(newAuthUser)
+        .connect(newAssetManager)
         .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
-    ).rejects.toBeRevertedWith('Not an authorized user');
+    ).rejects.toBeRevertedWith('Unauthorized');
 
-    // Set the new auth user
-    await integrationManager.connect(fundOwner).addAuthUserForFund(comptrollerProxy, newAuthUser);
+    // Set the new asset manager
+    await vaultProxy.connect(fundOwner).addAssetManagers([newAssetManager]);
 
-    // Call should be allowed for the authorized user
+    // Call should be allowed for the asset manager
     await expect(
       comptrollerProxy
-        .connect(newAuthUser)
+        .connect(newAssetManager)
         .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).resolves.toBeReceipt();
   });

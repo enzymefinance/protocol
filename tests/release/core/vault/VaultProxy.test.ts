@@ -607,6 +607,115 @@ describe('ownership', () => {
   });
 });
 
+describe('asset managers', () => {
+  let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
+  let vaultProxy: VaultLib;
+
+  beforeEach(async () => {
+    [fundOwner, fundAccessor] = fork.accounts;
+
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
+
+    vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+  });
+
+  describe('addAssetManagers', () => {
+    const assetManagersToAdd = [randomAddress(), randomAddress()];
+
+    it('does not allow the accessor to call', async () => {
+      await expect(vaultProxy.connect(fundAccessor).addAssetManagers(assetManagersToAdd)).rejects.toBeRevertedWith(
+        'Only the owner can call this function',
+      );
+    });
+
+    it('does not allow an already-registered value', async () => {
+      await vaultProxy.connect(fundOwner).addAssetManagers(assetManagersToAdd);
+
+      await expect(vaultProxy.connect(fundOwner).addAssetManagers(assetManagersToAdd)).rejects.toBeRevertedWith(
+        'Manager already registered',
+      );
+    });
+
+    it('happy path', async () => {
+      for (const manager of assetManagersToAdd) {
+        expect(await vaultProxy.canManageAssets(manager)).toBe(false);
+        expect(await vaultProxy.isAssetManager(manager)).toBe(false);
+      }
+
+      const receipt = await vaultProxy.connect(fundOwner).addAssetManagers(assetManagersToAdd);
+
+      for (const manager of assetManagersToAdd) {
+        expect(await vaultProxy.canManageAssets(manager)).toBe(true);
+        expect(await vaultProxy.isAssetManager(manager)).toBe(true);
+      }
+
+      const events = extractEvent(receipt, 'AssetManagerAdded');
+      expect(events.length).toBe(assetManagersToAdd.length);
+      for (const i in assetManagersToAdd) {
+        expect(events[i].args).toMatchObject({
+          manager: assetManagersToAdd[i],
+        });
+      }
+    });
+  });
+
+  describe('removeAssetManagers', () => {
+    const assetManagersToRemove = [randomAddress(), randomAddress()];
+
+    it('does not allow the accessor to call', async () => {
+      // Register the managers to be deregistered
+      await vaultProxy.connect(fundOwner).addAssetManagers(assetManagersToRemove);
+
+      await expect(
+        vaultProxy.connect(fundAccessor).removeAssetManagers(assetManagersToRemove),
+      ).rejects.toBeRevertedWith('Only the owner can call this function');
+    });
+
+    it('does not allow an unregistered value', async () => {
+      await expect(vaultProxy.connect(fundOwner).removeAssetManagers(assetManagersToRemove)).rejects.toBeRevertedWith(
+        'Manager not registered',
+      );
+    });
+
+    it('happy path', async () => {
+      // Register the managers to be deregistered
+      await vaultProxy.connect(fundOwner).addAssetManagers(assetManagersToRemove);
+
+      for (const manager of assetManagersToRemove) {
+        expect(await vaultProxy.canManageAssets(manager)).toBe(true);
+        expect(await vaultProxy.isAssetManager(manager)).toBe(true);
+      }
+
+      const receipt = await vaultProxy.connect(fundOwner).removeAssetManagers(assetManagersToRemove);
+
+      for (const manager of assetManagersToRemove) {
+        expect(await vaultProxy.canManageAssets(manager)).toBe(false);
+        expect(await vaultProxy.isAssetManager(manager)).toBe(false);
+      }
+
+      const events = extractEvent(receipt, 'AssetManagerRemoved');
+      expect(events.length).toBe(assetManagersToRemove.length);
+      for (const i in assetManagersToRemove) {
+        expect(events[i].args).toMatchObject({
+          manager: assetManagersToRemove[i],
+        });
+      }
+    });
+  });
+});
+
 // Only tests access control, as behavior is tested in vaultActions.test.ts
 describe('Comptroller calls to vault actions', () => {
   it('addPersistentlyTrackedAsset: can only be called by the accessor', async () => {

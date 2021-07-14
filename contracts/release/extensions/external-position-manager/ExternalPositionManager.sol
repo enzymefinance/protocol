@@ -82,7 +82,10 @@ contract ExternalPositionManager is
         address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
         require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
 
-        __validateIsFundOwner(vaultProxy, _caller);
+        require(
+            IVault(vaultProxy).canManageAssets(_caller),
+            "receiveCallFromComptroller: Unauthorized"
+        );
 
         // Dispatch the action
         if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
@@ -238,15 +241,6 @@ contract ExternalPositionManager is
         );
 
         __removeExternalPosition(msg.sender, externalPosition);
-    }
-
-    /// @dev Helper to validate fund owner.
-    /// Preferred to a modifier because allows gas savings if re-using _vaultProxy.
-    function __validateIsFundOwner(address _vaultProxy, address _who) private view {
-        require(
-            _who == IVault(_vaultProxy).getOwner(),
-            "__validateIsFundOwner: Only the fund owner can call this function"
-        );
     }
 
     ///////////////////

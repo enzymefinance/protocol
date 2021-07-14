@@ -55,7 +55,7 @@ describe('receiveCallFromComptroller', () => {
     });
 
     const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
-    // Call not allowed by the non authorized user
+
     await expect(
       comptrollerProxy
         .connect(fundOwner)
@@ -63,34 +63,41 @@ describe('receiveCallFromComptroller', () => {
     ).rejects.toBeRevertedWith('Invalid _actionId');
   });
 
-  describe('action: createExternalPosition', () => {
-    it('only allows authorized users', async () => {
-      const [fundOwner, newAuthUser] = fork.accounts;
-      const externalPositionManager = fork.deployment.externalPositionManager;
+  it('only allows the owner and asset managers', async () => {
+    const [fundOwner, newAssetManager] = fork.accounts;
+    const externalPositionManager = fork.deployment.externalPositionManager;
 
-      const { comptrollerProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-      });
-
-      const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
-
-      await expect(
-        comptrollerProxy
-          .connect(fundOwner)
-          .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
-      ).resolves.toBeReceipt();
-
-      // Call not allowed by the non authorized user
-      await expect(
-        comptrollerProxy
-          .connect(newAuthUser)
-          .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
-      ).rejects.toBeRevertedWith('Only the fund owner can call this function');
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fork.deployer,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
     });
 
+    const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
+
+    // Call should be allowed by the fund owner
+    await comptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs);
+
+    // Call not allowed by the yet-to-be added asset manager
+    await expect(
+      comptrollerProxy
+        .connect(newAssetManager)
+        .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs),
+    ).rejects.toBeRevertedWith('Unauthorized');
+
+    // Set the new asset manager
+    await vaultProxy.connect(fundOwner).addAssetManagers([newAssetManager]);
+
+    // Call should be allowed for the added asset manager
+    await comptrollerProxy
+      .connect(newAssetManager)
+      .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CreateExternalPosition, callArgs);
+  });
+
+  describe('action: createExternalPosition', () => {
     it('reverts if it receives an invalid typeId', async () => {
       const [fundOwner] = fork.accounts;
       const externalPositionManager = fork.deployment.externalPositionManager;
@@ -104,7 +111,6 @@ describe('receiveCallFromComptroller', () => {
 
       const callArgs = encodeArgs(['uint256', 'bytes'], [1, '0x']);
 
-      // Call not allowed by the non authorized user
       await expect(
         comptrollerProxy
           .connect(fundOwner)

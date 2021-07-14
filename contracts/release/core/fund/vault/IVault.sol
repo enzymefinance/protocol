@@ -49,6 +49,8 @@ interface IVault is IMigratableVault {
 
     function callOnContract(address, bytes calldata) external;
 
+    function canManageAssets(address) external view returns (bool);
+
     function getAccessor() external view returns (address);
 
     function getOwner() external view returns (address);
@@ -59,7 +61,7 @@ interface IVault is IMigratableVault {
 
     function getTrackedAssets() external view returns (address[] memory);
 
-    function isActiveExternalPosition(address _asset) external view returns (bool);
+    function isActiveExternalPosition(address) external view returns (bool);
 
     function isTrackedAsset(address) external view returns (bool);
 
