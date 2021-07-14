@@ -50,6 +50,8 @@ import {
   GuaranteedRedemption,
   GlobalConfigLib,
   AssetFinalityResolver,
+  ProtocolFeeReserveLib,
+  ProtocolFeeTracker,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -126,6 +128,9 @@ export async function deployProtocolFixture() {
     globalConfigLib: new GlobalConfigLib(fixture['GlobalConfigLib'].address, deployer),
     globalConfigProxy: new GlobalConfigLib(fixture['GlobalConfigProxy'].address, deployer),
     assetFinalityResolver: new AssetFinalityResolver(fixture['AssetFinalityResolver'].address, deployer),
+    protocolFeeReserveLib: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveLib'].address, deployer),
+    protocolFeeReserveProxy: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveProxy'].address, deployer),
+    protocolFeeTracker: new ProtocolFeeTracker(fixture['ProtocolFeeTracker'].address, deployer),
   } as const;
 
   return {

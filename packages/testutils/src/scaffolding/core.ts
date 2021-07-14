@@ -8,6 +8,7 @@ import {
   FundDeployer,
   IntegrationManager,
   PolicyManager,
+  ProtocolFeeTracker,
   ReleaseStatusTypes,
   ValueInterpreter,
   VaultLib,
@@ -53,10 +54,21 @@ export async function createFundDeployer({
     policyManager,
     chainlinkPriceFeed,
     assetFinalityResolver,
+    await vaultLib.getMlnToken(),
   );
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 
-  const nextVaultLib = await VaultLib.deploy(deployer, externalPositionManager, await vaultLib.getWethToken());
+  const nextProtocolFeeTracker = await ProtocolFeeTracker.deploy(deployer, nextFundDeployer);
+  await nextFundDeployer.setProtocolFeeTracker(nextProtocolFeeTracker);
+
+  const nextVaultLib = await VaultLib.deploy(
+    deployer,
+    externalPositionManager,
+    await vaultLib.getProtocolFeeReserve(),
+    nextProtocolFeeTracker,
+    await vaultLib.getMlnToken(),
+    await vaultLib.getWethToken(),
+  );
   await nextFundDeployer.setVaultLib(nextVaultLib);
 
   if (setReleaseStatusLive) {

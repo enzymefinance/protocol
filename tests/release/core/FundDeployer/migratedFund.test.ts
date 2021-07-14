@@ -275,6 +275,10 @@ describe('executeMigration', () => {
         expect(fork.deployment.dispatcher.executeMigration).toHaveBeenCalledOnContractWith(vaultProxy, false);
       });
 
+      it('correctly calls the ProtocolFeeTracker to initialize the protocol fee', async () => {
+        expect(fork.deployment.protocolFeeTracker.initializeForVault).toHaveBeenCalledOnContractWith(vaultProxy);
+      });
+
       it('correctly sets the nextComptrollerProxy as the vaultProxy accessor', async () => {
         expect(await vaultProxy.getAccessor()).toMatchAddress(nextComptrollerProxy);
       });

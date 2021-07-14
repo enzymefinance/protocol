@@ -51,6 +51,7 @@ async function snapshot() {
     mockPolicyManager,
     deployment.chainlinkPriceFeed,
     randomAddress(), // AssetFinalityResolver
+    config.primitives.mln,
   );
 
   // Deploy configured ComptrollerProxy
@@ -69,6 +70,7 @@ async function snapshot() {
   await mockVaultProxy.addPersistentlyTrackedAsset.returns(undefined);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
+  await mockVaultProxy.payProtocolFee.returns(undefined);
   await mockVaultProxy.transferShares.returns(undefined);
 
   return {
@@ -325,6 +327,7 @@ describe('destructActivated', () => {
 
     // Assert expected calls
     expect(mockFeeManager.deactivateForFund).toHaveBeenCalledOnContract();
+    expect(mockVaultProxy.payProtocolFee).toHaveBeenCalledOnContract();
   });
 });
 

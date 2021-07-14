@@ -1,5 +1,11 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
+import { deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets initial state for library', async () => {
@@ -26,6 +32,8 @@ describe('constructor', () => {
       primitivePriceFeed_: chainlinkPriceFeed,
       valueInterpreter_: valueInterpreter,
     });
+
+    expect(await comptrollerLib.getMlnToken()).toMatchAddress(fork.config.primitives.mln);
   });
 });
 
@@ -38,6 +46,7 @@ describe('destruct calls', () => {
       fork.deployer,
       randomAddress(),
       mockFundDeployer,
+      randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),

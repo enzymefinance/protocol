@@ -1,4 +1,4 @@
-import { Dispatcher, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
+import { Dispatcher, FundDeployer, ProtocolFeeTracker, ReleaseStatusTypes } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -10,16 +10,20 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const dispatcher = await get('Dispatcher');
   const fundDeployer = await get('FundDeployer');
+  const protocolFeeTracker = await get('ProtocolFeeTracker');
 
   const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
   await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
 
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
   await fundDeployerInstance.setReleaseStatus(ReleaseStatusTypes.Live);
+
+  const protocolFeeTrackerInstance = new ProtocolFeeTracker(protocolFeeTracker.address, deployer);
+  await protocolFeeTrackerInstance.setFeeBpsDefault(50);
 };
 
 fn.tags = ['Release'];
-fn.dependencies = ['Dispatcher', 'FundDeployer'];
+fn.dependencies = ['Dispatcher', 'FundDeployer', 'ProtocolFeeTracker'];
 fn.runAtTheEnd = true;
 
 // NOTE: On mainnet, this is part of the hand over / release routine.

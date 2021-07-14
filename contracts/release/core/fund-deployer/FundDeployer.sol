@@ -14,6 +14,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../persistent/utils/IMigrationHookHandler.sol";
+import "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
 import "../fund/vault/IVault.sol";
@@ -44,6 +45,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     );
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
+
+    event ProtocolFeeTrackerSet(address protocolFeeTracker);
 
     event ReconfigurationRequestCancelled(
         address indexed vaultProxy,
@@ -92,6 +95,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     // Pseudo-constants (can only be set once)
     address private comptrollerLib;
+    address private protocolFeeTracker;
     address private vaultLib;
 
     // Storage
@@ -146,7 +150,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // PSEUDO-CONSTANTS (only set once) //
     //////////////////////////////////////
 
-    /// @notice Sets the comptrollerLib
+    /// @notice Sets the ComptrollerLib
     /// @param _comptrollerLib The ComptrollerLib contract address
     function setComptrollerLib(address _comptrollerLib)
         external
@@ -156,6 +160,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         comptrollerLib = _comptrollerLib;
 
         emit ComptrollerLibSet(_comptrollerLib);
+    }
+
+    /// @notice Sets the ProtocolFeeTracker
+    /// @param _protocolFeeTracker The ProtocolFeeTracker contract address
+    function setProtocolFeeTracker(address _protocolFeeTracker)
+        external
+        onlyOwner
+        pseudoConstant(getProtocolFeeTracker())
+    {
+        protocolFeeTracker = _protocolFeeTracker;
+
+        emit ProtocolFeeTrackerSet(_protocolFeeTracker);
     }
 
     /// @notice Sets the VaultLib
@@ -189,6 +205,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             require(
                 getComptrollerLib() != address(0),
                 "setReleaseStatus: Can only set the release status when comptrollerLib is set"
+            );
+            require(
+                getProtocolFeeTracker() != address(0),
+                "setReleaseStatus: Can only set the release status when protocolFeeTracker is set"
             );
             require(
                 getVaultLib() != address(0),
@@ -295,6 +315,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
         comptrollerContract.setVaultProxy(vaultProxy_);
         comptrollerContract.activate(false);
+
+        IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(vaultProxy_);
 
         emit NewFundCreated(msg.sender, vaultProxy_, comptrollerProxy_);
 
@@ -414,6 +436,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     /// @notice Executes a pending reconfiguration request
     /// @param _vaultProxy The VaultProxy contract for which to execute the reconfiguration request
+    /// @dev ProtocolFeeTracker.initializeForVault() does not need to be included in a reconfiguration,
+    /// as it refers to the vault and not the new ComptrollerProxy
     function executeReconfiguration(address _vaultProxy)
         external
         onlyLiveRelease
@@ -496,6 +520,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         dispatcherContract.executeMigration(_vaultProxy, _bypassPrevReleaseFailure);
 
         IComptroller(comptrollerProxy).activate(true);
+
+        IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(_vaultProxy);
     }
 
     /// @notice Executes logic when a migration is canceled on the Dispatcher
@@ -645,6 +671,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @return comptrollerLib_ The `comptrollerLib` variable value
     function getComptrollerLib() public view returns (address comptrollerLib_) {
         return comptrollerLib;
+    }
+
+    /// @notice Gets the `protocolFeeTracker` variable value
+    /// @return protocolFeeTracker_ The `protocolFeeTracker` variable value
+    function getProtocolFeeTracker() public view returns (address protocolFeeTracker_) {
+        return protocolFeeTracker;
     }
 
     /// @notice Gets the pending ReconfigurationRequest for a given VaultProxy

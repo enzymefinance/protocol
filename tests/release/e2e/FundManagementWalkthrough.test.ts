@@ -24,44 +24,44 @@ import { BigNumber, BigNumberish, utils } from 'ethers';
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 352000,
-    weth: 330000,
+    usdc: 364283,
+    weth: 342565,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 322000,
-    weth: 307000,
+    usdc: 364414,
+    weth: 349343,
   },
   'buy shares: max assets': {
-    usdc: 1368000,
-    weth: 1303000,
+    usdc: 1389973,
+    weth: 1325069,
   },
   'calc gav: 20 assets': {
-    usdc: 1110000,
-    weth: 1072000,
+    usdc: 1096918,
+    weth: 1043285,
   },
   'calc gav: denomination asset only': {
-    usdc: 84400,
-    weth: 76000,
+    usdc: 84136,
+    weth: 74651,
   },
 
   'create fund': {
-    usdc: 935000,
-    weth: 925000,
-  },
-
-  'redeem all shares: max assets: all remaining': {
-    usdc: 2500000,
-    weth: 2404000,
+    usdc: 950477,
+    weth: 940068,
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2590000,
-    weth: 2472000,
+    usdc: 2558096,
+    weth: 2494557,
+  },
+
+  'redeem all shares: max assets': {
+    usdc: 2075784,
+    weth: 2036163,
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 269000,
-    weth: 237000,
+    usdc: 262497,
+    weth: 235922,
   },
 } as const;
 
@@ -127,7 +127,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       comptrollerProxy = createFundTx.comptrollerProxy;
       vaultProxy = createFundTx.vaultProxy;
 
-      expect(createFundTx.receipt).toCostLessThan(expectedGasCosts['create fund'][denominationAssetId]);
+      expect(createFundTx.receipt).toCostAround(expectedGasCosts['create fund'][denominationAssetId]);
     });
 
     it('enables the InvestorWhitelist policy for the fund', async () => {
@@ -160,7 +160,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         utils.parseUnits('1', denominationAssetDecimals).sub(expectedFee),
       );
 
-      expect(buySharesTx).toCostLessThan(
+      expect(buySharesTx).toCostAround(
         expectedGasCosts['buy shares: denomination asset only: first investment'][denominationAssetId],
       );
     });
@@ -177,7 +177,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
 
-      expect(buySharesTx).toCostLessThan(
+      expect(buySharesTx).toCostAround(
         expectedGasCosts['buy shares: denomination asset only: second investment'][denominationAssetId],
       );
     });
@@ -185,7 +185,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     it('calculates the GAV of the fund with only the denomination asset', async () => {
       const calcGavTx = await comptrollerProxy.calcGav(true);
 
-      expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: denomination asset only'][denominationAssetId]);
+      expect(calcGavTx).toCostAround(expectedGasCosts['calc gav: denomination asset only'][denominationAssetId]);
     });
 
     it('seeds the fund with all more assets', async () => {
@@ -259,7 +259,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const calcGavTx = await comptrollerProxy.calcGav(true);
 
-      expect(calcGavTx).toCostLessThan(expectedGasCosts['calc gav: 20 assets'][denominationAssetId]);
+      expect(calcGavTx).toCostAround(expectedGasCosts['calc gav: 20 assets'][denominationAssetId]);
     });
 
     it('trades on Uniswap', async () => {
@@ -274,7 +274,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         minIncomingAssetAmount: BigNumber.from(1),
       });
 
-      expect(receipt).toCostLessThan(expectedGasCosts['trade on Uniswap: max assets'][denominationAssetId]);
+      expect(receipt).toCostAround(expectedGasCosts['trade on Uniswap: max assets'][denominationAssetId]);
     });
 
     it("sends an asset amount to the fund's vault", async () => {
@@ -308,7 +308,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
 
-      expect(redeemed).toCostLessThan(expectedGasCosts['redeem partial shares: max assets'][denominationAssetId]);
+      expect(redeemed).toCostAround(expectedGasCosts['redeem partial shares: max assets'][denominationAssetId]);
     });
 
     it("sends an asset amount to the fund's vault again", async () => {
@@ -361,7 +361,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesQuantity);
 
-      expect(buySharesTx).toCostLessThan(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
+      expect(buySharesTx).toCostAround(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
     });
 
     it('redeems all remaining shares of the first investor (without fees failure)', async () => {
@@ -374,22 +374,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(failureEvents.length).toBe(0);
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
-    });
 
-    it('redeems all remaining shares of the other investor (without fees failure)', async () => {
-      const redeemed = await redeemSharesInKind({
-        comptrollerProxy,
-        signer: anotherInvestor,
-      });
-
-      const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
-      expect(failureEvents.length).toBe(0);
-
-      expect(await vaultProxy.balanceOf(anotherInvestor)).toEqBigNumber(utils.parseEther('0'));
-
-      expect(redeemed).toCostLessThan(
-        expectedGasCosts['redeem all shares: max assets: all remaining'][denominationAssetId],
-      );
+      expect(redeemed).toCostAround(expectedGasCosts['redeem all shares: max assets'][denominationAssetId]);
     });
   },
 );

@@ -1,9 +1,13 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
+  calcProtocolFeeSharesDue,
+  FeeHook,
   feeManagerConfigArgs,
   MockReentrancyToken,
   PolicyHook,
   ReleaseStatusTypes,
+  settlePostBuySharesArgs,
+  settlePreBuySharesArgs,
   StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
@@ -24,7 +28,7 @@ import {
   redeemSharesInKind,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -182,75 +186,10 @@ describe('buyShares', () => {
 
   it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 
-  it('works for a fund with no extensions', async () => {
+  it('happy path: no fund-level fees, first investment (i.e., no protocol fee)', async () => {
     const {
       fund: { denominationAsset },
-      deployment: { fundDeployer, policyManager },
-      accounts: [fundOwner, buyer],
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      denominationAsset,
-    });
-
-    const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
-    const receipt = await buyShares({
-      comptrollerProxy,
-      buyer,
-      denominationAsset,
-      investmentAmount,
-    });
-
-    // Expected values
-    const expectedGav = investmentAmount;
-    const expectedSharesIssued = investmentAmount;
-    const expectedSharesReceived = investmentAmount;
-
-    // Assert Events
-    assertEvent(receipt, 'SharesBought', {
-      buyer: await buyer.getAddress(),
-      investmentAmount,
-      sharesIssued: expectedSharesIssued,
-      sharesReceived: expectedSharesReceived,
-    });
-
-    // Assert calls on ComptrollerProxy
-    const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
-    expect(calcGavCall).toEqBigNumber(expectedGav);
-
-    const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toEqBigNumber(utils.parseEther('1'));
-
-    // Assert the PolicyManager was called with the correct data
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PostBuyShares,
-      validateRulePostBuySharesArgs({
-        buyer,
-        investmentAmount,
-        sharesIssued: expectedSharesIssued,
-        fundGav: expectedGav,
-      }),
-    );
-
-    // Assert calls on VaultProxy
-    // TODO: does this belong here?
-    const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
-    expect(sharesBuyerBalanceCall).toEqBigNumber(expectedSharesReceived);
-    const sharesTotalSupplyCall = await vaultProxy.totalSupply();
-    expect(sharesTotalSupplyCall).toEqBigNumber(sharesBuyerBalanceCall);
-    const trackedAssetsCall = await vaultProxy.getTrackedAssets();
-    expect(trackedAssetsCall).toContain(denominationAsset.address);
-    const isTrackedAssetCall = await vaultProxy.isTrackedAsset(denominationAsset);
-    expect(isTrackedAssetCall).toBe(true);
-  });
-
-  it('works for a fund with a non-18 decimal denominationAsset', async () => {
-    const {
-      deployment: { fundDeployer },
-      fund: { denominationAsset },
+      deployment: { feeManager, fundDeployer, policyManager, protocolFeeTracker },
       accounts: [fundOwner, buyer],
     } = await provider.snapshot(snapshot);
 
@@ -261,9 +200,12 @@ describe('buyShares', () => {
     });
 
     // Define the investment and expected shares amounts.
-    // For 1 unit (10^decimals()) of the denominationAsset, 1 shares unit (10^18) is expected.
-    const investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
-    const expectedSharesAmount = utils.parseEther('1');
+    // For 2 units (10^decimals()) of the denominationAsset, 2 shares unit (2 * 10^18) is expected,
+    // since there are no fund-level fees and protocol fee not charged on 0 shares supply
+    const investmentAmount = utils.parseUnits('2', await denominationAsset.decimals());
+    const expectedSharesAmount = utils.parseEther('2');
+    const expectedGav = investmentAmount;
+
     const receipt = await buyShares({
       comptrollerProxy,
       buyer,
@@ -271,7 +213,7 @@ describe('buyShares', () => {
       investmentAmount,
     });
 
-    // Assert correct event was emitted
+    // Assert Events
     assertEvent(receipt, 'SharesBought', {
       buyer: await buyer.getAddress(),
       investmentAmount,
@@ -279,17 +221,97 @@ describe('buyShares', () => {
       sharesReceived: expectedSharesAmount,
     });
 
-    // Assert GAV is the investment amount
-    const calcGavCall = await comptrollerProxy.calcGav.args(true).call();
-    expect(calcGavCall).toEqBigNumber(investmentAmount);
+    // Assert shares were minted correctly
+    const sharesBuyerBalance = await vaultProxy.balanceOf(buyer);
+    expect(sharesBuyerBalance).toEqBigNumber(expectedSharesAmount);
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(sharesBuyerBalance);
 
-    // Assert gross share value is the investment amount
-    const calcGrossShareValueCall = await comptrollerProxy.calcGrossShareValue.call();
-    expect(calcGrossShareValueCall).toEqBigNumber(investmentAmount);
+    // Assert correct GAV and gross share value calcs
+    expect(await comptrollerProxy.calcGav.args(true).call()).toEqBigNumber(expectedGav);
+    expect(await comptrollerProxy.calcGrossShareValue.call()).toEqBigNumber(utils.parseEther('1'));
 
-    // Assert the correct amount of shares was minted to the buyer
-    const sharesBuyerBalanceCall = await vaultProxy.balanceOf(buyer);
-    expect(sharesBuyerBalanceCall).toEqBigNumber(expectedSharesAmount);
+    // Assert the protocol fee payment was attempted
+    expect(protocolFeeTracker.payFee).toHaveBeenCalledOnContract();
+
+    // Assert the FeeManager was called with the correct data
+    expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
+      FeeHook.PreBuyShares,
+      settlePreBuySharesArgs({ buyer, investmentAmount }),
+      0, // No GAV since first investment
+    );
+    expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
+      FeeHook.PostBuyShares,
+      settlePostBuySharesArgs({ buyer, investmentAmount, sharesBought: expectedSharesAmount }),
+      expectedGav,
+    );
+
+    // Assert the PolicyManager was called with the correct data
+    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+      comptrollerProxy,
+      PolicyHook.PostBuyShares,
+      validateRulePostBuySharesArgs({
+        buyer,
+        investmentAmount,
+        sharesIssued: expectedSharesAmount,
+        fundGav: expectedGav,
+      }),
+    );
+  });
+
+  it('happy path: no fund-level fees, second investment (i.e., with a protocol fee)', async () => {
+    const {
+      fund: { denominationAsset },
+      deployment: { fundDeployer, protocolFeeTracker },
+      accounts: [fundOwner, buyer],
+    } = await provider.snapshot(snapshot);
+
+    const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundDeployer,
+      denominationAsset,
+      // Invest the 1st time to give a positive supply of shares
+      investment: {
+        buyer: fundOwner,
+        investmentAmount,
+      },
+    });
+
+    // Warp time so that a protocol fee will be due
+    await provider.send('evm_increaseTime', [3600]);
+
+    const preTxLastPaidTimestamp = await protocolFeeTracker.getLastPaidForVault(vaultProxy);
+    const preTxSharesSupply = await vaultProxy.totalSupply();
+
+    const receipt = await buyShares({
+      comptrollerProxy,
+      buyer,
+      denominationAsset,
+      investmentAmount,
+    });
+
+    // Expected values
+    const expectedProtocolFee = await calcProtocolFeeSharesDue({
+      protocolFeeTracker,
+      vaultProxyAddress: vaultProxy,
+      sharesSupply: preTxSharesSupply,
+      secondsSinceLastPaid: BigNumber.from(await transactionTimestamp(receipt)).sub(preTxLastPaidTimestamp),
+    });
+    expect(expectedProtocolFee).toBeGtBigNumber(0);
+    // Share price after the tx is the same as the share price during the time of shares issuance,
+    // since protocol fee has already been collected at that time.
+    const sharePrice = await comptrollerProxy.calcGrossShareValue.args(true).call();
+    const expectedSharesReceived = investmentAmount.mul(utils.parseEther('1')).div(sharePrice);
+
+    // Assert shares were minted correctly.
+    const sharesBuyerBalance = await vaultProxy.balanceOf(buyer);
+    expect(sharesBuyerBalance).toEqBigNumber(expectedSharesReceived);
+
+    const expectedSharesSupply = preTxSharesSupply.add(sharesBuyerBalance).add(expectedProtocolFee);
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(expectedSharesSupply);
+
+    // Other assertions same as made in previous test
   });
 
   it('happy path: no shares action timelock, pending migration', async () => {
@@ -401,7 +423,7 @@ describe('redeem', () => {
 
       // Create a new fund, and invested in equally by the fund manager and an investor
       const investmentAmount = await getAssetUnit(denominationAsset);
-      const { comptrollerProxy } = await createNewFund({
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
         signer: fundManager,
         fundDeployer,
         denominationAsset,
@@ -418,7 +440,7 @@ describe('redeem', () => {
         investmentAmount,
       });
 
-      const redeemQuantity = investmentAmount.add(1);
+      const redeemQuantity = (await vaultProxy.balanceOf(investor)).add(1);
 
       await expect(
         redeemSharesInKind({
@@ -529,15 +551,18 @@ describe('redeem', () => {
       ).rejects.toBeRevertedWith('Percents must total 100%');
     });
 
-    it('handles a valid call: full shares balance', async () => {
+    it('happy path: full shares balance, with no protocol fee', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, policyManager, valueInterpreter },
+        deployment: { fundDeployer, integrationManager, policyManager, protocolFeeTracker, valueInterpreter },
         accounts: [fundOwner, investor],
         config: {
           primitives: { dai, mln },
         },
       } = await provider.snapshot(snapshot);
+
+      // Turn off the protocol fee
+      await protocolFeeTracker.setFeeBpsDefault(0);
 
       // Create a new fund, invested in by the fund manager and an investor
       const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -642,7 +667,7 @@ describe('redeem', () => {
       );
     });
 
-    it('handles a valid call: explicitly claim less than 100% of owed gav', async () => {
+    it('happy path: explicitly claim less than 100% of owed gav', async () => {
       const {
         fund: { denominationAsset },
         deployment: { fundDeployer, valueInterpreter },
@@ -668,7 +693,7 @@ describe('redeem', () => {
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(4);
       const preTxGav = await comptrollerProxy.calcGav.args(true).call();
-      const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
+      const preTxSharesSupply = await vaultProxy.totalSupply();
 
       // Redeem part of the investor's shares
       const receipt = await redeemSharesForSpecificAssets({
@@ -678,6 +703,14 @@ describe('redeem', () => {
         payoutAssets,
         payoutAssetPercentages,
       });
+
+      // Calculate gav that should have been paid out to the redeemer. This needs to be done after
+      // the redemption has taken place to take into account protocol fees charged
+      const sharesSupplyWithProtocolFee = expectedSharesRedeemed.add(await vaultProxy.totalSupply());
+      // This also confirms that a protocol fee was charged
+      expect(sharesSupplyWithProtocolFee).toBeGtBigNumber(preTxSharesSupply);
+
+      const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(sharesSupplyWithProtocolFee);
 
       // Calculate the expected payout amount and expect 0 for the empty asset
       const expectedPayoutAmounts = [
@@ -788,15 +821,18 @@ describe('redeem', () => {
       ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
     });
 
-    it('handles a valid call: full shares balance, no additional config', async () => {
+    it('happy path: full shares balance, no additional config, no protocol fee', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager },
+        deployment: { fundDeployer, integrationManager, protocolFeeTracker },
         accounts: [fundOwner, investor],
         config: {
           primitives: { mln },
         },
       } = await provider.snapshot(snapshot);
+
+      // Turn off the protocol fee
+      await protocolFeeTracker.setFeeBpsDefault(0);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         signer: fundOwner,
@@ -867,7 +903,7 @@ describe('redeem', () => {
       ]);
     });
 
-    it('handles a valid call: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {
+    it('happy path: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {
       const {
         fund: { denominationAsset },
         deployment: { fundDeployer },
@@ -896,6 +932,9 @@ describe('redeem', () => {
         investmentAmount,
       });
 
+      // Warp time so that a protocol fee will be due while redeeming
+      await provider.send('evm_increaseTime', [3600]);
+
       // Send untracked asset directly to fund
       const untrackedAsset = new StandardToken(mln, whales.mln);
       const untrackedAssetBalance = utils.parseEther('2');
@@ -907,17 +946,19 @@ describe('redeem', () => {
 
       // Define the redemption params and the expected payout assets
       const recipient = randomAddress();
-      const redeemQuantity = investmentAmount.div(2);
+      const investorPreTxShares = await vaultProxy.balanceOf(investor);
+      const redeemQuantity = investorPreTxShares.div(2);
       const additionalAssets = [untrackedAsset];
       const assetsToSkip = [denominationAsset];
-      const expectedPayoutAssets = [untrackedAsset];
-      const expectedPayoutAmounts = [untrackedAssetBalance.div(4)];
+      const expectedPayoutAsset = untrackedAsset;
 
-      // Record the investor's pre-redemption balances
-      const [preExpectedPayoutAssetBalance, preAssetToSkipBalance] = await getAssetBalances({
+      // Record the pre-redemption balances
+      const [preTxRecipientExpectedPayoutAssetBalance, preTxReceipientAssetToSkipBalance] = await getAssetBalances({
         account: recipient,
-        assets: [untrackedAsset, denominationAsset],
+        assets: [expectedPayoutAsset, denominationAsset],
       });
+      const preTxVaultExpectedPayoutAssetBalance = await expectedPayoutAsset.balanceOf(vaultProxy);
+      const preTxSharesSupply = await vaultProxy.totalSupply();
 
       // Redeem half of investor's shares
       const receipt = await redeemSharesInKind({
@@ -929,25 +970,36 @@ describe('redeem', () => {
         assetsToSkip,
       });
 
+      // Calculate expected payout amount to the redeemer. This needs to be done after
+      // the redemption has taken place to take into account protocol fees charged.
+      const sharesSupplyWithProtocolFee = redeemQuantity.add(await vaultProxy.totalSupply());
+      // This also confirms that a protocol fee was charged
+      expect(sharesSupplyWithProtocolFee).toBeGtBigNumber(preTxSharesSupply);
+
+      const expectedPayoutAmount = preTxVaultExpectedPayoutAssetBalance
+        .mul(redeemQuantity)
+        .div(sharesSupplyWithProtocolFee);
+
       // Assert the event
       assertEvent(receipt, 'SharesRedeemed', {
         redeemer: investor,
         recipient,
         sharesAmount: redeemQuantity,
-        receivedAssets: expectedPayoutAssets,
-        receivedAssetAmounts: expectedPayoutAmounts,
+        receivedAssets: [expectedPayoutAsset],
+        receivedAssetAmounts: [expectedPayoutAmount],
       });
 
-      const [postExpectedPayoutAssetBalance, postAssetToSkipBalance] = await getAssetBalances({
+      const [postTxRecipientExpectedPayoutAssetBalance, postTxRecipientAssetToSkipBalance] = await getAssetBalances({
         account: recipient,
         assets: [untrackedAsset, denominationAsset],
       });
 
       // Assert the redeemer has redeemed the correct shares quantity and that the recipient received the expected assets and balances
-      const investorSharesBalanceCall = await vaultProxy.balanceOf(investor);
-      expect(investorSharesBalanceCall).toEqBigNumber(investmentAmount.sub(redeemQuantity));
-      expect(postExpectedPayoutAssetBalance).toEqBigNumber(preExpectedPayoutAssetBalance.add(expectedPayoutAmounts[0]));
-      expect(postAssetToSkipBalance).toEqBigNumber(preAssetToSkipBalance);
+      expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(investorPreTxShares.sub(redeemQuantity));
+      expect(postTxRecipientExpectedPayoutAssetBalance).toEqBigNumber(
+        preTxRecipientExpectedPayoutAssetBalance.add(expectedPayoutAmount),
+      );
+      expect(postTxRecipientAssetToSkipBalance).toEqBigNumber(preTxReceipientAssetToSkipBalance);
     });
 
     it.todo('handles a valid call: full shares balance with fee that reduces the number of sender shares');
@@ -998,6 +1050,8 @@ describe('redeem', () => {
         sharesAmount: investmentAmount,
       });
     });
+
+    it.todo('handles a payProtocolFee failure');
   });
 });
 

@@ -1,5 +1,6 @@
 import { ComptrollerLibArgs, FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
+import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -7,6 +8,7 @@ const fn: DeployFunction = async function (hre) {
     ethers: { getSigners },
   } = hre;
 
+  const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
   const dispatcher = await get('Dispatcher');
   const fundDeployer = await get('FundDeployer');
@@ -29,6 +31,7 @@ const fn: DeployFunction = async function (hre) {
       policyManager.address,
       chainlinkPriceFeed.address,
       assetFinalityResolver.address,
+      config.primitives.mln,
     ] as ComptrollerLibArgs,
     from: deployer.address,
     log: true,
@@ -44,6 +47,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'ComptrollerLib'];
 fn.dependencies = [
+  'Config',
   'Dispatcher',
   'ExternalPositionManager',
   'FundDeployer',

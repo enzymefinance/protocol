@@ -44,7 +44,7 @@ abstract contract FundDeployerOwnerMixin {
 
     /// @notice Gets the `FUND_DEPLOYER` variable
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
-    function getFundDeployer() external view returns (address fundDeployer_) {
+    function getFundDeployer() public view returns (address fundDeployer_) {
         return FUND_DEPLOYER;
     }
 }

@@ -10,7 +10,7 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets initial state', async () => {
-    const { comptrollerLib, fundDeployer, vaultLib, dispatcher } = fork.deployment;
+    const { comptrollerLib, fundDeployer, vaultLib, dispatcher, protocolFeeTracker } = fork.deployment;
 
     expect(await fundDeployer.getCreator()).toMatchAddress(fork.deployer);
     expect(await fundDeployer.getDispatcher()).toMatchAddress(dispatcher);
@@ -19,6 +19,7 @@ describe('constructor', () => {
 
     // Pseudo constants
     expect(await fundDeployer.getComptrollerLib()).toMatchAddress(comptrollerLib);
+    expect(await fundDeployer.getProtocolFeeTracker()).toMatchAddress(protocolFeeTracker);
     expect(await fundDeployer.getVaultLib()).toMatchAddress(vaultLib);
 
     for (const [contract, selector, dataHash] of fork.config.vaultCalls) {
@@ -63,6 +64,34 @@ describe('pseudo-constant setters', () => {
     });
   });
 
+  describe('setProtocolFeeTracker', () => {
+    const protocolFeeTrackerAddress = randomAddress();
+
+    it('cannot be called by a random user', async () => {
+      const [randomUser] = fork.accounts;
+
+      await expect(
+        fundDeployer.connect(randomUser).setProtocolFeeTracker(protocolFeeTrackerAddress),
+      ).rejects.toBeRevertedWith('Only the contract owner can call this function');
+    });
+
+    it('cannot be set a second time', async () => {
+      await fundDeployer.setProtocolFeeTracker(protocolFeeTrackerAddress);
+
+      await expect(fundDeployer.setProtocolFeeTracker(protocolFeeTrackerAddress)).rejects.toBeRevertedWith(
+        'This value can only be set once',
+      );
+    });
+
+    it('happy path', async () => {
+      const result = await fundDeployer.setProtocolFeeTracker(protocolFeeTrackerAddress);
+
+      assertEvent(result, 'ProtocolFeeTrackerSet', {
+        protocolFeeTracker: protocolFeeTrackerAddress,
+      });
+    });
+  });
+
   describe('setVaultLib', () => {
     const vaultLibAddress = randomAddress();
 
@@ -103,10 +132,23 @@ describe('setReleaseStatus', () => {
     const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
 
     // Set other necessary vars
+    await fundDeployer.setProtocolFeeTracker(randomAddress());
     await fundDeployer.setVaultLib(randomAddress());
 
     await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
       'Can only set the release status when comptrollerLib is set',
+    );
+  });
+
+  it('cannot be called during PreLaunch before protocolFeeTracker is set', async () => {
+    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+
+    // Set other necessary vars
+    await fundDeployer.setComptrollerLib(randomAddress());
+    await fundDeployer.setVaultLib(randomAddress());
+
+    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
+      'Can only set the release status when protocolFeeTracker is set',
     );
   });
 
@@ -115,6 +157,7 @@ describe('setReleaseStatus', () => {
 
     // Set other necessary vars
     await fundDeployer.setComptrollerLib(randomAddress());
+    await fundDeployer.setProtocolFeeTracker(randomAddress());
 
     await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
       'Can only set the release status when vaultLib is set',

@@ -71,6 +71,7 @@ contract ComptrollerLib is IComptroller {
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
+    address private immutable MLN_TOKEN;
     address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable VALUE_INTERPRETER;
@@ -176,7 +177,8 @@ contract ComptrollerLib is IComptroller {
         address _integrationManager,
         address _policyManager,
         address _primitivePriceFeed,
-        address _assetFinalityResolver
+        address _assetFinalityResolver,
+        address _mlnToken
     ) public {
         ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DISPATCHER = _dispatcher;
@@ -184,6 +186,7 @@ contract ComptrollerLib is IComptroller {
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
+        MLN_TOKEN = _mlnToken;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
         VALUE_INTERPRETER = _valueInterpreter;
@@ -262,6 +265,37 @@ contract ComptrollerLib is IComptroller {
         return
             IDispatcher(DISPATCHER).hasMigrationRequest(_vaultProxy) ||
             IFundDeployer(FUND_DEPLOYER).hasReconfigurationRequest(_vaultProxy);
+    }
+
+    //////////////////
+    // PROTOCOL FEE //
+    //////////////////
+
+    /// @notice Buys back shares collected as protocol fee at a discounted shares price, using MLN
+    /// @param _sharesAmount The amount of shares to buy back
+    /// TODO: allow a manager also?
+    function buyBackProtocolFeeShares(uint256 _sharesAmount) external onlyOwner {
+        address denominationAssetCopy = denominationAsset;
+        address vaultProxyCopy = vaultProxy;
+
+        uint256 gav = calcGav(true);
+        uint256 grossShareValue = __calcGrossShareValue(
+            gav,
+            ERC20(vaultProxyCopy).totalSupply(),
+            10**uint256(ERC20(denominationAssetCopy).decimals())
+        );
+
+        uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(
+            SHARES_UNIT
+        );
+
+        uint256 buybackValueInMln = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+            denominationAssetCopy,
+            buybackValueInDenominationAsset,
+            getMlnToken()
+        );
+
+        IVault(vaultProxyCopy).buyBackProtocolFeeShares(_sharesAmount, buybackValueInMln, gav);
     }
 
     ////////////////////////////////
@@ -442,6 +476,9 @@ contract ComptrollerLib is IComptroller {
         // Deactivate extensions as-necessary
         IExtension(FEE_MANAGER).deactivateForFund();
 
+        // TODO: use try/catch pattern?
+        IVault(vaultProxy).payProtocolFee();
+
         __selfDestruct();
     }
 
@@ -606,17 +643,19 @@ contract ComptrollerLib is IComptroller {
 
         uint256 gav = calcGav(true);
 
+        // Gives Extensions a chance to run logic prior to the minting of bought shares
+        __preBuySharesHook(msg.sender, _investmentAmount, gav);
+
+        // Pay the protocol fee after running other fees, but before minting new shares
+        IVault(vaultProxyCopy).payProtocolFee();
+
+        // Calculate the amount of shares to issue with the investment amount
         address denominationAssetCopy = denominationAsset;
         uint256 sharePrice = __calcGrossShareValue(
             gav,
             ERC20(vaultProxyCopy).totalSupply(),
             10**uint256(ERC20(denominationAssetCopy).decimals())
         );
-
-        // Gives Extensions a chance to run logic prior to the minting of bought shares
-        __preBuySharesHook(msg.sender, _investmentAmount, gav);
-
-        // Calculate the amount of shares to issue with the investment amount
         uint256 sharesIssued = _investmentAmount.mul(SHARES_UNIT).div(sharePrice);
 
         // Mint shares to the buyer
@@ -981,13 +1020,16 @@ contract ComptrollerLib is IComptroller {
         }
         require(sharesToRedeem_ > 0, "__redeemSharesSetup: No shares to redeem");
 
-        // When a fund is paused, settling fees will be skipped
+        // When a fund is paused, settling fund-level fees will be skipped
         if (!__fundIsPaused()) {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
             // then those fee shares will be transferred from the user's balance rather
             // than reallocated from the sharesToRedeem_.
             __preRedeemSharesHook(_redeemer, sharesToRedeem_, _gavIfCalculated);
         }
+
+        // Pay the protocol fee after running other fees, but before burning shares
+        vaultProxyContract.payProtocolFee();
 
         uint256 postHookSharesBalance = sharesContract.balanceOf(_redeemer);
         if (_sharesQuantityInput == type(uint256).max) {
@@ -1039,17 +1081,6 @@ contract ComptrollerLib is IComptroller {
     /// @return denominationAsset_ The `denominationAsset` variable value
     function getDenominationAsset() external view override returns (address denominationAsset_) {
         return denominationAsset;
-    }
-
-    /// @notice Gets the timestamp of the last time shares were bought for a given account
-    /// @param _who The account for which to get the timestamp
-    /// @return lastSharesBoughtTimestamp_ The timestamp of the last shares bought
-    function getLastSharesBoughtTimestampForAccount(address _who)
-        public
-        view
-        returns (uint256 lastSharesBoughtTimestamp_)
-    {
-        return acctToLastSharesBoughtTimestamp[_who];
     }
 
     /// @notice Gets the routes for the various contracts used by all funds
@@ -1104,5 +1135,24 @@ contract ComptrollerLib is IComptroller {
     /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() external view override returns (address vaultProxy_) {
         return vaultProxy;
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets the timestamp of the last time shares were bought for a given account
+    /// @param _who The account for which to get the timestamp
+    /// @return lastSharesBoughtTimestamp_ The timestamp of the last shares bought
+    function getLastSharesBoughtTimestampForAccount(address _who)
+        public
+        view
+        returns (uint256 lastSharesBoughtTimestamp_)
+    {
+        return acctToLastSharesBoughtTimestamp[_who];
+    }
+
+    /// @notice Gets the `MLN_TOKEN` variable
+    /// @return mlnToken_ The `MLN_TOKEN` variable value
+    function getMlnToken() public view returns (address mlnToken_) {
+        return MLN_TOKEN;
     }
 }

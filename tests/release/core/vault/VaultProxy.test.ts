@@ -1,14 +1,25 @@
 import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import {
+  ComptrollerLib,
+  FundDeployer,
+  calcProtocolFeeSharesDue,
+  StandardToken,
+  VaultLib,
+  ProtocolFeeTracker,
+  ProtocolFeeReserveLib,
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
+  assertNoEvent,
   createNewFund,
   createVaultProxy,
   deployProtocolFixture,
+  getAssetUnit,
   ProtocolDeployment,
+  transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -100,7 +111,14 @@ describe('setAccessorForFundReconfiguration', () => {
 
     const deployVaultProxyReceipt = await mockFundDeployer.forward(
       dispatcher.deployVaultProxy,
-      await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth),
+      await VaultLib.deploy(
+        fork.deployer,
+        fork.deployment.externalPositionManager,
+        fork.deployment.protocolFeeReserveProxy,
+        fork.deployment.protocolFeeTracker,
+        fork.config.primitives.mln,
+        fork.config.weth,
+      ),
       fundOwner,
       mockAccessor,
       'Test',
@@ -138,7 +156,14 @@ describe('setAccessorForFundReconfiguration', () => {
 describe('allowUntrackingAssets', () => {
   it('can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -155,7 +180,14 @@ describe('allowUntrackingAssets', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const assetsToAllowUntracking = [randomAddress(), randomAddress()];
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -187,6 +219,186 @@ describe('allowUntrackingAssets', () => {
         asset: assetsToAllowUntracking[i],
       });
     }
+  });
+});
+
+describe('buyBackProtocolFeeShares', () => {
+  let protocolFeeReserveProxy: ProtocolFeeReserveLib;
+  let vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
+  let mln: StandardToken;
+
+  beforeEach(async () => {
+    protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
+    [fundOwner, fundAccessor] = fork.accounts;
+    mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
+
+    vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+
+    // Mint shares to the ProtocolFeeRecipient to buy back
+    await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
+
+    // Seed the fund with MLN so it can buy back shares
+    const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
+    await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
+  });
+
+  it('cannot be called by the fundOwner', async () => {
+    await expect(vaultProxy.connect(fundOwner).buyBackProtocolFeeShares(1, 1, 1)).rejects.toBeRevertedWith(
+      'Only the designated accessor can make this call',
+    );
+  });
+
+  it('does not attempt to burn shares or MLN if mlnAmountToBurn is 0', async () => {
+    const preTxSharesSupply = await vaultProxy.totalSupply();
+    const preTxMlnSupply = await mln.totalSupply();
+
+    // _mlnValue will round down to 0
+    const receipt = await vaultProxy.connect(fundAccessor).buyBackProtocolFeeShares(1, 1, 1);
+
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply);
+    expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply);
+
+    assertNoEvent(receipt, 'ProtocolFeeSharesBoughtBack');
+  });
+
+  it('happy path', async () => {
+    const preTxMlnSupply = await mln.totalSupply();
+    const preTxSharesSupply = await vaultProxy.totalSupply();
+    const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
+    const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);
+
+    const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
+    const buybackMlnValue = preTxVaultMlnBalance.div(4);
+    const gav = 123;
+    expect(sharesToBuyBack).toBeGtBigNumber(0);
+    expect(buybackMlnValue).toBeGtBigNumber(0);
+
+    const receipt = await vaultProxy
+      .connect(fundAccessor)
+      .buyBackProtocolFeeShares(sharesToBuyBack, buybackMlnValue, gav);
+
+    // Assert ProtocolFeeRecipient was called correctly
+    expect(protocolFeeReserveProxy.buyBackSharesViaTrustedVaultProxy).toHaveBeenCalledOnContractWith(
+      sharesToBuyBack,
+      buybackMlnValue,
+      gav,
+    );
+
+    // TODO: move to exported constant?
+    const expectedMlnBurned = buybackMlnValue.div(2);
+    expect(expectedMlnBurned).toBeGtBigNumber(0);
+
+    // Assert shares were correctly burned
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply.sub(sharesToBuyBack));
+    expect(await vaultProxy.balanceOf(protocolFeeReserveProxy)).toEqBigNumber(
+      preTxProtocolFeeRecipientSharesBalance.sub(sharesToBuyBack),
+    );
+
+    // Assert mln was correctly burned
+    expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply.sub(expectedMlnBurned));
+    expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
+
+    assertEvent(receipt, 'ProtocolFeeSharesBoughtBack', {
+      sharesAmount: sharesToBuyBack,
+      mlnValue: buybackMlnValue,
+      mlnBurned: expectedMlnBurned,
+    });
+  });
+});
+
+describe('payProtocolFee', () => {
+  let protocolFeeTracker: ProtocolFeeTracker;
+  let vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
+
+  beforeEach(async () => {
+    let fundDeployerOwner: SignerWithAddress;
+    [fundOwner, fundAccessor, fundDeployerOwner] = fork.accounts;
+
+    // Deploy a new ProtocolFeeTracker with mockFundDeployer to easily initialize the vaultProxy and turn on the fee
+    const mockFundDeployer = await FundDeployer.mock(fork.deployer);
+    await mockFundDeployer.getOwner.returns(fundDeployerOwner);
+    protocolFeeTracker = await ProtocolFeeTracker.deploy(fork.deployer, mockFundDeployer);
+    await protocolFeeTracker.connect(fundDeployerOwner).setFeeBpsDefault(30);
+
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
+
+    vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+
+    // Initialize protocol fee tracking for the vault
+    await mockFundDeployer.forward(protocolFeeTracker.initializeForVault, vaultProxy);
+  });
+
+  it('cannot be called by the fundOwner', async () => {
+    await expect(vaultProxy.connect(fundOwner).payProtocolFee()).rejects.toBeRevertedWith(
+      'Only the designated accessor can make this call',
+    );
+  });
+
+  it('does not attempt to mint shares if no shares are due', async () => {
+    // No shares will be due while there are 0 shares
+    const receipt = await vaultProxy.connect(fundAccessor).payProtocolFee();
+
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(0);
+
+    assertNoEvent(receipt, 'ProtocolFeePaidInShares');
+  });
+
+  it('correctly calls the ProtocolFeeTracker, mints shares, and emits the correct event', async () => {
+    // Mint shares so that a protocol fee will be due
+    const initialSharesSupply = utils.parseEther('1');
+    await vaultProxy.connect(fundAccessor).mintShares(vaultProxy, initialSharesSupply);
+
+    // Warp time so that a protocol fee will be due
+    await provider.send('evm_increaseTime', [3600]);
+
+    // Get info needed to calculate the correct shares due after the tx
+    const preTxLastPaidTimestamp = await protocolFeeTracker.getLastPaidForVault(vaultProxy);
+    const preTxSharesSupply = await vaultProxy.totalSupply();
+
+    const receipt = await vaultProxy.connect(fundAccessor).payProtocolFee();
+
+    const secondsSinceLastPaid = BigNumber.from(await transactionTimestamp(receipt)).sub(preTxLastPaidTimestamp);
+    const expectedProtocolFee = await calcProtocolFeeSharesDue({
+      protocolFeeTracker,
+      vaultProxyAddress: vaultProxy,
+      sharesSupply: preTxSharesSupply,
+      secondsSinceLastPaid,
+    });
+    expect(expectedProtocolFee).toBeGtBigNumber(0);
+
+    expect(await vaultProxy.totalSupply()).toEqBigNumber(initialSharesSupply.add(expectedProtocolFee));
+
+    assertEvent(receipt, 'ProtocolFeePaidInShares', {
+      sharesAmount: expectedProtocolFee,
+    });
   });
 });
 
@@ -399,7 +611,14 @@ describe('ownership', () => {
 describe('Comptroller calls to vault actions', () => {
   it('addPersistentlyTrackedAsset: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -415,7 +634,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('burnShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -431,7 +657,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('mintShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -447,7 +680,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('receiveValidatedVaultAction: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -463,7 +703,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('removeTrackedAsset: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -479,7 +726,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('transferShares: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,
@@ -495,7 +749,14 @@ describe('Comptroller calls to vault actions', () => {
 
   it('withdrawAssetTo: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(fork.deployer, fork.deployment.externalPositionManager, fork.config.weth);
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
 
     const vaultProxy = await createVaultProxy({
       signer: fork.deployer,

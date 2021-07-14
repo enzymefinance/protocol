@@ -12,9 +12,12 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
+import "../../../infrastructure/protocol-fees/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
@@ -40,6 +43,9 @@ contract VaultLib is VaultLibBase2, IVault {
     uint256 private constant TRACKED_ASSETS_LIMIT = 20;
 
     address private immutable EXTERNAL_POSITION_MANAGER;
+    address private immutable MLN_TOKEN;
+    address private immutable PROTOCOL_FEE_RESERVE;
+    address private immutable PROTOCOL_FEE_TRACKER;
     address private immutable WETH_TOKEN;
 
     modifier notShares(address _asset) {
@@ -57,9 +63,18 @@ contract VaultLib is VaultLibBase2, IVault {
         _;
     }
 
-    constructor(address _externalPositionManager, address _weth) public {
+    constructor(
+        address _externalPositionManager,
+        address _protocolFeeReserve,
+        address _protocolFeeTracker,
+        address _mlnToken,
+        address _wethToken
+    ) public {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
-        WETH_TOKEN = _weth;
+        MLN_TOKEN = _mlnToken;
+        PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
+        PROTOCOL_FEE_TRACKER = _protocolFeeTracker;
+        WETH_TOKEN = _wethToken;
     }
 
     /// @dev If a VaultProxy receives ETH, immediately wrap into WETH.
@@ -192,6 +207,33 @@ contract VaultLib is VaultLibBase2, IVault {
         __burn(_target, _amount);
     }
 
+    /// @notice Buys back shares collected as protocol fee at a discounted shares price, using MLN
+    /// @param _sharesAmount The amount of shares to buy back
+    /// @param _mlnValue The MLN-denominated market value of _sharesAmount
+    /// @param _gav The total fund GAV
+    /// @dev Since the vault controls both the MLN to burn and the admin function to burn any user's
+    /// fund shares, there is no need to transfer assets back-and-forth with the ProtocolFeeReserve.
+    /// We only need to know the correct discounted amount of MLN to burn.
+    function buyBackProtocolFeeShares(
+        uint256 _sharesAmount,
+        uint256 _mlnValue,
+        uint256 _gav
+    ) external override onlyAccessor {
+        uint256 mlnAmountToBurn = IProtocolFeeReserve1(getProtocolFeeReserve())
+            .buyBackSharesViaTrustedVaultProxy(_sharesAmount, _mlnValue, _gav);
+
+        if (mlnAmountToBurn == 0) {
+            return;
+        }
+
+        // Burn shares and MLN amounts
+        // If shares or MLN balance is insufficient, will revert
+        __burn(getProtocolFeeReserve(), _sharesAmount);
+        ERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
+
+        emit ProtocolFeeSharesBoughtBack(_sharesAmount, _mlnValue, mlnAmountToBurn);
+    }
+
     /// @notice Makes an arbitrary call with this contract as the sender
     /// @param _contract The contract to call
     /// @param _callData The call data for the call
@@ -209,6 +251,19 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @param _amount The amount of shares to mint
     function mintShares(address _target, uint256 _amount) external override onlyAccessor {
         __mint(_target, _amount);
+    }
+
+    /// @notice Pays the due protocol fee by minting shares to the ProtocolFeeReserve
+    function payProtocolFee() external override onlyAccessor {
+        uint256 sharesDue = IProtocolFeeTracker(getProtocolFeeTracker()).payFee();
+
+        if (sharesDue == 0) {
+            return;
+        }
+
+        __mint(getProtocolFeeReserve(), sharesDue);
+
+        emit ProtocolFeePaidInShares(sharesDue);
     }
 
     /// @notice Removes a tracked asset
@@ -620,6 +675,24 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
     function getExternalPositionManager() public view returns (address externalPositionManager_) {
         return EXTERNAL_POSITION_MANAGER;
+    }
+
+    /// @notice Gets the `MLN_TOKEN` variable
+    /// @return mlnToken_ The `MLN_TOKEN` variable value
+    function getMlnToken() public view returns (address mlnToken_) {
+        return MLN_TOKEN;
+    }
+
+    /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable
+    /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
+    function getProtocolFeeReserve() public view returns (address protocolFeeReserve_) {
+        return PROTOCOL_FEE_RESERVE;
+    }
+
+    /// @notice Gets the `PROTOCOL_FEE_TRACKER` variable
+    /// @return protocolFeeTracker_ The `PROTOCOL_FEE_TRACKER` variable value
+    function getProtocolFeeTracker() public view returns (address protocolFeeTracker_) {
+        return PROTOCOL_FEE_TRACKER;
     }
 
     /// @notice Checks whether an asset is persistently tracked (i.e., it cannot be untracked)

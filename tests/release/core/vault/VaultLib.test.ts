@@ -4,6 +4,9 @@ describe('constructor', () => {
   it('sets initial state for library', async () => {
     const vaultLib = fork.deployment.vaultLib;
 
+    expect(await vaultLib.getMlnToken()).toMatchAddress(fork.config.primitives.mln);
+    expect(await vaultLib.getProtocolFeeReserve()).toMatchAddress(fork.deployment.protocolFeeReserveProxy);
+    expect(await vaultLib.getProtocolFeeTracker()).toMatchAddress(fork.deployment.protocolFeeTracker);
     expect(await vaultLib.getWethToken()).toMatchAddress(fork.config.weth);
 
     // The following vars should all be default (i.e., empty) values

@@ -1,5 +1,12 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { ComptrollerLib, FundDeployer, ReleaseStatusTypes, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import {
+  ComptrollerLib,
+  FundDeployer,
+  ProtocolFeeTracker,
+  ReleaseStatusTypes,
+  StandardToken,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
@@ -74,7 +81,7 @@ describe('unhappy paths', () => {
 
 describe('happy paths', () => {
   describe('No extension config', () => {
-    let fundDeployer: FundDeployer;
+    let fundDeployer: FundDeployer, protocolFeeTracker: ProtocolFeeTracker;
     let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
     let fundName: string, fundOwner: AddressLike, denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
 
@@ -83,6 +90,7 @@ describe('happy paths', () => {
 
       const [signer] = fork.accounts;
       fundDeployer = fork.deployment.fundDeployer;
+      protocolFeeTracker = fork.deployment.protocolFeeTracker;
 
       fundOwner = randomAddress();
       fundName = 'My Fund';
@@ -113,6 +121,10 @@ describe('happy paths', () => {
 
     it('correctly calls the lifecycle activate() function', async () => {
       expect(comptrollerProxy.activate).toHaveBeenCalledOnContractWith(false);
+    });
+
+    it('correctly calls the ProtocolFeeTracker to initialize the protocol fee', async () => {
+      expect(protocolFeeTracker.initializeForVault).toHaveBeenCalledOnContractWith(vaultProxy);
     });
 
     it('sets the correct ComptrollerProxy state values', async () => {

@@ -41,6 +41,12 @@ interface IVault is IMigratableVault {
 
     function burnShares(address, uint256) external;
 
+    function buyBackProtocolFeeShares(
+        uint256,
+        uint256,
+        uint256
+    ) external;
+
     function callOnContract(address, bytes calldata) external;
 
     function getAccessor() external view returns (address);
@@ -58,6 +64,8 @@ interface IVault is IMigratableVault {
     function isTrackedAsset(address) external view returns (bool);
 
     function mintShares(address, uint256) external;
+
+    function payProtocolFee() external;
 
     function receiveValidatedVaultAction(VaultAction, bytes calldata) external;
 

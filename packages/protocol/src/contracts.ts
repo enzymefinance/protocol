@@ -18,6 +18,9 @@ export * from './codegen/VaultLib';
 export * from './codegen/AssetFinalityResolver';
 export * from './codegen/GlobalConfigLib';
 export * from './codegen/GlobalConfigProxy';
+export * from './codegen/ProtocolFeeReserveLib';
+export * from './codegen/ProtocolFeeReserveProxy';
+export * from './codegen/ProtocolFeeTracker';
 export * from './codegen/ValueInterpreter';
 
 // Extensions

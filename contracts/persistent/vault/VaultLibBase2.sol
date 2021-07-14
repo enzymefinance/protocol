@@ -32,6 +32,10 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event PersistentlyTrackedAssetRemoved(address asset);
 
+    event ProtocolFeePaidInShares(uint256 sharesAmount);
+
+    event ProtocolFeeSharesBoughtBack(uint256 sharesAmount, uint256 mlnValue, uint256 mlnBurned);
+
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
     address internal nominatedOwner;
