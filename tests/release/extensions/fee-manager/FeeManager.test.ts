@@ -119,12 +119,12 @@ describe('activateForFund', () => {
 });
 
 describe('deactivateForFund', () => {
-  it('settles Continuous fees, pays out all shares outstanding, and deletes storage for fund', async () => {
+  it('pays out all shares outstanding', async () => {
     const {
       accounts: [buyer],
       deployer,
       deployment: { dispatcher, feeManager },
-      fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates },
+      fees: { mockContinuousFeeSettleOnly },
       fundOwner,
       denominationAsset,
       createFund,
@@ -141,18 +141,22 @@ describe('deactivateForFund', () => {
       seedBuyer: true,
     });
 
-    // All fee settlement amounts are the same
+    // Mint shares for a fee that are held as shares outstanding
     const feeAmount = utils.parseEther('0.5');
-
-    // Fee 1 mints shares outstanding with no payout ever
     await mockContinuousFeeSettleOnly.settle.returns(
       FeeSettlementType.MintSharesOutstanding,
       constants.AddressZero,
       feeAmount,
     );
-
-    // Fee 2 mints shares directly to manager
-    await mockContinuousFeeWithGavAndUpdates.settle.returns(FeeSettlementType.Mint, constants.AddressZero, feeAmount);
+    await callOnExtension({
+      signer: fundOwner,
+      comptrollerProxy,
+      extension: feeManager,
+      actionId: FeeManagerActionId.InvokeContinuousHook,
+    });
+    expect(
+      await feeManager.getFeeSharesOutstandingForFund(comptrollerProxy, mockContinuousFeeSettleOnly),
+    ).toEqBigNumber(feeAmount);
 
     // Setup a new mock release to migrate the fund
     const mockNextFundDeployer = await IMigrationHookHandler.mock(deployer);
@@ -173,7 +177,6 @@ describe('deactivateForFund', () => {
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    const preSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
 
     // Migrate the vault
     const receipt = await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
@@ -191,9 +194,9 @@ describe('deactivateForFund', () => {
     const postSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
 
     // Fees should be settled and payout of shares outstanding forced
-    const expectedPayoutAmount = BigNumber.from(feeAmount).mul(2);
+    const expectedPayoutAmount = BigNumber.from(feeAmount);
     expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall.add(expectedPayoutAmount));
-    expect(postSharesOutstandingCall).toEqBigNumber(preSharesOutstandingCall);
+    expect(postSharesOutstandingCall).toEqBigNumber(0);
   });
 });
 

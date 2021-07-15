@@ -106,12 +106,7 @@ contract FeeManager is
     }
 
     /// @notice Deactivate fees for a fund
-    /// @dev msg.sender is validated during __invokeHook()
     function deactivateForFund() external override {
-        // Settle continuous fees one last time, but without calling Fee.update()
-        __invokeHook(msg.sender, IFeeManager.FeeHook.Continuous, "", 0, false);
-
-        // Force payout of remaining shares outstanding
         __forcePayoutAllSharesOutstanding(msg.sender);
     }
 
