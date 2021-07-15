@@ -62,5 +62,7 @@ interface IComptroller {
         uint256
     ) external;
 
+    function preTransferSharesHookFreelyTransferable(address) external view;
+
     function setVaultProxy(address) external;
 }

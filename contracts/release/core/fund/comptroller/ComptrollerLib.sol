@@ -1098,7 +1098,7 @@ contract ComptrollerLib is IComptroller {
 
     // TRANSFER SHARES
 
-    /// @notice Runs logic prior to transferring shares between two parties
+    /// @notice Runs logic prior to transferring shares that are not freely transferable
     /// @param _sender The sender of the shares
     /// @param _recipient The recipient of the shares
     /// @param _amount The amount of shares
@@ -1116,6 +1116,13 @@ contract ComptrollerLib is IComptroller {
             IPolicyManager.PolicyHook.PreTransferShares,
             abi.encode(_sender, _recipient, _amount)
         );
+    }
+
+    /// @notice Runs logic prior to transferring shares that are freely transferable
+    /// @param _sender The sender of the shares
+    /// @dev No need to validate caller, as policies are not run
+    function preTransferSharesHookFreelyTransferable(address _sender) external view override {
+        __assertSharesActionNotTimelocked(vaultProxy, _sender);
     }
 
     ///////////////////

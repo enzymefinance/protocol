@@ -99,6 +99,19 @@ contract VaultLib is VaultLibBase2, IVault {
         return IExternalPositionManager(getExternalPositionManager()).getLibForType(_typeId);
     }
 
+    /// @notice Sets shares as (permanently) freely transferable
+    /// @dev Once set, this can never be allowed to be unset, as it provides a critical
+    /// transferability guarantee to liquidity pools and other smart contract holders
+    /// that rely on transfers to function properly. Enabling this option will skip all
+    /// policies run upon transferring shares, but will still respect the shares action timelock.
+    function setFreelyTransferableShares() external onlyOwner {
+        require(!sharesAreFreelyTransferable(), "setFreelyTransferableShares: Already set");
+
+        freelyTransferableShares = true;
+
+        emit FreelyTransferableSharesSet();
+    }
+
     ////////////////////////
     // PERMISSIONED ROLES //
     ////////////////////////
@@ -607,7 +620,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @dev Standard implementation of ERC20's transfer().
     /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
     function transfer(address _recipient, uint256 _amount) public override returns (bool) {
-        IComptroller(accessor).preTransferSharesHook(msg.sender, _recipient, _amount);
+        __invokePreTransferSharesHook(msg.sender, _recipient, _amount);
 
         return super.transfer(_recipient, _amount);
     }
@@ -619,9 +632,22 @@ contract VaultLib is VaultLibBase2, IVault {
         address _recipient,
         uint256 _amount
     ) public override returns (bool) {
-        IComptroller(accessor).preTransferSharesHook(_sender, _recipient, _amount);
+        __invokePreTransferSharesHook(_sender, _recipient, _amount);
 
         return super.transferFrom(_sender, _recipient, _amount);
+    }
+
+    /// @dev Helper to call the relevant preTransferShares hook
+    function __invokePreTransferSharesHook(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) private {
+        if (sharesAreFreelyTransferable()) {
+            IComptroller(accessor).preTransferSharesHookFreelyTransferable(_sender);
+        } else {
+            IComptroller(accessor).preTransferSharesHook(_sender, _recipient, _amount);
+        }
     }
 
     ///////////////////
@@ -749,5 +775,16 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return isTrackedAsset_ True if the address is a tracked asset
     function isTrackedAsset(address _asset) public view override returns (bool isTrackedAsset_) {
         return assetToIsTracked[_asset];
+    }
+
+    /// @notice Checks whether shares are (permanently) freely transferable
+    /// @return sharesAreFreelyTransferable_ True if shares are (permanently) freely transferable
+    function sharesAreFreelyTransferable()
+        public
+        view
+        override
+        returns (bool sharesAreFreelyTransferable_)
+    {
+        return freelyTransferableShares;
     }
 }

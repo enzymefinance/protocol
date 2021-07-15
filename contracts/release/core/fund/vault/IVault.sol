@@ -12,10 +12,11 @@
 pragma solidity 0.6.12;
 
 import "../../../../persistent/utils/IMigratableVault.sol";
+import "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
 
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IVault is IMigratableVault {
+interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
     enum VaultAction {
         None,
         // Shares management

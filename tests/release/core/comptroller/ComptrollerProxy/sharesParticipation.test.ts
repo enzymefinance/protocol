@@ -1,8 +1,9 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  calcProtocolFeeSharesDue,
   ComptrollerLib,
+  calcProtocolFeeSharesDue,
+  encodeArgs,
   FeeHook,
   feeManagerConfigArgs,
   FundDeployer,
@@ -33,7 +34,7 @@ import {
   redeemSharesInKind,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { BigNumber, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -1164,6 +1165,102 @@ describe('redeem', () => {
     });
 
     it.todo('handles a payProtocolFee failure');
+  });
+});
+
+describe('transfer shares', () => {
+  const transferee = randomAddress();
+  const transferAmount = 123;
+  let fundOwner: SignerWithAddress, investor: SignerWithAddress;
+  let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+  let sharesActionTimelock: BigNumberish;
+
+  beforeEach(async () => {
+    [fundOwner, investor] = fork.accounts;
+
+    // Spin up and invest in a fund to create shares
+    sharesActionTimelock = 1000;
+    const newFundRes = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+      fundDeployer: fork.deployment.fundDeployer,
+      sharesActionTimelock,
+      investment: {
+        buyer: investor,
+        seedBuyer: true,
+      },
+    });
+    comptrollerProxy = newFundRes.comptrollerProxy;
+    vaultProxy = newFundRes.vaultProxy;
+
+    // Reset the provider history to correctly assert expected calls
+    provider.history.clear();
+  });
+
+  describe('preTransferSharesHook', () => {
+    it('cannot be directly called by the owner', async () => {
+      // Warp ahead of the sharesActionTimelock
+      await provider.send('evm_increaseTime', [sharesActionTimelock]);
+
+      await expect(
+        comptrollerProxy.connect(fundOwner).preTransferSharesHook(investor, transferee, transferAmount),
+      ).rejects.toBeRevertedWith('Only VaultProxy callable');
+    });
+
+    it('respects the sharesActionTimelock', async () => {
+      await expect(vaultProxy.connect(investor).transfer(transferee, transferAmount)).rejects.toBeRevertedWith(
+        'Shares action timelocked',
+      );
+    });
+
+    it('happy path', async () => {
+      // Warp ahead of the sharesActionTimelock
+      await provider.send('evm_increaseTime', [sharesActionTimelock]);
+
+      // Execute the transfer
+      await vaultProxy.connect(investor).transfer(transferee, transferAmount);
+
+      // Assert the target function was correctly called
+      expect(comptrollerProxy.preTransferSharesHook).toHaveBeenCalledOnContractWith(
+        investor,
+        transferee,
+        transferAmount,
+      );
+
+      // Assert the PolicyManager was correctly called
+      expect(fork.deployment.policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.PreTransferShares,
+        encodeArgs(['address', 'address', 'uint256'], [investor, transferee, transferAmount]),
+      );
+    });
+  });
+
+  describe('preTransferSharesHookFreelyTransferable', () => {
+    beforeEach(async () => {
+      await vaultProxy.setFreelyTransferableShares();
+    });
+
+    it('respects the sharesActionTimelock', async () => {
+      await expect(vaultProxy.connect(investor).transfer(transferee, transferAmount)).rejects.toBeRevertedWith(
+        'Shares action timelocked',
+      );
+    });
+
+    it('happy path', async () => {
+      // Warp ahead of the sharesActionTimelock
+      await provider.send('evm_increaseTime', [sharesActionTimelock]);
+
+      // Execute the transfer
+      await vaultProxy.connect(investor).transfer(transferee, transferAmount);
+
+      // Assert the target function was correctly called
+      expect(comptrollerProxy.preTransferSharesHookFreelyTransferable).toHaveBeenCalledOnContractWith(investor);
+
+      // Assert the PolicyManager was not called
+      expect(fork.deployment.policyManager.validatePolicies).not.toHaveBeenCalledOnContract();
+    });
   });
 });
 

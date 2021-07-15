@@ -91,6 +91,44 @@ describe('init', () => {
   });
 });
 
+describe('setFreelyTransferableShares', () => {
+  let vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
+
+  beforeEach(async () => {
+    [fundOwner, fundAccessor] = fork.accounts;
+
+    vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib: fork.deployment.vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+  });
+
+  it('cannot be called by the accessor', async () => {
+    await expect(vaultProxy.connect(fundAccessor).setFreelyTransferableShares()).rejects.toBeRevertedWith(
+      'Only the owner can call this function',
+    );
+  });
+
+  it('does not allow an already-set freelyTransferableShares', async () => {
+    await vaultProxy.connect(fundOwner).setFreelyTransferableShares();
+
+    await expect(vaultProxy.connect(fundOwner).setFreelyTransferableShares()).rejects.toBeRevertedWith('Already set');
+  });
+
+  it('happy path', async () => {
+    expect(await vaultProxy.sharesAreFreelyTransferable()).toBe(false);
+
+    const receipt = await vaultProxy.connect(fundOwner).setFreelyTransferableShares();
+
+    expect(await vaultProxy.sharesAreFreelyTransferable()).toBe(true);
+
+    assertEvent(receipt, vaultProxy.abi.getEvent('FreelyTransferableSharesSet'));
+  });
+});
+
 describe('setAccessorForFundReconfiguration', () => {
   let vaultProxy: VaultLib;
   let mockFundDeployer: MockContract<FundDeployer>;

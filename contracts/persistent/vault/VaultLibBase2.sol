@@ -28,6 +28,8 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event ExternalPositionRemoved(address indexed externalPosition);
 
+    event FreelyTransferableSharesSet();
+
     event NominatedOwnerRemoved(address indexed nominatedOwner);
 
     event NominatedOwnerSet(address indexed nominatedOwner);
@@ -42,6 +44,10 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
 
+    // In order to make transferability guarantees to liquidity pools and other smart contracts
+    // that hold/treat shares as generic ERC20 tokens, a permanent guarantee on transferability
+    // is required. Once set as `true`, freelyTransferableShares should never be unset.
+    bool internal freelyTransferableShares;
     address internal nominatedOwner;
     address[] internal activeExternalPositions;
     mapping(address => bool) internal accountToIsAssetManager;
