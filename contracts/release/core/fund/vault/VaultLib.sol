@@ -37,10 +37,11 @@ contract VaultLib is VaultLibBase2, IVault {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
-    // Before updating TRACKED_ASSETS_LIMIT in the future, it is important to consider:
-    // 1. The highest tracked assets limit ever allowed in the protocol
+    // "Positions" are "tracked assets" + active "external positions"
+    // Before updating POSITIONS_LIMIT in the future, it is important to consider:
+    // 1. The highest positions limit ever allowed in the protocol
     // 2. That the next value will need to be respected by all future releases
-    uint256 private constant TRACKED_ASSETS_LIMIT = 20;
+    uint256 private constant POSITIONS_LIMIT = 20;
 
     address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable MLN_TOKEN;
@@ -472,14 +473,15 @@ contract VaultLib is VaultLibBase2, IVault {
     ///////////////////
 
     /// @dev Helper to track a new active external position
-    // TODO: Decide whether or not it makes sense to impose a external position limit
     function __addExternalPosition(address _externalPosition) private {
         if (!isActiveExternalPosition(_externalPosition)) {
+            __validatePositionsLimit();
+
             externalPositionToIsActive[_externalPosition] = true;
             activeExternalPositions.push(_externalPosition);
-        }
 
-        emit ExternalPositionAdded(_externalPosition);
+            emit ExternalPositionAdded(_externalPosition);
+        }
     }
 
     /// @dev Helper to add and persistently track an asset
@@ -491,10 +493,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @dev Helper to add a tracked asset
     function __addTrackedAsset(address _asset) private notShares(_asset) {
         if (!isTrackedAsset(_asset)) {
-            require(
-                trackedAssets.length < TRACKED_ASSETS_LIMIT,
-                "__addTrackedAsset: Limit exceeded"
-            );
+            __validatePositionsLimit();
 
             assetToIsTracked[_asset] = true;
             trackedAssets.push(_asset);
@@ -589,6 +588,14 @@ contract VaultLib is VaultLibBase2, IVault {
 
             emit PersistentlyTrackedAssetRemoved(_asset);
         }
+    }
+
+    /// @dev Helper to validate that the positions limit has not been reached
+    function __validatePositionsLimit() private view {
+        require(
+            trackedAssets.length + activeExternalPositions.length < POSITIONS_LIMIT,
+            "__validatePositionsLimit: Limit exceeded"
+        );
     }
 
     /// @dev Helper to withdraw an asset from the vault to a specified recipient

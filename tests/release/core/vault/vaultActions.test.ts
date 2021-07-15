@@ -15,6 +15,51 @@ beforeEach(async () => {
 });
 
 describe('AddExternalPosition', () => {
+  it('does not allow exceeding the positions limit', async () => {
+    const [fundOwner, fundAccessor] = fork.accounts;
+    const vaultLib = await VaultLib.deploy(
+      fork.deployer,
+      fork.deployment.externalPositionManager,
+      fork.deployment.protocolFeeReserveProxy,
+      fork.deployment.protocolFeeTracker,
+      fork.config.primitives.mln,
+      fork.config.weth,
+    );
+
+    const vaultProxy = await createVaultProxy({
+      signer: fork.deployer,
+      vaultLib,
+      fundOwner,
+      fundAccessor,
+    });
+
+    // Add 19 tracked assets
+    let i = 0;
+    while (i < 19) {
+      await vaultProxy.receiveValidatedVaultAction(
+        VaultAction.AddTrackedAsset,
+        encodeArgs(['address'], [randomAddress()]),
+      );
+      i++;
+    }
+    expect((await vaultProxy.getTrackedAssets()).length).toBe(19);
+
+    // Add 1 external position
+    await vaultProxy.receiveValidatedVaultAction(
+      VaultAction.AddExternalPosition,
+      encodeArgs(['address'], [randomAddress()]),
+    );
+    expect((await vaultProxy.getActiveExternalPositions()).length).toBe(1);
+
+    // Adding a new external position should fail
+    await expect(
+      vaultProxy.receiveValidatedVaultAction(
+        VaultAction.AddExternalPosition,
+        encodeArgs(['address'], [randomAddress()]),
+      ),
+    ).rejects.toBeRevertedWith('Limit exceeded');
+  });
+
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(
@@ -117,7 +162,7 @@ describe('AddTrackedAsset', () => {
     ).rejects.toBeRevertedWith('Cannot act on shares');
   });
 
-  it('does not allow exceeding the tracked assets limit', async () => {
+  it('does not allow exceeding the positions limit', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
