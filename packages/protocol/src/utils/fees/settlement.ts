@@ -25,6 +25,18 @@ export function settlePostBuySharesArgs({
   return encodeArgs(['address', 'uint256', 'uint256'], [buyer, investmentAmount, sharesBought]);
 }
 
+export function settlePreRedeemSharesArgs({
+  redeemer,
+  sharesToRedeem,
+  forSpecifiedAssets,
+}: {
+  redeemer: AddressLike;
+  sharesToRedeem: BigNumberish;
+  forSpecifiedAssets: boolean;
+}) {
+  return encodeArgs(['address', 'uint256', 'bool'], [redeemer, sharesToRedeem, forSpecifiedAssets]);
+}
+
 export const settleContinuousFeesFragment = utils.FunctionFragment.fromString('settleContinuousFees(address,bytes)');
 
 export const settleContinuousFeesSelector = sighash(settleContinuousFeesFragment);

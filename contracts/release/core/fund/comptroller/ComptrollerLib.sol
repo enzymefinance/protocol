@@ -807,6 +807,7 @@ contract ComptrollerLib is IComptroller {
             vaultProxyContract,
             msg.sender,
             _sharesQuantity,
+            true,
             gav
         );
 
@@ -895,6 +896,7 @@ contract ComptrollerLib is IComptroller {
             vaultProxyContract,
             msg.sender,
             _sharesQuantity,
+            false,
             0
         );
 
@@ -1010,12 +1012,13 @@ contract ComptrollerLib is IComptroller {
     function __preRedeemSharesHook(
         address _redeemer,
         uint256 _sharesToRedeem,
+        bool _forSpecifiedAssets,
         uint256 _gavIfCalculated
     ) private allowsPermissionedVaultAction {
         try
             IFeeManager(FEE_MANAGER).invokeHook(
                 IFeeManager.FeeHook.PreRedeemShares,
-                abi.encode(_redeemer, _sharesToRedeem),
+                abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
                 _gavIfCalculated
             )
          {} catch (bytes memory reason) {
@@ -1052,6 +1055,7 @@ contract ComptrollerLib is IComptroller {
         IVault vaultProxyContract,
         address _redeemer,
         uint256 _sharesQuantityInput,
+        bool _forSpecifiedAssets,
         uint256 _gavIfCalculated
     ) private returns (uint256 sharesToRedeem_, uint256 sharesSupply_) {
         __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
@@ -1070,7 +1074,12 @@ contract ComptrollerLib is IComptroller {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
             // then those fee shares will be transferred from the user's balance rather
             // than reallocated from the sharesToRedeem_.
-            __preRedeemSharesHook(_redeemer, sharesToRedeem_, _gavIfCalculated);
+            __preRedeemSharesHook(
+                _redeemer,
+                sharesToRedeem_,
+                _forSpecifiedAssets,
+                _gavIfCalculated
+            );
         }
 
         // Pay the protocol fee after running other fees, but before burning shares

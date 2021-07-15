@@ -13,6 +13,7 @@ import {
   ReleaseStatusTypes,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
+  settlePreRedeemSharesArgs,
   StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
@@ -667,7 +668,14 @@ describe('redeem', () => {
     it('happy path: full shares balance, with no protocol fee', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, policyManager, protocolFeeTracker, valueInterpreter },
+        deployment: {
+          feeManager,
+          fundDeployer,
+          integrationManager,
+          policyManager,
+          protocolFeeTracker,
+          valueInterpreter,
+        },
         accounts: [fundOwner, investor],
         config: {
           primitives: { dai, mln },
@@ -777,6 +785,17 @@ describe('redeem', () => {
           assetAmounts: expectedPayoutAmounts,
           gavPreRedeem: preTxGav,
         }),
+      );
+
+      // Assert the FeeManager was called with the correct data
+      expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
+        FeeHook.PreRedeemShares,
+        settlePreRedeemSharesArgs({
+          redeemer: investor,
+          sharesToRedeem: expectedSharesRedeemed,
+          forSpecifiedAssets: true,
+        }),
+        preTxGav,
       );
     });
 
@@ -937,7 +956,7 @@ describe('redeem', () => {
     it('happy path: full shares balance, no additional config, no protocol fee', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer, integrationManager, protocolFeeTracker },
+        deployment: { feeManager, fundDeployer, integrationManager, protocolFeeTracker },
         accounts: [fundOwner, investor],
         config: {
           primitives: { mln },
@@ -987,6 +1006,9 @@ describe('redeem', () => {
         assets: expectedPayoutAssets,
       });
 
+      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      expect(preTxGav).toBeGtBigNumber(0);
+
       // Redeem all of investor's shares
       const receipt = await redeemSharesInKind({
         comptrollerProxy,
@@ -1014,12 +1036,23 @@ describe('redeem', () => {
       expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [
         denominationAsset,
       ]);
+
+      // Assert the FeeManager was called with the correct data
+      expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
+        FeeHook.PreRedeemShares,
+        settlePreRedeemSharesArgs({
+          redeemer: investor,
+          sharesToRedeem: expectedSharesRedeemed,
+          forSpecifiedAssets: false,
+        }),
+        0, // Not calculated
+      );
     });
 
     it('happy path: partial shares, one additional asset, one asset to ignore, a different recipient', async () => {
       const {
         fund: { denominationAsset },
-        deployment: { fundDeployer },
+        deployment: { feeManager, fundDeployer },
         accounts: [fundManager, investor],
         config: {
           primitives: { mln },
@@ -1113,6 +1146,17 @@ describe('redeem', () => {
         preTxRecipientExpectedPayoutAssetBalance.add(expectedPayoutAmount),
       );
       expect(postTxRecipientAssetToSkipBalance).toEqBigNumber(preTxReceipientAssetToSkipBalance);
+
+      // Assert the FeeManager was called with the correct data
+      expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
+        FeeHook.PreRedeemShares,
+        settlePreRedeemSharesArgs({
+          redeemer: investor,
+          sharesToRedeem: redeemQuantity,
+          forSpecifiedAssets: false,
+        }),
+        0, // Not calculated
+      );
     });
 
     it.todo('handles a valid call: full shares balance with fee that reduces the number of sender shares');
