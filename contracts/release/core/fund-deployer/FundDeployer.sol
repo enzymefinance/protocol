@@ -27,6 +27,10 @@ import "./IFundDeployer.sol";
 /// it is also deferred to for contract access control and for allowed calls
 /// that can be made with a fund's VaultProxy as the msg.sender.
 contract FundDeployer is IFundDeployer, IMigrationHookHandler {
+    event BuySharesOnBehalfCallerDeregistered(address caller);
+
+    event BuySharesOnBehalfCallerRegistered(address caller);
+
     event ComptrollerLibSet(address comptrollerLib);
 
     event ComptrollerProxyDeployed(
@@ -102,6 +106,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     uint256 private reconfigurationTimelock;
     ReleaseStatus private releaseStatus;
 
+    mapping(address => bool) private acctToIsAllowedBuySharesOnBehalfCaller;
     mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
     mapping(address => ReconfigurationRequest) private vaultProxyToReconfigurationRequest;
 
@@ -560,9 +565,46 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         IComptroller(comptrollerProxy).destructActivated();
     }
 
-    /////////////////////////
-    // VAULT CALL REGISTRY //
-    /////////////////////////
+    //////////////
+    // REGISTRY //
+    //////////////
+
+    // BUY SHARES CALLERS
+
+    /// @notice Deregisters allowed callers of ComptrollerProxy.buySharesOnBehalf()
+    /// @param _callers The callers to deregister
+    function deregisterBuySharesOnBehalfCallers(address[] calldata _callers) external onlyOwner {
+        for (uint256 i; i < _callers.length; i++) {
+            require(
+                isAllowedBuySharesOnBehalfCaller(_callers[i]),
+                "deregisterBuySharesOnBehalfCallers: Caller not registered"
+            );
+
+            acctToIsAllowedBuySharesOnBehalfCaller[_callers[i]] = false;
+
+            emit BuySharesOnBehalfCallerDeregistered(_callers[i]);
+        }
+    }
+
+    /// @notice Registers allowed callers of ComptrollerProxy.buySharesOnBehalf()
+    /// @param _callers The allowed callers
+    /// @dev Validate that each registered caller only forwards requests to buy shares that
+    /// originate from the same _buyer passed into buySharesOnBehalf(). This is critical
+    /// to the integrity of VaultProxy.freelyTransferableShares.
+    function registerBuySharesOnBehalfCallers(address[] calldata _callers) external onlyOwner {
+        for (uint256 i; i < _callers.length; i++) {
+            require(
+                !isAllowedBuySharesOnBehalfCaller(_callers[i]),
+                "registerBuySharesOnBehalfCallers: Caller already registered"
+            );
+
+            acctToIsAllowedBuySharesOnBehalfCaller[_callers[i]] = true;
+
+            emit BuySharesOnBehalfCallerRegistered(_callers[i]);
+        }
+    }
+
+    // VAULT CALLS
 
     /// @notice De-registers allowed arbitrary contract calls that can be sent from the VaultProxy
     /// @param _contracts The contracts of the calls to de-register
@@ -712,6 +754,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         returns (bool hasReconfigurationRequest_)
     {
         return vaultProxyToReconfigurationRequest[_vaultProxy].nextComptrollerProxy != address(0);
+    }
+
+    /// @notice Checks if an account is an allowed caller of ComptrollerProxy.buySharesOnBehalf()
+    /// @param _who The account to check
+    /// @return isAllowed_ True if the account is an allowed caller
+    function isAllowedBuySharesOnBehalfCaller(address _who)
+        public
+        view
+        override
+        returns (bool isAllowed_)
+    {
+        return acctToIsAllowedBuySharesOnBehalfCaller[_who];
     }
 
     /// @notice Checks if a contract call is registered

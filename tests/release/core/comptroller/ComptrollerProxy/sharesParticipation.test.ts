@@ -1,16 +1,21 @@
 import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   calcProtocolFeeSharesDue,
+  ComptrollerLib,
   FeeHook,
   feeManagerConfigArgs,
+  FundDeployer,
   MockReentrancyToken,
   PolicyHook,
+  PolicyManager,
   ReleaseStatusTypes,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
   StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
+  VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -398,6 +403,113 @@ describe('buyShares', () => {
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
+  });
+});
+
+describe('buySharesOnBehalf', () => {
+  const investmentAmount = BigNumber.from('123');
+  const minSharesQuantity = '1';
+  let fundDeployer: FundDeployer, policyManager: PolicyManager;
+  let fundOwner: SignerWithAddress, buyer: SignerWithAddress, randomCaller: SignerWithAddress;
+  let denominationAsset: StandardToken;
+
+  beforeEach(async () => {
+    fork = await deployProtocolFixture();
+
+    [fundOwner, buyer, randomCaller] = fork.accounts;
+
+    fundDeployer = fork.deployment.fundDeployer;
+    policyManager = fork.deployment.policyManager;
+
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    await denominationAsset.transfer(randomCaller, investmentAmount);
+
+    // TODO: set protocol fee to 0 for simplicity/clarity
+  });
+
+  // Other validations and assertions are performed in buyShares() tests
+
+  describe('sharesActionTimelock', () => {
+    let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+
+    beforeEach(async () => {
+      const newFundRes = await createNewFund({
+        signer: fundOwner,
+        fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+        sharesActionTimelock: 1,
+      });
+
+      comptrollerProxy = newFundRes.comptrollerProxy;
+      vaultProxy = newFundRes.vaultProxy;
+
+      await denominationAsset.connect(randomCaller).approve(comptrollerProxy, investmentAmount);
+    });
+
+    it('cannot be called a random user', async () => {
+      await expect(
+        comptrollerProxy.connect(randomCaller).buySharesOnBehalf(buyer, investmentAmount, minSharesQuantity),
+      ).rejects.toBeRevertedWith('Unauthorized');
+    });
+
+    it('happy path', async () => {
+      // Approve the randomCaller as an allowed caller
+      await fundDeployer.registerBuySharesOnBehalfCallers([randomCaller]);
+
+      const receipt = await comptrollerProxy
+        .connect(randomCaller)
+        .buySharesOnBehalf(buyer, investmentAmount, minSharesQuantity);
+
+      const expectedGav = investmentAmount;
+      const expectedSharesIssued = investmentAmount
+        .mul(utils.parseEther('1')) // SHARES UNIT
+        .div(await getAssetUnit(denominationAsset));
+      const expectedSharesReceived = expectedSharesIssued;
+
+      // Only need to assert shares were received by the buyer, that policies were run with the correct data,
+      // and that the event has the correct data. All other assertions are the same as buyShares()
+
+      expect(await vaultProxy.balanceOf(buyer)).toEqBigNumber(expectedSharesReceived);
+
+      expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.PostBuyShares,
+        validateRulePostBuySharesArgs({
+          buyer,
+          investmentAmount,
+          sharesIssued: expectedSharesIssued,
+          fundGav: expectedGav,
+        }),
+      );
+
+      assertEvent(receipt, 'SharesBought', {
+        buyer,
+        investmentAmount,
+        sharesIssued: expectedSharesIssued,
+        sharesReceived: expectedSharesReceived,
+      });
+    });
+  });
+
+  describe('no sharesActionTimelock', () => {
+    let comptrollerProxy: ComptrollerLib;
+
+    beforeEach(async () => {
+      const newFundRes = await createNewFund({
+        signer: fundOwner,
+        fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+        sharesActionTimelock: 0, // Not necessary, but explicit
+      });
+
+      comptrollerProxy = newFundRes.comptrollerProxy;
+
+      await denominationAsset.connect(randomCaller).approve(comptrollerProxy, investmentAmount);
+    });
+
+    it('happy path: allows a random caller', async () => {
+      await comptrollerProxy.connect(randomCaller).buySharesOnBehalf(buyer, investmentAmount, minSharesQuantity);
+    });
   });
 });
 

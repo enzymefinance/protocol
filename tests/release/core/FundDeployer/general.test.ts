@@ -1,4 +1,5 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { FundDeployer, ReleaseStatusTypes, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -182,6 +183,96 @@ describe('setReleaseStatus', () => {
 
 describe('getOwner', () => {
   it.todo('write tests for special ownership conditions of this contract');
+});
+
+describe('buyShares caller registry', () => {
+  let fundDeployer: FundDeployer;
+  let randomUser: SignerWithAddress;
+
+  beforeEach(async () => {
+    [randomUser] = fork.accounts;
+    fundDeployer = fork.deployment.fundDeployer;
+  });
+
+  describe('registerBuySharesOnBehalfCallers', () => {
+    const buySharesCallersToRegister = [randomAddress(), randomAddress()];
+
+    it('does not allow a random caller', async () => {
+      await expect(
+        fundDeployer.connect(randomUser).registerBuySharesOnBehalfCallers(buySharesCallersToRegister),
+      ).rejects.toBeRevertedWith('Only the contract owner can call this function');
+    });
+
+    it('does not allow an already-registered value', async () => {
+      await fundDeployer.registerBuySharesOnBehalfCallers(buySharesCallersToRegister);
+
+      await expect(fundDeployer.registerBuySharesOnBehalfCallers(buySharesCallersToRegister)).rejects.toBeRevertedWith(
+        'Caller already registered',
+      );
+    });
+
+    it('happy path', async () => {
+      for (const caller of buySharesCallersToRegister) {
+        expect(await fundDeployer.isAllowedBuySharesOnBehalfCaller(caller)).toBe(false);
+      }
+
+      const receipt = await fundDeployer.registerBuySharesOnBehalfCallers(buySharesCallersToRegister);
+
+      for (const caller of buySharesCallersToRegister) {
+        expect(await fundDeployer.isAllowedBuySharesOnBehalfCaller(caller)).toBe(true);
+      }
+
+      const events = extractEvent(receipt, 'BuySharesOnBehalfCallerRegistered');
+      expect(events.length).toBe(buySharesCallersToRegister.length);
+      for (const i in buySharesCallersToRegister) {
+        expect(events[i].args).toMatchObject({
+          caller: buySharesCallersToRegister[i],
+        });
+      }
+    });
+  });
+
+  describe('deregisterBuySharesOnBehalfCallers', () => {
+    const buySharesCallersToDeregister = [randomAddress(), randomAddress()];
+
+    it('does not allow a random caller', async () => {
+      // Register the callers to be deregistered
+      await fundDeployer.registerBuySharesOnBehalfCallers(buySharesCallersToDeregister);
+
+      await expect(
+        fundDeployer.connect(randomUser).deregisterBuySharesOnBehalfCallers(buySharesCallersToDeregister),
+      ).rejects.toBeRevertedWith('Only the contract owner can call this function');
+    });
+
+    it('does not allow an unregistered value', async () => {
+      await expect(
+        fundDeployer.deregisterBuySharesOnBehalfCallers(buySharesCallersToDeregister),
+      ).rejects.toBeRevertedWith('Caller not registered');
+    });
+
+    it('happy path', async () => {
+      // Register the callers to be deregistered
+      await fundDeployer.registerBuySharesOnBehalfCallers(buySharesCallersToDeregister);
+
+      for (const caller of buySharesCallersToDeregister) {
+        expect(await fundDeployer.isAllowedBuySharesOnBehalfCaller(caller)).toBe(true);
+      }
+
+      const receipt = await fundDeployer.deregisterBuySharesOnBehalfCallers(buySharesCallersToDeregister);
+
+      for (const caller of buySharesCallersToDeregister) {
+        expect(await fundDeployer.isAllowedBuySharesOnBehalfCaller(caller)).toBe(false);
+      }
+
+      const events = extractEvent(receipt, 'BuySharesOnBehalfCallerDeregistered');
+      expect(events.length).toBe(buySharesCallersToDeregister.length);
+      for (const i in buySharesCallersToDeregister) {
+        expect(events[i].args).toMatchObject({
+          caller: buySharesCallersToDeregister[i],
+        });
+      }
+    });
+  });
 });
 
 describe('vault call registry', () => {

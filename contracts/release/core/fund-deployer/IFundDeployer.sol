@@ -22,6 +22,8 @@ interface IFundDeployer {
 
     function hasReconfigurationRequest(address) external view returns (bool);
 
+    function isAllowedBuySharesOnBehalfCaller(address) external view returns (bool);
+
     function isAllowedVaultCall(
         address,
         bytes4,

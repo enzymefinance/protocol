@@ -213,11 +213,11 @@ contract FundActionsWrapper {
         uint256 _minSharesQuantity
     ) private returns (uint256 sharesReceived_) {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        sharesReceived_ = comptrollerProxyContract.buyShares(
+        sharesReceived_ = comptrollerProxyContract.buySharesOnBehalf(
+            _buyer,
             _investmentAmount,
             _minSharesQuantity
         );
-        ERC20(comptrollerProxyContract.getVaultProxy()).safeTransfer(_buyer, sharesReceived_);
 
         return sharesReceived_;
     }

@@ -619,13 +619,58 @@ contract ComptrollerLib is IComptroller {
 
     // BUY SHARES
 
-    /// @notice Buys shares in the fund
+    /// @notice Buys shares on behalf of another user
+    /// @param _buyer The account on behalf of whom to buy shares
+    /// @param _investmentAmount The amount of the fund's denomination asset with which to buy shares
+    /// @param _minSharesQuantity The minimum quantity of shares to buy
+    /// @return sharesReceived_ The actual amount of shares received
+    /// @dev This function is freely callable if there is no sharesActionTimelock set, but it is
+    /// limited to a list of trusted callers otherwise, in order to prevent a griefing attack
+    /// where the caller buys shares for a _buyer, thereby resetting their lastSharesBought value.
+    function buySharesOnBehalf(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity
+    ) external returns (uint256 sharesReceived_) {
+        bool hasSharesActionTimelock = sharesActionTimelock > 0;
+
+        require(
+            !hasSharesActionTimelock ||
+                IFundDeployer(FUND_DEPLOYER).isAllowedBuySharesOnBehalfCaller(msg.sender),
+            "buySharesOnBehalf: Unauthorized"
+        );
+
+        return __buyShares(_buyer, _investmentAmount, _minSharesQuantity, hasSharesActionTimelock);
+    }
+
+    /// @notice Buys shares
     /// @param _investmentAmount The amount of the fund's denomination asset
     /// with which to buy shares
     /// @param _minSharesQuantity The minimum quantity of shares to buy
     /// @return sharesReceived_ The actual amount of shares received
     function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity)
         external
+        returns (uint256 sharesReceived_)
+    {
+        bool hasSharesActionTimelock = sharesActionTimelock > 0;
+
+        return
+            __buyShares(
+                msg.sender,
+                _investmentAmount,
+                _minSharesQuantity,
+                hasSharesActionTimelock
+            );
+    }
+
+    /// @dev Helper for buy shares logic
+    function __buyShares(
+        address _buyer,
+        uint256 _investmentAmount,
+        uint256 _minSharesQuantity,
+        bool _hasSharesActionTimelock
+    )
+        private
         onlyNotPaused
         locksReentrance
         allowsPermissionedVaultAction
@@ -633,12 +678,12 @@ contract ComptrollerLib is IComptroller {
     {
         // Enforcing a _minSharesQuantity also validates `_investmentAmount > 0`
         // and guarantees the function cannot succeed while minting 0 shares
-        require(_minSharesQuantity > 0, "buyShares: _minSharesQuantity must be >0");
+        require(_minSharesQuantity > 0, "__buyShares: _minSharesQuantity must be >0");
 
         address vaultProxyCopy = vaultProxy;
         require(
-            sharesActionTimelock == 0 || !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),
-            "buyShares: Pending migration or reconfiguration"
+            !_hasSharesActionTimelock || !__hasPendingMigrationOrReconfiguration(vaultProxyCopy),
+            "__buyShares: Pending migration or reconfiguration"
         );
 
         uint256 gav = calcGav(true);
@@ -659,8 +704,8 @@ contract ComptrollerLib is IComptroller {
         uint256 sharesIssued = _investmentAmount.mul(SHARES_UNIT).div(sharePrice);
 
         // Mint shares to the buyer
-        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(msg.sender);
-        IVault(vaultProxyCopy).mintShares(msg.sender, sharesIssued);
+        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
+        IVault(vaultProxyCopy).mintShares(_buyer, sharesIssued);
 
         // Transfer the investment asset to the fund.
         // Does not follow the checks-effects-interactions pattern, but it is preferred
@@ -672,21 +717,21 @@ contract ComptrollerLib is IComptroller {
         );
 
         // Gives Extensions a chance to run logic after shares are issued
-        __postBuySharesHook(msg.sender, _investmentAmount, sharesIssued, gav);
+        __postBuySharesHook(_buyer, _investmentAmount, sharesIssued, gav);
 
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
-        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(msg.sender).sub(prevBuyerShares);
+        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer).sub(prevBuyerShares);
         require(
             sharesReceived_ >= _minSharesQuantity,
-            "buyShares: Shares received < _minSharesQuantity"
+            "__buyShares: Shares received < _minSharesQuantity"
         );
 
-        if (sharesActionTimelock > 0) {
-            acctToLastSharesBoughtTimestamp[msg.sender] = block.timestamp;
+        if (_hasSharesActionTimelock) {
+            acctToLastSharesBoughtTimestamp[_buyer] = block.timestamp;
         }
 
-        emit SharesBought(msg.sender, _investmentAmount, sharesIssued, sharesReceived_);
+        emit SharesBought(_buyer, _investmentAmount, sharesIssued, sharesReceived_);
 
         return sharesReceived_;
     }
