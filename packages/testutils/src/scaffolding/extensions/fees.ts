@@ -38,6 +38,7 @@ export async function generateRegisteredMockFees({
   await Promise.all([
     // Continuous fee the mimics ManagementFee
     mockContinuousFeeSettleOnly.identifier.returns(`MOCK_CONTINUOUS_1`),
+    mockContinuousFeeSettleOnly.getRecipientForFund.returns(constants.AddressZero),
     mockContinuousFeeSettleOnly.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
     mockContinuousFeeSettleOnly.payout.returns(false),
     mockContinuousFeeSettleOnly.addFundSettings.returns(undefined),
@@ -51,6 +52,7 @@ export async function generateRegisteredMockFees({
     ),
     // Continuous fee the mimics PerformanceFee
     mockContinuousFeeWithGavAndUpdates.identifier.returns(`MOCK_CONTINUOUS_2`),
+    mockContinuousFeeWithGavAndUpdates.getRecipientForFund.returns(constants.AddressZero),
     mockContinuousFeeWithGavAndUpdates.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
     mockContinuousFeeWithGavAndUpdates.payout.returns(false),
     mockContinuousFeeWithGavAndUpdates.addFundSettings.returns(undefined),
@@ -64,6 +66,7 @@ export async function generateRegisteredMockFees({
     ),
     // PostBuyShares fee
     mockPostBuySharesFee.identifier.returns(`MOCK_POST_BUY_SHARES`),
+    mockPostBuySharesFee.getRecipientForFund.returns(constants.AddressZero),
     mockPostBuySharesFee.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
     mockPostBuySharesFee.payout.returns(false),
     mockPostBuySharesFee.addFundSettings.returns(undefined),

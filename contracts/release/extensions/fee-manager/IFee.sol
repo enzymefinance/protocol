@@ -37,6 +37,11 @@ interface IFee {
         external
         returns (bool isPayable_);
 
+    function getRecipientForFund(address _comptrollerProxy)
+        external
+        view
+        returns (address recipient_);
+
     function settle(
         address _comptrollerProxy,
         address _vaultProxy,

@@ -34,6 +34,19 @@ abstract contract FeeBase is IFee {
         return;
     }
 
+    /// @notice Gets the recipient of the fee for a given fund
+    /// @dev address(0) signifies the VaultProxy owner.
+    /// Returns address(0) by default, can be overridden by fee.
+    function getRecipientForFund(address)
+        external
+        view
+        virtual
+        override
+        returns (address recipient_)
+    {
+        return address(0);
+    }
+
     /// @notice Runs payout logic for a fee that utilizes shares outstanding as its settlement type
     /// @dev Returns false by default, can be overridden by fee
     function payout(address, address) external virtual override returns (bool) {

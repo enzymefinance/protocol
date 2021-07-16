@@ -1,12 +1,12 @@
-import { extractEvent } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
-  IMigrationHookHandler,
-  MockVaultLib,
-  IFee,
-  feeManagerConfigArgs,
-  FeeSettlementType,
   FeeHook,
   FeeManagerActionId,
+  feeManagerConfigArgs,
+  FeeSettlementType,
+  IFee,
+  IMigrationHookHandler,
+  MockVaultLib,
   payoutSharesOutstandingForFeesArgs,
   settlePreBuySharesArgs,
   settlePostBuySharesArgs,
@@ -14,12 +14,12 @@ import {
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
+  assertNoEvent,
   buyShares,
   callOnExtension,
   createNewFund,
-  generateRegisteredMockFees,
-  assertNoEvent,
   deployProtocolFixture,
+  generateRegisteredMockFees,
   getAssetUnit,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -182,10 +182,9 @@ describe('deactivateForFund', () => {
     const receipt = await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
     // Proper events are fired
-    const allSharesOutstandingForcePaidForFundEvent = feeManager.abi.getEvent('AllSharesOutstandingForcePaidForFund');
-
-    assertEvent(receipt, allSharesOutstandingForcePaidForFundEvent, {
+    assertEvent(receipt, feeManager.abi.getEvent('SharesOutstandingPaidForFund'), {
       comptrollerProxy: comptrollerProxy,
+      fee: mockContinuousFeeSettleOnly,
       payee: fundOwner,
       sharesDue: feeAmount,
     });
@@ -998,11 +997,11 @@ describe('__InvokeContinuousHook', () => {
 });
 
 describe('__payoutSharesOutstandingForFees', () => {
-  it('pays out shares outstanding (if payable) and emits one event per payout', async () => {
+  it('pays out shares outstanding (if payable) and emits one event per payout (multiple fee recipients)', async () => {
     const {
       accounts: [buyer],
       deployment: { feeManager },
-      fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates },
+      fees: { mockContinuousFeeSettleOnly: fee1, mockContinuousFeeWithGavAndUpdates: fee2 },
       fundOwner,
       denominationAsset,
       createFund,
@@ -1019,19 +1018,25 @@ describe('__payoutSharesOutstandingForFees', () => {
       seedBuyer: true,
     });
 
-    const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    const preSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
-
-    // Define both fees the same way, but with different fee amounts
-    const feeAmount1 = utils.parseEther('0.5');
-    const feeAmount2 = utils.parseEther('0.25');
+    // Define both fees with the same settlement, but with different fee amounts and recipients
     const settlementType = FeeSettlementType.MintSharesOutstanding;
-    await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount1);
-    await mockContinuousFeeWithGavAndUpdates.settle.returns(settlementType, constants.AddressZero, feeAmount2);
+
+    const fee1Recipient = fundOwner; // Unspecified
+    const fee1Amount = utils.parseEther('0.5');
+    await fee1.settle.returns(settlementType, constants.AddressZero, fee1Amount);
+
+    const fee2Recipient = randomAddress();
+    await fee2.getRecipientForFund.given(comptrollerProxy).returns(fee2Recipient);
+    const fee2Amount = utils.parseEther('0.25');
+    await fee2.settle.returns(settlementType, constants.AddressZero, fee2Amount);
 
     // Define param for all calls on extension
     const extension = feeManager;
-    const fees = [mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates];
+    const fees = [fee1, fee2];
+
+    // Record prior shares balances
+    const preTxFee1RecipientBalance = await vaultProxy.balanceOf(fee1Recipient);
+    const preTxFee2RecipientBalance = await vaultProxy.balanceOf(fee2Recipient);
 
     // Settle once via callOnExtension to mint shares outstanding with no payout
     await callOnExtension({
@@ -1051,12 +1056,12 @@ describe('__payoutSharesOutstandingForFees', () => {
       actionId,
       callArgs,
     });
-
-    expect(await vaultProxy.balanceOf(fundOwner)).toEqBigNumber(preFundOwnerSharesCall);
+    expect(await vaultProxy.balanceOf(fee1Recipient)).toEqBigNumber(preTxFee1RecipientBalance);
+    expect(await vaultProxy.balanceOf(fee2Recipient)).toEqBigNumber(preTxFee2RecipientBalance);
 
     // Set payout() to return true on both fees
-    await mockContinuousFeeSettleOnly.payout.returns(true);
-    await mockContinuousFeeWithGavAndUpdates.payout.returns(true);
+    await fee1.payout.returns(true);
+    await fee2.payout.returns(true);
 
     // Payout fees
     const receipt = await callOnExtension({
@@ -1066,29 +1071,29 @@ describe('__payoutSharesOutstandingForFees', () => {
       callArgs,
     });
 
-    const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
-    const postSharesOutstandingCall = await vaultProxy.balanceOf(vaultProxy);
+    // Record prior shares balances
+    const postTxFee1RecipientBalance = await vaultProxy.balanceOf(fee1Recipient);
+    const postTxFee2RecipientBalance = await vaultProxy.balanceOf(fee2Recipient);
 
     // One event should have been emitted for each fee
     const events = extractEvent(receipt, feeManager.abi.getEvent('SharesOutstandingPaidForFund'));
     expect(events.length).toBe(2);
     expect(events[0]).toMatchEventArgs({
       comptrollerProxy,
-      fee: mockContinuousFeeSettleOnly,
-      sharesDue: feeAmount1,
+      fee: fee1,
+      payee: fee1Recipient,
+      sharesDue: fee1Amount,
     });
     expect(events[1]).toMatchEventArgs({
       comptrollerProxy,
-      fee: mockContinuousFeeWithGavAndUpdates,
-      sharesDue: feeAmount2,
+      fee: fee2,
+      payee: fee2Recipient,
+      sharesDue: fee2Amount,
     });
 
-    // Both fees should be paid out to the fund owner
-    const expectedSharesOutstandingPaid = feeAmount1.add(feeAmount2);
-    expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall.add(expectedSharesOutstandingPaid));
-
-    // There should be no change in shares in the VaultProxy
-    expect(postSharesOutstandingCall).toEqBigNumber(preSharesOutstandingCall);
+    // Both fees should be paid out to the respective recipients
+    expect(postTxFee1RecipientBalance).toEqBigNumber(preTxFee1RecipientBalance.add(fee1Amount));
+    expect(postTxFee2RecipientBalance).toEqBigNumber(preTxFee2RecipientBalance.add(fee2Amount));
   });
 });
 
