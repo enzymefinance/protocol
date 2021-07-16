@@ -91,8 +91,8 @@ const config: HardhatUserConfig = {
         mnemonic,
       },
       forking: {
-        blockNumber: 12540501,
-        url: node('mainnet'), // May 31, 2021
+        blockNumber: 12836323, // July 16, 2021
+        url: node('mainnet'),
       },
       gas: 9500000,
       gasPrice: 0, // TODO: Consider removing this again.

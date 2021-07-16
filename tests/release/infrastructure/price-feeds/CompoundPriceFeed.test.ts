@@ -205,12 +205,12 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // cDai/usd price on May 31, 2021 was about 0,02144 USD.
-    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31>
+    // cDai/usd price on July 16, 2021 was about 0,0216 USD.
+    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('21449480548522202');
+    expect(canonicalAssetValue).toEqBigNumber('21514109123317253');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
@@ -223,11 +223,11 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // cUsdc/usd price on May 31, 2021 was about 0,0220 USD.
-    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31>
+    // cUsdc/usd price on July 16, 2021 was about 0,0221 USD.
+    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('22030');
+    expect(canonicalAssetValue).toEqBigNumber('22079');
   });
 });

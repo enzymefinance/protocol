@@ -32,12 +32,12 @@ const expectedGasCosts = {
     weth: 349343,
   },
   'buy shares: max assets': {
-    usdc: 1389973,
-    weth: 1325069,
+    usdc: 1384521,
+    weth: 1319617,
   },
   'calc gav: 20 assets': {
-    usdc: 1096918,
-    weth: 1043285,
+    usdc: 1091885,
+    weth: 1038252,
   },
   'calc gav: denomination asset only': {
     usdc: 84136,
@@ -50,13 +50,13 @@ const expectedGasCosts = {
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2558096,
-    weth: 2494557,
+    usdc: 2567014,
+    weth: 2503603,
   },
 
   'redeem all shares: max assets': {
-    usdc: 2069979,
-    weth: 2036163,
+    usdc: 2062062,
+    weth: 2027765,
   },
 
   'trade on Uniswap: max assets': {
@@ -218,7 +218,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       for (const asset of assets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
-        await asset.transfer.args(vaultProxy, transferAmount).send();
+        await asset.transfer(vaultProxy, transferAmount);
 
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);
@@ -246,8 +246,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       for (const asset of compoundAssets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
-
-        await asset.transfer.args(vaultProxy, transferAmount).send();
+        await asset.transfer(vaultProxy, transferAmount);
 
         const balance = await asset.balanceOf(vaultProxy);
         expect(balance).toBeGteBigNumber(transferAmount);

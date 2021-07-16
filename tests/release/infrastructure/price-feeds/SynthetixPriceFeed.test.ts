@@ -361,14 +361,14 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // sbtc/usd price at May 31, 2020 had a price of $35800
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31#panel>
+    // sbtc/usd price at July 16, 2020 had a price of ca. $32500
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('35096271489172293976414');
+    expect(canonicalAssetValue).toEqBigNumber('31931382264446721234605');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
@@ -382,13 +382,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // sbtc/usd price at May 31, 2020 had a price of $35,800
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-05-31&end_date=2021-05-31#panel>
+    // sbtc/usd price at July 16, 2020 had a price of $32500
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('34925293202');
+    expect(canonicalAssetValue).toEqBigNumber('31934452377');
   });
 });

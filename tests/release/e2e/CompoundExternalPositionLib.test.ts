@@ -143,7 +143,7 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      expect(addCollateralReceipt).toCostAround('249054');
+      expect(addCollateralReceipt).toCostAround('247601');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -230,7 +230,7 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      expect(removeCollateralReceipt).toCostAround('285449');
+      expect(removeCollateralReceipt).toCostAround('284391');
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
       expect(getManagedAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -579,7 +579,7 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toCostAround('311451');
+      expect(repayBorrowReceipt).toCostAround('310248');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

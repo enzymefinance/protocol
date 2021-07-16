@@ -7,7 +7,7 @@ import {
   getAssetUnit,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -112,7 +112,7 @@ describe('calcUnderlyingValues', () => {
     const finalRate = await wdgldPriceFeed.calcWdgldToXauRate.call();
 
     // Should be around 0.0904382075 (0.99)^10 with 27 decimals
-    expect(finalRate).toEqBigNumber(BigNumber.from('90438207500880449001000121'));
+    expect(finalRate).toEqBigNumber('90438207500880449001000121');
   });
 
   it('returns the expected value from the valueInterpreter', async () => {
@@ -122,9 +122,8 @@ describe('calcUnderlyingValues', () => {
 
     const wdgldUnit = utils.parseUnits('1', await wdgld.decimals());
 
-    // XAU/USD price at May 31 2021 had a rate of 1850 USD. Given an approximate GTR of 0.0988 gives a value around 182.7 USD
+    // XAU/USD price at July 16 2021 had a rate of 1822 USD. Given an approximate GTR of 0.0988 gives a value around 180 USD
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(wdgld, wdgldUnit, usdc).call();
-
-    expect(canonicalAssetValue).toEqBigNumber(185936532);
+    expect(canonicalAssetValue).toEqBigNumber(179033367);
   });
 });

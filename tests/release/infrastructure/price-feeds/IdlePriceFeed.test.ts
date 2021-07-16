@@ -123,7 +123,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1059179');
+    expect(canonicalAssetValue).toEqBigNumber('1062592');
   });
 });
 

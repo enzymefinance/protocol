@@ -180,7 +180,6 @@ describe('redeem', () => {
     expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
-    // Rounding up from 580824
-    expect(redeemReceipt).toCostLessThan('581000');
+    expect(redeemReceipt).toCostLessThan('600477', 0.05);
   });
 });

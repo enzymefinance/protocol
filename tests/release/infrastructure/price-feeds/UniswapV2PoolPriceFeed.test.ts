@@ -110,7 +110,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['79567669895365', '33866575594579201734267'],
+      underlyingAmounts_: ['73894532231345', '38492473356460301046925'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -153,11 +153,11 @@ describe('calcUnderlyingValues', () => {
 
     // Final canonical rate should be pushed towards the trusted rate ratio
     if (poolRateRatio > trustedUnderlyingsRateRatio) {
-      expect(canonicalUnderlyingsRateRatio).toBeLtBigNumber(poolRateRatio);
-      expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(trustedUnderlyingsRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeLteBigNumber(poolRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeGteBigNumber(trustedUnderlyingsRateRatio);
     } else if (poolRateRatio < trustedUnderlyingsRateRatio) {
-      expect(canonicalUnderlyingsRateRatio).toBeGtBigNumber(poolRateRatio);
-      expect(canonicalUnderlyingsRateRatio).toBeLtBigNumber(trustedUnderlyingsRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeGteBigNumber(poolRateRatio);
+      expect(canonicalUnderlyingsRateRatio).toBeLteBigNumber(trustedUnderlyingsRateRatio);
     } else {
       expect(canonicalUnderlyingsRateRatio).toEqBigNumber(poolRateRatio);
     }
@@ -179,9 +179,9 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on May 31, 2021 was worth about $167M
+      // usdc/weth on July 16, 2021 was worth about $147M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toEqBigNumber(158897255870290);
+      expect(canonicalAssetValue).toEqBigNumber('147718343352075');
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -199,9 +199,9 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on May 31, 2021 was worth about $160
+      // knc/weth on July 16, 2021 was worth about $140
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toEqBigNumber('158937723230135855509');
+      expect(canonicalAssetValue).toEqBigNumber('140713575671083187930');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

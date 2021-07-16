@@ -534,7 +534,7 @@ describe('lend', () => {
     });
 
     // Assert the amounts spent and received
-    expect(postTxStethBalance).toEqBigNumber(preTxStethBalance.sub(outgoingStethAmount));
+    expect(postTxStethBalance).toBeAroundBigNumber(preTxStethBalance.sub(outgoingStethAmount), 1);
     // TODO: get expected incoming amount
     expect(postTxLpTokenBalance).toBeGtBigNumber(0);
   });
@@ -581,8 +581,8 @@ describe('lend', () => {
     });
 
     // Assert the amounts spent and received
-    expect(postTxWethBalance).toEqBigNumber(preTxWethBalance.sub(outgoingWethAmount));
-    expect(postTxStethBalance).toEqBigNumber(preTxStethBalance.sub(outgoingStethAmount));
+    expect(postTxWethBalance).toBeAroundBigNumber(preTxWethBalance.sub(outgoingWethAmount), 1);
+    expect(postTxStethBalance).toBeAroundBigNumber(preTxStethBalance.sub(outgoingStethAmount), 1);
     // TODO: get expected incoming amount
     expect(postTxLpTokenBalance).toBeGtBigNumber(0);
   });
@@ -668,7 +668,7 @@ describe('lendAndStake', () => {
     });
 
     // Assert the amounts spent and received
-    expect(postTxStethBalance).toEqBigNumber(preTxStethBalance.sub(outgoingStethAmount));
+    expect(postTxStethBalance).toBeAroundBigNumber(preTxStethBalance.sub(outgoingStethAmount), 1);
     // TODO: get expected incoming amount
     expect(postTxLiquidityGaugeTokenBalance).toBeGtBigNumber(0);
   });
@@ -716,8 +716,8 @@ describe('lendAndStake', () => {
     });
 
     // Assert the amounts spent and received
-    expect(postTxWethBalance).toEqBigNumber(preTxWethBalance.sub(outgoingWethAmount));
-    expect(postTxStethBalance).toEqBigNumber(preTxStethBalance.sub(outgoingStethAmount));
+    expect(postTxWethBalance).toBeAroundBigNumber(preTxWethBalance.sub(outgoingWethAmount), 1);
+    expect(postTxStethBalance).toBeAroundBigNumber(preTxStethBalance.sub(outgoingStethAmount), 1);
     // TODO: get expected incoming amount
     expect(postTxLiquidityGaugeTokenBalance).toBeGtBigNumber(0);
   });
