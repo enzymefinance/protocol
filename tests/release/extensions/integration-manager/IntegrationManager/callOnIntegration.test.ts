@@ -124,7 +124,6 @@ async function seedFundByTrading({
     spendAssetAmounts: [],
     selector: mockGenericSwapASelector,
     integrationData,
-    vaultProxy,
   });
 }
 
@@ -450,13 +449,13 @@ describe('valid calls', () => {
       spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
@@ -529,13 +528,13 @@ describe('valid calls', () => {
       spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets: incomingAssets,
@@ -599,13 +598,13 @@ describe('valid calls', () => {
       spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
@@ -679,13 +678,13 @@ describe('valid calls', () => {
       spendAssetAmounts: expectedSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
@@ -747,13 +746,13 @@ describe('valid calls', () => {
       spendAssetAmounts: [0],
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets: [],
@@ -827,13 +826,13 @@ describe('valid calls', () => {
         spendAssets,
         actualSpendAssetAmounts,
       }),
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets: [],
@@ -881,13 +880,13 @@ describe('valid calls', () => {
       spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,
@@ -951,13 +950,13 @@ describe('valid calls', () => {
       spendAssetAmounts: actualSpendAssetAmounts,
       selector: mockGenericSwapASelector,
       integrationData,
-      vaultProxy,
     });
 
     expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.PostCallOnIntegration,
       validateRulePostCoIArgs({
+        caller: fundOwner,
         adapter: mockGenericAdapter,
         selector: mockGenericSwapASelector,
         incomingAssets,

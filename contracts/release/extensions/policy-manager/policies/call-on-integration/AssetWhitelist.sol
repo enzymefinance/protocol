@@ -88,7 +88,7 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (, , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
+        (, , , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, incomingAssets);
     }

@@ -692,6 +692,7 @@ describe('validatePolicies', () => {
     });
 
     const ruleArgs = validateRuleAddTrackedAssetsArgs({
+      caller: fundOwner,
       assets: assetsToAdd,
     });
     expect(mockAddTrackedAssetsPolicy.validateRule).toHaveBeenCalledOnContractWith(

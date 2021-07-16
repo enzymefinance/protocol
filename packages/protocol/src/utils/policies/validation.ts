@@ -2,8 +2,8 @@ import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../encoding';
 
-export function validateRuleAddTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
-  return encodeArgs(['address[]'], [assets]);
+export function validateRuleAddTrackedAssetsArgs({ caller, assets }: { caller: AddressLike; assets: AddressLike[] }) {
+  return encodeArgs(['address', 'address[]'], [caller, assets]);
 }
 
 export function validateRuleCreateExternalPositionArgs({
@@ -54,6 +54,7 @@ export function validateRulePostCallOnExternalPositionArgs({
 }
 
 export function validateRulePostCoIArgs({
+  caller,
   adapter,
   selector,
   incomingAssets,
@@ -61,6 +62,7 @@ export function validateRulePostCoIArgs({
   spendAssets,
   spendAssetAmounts,
 }: {
+  caller: AddressLike;
   adapter: AddressLike;
   selector: BytesLike;
   incomingAssets: AddressLike[];
@@ -69,8 +71,8 @@ export function validateRulePostCoIArgs({
   spendAssetAmounts: BigNumberish[];
 }) {
   return encodeArgs(
-    ['address', 'bytes4', 'address[]', 'uint256[]', 'address[]', 'uint256[]'],
-    [adapter, selector, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts],
+    ['address', 'address', 'bytes4', 'address[]', 'uint256[]', 'address[]', 'uint256[]'],
+    [caller, adapter, selector, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts],
   );
 }
 
@@ -105,6 +107,12 @@ export function validateRuleRemoveExternalPositionArgs({
   return encodeArgs(['address', 'address'], [caller, externalPositionProxy]);
 }
 
-export function validateRuleRemoveTrackedAssetsArgs({ assets }: { assets: AddressLike[] }) {
-  return encodeArgs(['address[]'], [assets]);
+export function validateRuleRemoveTrackedAssetsArgs({
+  caller,
+  assets,
+}: {
+  caller: AddressLike;
+  assets: AddressLike[];
+}) {
+  return encodeArgs(['address', 'address[]'], [caller, assets]);
 }

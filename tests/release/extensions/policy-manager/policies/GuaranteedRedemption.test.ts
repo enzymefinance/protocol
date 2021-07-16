@@ -289,6 +289,7 @@ describe('validateRule', () => {
   it('returns true if there is no adapter in the policy', async () => {
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter: randomAddress(),
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
@@ -322,6 +323,7 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
@@ -355,6 +357,7 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
@@ -377,6 +380,7 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
@@ -410,6 +414,7 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],
@@ -443,6 +448,7 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()],

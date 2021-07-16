@@ -46,7 +46,6 @@ contract IntegrationManager is
 
     event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
-        address vaultProxy,
         address caller,
         address indexed adapter,
         bytes4 indexed selector,
@@ -96,10 +95,12 @@ contract IntegrationManager is
         uint256 _actionId,
         bytes calldata _callArgs
     ) external override {
+        address comptrollerProxy = msg.sender;
+
         // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
         // activateForFund(), this function does not require further validation of the
         // sending ComptrollerProxy
-        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
+        address vaultProxy = comptrollerProxyToVaultProxy[comptrollerProxy];
         require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
 
         require(
@@ -109,45 +110,53 @@ contract IntegrationManager is
 
         // Dispatch the action
         if (_actionId == 0) {
-            __callOnIntegration(_caller, vaultProxy, _callArgs);
+            __callOnIntegration(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else if (_actionId == 1) {
-            __addTrackedAssetsToVault(_callArgs);
+            __addTrackedAssetsToVault(_caller, comptrollerProxy, _callArgs);
         } else if (_actionId == 2) {
-            __removeTrackedAssetsFromVault(_callArgs);
+            __removeTrackedAssetsFromVault(_caller, comptrollerProxy, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
     }
 
     /// @dev Adds assets as persistently tracked assets of the vault
-    function __addTrackedAssetsToVault(bytes memory _callArgs) private {
+    function __addTrackedAssetsToVault(
+        address _caller,
+        address _comptrollerProxy,
+        bytes memory _callArgs
+    ) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
-            msg.sender,
+            _comptrollerProxy,
             IPolicyManager.PolicyHook.AddTrackedAssets,
-            abi.encode(assets)
+            abi.encode(_caller, assets)
         );
 
         for (uint256 i; i < assets.length; i++) {
             require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
 
-            __addPersistentlyTrackedAsset(msg.sender, assets[i]);
+            __addPersistentlyTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
 
     /// @dev Removes assets from the tracked assets of the vault
-    function __removeTrackedAssetsFromVault(bytes memory _callArgs) private {
+    function __removeTrackedAssetsFromVault(
+        address _caller,
+        address _comptrollerProxy,
+        bytes memory _callArgs
+    ) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
         IPolicyManager(POLICY_MANAGER).validatePolicies(
-            msg.sender,
+            _comptrollerProxy,
             IPolicyManager.PolicyHook.RemoveTrackedAssets,
-            abi.encode(assets)
+            abi.encode(_caller, assets)
         );
 
         for (uint256 i; i < assets.length; i++) {
-            __removePersistentlyTrackedAsset(msg.sender, assets[i]);
+            __removePersistentlyTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
 
@@ -157,15 +166,16 @@ contract IntegrationManager is
 
     /// @notice Universal method for calling third party contract functions through adapters
     /// @param _caller The caller of this function via the ComptrollerProxy
-    /// @param _vaultProxy The VaultProxy of the fund
+    /// @param _comptrollerProxy The ComptrollerProxy
+    /// @param _vaultProxy The VaultProxy
     /// @param _callArgs The encoded args for this function
     /// - _adapter Adapter of the integration on which to execute a call
     /// - _selector Method selector of the adapter method to execute
     /// - _integrationData Encoded arguments specific to the adapter
-    /// @dev msg.sender is the ComptrollerProxy.
-    /// Refer to specific adapter to see how to encode its arguments.
+    /// @dev Refer to specific adapter to see how to encode its arguments.
     function __callOnIntegration(
         address _caller,
+        address _comptrollerProxy,
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
@@ -180,19 +190,30 @@ contract IntegrationManager is
             uint256[] memory incomingAssetAmounts,
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts
-        ) = __callOnIntegrationInner(_vaultProxy, adapter, selector, integrationData);
-
-        __postCoIHook(
+        ) = __callOnIntegrationInner(
+            _comptrollerProxy,
+            _vaultProxy,
             adapter,
             selector,
-            incomingAssets,
-            incomingAssetAmounts,
-            spendAssets,
-            spendAssetAmounts
+            integrationData
         );
 
-        __emitCoIEvent(
-            _vaultProxy,
+        IPolicyManager(POLICY_MANAGER).validatePolicies(
+            _comptrollerProxy,
+            IPolicyManager.PolicyHook.PostCallOnIntegration,
+            abi.encode(
+                _caller,
+                adapter,
+                selector,
+                incomingAssets,
+                incomingAssetAmounts,
+                spendAssets,
+                spendAssetAmounts
+            )
+        );
+
+        emit CallOnIntegrationExecutedForFund(
+            _comptrollerProxy,
             _caller,
             adapter,
             selector,
@@ -207,6 +228,7 @@ contract IntegrationManager is
     /// @dev Helper to execute the bulk of logic of callOnIntegration.
     /// Avoids the stack-too-deep-error.
     function __callOnIntegrationInner(
+        address _comptrollerProxy,
         address _vaultProxy,
         address _adapter,
         bytes4 _selector,
@@ -234,7 +256,7 @@ contract IntegrationManager is
             spendAssets_,
             maxSpendAssetAmounts,
             preCallSpendAssetBalances
-        ) = __preProcessCoI(_vaultProxy, _adapter, _selector, _integrationData);
+        ) = __preProcessCoI(_comptrollerProxy, _vaultProxy, _adapter, _selector, _integrationData);
 
         __executeCoI(
             _vaultProxy,
@@ -245,6 +267,7 @@ contract IntegrationManager is
         );
 
         (incomingAssetAmounts_, spendAssetAmounts_) = __postProcessCoI(
+            _comptrollerProxy,
             _vaultProxy,
             _adapter,
             incomingAssets_,
@@ -270,33 +293,6 @@ contract IntegrationManager is
         )
     {
         return abi.decode(_callArgs, (address, bytes4, bytes));
-    }
-
-    /// @dev Helper to emit the CallOnIntegrationExecuted event.
-    /// Avoids stack-too-deep error.
-    function __emitCoIEvent(
-        address _vaultProxy,
-        address _caller,
-        address _adapter,
-        bytes4 _selector,
-        bytes memory _integrationData,
-        address[] memory _incomingAssets,
-        uint256[] memory _incomingAssetAmounts,
-        address[] memory _spendAssets,
-        uint256[] memory _spendAssetAmounts
-    ) private {
-        emit CallOnIntegrationExecutedForFund(
-            msg.sender,
-            _vaultProxy,
-            _caller,
-            _adapter,
-            _selector,
-            _integrationData,
-            _incomingAssets,
-            _incomingAssetAmounts,
-            _spendAssets,
-            _spendAssetAmounts
-        );
     }
 
     /// @dev Helper to execute a call to an integration
@@ -332,6 +328,7 @@ contract IntegrationManager is
 
     /// @dev Helper for the internal actions to take prior to executing CoI
     function __preProcessCoI(
+        address _comptrollerProxy,
         address _vaultProxy,
         address _adapter,
         bytes4 _selector,
@@ -400,42 +397,25 @@ contract IntegrationManager is
             if (spendAssetsHandleType_ == SpendAssetsHandleType.Approve) {
                 // Use exact approve amount, and reset afterwards
                 __approveAssetSpender(
-                    msg.sender,
+                    _comptrollerProxy,
                     spendAssets_[i],
                     _adapter,
                     maxSpendAssetAmounts_[i]
                 );
             } else if (spendAssetsHandleType_ == SpendAssetsHandleType.Transfer) {
-                __withdrawAssetTo(msg.sender, spendAssets_[i], _adapter, maxSpendAssetAmounts_[i]);
+                __withdrawAssetTo(
+                    _comptrollerProxy,
+                    spendAssets_[i],
+                    _adapter,
+                    maxSpendAssetAmounts_[i]
+                );
             }
         }
     }
 
-    /// @dev Helper for the actions to take on external contracts after executing CoI
-    function __postCoIHook(
-        address _adapter,
-        bytes4 _selector,
-        address[] memory _incomingAssets,
-        uint256[] memory _incomingAssetAmounts,
-        address[] memory _spendAssets,
-        uint256[] memory _spendAssetAmounts
-    ) private {
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
-            msg.sender,
-            IPolicyManager.PolicyHook.PostCallOnIntegration,
-            abi.encode(
-                _adapter,
-                _selector,
-                _incomingAssets,
-                _incomingAssetAmounts,
-                _spendAssets,
-                _spendAssetAmounts
-            )
-        );
-    }
-
     /// @dev Helper to reconcile incoming and spend assets after executing CoI
     function __postProcessCoI(
+        address _comptrollerProxy,
         address _vaultProxy,
         address _adapter,
         address[] memory _incomingAssets,
@@ -462,7 +442,7 @@ contract IntegrationManager is
             );
 
             // Even if the asset's previous balance was >0, it might not have been tracked
-            __addTrackedAsset(msg.sender, _incomingAssets[i]);
+            __addTrackedAsset(_comptrollerProxy, _incomingAssets[i]);
         }
 
         // SPEND ASSETS
@@ -475,7 +455,7 @@ contract IntegrationManager is
                 _spendAssets[i]
             );
             if (postCallSpendAssetBalance == 0) {
-                __removeTrackedAsset(msg.sender, _spendAssets[i]);
+                __removeTrackedAsset(_comptrollerProxy, _spendAssets[i]);
                 spendAssetAmounts_[i] = _preCallSpendAssetBalances[i];
             } else if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
                 spendAssetAmounts_[i] = _preCallSpendAssetBalances[i].sub(
@@ -488,7 +468,7 @@ contract IntegrationManager is
                 _spendAssetsHandleType == SpendAssetsHandleType.Approve &&
                 ERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
             ) {
-                __approveAssetSpender(msg.sender, _spendAssets[i], _adapter, 0);
+                __approveAssetSpender(_comptrollerProxy, _spendAssets[i], _adapter, 0);
             } else if (_spendAssetsHandleType == SpendAssetsHandleType.None) {
                 // Only need to validate _maxSpendAssetAmounts if not SpendAssetsHandleType.Approve
                 // or SpendAssetsHandleType.Transfer, as each of those implicitly validate the max

@@ -163,7 +163,7 @@ contract GuaranteedRedemption is PostCallOnIntegrationValidatePolicyBase, FundDe
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (address adapter, , , , , ) = __decodeRuleArgs(_encodedArgs);
+        (, address adapter, , , , , ) = __decodeRuleArgs(_encodedArgs);
 
         return passesRule(_comptrollerProxy, adapter);
     }

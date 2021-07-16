@@ -36,6 +36,7 @@ abstract contract PostCallOnIntegrationValidatePolicyBase is PolicyBase {
         internal
         pure
         returns (
+            address caller_,
             address adapter_,
             bytes4 selector_,
             address[] memory incomingAssets_,
@@ -47,7 +48,7 @@ abstract contract PostCallOnIntegrationValidatePolicyBase is PolicyBase {
         return
             abi.decode(
                 _encodedRuleArgs,
-                (address, bytes4, address[], uint256[], address[], uint256[])
+                (address, address, bytes4, address[], uint256[], address[], uint256[])
             );
     }
 }

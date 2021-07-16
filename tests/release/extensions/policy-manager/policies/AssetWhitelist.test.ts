@@ -179,6 +179,7 @@ describe('validateRule', () => {
   it('returns true if an asset is in the whitelist', async () => {
     // Only the incoming assets arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter: constants.AddressZero,
       selector: utils.randomBytes(4),
       incomingAssets: [whitelistedAssets[0]], // good incoming asset
@@ -197,6 +198,7 @@ describe('validateRule', () => {
   it('returns false if an asset is not in the whitelist', async () => {
     // Only the incoming assets arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
+      caller: randomAddress(),
       adapter: constants.AddressZero,
       selector: utils.randomBytes(4),
       incomingAssets: [randomAddress()], // good incoming asset

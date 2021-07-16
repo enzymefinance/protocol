@@ -233,6 +233,7 @@ describe('callOnExtension actions', () => {
         comptrollerProxy,
         PolicyHook.AddTrackedAssets,
         validateRuleAddTrackedAssetsArgs({
+          caller: fundOwner,
           assets,
         }),
       );
@@ -329,6 +330,7 @@ describe('callOnExtension actions', () => {
         comptrollerProxy,
         PolicyHook.RemoveTrackedAssets,
         validateRuleRemoveTrackedAssetsArgs({
+          caller: fundOwner,
           assets: assetsToRemove,
         }),
       );
