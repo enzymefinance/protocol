@@ -48,7 +48,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
@@ -60,10 +60,10 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      synthetixAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+      synthetixAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(synthetixAdapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, args)).resolves.toBeTruthy();
+    await expect(synthetixAdapter.parseAssetsForAction(randomAddress(), takeOrderSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output', async () => {
@@ -80,9 +80,9 @@ describe('parseAssetsForMethod', () => {
       outgoingAssetAmount,
     });
 
-    const result = await synthetixAdapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await synthetixAdapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(synthetixAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(synthetixAdapter.parseAssetsForAction, {
       spendAssetsHandleType_: SpendAssetsHandleType.None,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],

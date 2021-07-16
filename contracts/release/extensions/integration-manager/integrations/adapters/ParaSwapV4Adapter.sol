@@ -34,12 +34,12 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
 
     /// @notice Trades assets on ParaSwap
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @dev ParaSwap v4 completely uses entire outgoing asset balance and incoming asset
     /// is sent directly to the beneficiary (the _vaultProxy)
     function takeOrder(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata
     ) external onlyIntegrationManager {
         (
@@ -48,7 +48,7 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
             address outgoingAsset,
             uint256 outgoingAssetAmount,
             IParaSwapV4AugustusSwapper.Path[] memory paths
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeCallArgs(_actionData);
 
         __paraSwapV4MultiSwap(
             outgoingAsset,
@@ -60,19 +60,19 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
         );
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -85,7 +85,7 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForAction: _selector invalid");
 
         (
             uint256 minIncomingAssetAmount,
@@ -93,7 +93,7 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
             address outgoingAsset,
             uint256 outgoingAssetAmount,
             IParaSwapV4AugustusSwapper.Path[] memory paths
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingAsset;
@@ -117,7 +117,7 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments
-    function __decodeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -130,7 +130,7 @@ contract ParaSwapV4Adapter is AdapterBase, ParaSwapV4ActionsMixin {
     {
         return
             abi.decode(
-                _encodedCallArgs,
+                _actionData,
                 (uint256, uint256, address, uint256, IParaSwapV4AugustusSwapper.Path[])
             );
     }

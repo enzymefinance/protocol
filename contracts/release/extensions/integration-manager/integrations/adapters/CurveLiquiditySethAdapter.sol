@@ -62,11 +62,11 @@ contract CurveLiquiditySethAdapter is
 
     /// @notice Lends assets for seth LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lend(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
@@ -77,7 +77,7 @@ contract CurveLiquiditySethAdapter is
             uint256 outgoingWethAmount,
             uint256 outgoingSethAmount,
             uint256 minIncomingLiquidityGaugeTokenAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         __curveSethLend(
             outgoingWethAmount,
@@ -88,11 +88,11 @@ contract CurveLiquiditySethAdapter is
 
     /// @notice Lends assets for seth LP tokens, then stakes the received LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function lendAndStake(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
@@ -103,7 +103,7 @@ contract CurveLiquiditySethAdapter is
             uint256 outgoingWethAmount,
             uint256 outgoingSethAmount,
             uint256 minIncomingLiquidityGaugeTokenAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         __curveSethLend(
             outgoingWethAmount,
@@ -119,11 +119,11 @@ contract CurveLiquiditySethAdapter is
 
     /// @notice Redeems seth LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
@@ -135,7 +135,7 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingWethAmount,
             uint256 minIncomingSethAmount,
             bool redeemSingleAsset
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         __curveSethRedeem(
             outgoingLpTokenAmount,
@@ -147,47 +147,43 @@ contract CurveLiquiditySethAdapter is
 
     /// @notice Stakes seth LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function stake(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        __curveGaugeV2Stake(
-            LIQUIDITY_GAUGE_TOKEN,
-            LP_TOKEN,
-            __decodeStakeCallArgs(_encodedCallArgs)
-        );
+        __curveGaugeV2Stake(LIQUIDITY_GAUGE_TOKEN, LP_TOKEN, __decodeStakeCallArgs(_actionData));
     }
 
     /// @notice Unstakes seth LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function unstake(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        __curveGaugeV2Unstake(LIQUIDITY_GAUGE_TOKEN, __decodeUnstakeCallArgs(_encodedCallArgs));
+        __curveGaugeV2Unstake(LIQUIDITY_GAUGE_TOKEN, __decodeUnstakeCallArgs(_actionData));
     }
 
     /// @notice Unstakes seth LP tokens, then redeems them
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function unstakeAndRedeem(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
@@ -199,7 +195,7 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingWethAmount,
             uint256 minIncomingSethAmount,
             bool redeemSingleAsset
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         __curveGaugeV2Unstake(LIQUIDITY_GAUGE_TOKEN, outgoingLiquidityGaugeTokenAmount);
         __curveSethRedeem(
@@ -214,19 +210,19 @@ contract CurveLiquiditySethAdapter is
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -242,20 +238,20 @@ contract CurveLiquiditySethAdapter is
         if (_selector == CLAIM_REWARDS_SELECTOR) {
             return __parseAssetsForClaimRewards();
         } else if (_selector == LEND_SELECTOR) {
-            return __parseAssetsForLend(_encodedCallArgs);
+            return __parseAssetsForLend(_actionData);
         } else if (_selector == LEND_AND_STAKE_SELECTOR) {
-            return __parseAssetsForLendAndStake(_encodedCallArgs);
+            return __parseAssetsForLendAndStake(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
-            return __parseAssetsForRedeem(_encodedCallArgs);
+            return __parseAssetsForRedeem(_actionData);
         } else if (_selector == STAKE_SELECTOR) {
-            return __parseAssetsForStake(_encodedCallArgs);
+            return __parseAssetsForStake(_actionData);
         } else if (_selector == UNSTAKE_SELECTOR) {
-            return __parseAssetsForUnstake(_encodedCallArgs);
+            return __parseAssetsForUnstake(_actionData);
         } else if (_selector == UNSTAKE_AND_REDEEM_SELECTOR) {
-            return __parseAssetsForUnstakeAndRedeem(_encodedCallArgs);
+            return __parseAssetsForUnstakeAndRedeem(_actionData);
         }
 
-        revert("parseAssetsForMethod: _selector invalid");
+        revert("parseAssetsForAction: _selector invalid");
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
@@ -283,7 +279,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during lend() calls
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+    function __parseAssetsForLend(bytes calldata _actionData)
         private
         view
         returns (
@@ -298,7 +294,7 @@ contract CurveLiquiditySethAdapter is
             uint256 outgoingWethAmount,
             uint256 outgoingSethAmount,
             uint256 minIncomingLpTokenAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
             outgoingWethAmount,
@@ -322,7 +318,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during lendAndStake() calls
-    function __parseAssetsForLendAndStake(bytes calldata _encodedCallArgs)
+    function __parseAssetsForLendAndStake(bytes calldata _actionData)
         private
         view
         returns (
@@ -337,7 +333,7 @@ contract CurveLiquiditySethAdapter is
             uint256 outgoingWethAmount,
             uint256 outgoingSethAmount,
             uint256 minIncomingLiquidityGaugeTokenAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
             outgoingWethAmount,
@@ -361,7 +357,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
-    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+    function __parseAssetsForRedeem(bytes calldata _actionData)
         private
         view
         returns (
@@ -377,7 +373,7 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingWethAmount,
             uint256 minIncomingSethAmount,
             bool receiveSingleAsset
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = LP_TOKEN;
@@ -402,7 +398,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during stake() calls
-    function __parseAssetsForStake(bytes calldata _encodedCallArgs)
+    function __parseAssetsForStake(bytes calldata _actionData)
         private
         view
         returns (
@@ -413,7 +409,7 @@ contract CurveLiquiditySethAdapter is
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        uint256 outgoingLpTokenAmount = __decodeStakeCallArgs(_encodedCallArgs);
+        uint256 outgoingLpTokenAmount = __decodeStakeCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = LP_TOKEN;
@@ -438,7 +434,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during unstake() calls
-    function __parseAssetsForUnstake(bytes calldata _encodedCallArgs)
+    function __parseAssetsForUnstake(bytes calldata _actionData)
         private
         view
         returns (
@@ -449,7 +445,7 @@ contract CurveLiquiditySethAdapter is
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        uint256 outgoingLiquidityGaugeTokenAmount = __decodeUnstakeCallArgs(_encodedCallArgs);
+        uint256 outgoingLiquidityGaugeTokenAmount = __decodeUnstakeCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = LIQUIDITY_GAUGE_TOKEN;
@@ -474,7 +470,7 @@ contract CurveLiquiditySethAdapter is
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during unstakeAndRedeem() calls
-    function __parseAssetsForUnstakeAndRedeem(bytes calldata _encodedCallArgs)
+    function __parseAssetsForUnstakeAndRedeem(bytes calldata _actionData)
         private
         view
         returns (
@@ -490,7 +486,7 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingWethAmount,
             uint256 minIncomingSethAmount,
             bool receiveSingleAsset
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = LIQUIDITY_GAUGE_TOKEN;
@@ -590,7 +586,7 @@ contract CurveLiquiditySethAdapter is
     ///////////////////////
 
     /// @dev Helper to decode the encoded call arguments for lending
-    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+    function __decodeLendCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -599,14 +595,14 @@ contract CurveLiquiditySethAdapter is
             uint256 minIncomingAssetAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (uint256, uint256, uint256));
+        return abi.decode(_actionData, (uint256, uint256, uint256));
     }
 
     /// @dev Helper to decode the encoded call arguments for redeeming.
     /// If `receiveSingleAsset_` is `true`, then one (and only one) of
     /// `minIncomingWethAmount_` and `minIncomingSethAmount_` must be >0
     /// to indicate which asset is to be received.
-    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
+    function __decodeRedeemCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -616,25 +612,25 @@ contract CurveLiquiditySethAdapter is
             bool receiveSingleAsset_
         )
     {
-        return abi.decode(_encodedCallArgs, (uint256, uint256, uint256, bool));
+        return abi.decode(_actionData, (uint256, uint256, uint256, bool));
     }
 
     /// @dev Helper to decode the encoded call arguments for staking
-    function __decodeStakeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeStakeCallArgs(bytes memory _actionData)
         private
         pure
         returns (uint256 outgoingLpTokenAmount_)
     {
-        return abi.decode(_encodedCallArgs, (uint256));
+        return abi.decode(_actionData, (uint256));
     }
 
     /// @dev Helper to decode the encoded call arguments for unstaking
-    function __decodeUnstakeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeUnstakeCallArgs(bytes memory _actionData)
         private
         pure
         returns (uint256 outgoingLiquidityGaugeTokenAmount_)
     {
-        return abi.decode(_encodedCallArgs, (uint256));
+        return abi.decode(_actionData, (uint256));
     }
 
     ///////////////////

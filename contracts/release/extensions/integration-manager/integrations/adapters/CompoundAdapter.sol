@@ -80,19 +80,19 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -106,17 +106,17 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
         )
     {
         if (_selector == LEND_SELECTOR) {
-            return __parseAssetsForLend(_encodedCallArgs);
+            return __parseAssetsForLend(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
-            return __parseAssetsForRedeem(_encodedCallArgs);
+            return __parseAssetsForRedeem(_actionData);
         }
 
-        revert("parseAssetsForMethod: _selector invalid");
+        revert("parseAssetsForAction: _selector invalid");
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during lend() calls
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+    function __parseAssetsForLend(bytes calldata _actionData)
         private
         view
         returns (
@@ -128,7 +128,7 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
         )
     {
         (address cToken, uint256 tokenAmount, uint256 minCTokenAmount) = __decodeCallArgs(
-            _encodedCallArgs
+            _actionData
         );
         address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
         require(token != address(0), "__parseAssetsForLend: Unsupported cToken");
@@ -154,7 +154,7 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
-    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+    function __parseAssetsForRedeem(bytes calldata _actionData)
         private
         view
         returns (
@@ -166,7 +166,7 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
         )
     {
         (address cToken, uint256 cTokenAmount, uint256 minTokenAmount) = __decodeCallArgs(
-            _encodedCallArgs
+            _actionData
         );
         address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
         require(token != address(0), "__parseAssetsForRedeem: Unsupported cToken");
@@ -193,7 +193,7 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -202,7 +202,7 @@ contract CompoundAdapter is AdapterBase, CompoundActionsMixin {
             uint256 minIncomingAssetAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (address, uint256, uint256));
+        return abi.decode(_actionData, (address, uint256, uint256));
     }
 
     ///////////////////

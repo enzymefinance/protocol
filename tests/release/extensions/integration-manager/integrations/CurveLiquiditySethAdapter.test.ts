@@ -66,12 +66,12 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
 
     await expect(
-      curveLiquiditySethAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
+      curveLiquiditySethAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -79,13 +79,13 @@ describe('parseAssetsForMethod', () => {
     it('generates expected output', async () => {
       const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         claimRewardsSelector,
         constants.HashZero,
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.None,
         spendAssets_: [],
         spendAssetAmounts_: [],
@@ -101,7 +101,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingWethAmount = utils.parseEther('2');
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         curveSethLendArgs({
@@ -111,7 +111,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.weth],
         spendAssetAmounts_: [outgoingWethAmount],
@@ -125,7 +125,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingSethAmount = utils.parseEther('2');
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         curveSethLendArgs({
@@ -135,7 +135,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.synthetix.synths.seth],
         spendAssetAmounts_: [outgoingSethAmount],
@@ -150,7 +150,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingSethAmount = utils.parseEther('2');
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         curveSethLendArgs({
@@ -160,7 +160,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
         spendAssetAmounts_: [outgoingWethAmount, outgoingSethAmount],
@@ -176,7 +176,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingWethAmount = utils.parseEther('2');
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveSethLendAndStakeArgs({
@@ -186,7 +186,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.weth],
         spendAssetAmounts_: [outgoingWethAmount],
@@ -200,7 +200,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingSethAmount = utils.parseEther('2');
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveSethLendAndStakeArgs({
@@ -210,7 +210,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.synthetix.synths.seth],
         spendAssetAmounts_: [outgoingSethAmount],
@@ -225,7 +225,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingSethAmount = utils.parseEther('2');
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveSethLendAndStakeArgs({
@@ -235,7 +235,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
         spendAssetAmounts_: [outgoingWethAmount, outgoingSethAmount],
@@ -252,7 +252,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingSethAmount = utils.parseEther('2');
       const outgoingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         curveSethRedeemArgs({
@@ -263,7 +263,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -277,7 +277,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingWethAmount = utils.parseEther('3');
       const outgoingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         curveSethRedeemArgs({
@@ -288,7 +288,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -302,7 +302,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingSethAmount = utils.parseEther('3');
       const outgoingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         curveSethRedeemArgs({
@@ -313,7 +313,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -328,7 +328,7 @@ describe('parseAssetsForMethod', () => {
       const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
       const outgoingLPTokenAmount = utils.parseEther('2');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         stakeSelector,
         curveSethStakeArgs({
@@ -336,7 +336,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -351,7 +351,7 @@ describe('parseAssetsForMethod', () => {
       const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('2');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeSelector,
         curveSethUnstakeArgs({
@@ -359,7 +359,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
@@ -376,7 +376,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingSethAmount = utils.parseEther('2');
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeAndRedeemSelector,
         curveSethUnstakeAndRedeemArgs({
@@ -387,7 +387,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
@@ -401,7 +401,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingWethAmount = utils.parseEther('3');
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeAndRedeemSelector,
         curveSethUnstakeAndRedeemArgs({
@@ -412,7 +412,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
@@ -426,7 +426,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingSethAmount = utils.parseEther('3');
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquiditySethAdapter.parseAssetsForMethod(
+      const result = await curveLiquiditySethAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeAndRedeemSelector,
         curveSethUnstakeAndRedeemArgs({
@@ -437,7 +437,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.seth.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],

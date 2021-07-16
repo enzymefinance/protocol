@@ -33,10 +33,10 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     function lend(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata
     ) external onlyIntegrationManager {
         (
@@ -44,7 +44,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[2] memory maxOutgoingAssetAmounts,
             uint256[2] memory minOutgoingAssetAmounts,
 
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         __uniswapV2Lend(
             _vaultProxy,
@@ -59,18 +59,18 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     /// @notice Redeems pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function redeem(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     ) external onlyIntegrationManager {
         (
             uint256 outgoingAssetAmount,
             address[2] memory incomingAssets,
             uint256[2] memory minIncomingAssetAmounts
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         // More efficient to parse pool token from _assetData than external call
         (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
@@ -88,17 +88,17 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     /// @notice Trades assets on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     function takeOrder(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata
     ) external onlyIntegrationManager {
         (
             address[] memory path,
             uint256 outgoingAssetAmount,
             uint256 minIncomingAssetAmount
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ) = __decodeTakeOrderCallArgs(_actionData);
 
         __uniswapV2Swap(_vaultProxy, outgoingAssetAmount, minIncomingAssetAmount, path);
     }
@@ -107,19 +107,19 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -133,19 +133,19 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
         )
     {
         if (_selector == LEND_SELECTOR) {
-            return __parseAssetsForLend(_encodedCallArgs);
+            return __parseAssetsForLend(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
-            return __parseAssetsForRedeem(_encodedCallArgs);
+            return __parseAssetsForRedeem(_actionData);
         } else if (_selector == TAKE_ORDER_SELECTOR) {
-            return __parseAssetsForTakeOrder(_encodedCallArgs);
+            return __parseAssetsForTakeOrder(_actionData);
         }
 
-        revert("parseAssetsForMethod: _selector invalid");
+        revert("parseAssetsForAction: _selector invalid");
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during lend() calls
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+    function __parseAssetsForLend(bytes calldata _actionData)
         private
         view
         returns (
@@ -161,7 +161,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[2] memory maxOutgoingAssetAmounts,
             ,
             uint256 minIncomingAssetAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         spendAssets_ = new address[](2);
         spendAssets_[0] = outgoingAssets[0];
@@ -192,7 +192,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
-    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+    function __parseAssetsForRedeem(bytes calldata _actionData)
         private
         view
         returns (
@@ -207,7 +207,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256 outgoingAssetAmount,
             address[2] memory incomingAssets,
             uint256[2] memory minIncomingAssetAmounts
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         // No need to validate not address(0), this will be caught in IntegrationManager
@@ -235,7 +235,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during takeOrder() calls
-    function __parseAssetsForTakeOrder(bytes calldata _encodedCallArgs)
+    function __parseAssetsForTakeOrder(bytes calldata _actionData)
         private
         pure
         returns (
@@ -250,7 +250,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             address[] memory path,
             uint256 outgoingAssetAmount,
             uint256 minIncomingAssetAmount
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ) = __decodeTakeOrderCallArgs(_actionData);
 
         require(path.length >= 2, "__parseAssetsForTakeOrder: _path must be >= 2");
 
@@ -276,7 +276,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the lend encoded call arguments
-    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+    function __decodeLendCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -286,11 +286,11 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256 minIncomingAssetAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (address[2], uint256[2], uint256[2], uint256));
+        return abi.decode(_actionData, (address[2], uint256[2], uint256[2], uint256));
     }
 
     /// @dev Helper to decode the redeem encoded call arguments
-    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
+    function __decodeRedeemCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -299,11 +299,11 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[2] memory minIncomingAssetAmounts_
         )
     {
-        return abi.decode(_encodedCallArgs, (uint256, address[2], uint256[2]));
+        return abi.decode(_actionData, (uint256, address[2], uint256[2]));
     }
 
     /// @dev Helper to decode the take order encoded call arguments
-    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
+    function __decodeTakeOrderCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -312,7 +312,7 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             uint256 minIncomingAssetAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (address[], uint256, uint256));
+        return abi.decode(_actionData, (address[], uint256, uint256));
     }
 
     ///////////////////

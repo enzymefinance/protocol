@@ -77,7 +77,7 @@ contract MockGenericAdapter is AdapterBase {
         INTEGRATEE = _integratee;
     }
 
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
         bytes calldata _callArgs

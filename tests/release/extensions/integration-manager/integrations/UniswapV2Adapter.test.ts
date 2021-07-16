@@ -44,7 +44,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const uniswapV2Adapter = fork.deployment.uniswapV2Adapter;
 
@@ -65,10 +65,10 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      uniswapV2Adapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+      uniswapV2Adapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(uniswapV2Adapter.parseAssetsForMethod(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
+    await expect(uniswapV2Adapter.parseAssetsForAction(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -93,9 +93,9 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = lendSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(randomAddress(), selector, lendArgs);
+    const result = await uniswapV2Adapter.parseAssetsForAction(randomAddress(), selector, lendArgs);
 
-    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForAction, {
       incomingAssets_: [poolToken],
       spendAssets_: [tokenA, tokenB],
       spendAssetAmounts_: [amountADesired, amountBDesired],
@@ -122,9 +122,9 @@ describe('parseAssetsForMethod', () => {
     });
 
     const selector = redeemSelector;
-    const result = await uniswapV2Adapter.parseAssetsForMethod(randomAddress(), selector, redeemArgs);
+    const result = await uniswapV2Adapter.parseAssetsForAction(randomAddress(), selector, redeemArgs);
 
-    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(uniswapV2Adapter.parseAssetsForAction, {
       incomingAssets_: [tokenA, tokenB],
       spendAssets_: [poolToken],
       spendAssetAmounts_: [poolTokenAmount],

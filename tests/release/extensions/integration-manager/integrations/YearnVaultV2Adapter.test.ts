@@ -35,10 +35,10 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     await expect(
-      fork.deployment.yearnVaultV2Adapter.parseAssetsForMethod(
+      fork.deployment.yearnVaultV2Adapter.parseAssetsForAction(
         randomAddress(),
         utils.randomBytes(4),
         constants.HashZero,
@@ -49,7 +49,7 @@ describe('parseAssetsForMethod', () => {
   describe('lend', () => {
     it('does not allow an invalid yVault', async () => {
       await expect(
-        fork.deployment.yearnVaultV2Adapter.parseAssetsForMethod(
+        fork.deployment.yearnVaultV2Adapter.parseAssetsForAction(
           randomAddress(),
           lendSelector,
           yearnVaultV2LendArgs({
@@ -68,7 +68,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingUnderlyingAmount = utils.parseEther('2');
       const minIncomingYVaultSharesAmount = utils.parseEther('3');
 
-      const result = await yearnVaultV2Adapter.parseAssetsForMethod(
+      const result = await yearnVaultV2Adapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         yearnVaultV2LendArgs({
@@ -78,7 +78,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [await yVault.token()],
         spendAssetAmounts_: [outgoingUnderlyingAmount],
@@ -91,7 +91,7 @@ describe('parseAssetsForMethod', () => {
   describe('redeem', () => {
     it('does not allow an invalid yVault', async () => {
       await expect(
-        fork.deployment.yearnVaultV2Adapter.parseAssetsForMethod(
+        fork.deployment.yearnVaultV2Adapter.parseAssetsForAction(
           randomAddress(),
           redeemSelector,
           yearnVaultV2RedeemArgs({
@@ -111,7 +111,7 @@ describe('parseAssetsForMethod', () => {
       const maxOutgoingYVaultSharesAmount = utils.parseEther('2');
       const minIncomingUnderlyingAmount = utils.parseEther('3');
 
-      const result = await yearnVaultV2Adapter.parseAssetsForMethod(
+      const result = await yearnVaultV2Adapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         yearnVaultV2RedeemArgs({
@@ -122,7 +122,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [yVault],
         spendAssetAmounts_: [maxOutgoingYVaultSharesAmount],

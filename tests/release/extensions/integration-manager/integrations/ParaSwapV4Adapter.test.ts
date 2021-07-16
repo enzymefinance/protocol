@@ -41,7 +41,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
@@ -54,11 +54,11 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      paraSwapV4Adapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+      paraSwapV4Adapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
     await expect(
-      paraSwapV4Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, args),
+      paraSwapV4Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, args),
     ).resolves.toBeTruthy();
   });
 
@@ -78,9 +78,9 @@ describe('parseAssetsForMethod', () => {
       paths: paraSwapV4GenerateDummyPaths({ toTokens: [incomingAsset] }),
     });
 
-    const result = await paraSwapV4Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await paraSwapV4Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(paraSwapV4Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(paraSwapV4Adapter.parseAssetsForAction, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],

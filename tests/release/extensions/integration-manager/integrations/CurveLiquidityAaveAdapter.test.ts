@@ -86,12 +86,12 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
 
     await expect(
-      curveLiquidityAaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
+      curveLiquidityAaveAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -99,13 +99,13 @@ describe('parseAssetsForMethod', () => {
     it('generates expected output', async () => {
       const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         claimRewardsSelector,
         constants.HashZero,
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.None,
         spendAssets_: [],
         spendAssetAmounts_: [],
@@ -121,7 +121,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingAaveDaiAmount = utils.parseEther('2');
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         curveAaveLendArgs({
@@ -133,7 +133,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.aave.atokens.adai[0]], // aToken
         spendAssetAmounts_: [outgoingAaveDaiAmount],
@@ -148,7 +148,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingAaveUsdtAmount = utils.parseEther('3');
       const minIncomingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         lendSelector,
         curveAaveLendArgs({
@@ -160,7 +160,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt], // aToken underlyings
         spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
@@ -176,7 +176,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingAaveDaiAmount = utils.parseEther('2');
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveAaveLendAndStakeArgs({
@@ -188,7 +188,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.aave.atokens.adai[0]], // aToken
         spendAssetAmounts_: [outgoingAaveDaiAmount],
@@ -203,7 +203,7 @@ describe('parseAssetsForMethod', () => {
       const outgoingAaveUsdtAmount = utils.parseEther('3');
       const minIncomingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveAaveLendAndStakeArgs({
@@ -215,7 +215,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt], // aToken underlyings
         spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
@@ -228,7 +228,7 @@ describe('parseAssetsForMethod', () => {
   describe('redeem', () => {
     it('single asset redemption does not allow multiple incoming assets', async () => {
       await expect(
-        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForMethod(
+        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForAction(
           randomAddress(),
           redeemSelector,
           curveAaveRedeemArgs({
@@ -245,7 +245,7 @@ describe('parseAssetsForMethod', () => {
 
     it('single asset redemption does not allow no incoming assets', async () => {
       await expect(
-        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForMethod(
+        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForAction(
           randomAddress(),
           redeemSelector,
           curveAaveRedeemArgs({
@@ -267,7 +267,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAaveUsdtAmount = utils.parseEther('1.5');
       const outgoingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         curveAaveRedeemArgs({
@@ -280,7 +280,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -298,7 +298,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAaveUsdcAmount = utils.parseEther('2');
       const outgoingLPTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         redeemSelector,
         curveAaveRedeemArgs({
@@ -311,7 +311,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -326,7 +326,7 @@ describe('parseAssetsForMethod', () => {
       const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
       const outgoingLPTokenAmount = utils.parseEther('2');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         stakeSelector,
         curveAaveStakeArgs({
@@ -334,7 +334,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.lpToken],
         spendAssetAmounts_: [outgoingLPTokenAmount],
@@ -349,7 +349,7 @@ describe('parseAssetsForMethod', () => {
       const curveLiquidityAaveAdapter = fork.deployment.curveLiquidityAaveAdapter;
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('2');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeSelector,
         curveAaveUnstakeArgs({
@@ -357,7 +357,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
@@ -370,7 +370,7 @@ describe('parseAssetsForMethod', () => {
   describe('unstakeAndRedeem', () => {
     it('single asset redemption does not allow multiple incoming assets', async () => {
       await expect(
-        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForMethod(
+        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForAction(
           randomAddress(),
           unstakeAndRedeemSelector,
           curveAaveUnstakeAndRedeemArgs({
@@ -387,7 +387,7 @@ describe('parseAssetsForMethod', () => {
 
     it('single asset redemption does not allow no incoming assets', async () => {
       await expect(
-        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForMethod(
+        fork.deployment.curveLiquidityAaveAdapter.parseAssetsForAction(
           randomAddress(),
           unstakeAndRedeemSelector,
           curveAaveUnstakeAndRedeemArgs({
@@ -409,7 +409,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAaveUsdtAmount = utils.parseEther('1.5');
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeAndRedeemSelector,
         curveAaveUnstakeAndRedeemArgs({
@@ -422,7 +422,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
@@ -440,7 +440,7 @@ describe('parseAssetsForMethod', () => {
       const minIncomingAaveUsdcAmount = utils.parseEther('2');
       const outgoingLiquidityGaugeTokenAmount = utils.parseEther('1');
 
-      const result = await curveLiquidityAaveAdapter.parseAssetsForMethod(
+      const result = await curveLiquidityAaveAdapter.parseAssetsForAction(
         randomAddress(),
         unstakeAndRedeemSelector,
         curveAaveUnstakeAndRedeemArgs({
@@ -453,7 +453,7 @@ describe('parseAssetsForMethod', () => {
         }),
       );
 
-      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForMethod, {
+      expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],

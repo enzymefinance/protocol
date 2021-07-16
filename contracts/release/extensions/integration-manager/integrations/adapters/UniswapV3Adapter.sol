@@ -29,10 +29,10 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
 
     /// @notice Trades assets on UniswapV3
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     function takeOrder(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata
     ) external onlyIntegrationManager {
         (
@@ -40,7 +40,7 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
             uint24[] memory pathFees,
             uint256 outgoingAssetAmount,
             uint256 minIncomingAssetAmount
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeCallArgs(_actionData);
 
         __uniswapV3Swap(
             _vaultProxy,
@@ -51,19 +51,19 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
         );
     }
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -76,19 +76,19 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForAction: _selector invalid");
 
         (
             address[] memory pathAddresses,
             uint24[] memory pathFees,
             uint256 outgoingAssetAmount,
             uint256 minIncomingAssetAmount
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeCallArgs(_actionData);
 
-        require(pathAddresses.length >= 2, "parseAssetsForMethod: pathAddresses must be >= 2");
+        require(pathAddresses.length >= 2, "parseAssetsForAction: pathAddresses must be >= 2");
         require(
             pathAddresses.length == pathFees.length + 1,
-            "parseAssetsForMethod: incorrect pathAddresses or pathFees length"
+            "parseAssetsForAction: incorrect pathAddresses or pathFees length"
         );
 
         spendAssets_ = new address[](1);
@@ -111,7 +111,7 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments
-    function __decodeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -121,6 +121,6 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
             uint256 minIncomingAssetAmount
         )
     {
-        return abi.decode(_encodedCallArgs, (address[], uint24[], uint256, uint256));
+        return abi.decode(_actionData, (address[], uint24[], uint256, uint256));
     }
 }

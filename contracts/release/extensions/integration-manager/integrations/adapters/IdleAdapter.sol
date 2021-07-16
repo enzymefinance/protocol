@@ -45,18 +45,18 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     /// @notice Claims rewards for a given IdleToken
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function claimRewards(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
         onlyIntegrationManager
         postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        address idleToken = __decodeClaimRewardsCallArgs(_encodedCallArgs);
+        address idleToken = __decodeClaimRewardsCallArgs(_actionData);
 
         __idleV4ClaimRewards(idleToken);
 
@@ -87,7 +87,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     /// @notice Redeems an amount of idleToken for its underlying asset
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     /// @dev This will also pay out any due gov token rewards.
     /// We use the full IdleToken balance of the current contract rather than the user input
@@ -96,14 +96,14 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// initial token balance in the current contract post-tx.
     function redeem(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        (address idleToken, , ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        (address idleToken, , ) = __decodeRedeemCallArgs(_actionData);
 
         __idleV4Redeem(idleToken, ERC20(idleToken).balanceOf(address(this)));
 
@@ -123,19 +123,19 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address _vaultProxy,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -149,19 +149,19 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
         )
     {
         if (_selector == CLAIM_REWARDS_SELECTOR) {
-            return __parseAssetsForClaimRewards(_vaultProxy, _encodedCallArgs);
+            return __parseAssetsForClaimRewards(_vaultProxy, _actionData);
         } else if (_selector == LEND_SELECTOR) {
-            return __parseAssetsForLend(_encodedCallArgs);
+            return __parseAssetsForLend(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
-            return __parseAssetsForRedeem(_encodedCallArgs);
+            return __parseAssetsForRedeem(_actionData);
         }
 
-        revert("parseAssetsForMethod: _selector invalid");
+        revert("parseAssetsForAction: _selector invalid");
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during claimRewards() calls
-    function __parseAssetsForClaimRewards(address _vaultProxy, bytes calldata _encodedCallArgs)
+    function __parseAssetsForClaimRewards(address _vaultProxy, bytes calldata _actionData)
         private
         view
         returns (
@@ -172,7 +172,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        address idleToken = __decodeClaimRewardsCallArgs(_encodedCallArgs);
+        address idleToken = __decodeClaimRewardsCallArgs(_actionData);
 
         require(
             __getUnderlyingForIdleToken(idleToken) != address(0),
@@ -196,7 +196,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during lend() calls
-    function __parseAssetsForLend(bytes calldata _encodedCallArgs)
+    function __parseAssetsForLend(bytes calldata _actionData)
         private
         view
         returns (
@@ -211,7 +211,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             address idleToken,
             uint256 outgoingUnderlyingAmount,
             uint256 minIncomingIdleTokenAmount
-        ) = __decodeLendCallArgs(_encodedCallArgs);
+        ) = __decodeLendCallArgs(_actionData);
 
         address underlying = __getUnderlyingForIdleToken(idleToken);
         require(underlying != address(0), "__parseAssetsForLend: Unsupported idleToken");
@@ -239,7 +239,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during redeem() calls
-    function __parseAssetsForRedeem(bytes calldata _encodedCallArgs)
+    function __parseAssetsForRedeem(bytes calldata _actionData)
         private
         view
         returns (
@@ -254,7 +254,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             address idleToken,
             uint256 outgoingIdleTokenAmount,
             uint256 minIncomingUnderlyingAmount
-        ) = __decodeRedeemCallArgs(_encodedCallArgs);
+        ) = __decodeRedeemCallArgs(_actionData);
 
         address underlying = __getUnderlyingForIdleToken(idleToken);
         require(underlying != address(0), "__parseAssetsForRedeem: Unsupported idleToken");
@@ -285,16 +285,16 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     ///////////////////////
 
     /// @dev Helper to decode callArgs for claiming rewards tokens
-    function __decodeClaimRewardsCallArgs(bytes memory _encodedCallArgs)
+    function __decodeClaimRewardsCallArgs(bytes memory _actionData)
         private
         pure
         returns (address idleToken_)
     {
-        return abi.decode(_encodedCallArgs, (address));
+        return abi.decode(_actionData, (address));
     }
 
     /// @dev Helper to decode callArgs for lending
-    function __decodeLendCallArgs(bytes memory _encodedCallArgs)
+    function __decodeLendCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -303,11 +303,11 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             uint256 minIncomingIdleTokenAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (address, uint256, uint256));
+        return abi.decode(_actionData, (address, uint256, uint256));
     }
 
     /// @dev Helper to decode callArgs for redeeming
-    function __decodeRedeemCallArgs(bytes memory _encodedCallArgs)
+    function __decodeRedeemCallArgs(bytes memory _actionData)
         private
         pure
         returns (
@@ -316,7 +316,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             uint256 minIncomingUnderlyingAmount_
         )
     {
-        return abi.decode(_encodedCallArgs, (address, uint256, uint256));
+        return abi.decode(_actionData, (address, uint256, uint256));
     }
 
     ///////////////////

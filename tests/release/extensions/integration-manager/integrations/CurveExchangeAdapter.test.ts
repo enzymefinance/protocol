@@ -46,12 +46,12 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
 
     await expect(
-      curveExchangeAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), constants.HashZero),
+      curveExchangeAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), constants.HashZero),
     ).rejects.toBeRevertedWith('_selector invalid');
   });
 
@@ -64,7 +64,7 @@ describe('parseAssetsForMethod', () => {
     const minIncomingAssetAmount = utils.parseEther('0.3');
 
     await expect(
-      curveExchangeAdapter.parseAssetsForMethod(
+      curveExchangeAdapter.parseAssetsForAction(
         randomAddress(),
         takeOrderSelector,
         curveTakeOrderArgs({
@@ -86,7 +86,7 @@ describe('parseAssetsForMethod', () => {
     const incomingAsset = randomAddress();
     const minIncomingAssetAmount = utils.parseEther('0.3');
 
-    const result = await curveExchangeAdapter.parseAssetsForMethod(
+    const result = await curveExchangeAdapter.parseAssetsForAction(
       randomAddress(),
       takeOrderSelector,
       curveTakeOrderArgs({
@@ -98,7 +98,7 @@ describe('parseAssetsForMethod', () => {
       }),
     );
 
-    expect(result).toMatchFunctionOutput(curveExchangeAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(curveExchangeAdapter.parseAssetsForAction, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [outgoingAssetAmount],

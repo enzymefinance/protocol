@@ -17,7 +17,7 @@ import "../IIntegrationManager.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all integration adapters
 interface IIntegrationAdapter {
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address _vaultProxy,
         bytes4 _selector,
         bytes calldata _encodedCallArgs

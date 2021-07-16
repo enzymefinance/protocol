@@ -48,11 +48,11 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
 
     /// @notice Take an order on 0x
     /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _encodedCallArgs Encoded order parameters
+    /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
     function takeOrder(
         address _vaultProxy,
-        bytes calldata _encodedCallArgs,
+        bytes calldata _actionData,
         bytes calldata _assetData
     )
         external
@@ -62,7 +62,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
         (
             bytes memory encodedZeroExOrderArgs,
             uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ) = __decodeTakeOrderCallArgs(_actionData);
 
         IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
         (, , , bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
@@ -74,19 +74,19 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
 
-    /// @notice Parses the expected assets to receive from a call on integration
+    /// @notice Parses the expected assets in a particular action
     /// @param _selector The function selector for the callOnIntegration
-    /// @param _encodedCallArgs The encoded parameters for the callOnIntegration
+    /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
     /// the adapter access to spend assets (`None` by default)
     /// @return spendAssets_ The assets to spend in the call
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForMethod(
+    function parseAssetsForAction(
         address,
         bytes4 _selector,
-        bytes calldata _encodedCallArgs
+        bytes calldata _actionData
     )
         external
         view
@@ -99,21 +99,21 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForMethod: _selector invalid");
+        require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForAction: _selector invalid");
 
         (
             bytes memory encodedZeroExOrderArgs,
             uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        ) = __decodeTakeOrderCallArgs(_actionData);
         IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
 
         require(
             isAllowedMaker(order.makerAddress),
-            "parseAssetsForMethod: Order maker is not allowed"
+            "parseAssetsForAction: Order maker is not allowed"
         );
         require(
             takerAssetFillAmount <= order.takerAssetAmount,
-            "parseAssetsForMethod: Taker asset fill amount greater than available"
+            "parseAssetsForAction: Taker asset fill amount greater than available"
         );
 
         address makerAsset = __getAssetAddress(order.makerAssetData);
@@ -142,7 +142,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
             if (takerFeeAsset == makerAsset) {
                 require(
                     order.takerFee < order.makerAssetAmount,
-                    "parseAssetsForMethod: Fee greater than makerAssetAmount"
+                    "parseAssetsForAction: Fee greater than makerAssetAmount"
                 );
 
                 spendAssets_ = new address[](1);
@@ -187,15 +187,15 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     // PRIVATE FUNCTIONS
 
     /// @dev Decode the parameters of a takeOrder call
-    /// @param _encodedCallArgs Encoded parameters passed from client side
+    /// @param _actionData Encoded parameters passed from client side
     /// @return encodedZeroExOrderArgs_ Encoded args of the 0x order
     /// @return takerAssetFillAmount_ Amount of taker asset to fill
-    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
+    function __decodeTakeOrderCallArgs(bytes memory _actionData)
         private
         pure
         returns (bytes memory encodedZeroExOrderArgs_, uint256 takerAssetFillAmount_)
     {
-        return abi.decode(_encodedCallArgs, (bytes, uint256));
+        return abi.decode(_actionData, (bytes, uint256));
     }
 
     /////////////////////////////

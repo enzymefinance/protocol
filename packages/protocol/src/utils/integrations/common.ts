@@ -29,7 +29,7 @@ export const unstakeAndRedeemSelector = sighash(unstakeAndRedeemFragment);
 
 // prettier-ignore
 export interface IntegrationAdapterInterface {
-  parseAssetsForMethod: Call<(vaultProxy: AddressLike, selector: BytesLike, encodedCallArgs: BytesLike) => any>;
+  parseAssetsForAction: Call<(vaultProxy: AddressLike, selector: BytesLike, encodedCallArgs: BytesLike) => any>;
 }
 
 export async function assetTransferArgs({
@@ -48,7 +48,7 @@ export async function assetTransferArgs({
     1: spendAssets,
     2: spendAssetAmounts,
     3: expectedIncomingAssets,
-  } = await adapter.parseAssetsForMethod(vaultProxy, selector, encodedCallArgs);
+  } = await adapter.parseAssetsForAction(vaultProxy, selector, encodedCallArgs);
 
   return encodeArgs(
     ['uint', 'address[]', 'uint[]', 'address[]'],

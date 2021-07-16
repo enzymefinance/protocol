@@ -40,7 +40,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a maker which is not whitelisted', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
@@ -70,7 +70,7 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs),
+      zeroExV2Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs),
     ).rejects.toBeRevertedWith('Order maker is not allowed');
   });
 
@@ -110,9 +110,9 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount],
@@ -160,9 +160,9 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount],
@@ -207,9 +207,9 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset],
       spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
@@ -256,9 +256,9 @@ describe('parseAssetsForMethod', () => {
       takerAssetFillAmount,
     });
 
-    const result = await zeroExV2Adapter.parseAssetsForMethod(randomAddress(), takeOrderSelector, takeOrderArgs);
+    const result = await zeroExV2Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
-    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
       spendAssets_: [outgoingAsset, takerFeeAsset],
       spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],

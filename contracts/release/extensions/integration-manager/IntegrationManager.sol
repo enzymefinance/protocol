@@ -358,7 +358,7 @@ contract IntegrationManager is
             maxSpendAssetAmounts_,
             incomingAssets_,
             minIncomingAssetAmounts_
-        ) = IIntegrationAdapter(_adapter).parseAssetsForMethod(
+        ) = IIntegrationAdapter(_adapter).parseAssetsForAction(
             _vaultProxy,
             _selector,
             _integrationData

@@ -29,7 +29,7 @@ describe('constructor', () => {
   });
 });
 
-describe('parseAssetsForMethod', () => {
+describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -42,10 +42,10 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      aaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+      aaveAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(aaveAdapter.parseAssetsForMethod(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
+    await expect(aaveAdapter.parseAssetsForAction(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
@@ -60,12 +60,12 @@ describe('parseAssetsForMethod', () => {
     });
 
     await expect(
-      aaveAdapter.parseAssetsForMethod(randomAddress(), utils.randomBytes(4), args),
+      aaveAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    const result = await aaveAdapter.parseAssetsForMethod(randomAddress(), lendSelector, args);
+    const result = await aaveAdapter.parseAssetsForAction(randomAddress(), lendSelector, args);
 
-    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [aToken.address],
       spendAssets_: [outgoingToken],
@@ -85,9 +85,9 @@ describe('parseAssetsForMethod', () => {
       amount,
     });
 
-    const result = await aaveAdapter.parseAssetsForMethod(randomAddress(), redeemSelector, args);
+    const result = await aaveAdapter.parseAssetsForAction(randomAddress(), redeemSelector, args);
 
-    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForMethod, {
+    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [token],
       spendAssets_: [aToken],
