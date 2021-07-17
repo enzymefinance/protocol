@@ -22,6 +22,8 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 
+const tempTolerance = 10000;
+
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
     usdc: 364283,
@@ -307,7 +309,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
 
-      expect(redeemed).toCostAround(expectedGasCosts['redeem partial shares: max assets'][denominationAssetId]);
+      expect(redeemed).toCostAround(
+        expectedGasCosts['redeem partial shares: max assets'][denominationAssetId],
+        tempTolerance,
+      );
     });
 
     it("sends an asset amount to the fund's vault again", async () => {
@@ -374,7 +379,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));
 
-      expect(redeemed).toCostAround(expectedGasCosts['redeem all shares: max assets'][denominationAssetId]);
+      expect(redeemed).toCostAround(
+        expectedGasCosts['redeem all shares: max assets'][denominationAssetId],
+        tempTolerance,
+      );
     });
   },
 );
