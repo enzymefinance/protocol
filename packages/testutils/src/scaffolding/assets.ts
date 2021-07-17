@@ -9,14 +9,12 @@ export async function addNewAssetsToFund({
   integrationManager,
   assets,
   amounts = new Array(assets.length).fill(1),
-  setAsPersistentlyTracked = new Array(assets.length).fill(true),
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   assets: StandardToken[];
   amounts?: BigNumberish[];
-  setAsPersistentlyTracked?: boolean[];
 }) {
   // First, add tracked assets while their balances are 0
   const receipt = addTrackedAssetsToVault({
@@ -31,9 +29,6 @@ export async function addNewAssetsToFund({
   for (const i in assets) {
     if (amounts[i] > 0) {
       await assets[i].transfer(vaultProxy, amounts[i]);
-    }
-    if (!setAsPersistentlyTracked[i]) {
-      await comptrollerProxy.allowUntrackingAssets([assets[i]]);
     }
   }
 

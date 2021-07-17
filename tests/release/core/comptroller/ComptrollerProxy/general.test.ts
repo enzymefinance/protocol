@@ -1,7 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { encodeArgs, ReleaseStatusTypes, sighash, StandardToken } from '@enzymefinance/protocol';
 import {
-  addNewAssetsToFund,
   assertEvent,
   callOnExtension,
   createNewFund,
@@ -13,55 +12,6 @@ import { constants, utils } from 'ethers';
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
-});
-
-describe('allowUntrackingAssets', () => {
-  it('can only be called by the owner', async () => {
-    const { fundDeployer } = fork.deployment;
-    const [fundOwner, randomUser] = fork.accounts;
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    await expect(
-      comptrollerProxy.connect(randomUser).allowUntrackingAssets([randomAddress()]),
-    ).rejects.toBeRevertedWith('Only fund owner callable');
-  });
-
-  it('correctly unsets an asset as persistently tracked', async () => {
-    const { fundDeployer, integrationManager } = fork.deployment;
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    // Track an asset and make it persistently tracked
-    const assetToUnsetAsPermanentlyTracked = new StandardToken(fork.config.primitives.dai, whales.dai);
-    await addNewAssetsToFund({
-      signer: fundOwner,
-      comptrollerProxy,
-      integrationManager,
-      assets: [assetToUnsetAsPermanentlyTracked],
-      setAsPersistentlyTracked: [true],
-    });
-
-    // The asset should be persistently tracked
-    expect(await vaultProxy.isPersistentlyTrackedAsset(assetToUnsetAsPermanentlyTracked)).toBe(true);
-
-    // Unset the asset as persistently tracked
-    await comptrollerProxy.allowUntrackingAssets([assetToUnsetAsPermanentlyTracked]);
-
-    // The asset should not longer be persistently tracked
-    expect(await vaultProxy.isPersistentlyTrackedAsset(assetToUnsetAsPermanentlyTracked)).toBe(false);
-  });
 });
 
 describe('callOnExtension', () => {

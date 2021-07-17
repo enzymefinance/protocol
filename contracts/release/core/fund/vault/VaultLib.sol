@@ -88,6 +88,20 @@ contract VaultLib is VaultLibBase2, IVault {
     // GENERAL //
     /////////////
 
+    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
+    /// @param _assets The asset to allow to untrack
+    /// @dev Generally unnecessary to call directly, but closes a potential griefing attack
+    function allowUntrackingAssets(address[] memory _assets) external override onlyOwner {
+        address denominationAsset = IComptroller(accessor).getDenominationAsset();
+        for (uint256 i; i < _assets.length; i++) {
+            require(
+                _assets[i] != denominationAsset,
+                "allowUntrackingAssets: denominationAsset not allowed"
+            );
+            __unsetPersistentlyTrackedAsset(_assets[i]);
+        }
+    }
+
     /// @notice Gets the external position library contract for a given type
     /// @param _typeId The type for which to get the external position library
     /// @return externalPositionLib_ The external position library
@@ -227,15 +241,6 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @param _asset The asset to add and set as persistently tracked
     function addPersistentlyTrackedAsset(address _asset) external override onlyAccessor {
         __addPersistentlyTrackedAsset(_asset);
-    }
-
-    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
-    /// @param _assets The asset to allow to untrack
-    /// @dev Generally unnecessary to call directly, but closes a potential griefing attack
-    function allowUntrackingAssets(address[] memory _assets) external override onlyAccessor {
-        for (uint256 i; i < _assets.length; i++) {
-            __unsetPersistentlyTrackedAsset(_assets[i]);
-        }
     }
 
     /// @notice Burns fund shares from a particular account

@@ -302,20 +302,6 @@ contract ComptrollerLib is IComptroller {
     // PERMISSIONED VAULT ACTIONS //
     ////////////////////////////////
 
-    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
-    /// @param _assets The asset to allow to untrack
-    /// @dev No need to check onlyNotPaused as there is no risk of value loss
-    function allowUntrackingAssets(address[] memory _assets) external onlyOwner {
-        for (uint256 i; i < _assets.length; i++) {
-            require(
-                _assets[i] != denominationAsset,
-                "allowUntrackingAssets: denominationAsset not allowed"
-            );
-        }
-
-        IVault(vaultProxy).allowUntrackingAssets(_assets);
-    }
-
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform

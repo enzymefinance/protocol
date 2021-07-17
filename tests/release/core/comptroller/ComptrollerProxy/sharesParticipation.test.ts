@@ -982,7 +982,7 @@ describe('redeem', () => {
       // Seed the vault with the denomination asset
       await denominationAsset.transfer(vaultProxy, 1);
 
-      // Send and track a second asset in the vault
+      // Send and track a second asset in the vault, but then allow it to be untracked
       const secondAsset = new StandardToken(mln, whales.mln);
       await addNewAssetsToFund({
         signer: fundOwner,
@@ -990,8 +990,9 @@ describe('redeem', () => {
         integrationManager,
         assets: [secondAsset],
         amounts: [(await getAssetUnit(secondAsset)).mul(3)],
-        setAsPersistentlyTracked: [false], // Allow untracking to test auto-removal
       });
+      // Allow untracking
+      await vaultProxy.connect(fundOwner).allowUntrackingAssets([secondAsset]);
 
       // Define the expected payout assets
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
