@@ -36,20 +36,7 @@ interface IComptroller {
 
     function getDenominationAsset() external view returns (address);
 
-    function getLibRoutes()
-        external
-        view
-        returns (
-            address,
-            address,
-            address,
-            address,
-            address,
-            address,
-            address,
-            address,
-            address
-        );
+    function getIntegrationManager() external view returns (address);
 
     function getVaultProxy() external view returns (address);
 

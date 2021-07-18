@@ -152,7 +152,7 @@ contract ComptrollerLib is IComptroller {
     // so we use helper functions to prevent repetitive inlining of expensive string values.
 
     function __assertIsFundDeployer(address _who) private view {
-        require(_who == FUND_DEPLOYER, "Only FundDeployer callable");
+        require(_who == getFundDeployer(), "Only FundDeployer callable");
     }
 
     function __assertIsOwner(address _who) private view {
@@ -179,7 +179,7 @@ contract ComptrollerLib is IComptroller {
 
         require(
             lastSharesBoughtTimestamp == 0 ||
-                block.timestamp.sub(lastSharesBoughtTimestamp) >= sharesActionTimelock ||
+                block.timestamp.sub(lastSharesBoughtTimestamp) >= getSharesActionTimelock() ||
                 __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
@@ -229,9 +229,9 @@ contract ComptrollerLib is IComptroller {
         bytes calldata _callArgs
     ) external override onlyNotPaused locksReentrance allowsPermissionedVaultAction {
         require(
-            _extension == FEE_MANAGER ||
-                _extension == INTEGRATION_MANAGER ||
-                _extension == EXTERNAL_POSITION_MANAGER,
+            _extension == getFeeManager() ||
+                _extension == getIntegrationManager() ||
+                _extension == getExternalPositionManager(),
             "callOnExtension: _extension invalid"
         );
 
@@ -256,7 +256,7 @@ contract ComptrollerLib is IComptroller {
         bytes calldata _encodedArgs
     ) external onlyNotPaused onlyOwner {
         require(
-            IFundDeployer(FUND_DEPLOYER).isAllowedVaultCall(
+            IFundDeployer(getFundDeployer()).isAllowedVaultCall(
                 _contract,
                 _selector,
                 keccak256(_encodedArgs)
@@ -270,9 +270,9 @@ contract ComptrollerLib is IComptroller {
     /// @dev Helper to check whether the release is paused, and that there is no local override
     function __fundIsPaused() private view returns (bool) {
         return
-            IFundDeployer(FUND_DEPLOYER).getReleaseStatus() ==
+            IFundDeployer(getFundDeployer()).getReleaseStatus() ==
             IFundDeployer.ReleaseStatus.Paused &&
-            !overridePause;
+            !getOverridePause();
     }
 
     /// @dev Helper to check if a VaultProxy has a pending migration or reconfiguration request
@@ -282,8 +282,8 @@ contract ComptrollerLib is IComptroller {
         returns (bool hasPendingMigrationOrReconfiguration)
     {
         return
-            IDispatcher(DISPATCHER).hasMigrationRequest(_vaultProxy) ||
-            IFundDeployer(FUND_DEPLOYER).hasReconfigurationRequest(_vaultProxy);
+            IDispatcher(getDispatcher()).hasMigrationRequest(_vaultProxy) ||
+            IFundDeployer(getFundDeployer()).hasReconfigurationRequest(_vaultProxy);
     }
 
     //////////////////
@@ -322,7 +322,7 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper to buyback the max available protocol fee shares, during an auto-buyback
     function __buyBackMaxProtocolFeeShares(address _vaultProxy, uint256 _gav) private {
-        uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(PROTOCOL_FEE_RESERVE);
+        uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
         uint256 buybackValueInMln = __getBuybackValueInMln(_vaultProxy, sharesAmount, _gav);
 
         try
@@ -338,7 +338,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _sharesAmount,
         uint256 _gav
     ) private returns (uint256 buybackValueInMln_) {
-        address denominationAssetCopy = denominationAsset;
+        address denominationAssetCopy = getDenominationAsset();
 
         uint256 grossShareValue = __calcGrossShareValue(
             _gav,
@@ -351,7 +351,7 @@ contract ComptrollerLib is IComptroller {
         );
 
         return
-            IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+            IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
                 denominationAssetCopy,
                 buybackValueInDenominationAsset,
                 getMlnToken()
@@ -375,7 +375,7 @@ contract ComptrollerLib is IComptroller {
         // Validate action as needed
         if (_action == IVault.VaultAction.RemoveTrackedAsset) {
             require(
-                abi.decode(_actionData, (address)) != denominationAsset,
+                abi.decode(_actionData, (address)) != getDenominationAsset(),
                 "permissionedVaultAction: Cannot untrack denomination asset"
             );
         }
@@ -392,7 +392,7 @@ contract ComptrollerLib is IComptroller {
         bool validAction;
         if (permissionedVaultActionAllowed) {
             // Calls are roughly ordered by likely frequency
-            if (_caller == INTEGRATION_MANAGER) {
+            if (_caller == getIntegrationManager()) {
                 if (
                     _action == IVault.VaultAction.AddTrackedAsset ||
                     _action == IVault.VaultAction.RemoveTrackedAsset ||
@@ -401,7 +401,7 @@ contract ComptrollerLib is IComptroller {
                 ) {
                     validAction = true;
                 }
-            } else if (_caller == FEE_MANAGER) {
+            } else if (_caller == getFeeManager()) {
                 if (
                     _action == IVault.VaultAction.MintShares ||
                     _action == IVault.VaultAction.BurnShares ||
@@ -409,7 +409,7 @@ contract ComptrollerLib is IComptroller {
                 ) {
                     validAction = true;
                 }
-            } else if (_caller == EXTERNAL_POSITION_MANAGER) {
+            } else if (_caller == getExternalPositionManager()) {
                 if (
                     _action == IVault.VaultAction.CallOnExternalPosition ||
                     _action == IVault.VaultAction.AddExternalPosition ||
@@ -437,9 +437,9 @@ contract ComptrollerLib is IComptroller {
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
     function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
-        require(denominationAsset == address(0), "init: Already initialized");
+        require(getDenominationAsset() == address(0), "init: Already initialized");
         require(
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_denominationAsset),
+            IPrimitivePriceFeed(getPrimitivePriceFeed()).isSupportedAsset(_denominationAsset),
             "init: Bad denomination asset"
         );
 
@@ -458,10 +458,10 @@ contract ComptrollerLib is IComptroller {
         bytes calldata _policyManagerConfigData
     ) external override onlyFundDeployer {
         if (_feeManagerConfigData.length > 0) {
-            IExtension(FEE_MANAGER).setConfigForFund(_feeManagerConfigData);
+            IExtension(getFeeManager()).setConfigForFund(_feeManagerConfigData);
         }
         if (_policyManagerConfigData.length > 0) {
-            IExtension(POLICY_MANAGER).setConfigForFund(_policyManagerConfigData);
+            IExtension(getPolicyManager()).setConfigForFund(_policyManagerConfigData);
         }
     }
 
@@ -497,13 +497,13 @@ contract ComptrollerLib is IComptroller {
             }
         }
 
-        IVault(vaultProxyCopy).addTrackedAsset(denominationAsset);
+        IVault(vaultProxyCopy).addTrackedAsset(getDenominationAsset());
 
         // Activate extensions
-        IExtension(EXTERNAL_POSITION_MANAGER).activateForFund(_isMigration);
-        IExtension(FEE_MANAGER).activateForFund(_isMigration);
-        IExtension(INTEGRATION_MANAGER).activateForFund(_isMigration);
-        IExtension(POLICY_MANAGER).activateForFund(_isMigration);
+        IExtension(getExternalPositionManager()).activateForFund(_isMigration);
+        IExtension(getFeeManager()).activateForFund(_isMigration);
+        IExtension(getIntegrationManager()).activateForFund(_isMigration);
+        IExtension(getPolicyManager()).activateForFund(_isMigration);
     }
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active
@@ -526,7 +526,7 @@ contract ComptrollerLib is IComptroller {
         // Base cost: 17k
         // Per fee that uses shares outstanding (default recipient): 33k
         // 300k accommodates up to 8 such fees
-        try IExtension(FEE_MANAGER).deactivateForFund{gas: 300000}()  {} catch {
+        try IExtension(getFeeManager()).deactivateForFund{gas: 300000}()  {} catch {
             emit DeactivateFeeManagerFailed();
         }
 
@@ -568,7 +568,7 @@ contract ComptrollerLib is IComptroller {
         // It is not necessary to finalize assets in external positions, as synths will have
         // already been settled prior to transferring to the external position contract
         if (_finalizeAssets) {
-            IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+            IAssetFinalityResolver(getAssetFinalityResolver()).finalizeAssets(
                 vaultProxyAddress,
                 assets
             );
@@ -579,10 +579,10 @@ contract ComptrollerLib is IComptroller {
             balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
-        gav_ = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+        gav_ = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
             assets,
             balances,
-            denominationAsset
+            getDenominationAsset()
         );
 
         if (externalPositions.length > 0) {
@@ -610,7 +610,7 @@ contract ComptrollerLib is IComptroller {
         grossShareValue_ = __calcGrossShareValue(
             gav,
             ERC20(vaultProxy).totalSupply(),
-            10**uint256(ERC20(denominationAsset).decimals())
+            10**uint256(ERC20(getDenominationAsset()).decimals())
         );
 
         return grossShareValue_;
@@ -626,11 +626,11 @@ contract ComptrollerLib is IComptroller {
             uint256[] memory collateralBalances
         ) = IExternalPosition(_externalPosition).getManagedAssets();
 
-        uint256 collateralValue = IValueInterpreter(VALUE_INTERPRETER)
+        uint256 collateralValue = IValueInterpreter(getValueInterpreter())
             .calcCanonicalAssetsTotalValue(
             collateralAssets,
             collateralBalances,
-            denominationAsset
+            getDenominationAsset()
         );
 
         (address[] memory borrowedAssets, uint256[] memory borrowedBalances) = IExternalPosition(
@@ -638,10 +638,11 @@ contract ComptrollerLib is IComptroller {
         )
             .getDebtAssets();
 
-        uint256 borrowedValue = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetsTotalValue(
+        uint256 borrowedValue = IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetsTotalValue(
             borrowedAssets,
             borrowedBalances,
-            denominationAsset
+            getDenominationAsset()
         );
 
         if (collateralValue > borrowedValue) {
@@ -683,11 +684,11 @@ contract ComptrollerLib is IComptroller {
         uint256 _investmentAmount,
         uint256 _minSharesQuantity
     ) external returns (uint256 sharesReceived_) {
-        bool hasSharesActionTimelock = sharesActionTimelock > 0;
+        bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
 
         require(
             !hasSharesActionTimelock ||
-                IFundDeployer(FUND_DEPLOYER).isAllowedBuySharesOnBehalfCaller(msg.sender),
+                IFundDeployer(getFundDeployer()).isAllowedBuySharesOnBehalfCaller(msg.sender),
             "buySharesOnBehalf: Unauthorized"
         );
 
@@ -703,7 +704,7 @@ contract ComptrollerLib is IComptroller {
         external
         returns (uint256 sharesReceived_)
     {
-        bool hasSharesActionTimelock = sharesActionTimelock > 0;
+        bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
 
         return
             __buyShares(
@@ -749,7 +750,7 @@ contract ComptrollerLib is IComptroller {
         }
 
         // Calculate the amount of shares to issue with the investment amount
-        address denominationAssetCopy = denominationAsset;
+        address denominationAssetCopy = getDenominationAsset();
         uint256 sharePrice = __calcGrossShareValue(
             gav,
             ERC20(vaultProxyCopy).totalSupply(),
@@ -796,7 +797,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _investmentAmount,
         uint256 _gav
     ) private {
-        IFeeManager(FEE_MANAGER).invokeHook(
+        IFeeManager(getFeeManager()).invokeHook(
             IFeeManager.FeeHook.PreBuyShares,
             abi.encode(_buyer, _investmentAmount),
             _gav
@@ -814,13 +815,13 @@ contract ComptrollerLib is IComptroller {
         uint256 _preBuySharesGav
     ) private {
         uint256 gav = _preBuySharesGav.add(_investmentAmount);
-        IFeeManager(FEE_MANAGER).invokeHook(
+        IFeeManager(getFeeManager()).invokeHook(
             IFeeManager.FeeHook.PostBuyShares,
             abi.encode(_buyer, _investmentAmount, _sharesIssued),
             gav
         );
 
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.PostBuyShares,
             abi.encode(_buyer, _investmentAmount, _sharesIssued, gav)
@@ -941,7 +942,7 @@ contract ComptrollerLib is IComptroller {
 
         // Resolve finality of all assets as needed.
         // Run this prior to calculating GAV.
-        IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
+        IAssetFinalityResolver(getAssetFinalityResolver()).finalizeAssets(
             address(vaultProxyContract),
             payoutAssets_
         );
@@ -1039,7 +1040,7 @@ contract ComptrollerLib is IComptroller {
         uint256[] calldata _payoutAssetPercentages,
         uint256 _owedGav
     ) private returns (uint256[] memory payoutAmounts_) {
-        address denominationAssetCopy = denominationAsset;
+        address denominationAssetCopy = getDenominationAsset();
         uint256 percentagesTotal;
         payoutAmounts_ = new uint256[](_payoutAssets.length);
         for (uint256 i; i < _payoutAssets.length; i++) {
@@ -1050,7 +1051,7 @@ contract ComptrollerLib is IComptroller {
                 continue;
             }
 
-            payoutAmounts_[i] = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+            payoutAmounts_[i] = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
                 denominationAssetCopy,
                 _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
                 _payoutAssets[i]
@@ -1076,7 +1077,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _gavIfCalculated
     ) private allowsPermissionedVaultAction {
         try
-            IFeeManager(FEE_MANAGER).invokeHook(
+            IFeeManager(getFeeManager()).invokeHook(
                 IFeeManager.FeeHook.PreRedeemShares,
                 abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
                 _gavIfCalculated
@@ -1096,7 +1097,7 @@ contract ComptrollerLib is IComptroller {
         uint256[] memory _assetAmounts,
         uint256 _gavPreRedeem
     ) private {
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets,
             abi.encode(
@@ -1184,7 +1185,7 @@ contract ComptrollerLib is IComptroller {
         require(msg.sender == vaultProxyCopy, "preTransferSharesHook: Only VaultProxy callable");
         __assertSharesActionNotTimelocked(vaultProxyCopy, _sender);
 
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.PreTransferShares,
             abi.encode(_sender, _recipient, _amount)
@@ -1202,76 +1203,87 @@ contract ComptrollerLib is IComptroller {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `denominationAsset` variable
-    /// @return denominationAsset_ The `denominationAsset` variable value
-    function getDenominationAsset() external view override returns (address denominationAsset_) {
-        return denominationAsset;
-    }
+    // LIB IMMUTABLES
 
-    /// @notice Gets the routes for the various contracts used by all funds
+    /// @notice Gets the `ASSET_FINALITY_RESOLVER` variable
     /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
+    function getAssetFinalityResolver() public view returns (address assetFinalityResolver_) {
+        return ASSET_FINALITY_RESOLVER;
+    }
+
+    /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value
+    function getDispatcher() public view returns (address dispatcher_) {
+        return DISPATCHER;
+    }
+
+    /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
+    /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
+    function getExternalPositionManager() public view returns (address externalPositionManager_) {
+        return EXTERNAL_POSITION_MANAGER;
+    }
+
+    /// @notice Gets the `FEE_MANAGER` variable
     /// @return feeManager_ The `FEE_MANAGER` variable value
+    function getFeeManager() public view returns (address feeManager_) {
+        return FEE_MANAGER;
+    }
+
+    /// @notice Gets the `FUND_DEPLOYER` variable
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
+    function getFundDeployer() public view returns (address fundDeployer_) {
+        return FUND_DEPLOYER;
+    }
+
+    /// @notice Gets the `INTEGRATION_MANAGER` variable
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
+    function getIntegrationManager() public view override returns (address integrationManager_) {
+        return INTEGRATION_MANAGER;
+    }
+
+    /// @notice Gets the `MLN_TOKEN` variable
+    /// @return mlnToken_ The `MLN_TOKEN` variable value
+    function getMlnToken() public view returns (address mlnToken_) {
+        return MLN_TOKEN;
+    }
+
+    /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
+    function getPolicyManager() public view returns (address policyManager_) {
+        return POLICY_MANAGER;
+    }
+
+    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
     /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
+    function getPrimitivePriceFeed() public view returns (address primitivePriceFeed_) {
+        return PRIMITIVE_PRICE_FEED;
+    }
+
+    /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable
     /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
+    function getProtocolFeeReserve() public view returns (address protocolFeeReserve_) {
+        return PROTOCOL_FEE_RESERVE;
+    }
+
+    /// @notice Gets the `VALUE_INTERPRETER` variable
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getLibRoutes()
-        external
-        view
-        override
-        returns (
-            address assetFinalityResolver_,
-            address dispatcher_,
-            address feeManager_,
-            address fundDeployer_,
-            address integrationManager_,
-            address policyManager_,
-            address primitivePriceFeed_,
-            address protocolFeeReserve_,
-            address valueInterpreter_
-        )
-    {
-        return (
-            ASSET_FINALITY_RESOLVER,
-            DISPATCHER,
-            FEE_MANAGER,
-            FUND_DEPLOYER,
-            INTEGRATION_MANAGER,
-            POLICY_MANAGER,
-            PRIMITIVE_PRICE_FEED,
-            PROTOCOL_FEE_RESERVE,
-            VALUE_INTERPRETER
-        );
+    function getValueInterpreter() public view returns (address valueInterpreter_) {
+        return VALUE_INTERPRETER;
     }
 
-    /// @notice Gets the `overridePause` variable
-    /// @return overridePause_ The `overridePause` variable value
-    function getOverridePause() external view returns (bool overridePause_) {
-        return overridePause;
-    }
-
-    /// @notice Gets the `sharesActionTimelock` variable
-    /// @return sharesActionTimelock_ The `sharesActionTimelock` variable value
-    function getSharesActionTimelock() external view returns (uint256 sharesActionTimelock_) {
-        return sharesActionTimelock;
-    }
-
-    /// @notice Gets the `vaultProxy` variable
-    /// @return vaultProxy_ The `vaultProxy` variable value
-    function getVaultProxy() external view override returns (address vaultProxy_) {
-        return vaultProxy;
-    }
-
-    // PUBLIC FUNCTIONS
+    // PROXY STORAGE
 
     /// @notice Checks if collected protocol fee shares are automatically bought back
     /// while buying or redeeming shares
     /// @return doesAutoBuyback_ True if shares are automatically bought back
     function doesAutoProtocolFeeSharesBuyback() public view returns (bool doesAutoBuyback_) {
         return autoProtocolFeeSharesBuyback;
+    }
+
+    /// @notice Gets the `denominationAsset` variable
+    /// @return denominationAsset_ The `denominationAsset` variable value
+    function getDenominationAsset() public view override returns (address denominationAsset_) {
+        return denominationAsset;
     }
 
     /// @notice Gets the timestamp of the last time shares were bought for a given account
@@ -1285,9 +1297,21 @@ contract ComptrollerLib is IComptroller {
         return acctToLastSharesBoughtTimestamp[_who];
     }
 
-    /// @notice Gets the `MLN_TOKEN` variable
-    /// @return mlnToken_ The `MLN_TOKEN` variable value
-    function getMlnToken() public view returns (address mlnToken_) {
-        return MLN_TOKEN;
+    /// @notice Gets the `overridePause` variable
+    /// @return overridePause_ The `overridePause` variable value
+    function getOverridePause() public view returns (bool overridePause_) {
+        return overridePause;
+    }
+
+    /// @notice Gets the `sharesActionTimelock` variable
+    /// @return sharesActionTimelock_ The `sharesActionTimelock` variable value
+    function getSharesActionTimelock() public view returns (uint256 sharesActionTimelock_) {
+        return sharesActionTimelock;
+    }
+
+    /// @notice Gets the `vaultProxy` variable
+    /// @return vaultProxy_ The `vaultProxy` variable value
+    function getVaultProxy() public view override returns (address vaultProxy_) {
+        return vaultProxy;
     }
 }

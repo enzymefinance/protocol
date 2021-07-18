@@ -9,33 +9,19 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets initial state for library', async () => {
-    const {
-      assetFinalityResolver,
-      chainlinkPriceFeed,
-      comptrollerLib,
-      dispatcher,
-      feeManager,
-      fundDeployer,
-      integrationManager,
-      policyManager,
-      protocolFeeReserveProxy,
-      valueInterpreter,
-    } = fork.deployment;
+    const comptrollerLib = fork.deployment.comptrollerLib;
 
-    const routesCall = await comptrollerLib.getLibRoutes();
-    expect(routesCall).toMatchFunctionOutput(comptrollerLib.getLibRoutes, {
-      assetFinalityResolver_: assetFinalityResolver,
-      dispatcher_: dispatcher,
-      feeManager_: feeManager,
-      fundDeployer_: fundDeployer,
-      integrationManager_: integrationManager,
-      policyManager_: policyManager,
-      primitivePriceFeed_: chainlinkPriceFeed,
-      protocolFeeReserve_: protocolFeeReserveProxy,
-      valueInterpreter_: valueInterpreter,
-    });
-
+    expect(await comptrollerLib.getAssetFinalityResolver()).toMatchAddress(fork.deployment.assetFinalityResolver);
+    expect(await comptrollerLib.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
+    expect(await comptrollerLib.getExternalPositionManager()).toMatchAddress(fork.deployment.externalPositionManager);
+    expect(await comptrollerLib.getFeeManager()).toMatchAddress(fork.deployment.feeManager);
+    expect(await comptrollerLib.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
+    expect(await comptrollerLib.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
     expect(await comptrollerLib.getMlnToken()).toMatchAddress(fork.config.primitives.mln);
+    expect(await comptrollerLib.getPolicyManager()).toMatchAddress(fork.deployment.policyManager);
+    expect(await comptrollerLib.getPrimitivePriceFeed()).toMatchAddress(fork.deployment.chainlinkPriceFeed);
+    expect(await comptrollerLib.getProtocolFeeReserve()).toMatchAddress(fork.deployment.protocolFeeReserveProxy);
+    expect(await comptrollerLib.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
   });
 });
 
