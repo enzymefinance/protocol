@@ -16,10 +16,8 @@ export enum VaultAction {
   MintShares,
   TransferShares,
   // Asset management
-  AddPersistentlyTrackedAsset,
   AddTrackedAsset,
   ApproveAssetSpender,
-  RemovePersistentlyTrackedAsset,
   RemoveTrackedAsset,
   WithdrawAssetTo,
   // External position management

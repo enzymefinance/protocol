@@ -47,23 +47,23 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 950477,
-    weth: 940068,
+    usdc: 927067,
+    weth: 916658,
   },
 
   'redeem partial shares: max assets': {
-    usdc: 2568723,
-    weth: 2505140,
+    usdc: 2531581,
+    weth: 2468936,
   },
 
   'redeem all shares: max assets': {
-    usdc: 2063712,
-    weth: 2029690,
+    usdc: 2032607,
+    weth: 1993567,
   },
 
   'trade on Uniswap: max assets': {
-    usdc: 260061,
-    weth: 233486,
+    usdc: 257842,
+    weth: 232048,
   },
 } as const;
 

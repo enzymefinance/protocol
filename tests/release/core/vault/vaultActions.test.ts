@@ -97,47 +97,6 @@ describe('AddExternalPosition', () => {
   });
 });
 
-describe('AddPersistentlyTrackedAsset', () => {
-  // Validations tested by AddTrackedAsset
-
-  it('works as expected', async () => {
-    const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
-    const asset = randomAddress();
-
-    const vaultProxy = await createVaultProxy({
-      signer: fork.deployer,
-      vaultLib,
-      fundOwner,
-      fundAccessor,
-    });
-
-    const receipt = await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddPersistentlyTrackedAsset,
-      encodeArgs(['address'], [asset]),
-    );
-
-    // The asset should be tracked, and permanently tracked
-    expect(await vaultProxy.isTrackedAsset(asset)).toBe(true);
-    expect(await vaultProxy.isPersistentlyTrackedAsset(asset)).toBe(true);
-
-    // Assert that the correct events were emitted
-    assertEvent(receipt, 'PersistentlyTrackedAssetAdded', {
-      asset,
-    });
-    assertEvent(receipt, 'TrackedAssetAdded', {
-      asset,
-    });
-  });
-});
-
 describe('AddTrackedAsset', () => {
   it('cannot specify shares as the asset', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
@@ -222,15 +181,13 @@ describe('AddTrackedAsset', () => {
       encodeArgs(['address'], [asset]),
     );
 
-    // The asset should be tracked, but not permanently tracked
+    // The asset should be tracked
     expect(await vaultProxy.isTrackedAsset(asset)).toBe(true);
-    expect(await vaultProxy.isPersistentlyTrackedAsset(asset)).toBe(false);
 
     // Assert that only the correct event was emitted
     assertEvent(receipt, 'TrackedAssetAdded', {
       asset,
     });
-    expect(extractEvent(receipt, 'PersistentlyTrackedAssetAdded').length).toBe(0);
   });
 });
 
@@ -455,54 +412,6 @@ describe('RemoveExternalPosition', () => {
   });
 });
 
-describe('RemovePersistentlyTrackedAsset', () => {
-  it('works as expected', async () => {
-    const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
-
-    const vaultProxy = await createVaultProxy({
-      signer: fork.deployer,
-      vaultLib,
-      fundOwner,
-      fundAccessor,
-    });
-
-    const asset = randomAddress();
-
-    // Add persistently tracked asset to be removed
-    await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddPersistentlyTrackedAsset,
-      encodeArgs(['address'], [asset]),
-    );
-    expect(await vaultProxy.isTrackedAsset(asset)).toBe(true);
-
-    // Remove the persistently tracked asset
-    const receipt = await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.RemovePersistentlyTrackedAsset,
-      encodeArgs(['address'], [asset]),
-    );
-
-    // The tracked asset should be removed from tracked assets and no longer be persistently tracked
-    expect(await vaultProxy.isPersistentlyTrackedAsset(asset)).toBe(false);
-    expect(await vaultProxy.isTrackedAsset(asset)).toBe(false);
-
-    // Assert the correct events were emitted
-    assertEvent(receipt, 'PersistentlyTrackedAssetRemoved', {
-      asset,
-    });
-    assertEvent(receipt, 'TrackedAssetRemoved', {
-      asset,
-    });
-  });
-});
-
 describe('RemoveTrackedAsset', () => {
   it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
@@ -523,7 +432,6 @@ describe('RemoveTrackedAsset', () => {
     });
 
     const assetToRemove = randomAddress();
-    const persistentlyTrackedAsset = randomAddress();
 
     // Call with an untracked asset should fail silently
     const untrackedAssetRemovalReceipt = await vaultProxy.receiveValidatedVaultAction(
@@ -534,25 +442,7 @@ describe('RemoveTrackedAsset', () => {
 
     // Add tracked asset to be removed
     await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [assetToRemove]));
-
-    // Add asset to remain as a persistently tracked asset
-    await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddPersistentlyTrackedAsset,
-      encodeArgs(['address'], [persistentlyTrackedAsset]),
-    );
-
-    expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [
-      assetToRemove,
-      persistentlyTrackedAsset,
-    ]);
-
-    // Attempting to remove the persistently tracked asset fails silently
-    const persistentlyTrackedAssetRemovalReceipt = await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.RemoveTrackedAsset,
-      encodeArgs(['address'], [persistentlyTrackedAsset]),
-    );
-    expect(await vaultProxy.isTrackedAsset(persistentlyTrackedAsset)).toBe(true);
-    expect(extractEvent(persistentlyTrackedAssetRemovalReceipt, 'TrackedAssetRemoved').length).toBe(0);
+    expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [assetToRemove]);
 
     // Remove the tracked asset
     const trackedAssetRemovalReceipt = await vaultProxy.receiveValidatedVaultAction(
@@ -561,9 +451,7 @@ describe('RemoveTrackedAsset', () => {
     );
 
     // The tracked asset should be removed from tracked assets
-    expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [
-      persistentlyTrackedAsset,
-    ]);
+    expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, []);
     expect(await vaultProxy.isTrackedAsset(assetToRemove)).toBe(false);
 
     // Assert the correct event was emitted
@@ -644,7 +532,7 @@ describe('WithdrawAssetTo', () => {
     ).rejects.toBeRevertedWith('Cannot act on shares');
   });
 
-  it('works as expected: partial amount with asset that can be untracked', async () => {
+  it('works as expected', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
@@ -663,7 +551,7 @@ describe('WithdrawAssetTo', () => {
       fundAccessor,
     });
 
-    // Seed the vault with the asset and add it as a removable tracked asset
+    // Seed the vault with the asset
     const amountToTransfer = await getAssetUnit(asset);
     await asset.transfer(vaultProxy, amountToTransfer);
     await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [asset]));
@@ -691,70 +579,5 @@ describe('WithdrawAssetTo', () => {
       target,
       amount,
     });
-  });
-
-  it('works as expected: full amount with asset that can be untracked', async () => {
-    const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
-    const asset = new StandardToken(fork.config.weth, whales.weth);
-
-    const vaultProxy = await createVaultProxy({
-      signer: fork.deployer,
-      vaultLib,
-      fundOwner,
-      fundAccessor,
-    });
-
-    // Seed the vault with the asset and add it as a removable tracked asset
-    const amountToTransfer = await getAssetUnit(asset);
-    await asset.transfer(vaultProxy, amountToTransfer);
-    await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [asset]));
-
-    // Withdraw the full amount of the asset
-    await vaultProxy.withdrawAssetTo(asset, randomAddress(), amountToTransfer);
-
-    // Assert the asset to no longer be tracked
-    expect(await vaultProxy.isTrackedAsset(asset)).toBe(false);
-  });
-
-  it('works as expected: full amount with asset that can NOT be untracked', async () => {
-    const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
-    const asset = new StandardToken(fork.config.weth, whales.weth);
-
-    const vaultProxy = await createVaultProxy({
-      signer: fork.deployer,
-      vaultLib,
-      fundOwner,
-      fundAccessor,
-    });
-
-    // Seed the vault with the asset and add it as a non-untrackable asset
-    const amountToTransfer = await getAssetUnit(asset);
-    await asset.transfer(vaultProxy, amountToTransfer);
-    await vaultProxy.receiveValidatedVaultAction(
-      VaultAction.AddPersistentlyTrackedAsset,
-      encodeArgs(['address'], [asset]),
-    );
-
-    // Withdraw the full amount of the asset
-    await vaultProxy.withdrawAssetTo(asset, randomAddress(), amountToTransfer);
-
-    // Assert the asset is still tracked
-    expect(await vaultProxy.isTrackedAsset(asset)).toBe(true);
   });
 });

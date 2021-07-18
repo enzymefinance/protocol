@@ -80,7 +80,7 @@ describe('permissionedVaultAction', () => {
 
   it.todo('access control tests');
 
-  it.todo('RemovePersistentlyTrackedAsset: does not allow the denomination asset');
+  it.todo('RemoveTrackedAsset: does not allow the denomination asset');
 });
 
 describe('setOverridePause', () => {

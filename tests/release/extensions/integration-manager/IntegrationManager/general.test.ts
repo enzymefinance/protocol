@@ -197,7 +197,7 @@ describe('callOnExtension actions', () => {
       ).rejects.toBeRevertedWith('Unsupported asset');
     });
 
-    it('successfully adds each asset to tracked assets, sets them as persistently tracked, and correctly calls the policy manager', async () => {
+    it('successfully adds each asset to tracked assets, and correctly calls the policy manager', async () => {
       const {
         deployment: { integrationManager, policyManager },
         config: {
@@ -206,7 +206,6 @@ describe('callOnExtension actions', () => {
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
-      // Define assets and whether they should be set as persistently tracked
       const assets = [mln, dai];
 
       // Neither asset to add should be tracked
@@ -222,10 +221,9 @@ describe('callOnExtension actions', () => {
         assets,
       });
 
-      // Both assets should now be tracked and set as persistently tracked
+      // Both assets should now be tracked
       for (const i in assets) {
         expect(await vaultProxy.isTrackedAsset(assets[i])).toBe(true);
-        expect(await vaultProxy.isPersistentlyTrackedAsset(assets[i])).toBe(true);
       }
 
       // Assert that the PolicyManager hook was called correctly

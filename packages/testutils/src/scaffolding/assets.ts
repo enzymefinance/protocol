@@ -24,7 +24,7 @@ export async function addNewAssetsToFund({
     assets,
   });
 
-  // Then seed the vault with balances and unset persistently tracked assets as necessary
+  // Then seed the vault with balances as necessary
   const vaultProxy = await comptrollerProxy.getVaultProxy();
   for (const i in assets) {
     if (amounts[i] > 0) {

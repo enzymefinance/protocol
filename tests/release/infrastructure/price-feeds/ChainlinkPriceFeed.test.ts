@@ -99,7 +99,7 @@ describe('primitives gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(39000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(38000));
   });
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
@@ -150,7 +150,7 @@ describe('primitives gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(59000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(59000));
   });
 });
 

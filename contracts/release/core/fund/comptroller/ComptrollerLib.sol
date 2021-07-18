@@ -321,7 +321,7 @@ contract ComptrollerLib is IComptroller {
         __assertPermissionedVaultAction(msg.sender, _action);
 
         // Validate action as needed
-        if (_action == IVault.VaultAction.RemovePersistentlyTrackedAsset) {
+        if (_action == IVault.VaultAction.RemoveTrackedAsset) {
             require(
                 abi.decode(_actionData, (address)) != denominationAsset,
                 "permissionedVaultAction: Cannot untrack denomination asset"
@@ -345,9 +345,7 @@ contract ComptrollerLib is IComptroller {
                     _action == IVault.VaultAction.AddTrackedAsset ||
                     _action == IVault.VaultAction.RemoveTrackedAsset ||
                     _action == IVault.VaultAction.WithdrawAssetTo ||
-                    _action == IVault.VaultAction.ApproveAssetSpender ||
-                    _action == IVault.VaultAction.AddPersistentlyTrackedAsset ||
-                    _action == IVault.VaultAction.RemovePersistentlyTrackedAsset
+                    _action == IVault.VaultAction.ApproveAssetSpender
                 ) {
                     validAction = true;
                 }
@@ -447,9 +445,7 @@ contract ComptrollerLib is IComptroller {
             }
         }
 
-        // TODO: do we want to handle a corner case of a fund that is at the max assets limit
-        // but does already track the denominationAsset?
-        IVault(vaultProxyCopy).addPersistentlyTrackedAsset(denominationAsset);
+        IVault(vaultProxyCopy).addTrackedAsset(denominationAsset);
 
         // Activate extensions
         IExtension(EXTERNAL_POSITION_MANAGER).activateForFund(_isMigration);
@@ -903,17 +899,10 @@ contract ComptrollerLib is IComptroller {
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
-            // If all remaining shares are being redeemed, the logic changes slightly
-            if (sharesToRedeem == sharesSupply) {
-                payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(address(vaultProxyContract));
-                // Will not remove assets that are marked to not be untracked
-                vaultProxyContract.removeTrackedAsset(payoutAssets_[i]);
-            } else {
-                payoutAmounts_[i] = ERC20(payoutAssets_[i])
-                    .balanceOf(address(vaultProxyContract))
-                    .mul(sharesToRedeem)
-                    .div(sharesSupply);
-            }
+            payoutAmounts_[i] = ERC20(payoutAssets_[i])
+                .balanceOf(address(vaultProxyContract))
+                .mul(sharesToRedeem)
+                .div(sharesSupply);
 
             // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {

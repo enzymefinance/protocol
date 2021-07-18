@@ -57,7 +57,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(98000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(95700));
   });
 });
 
@@ -95,8 +95,7 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    // Rounding up from 96905
-    expect(calcUnderlyingValuesTx).toCostLessThan('97000');
+    expect(calcUnderlyingValuesTx).toCostAround('95281');
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -125,8 +124,7 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    // Rounding up from 64278
-    expect(calcUnderlyingValuesTx).toCostLessThan('64300');
+    expect(calcUnderlyingValuesTx).toCostAround('64300');
   });
 });
 

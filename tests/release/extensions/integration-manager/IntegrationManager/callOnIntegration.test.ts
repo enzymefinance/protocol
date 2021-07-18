@@ -1,10 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   callOnIntegrationArgs,
-  ComptrollerLib,
   encodeArgs,
-  IntegrationManager,
   IntegrationManagerActionId,
   MockGenericAdapter,
   MockGenericIntegratee,
@@ -12,7 +9,6 @@ import {
   sighash,
   StandardToken,
   validateRulePostCoIArgs,
-  VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -26,7 +22,7 @@ import {
   mockGenericSwapASelector,
   mockGenericSwapDirectFromVaultSelector,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -73,58 +69,6 @@ async function snapshot() {
       vaultProxy,
     },
   };
-}
-
-async function seedFundByTrading({
-  comptrollerProxy,
-  vaultProxy,
-  integrationManager,
-  fundOwner,
-  mockGenericAdapter,
-  incomingAsset,
-  incomingAssetAmount,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  mockGenericAdapter: MockGenericAdapter;
-  incomingAsset: StandardToken;
-  incomingAssetAmount: BigNumberish;
-}) {
-  const swapArgs = {
-    spendAssets: [],
-    actualSpendAssetAmounts: [],
-    incomingAssets: [incomingAsset],
-    minIncomingAssetAmounts: [BigNumber.from(1)],
-    actualIncomingAssetAmounts: [incomingAssetAmount],
-  };
-
-  const receipt = await mockGenericSwap({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    mockGenericAdapter,
-    seedFund: true,
-    ...swapArgs,
-  });
-
-  const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-  const integrationData = mockGenericSwapArgs({ ...swapArgs });
-
-  assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-    adapter: mockGenericAdapter,
-    comptrollerProxy,
-    caller: fundOwner,
-    incomingAssets: [incomingAsset],
-    incomingAssetAmounts: [incomingAssetAmount],
-    spendAssets: [],
-    spendAssetAmounts: [],
-    selector: mockGenericSwapASelector,
-    integrationData,
-  });
 }
 
 describe('callOnIntegration', () => {
@@ -897,90 +841,6 @@ describe('valid calls', () => {
     );
   });
 
-  it('handles a spend asset that is completely spent', async () => {
-    const {
-      mockGenericAdapter,
-      tokens: { mln },
-      deployment: { integrationManager, policyManager },
-      fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    await seedFundByTrading({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      incomingAsset: mln,
-      incomingAssetAmount: utils.parseEther('1'),
-    });
-
-    const spendAssets = [mln];
-    const actualSpendAssetAmounts = [utils.parseEther('1')];
-    const incomingAssets = [denominationAsset];
-    const actualIncomingAssetAmounts = [utils.parseEther('1')];
-
-    const swapArgs = {
-      spendAssets,
-      actualSpendAssetAmounts,
-      incomingAssets,
-      actualIncomingAssetAmounts,
-    };
-
-    const receipt = await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      ...swapArgs,
-    });
-
-    const CallOnIntegrationExecutedForFundEvent = integrationManager.abi.getEvent('CallOnIntegrationExecutedForFund');
-
-    const integrationData = mockGenericSwapArgs({ ...swapArgs });
-
-    assertEvent(receipt, CallOnIntegrationExecutedForFundEvent, {
-      adapter: mockGenericAdapter,
-      comptrollerProxy,
-      caller: fundOwner,
-      incomingAssets,
-      incomingAssetAmounts: actualIncomingAssetAmounts,
-      spendAssets: spendAssets,
-      spendAssetAmounts: actualSpendAssetAmounts,
-      selector: mockGenericSwapASelector,
-      integrationData,
-    });
-
-    expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
-      comptrollerProxy,
-      PolicyHook.PostCallOnIntegration,
-      validateRulePostCoIArgs({
-        caller: fundOwner,
-        adapter: mockGenericAdapter,
-        selector: mockGenericSwapASelector,
-        incomingAssets,
-        incomingAssetAmounts: actualIncomingAssetAmounts,
-        spendAssets: spendAssets,
-        spendAssetAmounts: actualSpendAssetAmounts,
-      }),
-    );
-
-    const spendAssetBalancesCall = await getAssetBalances({
-      account: vaultProxy,
-      assets: spendAssets,
-    });
-
-    expect(spendAssetBalancesCall).toEqual([utils.parseEther('0')]);
-    const incomingAssetBalancesCall = await getAssetBalances({
-      account: vaultProxy,
-      assets: incomingAssets,
-    });
-    expect(incomingAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
-    const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
-    expect(postTxGetTrackedAssetsCall).toEqual([denominationAsset.address]);
-  });
-
   it('tracks an untracked incoming asset but does not set it as permanently tracked', async () => {
     const {
       mockGenericAdapter,
@@ -1002,7 +862,6 @@ describe('valid calls', () => {
     });
 
     expect(await vaultProxy.isTrackedAsset(mln)).toBe(true);
-    expect(await vaultProxy.isPersistentlyTrackedAsset(mln)).toBe(false);
   });
 });
 

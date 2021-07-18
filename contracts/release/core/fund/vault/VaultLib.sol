@@ -88,20 +88,6 @@ contract VaultLib is VaultLibBase2, IVault {
     // GENERAL //
     /////////////
 
-    /// @notice Allows specified assets to be untracked, unsetting them as persistently tracked
-    /// @param _assets The asset to allow to untrack
-    /// @dev Generally unnecessary to call directly, but closes a potential griefing attack
-    function allowUntrackingAssets(address[] memory _assets) external override onlyOwner {
-        address denominationAsset = IComptroller(accessor).getDenominationAsset();
-        for (uint256 i; i < _assets.length; i++) {
-            require(
-                _assets[i] != denominationAsset,
-                "allowUntrackingAssets: denominationAsset not allowed"
-            );
-            __unsetPersistentlyTrackedAsset(_assets[i]);
-        }
-    }
-
     /// @notice Gets the external position library contract for a given type
     /// @param _typeId The type for which to get the external position library
     /// @return externalPositionLib_ The external position library
@@ -237,10 +223,10 @@ contract VaultLib is VaultLibBase2, IVault {
     // ACCESSOR (COMPTROLLER PROXY) ONLY //
     ///////////////////////////////////////
 
-    /// @notice Adds a tracked asset and sets it as persistently tracked
-    /// @param _asset The asset to add and set as persistently tracked
-    function addPersistentlyTrackedAsset(address _asset) external override onlyAccessor {
-        __addPersistentlyTrackedAsset(_asset);
+    /// @notice Adds a tracked asset
+    /// @param _asset The asset to add as a tracked asset
+    function addTrackedAsset(address _asset) external override onlyAccessor {
+        __addTrackedAsset(_asset);
     }
 
     /// @notice Burns fund shares from a particular account
@@ -309,12 +295,6 @@ contract VaultLib is VaultLibBase2, IVault {
         emit ProtocolFeePaidInShares(sharesDue);
     }
 
-    /// @notice Removes a tracked asset
-    /// @param _asset The asset to remove as a tracked asset
-    function removeTrackedAsset(address _asset) external override onlyAccessor {
-        __removeTrackedAsset(_asset);
-    }
-
     /// @notice Transfers fund shares from one account to another
     /// @param _from The account from which to transfer shares
     /// @param _to The account to which to transfer shares
@@ -355,8 +335,6 @@ contract VaultLib is VaultLibBase2, IVault {
     {
         if (_action == VaultAction.AddExternalPosition) {
             __executeVaultActionAddExternalPosition(_actionData);
-        } else if (_action == VaultAction.AddPersistentlyTrackedAsset) {
-            __executeVaultActionAddPersistentlyTrackedAsset(_actionData);
         } else if (_action == VaultAction.AddTrackedAsset) {
             __executeVaultActionAddTrackedAsset(_actionData);
         } else if (_action == VaultAction.ApproveAssetSpender) {
@@ -369,8 +347,6 @@ contract VaultLib is VaultLibBase2, IVault {
             __executeVaultActionMintShares(_actionData);
         } else if (_action == VaultAction.RemoveExternalPosition) {
             __executeVaultActionRemoveExternalPosition(_actionData);
-        } else if (_action == VaultAction.RemovePersistentlyTrackedAsset) {
-            __executeVaultActionRemovePersistentlyTrackedAsset(_actionData);
         } else if (_action == VaultAction.RemoveTrackedAsset) {
             __executeVaultActionRemoveTrackedAsset(_actionData);
         } else if (_action == VaultAction.TransferShares) {
@@ -383,11 +359,6 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @dev Helper to decode actionData and execute VaultAction.AddExternalPosition
     function __executeVaultActionAddExternalPosition(bytes memory _actionData) private {
         __addExternalPosition(abi.decode(_actionData, (address)));
-    }
-
-    /// @dev Helper to decode actionData and execute VaultAction.AddPersistentlyTrackedAsset
-    function __executeVaultActionAddPersistentlyTrackedAsset(bytes memory _actionData) private {
-        __addPersistentlyTrackedAsset(abi.decode(_actionData, (address)));
     }
 
     /// @dev Helper to decode actionData and execute VaultAction.AddTrackedAsset
@@ -443,11 +414,6 @@ contract VaultLib is VaultLibBase2, IVault {
         __removeExternalPosition(abi.decode(_actionData, (address)));
     }
 
-    /// @dev Helper to decode actionData and execute VaultAction.RemovePersistentlyTrackedAsset
-    function __executeVaultActionRemovePersistentlyTrackedAsset(bytes memory _actionData) private {
-        __removePersistentlyTrackedAsset(abi.decode(_actionData, (address)));
-    }
-
     /// @dev Helper to decode actionData and execute VaultAction.RemoveTrackedAsset
     function __executeVaultActionRemoveTrackedAsset(bytes memory _actionData) private {
         __removeTrackedAsset(abi.decode(_actionData, (address)));
@@ -487,12 +453,6 @@ contract VaultLib is VaultLibBase2, IVault {
 
             emit ExternalPositionAdded(_externalPosition);
         }
-    }
-
-    /// @dev Helper to add and persistently track an asset
-    function __addPersistentlyTrackedAsset(address _asset) private {
-        __setPersistentlyTrackedAsset(_asset);
-        __addTrackedAsset(_asset);
     }
 
     /// @dev Helper to add a tracked asset
@@ -560,38 +520,14 @@ contract VaultLib is VaultLibBase2, IVault {
         }
     }
 
-    /// @dev Helper to unset and remove a persistently tracked asset
-    function __removePersistentlyTrackedAsset(address _asset) private {
-        __unsetPersistentlyTrackedAsset(_asset);
-        __removeTrackedAsset(_asset);
-    }
-
     /// @dev Helper to remove a tracked asset
     function __removeTrackedAsset(address _asset) private {
-        if (isTrackedAsset(_asset) && !isPersistentlyTrackedAsset(_asset)) {
+        if (isTrackedAsset(_asset)) {
             assetToIsTracked[_asset] = false;
 
             trackedAssets.removeStorageItem(_asset);
 
             emit TrackedAssetRemoved(_asset);
-        }
-    }
-
-    /// @dev Helper to add asset to the list of assets that cannot be untracked
-    function __setPersistentlyTrackedAsset(address _asset) private {
-        if (!isPersistentlyTrackedAsset(_asset)) {
-            assetToIsPersistentlyTracked[_asset] = true;
-
-            emit PersistentlyTrackedAssetAdded(_asset);
-        }
-    }
-
-    /// @dev Helper to remove assets from the list of assets that cannot be untracked
-    function __unsetPersistentlyTrackedAsset(address _asset) private {
-        if (isPersistentlyTrackedAsset(_asset)) {
-            assetToIsPersistentlyTracked[_asset] = false;
-
-            emit PersistentlyTrackedAssetRemoved(_asset);
         }
     }
 
@@ -612,10 +548,6 @@ contract VaultLib is VaultLibBase2, IVault {
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
-
-        if (__getAssetBalance(_asset) == 0) {
-            __removeTrackedAsset(_asset);
-        }
     }
 
     ////////////////////////////
@@ -769,17 +701,6 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return isAssetManager_ True if the account is an allowed asset manager
     function isAssetManager(address _who) public view returns (bool isAssetManager_) {
         return accountToIsAssetManager[_who];
-    }
-
-    /// @notice Checks whether an asset is persistently tracked (i.e., it cannot be untracked)
-    /// @param _asset The address to check
-    /// @return isPersistentlyTrackedAsset_ True if the asset is persistently tracked
-    function isPersistentlyTrackedAsset(address _asset)
-        public
-        view
-        returns (bool isPersistentlyTrackedAsset_)
-    {
-        return assetToIsPersistentlyTracked[_asset];
     }
 
     /// @notice Checks whether an address is a tracked asset of the vault

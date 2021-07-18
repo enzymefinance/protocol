@@ -24,10 +24,8 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
         MintShares,
         TransferShares,
         // Asset management
-        AddPersistentlyTrackedAsset,
         AddTrackedAsset,
         ApproveAssetSpender,
-        RemovePersistentlyTrackedAsset,
         RemoveTrackedAsset,
         WithdrawAssetTo,
         // External position management
@@ -36,9 +34,7 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
         RemoveExternalPosition
     }
 
-    function addPersistentlyTrackedAsset(address) external;
-
-    function allowUntrackingAssets(address[] memory) external;
+    function addTrackedAsset(address) external;
 
     function burnShares(address, uint256) external;
 
@@ -71,8 +67,6 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
     function payProtocolFee() external;
 
     function receiveValidatedVaultAction(VaultAction, bytes calldata) external;
-
-    function removeTrackedAsset(address) external;
 
     function setAccessorForFundReconfiguration(address) external;
 

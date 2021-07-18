@@ -10,7 +10,6 @@ import {
   ProtocolFeeReserveLib,
 } from '@enzymefinance/protocol';
 import {
-  addNewAssetsToFund,
   assertEvent,
   assertNoEvent,
   createNewFund,
@@ -190,128 +189,6 @@ describe('setAccessorForFundReconfiguration', () => {
       nextAccessor,
     });
   });
-});
-
-// TODO: copied over integration-style tests for now, but can refactor the commented tests below,
-// if we keep this function/concept
-describe('allowUntrackingAssets', () => {
-  it('can only be called by the owner', async () => {
-    const { fundDeployer } = fork.deployment;
-    const [fundOwner, randomUser] = fork.accounts;
-
-    const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    await expect(vaultProxy.connect(randomUser).allowUntrackingAssets([randomAddress()])).rejects.toBeRevertedWith(
-      'Only the owner can call this function',
-    );
-  });
-
-  it('correctly unsets an asset as persistently tracked', async () => {
-    const { fundDeployer, integrationManager } = fork.deployment;
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    // Track an asset, which makes it persistently tracked
-    const assetToUnsetAsPermanentlyTracked = new StandardToken(fork.config.primitives.dai, whales.dai);
-    await addNewAssetsToFund({
-      signer: fundOwner,
-      comptrollerProxy,
-      integrationManager,
-      assets: [assetToUnsetAsPermanentlyTracked],
-    });
-
-    // The asset should be persistently tracked
-    expect(await vaultProxy.isPersistentlyTrackedAsset(assetToUnsetAsPermanentlyTracked)).toBe(true);
-
-    // Unset the asset as persistently tracked
-    await vaultProxy.connect(fundOwner).allowUntrackingAssets([assetToUnsetAsPermanentlyTracked]);
-
-    // The asset should not longer be persistently tracked
-    expect(await vaultProxy.isPersistentlyTrackedAsset(assetToUnsetAsPermanentlyTracked)).toBe(false);
-  });
-
-  // TODO: fix below tests if we do not remove this function/concept
-
-  // it('can only be called by the fundOwner', async () => {
-  //   const [fundOwner, fundAccessor] = fork.accounts;
-  //   const vaultLib = await VaultLib.deploy(
-  //     fork.deployer,
-  //     fork.deployment.externalPositionManager,
-  //     fork.deployment.protocolFeeReserveProxy,
-  //     fork.deployment.protocolFeeTracker,
-  //     fork.config.primitives.mln,
-  //     fork.config.weth,
-  //   );
-
-  //   const vaultProxy = await createVaultProxy({
-  //     signer: fork.deployer,
-  //     vaultLib,
-  //     fundOwner,
-  //     fundAccessor,
-  //   });
-
-  //   await expect(vaultProxy.connect(fundAccessor).allowUntrackingAssets([randomAddress()])).rejects.toBeRevertedWith(
-  //     'Only the owner can call this function',
-  //   );
-  // });
-
-  // it('works as expected', async () => {
-  //   const [fundOwner] = fork.accounts;
-
-  //   const mockComptrollerProxy = ComptrollerLib.mocks()
-
-  //   const assetsToAllowUntracking = [randomAddress(), randomAddress()];
-  //   const vaultLib = await VaultLib.deploy(
-  //     fork.deployer,
-  //     fork.deployment.externalPositionManager,
-  //     fork.deployment.protocolFeeReserveProxy,
-  //     fork.deployment.protocolFeeTracker,
-  //     fork.config.primitives.mln,
-  //     fork.config.weth,
-  //   );
-
-  //   const vaultProxy = await createVaultProxy({
-  //     signer: fork.deployer,
-  //     vaultLib,
-  //     fundOwner,
-  //     fundAccessor,
-  //   });
-
-  //   // Track the assets and make them persistently tracked
-  //   for (const asset of assetsToAllowUntracking) {
-  //     await vaultProxy.addPersistentlyTrackedAsset(asset);
-  //     expect(await vaultProxy.isPersistentlyTrackedAsset(asset)).toBe(true);
-  //   }
-
-  //   // Allow untracking the assets, unsetting them as persistently tracked
-  //   const receipt = await vaultProxy.connect(fundOwner).allowUntrackingAssets(assetsToAllowUntracking);
-
-  //   // Assert the assets are still tracked but are not set as persistently tracked
-  //   for (const asset of assetsToAllowUntracking) {
-  //     expect(await vaultProxy.isPersistentlyTrackedAsset(asset)).toBe(false);
-  //     expect(await vaultProxy.isTrackedAsset(asset)).toBe(true);
-  //   }
-
-  //   // Assert the correct events were emitted
-  //   const events = extractEvent(receipt, 'PersistentlyTrackedAssetRemoved');
-  //   expect(events.length).toBe(assetsToAllowUntracking.length);
-  //   for (const i in assetsToAllowUntracking) {
-  //     expect(events[i]).toMatchEventArgs({
-  //       asset: assetsToAllowUntracking[i],
-  //     });
-  //   }
-  // });
 });
 
 describe('buyBackProtocolFeeShares', () => {
@@ -810,7 +687,7 @@ describe('asset managers', () => {
 
 // Only tests access control, as behavior is tested in vaultActions.test.ts
 describe('Comptroller calls to vault actions', () => {
-  it('addPersistentlyTrackedAsset: can only be called by the accessor', async () => {
+  it('addTrackedAsset: can only be called by the accessor', async () => {
     const [fundOwner, fundAccessor] = fork.accounts;
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
@@ -828,7 +705,7 @@ describe('Comptroller calls to vault actions', () => {
       fundAccessor,
     });
 
-    await expect(vaultProxy.connect(fundOwner).addPersistentlyTrackedAsset(randomAddress())).rejects.toBeRevertedWith(
+    await expect(vaultProxy.connect(fundOwner).addTrackedAsset(randomAddress())).rejects.toBeRevertedWith(
       'Only the designated accessor can make this call',
     );
   });
@@ -900,29 +777,6 @@ describe('Comptroller calls to vault actions', () => {
     await expect(
       vaultProxy.connect(fundOwner).receiveValidatedVaultAction(0, constants.HashZero),
     ).rejects.toBeRevertedWith('Only the designated accessor can make this call');
-  });
-
-  it('removeTrackedAsset: can only be called by the accessor', async () => {
-    const [fundOwner, fundAccessor] = fork.accounts;
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
-
-    const vaultProxy = await createVaultProxy({
-      signer: fork.deployer,
-      vaultLib,
-      fundOwner,
-      fundAccessor,
-    });
-
-    await expect(vaultProxy.connect(fundOwner).removeTrackedAsset(randomAddress())).rejects.toBeRevertedWith(
-      'Only the designated accessor can make this call',
-    );
   });
 
   it('transferShares: can only be called by the accessor', async () => {

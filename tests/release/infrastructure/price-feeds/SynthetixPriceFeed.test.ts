@@ -92,7 +92,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostLessThan(calcGavBaseGas.add(186000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(183000));
   });
 });
 
@@ -170,9 +170,8 @@ describe('calcUnderlyingValues', () => {
     });
 
     // Assert gas
-    // Rounded up from 96624
     const calcUnderlyingValuesTx = await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
-    expect(calcUnderlyingValuesTx).toCostLessThan(97000);
+    expect(calcUnderlyingValuesTx).toCostAround(97000);
   });
 });
 

@@ -34,10 +34,6 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event NominatedOwnerSet(address indexed nominatedOwner);
 
-    event PersistentlyTrackedAssetAdded(address asset);
-
-    event PersistentlyTrackedAssetRemoved(address asset);
-
     event ProtocolFeePaidInShares(uint256 sharesAmount);
 
     event ProtocolFeeSharesBoughtBack(uint256 sharesAmount, uint256 mlnValue, uint256 mlnBurned);
@@ -51,6 +47,5 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
     address internal nominatedOwner;
     address[] internal activeExternalPositions;
     mapping(address => bool) internal accountToIsAssetManager;
-    mapping(address => bool) internal assetToIsPersistentlyTracked;
     mapping(address => bool) internal externalPositionToIsActive;
 }

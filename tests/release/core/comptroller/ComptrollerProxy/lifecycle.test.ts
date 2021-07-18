@@ -67,7 +67,7 @@ async function snapshot() {
 
   // Deploy Mock VaultProxy
   const mockVaultProxy = await VaultLib.mock(deployer);
-  await mockVaultProxy.addPersistentlyTrackedAsset.returns(undefined);
+  await mockVaultProxy.addTrackedAsset.returns(undefined);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
   await mockVaultProxy.payProtocolFee.returns(undefined);
@@ -219,7 +219,7 @@ describe('activate', () => {
     await mockFundDeployer.forward(comptrollerProxy.activate, false);
 
     // Assert expected calls
-    expect(mockVaultProxy.addPersistentlyTrackedAsset).toHaveBeenCalledOnContractWith(
+    expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
       await comptrollerProxy.getDenominationAsset(),
     );
 
@@ -265,7 +265,7 @@ describe('activate', () => {
       sharesDue,
     );
 
-    expect(mockVaultProxy.addPersistentlyTrackedAsset).toHaveBeenCalledOnContractWith(
+    expect(mockVaultProxy.addTrackedAsset).toHaveBeenCalledOnContractWith(
       await comptrollerProxy.getDenominationAsset(),
     );
 

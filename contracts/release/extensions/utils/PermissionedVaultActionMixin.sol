@@ -28,16 +28,6 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Adds a tracked asset and sets it as persistently tracked
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _asset The asset to add and set as persistently tracked
-    function __addPersistentlyTrackedAsset(address _comptrollerProxy, address _asset) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.AddPersistentlyTrackedAsset,
-            abi.encode(_asset)
-        );
-    }
-
     /// @notice Adds a tracked asset
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _asset The asset to add
@@ -114,16 +104,6 @@ abstract contract PermissionedVaultActionMixin {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
             IVault.VaultAction.RemoveExternalPosition,
             abi.encode(_externalPosition)
-        );
-    }
-
-    /// @notice Removes a tracked asset and unsets it as persistently tracked
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _asset The asset to remove and unset as persistently tracked
-    function __removePersistentlyTrackedAsset(address _comptrollerProxy, address _asset) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.RemovePersistentlyTrackedAsset,
-            abi.encode(_asset)
         );
     }
 

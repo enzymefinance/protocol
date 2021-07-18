@@ -991,8 +991,6 @@ describe('redeem', () => {
         assets: [secondAsset],
         amounts: [(await getAssetUnit(secondAsset)).mul(3)],
       });
-      // Allow untracking
-      await vaultProxy.connect(fundOwner).allowUntrackingAssets([secondAsset]);
 
       // Define the expected payout assets
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
@@ -1032,11 +1030,6 @@ describe('redeem', () => {
           preTxInvestorExpectedAssetsBalances[i].add(expectedPayoutAmounts[i]),
         );
       }
-
-      // Assert that the denomination asset is the only remaining tracked asset
-      expect(await vaultProxy.getTrackedAssets()).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [
-        denominationAsset,
-      ]);
 
       // Assert the FeeManager was called with the correct data
       expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(

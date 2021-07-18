@@ -120,7 +120,8 @@ contract IntegrationManager is
         }
     }
 
-    /// @dev Adds assets as persistently tracked assets of the vault
+    /// @dev Adds assets as tracked assets of the vault.
+    /// Does not validate that assets are not already tracked.
     function __addTrackedAssetsToVault(
         address _caller,
         address _comptrollerProxy,
@@ -137,11 +138,12 @@ contract IntegrationManager is
         for (uint256 i; i < assets.length; i++) {
             require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
 
-            __addPersistentlyTrackedAsset(_comptrollerProxy, assets[i]);
+            __addTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
 
-    /// @dev Removes assets from the tracked assets of the vault
+    /// @dev Removes assets from the tracked assets of the vault.
+    /// Does not validate that assets are not already tracked.
     function __removeTrackedAssetsFromVault(
         address _caller,
         address _comptrollerProxy,
@@ -156,7 +158,7 @@ contract IntegrationManager is
         );
 
         for (uint256 i; i < assets.length; i++) {
-            __removePersistentlyTrackedAsset(_comptrollerProxy, assets[i]);
+            __removeTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
 
@@ -454,10 +456,7 @@ contract IntegrationManager is
                 _vaultProxy,
                 _spendAssets[i]
             );
-            if (postCallSpendAssetBalance == 0) {
-                __removeTrackedAsset(_comptrollerProxy, _spendAssets[i]);
-                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i];
-            } else if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
+            if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
                 spendAssetAmounts_[i] = _preCallSpendAssetBalances[i].sub(
                     postCallSpendAssetBalance
                 );
