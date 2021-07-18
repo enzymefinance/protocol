@@ -76,10 +76,10 @@ describe('buyBackProtocolFeeShares', () => {
 
     await expect(
       comptrollerProxy.connect(randomUser).buyBackProtocolFeeShares(feeSharesCollected),
-    ).rejects.toBeRevertedWith('Only fund owner callable');
+    ).rejects.toBeRevertedWith('Unauthorized');
   });
 
-  it('happy path: buyback all shares collected', async () => {
+  it('happy path: buyback all shares collected (called by owner)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
 
     const sharesToBuyBack = feeSharesCollected;
@@ -103,7 +103,11 @@ describe('buyBackProtocolFeeShares', () => {
     expect(await vaultProxy.balanceOf(protocolFeeReserveProxy)).toEqBigNumber(0);
   });
 
-  it('happy path: buyback partial shares collected', async () => {
+  it('happy path: buyback partial shares collected (called by asset manager)', async () => {
+    // Add an asset manager
+    const [assetManager] = remainingAccounts;
+    await vaultProxy.addAssetManagers([assetManager]);
+
     const valueInterpreter = fork.deployment.valueInterpreter;
 
     const sharesToBuyBack = feeSharesCollected.div(4);

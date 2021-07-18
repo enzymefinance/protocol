@@ -277,10 +277,14 @@ contract ComptrollerLib is IComptroller {
 
     /// @notice Buys back shares collected as protocol fee at a discounted shares price, using MLN
     /// @param _sharesAmount The amount of shares to buy back
-    /// TODO: allow a manager also?
-    function buyBackProtocolFeeShares(uint256 _sharesAmount) external onlyOwner {
-        address denominationAssetCopy = denominationAsset;
+    function buyBackProtocolFeeShares(uint256 _sharesAmount) external onlyNotPaused {
         address vaultProxyCopy = vaultProxy;
+        require(
+            IVault(vaultProxyCopy).canManageAssets(msg.sender),
+            "buyBackProtocolFeeShares: Unauthorized"
+        );
+
+        address denominationAssetCopy = denominationAsset;
 
         uint256 gav = calcGav(true);
         uint256 grossShareValue = __calcGrossShareValue(
