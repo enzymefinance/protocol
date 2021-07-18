@@ -35,9 +35,13 @@ contract ComptrollerLib is IComptroller {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
+    event DeactivateFeeManagerFailed();
+
     event MigratedSharesDuePaid(uint256 sharesDue);
 
     event OverridePauseSet(bool indexed overridePause);
+
+    event PayProtocolFeeDuringDestructFailed();
 
     event PreRedeemSharesHookFailed(
         bytes failureReturnData,
@@ -450,20 +454,24 @@ contract ComptrollerLib is IComptroller {
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active
     /// @dev No need to assert anything beyond FundDeployer access.
-    /// Calling onlyNotPaused here rather than in the FundDeployer allows
-    /// the owner to potentially override the pause and rescue unpaid fees.
-    function destructActivated()
-        external
-        override
-        onlyFundDeployer
-        onlyNotPaused
-        allowsPermissionedVaultAction
-    {
-        // Deactivate extensions as-necessary
-        IExtension(FEE_MANAGER).deactivateForFund();
+    /// Use the try/catch pattern throughout out of an abundance of caution,
+    /// and forward limited gas to each call within.
+    function destructActivated() external override onlyFundDeployer allowsPermissionedVaultAction {
+        // Cost: 50k
+        try IVault(vaultProxy).payProtocolFee{gas: 200000}()  {} catch {
+            emit PayProtocolFeeDuringDestructFailed();
+        }
 
-        // TODO: use try/catch pattern?
-        IVault(vaultProxy).payProtocolFee();
+        // Deactivate extensions only as-necessary
+
+        // Pays out shares outstanding for fees.
+        // Forward limited gas in case external call to fetch fee recipient eats gas
+        // Base cost: 17k
+        // Per fee that uses shares outstanding (default recipient): 33k
+        // 300k accommodates up to 8 such fees
+        try IExtension(FEE_MANAGER).deactivateForFund{gas: 300000}()  {} catch {
+            emit DeactivateFeeManagerFailed();
+        }
 
         __selfDestruct();
     }

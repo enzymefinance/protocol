@@ -282,30 +282,6 @@ describe('destructActivated', () => {
     await expect(comptrollerProxy.destructActivated()).rejects.toBeRevertedWith('Only FundDeployer callable');
   });
 
-  it('does not allow a paused release, unless overridePause is set', async () => {
-    const { comptrollerProxy, mockFundDeployer, mockVaultProxy } = await provider.snapshot(snapshot);
-
-    // Set VaultProxy
-    await mockFundDeployer.forward(comptrollerProxy.setVaultProxy, mockVaultProxy);
-
-    // Activate fund
-    await mockFundDeployer.forward(comptrollerProxy.activate, false);
-
-    // Mock ReleaseStatus.Pause
-    await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Paused);
-
-    // The call should fail
-    await expect(mockFundDeployer.forward(comptrollerProxy.destructActivated)).rejects.toBeRevertedWith(
-      'Fund is paused',
-    );
-
-    // Override the pause
-    await comptrollerProxy.setOverridePause(true);
-
-    // The call should then succeed
-    await expect(mockFundDeployer.forward(comptrollerProxy.destructActivated)).resolves.toBeReceipt();
-  });
-
   it('correctly handles valid call', async () => {
     const { comptrollerProxy, mockFeeManager, mockFundDeployer, mockVaultProxy } = await provider.snapshot(snapshot);
 
