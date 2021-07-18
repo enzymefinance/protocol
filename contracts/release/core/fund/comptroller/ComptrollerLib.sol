@@ -327,44 +327,46 @@ contract ComptrollerLib is IComptroller {
         IVault(vaultProxy).receiveValidatedVaultAction(_action, _actionData);
     }
 
-    /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction
+    /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction.
+    /// Uses this pattern rather than multiple `require` statements to save on contract size.
     function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action)
         private
         view
     {
-        require(
-            permissionedVaultActionAllowed,
-            "__assertPermissionedVaultAction: No action allowed"
-        );
-
-        // Calls are roughly ordered by likely frequency
-        if (_caller == INTEGRATION_MANAGER) {
-            require(
-                _action == IVault.VaultAction.AddTrackedAsset ||
+        bool validAction;
+        if (permissionedVaultActionAllowed) {
+            // Calls are roughly ordered by likely frequency
+            if (_caller == INTEGRATION_MANAGER) {
+                if (
+                    _action == IVault.VaultAction.AddTrackedAsset ||
                     _action == IVault.VaultAction.RemoveTrackedAsset ||
                     _action == IVault.VaultAction.WithdrawAssetTo ||
                     _action == IVault.VaultAction.ApproveAssetSpender ||
                     _action == IVault.VaultAction.AddPersistentlyTrackedAsset ||
-                    _action == IVault.VaultAction.RemovePersistentlyTrackedAsset,
-                "__assertPermissionedVaultAction: Not allowed"
-            );
-        } else if (_caller == FEE_MANAGER) {
-            require(
-                _action == IVault.VaultAction.MintShares ||
+                    _action == IVault.VaultAction.RemovePersistentlyTrackedAsset
+                ) {
+                    validAction = true;
+                }
+            } else if (_caller == FEE_MANAGER) {
+                if (
+                    _action == IVault.VaultAction.MintShares ||
                     _action == IVault.VaultAction.BurnShares ||
-                    _action == IVault.VaultAction.TransferShares,
-                "__assertPermissionedVaultAction: Not allowed"
-            );
-        } else if (_caller == EXTERNAL_POSITION_MANAGER) {
-            require(
-                _action == IVault.VaultAction.CallOnExternalPosition ||
+                    _action == IVault.VaultAction.TransferShares
+                ) {
+                    validAction = true;
+                }
+            } else if (_caller == EXTERNAL_POSITION_MANAGER) {
+                if (
+                    _action == IVault.VaultAction.CallOnExternalPosition ||
                     _action == IVault.VaultAction.AddExternalPosition ||
-                    _action == IVault.VaultAction.RemoveExternalPosition,
-                "__assertPermissionedVaultAction: Not allowed"
-            );
-        } else {
-            revert("__assertPermissionedVaultAction: Not a valid actor");
+                    _action == IVault.VaultAction.RemoveExternalPosition
+                ) {
+                    validAction = true;
+                }
+            }
         }
+
+        require(validAction, "__assertPermissionedVaultAction: Action not allowed");
     }
 
     ///////////////
