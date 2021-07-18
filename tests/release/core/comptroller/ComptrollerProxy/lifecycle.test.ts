@@ -43,6 +43,7 @@ async function snapshot() {
   const comptrollerLib = await ComptrollerLib.deploy(
     deployer,
     deployment.dispatcher,
+    randomAddress(), // ProtocolFeeReserve
     mockFundDeployer,
     randomAddress(), // ValueInterpreter
     mockExternalPositionManager,

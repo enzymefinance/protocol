@@ -10,19 +10,22 @@ const fn: DeployFunction = async function (hre) {
 
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
-  const dispatcher = await get('Dispatcher');
-  const fundDeployer = await get('FundDeployer');
-  const valueInterpreter = await get('ValueInterpreter');
-  const feeManager = await get('FeeManager');
-  const integrationManager = await get('IntegrationManager');
-  const externalPositionManager = await get('ExternalPositionManager');
-  const policyManager = await get('PolicyManager');
-  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
+
   const assetFinalityResolver = await get('AssetFinalityResolver');
+  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
+  const dispatcher = await get('Dispatcher');
+  const externalPositionManager = await get('ExternalPositionManager');
+  const feeManager = await get('FeeManager');
+  const fundDeployer = await get('FundDeployer');
+  const integrationManager = await get('IntegrationManager');
+  const policyManager = await get('PolicyManager');
+  const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
+  const valueInterpreter = await get('ValueInterpreter');
 
   const comptrollerLib = await deploy('ComptrollerLib', {
     args: [
       dispatcher.address,
+      protocolFeeReserveProxy.address,
       fundDeployer.address,
       valueInterpreter.address,
       externalPositionManager.address,
@@ -47,16 +50,17 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'ComptrollerLib'];
 fn.dependencies = [
+  'AssetFinalityResolver',
+  'ChainlinkPriceFeed',
   'Config',
   'Dispatcher',
   'ExternalPositionManager',
-  'FundDeployer',
-  'ValueInterpreter',
   'FeeManager',
+  'FundDeployer',
   'IntegrationManager',
   'PolicyManager',
-  'ChainlinkPriceFeed',
-  'AssetFinalityResolver',
+  'ProtocolFeeReserve',
+  'ValueInterpreter',
 ];
 
 export default fn;

@@ -35,6 +35,14 @@ contract ComptrollerLib is IComptroller {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
+    event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
+
+    event BuyBackMaxProtocolFeeSharesFailed(
+        bytes failureReturnData,
+        uint256 sharesAmount,
+        uint256 buybackValueInMln,
+        uint256 gav
+    );
     event DeactivateFeeManagerFailed();
 
     event MigratedSharesDuePaid(uint256 sharesDue);
@@ -48,6 +56,8 @@ contract ComptrollerLib is IComptroller {
         address redeemer,
         uint256 sharesAmount
     );
+
+    event RedeemSharesInKindCalcGavFailed();
 
     event SharesBought(
         address indexed buyer,
@@ -76,8 +86,9 @@ contract ComptrollerLib is IComptroller {
     address private immutable FEE_MANAGER;
     address private immutable INTEGRATION_MANAGER;
     address private immutable MLN_TOKEN;
-    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
+    address private immutable PRIMITIVE_PRICE_FEED;
+    address private immutable PROTOCOL_FEE_RESERVE;
     address private immutable VALUE_INTERPRETER;
 
     // Pseudo-constants (can only be set once)
@@ -89,6 +100,8 @@ contract ComptrollerLib is IComptroller {
 
     // Storage
 
+    // Attempts to buy back protocol fee shares immediately after collection
+    bool internal autoProtocolFeeSharesBuyback;
     // Allows a fund owner to override a release-level pause
     bool internal overridePause;
     // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
@@ -174,6 +187,7 @@ contract ComptrollerLib is IComptroller {
 
     constructor(
         address _dispatcher,
+        address _protocolFeeReserve,
         address _fundDeployer,
         address _valueInterpreter,
         address _externalPositionManager,
@@ -193,6 +207,7 @@ contract ComptrollerLib is IComptroller {
         MLN_TOKEN = _mlnToken;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
+        PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         VALUE_INTERPRETER = _valueInterpreter;
         isLib = true;
     }
@@ -284,12 +299,50 @@ contract ComptrollerLib is IComptroller {
             "buyBackProtocolFeeShares: Unauthorized"
         );
 
+        uint256 gav = calcGav(true);
+
+        IVault(vaultProxyCopy).buyBackProtocolFeeShares(
+            _sharesAmount,
+            __getBuybackValueInMln(vaultProxyCopy, _sharesAmount, gav),
+            gav
+        );
+    }
+
+    /// @notice Sets whether to attempt to buyback protocol fee shares immediately when collected
+    /// @param _nextAutoProtocolFeeSharesBuyback True if protocol fee shares should be attempted
+    /// to be bought back immediately when collected
+    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback)
+        external
+        onlyOwner
+    {
+        autoProtocolFeeSharesBuyback = _nextAutoProtocolFeeSharesBuyback;
+
+        emit AutoProtocolFeeSharesBuybackSet(_nextAutoProtocolFeeSharesBuyback);
+    }
+
+    /// @dev Helper to buyback the max available protocol fee shares, during an auto-buyback
+    function __buyBackMaxProtocolFeeShares(address _vaultProxy, uint256 _gav) private {
+        uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(PROTOCOL_FEE_RESERVE);
+        uint256 buybackValueInMln = __getBuybackValueInMln(_vaultProxy, sharesAmount, _gav);
+
+        try
+            IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav)
+         {} catch (bytes memory reason) {
+            emit BuyBackMaxProtocolFeeSharesFailed(reason, sharesAmount, buybackValueInMln, _gav);
+        }
+    }
+
+    /// @dev Helper to buyback the max available protocol fee shares
+    function __getBuybackValueInMln(
+        address _vaultProxy,
+        uint256 _sharesAmount,
+        uint256 _gav
+    ) private returns (uint256 buybackValueInMln_) {
         address denominationAssetCopy = denominationAsset;
 
-        uint256 gav = calcGav(true);
         uint256 grossShareValue = __calcGrossShareValue(
-            gav,
-            ERC20(vaultProxyCopy).totalSupply(),
+            _gav,
+            ERC20(_vaultProxy).totalSupply(),
             10**uint256(ERC20(denominationAssetCopy).decimals())
         );
 
@@ -297,13 +350,12 @@ contract ComptrollerLib is IComptroller {
             SHARES_UNIT
         );
 
-        uint256 buybackValueInMln = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
-            denominationAssetCopy,
-            buybackValueInDenominationAsset,
-            getMlnToken()
-        );
-
-        IVault(vaultProxyCopy).buyBackProtocolFeeShares(_sharesAmount, buybackValueInMln, gav);
+        return
+            IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+                denominationAssetCopy,
+                buybackValueInDenominationAsset,
+                getMlnToken()
+            );
     }
 
     ////////////////////////////////
@@ -463,6 +515,9 @@ contract ComptrollerLib is IComptroller {
         try IVault(vaultProxy).payProtocolFee{gas: 200000}()  {} catch {
             emit PayProtocolFeeDuringDestructFailed();
         }
+
+        // Do not attempt to auto-buyback protocol fee shares in this case,
+        // as the call is gav-dependent and can consume too much gas
 
         // Deactivate extensions only as-necessary
 
@@ -689,6 +744,9 @@ contract ComptrollerLib is IComptroller {
 
         // Pay the protocol fee after running other fees, but before minting new shares
         IVault(vaultProxyCopy).payProtocolFee();
+        if (doesAutoProtocolFeeSharesBuyback()) {
+            __buyBackMaxProtocolFeeShares(vaultProxyCopy, gav);
+        }
 
         // Calculate the amount of shares to issue with the investment amount
         address denominationAssetCopy = denominationAsset;
@@ -882,18 +940,31 @@ contract ComptrollerLib is IComptroller {
         );
 
         // Resolve finality of all assets as needed.
-        // Run this prior to __redeemSharesSetup in order to settle synths before calculating GAV.
+        // Run this prior to calculating GAV.
         IAssetFinalityResolver(ASSET_FINALITY_RESOLVER).finalizeAssets(
             address(vaultProxyContract),
             payoutAssets_
         );
+
+        // If protocol fee shares will be auto-bought back, attempt to calculate GAV to pass into fees,
+        // as we will require GAV later during the buyback.
+        uint256 gavOrZero;
+        if (doesAutoProtocolFeeSharesBuyback()) {
+            // Since GAV calculation can fail with a revering price or a no-longer-supported asset,
+            // we must try/catch GAV calculation to ensure that in-kind redemption can still succeed
+            try this.calcGav(false) returns (uint256 gav) {
+                gavOrZero = gav;
+            } catch {
+                emit RedeemSharesInKindCalcGavFailed();
+            }
+        }
 
         (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
             vaultProxyContract,
             msg.sender,
             _sharesQuantity,
             false,
-            0
+            gavOrZero
         );
 
         // Calculate and transfer payout asset amounts due to _recipient
@@ -1058,7 +1129,7 @@ contract ComptrollerLib is IComptroller {
         }
         require(sharesToRedeem_ > 0, "__redeemSharesSetup: No shares to redeem");
 
-        // When a fund is paused, settling fund-level fees will be skipped
+        // While paused, settling fund-level fees will be skipped
         if (!__fundIsPaused()) {
             // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
             // then those fee shares will be transferred from the user's balance rather
@@ -1073,6 +1144,10 @@ contract ComptrollerLib is IComptroller {
 
         // Pay the protocol fee after running other fees, but before burning shares
         vaultProxyContract.payProtocolFee();
+
+        if (_gavIfCalculated > 0 && doesAutoProtocolFeeSharesBuyback()) {
+            __buyBackMaxProtocolFeeShares(address(vaultProxyContract), _gavIfCalculated);
+        }
 
         uint256 postHookSharesBalance = sharesContract.balanceOf(_redeemer);
         if (_sharesQuantityInput == type(uint256).max) {
@@ -1141,6 +1216,7 @@ contract ComptrollerLib is IComptroller {
     /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
+    /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
     function getLibRoutes()
         external
@@ -1154,6 +1230,7 @@ contract ComptrollerLib is IComptroller {
             address integrationManager_,
             address policyManager_,
             address primitivePriceFeed_,
+            address protocolFeeReserve_,
             address valueInterpreter_
         )
     {
@@ -1165,6 +1242,7 @@ contract ComptrollerLib is IComptroller {
             INTEGRATION_MANAGER,
             POLICY_MANAGER,
             PRIMITIVE_PRICE_FEED,
+            PROTOCOL_FEE_RESERVE,
             VALUE_INTERPRETER
         );
     }
@@ -1188,6 +1266,13 @@ contract ComptrollerLib is IComptroller {
     }
 
     // PUBLIC FUNCTIONS
+
+    /// @notice Checks if collected protocol fee shares are automatically bought back
+    /// while buying or redeeming shares
+    /// @return doesAutoBuyback_ True if shares are automatically bought back
+    function doesAutoProtocolFeeSharesBuyback() public view returns (bool doesAutoBuyback_) {
+        return autoProtocolFeeSharesBuyback;
+    }
 
     /// @notice Gets the timestamp of the last time shares were bought for a given account
     /// @param _who The account for which to get the timestamp

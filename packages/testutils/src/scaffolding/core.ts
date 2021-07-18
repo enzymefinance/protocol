@@ -15,6 +15,8 @@ import {
 } from '@enzymefinance/protocol';
 import { Signer } from 'ethers';
 
+// TODO: Should refactor this function to take all deployment contracts and set up everything by default,
+// unless overrides are passed-in
 export async function createFundDeployer({
   deployer,
   assetFinalityResolver,
@@ -43,9 +45,14 @@ export async function createFundDeployer({
   setReleaseStatusLive?: boolean;
 }) {
   const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher);
+
+  // TODO: Shortcut for now, can pass in param later
+  const protocolFeeReserve = await vaultLib.getProtocolFeeReserve();
+
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,
+    protocolFeeReserve,
     nextFundDeployer,
     valueInterpreter,
     externalPositionManager,

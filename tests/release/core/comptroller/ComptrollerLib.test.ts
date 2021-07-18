@@ -10,15 +10,16 @@ beforeEach(async () => {
 describe('constructor', () => {
   it('sets initial state for library', async () => {
     const {
+      assetFinalityResolver,
+      chainlinkPriceFeed,
       comptrollerLib,
       dispatcher,
       feeManager,
       fundDeployer,
       integrationManager,
       policyManager,
-      chainlinkPriceFeed,
+      protocolFeeReserveProxy,
       valueInterpreter,
-      assetFinalityResolver,
     } = fork.deployment;
 
     const routesCall = await comptrollerLib.getLibRoutes();
@@ -30,6 +31,7 @@ describe('constructor', () => {
       integrationManager_: integrationManager,
       policyManager_: policyManager,
       primitivePriceFeed_: chainlinkPriceFeed,
+      protocolFeeReserve_: protocolFeeReserveProxy,
       valueInterpreter_: valueInterpreter,
     });
 
@@ -44,6 +46,7 @@ describe('destruct calls', () => {
 
     const comptrollerLib = await ComptrollerLib.deploy(
       fork.deployer,
+      randomAddress(),
       randomAddress(),
       mockFundDeployer,
       randomAddress(),

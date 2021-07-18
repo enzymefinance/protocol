@@ -47,6 +47,7 @@ interface IComptroller {
             address,
             address,
             address,
+            address,
             address
         );
 
