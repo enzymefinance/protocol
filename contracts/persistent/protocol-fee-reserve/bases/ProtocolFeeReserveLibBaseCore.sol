@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/dispatcher/IDispatcher.sol";
+import "../../dispatcher/IDispatcher.sol";
 import "../utils/ProxiableProtocolFeeReserveLib.sol";
 
 /// @title ProtocolFeeReserveLibBaseCore Contract
