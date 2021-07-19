@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
+import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
 import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
@@ -22,7 +23,6 @@ import "../../../extensions/external-position-manager/IExternalPositionManager.s
 import "../../../interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
-import "../external-positions/IExternalPosition.sol";
 import "./IVault.sol";
 
 /// @title VaultLib Contract

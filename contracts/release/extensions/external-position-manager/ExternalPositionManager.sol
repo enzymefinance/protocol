@@ -12,8 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../core/fund/external-positions/ExternalPositionProxy.sol";
-import "../../core/fund/external-positions/IExternalPosition.sol";
+import "../../../persistent/external-positions/ExternalPositionFactory.sol";
+import "../../../persistent/external-positions/ExternalPositionProxy.sol";
+import "../../../persistent/external-positions/IExternalPosition.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
@@ -38,26 +39,18 @@ contract ExternalPositionManager is
         bytes data
     );
 
-    struct TypeInfo {
-        address parser;
-        address lib;
-    }
-
-    enum ExternalPositionManagerActions {
-        CreateExternalPosition,
-        CallOnExternalPosition,
-        RemoveExternalPosition
-    }
-
+    address private immutable EXTERNAL_POSITION_FACTORY;
     address private immutable POLICY_MANAGER;
 
     uint256 private totalTypes;
     mapping(uint256 => TypeInfo) private typeToTypeInfo;
 
-    constructor(address _fundDeployer, address _policyManager)
-        public
-        FundDeployerOwnerMixin(_fundDeployer)
-    {
+    constructor(
+        address _fundDeployer,
+        address _externalPositionFactory,
+        address _policyManager
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
+        EXTERNAL_POSITION_FACTORY = _externalPositionFactory;
         POLICY_MANAGER = _policyManager;
     }
 
@@ -167,8 +160,11 @@ contract ExternalPositionManager is
             initData
         );
 
-        address externalPosition = address(
-            new ExternalPositionProxy(constructData, _vaultProxy, typeId, typeInfo.lib)
+        address externalPosition = ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
+            _vaultProxy,
+            typeId,
+            typeInfo.lib,
+            constructData
         );
 
         emit ExternalPositionDeployed(msg.sender, _vaultProxy, externalPosition, typeId, initArgs);
@@ -252,6 +248,13 @@ contract ExternalPositionManager is
     /// @return lib_ The external position library
     function getLibForType(uint256 _typeId) external view override returns (address lib_) {
         return typeToTypeInfo[_typeId].lib;
+    }
+
+    /// @notice Returns the parser of a given typeId
+    /// @param _typeId The type for which to get the external position's parser
+    /// @return lib_ The external position parser address
+    function getParserForType(uint256 _typeId) public view returns (address) {
+        return typeToTypeInfo[_typeId].parser;
     }
 
     /// @notice Gets the `POLICY_MANAGER` variable

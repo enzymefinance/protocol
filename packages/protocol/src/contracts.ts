@@ -25,6 +25,7 @@ export * from './codegen/ValueInterpreter';
 
 // Extensions
 export * from './codegen/IExtension';
+export * from './codegen/ExternalPositionFactory';
 export * from './codegen/ExternalPositionManager';
 export * from './codegen/FeeManager';
 export * from './codegen/IntegrationManager';

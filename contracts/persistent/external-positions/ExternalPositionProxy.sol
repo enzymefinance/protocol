@@ -9,7 +9,7 @@
 
 pragma solidity 0.6.12;
 
-import "../vault/IVault.sol";
+import "../vault/interfaces/IExternalPositionVault.sol";
 import "./IExternalPosition.sol";
 
 /// @title ExternalPositionProxy Contract
@@ -32,12 +32,13 @@ contract ExternalPositionProxy {
         EXTERNAL_POSITION_TYPE = _externalPositionType;
 
         (bool success, bytes memory returnData) = _initialLib.delegatecall(_constructData);
+
         require(success, string(returnData));
     }
 
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
-        address contractLogic = IVault(VAULT_PROXY).getExternalPositionLibForType(
+        address contractLogic = IExternalPositionVault(VAULT_PROXY).getExternalPositionLibForType(
             EXTERNAL_POSITION_TYPE
         );
         assembly {
@@ -69,7 +70,7 @@ contract ExternalPositionProxy {
             msg.sender == VAULT_PROXY,
             "receiveCallFromVault: Only the vault can make this call"
         );
-        address contractLogic = IVault(VAULT_PROXY).getExternalPositionLibForType(
+        address contractLogic = IExternalPositionVault(VAULT_PROXY).getExternalPositionLibForType(
             EXTERNAL_POSITION_TYPE
         );
         (bool success, bytes memory returnData) = contractLogic.delegatecall(

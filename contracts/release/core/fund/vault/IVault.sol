@@ -12,11 +12,12 @@
 pragma solidity 0.6.12;
 
 import "../../../../persistent/utils/IMigratableVault.sol";
+import "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
 import "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
 
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
+interface IVault is IMigratableVault, IFreelyTransferableSharesVault, IExternalPositionVault {
     enum VaultAction {
         None,
         // Shares management
@@ -53,8 +54,6 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault {
     function getOwner() external view returns (address);
 
     function getActiveExternalPositions() external view returns (address[] memory);
-
-    function getExternalPositionLibForType(uint256) external view returns (address);
 
     function getTrackedAssets() external view returns (address[] memory);
 

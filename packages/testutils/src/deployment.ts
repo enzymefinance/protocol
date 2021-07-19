@@ -52,6 +52,7 @@ import {
   AssetFinalityResolver,
   ProtocolFeeReserveLib,
   ProtocolFeeTracker,
+  ExternalPositionFactory,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -100,6 +101,7 @@ export async function deployProtocolFixture() {
     uniswapV2PoolPriceFeed: new UniswapV2PoolPriceFeed(fixture['UniswapV2PoolPriceFeed'].address, deployer),
     integrationManager: new IntegrationManager(fixture['IntegrationManager'].address, deployer),
     externalPositionManager: new ExternalPositionManager(fixture['ExternalPositionManager'].address, deployer),
+    externalPositionFactory: new ExternalPositionFactory(fixture['ExternalPositionFactory'].address, deployer),
     curveLiquidityAaveAdapter: new CurveLiquidityAaveAdapter(fixture['CurveLiquidityAaveAdapter'].address, deployer),
     curveLiquidityEursAdapter: new CurveLiquidityEursAdapter(fixture['CurveLiquidityEursAdapter'].address, deployer),
     curveLiquiditySethAdapter: new CurveLiquiditySethAdapter(fixture['CurveLiquiditySethAdapter'].address, deployer),

@@ -10,9 +10,21 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-/// @title IExternalPositionManager Interface
+/// @title IExternalPositionManager interface
 /// @author Enzyme Council <security@enzyme.finance>
+/// @notice Interface for the ExternalPositionManager
 interface IExternalPositionManager {
+    struct TypeInfo {
+        address parser;
+        address lib;
+    }
+    enum ExternalPositionManagerActions {
+        CreateExternalPosition,
+        CallOnExternalPosition,
+        RemoveExternalPosition
+    }
+
     function getLibForType(uint256) external view returns (address);
 }

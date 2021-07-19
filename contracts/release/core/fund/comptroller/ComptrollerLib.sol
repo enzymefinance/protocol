@@ -15,6 +15,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
+import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
@@ -23,7 +24,6 @@ import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
-import "../external-positions/IExternalPosition.sol";
 import "../vault/IVault.sol";
 import "./IComptroller.sol";
 

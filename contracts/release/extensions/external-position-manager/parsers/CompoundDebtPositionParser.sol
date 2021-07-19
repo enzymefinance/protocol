@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import "../../../core/fund/external-positions/IExternalPosition.sol";
+import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../core/fund/external-positions/CompoundDebtPositionLib.sol";
 import "../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import "../../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
