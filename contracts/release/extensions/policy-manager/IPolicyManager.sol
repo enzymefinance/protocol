@@ -28,7 +28,8 @@ interface IPolicyManager {
         RemoveTrackedAssets,
         CreateExternalPosition,
         PostCallOnExternalPosition,
-        RemoveExternalPosition
+        RemoveExternalPosition,
+        ReactivateExternalPosition
     }
 
     function validatePolicies(

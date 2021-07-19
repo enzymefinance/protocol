@@ -29,8 +29,8 @@ const expectedGasCosts = {
     weth: 484073,
   },
   'execute reconfiguration': {
-    usdc: 433173,
-    weth: 402712,
+    usdc: 436324,
+    weth: 405863,
   },
 } as const;
 

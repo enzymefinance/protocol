@@ -6,6 +6,7 @@ export enum ExternalPositionManagerActionId {
   CreateExternalPosition,
   CallOnExternalPosition,
   RemoveExternalPosition,
+  ReactivateExternalPosition,
 }
 
 export enum ExternalPositionActionId {
@@ -41,6 +42,10 @@ export function externalPositionCallArgs({
   encodedCallArgs: BytesLike;
 }) {
   return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, encodedCallArgs]);
+}
+
+export function externalPositionReactivateArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {
+  return encodeArgs(['address'], [externalPositionProxy]);
 }
 
 export function externalPositionRemoveArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {

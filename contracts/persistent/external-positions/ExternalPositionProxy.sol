@@ -11,11 +11,12 @@ pragma solidity 0.6.12;
 
 import "../vault/interfaces/IExternalPositionVault.sol";
 import "./IExternalPosition.sol";
+import "./IExternalPositionProxy.sol";
 
 /// @title ExternalPositionProxy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy for all external positions, modified from EIP-1822
-contract ExternalPositionProxy {
+contract ExternalPositionProxy is IExternalPositionProxy {
     uint256 private immutable EXTERNAL_POSITION_TYPE;
     address private immutable VAULT_PROXY;
 
@@ -86,13 +87,18 @@ contract ExternalPositionProxy {
 
     /// @notice Gets the `EXTERNAL_POSITION_TYPE` variable
     /// @return externalPositionType_ The `EXTERNAL_POSITION_TYPE` variable value
-    function getExternalPositionType() external view returns (uint256 externalPositionType_) {
+    function getExternalPositionType()
+        external
+        view
+        override
+        returns (uint256 externalPositionType_)
+    {
         return EXTERNAL_POSITION_TYPE;
     }
 
     /// @notice Gets the `VAULT_PROXY` variable
     /// @return vaultProxy_ The `VAULT_PROXY` variable value
-    function getVaultProxy() external view returns (address vaultProxy_) {
+    function getVaultProxy() external view override returns (address vaultProxy_) {
         return VAULT_PROXY;
     }
 }

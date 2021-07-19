@@ -8,4 +8,5 @@ export enum PolicyHook {
   CreateExternalPosition,
   PostCallOnExternalPosition,
   RemoveExternalPosition,
+  ReactivateExternalPosition,
 }

@@ -10,6 +10,8 @@ import {
   StandardToken,
   validateRulePostCallOnExternalPositionArgs,
   encodeArgs,
+  externalPositionReactivateArgs,
+  validateRuleReactivateExternalPositionArgs,
 } from '@enzymefinance/protocol';
 import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { addCollateral } from '@enzymefinance/testutils/src/scaffolding/extensions/external-positions';
@@ -211,6 +213,151 @@ describe('receiveCallFromComptroller', () => {
           encodedActionData,
         }),
       );
+    });
+  });
+
+  describe('action: reactivateExternalPosition', () => {
+    it('works as expected when reactivating a valid position', async () => {
+      const [fundOwner] = fork.accounts;
+      const externalPositionManager = fork.deployment.externalPositionManager;
+      const policyManager = fork.deployment.policyManager;
+
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fork.deployer,
+        fundOwner,
+        fundDeployer: fork.deployment.fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      });
+
+      // Create an external position
+      const createPositionCallArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
+
+      await comptrollerProxy
+        .connect(fundOwner)
+        .callOnExtension(
+          externalPositionManager,
+          ExternalPositionManagerActionId.CreateExternalPosition,
+          createPositionCallArgs,
+        );
+
+      const externalPositionProxy = (await vaultProxy.getActiveExternalPositions.call())[0];
+
+      // Removes previously created external position
+      const removePositionCallArgs = externalPositionRemoveArgs({
+        externalPositionProxy,
+      });
+
+      await comptrollerProxy
+        .connect(fundOwner)
+        .callOnExtension(
+          externalPositionManager,
+          ExternalPositionManagerActionId.RemoveExternalPosition,
+          removePositionCallArgs,
+        );
+
+      // Re-activate the same external position to the vault
+      const reactivateExternalPositionArgs = externalPositionReactivateArgs({
+        externalPositionProxy,
+      });
+
+      const activeExternalPositionsBefore = await vaultProxy.getActiveExternalPositions.call();
+      expect(activeExternalPositionsBefore.length).toEqual(0);
+
+      // Add back the previously removed position
+      await comptrollerProxy
+        .connect(fundOwner)
+        .callOnExtension(
+          externalPositionManager,
+          ExternalPositionManagerActionId.ReactivateExternalPosition,
+          reactivateExternalPositionArgs,
+        );
+
+      // Check policy was correctly called
+      expect(policyManager.validatePolicies).toHaveBeenCalledOnContractWith(
+        comptrollerProxy,
+        PolicyHook.ReactivateExternalPosition,
+        validateRuleReactivateExternalPositionArgs({
+          caller: fundOwner,
+          externalPositionProxy,
+        }),
+      );
+
+      const activeExternalPositionsAfter = await vaultProxy.getActiveExternalPositions.call();
+      expect(activeExternalPositionsAfter[0]).toMatchAddress(externalPositionProxy);
+    });
+
+    it('reverts if the provided account is not an external position', async () => {
+      const [fundOwner] = fork.accounts;
+      const externalPositionManager = fork.deployment.externalPositionManager;
+
+      const { comptrollerProxy } = await createNewFund({
+        signer: fork.deployer,
+        fundOwner,
+        fundDeployer: fork.deployment.fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      });
+
+      const reactivateExternalPositionArgs = externalPositionReactivateArgs({
+        externalPositionProxy: randomAddress(),
+      });
+
+      await expect(
+        comptrollerProxy
+          .connect(fundOwner)
+          .callOnExtension(
+            externalPositionManager,
+            ExternalPositionManagerActionId.ReactivateExternalPosition,
+            reactivateExternalPositionArgs,
+          ),
+      ).rejects.toBeRevertedWith('Account provided is not a valid external position');
+    });
+
+    it('reverts if the external position is not owned by the vault proxy', async () => {
+      const [fundOwner] = fork.accounts;
+      const externalPositionManager = fork.deployment.externalPositionManager;
+
+      const { comptrollerProxy: comptrollerProxy1, vaultProxy: vaultProxy1 } = await createNewFund({
+        signer: fork.deployer,
+        fundOwner,
+        fundDeployer: fork.deployment.fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      });
+
+      const createPositionCallArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
+
+      // Create an external position
+      await comptrollerProxy1
+        .connect(fundOwner)
+        .callOnExtension(
+          externalPositionManager,
+          ExternalPositionManagerActionId.CreateExternalPosition,
+          createPositionCallArgs,
+        );
+
+      // Create a second vault to include the external position created for the first vault
+      const { comptrollerProxy: comptrollerProxy2 } = await createNewFund({
+        signer: fork.deployer,
+        fundOwner,
+        fundDeployer: fork.deployment.fundDeployer,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      });
+
+      const activeExternalPositionsBefore = await vaultProxy1.getActiveExternalPositions.call();
+      const externalPositionProxy = activeExternalPositionsBefore[0];
+
+      const reactivateExternalPositionArgs = externalPositionReactivateArgs({
+        externalPositionProxy,
+      });
+
+      await expect(
+        comptrollerProxy2
+          .connect(fundOwner)
+          .callOnExtension(
+            externalPositionManager,
+            ExternalPositionManagerActionId.ReactivateExternalPosition,
+            reactivateExternalPositionArgs,
+          ),
+      ).rejects.toBeRevertedWith('External position belongs to a different vault');
     });
   });
 

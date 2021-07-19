@@ -107,6 +107,16 @@ export function validateRuleRemoveExternalPositionArgs({
   return encodeArgs(['address', 'address'], [caller, externalPositionProxy]);
 }
 
+export function validateRuleReactivateExternalPositionArgs({
+  externalPositionProxy,
+  caller,
+}: {
+  externalPositionProxy: AddressLike;
+  caller: AddressLike;
+}) {
+  return encodeArgs(['address', 'address'], [caller, externalPositionProxy]);
+}
+
 export function validateRuleRemoveTrackedAssetsArgs({
   caller,
   assets,

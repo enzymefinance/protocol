@@ -23,7 +23,8 @@ interface IExternalPositionManager {
     enum ExternalPositionManagerActions {
         CreateExternalPosition,
         CallOnExternalPosition,
-        RemoveExternalPosition
+        RemoveExternalPosition,
+        ReactivateExternalPosition
     }
 
     function getLibForType(uint256) external view returns (address);

@@ -13,8 +13,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../persistent/external-positions/ExternalPositionFactory.sol";
-import "../../../persistent/external-positions/ExternalPositionProxy.sol";
 import "../../../persistent/external-positions/IExternalPosition.sol";
+import "../../../persistent/external-positions/IExternalPositionProxy.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
@@ -87,6 +87,10 @@ contract ExternalPositionManager is
             __executeCallOnExternalPosition(_caller, vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
             __executeRemoveExternalPosition(_caller, _callArgs);
+        } else if (
+            _actionId == uint256(ExternalPositionManagerActions.ReactivateExternalPosition)
+        ) {
+            __reactivateExternalPosition(_caller, vaultProxy, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
@@ -172,7 +176,36 @@ contract ExternalPositionManager is
         __addExternalPosition(msg.sender, externalPosition);
     }
 
-    // Performs an action on a specific external position, validating the incoming arguments and the final result
+    ///@dev Reactivates an existing externalPosition
+    function __reactivateExternalPosition(
+        address _caller,
+        address _vaultProxy,
+        bytes memory _callArgs
+    ) private {
+        address externalPosition = abi.decode(_callArgs, (address));
+
+        require(
+            ExternalPositionFactory(getExternalPositionFactory()).isExternalPositionProxy(
+                externalPosition
+            ),
+            "__reactivateExternalPosition: Account provided is not a valid external position"
+        );
+
+        require(
+            IExternalPositionProxy(externalPosition).getVaultProxy() == _vaultProxy,
+            "__reactivateExternalPosition: External position belongs to a different vault"
+        );
+
+        IPolicyManager(getPolicyManager()).validatePolicies(
+            msg.sender,
+            IPolicyManager.PolicyHook.ReactivateExternalPosition,
+            abi.encode(_caller, externalPosition)
+        );
+
+        __addExternalPosition(msg.sender, externalPosition);
+    }
+
+    /// @dev Performs an action on a specific external position, validating the incoming arguments and the final result
     function __executeCallOnExternalPosition(
         address _caller,
         address _vaultProxy,
@@ -183,7 +216,7 @@ contract ExternalPositionManager is
             (address, uint256, bytes)
         );
 
-        uint256 typeId = ExternalPositionProxy(externalPosition).getExternalPositionType();
+        uint256 typeId = IExternalPositionProxy(externalPosition).getExternalPositionType();
 
         require(
             IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
@@ -242,6 +275,12 @@ contract ExternalPositionManager is
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    /// @notice Gets the `EXTERNAL_POSITION_FACTORY` variable
+    /// @return externalPositionFactory_ The `EXTERNAL_POSITION_FACTORY` variable value
+    function getExternalPositionFactory() public view returns (address externalPositionFactory_) {
+        return EXTERNAL_POSITION_FACTORY;
+    }
 
     /// @notice Gets the external position library contract for a given type
     /// @param _typeId The type for which to get the external position library
