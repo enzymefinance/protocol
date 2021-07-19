@@ -9,12 +9,12 @@
     file that was distributed with this source code.
 */
 
-import "../../../../persistent/external-positions/IExternalPosition.sol";
-import "../../../core/fund/external-positions/CompoundDebtPositionLib.sol";
-import "../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
-import "../../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
-import "./IExternalPositionParser.sol";
+import "../../../../../persistent/external-positions/IExternalPosition.sol";
+import "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
+import "../../../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
+import "../../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
+import "../IExternalPositionParser.sol";
+import "./ICompoundDebtPosition.sol";
 
 pragma solidity 0.6.12;
 
@@ -22,8 +22,6 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Compound Debt Positions
 contract CompoundDebtPositionParser is IExternalPositionParser {
-    using AddressArrayLib for address[];
-
     address private immutable COMPOUND_PRICE_FEED;
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable PRIMITIVE_PRICE_FEED;

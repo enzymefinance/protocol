@@ -12,9 +12,9 @@ pragma solidity 0.6.12;
 /// @title IExternalPosition Contract
 /// @author Enzyme Council <security@enzyme.finance>
 interface IExternalPosition {
-    function getManagedAssets() external returns (address[] memory, uint256[] memory);
-
     function getDebtAssets() external returns (address[] memory, uint256[] memory);
+
+    function getManagedAssets() external returns (address[] memory, uint256[] memory);
 
     function init(bytes memory) external;
 

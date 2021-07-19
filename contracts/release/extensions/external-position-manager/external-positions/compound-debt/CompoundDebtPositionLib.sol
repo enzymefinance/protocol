@@ -12,12 +12,12 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../../persistent/external-positions/CompoundDebtPositionLibBase1.sol";
-import "../../../interfaces/ICERC20.sol";
-import "../../../interfaces/ICEther.sol";
-import "../../../interfaces/ICompoundComptroller.sol";
-import "../../../interfaces/IWETH.sol";
-import "../../../utils/AddressArrayLib.sol";
+import "../../../../../persistent/external-positions/compound-debt/CompoundDebtPositionLibBase1.sol";
+import "../../../../interfaces/ICERC20.sol";
+import "../../../../interfaces/ICEther.sol";
+import "../../../../interfaces/ICompoundComptroller.sol";
+import "../../../../interfaces/IWETH.sol";
+import "../../../../utils/AddressArrayLib.sol";
 import "./ICompoundDebtPosition.sol";
 
 /// @title CompoundDebtPositionLib Contract

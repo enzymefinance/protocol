@@ -19,7 +19,7 @@ import "../../utils/FundDeployerOwnerMixin.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
-import "./parsers/IExternalPositionParser.sol";
+import "./external-positions/IExternalPositionParser.sol";
 import "./IExternalPositionManager.sol";
 
 /// @title ExternalPositionManager
