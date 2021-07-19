@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../utils/IMigratableVault.sol";
+import "./interfaces/IMigratableVault.sol";
 import "./utils/ProxiableVaultLib.sol";
 import "./utils/SharesTokenBase.sol";
 

@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../persistent/utils/IMigratableVault.sol";
 import "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
 import "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
+import "../../../../persistent/vault/interfaces/IMigratableVault.sol";
 
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>

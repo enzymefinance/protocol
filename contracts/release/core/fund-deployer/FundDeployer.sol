@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../persistent/utils/IMigrationHookHandler.sol";
+import "../../../persistent/dispatcher/IMigrationHookHandler.sol";
 import "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";

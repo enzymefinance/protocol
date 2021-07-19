@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../utils/IMigrationHookHandler.sol";
-import "../utils/IMigratableVault.sol";
+import "../vault/interfaces/IMigratableVault.sol";
 import "../vault/VaultProxy.sol";
 import "./IDispatcher.sol";
+import "./IMigrationHookHandler.sol";
 
 /// @title Dispatcher Contract
 /// @author Enzyme Council <security@enzyme.finance>
