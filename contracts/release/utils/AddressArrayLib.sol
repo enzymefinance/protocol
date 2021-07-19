@@ -85,20 +85,6 @@ library AddressArrayLib {
         return false;
     }
 
-    /// @dev Helper to reassign all items in an array with a specified value
-    function fill(address[] memory _self, address _value)
-        internal
-        pure
-        returns (address[] memory nextArray_)
-    {
-        nextArray_ = new address[](_self.length);
-        for (uint256 i; i < nextArray_.length; i++) {
-            nextArray_[i] = _value;
-        }
-
-        return nextArray_;
-    }
-
     /// @dev Helper to merge the unique items of a second array.
     /// Does not consider uniqueness of either array, only relative uniqueness.
     /// Preserves ordering.

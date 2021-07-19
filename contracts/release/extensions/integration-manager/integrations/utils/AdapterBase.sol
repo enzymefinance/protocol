@@ -25,19 +25,6 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
 
     address internal immutable INTEGRATION_MANAGER;
 
-    /// @dev Provides a standard implementation for transferring incoming assets and
-    /// unspent spend assets from an adapter to a VaultProxy at the end of an adapter action
-    modifier postActionAssetsTransferHandler(address _vaultProxy, bytes memory _assetData) {
-        _;
-
-        (address[] memory spendAssets, , address[] memory incomingAssets) = __decodeAssetData(
-            _assetData
-        );
-
-        __pushFullAssetBalances(_vaultProxy, incomingAssets);
-        __pushFullAssetBalances(_vaultProxy, spendAssets);
-    }
-
     /// @dev Provides a standard implementation for transferring incoming assets
     /// from an adapter to a VaultProxy at the end of an adapter action
     modifier postActionIncomingAssetsTransferHandler(

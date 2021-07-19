@@ -27,18 +27,4 @@ abstract contract MathHelpers {
     ) internal pure returns (uint256 relativeQuantity2_) {
         return _relativeQuantity1.mul(_quantity2).div(_quantity1);
     }
-
-    /// @dev Calculates a rate normalized to 10^18 precision,
-    /// for given base and quote asset decimals and amounts
-    function __calcNormalizedRate(
-        uint256 _baseAssetDecimals,
-        uint256 _baseAssetAmount,
-        uint256 _quoteAssetDecimals,
-        uint256 _quoteAssetAmount
-    ) internal pure returns (uint256 normalizedRate_) {
-        return
-            _quoteAssetAmount.mul(10**_baseAssetDecimals.add(18)).div(
-                _baseAssetAmount.mul(10**_quoteAssetDecimals)
-            );
-    }
 }
