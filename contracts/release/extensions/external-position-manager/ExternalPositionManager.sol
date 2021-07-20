@@ -10,7 +10,6 @@
 */
 
 pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
 
 import "../../../persistent/external-positions/ExternalPositionFactory.sol";
 import "../../../persistent/external-positions/IExternalPosition.sol";
@@ -24,26 +23,38 @@ import "./IExternalPositionManager.sol";
 
 /// @title ExternalPositionManager
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Extension to handle external position actions for funds.
+/// @notice Extension to handle external position actions for funds
 contract ExternalPositionManager is
     IExternalPositionManager,
     ExtensionBase,
     PermissionedVaultActionMixin,
     FundDeployerOwnerMixin
 {
-    event ExternalPositionDeployed(
+    event CallOnExternalPositionExecutedForFund(
+        address indexed caller,
+        address indexed comptrollerProxy,
+        address indexed externalPosition,
+        uint256 actionId,
+        bytes actionArgs,
+        address[] assetsToTransfer,
+        uint256[] amountsToTransfer,
+        address[] assetsToReceive
+    );
+
+    event ExternalPositionDeployedForFund(
         address indexed comptrollerProxy,
         address indexed vaultProxy,
         address externalPosition,
-        uint256 externalPositionType,
+        uint256 indexed externalPositionTypeId,
         bytes data
     );
+
+    event ExternalPositionTypeInfoUpdated(uint256 indexed typeId, address lib, address parser);
 
     address private immutable EXTERNAL_POSITION_FACTORY;
     address private immutable POLICY_MANAGER;
 
-    uint256 private totalTypes;
-    mapping(uint256 => TypeInfo) private typeToTypeInfo;
+    mapping(uint256 => ExternalPositionTypeInfo) private typeIdToTypeInfo;
 
     constructor(
         address _fundDeployer,
@@ -72,7 +83,9 @@ contract ExternalPositionManager is
         uint256 _actionId,
         bytes calldata _callArgs
     ) external override {
-        address vaultProxy = comptrollerProxyToVaultProxy[msg.sender];
+        address comptrollerProxy = msg.sender;
+
+        address vaultProxy = comptrollerProxyToVaultProxy[comptrollerProxy];
         require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
 
         require(
@@ -82,79 +95,41 @@ contract ExternalPositionManager is
 
         // Dispatch the action
         if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
-            __createExternalPosition(_caller, vaultProxy, _callArgs);
+            __createExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.CallOnExternalPosition)) {
-            __executeCallOnExternalPosition(_caller, vaultProxy, _callArgs);
+            __executeCallOnExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
-            __executeRemoveExternalPosition(_caller, _callArgs);
+            __executeRemoveExternalPosition(_caller, comptrollerProxy, _callArgs);
         } else if (
             _actionId == uint256(ExternalPositionManagerActions.ReactivateExternalPosition)
         ) {
-            __reactivateExternalPosition(_caller, vaultProxy, _callArgs);
+            __reactivateExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
     }
 
-    ////////////////////
-    // TYPES REGISTRY //
-    ////////////////////
-
-    /// @notice Creates a new type id and adds the input type info to it
-    /// @param _libs Contract libs to be set for the new type id
-    /// @param _parsers Parsers to be set for the new type id
-    function addTypesInfo(address[] memory _libs, address[] memory _parsers)
-        external
-        onlyFundDeployerOwner
-    {
-        __addTypesInfo(_libs, _parsers);
-    }
-
-    /// @notice Updates the TypeInfo of the given typeIds
-    /// @param _typeIds Ids of the types to be updated
-    /// @param _libs Contract libs to be set for the type ids
-    /// @param _parsers Parsers to be set for the type ids
-    function updateTypesInfo(
-        uint256[] memory _typeIds,
-        address[] memory _libs,
-        address[] memory _parsers
-    ) external onlyFundDeployerOwner {
-        for (uint256 i; i < _typeIds.length; i++) {
-            require(_typeIds[i] < totalTypes, "__updateTypesInfo: Type id is out of range");
-            typeToTypeInfo[_typeIds[i]] = TypeInfo({lib: _libs[i], parser: _parsers[i]});
-        }
-    }
-
     // PRIVATE FUNCTIONS
 
-    /// @dev Adds new types with new typeInfo structs
-    function __addTypesInfo(address[] memory _libs, address[] memory _parsers) private {
-        for (uint256 i; i < _libs.length; i++) {
-            typeToTypeInfo[totalTypes] = TypeInfo({lib: _libs[i], parser: _parsers[i]});
-
-            totalTypes++;
-        }
-    }
-
-    /// @dev Creates a new external position and links it to the _vaultProxy.
+    /// @dev Creates a new external position and links it to the _vaultProxy
     function __createExternalPosition(
         address _caller,
+        address _comptrollerProxy,
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
         (uint256 typeId, bytes memory initArgs) = abi.decode(_callArgs, (uint256, bytes));
 
-        require(typeId < totalTypes, "__createExternalPosition: Invalid typeId");
+        address parser = getExternalPositionParserForType(typeId);
+        require(parser != address(0), "__createExternalPosition: Invalid typeId");
 
         IPolicyManager(getPolicyManager()).validatePolicies(
-            msg.sender,
+            _comptrollerProxy,
             IPolicyManager.PolicyHook.CreateExternalPosition,
             abi.encode(_caller, typeId, initArgs)
         );
 
-        TypeInfo memory typeInfo = getTypeInfo(typeId);
-
-        bytes memory initData = IExternalPositionParser(typeInfo.parser).parseInitArgs(
+        bytes memory initData = IExternalPositionParser(parser).parseInitArgs(
             _vaultProxy,
             initArgs
         );
@@ -167,18 +142,107 @@ contract ExternalPositionManager is
         address externalPosition = ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
             _vaultProxy,
             typeId,
-            typeInfo.lib,
+            getExternalPositionLibForType(typeId),
             constructData
         );
 
-        emit ExternalPositionDeployed(msg.sender, _vaultProxy, externalPosition, typeId, initArgs);
+        emit ExternalPositionDeployedForFund(
+            _comptrollerProxy,
+            _vaultProxy,
+            externalPosition,
+            typeId,
+            initArgs
+        );
 
-        __addExternalPosition(msg.sender, externalPosition);
+        __addExternalPosition(_comptrollerProxy, externalPosition);
+    }
+
+    /// @dev Performs an action on a specific external position
+    function __executeCallOnExternalPosition(
+        address _caller,
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes memory _callArgs
+    ) private {
+        (address payable externalPosition, uint256 actionId, bytes memory actionArgs) = abi.decode(
+            _callArgs,
+            (address, uint256, bytes)
+        );
+
+        require(
+            IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
+            "__executeCallOnExternalPosition: External position is not valid"
+        );
+
+        address parser = getExternalPositionParserForType(
+            IExternalPositionProxy(externalPosition).getExternalPositionType()
+        );
+
+        (
+            address[] memory assetsToTransfer,
+            uint256[] memory amountsToTransfer,
+            address[] memory assetsToReceive
+        ) = IExternalPositionParser(parser).parseAssetsForAction(actionId, actionArgs);
+
+        bytes memory encodedActionData = abi.encode(actionId, actionArgs);
+
+        __callOnExternalPosition(
+            _comptrollerProxy,
+            abi.encode(
+                externalPosition,
+                encodedActionData,
+                assetsToTransfer,
+                amountsToTransfer,
+                assetsToReceive
+            )
+        );
+
+        IPolicyManager(getPolicyManager()).validatePolicies(
+            _comptrollerProxy,
+            IPolicyManager.PolicyHook.PostCallOnExternalPosition,
+            abi.encode(
+                _caller,
+                externalPosition,
+                assetsToTransfer,
+                amountsToTransfer,
+                assetsToReceive,
+                encodedActionData
+            )
+        );
+
+        emit CallOnExternalPositionExecutedForFund(
+            _caller,
+            _comptrollerProxy,
+            externalPosition,
+            actionId,
+            actionArgs,
+            assetsToTransfer,
+            amountsToTransfer,
+            assetsToReceive
+        );
+    }
+
+    /// @dev Removes an external position from the VaultProxy
+    function __executeRemoveExternalPosition(
+        address _caller,
+        address _comptrollerProxy,
+        bytes memory _callArgs
+    ) private {
+        address externalPosition = abi.decode(_callArgs, (address));
+
+        IPolicyManager(getPolicyManager()).validatePolicies(
+            _comptrollerProxy,
+            IPolicyManager.PolicyHook.RemoveExternalPosition,
+            abi.encode(_caller, externalPosition)
+        );
+
+        __removeExternalPosition(_comptrollerProxy, externalPosition);
     }
 
     ///@dev Reactivates an existing externalPosition
     function __reactivateExternalPosition(
         address _caller,
+        address _comptrollerProxy,
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
@@ -197,79 +261,46 @@ contract ExternalPositionManager is
         );
 
         IPolicyManager(getPolicyManager()).validatePolicies(
-            msg.sender,
+            _comptrollerProxy,
             IPolicyManager.PolicyHook.ReactivateExternalPosition,
             abi.encode(_caller, externalPosition)
         );
 
-        __addExternalPosition(msg.sender, externalPosition);
+        __addExternalPosition(_comptrollerProxy, externalPosition);
     }
 
-    /// @dev Performs an action on a specific external position, validating the incoming arguments and the final result
-    function __executeCallOnExternalPosition(
-        address _caller,
-        address _vaultProxy,
-        bytes memory _callArgs
-    ) private {
-        (address payable externalPosition, uint256 actionId, bytes memory actionArgs) = abi.decode(
-            _callArgs,
-            (address, uint256, bytes)
-        );
+    ///////////////////////////////////////////
+    // EXTERNAL POSITION TYPES INFO REGISTRY //
+    ///////////////////////////////////////////
 
-        uint256 typeId = IExternalPositionProxy(externalPosition).getExternalPositionType();
-
+    /// @notice Updates the libs and parsers for a set of external position type ids
+    /// @param _typeIds The external position type ids for which to set the libs and parsers
+    /// @param _libs The libs
+    /// @param _parsers The parsers
+    function updateExternalPositionTypesInfo(
+        uint256[] memory _typeIds,
+        address[] memory _libs,
+        address[] memory _parsers
+    ) external onlyFundDeployerOwner {
         require(
-            IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
-            "__executeCallOnExternalPosition: External position is not valid"
+            _typeIds.length == _parsers.length && _libs.length == _parsers.length,
+            "updateTypesInfo: Unequal arrays"
         );
 
-        address parser = typeToTypeInfo[typeId].parser;
+        for (uint256 i; i < _typeIds.length; i++) {
+            require(
+                _typeIds[i] <
+                    ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).getPositionTypeCounter(),
+                "updateTypesInfo: Type does not exist"
+            );
 
-        (
-            address[] memory assetsToTransfer,
-            uint256[] memory amountsToTransfer,
-            address[] memory assetsToReceive
-        ) = IExternalPositionParser(parser).parseAssetsForAction(actionId, actionArgs);
+            typeIdToTypeInfo[_typeIds[i]] = ExternalPositionTypeInfo({
+                lib: _libs[i],
+                parser: _parsers[i]
+            });
 
-        bytes memory encodedActionData = abi.encode(actionId, actionArgs);
-
-        // Execute callOnExternalPosition
-        __callOnExternalPosition(
-            msg.sender,
-            abi.encode(
-                externalPosition,
-                encodedActionData,
-                assetsToTransfer,
-                amountsToTransfer,
-                assetsToReceive
-            )
-        );
-
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            msg.sender,
-            IPolicyManager.PolicyHook.PostCallOnExternalPosition,
-            abi.encode(
-                _caller,
-                externalPosition,
-                assetsToTransfer,
-                amountsToTransfer,
-                assetsToReceive,
-                encodedActionData
-            )
-        );
-    }
-
-    /// @dev Removes an external position from the VaultProxy
-    function __executeRemoveExternalPosition(address _caller, bytes memory _callArgs) private {
-        address externalPosition = abi.decode(_callArgs, (address));
-
-        IPolicyManager(getPolicyManager()).validatePolicies(
-            msg.sender,
-            IPolicyManager.PolicyHook.RemoveExternalPosition,
-            abi.encode(_caller, externalPosition)
-        );
-
-        __removeExternalPosition(msg.sender, externalPosition);
+            emit ExternalPositionTypeInfoUpdated(_typeIds[i], _libs[i], _parsers[i]);
+        }
     }
 
     ///////////////////
@@ -285,27 +316,29 @@ contract ExternalPositionManager is
     /// @notice Gets the external position library contract for a given type
     /// @param _typeId The type for which to get the external position library
     /// @return lib_ The external position library
-    function getLibForType(uint256 _typeId) external view override returns (address lib_) {
-        return typeToTypeInfo[_typeId].lib;
+    function getExternalPositionLibForType(uint256 _typeId)
+        public
+        view
+        override
+        returns (address lib_)
+    {
+        return typeIdToTypeInfo[_typeId].lib;
     }
 
-    /// @notice Returns the parser of a given typeId
+    /// @notice Gets the external position parser contract for a given type
     /// @param _typeId The type for which to get the external position's parser
-    /// @return lib_ The external position parser address
-    function getParserForType(uint256 _typeId) public view returns (address) {
-        return typeToTypeInfo[_typeId].parser;
+    /// @return parser_ The external position parser
+    function getExternalPositionParserForType(uint256 _typeId)
+        public
+        view
+        returns (address parser_)
+    {
+        return typeIdToTypeInfo[_typeId].parser;
     }
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() public view returns (address policyManager_) {
         return POLICY_MANAGER;
-    }
-
-    /// @notice Returns the external position type info struct of a given type id
-    /// @param _typeId The procotol for which to get the external position's type info
-    /// @return typeInfo_ The external position type info struct
-    function getTypeInfo(uint256 _typeId) public view returns (TypeInfo memory typeInfo_) {
-        return typeToTypeInfo[_typeId];
     }
 }

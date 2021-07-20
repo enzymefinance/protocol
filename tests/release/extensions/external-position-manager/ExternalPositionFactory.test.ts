@@ -126,3 +126,43 @@ describe('removePositionDeployers', () => {
     ).rejects.toBeRevertedWith('Account is not a position deployer');
   });
 });
+
+describe('addNewPositionTypes', () => {
+  it('works as expected', async () => {
+    const externalPositionFactory = await ExternalPositionFactory.deploy(fork.deployer, fork.deployment.dispatcher);
+
+    const labelsBefore = await externalPositionFactory.getPositionTypeCounter();
+
+    const testLabel = 'TEST_NEW_LABEL';
+
+    await externalPositionFactory.addNewPositionTypes([testLabel]);
+
+    const labelsAfter = await externalPositionFactory.getPositionTypeCounter();
+    const labelRetrieved = await externalPositionFactory.getLabelForPositionType(labelsBefore);
+
+    expect(labelsAfter.sub(labelsBefore)).toEqBigNumber('1');
+    expect(labelRetrieved).toEqual(testLabel);
+  });
+});
+
+describe('updatePositionTypeLabels', () => {
+  it('works as expected', async () => {
+    const externalPositionFactory = await ExternalPositionFactory.deploy(fork.deployer, fork.deployment.dispatcher);
+
+    const testLabel = 'TEST_NEW_LABEL';
+
+    await externalPositionFactory.addNewPositionTypes([testLabel]);
+
+    const labelsBefore = await externalPositionFactory.getPositionTypeCounter();
+
+    const testUpdatedLabel = 'TEST_UPDATED_LABEL';
+
+    await externalPositionFactory.updatePositionTypeLabels([labelsBefore], [testUpdatedLabel]);
+
+    const labelsAfter = await externalPositionFactory.getPositionTypeCounter();
+    const labelRetrieved = await externalPositionFactory.getLabelForPositionType(labelsAfter);
+
+    expect(labelsAfter.sub(labelsBefore)).toEqBigNumber('0');
+    expect(labelRetrieved).toEqual(testUpdatedLabel);
+  });
+});

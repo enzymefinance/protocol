@@ -16,7 +16,7 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for the ExternalPositionManager
 interface IExternalPositionManager {
-    struct TypeInfo {
+    struct ExternalPositionTypeInfo {
         address parser;
         address lib;
     }
@@ -27,5 +27,5 @@ interface IExternalPositionManager {
         ReactivateExternalPosition
     }
 
-    function getLibForType(uint256) external view returns (address);
+    function getExternalPositionLibForType(uint256) external view returns (address);
 }

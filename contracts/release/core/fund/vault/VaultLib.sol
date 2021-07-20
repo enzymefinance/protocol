@@ -97,7 +97,10 @@ contract VaultLib is VaultLibBase2, IVault {
         override
         returns (address externalPositionLib_)
     {
-        return IExternalPositionManager(getExternalPositionManager()).getLibForType(_typeId);
+        return
+            IExternalPositionManager(getExternalPositionManager()).getExternalPositionLibForType(
+                _typeId
+            );
     }
 
     /// @notice Sets shares as (permanently) freely transferable

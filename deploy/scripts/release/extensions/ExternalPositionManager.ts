@@ -24,11 +24,17 @@ const fn: DeployFunction = async function (hre) {
   if (externalPositionManager.newlyDeployed) {
     log('Updating ExternalPositionManager on ExternalPositionFactory');
     const externalPositionFactoryInstance = new ExternalPositionFactory(externalPositionFactory.address, deployer);
-    await externalPositionFactoryInstance.addPositionDeployers([externalPositionManager]);
-  }
 
-  const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
-  await externalPositionManagerInstance.addTypesInfo([compoundDebtPositionLib], [compoundDebtPositionParser]);
+    await externalPositionFactoryInstance.addPositionDeployers([externalPositionManager]);
+    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT']);
+
+    const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [0],
+      [compoundDebtPositionLib],
+      [compoundDebtPositionParser],
+    );
+  }
 };
 fn.tags = ['Release', 'ExternalPositionManager'];
 fn.dependencies = [

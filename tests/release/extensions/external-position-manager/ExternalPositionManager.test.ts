@@ -37,10 +37,12 @@ describe('constructor', () => {
     const compoundDebtPositionLib = fork.deployment.compoundDebtPositionLib;
     const externalPositionManager = fork.deployment.externalPositionManager;
 
-    const typeInfo = await externalPositionManager.getTypeInfo(0);
-
-    expect(typeInfo.parser).toMatchAddress(compoundDebtPositionParser.address);
-    expect(typeInfo.lib).toMatchAddress(compoundDebtPositionLib.address);
+    expect(await externalPositionManager.getExternalPositionLibForType(0)).toMatchAddress(
+      compoundDebtPositionLib.address,
+    );
+    expect(await externalPositionManager.getExternalPositionParserForType(0)).toMatchAddress(
+      compoundDebtPositionParser.address,
+    );
   });
 });
 
