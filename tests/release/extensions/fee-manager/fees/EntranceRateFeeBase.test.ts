@@ -22,25 +22,6 @@ async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
   return entranceRateFee;
 }
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const getFeeManagerCall = await fork.deployment.entranceRateDirectFee.getFeeManager();
-    expect(getFeeManagerCall).toMatchAddress(fork.deployment.feeManager);
-
-    // Implements expected hooks
-    const implementedHooksCall = await fork.deployment.entranceRateDirectFee.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(
-      fork.deployment.entranceRateDirectFee.implementedHooks.fragment,
-      {
-        implementedHooksForSettle_: [FeeHook.PostBuyShares],
-        implementedHooksForUpdate_: [],
-        usesGavOnSettle_: false,
-        usesGavOnUpdate_: false,
-      },
-    );
-  });
-});
-
 describe('addFundSettings', () => {
   let fork: ProtocolDeployment;
   let entranceRateFee: EntranceRateDirectFee;

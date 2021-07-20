@@ -13,7 +13,7 @@ async function snapshot() {
     deployer,
     accounts: [fundOwner, arbitraryUser],
     config: { weth },
-    deployment: { dispatcher, fundDeployer, feeManager, policyManager },
+    deployment: { dispatcher, fundDeployer },
   } = await deployProtocolFixture();
 
   const denominationAsset = new StandardToken(weth, deployer);
@@ -21,12 +21,10 @@ async function snapshot() {
   // Get mock fees and mock policies data with which to configure fund
   const feeManagerConfig = await generateFeeManagerConfigWithMockFees({
     deployer,
-    feeManager,
   });
 
   const policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies({
     deployer,
-    policyManager,
   });
 
   // Create initial fund on prevFundDeployer

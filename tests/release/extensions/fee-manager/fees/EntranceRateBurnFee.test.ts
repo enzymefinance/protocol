@@ -15,10 +15,22 @@ import {
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const getSettlementTypeCall = await fork.deployment.entranceRateBurnFee.getSettlementType();
-    expect(getSettlementTypeCall).toBe(FeeSettlementType.Burn);
+describe('config', () => {
+  it('has correct config', async () => {
+    const entranceRateBurnFee = fork.deployment.entranceRateBurnFee;
+
+    for (const hook of Object.values(FeeHook)) {
+      expect(await entranceRateBurnFee.settlesOnHook(hook)).toMatchFunctionOutput(entranceRateBurnFee.settlesOnHook, {
+        settles_: hook === FeeHook.PostBuyShares,
+        usesGav_: false,
+      });
+      expect(await entranceRateBurnFee.updatesOnHook(hook)).toMatchFunctionOutput(entranceRateBurnFee.updatesOnHook, {
+        updates_: false,
+        usesGav_: false,
+      });
+    }
+
+    expect(await entranceRateBurnFee.getSettlementType()).toBe(FeeSettlementType.Burn);
   });
 });
 
@@ -31,7 +43,7 @@ describe('settle', () => {
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('.1'); // 10%
-    const entranceRateFeeConfig = await entranceRateFeeConfigArgs(rate);
+    const entranceRateFeeConfig = entranceRateFeeConfigArgs(rate);
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
@@ -40,7 +52,7 @@ describe('settle', () => {
     const buyer = randomAddress();
     const sharesBought = utils.parseEther('2');
     const investmentAmount = utils.parseEther('2');
-    const settlementData = await settlePostBuySharesArgs({
+    const settlementData = settlePostBuySharesArgs({
       buyer,
       sharesBought,
       investmentAmount,

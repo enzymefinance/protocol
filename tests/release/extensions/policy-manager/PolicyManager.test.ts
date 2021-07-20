@@ -1,6 +1,5 @@
 import { extractEvent } from '@enzymefinance/ethers';
 import {
-  IPolicy,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
@@ -10,7 +9,7 @@ import {
 } from '@enzymefinance/protocol';
 import {
   createNewFund,
-  generateRegisteredMockPolicies,
+  generateMockPolicies,
   mockGenericSwap,
   assertEvent,
   createFundDeployer,
@@ -28,14 +27,12 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const policies = await generateRegisteredMockPolicies({
+  const policies = await generateMockPolicies({
     deployer,
-    policyManager: deployment.policyManager,
   });
 
   const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
   const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
-  await deployment.integrationManager.registerAdapters([mockGenericAdapter]);
 
   const orderedPolicies = Object.values(policies);
   const policiesSettingsData = [
@@ -69,25 +66,8 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: {
-        assetWhitelist,
-        fundDeployer,
-        guaranteedRedemption,
-        policyManager,
-        investorWhitelist,
-        minMaxInvestment,
-      },
-      policies,
+      deployment: { fundDeployer, policyManager },
     } = await provider.snapshot(snapshot);
-
-    const result = await policyManager.getRegisteredPolicies();
-    expect(result).toMatchFunctionOutput(policyManager.getRegisteredPolicies, [
-      assetWhitelist,
-      guaranteedRedemption,
-      investorWhitelist,
-      minMaxInvestment,
-      ...Object.values(policies),
-    ]);
 
     expect(await policyManager.getOwner()).toMatchAddress(await fundDeployer.getOwner());
   });
@@ -320,37 +300,6 @@ describe('enablePolicyForFund', () => {
     await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy is already enabled');
   });
 
-  it('does not allow an unregistered policy', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostBuySharesPolicy },
-      fundOwner,
-      denominationAsset,
-    } = await provider.snapshot(snapshot);
-
-    // Create fund without policy config
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-    });
-
-    // Deregister the mockPostBuySharesPolicy
-    await policyManager.deregisterPolicies([mockPostBuySharesPolicy]);
-
-    // Assert that the policy has been de-registered
-    const mockPostBuySharesPolicyIsRegistered = await policyManager.policyIsRegistered(mockPostBuySharesPolicy);
-    expect(mockPostBuySharesPolicyIsRegistered).toBe(false);
-
-    // Attempt to enable the unregistered policy
-    const enablePolicyForFundCall = policyManager
-      .connect(fundOwner)
-      .enablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy, utils.randomBytes(10));
-
-    await expect(enablePolicyForFundCall).rejects.toBeRevertedWith('Policy is not registered');
-  });
-
   it('adds specified policy, calls `addFundSettings` and `activateForFund` with the correct params, and emits event', async () => {
     const {
       deployment: { fundDeployer, policyManager },
@@ -479,36 +428,6 @@ describe('setConfigForFund', () => {
     // Call the setConfigForFund with this new config
     const newSetConfigForFundCall = policyManager.setConfigForFund(newPolicyManagerConfig);
     await expect(newSetConfigForFundCall).rejects.toBeRevertedWith('Policy is already enabled');
-  });
-
-  it('does not allow unregistered policies', async () => {
-    const {
-      deployment: { fundDeployer, policyManager },
-      policies: { mockPostBuySharesPolicy },
-      fundOwner,
-      denominationAsset,
-      policyManagerConfig,
-    } = await provider.snapshot(snapshot);
-
-    await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      policyManagerConfig,
-    });
-
-    // De-register mockPostBuySharesPolicy
-    await policyManager.deregisterPolicies([mockPostBuySharesPolicy]);
-
-    // Create config for mockPostBuySharesPolicy
-    const policies = [mockPostBuySharesPolicy];
-    const policiesSettings = [utils.randomBytes(10)];
-    const newPolicyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
-
-    // Call the setConfigForFund with this new config
-    const callSetConfigForFund = policyManager.setConfigForFund(newPolicyManagerConfig);
-    await expect(callSetConfigForFund).rejects.toBeRevertedWith('Policy is not registered');
   });
 
   it('adds specified policies, calls `addFundSettings` on each with the correct params, and emits an event for each', async () => {
@@ -736,143 +655,5 @@ describe('validatePolicies', () => {
         mockGenericAdapter,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false');
-  });
-});
-
-describe('policy registry', () => {
-  describe('deregisterPolicies', () => {
-    it('can only be called by the owner of the FundDeployer contract', async () => {
-      const {
-        accounts: [, randomUser],
-        deployment: { policyManager },
-        policies: { mockPostBuySharesPolicy },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to call deregisterPolicies with a random (non-owner) account
-      const deregisterPoliciesCall = policyManager.connect(randomUser).deregisterPolicies([mockPostBuySharesPolicy]);
-      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith(
-        'Only the FundDeployer owner can call this function',
-      );
-    });
-
-    it('does not allow empty _policies param', async () => {
-      const {
-        deployment: { policyManager },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to call deregisterPolicies with an empty _policies param
-      const deregisterPoliciesCall = policyManager.deregisterPolicies([]);
-      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith('_policies cannot be empty');
-    });
-
-    it('does not allow an unregistered policy', async () => {
-      const {
-        deployment: { policyManager },
-        policies: { mockPostBuySharesPolicy },
-      } = await provider.snapshot(snapshot);
-
-      // De-register mockPostBuySharesPolicy
-      await policyManager.deregisterPolicies([mockPostBuySharesPolicy]);
-
-      // Confirm that mockPostBuySharesPolicy is deregistered
-      const isMockPostBuySharesPolicyRegistered = await policyManager.policyIsRegistered(mockPostBuySharesPolicy);
-      expect(isMockPostBuySharesPolicyRegistered).toBe(false);
-
-      // Attempt to de-register mockPostBuySharesPolicy again
-      const deregisterPoliciesCall = policyManager.deregisterPolicies([mockPostBuySharesPolicy]);
-      await expect(deregisterPoliciesCall).rejects.toBeRevertedWith('policy is not registered');
-    });
-
-    it('successfully de-registers multiple policies and emits one event per policy', async () => {
-      const {
-        deployment: { policyManager },
-        policies: { mockPostBuySharesPolicy, mockPostCoIPolicy },
-      } = await provider.snapshot(snapshot);
-
-      // De-register multiple policies
-      const policies = [mockPostBuySharesPolicy, mockPostCoIPolicy];
-      const receipt = await policyManager.deregisterPolicies(policies);
-
-      const policyDeRegisteredEvent = policyManager.abi.getEvent('PolicyDeregistered');
-
-      // One policyDeRegisteredEvent should have been emitted for each element in policyArray
-      const events = extractEvent(receipt, policyDeRegisteredEvent);
-      expect(events.length).toBe(policies.length);
-
-      for (let i = 0; i < policies.length; i++) {
-        // Make sure that each event contains the corresponding policy address
-        expect(events[i].args[0]).toBe(policies[i].address);
-      }
-    });
-  });
-
-  describe('registerPolicies', () => {
-    it('can only be called by the owner of the FundDeployer contract', async () => {
-      const {
-        deployer,
-        accounts: [randomAccount],
-        deployment: { policyManager },
-      } = await provider.snapshot(snapshot);
-
-      const mockPolicy = await IPolicy.mock(deployer);
-
-      // Attempt to register the policy with a non-owner account
-      const registerPoliciesCall = policyManager.connect(randomAccount).registerPolicies([mockPolicy]);
-      await expect(registerPoliciesCall).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
-    });
-
-    it('does not allow empty _policies param', async () => {
-      const {
-        deployment: { policyManager },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to call deregisterPolicies with an empty _policies param
-      const registerPoliciesCall = policyManager.registerPolicies([]);
-      await expect(registerPoliciesCall).rejects.toBeRevertedWith('_policies cannot be empty');
-    });
-
-    it('does not allow an already registered policy', async () => {
-      const {
-        policies: { mockPostBuySharesPolicy },
-        deployment: { policyManager },
-      } = await provider.snapshot(snapshot);
-
-      // Confirm that policy is already registered
-      expect(await policyManager.policyIsRegistered(mockPostBuySharesPolicy)).toBe(true);
-
-      // Attempt to re-register policy
-      const registerPoliciesCall = policyManager.registerPolicies([mockPostBuySharesPolicy]);
-      await expect(registerPoliciesCall).rejects.toBeRevertedWith('policy already registered');
-    });
-
-    it('successfully registers a policy and emits the correct event', async () => {
-      const {
-        deployer,
-        deployment: { policyManager },
-      } = await provider.snapshot(snapshot);
-
-      // Setup a mock policy
-      const identifier = `MOCK_POLICY`;
-      const mockPolicy = await IPolicy.mock(deployer);
-      await mockPolicy.identifier.returns(identifier);
-
-      const receipt = await policyManager.registerPolicies([mockPolicy]);
-
-      // Assert event
-      assertEvent(receipt, 'PolicyRegistered', {
-        policy: mockPolicy,
-        // TODO: Improve param matching to automatically derive the sighash for indexed event args.
-        identifier: expect.objectContaining({
-          hash: utils.id(identifier),
-        }),
-      });
-
-      // Policies should be registered
-      const registeredPolicies = await policyManager.getRegisteredPolicies();
-      expect(registeredPolicies).toMatchFunctionOutput(
-        policyManager.getRegisteredPolicies,
-        expect.arrayContaining([mockPolicy.address]),
-      );
-    });
   });
 });

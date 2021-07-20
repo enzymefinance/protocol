@@ -51,20 +51,19 @@ async function deployAndConfigureStandaloneManagementFee(
   return managementFee;
 }
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const getFeeManagerCall = await fork.deployment.managementFee.getFeeManager();
-    expect(getFeeManagerCall).toMatchAddress(fork.deployment.feeManager);
+it('has correct config', async () => {
+  const managementFee = fork.deployment.managementFee;
 
-    // Implements expected hooks
-    const implementedHooksCall = await fork.deployment.managementFee.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(fork.deployment.managementFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
-      implementedHooksForUpdate_: [],
-      usesGavOnSettle_: false,
-      usesGavOnUpdate_: false,
+  for (const hook of Object.values(FeeHook)) {
+    expect(await managementFee.settlesOnHook(hook)).toMatchFunctionOutput(managementFee.settlesOnHook, {
+      settles_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares].includes(hook),
+      usesGav_: false,
     });
-  });
+    expect(await managementFee.updatesOnHook(hook)).toMatchFunctionOutput(managementFee.updatesOnHook, {
+      updates_: false,
+      usesGav_: false,
+    });
+  }
 });
 
 describe('addFundSettings', () => {

@@ -59,29 +59,6 @@ abstract contract EntranceRateFeeBase is FeeBase {
         emit FundSettingsAdded(_comptrollerProxy, rate);
     }
 
-    /// @notice Gets the hooks that are implemented by the fee
-    /// @return implementedHooksForSettle_ The hooks during which settle() is implemented
-    /// @return implementedHooksForUpdate_ The hooks during which update() is implemented
-    /// @return usesGavOnSettle_ True if GAV is used during the settle() implementation
-    /// @return usesGavOnUpdate_ True if GAV is used during the update() implementation
-    /// @dev Used only during fee registration
-    function implementedHooks()
-        external
-        view
-        override
-        returns (
-            IFeeManager.FeeHook[] memory implementedHooksForSettle_,
-            IFeeManager.FeeHook[] memory implementedHooksForUpdate_,
-            bool usesGavOnSettle_,
-            bool usesGavOnUpdate_
-        )
-    {
-        implementedHooksForSettle_ = new IFeeManager.FeeHook[](1);
-        implementedHooksForSettle_[0] = IFeeManager.FeeHook.PostBuyShares;
-
-        return (implementedHooksForSettle_, new IFeeManager.FeeHook[](0), false, false);
-    }
-
     /// @notice Settles the fee
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settlementData Encoded args to use in calculating the settlement
@@ -117,6 +94,23 @@ abstract contract EntranceRateFeeBase is FeeBase {
         emit Settled(_comptrollerProxy, payer_, sharesDue_);
 
         return (SETTLEMENT_TYPE, payer_, sharesDue_);
+    }
+
+    /// @notice Gets whether the fee settles and requires GAV on a particular hook
+    /// @param _hook The FeeHook
+    /// @return settles_ True if the fee settles on the _hook
+    /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
+    function settlesOnHook(IFeeManager.FeeHook _hook)
+        external
+        view
+        override
+        returns (bool settles_, bool usesGav_)
+    {
+        if (_hook == IFeeManager.FeeHook.PostBuyShares) {
+            return (true, false);
+        }
+
+        return (false, false);
     }
 
     ///////////////////

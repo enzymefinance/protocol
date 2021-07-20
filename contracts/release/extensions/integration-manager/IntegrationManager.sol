@@ -13,7 +13,6 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
@@ -29,6 +28,10 @@ import "./IIntegrationManager.sol";
 /// @title IntegrationManager
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Extension to handle DeFi integration actions for funds
+/// @dev Any arbitrary adapter is allowed by default, so all participants must be aware of
+/// their fund's configuration, especially whether they use a policy that only allows
+/// official adapters. Owners and asset managers must also establish trust for any
+/// arbitrary adapters that they interact with.
 contract IntegrationManager is
     IIntegrationManager,
     ExtensionBase,
@@ -37,12 +40,7 @@ contract IntegrationManager is
     AssetHelpers
 {
     using AddressArrayLib for address[];
-    using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
-
-    event AdapterDeregistered(address indexed adapter);
-
-    event AdapterRegistered(address indexed adapter);
 
     event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
@@ -59,8 +57,6 @@ contract IntegrationManager is
     address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
     address private immutable PRIMITIVE_PRICE_FEED;
-
-    EnumerableSet.AddressSet private registeredAdapters;
 
     constructor(
         address _fundDeployer,
@@ -347,8 +343,6 @@ contract IntegrationManager is
             uint256[] memory preCallSpendAssetBalances_
         )
     {
-        require(adapterIsRegistered(_adapter), "callOnIntegration: Adapter is not registered");
-
         // Note that incoming and spend assets are allowed to overlap
         // (e.g., a fee for the incomingAsset charged in a spend asset)
         (
@@ -481,56 +475,9 @@ contract IntegrationManager is
         return (incomingAssetAmounts_, spendAssetAmounts_);
     }
 
-    ///////////////////////////
-    // INTEGRATIONS REGISTRY //
-    ///////////////////////////
-
-    /// @notice Remove integration adapters from the list of registered adapters
-    /// @param _adapters Addresses of adapters to be deregistered
-    function deregisterAdapters(address[] calldata _adapters) external onlyFundDeployerOwner {
-        require(_adapters.length > 0, "deregisterAdapters: _adapters cannot be empty");
-
-        for (uint256 i; i < _adapters.length; i++) {
-            require(
-                adapterIsRegistered(_adapters[i]),
-                "deregisterAdapters: Adapter is not registered"
-            );
-
-            registeredAdapters.remove(_adapters[i]);
-
-            emit AdapterDeregistered(_adapters[i]);
-        }
-    }
-
-    /// @notice Add integration adapters to the list of registered adapters
-    /// @param _adapters Addresses of adapters to be registered
-    function registerAdapters(address[] calldata _adapters) external onlyFundDeployerOwner {
-        require(_adapters.length > 0, "registerAdapters: _adapters cannot be empty");
-
-        for (uint256 i; i < _adapters.length; i++) {
-            require(_adapters[i] != address(0), "registerAdapters: Adapter cannot be empty");
-
-            require(
-                !adapterIsRegistered(_adapters[i]),
-                "registerAdapters: Adapter already registered"
-            );
-
-            registeredAdapters.add(_adapters[i]);
-
-            emit AdapterRegistered(_adapters[i]);
-        }
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
-
-    /// @notice Checks if an integration adapter is registered
-    /// @param _adapter The adapter to check
-    /// @return isRegistered_ True if the adapter is registered
-    function adapterIsRegistered(address _adapter) public view returns (bool isRegistered_) {
-        return registeredAdapters.contains(_adapter);
-    }
 
     /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
     /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
@@ -548,20 +495,5 @@ contract IntegrationManager is
     /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
     function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
         return PRIMITIVE_PRICE_FEED;
-    }
-
-    /// @notice Gets all registered integration adapters
-    /// @return registeredAdaptersArray_ A list of all registered integration adapters
-    function getRegisteredAdapters()
-        external
-        view
-        returns (address[] memory registeredAdaptersArray_)
-    {
-        registeredAdaptersArray_ = new address[](registeredAdapters.length());
-        for (uint256 i; i < registeredAdaptersArray_.length; i++) {
-            registeredAdaptersArray_[i] = registeredAdapters.at(i);
-        }
-
-        return registeredAdaptersArray_;
     }
 }

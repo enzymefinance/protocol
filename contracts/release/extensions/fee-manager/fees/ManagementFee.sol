@@ -84,37 +84,6 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         emit FundSettingsAdded(_comptrollerProxy, scaledPerSecondRate);
     }
 
-    /// @notice Provides a constant string identifier for a fee
-    /// @return identifier_ The identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "MANAGEMENT";
-    }
-
-    /// @notice Gets the hooks that are implemented by the fee
-    /// @return implementedHooksForSettle_ The hooks during which settle() is implemented
-    /// @return implementedHooksForUpdate_ The hooks during which update() is implemented
-    /// @return usesGavOnSettle_ True if GAV is used during the settle() implementation
-    /// @return usesGavOnUpdate_ True if GAV is used during the update() implementation
-    /// @dev Used only during fee registration
-    function implementedHooks()
-        external
-        view
-        override
-        returns (
-            IFeeManager.FeeHook[] memory implementedHooksForSettle_,
-            IFeeManager.FeeHook[] memory implementedHooksForUpdate_,
-            bool usesGavOnSettle_,
-            bool usesGavOnUpdate_
-        )
-    {
-        implementedHooksForSettle_ = new IFeeManager.FeeHook[](3);
-        implementedHooksForSettle_[0] = IFeeManager.FeeHook.Continuous;
-        implementedHooksForSettle_[1] = IFeeManager.FeeHook.PreBuyShares;
-        implementedHooksForSettle_[2] = IFeeManager.FeeHook.PreRedeemShares;
-
-        return (implementedHooksForSettle_, new IFeeManager.FeeHook[](0), false, false);
-    }
-
     /// @notice Settle the fee and calculate shares due
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _vaultProxy The VaultProxy of the fund
@@ -174,6 +143,27 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         }
 
         return (IFeeManager.SettlementType.Mint, address(0), sharesDue_);
+    }
+
+    /// @notice Gets whether the fee settles and requires GAV on a particular hook
+    /// @param _hook The FeeHook
+    /// @return settles_ True if the fee settles on the _hook
+    /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
+    function settlesOnHook(IFeeManager.FeeHook _hook)
+        external
+        view
+        override
+        returns (bool settles_, bool usesGav_)
+    {
+        if (
+            _hook == IFeeManager.FeeHook.PreBuyShares ||
+            _hook == IFeeManager.FeeHook.PreRedeemShares ||
+            _hook == IFeeManager.FeeHook.Continuous
+        ) {
+            return (true, false);
+        }
+
+        return (false, false);
     }
 
     ///////////////////

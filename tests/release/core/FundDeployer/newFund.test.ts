@@ -153,7 +153,6 @@ describe('happy paths', () => {
 
       policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies({
         deployer: fork.deployer,
-        policyManager: fork.deployment.policyManager,
       });
 
       // Note that events are asserted within helper
@@ -187,7 +186,6 @@ describe('happy paths', () => {
 
       feeManagerConfig = await generateFeeManagerConfigWithMockFees({
         deployer: fork.deployer,
-        feeManager: fork.deployment.feeManager,
       });
 
       // Note that events are asserted within helper

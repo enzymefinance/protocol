@@ -21,10 +21,4 @@ contract EntranceRateDirectFee is EntranceRateFeeBase {
         public
         EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Direct)
     {}
-
-    /// @notice Provides a constant string identifier for a fee
-    /// @return identifier_ The identifier string
-    function identifier() external pure override returns (string memory identifier_) {
-        return "ENTRANCE_RATE_DIRECT";
-    }
 }

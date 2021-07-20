@@ -39,7 +39,6 @@ async function snapshot() {
 
   const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
   const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
-  await deployment.integrationManager.registerAdapters([mockGenericAdapter]);
 
   await Promise.all([
     knc.transfer(mockGenericIntegratee, utils.parseEther('1000')),
@@ -111,31 +110,6 @@ describe('callOnIntegration', () => {
         .connect(newAssetManager)
         .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs),
     ).resolves.toBeReceipt();
-  });
-
-  it('does not allow an unregistered adapter', async () => {
-    const {
-      mockGenericAdapter,
-      deployment: { integrationManager },
-      tokens: { weth: spendAsset, mln: incomingAsset },
-      fund: { comptrollerProxy, fundOwner, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    await expect(integrationManager.deregisterAdapters([mockGenericAdapter])).resolves.toBeReceipt();
-
-    await expect(
-      mockGenericSwap({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager,
-        fundOwner,
-        mockGenericAdapter,
-        spendAssets: [spendAsset],
-        actualSpendAssetAmounts: [0],
-        incomingAssets: [incomingAsset],
-        minIncomingAssetAmounts: [utils.parseEther('1')],
-      }),
-    ).rejects.toBeRevertedWith('Adapter is not registered');
   });
 
   it('does not allow spendAssets and actualSpendAssetAmounts arrays to have unequal lengths', async () => {

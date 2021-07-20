@@ -12,7 +12,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
@@ -23,11 +22,13 @@ import "./IPolicyManager.sol";
 /// @title PolicyManager Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Manages policies for funds
+/// @dev Any arbitrary fee is allowed by default, so all participants must be aware of
+/// their fund's configuration, especially whether they use official policies only.
+/// Policies that restrict current investors can only be added upon fund setup, migration, or reconfiguration.
+/// Policies that restrict new investors or asset management actions can be added at any time.
+/// Policies themselves specify whether or not they are allowed to be updated or removed.
 contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin {
     using AddressArrayLib for address[];
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    event PolicyDeregistered(address indexed policy, string indexed identifier);
 
     event PolicyDisabledForFund(address indexed comptrollerProxy, address indexed policy);
 
@@ -37,9 +38,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         bytes settingsData
     );
 
-    event PolicyRegistered(address indexed policy, string indexed identifier);
-
-    EnumerableSet.AddressSet private registeredPolicies;
     mapping(address => mapping(PolicyHook => address[])) private comptrollerProxyToHookToPolicies;
 
     modifier onlyFundOwner(address _comptrollerProxy) {
@@ -200,8 +198,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         bytes memory _settingsData,
         PolicyHook[] memory _hooks
     ) private {
-        require(policyIsRegistered(_policy), "__enablePolicyForFund: Policy is not registered");
-
         // Set fund config on policy
         if (_settingsData.length > 0) {
             IPolicy(_policy).addFundSettings(_comptrollerProxy, _settingsData);
@@ -247,60 +243,9 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
             _hook == PolicyHook.RedeemSharesForSpecificAssets;
     }
 
-    ///////////////////////
-    // POLICIES REGISTRY //
-    ///////////////////////
-
-    /// @notice Remove policies from the list of registered policies
-    /// @param _policies Addresses of policies to be registered
-    function deregisterPolicies(address[] calldata _policies) external onlyFundDeployerOwner {
-        require(_policies.length > 0, "deregisterPolicies: _policies cannot be empty");
-
-        for (uint256 i; i < _policies.length; i++) {
-            require(
-                policyIsRegistered(_policies[i]),
-                "deregisterPolicies: policy is not registered"
-            );
-
-            registeredPolicies.remove(_policies[i]);
-
-            emit PolicyDeregistered(_policies[i], IPolicy(_policies[i]).identifier());
-        }
-    }
-
-    /// @notice Add policies to the list of registered policies
-    /// @param _policies Addresses of policies to be registered
-    function registerPolicies(address[] calldata _policies) external onlyFundDeployerOwner {
-        require(_policies.length > 0, "registerPolicies: _policies cannot be empty");
-
-        for (uint256 i; i < _policies.length; i++) {
-            require(
-                !policyIsRegistered(_policies[i]),
-                "registerPolicies: policy already registered"
-            );
-
-            registeredPolicies.add(_policies[i]);
-
-            emit PolicyRegistered(_policies[i], IPolicy(_policies[i]).identifier());
-        }
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
-
-    /// @notice Get all registered policies
-    /// @return registeredPoliciesArray_ A list of all registered policy addresses
-    function getRegisteredPolicies()
-        external
-        view
-        returns (address[] memory registeredPoliciesArray_)
-    {
-        registeredPoliciesArray_ = new address[](registeredPolicies.length());
-        for (uint256 i; i < registeredPoliciesArray_.length; i++) {
-            registeredPoliciesArray_[i] = registeredPolicies.at(i);
-        }
-    }
 
     /// @notice Get a list of enabled policies for the given fund
     /// @param _comptrollerProxy The ComptrollerProxy
@@ -344,12 +289,5 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
         address _policy
     ) public view returns (bool isEnabled_) {
         return getEnabledPoliciesOnHookForFund(_comptrollerProxy, _hook).contains(_policy);
-    }
-
-    /// @notice Check whether a policy is registered
-    /// @param _policy The address of the policy to check
-    /// @return isRegistered_ True if the policy is registered
-    function policyIsRegistered(address _policy) public view returns (bool isRegistered_) {
-        return registeredPolicies.contains(_policy);
     }
 }

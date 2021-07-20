@@ -28,7 +28,7 @@ import {
   createMigrationRequest,
   createNewFund,
   deployProtocolFixture,
-  generateRegisteredMockFees,
+  generateMockFees,
   getAssetBalances,
   getAssetUnit,
   redeemSharesForSpecificAssets,
@@ -46,9 +46,8 @@ async function snapshot() {
   } = await deployProtocolFixture();
 
   const weth = new WETH(config.weth, whales.weth);
-  const fees = await generateRegisteredMockFees({
+  const fees = await generateMockFees({
     deployer,
-    feeManager: deployment.feeManager,
   });
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({

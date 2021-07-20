@@ -16,9 +16,27 @@ import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 describe('constructor', () => {
-  it('sets state vars', async () => {
-    const getSettlementTypeCall = await fork.deployment.entranceRateDirectFee.getSettlementType();
-    expect(getSettlementTypeCall).toBe(FeeSettlementType.Direct);
+  it('has correct config', async () => {
+    const entranceRateDirectFee = fork.deployment.entranceRateDirectFee;
+
+    for (const hook of Object.values(FeeHook)) {
+      expect(await entranceRateDirectFee.settlesOnHook(hook)).toMatchFunctionOutput(
+        entranceRateDirectFee.settlesOnHook,
+        {
+          settles_: hook === FeeHook.PostBuyShares,
+          usesGav_: false,
+        },
+      );
+      expect(await entranceRateDirectFee.updatesOnHook(hook)).toMatchFunctionOutput(
+        entranceRateDirectFee.updatesOnHook,
+        {
+          updates_: false,
+          usesGav_: false,
+        },
+      );
+    }
+
+    expect(await entranceRateDirectFee.getSettlementType()).toBe(FeeSettlementType.Direct);
   });
 });
 

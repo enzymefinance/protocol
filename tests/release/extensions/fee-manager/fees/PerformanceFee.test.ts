@@ -209,65 +209,21 @@ async function assertAdjustedPerformance({
   return { feeSettlementType, settleReceipt };
 }
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const performanceFee = fork.deployment.performanceFee;
-    const feeManager = fork.deployment.feeManager;
-    const getFeeManagerCall = await performanceFee.getFeeManager();
-    expect(getFeeManagerCall).toMatchAddress(feeManager);
+it('has correct config', async () => {
+  const performanceFee = fork.deployment.performanceFee;
 
-    // Implements expected hooks
-    const implementedHooksCall = await performanceFee.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(performanceFee.implementedHooks.fragment, {
-      implementedHooksForSettle_: [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares],
-      implementedHooksForUpdate_: [FeeHook.Continuous, FeeHook.PostBuyShares, FeeHook.PreRedeemShares],
-      usesGavOnSettle_: true,
-      usesGavOnUpdate_: true,
+  for (const hook of Object.values(FeeHook)) {
+    const settlesOnHook = [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares].includes(hook);
+    expect(await performanceFee.settlesOnHook(hook)).toMatchFunctionOutput(performanceFee.settlesOnHook, {
+      settles_: settlesOnHook,
+      usesGav_: settlesOnHook,
     });
-
-    // Is registered with correct hooks
-
-    // Settle - true
-    const feeSettlesOnHookContinuousValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.Continuous);
-    expect(feeSettlesOnHookContinuousValue).toBe(true);
-
-    const feeSettlesOnHookPreBuySharesValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.PreBuyShares);
-    expect(feeSettlesOnHookPreBuySharesValue).toBe(true);
-
-    const feeSettlesOnHookPreRedeemSharesValue = await feeManager.feeSettlesOnHook(
-      performanceFee,
-      FeeHook.PreRedeemShares,
-    );
-    expect(feeSettlesOnHookPreRedeemSharesValue).toBe(true);
-
-    // Settle - false
-    const feeSettlesOnHookPostBuySharesValue = await feeManager.feeSettlesOnHook(performanceFee, FeeHook.PostBuyShares);
-    expect(feeSettlesOnHookPostBuySharesValue).toBe(false);
-
-    // Update - true
-    const feeUpdatesOnHookContinuousValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.Continuous);
-    expect(feeUpdatesOnHookContinuousValue).toBe(true);
-
-    const feeUpdatesOnHookPostBuySharesValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.PostBuyShares);
-    expect(feeUpdatesOnHookPostBuySharesValue).toBe(true);
-
-    const feeUpdatesOnHookPreRedeemSharesValue = await feeManager.feeUpdatesOnHook(
-      performanceFee,
-      FeeHook.PreRedeemShares,
-    );
-    expect(feeUpdatesOnHookPreRedeemSharesValue).toBe(true);
-
-    // Update - false
-    const feeUpdatesOnHookPreBuySharesValue = await feeManager.feeUpdatesOnHook(performanceFee, FeeHook.PreBuyShares);
-    expect(feeUpdatesOnHookPreBuySharesValue).toBe(false);
-
-    // Uses GAV
-    const feeUsesGavOnSettleValue = await feeManager.feeUsesGavOnSettle(performanceFee);
-    expect(feeUsesGavOnSettleValue).toBe(true);
-
-    const feeUsesGavOnUpdateValue = await feeManager.feeUsesGavOnUpdate(performanceFee);
-    expect(feeUsesGavOnUpdateValue).toBe(true);
-  });
+    const updatesOnHook = [FeeHook.Continuous, FeeHook.PostBuyShares, FeeHook.PreRedeemShares].includes(hook);
+    expect(await performanceFee.updatesOnHook(hook)).toMatchFunctionOutput(performanceFee.updatesOnHook, {
+      updates_: updatesOnHook,
+      usesGav_: updatesOnHook,
+    });
+  }
 });
 
 describe('addFundSettings', () => {

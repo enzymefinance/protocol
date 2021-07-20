@@ -19,7 +19,7 @@ import {
   callOnExtension,
   createNewFund,
   deployProtocolFixture,
-  generateRegisteredMockFees,
+  generateMockFees,
   getAssetUnit,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -32,9 +32,8 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const fees = await generateRegisteredMockFees({
+  const fees = await generateMockFees({
     deployer,
-    feeManager: deployment.feeManager,
   });
 
   const denominationAsset = new WETH(config.weth, whales.weth);
@@ -71,25 +70,8 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: {
-        feeManager,
-        fundDeployer,
-        entranceRateBurnFee,
-        entranceRateDirectFee,
-        managementFee,
-        performanceFee,
-      },
-      fees,
+      deployment: { feeManager, fundDeployer },
     } = await provider.snapshot(snapshot);
-
-    const getRegisteredFeesCall = await feeManager.getRegisteredFees();
-    expect(getRegisteredFeesCall).toMatchFunctionOutput(feeManager.getRegisteredFees, [
-      entranceRateDirectFee,
-      entranceRateBurnFee,
-      managementFee,
-      performanceFee,
-      ...Object.values(fees),
-    ]);
 
     const fundDeployerOwner = await fundDeployer.getOwner();
     const getOwnerCall = await feeManager.getOwner();
@@ -318,33 +300,6 @@ describe('setConfigForFund', () => {
     await expect(createNewFundCall).rejects.toBeRevertedWith('fees cannot include duplicates');
   });
 
-  it('does not allow an unregistered fee', async () => {
-    const {
-      denominationAsset,
-      accounts: [fundOwner],
-      deployment: { fundDeployer },
-    } = await provider.snapshot(snapshot);
-
-    // Unregistered fee
-    const fees = [constants.AddressZero];
-    const feesSettingsData = [utils.randomBytes(10)];
-
-    const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
-      settings: feesSettingsData,
-    });
-
-    const createNewFundCall = createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset,
-      feeManagerConfig,
-    });
-
-    await expect(createNewFundCall).rejects.toBeRevertedWith('Fee is not registered');
-  });
-
   it('calls `addFundSettings` on each Fee, adds all fees to storage, and fires the correct event per Fee', async () => {
     const {
       denominationAsset,
@@ -402,20 +357,19 @@ describe('invokeHook', () => {
       deployment: { feeManager, fundDeployer },
     } = await provider.snapshot(snapshot);
 
-    // Register new mock fee that will not be activated on fund
     const nonActivatedMockFee = await IFee.mock(deployer);
 
     await Promise.all([
-      nonActivatedMockFee.identifier.returns(`NON_ACTIVATED_MOCK_FEE`),
       nonActivatedMockFee.settle.returns(FeeSettlementType.None, constants.AddressZero, 0),
       nonActivatedMockFee.payout.returns(false),
       nonActivatedMockFee.addFundSettings.returns(undefined),
       nonActivatedMockFee.activateForFund.returns(undefined),
-      nonActivatedMockFee.implementedHooks.returns([FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares]),
+      nonActivatedMockFee.settlesOnHook.returns(false, false),
+      nonActivatedMockFee.settlesOnHook.given(FeeHook.Continuous).returns(true, false),
+      nonActivatedMockFee.settlesOnHook.given(FeeHook.PreBuyShares).returns(true, false),
+      nonActivatedMockFee.settlesOnHook.given(FeeHook.PreRedeemShares).returns(true, false),
+      nonActivatedMockFee.updatesOnHook.returns(false, false),
     ]);
-
-    // Register the mock fee
-    await feeManager.registerFees([nonActivatedMockFee]);
 
     const fees = [nonActivatedMockFee];
     const feesSettingsData = [utils.randomBytes(10)];
@@ -1094,195 +1048,5 @@ describe('__payoutSharesOutstandingForFees', () => {
     // Both fees should be paid out to the respective recipients
     expect(postTxFee1RecipientBalance).toEqBigNumber(preTxFee1RecipientBalance.add(fee1Amount));
     expect(postTxFee2RecipientBalance).toEqBigNumber(preTxFee2RecipientBalance.add(fee2Amount));
-  });
-});
-
-describe('fee registry', () => {
-  describe('deregisterFees', () => {
-    it('can only be called by the owner of the FundDeployer contract', async () => {
-      const {
-        accounts: [, randomUser],
-        deployment: { feeManager },
-        fees: { mockContinuousFeeSettleOnly },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to call deregisterFees with a random (non-owner) account
-      const deregisterFeesCall = feeManager.connect(randomUser).deregisterFees([mockContinuousFeeSettleOnly]);
-      await expect(deregisterFeesCall).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
-    });
-
-    it('does not allow empty _fees param', async () => {
-      const {
-        deployment: { feeManager },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to call deregisterFees with an empty _fees param
-      const deregisterFeesCall = feeManager.deregisterFees([]);
-      await expect(deregisterFeesCall).rejects.toBeRevertedWith('_fees cannot be empty');
-    });
-
-    it('does not allow an unregistered fee', async () => {
-      const {
-        deployment: { feeManager },
-        fees: { mockContinuousFeeSettleOnly },
-      } = await provider.snapshot(snapshot);
-
-      // De-register mockContinuousFeeSettleOnly
-      await feeManager.deregisterFees([mockContinuousFeeSettleOnly]);
-
-      // Confirm that mockContinuousFeeSettleOnly is deregistered
-      const isMockContinuousFeeSettleOnlyRegistered = await feeManager.isRegisteredFee(mockContinuousFeeSettleOnly);
-      expect(isMockContinuousFeeSettleOnlyRegistered).toBe(false);
-
-      // Attempt to de-register mockContinuousFeeSettleOnly again
-      const deregisterFeesCall = feeManager.deregisterFees([mockContinuousFeeSettleOnly]);
-      await expect(deregisterFeesCall).rejects.toBeRevertedWith('fee is not registered');
-    });
-
-    it('successfully de-registers multiple fees and fires one event per fee', async () => {
-      const {
-        deployment: { feeManager },
-        fees: { mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates, mockPostBuySharesFee },
-      } = await provider.snapshot(snapshot);
-
-      // De-register multiple fees
-      const fees = [mockContinuousFeeSettleOnly, mockContinuousFeeWithGavAndUpdates, mockPostBuySharesFee];
-      const receipt = await feeManager.deregisterFees(fees);
-
-      const feeDeregisteredEvent = feeManager.abi.getEvent('FeeDeregistered');
-
-      // One feeDeregisteredEvent should have been emitted for each element in feeArray
-      const events = extractEvent(receipt, feeDeregisteredEvent);
-      expect(events.length).toBe(fees.length);
-
-      // Make sure that each event contains the corresponding fee address
-      expect(events[0]).toMatchEventArgs({
-        fee: fees[0],
-        identifier: expect.objectContaining({
-          hash: utils.id('MOCK_CONTINUOUS_1'),
-        }),
-      });
-
-      expect(events[1]).toMatchEventArgs({
-        fee: fees[1],
-        identifier: expect.objectContaining({
-          hash: utils.id('MOCK_CONTINUOUS_2'),
-        }),
-      });
-
-      expect(events[2]).toMatchEventArgs({
-        fee: fees[2],
-        identifier: expect.objectContaining({
-          hash: utils.id('MOCK_POST_BUY_SHARES'),
-        }),
-      });
-    });
-  });
-
-  describe('registerFees', () => {
-    it('can only be called by the owner of the FundDeployer contract', async () => {
-      const {
-        accounts: [randomAccount],
-        deployer,
-        deployment: { feeManager },
-      } = await provider.snapshot(snapshot);
-
-      const mockFee = await IFee.mock(deployer);
-
-      // Attempt to register the fee with a non-owner account
-      const registerFeesCall = feeManager.connect(randomAccount).registerFees([mockFee]);
-      await expect(registerFeesCall).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
-    });
-
-    it('does not allow empty _fees param', async () => {
-      const {
-        deployment: { feeManager },
-      } = await provider.snapshot(snapshot);
-
-      // Attempt to register the fees with a non-owner account
-      const registerFeesCall = feeManager.registerFees([]);
-      await expect(registerFeesCall).rejects.toBeRevertedWith('_fees cannot be empty');
-    });
-
-    it('does not allow an already registered fee', async () => {
-      const {
-        fees: { mockContinuousFeeSettleOnly },
-        deployment: { feeManager },
-      } = await provider.snapshot(snapshot);
-
-      // Confirm that mockContinuousFeeSettleOnly is already registered
-      const ismockContinuousFeeSettleOnlyRegistered = await feeManager.isRegisteredFee(mockContinuousFeeSettleOnly);
-      expect(ismockContinuousFeeSettleOnlyRegistered).toBe(true);
-
-      // Attempt to re-register mockContinuousFeeSettleOnly
-      const registerFeesCall = feeManager.registerFees([mockContinuousFeeSettleOnly]);
-      await expect(registerFeesCall).rejects.toBeRevertedWith('fee already registered');
-    });
-
-    it('successfully registers multiple fees (stores registered fee and implemented fee hooks) and fires one event per fee', async () => {
-      const {
-        deployer,
-        deployment: { feeManager },
-      } = await provider.snapshot(snapshot);
-
-      // Setup a mock fee that implements multiple hooks
-      const identifier = `MOCK_FEE`;
-      const settleHooks = [FeeHook.PreBuyShares, FeeHook.PreRedeemShares];
-      const notIncludedSettleHooks = [FeeHook.PostBuyShares, FeeHook.Continuous];
-      const updateHooks = [FeeHook.PreRedeemShares];
-      const notIncludedUpdateHooks = [FeeHook.PreBuyShares, FeeHook.PostBuyShares, FeeHook.Continuous];
-      const usesGavOnSettle = false;
-      const usesGavOnUpdate = true;
-      const mockFee = await IFee.mock(deployer);
-      await mockFee.identifier.returns(identifier);
-      await mockFee.implementedHooks.returns(settleHooks, updateHooks, usesGavOnSettle, usesGavOnUpdate);
-
-      // Register the fees
-      const receipt = await feeManager.registerFees([mockFee]);
-
-      // Assert event
-      assertEvent(receipt, 'FeeRegistered', {
-        fee: mockFee.address,
-        identifier: expect.objectContaining({
-          hash: utils.id(identifier),
-        }),
-        implementedHooksForSettle: settleHooks,
-        implementedHooksForUpdate: updateHooks,
-        usesGavOnSettle,
-        usesGavOnUpdate,
-      });
-
-      // Fees should be registered
-      const getRegisteredFeesCall = await feeManager.getRegisteredFees();
-      expect(getRegisteredFeesCall).toEqual(expect.arrayContaining([mockFee.address]));
-
-      // Fee hooks should be stored
-      for (const hook of settleHooks) {
-        const goodFeeSettlesOnHookHookCall = await feeManager.feeSettlesOnHook(mockFee, hook);
-        expect(goodFeeSettlesOnHookHookCall).toBe(true);
-      }
-
-      for (const hook of notIncludedSettleHooks) {
-        const badFeeSettlesOnHookHookCall = await feeManager.feeSettlesOnHook(mockFee, hook);
-        expect(badFeeSettlesOnHookHookCall).toBe(false);
-      }
-
-      for (const hook of updateHooks) {
-        const goodFeeUpdatesOnHookHookCall = await feeManager.feeUpdatesOnHook(mockFee, hook);
-        expect(goodFeeUpdatesOnHookHookCall).toBe(true);
-      }
-
-      for (const hook of notIncludedUpdateHooks) {
-        const badFeeUpdatesOnHookHookCall = await feeManager.feeUpdatesOnHook(mockFee, hook);
-        expect(badFeeUpdatesOnHookHookCall).toBe(false);
-      }
-
-      // Gav usage should be stored
-      const feeUsesGavOnSettleCall = await feeManager.feeUsesGavOnSettle(mockFee);
-      expect(feeUsesGavOnSettleCall).toBe(usesGavOnSettle);
-
-      const feeUsesGavOnUpdateCall = await feeManager.feeUsesGavOnUpdate(mockFee);
-      expect(feeUsesGavOnUpdateCall).toBe(usesGavOnUpdate);
-    });
   });
 });

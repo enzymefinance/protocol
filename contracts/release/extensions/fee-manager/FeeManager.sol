@@ -14,7 +14,6 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../utils/AddressArrayLib.sol";
@@ -27,6 +26,9 @@ import "./IFeeManager.sol";
 /// @title FeeManager Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Manages fees for funds
+/// @dev Any arbitrary fee is allowed by default, so all participants must be aware of
+/// their fund's configuration, especially whether they use official fees only.
+/// Fees can only be added upon fund setup, migration, or reconfiguration.
 contract FeeManager is
     IFeeManager,
     ExtensionBase,
@@ -34,24 +36,12 @@ contract FeeManager is
     PermissionedVaultActionMixin
 {
     using AddressArrayLib for address[];
-    using EnumerableSet for EnumerableSet.AddressSet;
     using SafeMath for uint256;
-
-    event FeeDeregistered(address indexed fee, string indexed identifier);
 
     event FeeEnabledForFund(
         address indexed comptrollerProxy,
         address indexed fee,
         bytes settingsData
-    );
-
-    event FeeRegistered(
-        address indexed fee,
-        string indexed identifier,
-        FeeHook[] implementedHooksForSettle,
-        FeeHook[] implementedHooksForUpdate,
-        bool usesGavOnSettle,
-        bool usesGavOnUpdate
     );
 
     event FeeSettledForFund(
@@ -69,12 +59,6 @@ contract FeeManager is
         address indexed payee,
         uint256 sharesDue
     );
-
-    EnumerableSet.AddressSet private registeredFees;
-    mapping(address => bool) private feeToUsesGavOnSettle;
-    mapping(address => bool) private feeToUsesGavOnUpdate;
-    mapping(address => mapping(FeeHook => bool)) private feeToHookToImplementsSettle;
-    mapping(address => mapping(FeeHook => bool)) private feeToHookToImplementsUpdate;
 
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => mapping(address => uint256))
@@ -159,8 +143,6 @@ contract FeeManager is
 
         // Enable each fee with settings
         for (uint256 i; i < fees.length; i++) {
-            require(isRegisteredFee(fees[i]), "setConfigForFund: Fee is not registered");
-
             // Set fund config on fee
             IFee(fees[i]).addFundSettings(msg.sender, settingsData[i]);
 
@@ -174,19 +156,16 @@ contract FeeManager is
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to get the canonical value of GAV if not yet set and required by fee
-    function __getGavAsNecessary(
-        address _comptrollerProxy,
-        address _fee,
-        uint256 _gavOrZero
-    ) private returns (uint256 gav_) {
-        if (_gavOrZero == 0 && feeUsesGavOnUpdate(_fee)) {
+    function __getGavAsNecessary(address _comptrollerProxy, uint256 _gavOrZero)
+        private
+        returns (uint256 gav_)
+    {
+        if (_gavOrZero == 0) {
             // Do not finalize synths, as this can lead to lost fees when redeeming shares
-            gav_ = IComptroller(_comptrollerProxy).calcGav(false);
+            return IComptroller(_comptrollerProxy).calcGav(false);
         } else {
-            gav_ = _gavOrZero;
+            return _gavOrZero;
         }
-
-        return gav_;
     }
 
     /// @dev Helper to run settle() on all enabled fees for a fund that implement a given hook, and then to
@@ -342,11 +321,14 @@ contract FeeManager is
         gav_ = _gavOrZero;
 
         for (uint256 i; i < _fees.length; i++) {
-            if (!feeSettlesOnHook(_fees[i], _hook)) {
+            (bool settles, bool usesGav) = IFee(_fees[i]).settlesOnHook(_hook);
+            if (!settles) {
                 continue;
             }
 
-            gav_ = __getGavAsNecessary(_comptrollerProxy, _fees[i], gav_);
+            if (usesGav) {
+                gav_ = __getGavAsNecessary(_comptrollerProxy, gav_);
+            }
 
             __settleFee(_comptrollerProxy, _vaultProxy, _fees[i], _hook, _settlementData, gav_);
         }
@@ -366,79 +348,16 @@ contract FeeManager is
         uint256 gav = _gavOrZero;
 
         for (uint256 i; i < _fees.length; i++) {
-            if (!feeUpdatesOnHook(_fees[i], _hook)) {
+            (bool updates, bool usesGav) = IFee(_fees[i]).updatesOnHook(_hook);
+            if (!updates) {
                 continue;
             }
 
-            gav = __getGavAsNecessary(_comptrollerProxy, _fees[i], gav);
+            if (usesGav) {
+                gav = __getGavAsNecessary(_comptrollerProxy, gav);
+            }
 
             IFee(_fees[i]).update(_comptrollerProxy, _vaultProxy, _hook, _settlementData, gav);
-        }
-    }
-
-    ///////////////////
-    // FEES REGISTRY //
-    ///////////////////
-
-    /// @notice Remove fees from the list of registered fees
-    /// @param _fees Addresses of fees to be deregistered
-    function deregisterFees(address[] calldata _fees) external onlyFundDeployerOwner {
-        require(_fees.length > 0, "deregisterFees: _fees cannot be empty");
-
-        for (uint256 i; i < _fees.length; i++) {
-            require(isRegisteredFee(_fees[i]), "deregisterFees: fee is not registered");
-
-            registeredFees.remove(_fees[i]);
-
-            emit FeeDeregistered(_fees[i], IFee(_fees[i]).identifier());
-        }
-    }
-
-    /// @notice Add fees to the list of registered fees
-    /// @param _fees Addresses of fees to be registered
-    /// @dev Stores the hooks that a fee implements and whether each implementation uses GAV,
-    /// which fronts the gas for calls to check if a hook is implemented, and guarantees
-    /// that these hook implementation return values do not change post-registration.
-    function registerFees(address[] calldata _fees) external onlyFundDeployerOwner {
-        require(_fees.length > 0, "registerFees: _fees cannot be empty");
-
-        for (uint256 i; i < _fees.length; i++) {
-            require(!isRegisteredFee(_fees[i]), "registerFees: fee already registered");
-
-            registeredFees.add(_fees[i]);
-
-            IFee feeContract = IFee(_fees[i]);
-            (
-                FeeHook[] memory implementedHooksForSettle,
-                FeeHook[] memory implementedHooksForUpdate,
-                bool usesGavOnSettle,
-                bool usesGavOnUpdate
-            ) = feeContract.implementedHooks();
-
-            // Stores the hooks for which each fee implements settle() and update()
-            for (uint256 j; j < implementedHooksForSettle.length; j++) {
-                feeToHookToImplementsSettle[_fees[i]][implementedHooksForSettle[j]] = true;
-            }
-            for (uint256 j; j < implementedHooksForUpdate.length; j++) {
-                feeToHookToImplementsUpdate[_fees[i]][implementedHooksForUpdate[j]] = true;
-            }
-
-            // Stores whether each fee requires GAV during its implementations for settle() and update()
-            if (usesGavOnSettle) {
-                feeToUsesGavOnSettle[_fees[i]] = true;
-            }
-            if (usesGavOnUpdate) {
-                feeToUsesGavOnUpdate[_fees[i]] = true;
-            }
-
-            emit FeeRegistered(
-                _fees[i],
-                feeContract.identifier(),
-                implementedHooksForSettle,
-                implementedHooksForUpdate,
-                usesGavOnSettle,
-                usesGavOnUpdate
-            );
         }
     }
 
@@ -457,56 +376,7 @@ contract FeeManager is
         return comptrollerProxyToFees[_comptrollerProxy];
     }
 
-    /// @notice Get all registered fees
-    /// @return registeredFees_ A list of all registered fee addresses
-    function getRegisteredFees() external view returns (address[] memory registeredFees_) {
-        registeredFees_ = new address[](registeredFees.length());
-        for (uint256 i; i < registeredFees_.length; i++) {
-            registeredFees_[i] = registeredFees.at(i);
-        }
-
-        return registeredFees_;
-    }
-
     // PUBLIC FUNCTIONS
-
-    /// @notice Checks if a fee implements settle() on a particular hook
-    /// @param _fee The address of the fee to check
-    /// @param _hook The FeeHook to check
-    /// @return settlesOnHook_ True if the fee settles on the given hook
-    function feeSettlesOnHook(address _fee, FeeHook _hook)
-        public
-        view
-        returns (bool settlesOnHook_)
-    {
-        return feeToHookToImplementsSettle[_fee][_hook];
-    }
-
-    /// @notice Checks if a fee implements update() on a particular hook
-    /// @param _fee The address of the fee to check
-    /// @param _hook The FeeHook to check
-    /// @return updatesOnHook_ True if the fee updates on the given hook
-    function feeUpdatesOnHook(address _fee, FeeHook _hook)
-        public
-        view
-        returns (bool updatesOnHook_)
-    {
-        return feeToHookToImplementsUpdate[_fee][_hook];
-    }
-
-    /// @notice Checks if a fee uses GAV in its settle() implementation
-    /// @param _fee The address of the fee to check
-    /// @return usesGav_ True if the fee uses GAV during settle() implementation
-    function feeUsesGavOnSettle(address _fee) public view returns (bool usesGav_) {
-        return feeToUsesGavOnSettle[_fee];
-    }
-
-    /// @notice Checks if a fee uses GAV in its update() implementation
-    /// @param _fee The address of the fee to check
-    /// @return usesGav_ True if the fee uses GAV during update() implementation
-    function feeUsesGavOnUpdate(address _fee) public view returns (bool usesGav_) {
-        return feeToUsesGavOnUpdate[_fee];
-    }
 
     /// @notice Get the amount of shares outstanding for a particular fee for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
@@ -518,12 +388,5 @@ contract FeeManager is
         returns (uint256 sharesOutstanding_)
     {
         return comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
-    }
-
-    /// @notice Check whether a fee is registered
-    /// @param _fee The address of the fee to check
-    /// @return isRegisteredFee_ True if the fee is registered
-    function isRegisteredFee(address _fee) public view returns (bool isRegisteredFee_) {
-        return registeredFees.contains(_fee);
     }
 }

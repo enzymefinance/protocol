@@ -158,7 +158,8 @@ contract FundActionsWrapper {
         uint256 continuousFeesCount;
         bool[] memory implementsContinuousHook = new bool[](fees.length);
         for (uint256 i; i < fees.length; i++) {
-            if (feeManagerContract.feeSettlesOnHook(fees[i], IFeeManager.FeeHook.Continuous)) {
+            (bool settles, ) = IFee(fees[i]).settlesOnHook(IFeeManager.FeeHook.Continuous);
+            if (settles) {
                 continuousFeesCount++;
                 implementsContinuousHook[i] = true;
             }

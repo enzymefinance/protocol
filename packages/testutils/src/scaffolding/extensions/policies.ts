@@ -1,19 +1,12 @@
-import { IPolicy, PolicyHook, PolicyManager, policyManagerConfigArgs } from '@enzymefinance/protocol';
+import { IPolicy, PolicyHook, policyManagerConfigArgs } from '@enzymefinance/protocol';
 import { constants, Signer, utils } from 'ethers';
 
 // Policy Manager
 
-export async function generatePolicyManagerConfigWithMockPolicies({
-  deployer,
-  policyManager,
-}: {
-  deployer: Signer;
-  policyManager: PolicyManager;
-}) {
+export async function generatePolicyManagerConfigWithMockPolicies({ deployer }: { deployer: Signer }) {
   const policies = Object.values(
-    await generateRegisteredMockPolicies({
+    await generateMockPolicies({
       deployer,
-      policyManager,
     }),
   );
 
@@ -26,13 +19,7 @@ export async function generatePolicyManagerConfigWithMockPolicies({
   });
 }
 
-export async function generateRegisteredMockPolicies({
-  deployer,
-  policyManager,
-}: {
-  deployer: Signer;
-  policyManager: PolicyManager;
-}) {
+export async function generateMockPolicies({ deployer }: { deployer: Signer }) {
   // Create mock policies
   const mockAddTrackedAssetsPolicy = await IPolicy.mock(deployer);
   const mockCreateExternalPositionPolicy = await IPolicy.mock(deployer);
@@ -109,18 +96,6 @@ export async function generateRegisteredMockPolicies({
     mockRemoveExternalPositionPolicy.validateRule.returns(true),
     mockRemoveExternalPositionPolicy.implementedHooks.returns([PolicyHook.RedeemSharesForSpecificAssets]),
     mockRemoveExternalPositionPolicy.updateFundSettings.returns(undefined),
-  ]);
-
-  // Register all mock policies
-  await policyManager.registerPolicies([
-    mockAddTrackedAssetsPolicy,
-    mockCreateExternalPositionPolicy,
-    mockPostBuySharesPolicy,
-    mockPostCallOnExternalPositionPolicy,
-    mockPostCoIPolicy,
-    mockPreTransferSharesPolicy,
-    mockRedeemSharesForSpecificAssetsPolicy,
-    mockRemoveExternalPositionPolicy,
   ]);
 
   return {

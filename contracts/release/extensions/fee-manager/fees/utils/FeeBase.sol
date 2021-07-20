@@ -65,6 +65,20 @@ abstract contract FeeBase is IFee {
         return;
     }
 
+    /// @notice Gets whether the fee updates and requires GAV on a particular hook
+    /// @return updates_ True if the fee updates on the _hook
+    /// @return usesGav_ True if the fee uses GAV during update() for the _hook
+    /// @dev Returns false values by default, can be overridden by fee
+    function updatesOnHook(IFeeManager.FeeHook)
+        external
+        view
+        virtual
+        override
+        returns (bool updates_, bool usesGav_)
+    {
+        return (false, false);
+    }
+
     /// @notice Helper to parse settlement arguments from encoded data for PreBuyShares fee hook
     function __decodePreBuySharesSettlementData(bytes memory _settlementData)
         internal
