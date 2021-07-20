@@ -8,6 +8,7 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "../dispatcher/IDispatcher.sol";
 import "./ExternalPositionProxy.sol";
@@ -27,10 +28,15 @@ contract ExternalPositionFactory {
 
     event PositionDeployerRemoved(address positionDeployer);
 
+    event PositionTypeAdded(uint256 typeId, string label);
+
+    event PositionTypeLabelUpdated(uint256 indexed typeId, string label);
+
     address private immutable DISPATCHER;
 
+    uint256 private positionTypeCounter;
+    mapping(uint256 => string) private positionTypeIdToLabel;
     mapping(address => bool) private accountToIsPositionDeployer;
-
     mapping(address => bool) private accountToIsExternalPositionProxy;
 
     modifier onlyDispatcherOwner {
@@ -72,6 +78,38 @@ contract ExternalPositionFactory {
         return externalPositionProxy_;
     }
 
+    ////////////////////
+    // TYPES REGISTRY //
+    ////////////////////
+
+    /// @notice Adds a set of new position types
+    /// @param _labels Labels for each new position type
+    function addNewPositionTypes(string[] calldata _labels) external onlyDispatcherOwner {
+        for (uint256 i; i < _labels.length; i++) {
+            uint256 typeId = getPositionTypeCounter();
+            positionTypeCounter++;
+
+            positionTypeIdToLabel[typeId] = _labels[i];
+
+            emit PositionTypeAdded(typeId, _labels[i]);
+        }
+    }
+
+    /// @notice Updates a set of position type labels
+    /// @param _typeIds The position type ids
+    /// @param _labels The updated labels
+    function updatePositionTypeLabels(uint256[] calldata _typeIds, string[] calldata _labels)
+        external
+        onlyDispatcherOwner
+    {
+        require(_typeIds.length == _labels.length, "updatePositionTypeLabels: Unequal arrays");
+        for (uint256 i; i < _typeIds.length; i++) {
+            positionTypeIdToLabel[_typeIds[i]] = _labels[i];
+
+            emit PositionTypeLabelUpdated(_typeIds[i], _labels[i]);
+        }
+    }
+
     /////////////////////////////////
     // POSITION DEPLOYERS REGISTRY //
     /////////////////////////////////
@@ -110,10 +148,31 @@ contract ExternalPositionFactory {
     // STATE GETTERS //
     ///////////////////
 
+    // EXTERNAL FUNCTIONS
+
+    /// @notice Gets the label for a position type
+    /// @param _typeId The position type id
+    /// @return label_ The label
+    function getLabelForPositionType(uint256 _typeId)
+        external
+        view
+        returns (string memory label_)
+    {
+        return positionTypeIdToLabel[_typeId];
+    }
+
+    // PUBLIC FUNCTIONS
+
     /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value
     function getDispatcher() public view returns (address dispatcher_) {
         return DISPATCHER;
+    }
+
+    /// @notice Gets the `positionTypeCounter` variable
+    /// @return positionTypeCounter_ The `positionTypeCounter` variable value
+    function getPositionTypeCounter() public view returns (uint256 positionTypeCounter_) {
+        return positionTypeCounter;
     }
 
     /// @notice Checks if an account is an external position proxy
