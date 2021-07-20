@@ -253,9 +253,7 @@ describe('integration tests', () => {
       .connect(fundOwner)
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
 
-    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_BLACKLIST',
-    );
+    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith('Rule evaluated to false: ASSET_BLACKLIST');
   });
 
   it('can create a migrated fund with this policy', async () => {
@@ -350,8 +348,6 @@ describe('integration tests', () => {
       .connect(fundOwner)
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, trackedAssetCallArgs);
 
-    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ASSET_BLACKLIST',
-    );
+    await expect(addTrackedAssetsTx).rejects.toBeRevertedWith('Rule evaluated to false: ASSET_BLACKLIST');
   });
 });

@@ -185,9 +185,7 @@ describe('integration tests', () => {
       .connect(fundOwner)
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
 
-    await expect(kyberTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_BLACKLIST',
-    );
+    await expect(kyberTx).rejects.toBeRevertedWith('Rule evaluated to false: ADAPTER_BLACKLIST');
   });
 
   it('can create a migrated fund with this policy', async () => {
@@ -282,8 +280,6 @@ describe('integration tests', () => {
       .connect(fundOwner)
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, kyberCallArgs);
 
-    await expect(kyberTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_BLACKLIST',
-    );
+    await expect(kyberTx).rejects.toBeRevertedWith('Rule evaluated to false: ADAPTER_BLACKLIST');
   });
 });

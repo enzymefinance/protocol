@@ -309,8 +309,6 @@ describe('integration tests', () => {
     const uniswapTx = nextComptrollerProxy
       .connect(fundOwner)
       .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, uniswapCallArgs);
-    await expect(uniswapTx).rejects.toBeRevertedWith(
-      'VM Exception while processing transaction: revert Rule evaluated to false: ADAPTER_WHITELIST',
-    );
+    await expect(uniswapTx).rejects.toBeRevertedWith('Rule evaluated to false: ADAPTER_WHITELIST');
   });
 });
