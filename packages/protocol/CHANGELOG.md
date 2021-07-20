@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.10
+
+### Patch Changes
+
+- 820d04db: Upgrade dependencies
+
 ## 2.0.9
 
 ### Patch Changes
