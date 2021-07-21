@@ -465,7 +465,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             "executeReconfiguration: _vaultProxy is no longer on this release"
         );
 
-        // TODO: add bypass failure option in case destruct action fails?
         // Unwind and destroy the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
         address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
         IComptroller(prevComptrollerProxy).destructActivated();

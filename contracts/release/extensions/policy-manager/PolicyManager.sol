@@ -68,13 +68,15 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
     /// @notice Disables a policy for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _policy The policy address to disable
+    /// @dev If an arbitrary policy changes its `implementedHooks()` return values after it is
+    /// already enabled on a fund, then this will not correctly disable the policy from any
+    /// removed hook values
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external
         onlyFundOwner(_comptrollerProxy)
     {
         require(IPolicy(_policy).canDisable(), "disablePolicyForFund: _policy cannot be disabled");
 
-        // TODO: if we have untrusted policies, could consider looping through all hooks
         bool disabled;
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
