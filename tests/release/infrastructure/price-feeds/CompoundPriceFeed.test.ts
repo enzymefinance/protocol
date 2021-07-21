@@ -121,7 +121,6 @@ describe('addCTokens', () => {
       fork.deployment.dispatcher,
       fork.config.weth,
       fork.config.compound.ceth,
-      [],
     );
 
     // The cTokens should not be supported assets initially

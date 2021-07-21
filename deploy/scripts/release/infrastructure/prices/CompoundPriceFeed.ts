@@ -1,11 +1,11 @@
-import { CompoundPriceFeedArgs } from '@enzymefinance/protocol';
+import { CompoundPriceFeed, CompoundPriceFeedArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, log },
     ethers: { getSigners },
   } = hre;
 
@@ -13,13 +13,22 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const fundDeployer = await get('FundDeployer');
 
-  const ctokens = Object.values(config.compound.ctokens);
-  await deploy('CompoundPriceFeed', {
-    args: [fundDeployer.address, config.weth, config.compound.ceth, ctokens] as CompoundPriceFeedArgs,
+  const compoundPriceFeed = await deploy('CompoundPriceFeed', {
+    args: [fundDeployer.address, config.weth, config.compound.ceth] as CompoundPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
+
+  // Register all uniswap pool tokens with the derivative price feed.
+  if (compoundPriceFeed.newlyDeployed) {
+    const ctokens = Object.values(config.compound.ctokens);
+    if (!!ctokens.length) {
+      log('Registering Compound cTokens');
+      const compoundPriceFeedInstance = new CompoundPriceFeed(compoundPriceFeed.address, deployer);
+      await compoundPriceFeedInstance.addCTokens(ctokens);
+    }
+  }
 };
 
 fn.tags = ['Release', 'CompoundPriceFeed'];

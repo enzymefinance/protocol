@@ -1,4 +1,8 @@
-import { AggregatedDerivativePriceFeed, UniswapV2PoolPriceFeedArgs } from '@enzymefinance/protocol';
+import {
+  AggregatedDerivativePriceFeed,
+  UniswapV2PoolPriceFeed,
+  UniswapV2PoolPriceFeedArgs,
+} from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -16,7 +20,6 @@ const fn: DeployFunction = async function (hre) {
   const valueInterpreter = await get('ValueInterpreter');
   const derivativePriceFeed = await get('AggregatedDerivativePriceFeed');
 
-  const pools = Object.values(config.uniswap.pools);
   const uniswapPoolPriceFeed = await deploy('UniswapV2PoolPriceFeed', {
     args: [
       fundDeployer.address,
@@ -24,19 +27,21 @@ const fn: DeployFunction = async function (hre) {
       chainlinkPriceFeed.address,
       valueInterpreter.address,
       config.uniswap.factory,
-      pools,
     ] as UniswapV2PoolPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
 
-  // Register all uniswap pool tokens with the derivative price feed.
+  // Register all uniswap pool tokens with the derivative price feed
   if (uniswapPoolPriceFeed.newlyDeployed) {
-    const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(derivativePriceFeed.address, deployer);
-
+    const pools = Object.values(config.uniswap.pools);
     if (!!pools.length) {
-      log('Registering pool tokens');
+      log('Registering UniswapV2 pool tokens');
+      const uniswapPoolPriceFeedInstance = new UniswapV2PoolPriceFeed(uniswapPoolPriceFeed.address, deployer);
+      await uniswapPoolPriceFeedInstance.addPoolTokens(pools);
+
+      const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(derivativePriceFeed.address, deployer);
       await derivativePriceFeedInstance.addDerivatives(
         pools,
         pools.map(() => uniswapPoolPriceFeed.address),

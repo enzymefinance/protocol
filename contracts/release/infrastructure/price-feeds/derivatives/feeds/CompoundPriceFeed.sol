@@ -31,17 +31,11 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     constructor(
         address _fundDeployer,
         address _weth,
-        address _ceth,
-        address[] memory cERC20Tokens
+        address _ceth
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         // Set cEth
         cTokenToToken[_ceth] = _weth;
         emit CTokenAdded(_ceth, _weth);
-
-        // Set any other cTokens
-        if (cERC20Tokens.length > 0) {
-            __addCERC20Tokens(cERC20Tokens);
-        }
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -82,15 +76,10 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// @param _cTokens cTokens to add
     /// @dev Only allows CERC20 tokens. CEther is set in the constructor.
     function addCTokens(address[] calldata _cTokens) external onlyFundDeployerOwner {
-        __addCERC20Tokens(_cTokens);
-    }
-
-    /// @dev Helper to add cTokens
-    function __addCERC20Tokens(address[] memory _cTokens) private {
-        require(_cTokens.length > 0, "__addCTokens: Empty _cTokens");
+        require(_cTokens.length > 0, "addCTokens: Empty _cTokens");
 
         for (uint256 i; i < _cTokens.length; i++) {
-            require(cTokenToToken[_cTokens[i]] == address(0), "__addCTokens: Value already set");
+            require(cTokenToToken[_cTokens[i]] == address(0), "addCTokens: Value already set");
 
             address token = ICERC20(_cTokens[i]).underlying();
             cTokenToToken[_cTokens[i]] = token;

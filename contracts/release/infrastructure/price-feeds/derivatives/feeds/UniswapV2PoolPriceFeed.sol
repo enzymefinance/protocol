@@ -52,15 +52,12 @@ contract UniswapV2PoolPriceFeed is
         address _derivativePriceFeed,
         address _primitivePriceFeed,
         address _valueInterpreter,
-        address _factory,
-        address[] memory _poolTokens
+        address _factory
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         FACTORY = _factory;
         PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
-
-        __addPoolTokens(_poolTokens, _derivativePriceFeed, _primitivePriceFeed);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -154,20 +151,11 @@ contract UniswapV2PoolPriceFeed is
     function addPoolTokens(address[] calldata _poolTokens) external onlyFundDeployerOwner {
         require(_poolTokens.length > 0, "addPoolTokens: Empty _poolTokens");
 
-        __addPoolTokens(_poolTokens, DERIVATIVE_PRICE_FEED, PRIMITIVE_PRICE_FEED);
-    }
-
-    /// @dev Helper to add Uniswap pool tokens
-    function __addPoolTokens(
-        address[] memory _poolTokens,
-        address _derivativePriceFeed,
-        address _primitivePriceFeed
-    ) private {
         for (uint256 i; i < _poolTokens.length; i++) {
-            require(_poolTokens[i] != address(0), "__addPoolTokens: Empty poolToken");
+            require(_poolTokens[i] != address(0), "addPoolTokens: Empty poolToken");
             require(
                 poolTokenToInfo[_poolTokens[i]].token0 == address(0),
-                "__addPoolTokens: Value already set"
+                "addPoolTokens: Value already set"
             );
 
             IUniswapV2Pair uniswapV2Pair = IUniswapV2Pair(_poolTokens[i]);
@@ -176,12 +164,12 @@ contract UniswapV2PoolPriceFeed is
 
             require(
                 __poolTokenIsSupportable(
-                    _derivativePriceFeed,
-                    _primitivePriceFeed,
+                    DERIVATIVE_PRICE_FEED,
+                    PRIMITIVE_PRICE_FEED,
                     token0,
                     token1
                 ),
-                "__addPoolTokens: Unsupported pool token"
+                "addPoolTokens: Unsupported pool token"
             );
 
             poolTokenToInfo[_poolTokens[i]] = PoolTokenInfo({
