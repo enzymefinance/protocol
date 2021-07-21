@@ -11,14 +11,14 @@
 
 pragma solidity 0.6.12;
 
-import "../../../utils/Proxy.sol";
+import "../../../utils/NonUpgradableProxy.sol";
 
 /// @title ComptrollerProxy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy contract for all ComptrollerProxy instances
-contract ComptrollerProxy is Proxy {
+contract ComptrollerProxy is NonUpgradableProxy {
     constructor(bytes memory _constructData, address _comptrollerLib)
         public
-        Proxy(_constructData, _comptrollerLib)
+        NonUpgradableProxy(_constructData, _comptrollerLib)
     {}
 }
