@@ -47,8 +47,6 @@ contract ComptrollerLib is IComptroller {
 
     event MigratedSharesDuePaid(uint256 sharesDue);
 
-    event OverridePauseSet(bool indexed overridePause);
-
     event PayProtocolFeeDuringDestructFailed();
 
     event PreRedeemSharesHookFailed(
@@ -102,8 +100,6 @@ contract ComptrollerLib is IComptroller {
 
     // Attempts to buy back protocol fee shares immediately after collection
     bool internal autoProtocolFeeSharesBuyback;
-    // Allows a fund owner to override a release-level pause
-    bool internal overridePause;
     // A reverse-mutex, granting atomic permission for particular contracts to make vault calls
     bool internal permissionedVaultActionAllowed;
     // A mutex to protect against reentrancy
@@ -131,11 +127,6 @@ contract ComptrollerLib is IComptroller {
         reentranceLocked = false;
     }
 
-    modifier onlyNotPaused() {
-        __assertNotPaused();
-        _;
-    }
-
     modifier onlyFundDeployer() {
         __assertIsFundDeployer(msg.sender);
         _;
@@ -157,10 +148,6 @@ contract ComptrollerLib is IComptroller {
 
     function __assertIsOwner(address _who) private view {
         require(_who == IVault(vaultProxy).getOwner(), "Only fund owner callable");
-    }
-
-    function __assertNotPaused() private view {
-        require(!__fundIsPaused(), "Fund is paused");
     }
 
     function __assertNotReentranceLocked() private view {
@@ -227,7 +214,7 @@ contract ComptrollerLib is IComptroller {
         address _extension,
         uint256 _actionId,
         bytes calldata _callArgs
-    ) external override onlyNotPaused locksReentrance allowsPermissionedVaultAction {
+    ) external override locksReentrance allowsPermissionedVaultAction {
         require(
             _extension == getFeeManager() ||
                 _extension == getIntegrationManager() ||
@@ -238,14 +225,6 @@ contract ComptrollerLib is IComptroller {
         IExtension(_extension).receiveCallFromComptroller(msg.sender, _actionId, _callArgs);
     }
 
-    /// @notice Sets or unsets an override on a release-wide pause
-    /// @param _nextOverridePause True if the pause should be overrode
-    function setOverridePause(bool _nextOverridePause) external onlyOwner {
-        overridePause = _nextOverridePause;
-
-        emit OverridePauseSet(_nextOverridePause);
-    }
-
     /// @notice Makes an arbitrary call with the VaultProxy contract as the sender
     /// @param _contract The contract to call
     /// @param _selector The selector to call
@@ -254,7 +233,7 @@ contract ComptrollerLib is IComptroller {
         address _contract,
         bytes4 _selector,
         bytes calldata _encodedArgs
-    ) external onlyNotPaused onlyOwner {
+    ) external onlyOwner {
         require(
             IFundDeployer(getFundDeployer()).isAllowedVaultCall(
                 _contract,
@@ -265,14 +244,6 @@ contract ComptrollerLib is IComptroller {
         );
 
         IVault(vaultProxy).callOnContract(_contract, abi.encodePacked(_selector, _encodedArgs));
-    }
-
-    /// @dev Helper to check whether the release is paused, and that there is no local override
-    function __fundIsPaused() private view returns (bool) {
-        return
-            IFundDeployer(getFundDeployer()).getReleaseStatus() ==
-            IFundDeployer.ReleaseStatus.Paused &&
-            !getOverridePause();
     }
 
     /// @dev Helper to check if a VaultProxy has a pending migration or reconfiguration request
@@ -292,7 +263,7 @@ contract ComptrollerLib is IComptroller {
 
     /// @notice Buys back shares collected as protocol fee at a discounted shares price, using MLN
     /// @param _sharesAmount The amount of shares to buy back
-    function buyBackProtocolFeeShares(uint256 _sharesAmount) external onlyNotPaused {
+    function buyBackProtocolFeeShares(uint256 _sharesAmount) external {
         address vaultProxyCopy = vaultProxy;
         require(
             IVault(vaultProxyCopy).canManageAssets(msg.sender),
@@ -368,7 +339,6 @@ contract ComptrollerLib is IComptroller {
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData)
         external
         override
-        onlyNotPaused
     {
         __assertPermissionedVaultAction(msg.sender, _action);
 
@@ -721,13 +691,7 @@ contract ComptrollerLib is IComptroller {
         uint256 _investmentAmount,
         uint256 _minSharesQuantity,
         bool _hasSharesActionTimelock
-    )
-        private
-        onlyNotPaused
-        locksReentrance
-        allowsPermissionedVaultAction
-        returns (uint256 sharesReceived_)
-    {
+    ) private locksReentrance allowsPermissionedVaultAction returns (uint256 sharesReceived_) {
         // Enforcing a _minSharesQuantity also validates `_investmentAmount > 0`
         // and guarantees the function cannot succeed while minting 0 shares
         require(_minSharesQuantity > 0, "__buyShares: _minSharesQuantity must be >0");
@@ -1130,18 +1094,10 @@ contract ComptrollerLib is IComptroller {
         }
         require(sharesToRedeem_ > 0, "__redeemSharesSetup: No shares to redeem");
 
-        // While paused, settling fund-level fees will be skipped
-        if (!__fundIsPaused()) {
-            // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
-            // then those fee shares will be transferred from the user's balance rather
-            // than reallocated from the sharesToRedeem_.
-            __preRedeemSharesHook(
-                _redeemer,
-                sharesToRedeem_,
-                _forSpecifiedAssets,
-                _gavIfCalculated
-            );
-        }
+        // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
+        // then those fee shares will be transferred from the user's balance rather
+        // than reallocated from the sharesToRedeem_.
+        __preRedeemSharesHook(_redeemer, sharesToRedeem_, _forSpecifiedAssets, _gavIfCalculated);
 
         // Pay the protocol fee after running other fees, but before burning shares
         vaultProxyContract.payProtocolFee();
@@ -1295,12 +1251,6 @@ contract ComptrollerLib is IComptroller {
         returns (uint256 lastSharesBoughtTimestamp_)
     {
         return acctToLastSharesBoughtTimestamp[_who];
-    }
-
-    /// @notice Gets the `overridePause` variable
-    /// @return overridePause_ The `overridePause` variable value
-    function getOverridePause() public view returns (bool overridePause_) {
-        return overridePause;
     }
 
     /// @notice Gets the `sharesActionTimelock` variable

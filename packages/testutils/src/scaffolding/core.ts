@@ -9,7 +9,6 @@ import {
   IntegrationManager,
   PolicyManager,
   ProtocolFeeTracker,
-  ReleaseStatusTypes,
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -29,7 +28,7 @@ export async function createFundDeployer({
   valueInterpreter,
   vaultLib,
   setOnDispatcher = true,
-  setReleaseStatusLive = true,
+  setReleaseLive = true,
 }: {
   deployer: Signer;
   assetFinalityResolver: AssetFinalityResolver;
@@ -42,7 +41,7 @@ export async function createFundDeployer({
   valueInterpreter: ValueInterpreter;
   vaultLib: VaultLib;
   setOnDispatcher?: boolean;
-  setReleaseStatusLive?: boolean;
+  setReleaseLive?: boolean;
 }) {
   const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher);
 
@@ -78,8 +77,8 @@ export async function createFundDeployer({
   );
   await nextFundDeployer.setVaultLib(nextVaultLib);
 
-  if (setReleaseStatusLive) {
-    await nextFundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+  if (setReleaseLive) {
+    await nextFundDeployer.setReleaseLive();
   }
   if (setOnDispatcher) {
     await dispatcher.setCurrentFundDeployer(nextFundDeployer);

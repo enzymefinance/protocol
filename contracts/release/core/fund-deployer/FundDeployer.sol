@@ -72,7 +72,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     event ReconfigurationTimelockSet(uint256 nextTimelock);
 
-    event ReleaseStatusSet(ReleaseStatus indexed prevStatus, ReleaseStatus indexed nextStatus);
+    event ReleaseIsLive();
 
     event VaultCallDeregistered(
         address indexed contractAddress,
@@ -103,8 +103,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     address private vaultLib;
 
     // Storage
+    bool private isLive;
     uint256 private reconfigurationTimelock;
-    ReleaseStatus private releaseStatus;
 
     mapping(address => bool) private acctToIsAllowedBuySharesOnBehalfCaller;
     mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
@@ -116,7 +116,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     }
 
     modifier onlyLiveRelease() {
-        require(releaseStatus == ReleaseStatus.Live, "Release is not Live");
+        require(releaseIsLive(), "Release is not yet live");
         _;
     }
 
@@ -191,53 +191,36 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // GENERAL //
     /////////////
 
-    /// @notice Sets the status of the protocol to a new state
-    /// @param _nextStatus The next status state to set
-    function setReleaseStatus(ReleaseStatus _nextStatus) external {
-        require(
-            msg.sender == getOwner(),
-            "setReleaseStatus: Only the owner can call this function"
-        );
-        require(
-            _nextStatus != ReleaseStatus.PreLaunch,
-            "setReleaseStatus: Cannot return to PreLaunch status"
-        );
-
-        ReleaseStatus prevStatus = releaseStatus;
-        require(_nextStatus != prevStatus, "setReleaseStatus: _nextStatus is the current status");
-
-        if (prevStatus == ReleaseStatus.PreLaunch) {
-            require(
-                getComptrollerLib() != address(0),
-                "setReleaseStatus: Can only set the release status when comptrollerLib is set"
-            );
-            require(
-                getProtocolFeeTracker() != address(0),
-                "setReleaseStatus: Can only set the release status when protocolFeeTracker is set"
-            );
-            require(
-                getVaultLib() != address(0),
-                "setReleaseStatus: Can only set the release status when vaultLib is set"
-            );
-        }
-
-        releaseStatus = _nextStatus;
-
-        emit ReleaseStatusSet(prevStatus, _nextStatus);
-    }
-
     /// @notice Gets the current owner of the contract
     /// @return owner_ The contract owner address
-    /// @dev Dynamically gets the owner based on the Protocol status. The owner is initially the
-    /// contract's deployer, for convenience in setting up configuration.
-    /// Ownership is claimed when the owner of the Dispatcher contract (the Enzyme Council)
-    /// sets the releaseStatus to `Live`.
+    /// @dev The owner is initially the contract's creator, for convenience in setting up configuration.
+    /// Ownership is handed-off when the creator calls setReleaseLive().
     function getOwner() public view override returns (address owner_) {
-        if (releaseStatus == ReleaseStatus.PreLaunch) {
+        if (!releaseIsLive()) {
             return CREATOR;
         }
 
         return IDispatcher(DISPATCHER).getOwner();
+    }
+
+    /// @notice Sets the release as live
+    /// @dev A live release allows funds to be created and migrated once this contract
+    /// is set as the Dispatcher.currentFundDeployer
+    function setReleaseLive() external {
+        require(msg.sender == CREATOR, "setReleaseLive: Only the creator can call this function");
+        require(!releaseIsLive(), "setReleaseLive: Already live");
+
+        // All pseudo-constants should be set
+        require(getComptrollerLib() != address(0), "setReleaseLive: comptrollerLib is not set");
+        require(
+            getProtocolFeeTracker() != address(0),
+            "setReleaseLive: protocolFeeTracker is not set"
+        );
+        require(getVaultLib() != address(0), "setReleaseLive: vaultLib is not set");
+
+        isLive = true;
+
+        emit ReleaseIsLive();
     }
 
     ///////////////////
@@ -342,7 +325,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external onlyLiveRelease onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
+    ) external onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
         require(
             IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
             "createReconfigurationRequest: VaultProxy not on this release"
@@ -418,11 +401,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     /// @notice Cancels a pending reconfiguration request
     /// @param _vaultProxy The VaultProxy contract for which to cancel the reconfiguration request
-    function cancelReconfiguration(address _vaultProxy)
-        external
-        onlyLiveRelease
-        onlyMigrator(_vaultProxy)
-    {
+    function cancelReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
         address nextComptrollerProxy = vaultProxyToReconfigurationRequest[_vaultProxy]
             .nextComptrollerProxy;
         require(
@@ -443,11 +422,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _vaultProxy The VaultProxy contract for which to execute the reconfiguration request
     /// @dev ProtocolFeeTracker.initializeForVault() does not need to be included in a reconfiguration,
     /// as it refers to the vault and not the new ComptrollerProxy
-    function executeReconfiguration(address _vaultProxy)
-        external
-        onlyLiveRelease
-        onlyMigrator(_vaultProxy)
-    {
+    function executeReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
         ReconfigurationRequest memory request = getReconfigurationRequestForVaultProxy(
             _vaultProxy
         );
@@ -502,7 +477,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while canceling migration
     function cancelMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
-        onlyLiveRelease
         onlyMigrator(_vaultProxy)
     {
         IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
@@ -513,7 +487,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while executing migration
     function executeMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
-        onlyLiveRelease
         onlyMigrator(_vaultProxy)
     {
         IDispatcher dispatcherContract = IDispatcher(DISPATCHER);
@@ -681,12 +654,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         return DISPATCHER;
     }
 
-    /// @notice Gets the `releaseStatus` variable value
-    /// @return status_ The `releaseStatus` variable value
-    function getReleaseStatus() external view override returns (ReleaseStatus status_) {
-        return releaseStatus;
-    }
-
     /// @notice Checks if a contract call is allowed
     /// @param _contract The contract of the call to check
     /// @param _selector The selector of the call to check
@@ -781,5 +748,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             vaultCallToPayloadToIsAllowed[keccak256(
                 abi.encodePacked(_contract, _selector)
             )][_dataHash];
+    }
+
+    /// @notice Gets the `isLive` variable value
+    /// @return isLive_ The `isLive` variable value
+    function releaseIsLive() public view returns (bool isLive_) {
+        return isLive;
     }
 }

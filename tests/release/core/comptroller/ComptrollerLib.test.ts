@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { ComptrollerLib, FundDeployer, ReleaseStatusTypes } from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer } from '@enzymefinance/protocol';
 import { deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
@@ -28,7 +28,7 @@ describe('constructor', () => {
 describe('destruct calls', () => {
   it('cannot be non-delegatecalled', async () => {
     const mockFundDeployer = await FundDeployer.mock(fork.deployer);
-    await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
+    await mockFundDeployer.releaseIsLive.returns(true);
 
     const comptrollerLib = await ComptrollerLib.deploy(
       fork.deployer,

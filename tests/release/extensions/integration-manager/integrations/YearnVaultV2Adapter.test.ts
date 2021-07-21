@@ -186,7 +186,7 @@ describe('lend', () => {
       preTxUnderlyingBalance.sub(outgoingUnderlyingAmount).add(preTxAdapterUnderlyingBalance),
     );
 
-    expect(lendReceipt).toCostAround('298303');
+    expect(lendReceipt).toCostAround('290413');
   });
 });
 
@@ -267,6 +267,6 @@ describe('redeem', () => {
       slippageToleranceBps,
     );
 
-    expect(redeemReceipt).toCostAround('192619');
+    expect(redeemReceipt).toCostAround('184729');
   });
 });

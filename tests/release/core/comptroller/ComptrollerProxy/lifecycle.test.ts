@@ -1,12 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import {
-  ComptrollerLib,
-  FundDeployer,
-  IExtension,
-  ReleaseStatusTypes,
-  StandardToken,
-  VaultLib,
-} from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer, IExtension, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import { assertEvent, createComptrollerProxy, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -22,7 +15,7 @@ async function snapshot() {
 
   // Deploy a mock FundDeployer
   const mockFundDeployer = await FundDeployer.mock(deployer);
-  await mockFundDeployer.getReleaseStatus.returns(ReleaseStatusTypes.Live);
+  await mockFundDeployer.releaseIsLive.returns(true);
 
   // Deploy mock extensions
   const mockExternalPositionManager = await IExtension.mock(deployer);
@@ -116,9 +109,6 @@ describe('init', () => {
     // Assert state has been set
     const getDenominationAssetCall = await comptrollerProxy.getDenominationAsset();
     expect(getDenominationAssetCall).toMatchAddress(denominationAsset);
-
-    const getOverridePauseCall = await comptrollerProxy.getOverridePause();
-    expect(getOverridePauseCall).toBe(false);
 
     const getSharesActionTimelockCall = await comptrollerProxy.getSharesActionTimelock();
     expect(getSharesActionTimelockCall).toEqBigNumber(sharesActionTimelock);

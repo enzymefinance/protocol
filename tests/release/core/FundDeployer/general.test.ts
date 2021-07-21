@@ -1,6 +1,6 @@
-import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import { extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { FundDeployer, ReleaseStatusTypes, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
+import { Dispatcher, FundDeployer, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -16,7 +16,7 @@ describe('constructor', () => {
     expect(await fundDeployer.getCreator()).toMatchAddress(fork.deployer);
     expect(await fundDeployer.getDispatcher()).toMatchAddress(dispatcher);
     expect(await fundDeployer.getOwner()).toMatchAddress(fork.deployer);
-    expect(await fundDeployer.getReleaseStatus()).toBe(ReleaseStatusTypes.Live);
+    expect(await fundDeployer.releaseIsLive()).toBe(true);
 
     // Pseudo constants
     expect(await fundDeployer.getComptrollerLib()).toMatchAddress(comptrollerLib);
@@ -122,62 +122,84 @@ describe('pseudo-constant setters', () => {
   });
 });
 
-describe('setReleaseStatus', () => {
-  it.todo('can only be called by the Dispatcher contract owner');
+describe('setReleaseLive', () => {
+  let fundDeployer: FundDeployer;
+  let mockDispatcher: MockContract<Dispatcher>;
+  let creator: SignerWithAddress, dispatcherOwner: SignerWithAddress;
 
-  it.todo('does not allow returning to PreLaunch status');
+  beforeEach(async () => {
+    [creator, dispatcherOwner] = fork.accounts;
 
-  it.todo('does not allow the current status');
+    // Use a mock Dispatcher to easily set a distinct owner
+    mockDispatcher = await Dispatcher.mock(fork.deployer);
+    await mockDispatcher.getOwner.returns(dispatcherOwner);
 
-  it('cannot be called during PreLaunch before comptrollerLib is set', async () => {
-    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
-
-    // Set other necessary vars
-    await fundDeployer.setProtocolFeeTracker(randomAddress());
-    await fundDeployer.setVaultLib(randomAddress());
-
-    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
-      'Can only set the release status when comptrollerLib is set',
-    );
+    fundDeployer = await FundDeployer.deploy(creator, mockDispatcher);
   });
 
-  it('cannot be called during PreLaunch before protocolFeeTracker is set', async () => {
-    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+  describe('before setting pseudo-constants', () => {
+    it('cannot be called before comptrollerLib is set', async () => {
+      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
 
-    // Set other necessary vars
-    await fundDeployer.setComptrollerLib(randomAddress());
-    await fundDeployer.setVaultLib(randomAddress());
+      // Set other necessary vars
+      await fundDeployer.setProtocolFeeTracker(randomAddress());
+      await fundDeployer.setVaultLib(randomAddress());
 
-    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
-      'Can only set the release status when protocolFeeTracker is set',
-    );
-  });
-
-  it('cannot be called during PreLaunch before vaultLib is set', async () => {
-    const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
-
-    // Set other necessary vars
-    await fundDeployer.setComptrollerLib(randomAddress());
-    await fundDeployer.setProtocolFeeTracker(randomAddress());
-
-    await expect(fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live)).rejects.toBeRevertedWith(
-      'Can only set the release status when vaultLib is set',
-    );
-  });
-
-  it('correctly handles setting the release status', async () => {
-    const { fundDeployer } = fork.deployment;
-    const receipt = await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    // ReleaseStatusSet event is emitted
-    assertEvent(receipt, 'ReleaseStatusSet', {
-      prevStatus: ReleaseStatusTypes.Live,
-      nextStatus: ReleaseStatusTypes.Paused,
+      await expect(fundDeployer.setReleaseLive()).rejects.toBeRevertedWith('comptrollerLib is not set');
     });
 
-    // Release Status should be Paused
-    const getReleaseStatusCall = await fundDeployer.getReleaseStatus();
-    expect(getReleaseStatusCall).toBe(ReleaseStatusTypes.Paused);
+    it('cannot be called before protocolFeeTracker is set', async () => {
+      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+
+      // Set other necessary vars
+      await fundDeployer.setComptrollerLib(randomAddress());
+      await fundDeployer.setVaultLib(randomAddress());
+
+      await expect(fundDeployer.setReleaseLive()).rejects.toBeRevertedWith('protocolFeeTracker is not set');
+    });
+
+    it('cannot be called before vaultLib is set', async () => {
+      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+
+      // Set other necessary vars
+      await fundDeployer.setComptrollerLib(randomAddress());
+      await fundDeployer.setProtocolFeeTracker(randomAddress());
+
+      await expect(fundDeployer.setReleaseLive()).rejects.toBeRevertedWith('vaultLib is not set');
+    });
+  });
+
+  describe('after setting pseudo-constants', () => {
+    beforeEach(async () => {
+      await fundDeployer.setComptrollerLib(randomAddress());
+      await fundDeployer.setProtocolFeeTracker(randomAddress());
+      await fundDeployer.setVaultLib(randomAddress());
+    });
+
+    it('can only be called by the contract creator', async () => {
+      await expect(fundDeployer.connect(dispatcherOwner).setReleaseLive()).rejects.toBeRevertedWith(
+        'Only the creator can call this function',
+      );
+    });
+
+    it('cannot be called a second time', async () => {
+      // Set release as live
+      await fundDeployer.setReleaseLive();
+
+      await expect(fundDeployer.setReleaseLive()).rejects.toBeRevertedWith('Already live');
+    });
+
+    it('happy path', async () => {
+      expect(await fundDeployer.releaseIsLive()).toBe(false);
+      expect(await fundDeployer.getOwner()).toMatchAddress(creator);
+
+      const receipt = await fundDeployer.setReleaseLive();
+
+      expect(await fundDeployer.releaseIsLive()).toBe(true);
+      expect(await fundDeployer.getOwner()).toMatchAddress(dispatcherOwner);
+
+      assertEvent(receipt, 'ReleaseIsLive');
+    });
   });
 });
 

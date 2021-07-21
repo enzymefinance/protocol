@@ -1,12 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { encodeArgs, ReleaseStatusTypes, sighash, StandardToken } from '@enzymefinance/protocol';
-import {
-  assertEvent,
-  callOnExtension,
-  createNewFund,
-  deployProtocolFixture,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
+import { encodeArgs, sighash, StandardToken } from '@enzymefinance/protocol';
+import { callOnExtension, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -36,91 +30,13 @@ describe('callOnExtension', () => {
     ).rejects.toBeRevertedWith('_extension invalid');
   });
 
-  it('does not allow a paused release, unless overridePause is set', async () => {
-    const { fundDeployer } = fork.deployment;
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    // Pause the release
-    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    await expect(
-      callOnExtension({
-        signer: fundOwner,
-        comptrollerProxy,
-        extension: randomAddress(),
-        actionId: 0,
-      }),
-    ).rejects.toBeRevertedWith('Fund is paused');
-
-    // Override the pause
-    await comptrollerProxy.setOverridePause(true);
-
-    await expect(
-      callOnExtension({
-        signer: fundOwner,
-        comptrollerProxy,
-        extension: randomAddress(),
-        actionId: 0,
-      }),
-    ).rejects.toBeRevertedWith('_extension invalid');
-  });
-
   it.todo('does not allow re-entrance');
 });
 
 describe('permissionedVaultAction', () => {
-  it.todo('onlyNotPaused test');
-
   it.todo('access control tests');
 
   it.todo('RemoveTrackedAsset: does not allow the denomination asset');
-});
-
-describe('setOverridePause', () => {
-  it('cannot be called by a random user', async () => {
-    const { fundDeployer } = fork.deployment;
-    const [fundOwner, randomUser] = fork.accounts;
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    await expect(comptrollerProxy.connect(randomUser).setOverridePause(true)).rejects.toBeRevertedWith(
-      'Only fund owner callable',
-    );
-  });
-
-  it('correctly handles valid call', async () => {
-    const { fundDeployer } = fork.deployment;
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-    });
-
-    const receipt = await comptrollerProxy.setOverridePause(true);
-    // Assert event emitted
-    assertEvent(receipt, 'OverridePauseSet', {
-      overridePause: true,
-    });
-
-    // Assert state has been set
-    const getOverridePauseCall = await comptrollerProxy.getOverridePause();
-    expect(getOverridePauseCall).toBe(true);
-  });
 });
 
 describe('vaultCallOnContract', () => {

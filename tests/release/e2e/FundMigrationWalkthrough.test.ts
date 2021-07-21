@@ -6,7 +6,6 @@ import {
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
-  // ReleaseStatusTypes,
   StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -155,7 +154,7 @@ describe('Walkthrough a fund migration', () => {
   // it('deploys a new live release', async () => {
   //   newRelease = await deployRelease(fork.config);
 
-  //   await newRelease.fundDeployer.setReleaseStatus(ReleaseStatusTypes.Live);
+  //   await newRelease.fundDeployer.setReleaseLive();
   //   await fork.deployment.dispatcher.setCurrentFundDeployer(newRelease.fundDeployer);
   // });
 

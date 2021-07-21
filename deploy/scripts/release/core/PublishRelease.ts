@@ -1,4 +1,4 @@
-import { Dispatcher, FundDeployer, ProtocolFeeTracker, ReleaseStatusTypes } from '@enzymefinance/protocol';
+import { Dispatcher, FundDeployer, ProtocolFeeTracker } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -16,7 +16,7 @@ const fn: DeployFunction = async function (hre) {
   await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
 
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
-  await fundDeployerInstance.setReleaseStatus(ReleaseStatusTypes.Live);
+  await fundDeployerInstance.setReleaseLive();
 
   const protocolFeeTrackerInstance = new ProtocolFeeTracker(protocolFeeTracker.address, deployer);
   await protocolFeeTrackerInstance.setFeeBpsDefault(50);

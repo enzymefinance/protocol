@@ -1,6 +1,6 @@
 import { ContractReceipt } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, ReleaseStatusTypes, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
@@ -73,20 +73,6 @@ describe('createReconfigurationRequest', () => {
     });
 
     // Other validations covered by common logic in createNewFund() tests
-
-    it('does not allow the release status to be Paused', async () => {
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(
-        createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
-          denominationAsset,
-        }),
-      ).rejects.toBeRevertedWith('Release is not Live');
-    });
 
     it('cannot be called by a random user', async () => {
       await expect(
@@ -269,22 +255,6 @@ describe('executeReconfiguration', () => {
       vaultProxy = newFundRes.vaultProxy;
     });
 
-    it('does not allow the release status to be Paused', async () => {
-      await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-      });
-
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(fundDeployer.connect(fundOwner).executeReconfiguration(vaultProxy)).rejects.toBeRevertedWith(
-        'Release is not Live',
-      );
-    });
-
     it('cannot be called by a random user', async () => {
       await createReconfigurationRequest({
         signer: fundOwner,
@@ -338,7 +308,7 @@ describe('executeReconfiguration', () => {
         policyManager: fork.deployment.policyManager,
         valueInterpreter: fork.deployment.valueInterpreter,
         vaultLib: fork.deployment.vaultLib,
-        setReleaseStatusLive: true,
+        setReleaseLive: true,
         setOnDispatcher: true,
       });
 
@@ -490,22 +460,6 @@ describe('cancelReconfiguration', () => {
       });
 
       vaultProxy = newFundRes.vaultProxy;
-    });
-
-    it('does not allow the release status to be Paused', async () => {
-      await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-      });
-
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(fundDeployer.connect(fundOwner).cancelReconfiguration(vaultProxy)).rejects.toBeRevertedWith(
-        'Release is not Live',
-      );
     });
 
     it('cannot be called by a random user', async () => {

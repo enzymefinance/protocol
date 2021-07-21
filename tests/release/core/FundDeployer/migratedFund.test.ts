@@ -1,6 +1,6 @@
-import { ContractReceipt } from '@enzymefinance/ethers';
+import { ContractReceipt, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, ReleaseStatusTypes, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   assertEvent,
   createFundDeployer,
@@ -32,7 +32,7 @@ async function createNewFundOnPrevRelease({
     policyManager: fork.deployment.policyManager,
     valueInterpreter: fork.deployment.valueInterpreter,
     vaultLib: fork.deployment.vaultLib,
-    setReleaseStatusLive: true,
+    setReleaseLive: true,
     setOnDispatcher: true,
   });
 
@@ -62,24 +62,6 @@ describe('createMigrationRequest', () => {
 
     // Other validations covered by common logic in createNewFund() tests
 
-    it('does not allow the release status to be Paused', async () => {
-      const [fundOwner] = fork.accounts;
-
-      const { vaultProxy } = await createNewFundOnPrevRelease({ fork, fundOwner });
-
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(
-        createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-        }),
-      ).rejects.toBeRevertedWith('Release is not Live');
-    });
-
     it('cannot be called by a random user', async () => {
       const [fundOwner, randomUser] = fork.accounts;
 
@@ -93,6 +75,45 @@ describe('createMigrationRequest', () => {
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         }),
       ).rejects.toBeRevertedWith('Only a permissioned migrator can call this function');
+    });
+
+    it('does not allow ownership handoff to not be incomplete', async () => {
+      const {
+        assetFinalityResolver,
+        chainlinkPriceFeed,
+        externalPositionManager,
+        dispatcher,
+        feeManager,
+        integrationManager,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+      } = fork.deployment;
+      const nonLiveFundDeployer = await createFundDeployer({
+        deployer: fork.deployer,
+        assetFinalityResolver,
+        chainlinkPriceFeed,
+        externalPositionManager,
+        dispatcher,
+        feeManager,
+        integrationManager,
+        policyManager,
+        valueInterpreter,
+        vaultLib,
+        setReleaseLive: false, // Do NOT set release as live
+        setOnDispatcher: true, // Do set as the current release on the Dispatcher
+      });
+
+      await expect(
+        nonLiveFundDeployer.createMigrationRequest(
+          randomAddress(),
+          randomAddress(),
+          0,
+          constants.HashZero,
+          constants.HashZero,
+          false,
+        ),
+      ).rejects.toBeRevertedWith('Release is not yet live');
     });
   });
 
@@ -222,15 +243,6 @@ describe('executeMigration', () => {
       });
     });
 
-    it('does not allow the release status to be Paused', async () => {
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(fundDeployer.connect(fundOwner).executeMigration(vaultProxy, false)).rejects.toBeRevertedWith(
-        'Release is not Live',
-      );
-    });
-
     it('cannot be called by a random user', async () => {
       await expect(fundDeployer.connect(randomUser).executeMigration(vaultProxy, false)).rejects.toBeRevertedWith(
         'Only a permissioned migrator can call this function',
@@ -341,15 +353,6 @@ describe('cancelMigration', () => {
         vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       });
-    });
-
-    it('does not allow the release status to be Paused', async () => {
-      // Pause the release
-      await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-      await expect(fundDeployer.connect(fundOwner).cancelMigration(vaultProxy, false)).rejects.toBeRevertedWith(
-        'Release is not Live',
-      );
     });
 
     it('cannot be called by a random user', async () => {

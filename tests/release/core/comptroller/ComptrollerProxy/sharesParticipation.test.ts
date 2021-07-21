@@ -10,7 +10,6 @@ import {
   MockReentrancyToken,
   PolicyHook,
   PolicyManager,
-  ReleaseStatusTypes,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
   settlePreRedeemSharesArgs,
@@ -366,45 +365,6 @@ describe('buyShares', () => {
   });
 
   it.todo('happy path: no shares action timelock, pending reconfiguration');
-
-  it('does not allow a paused release, unless overridePause is set', async () => {
-    const {
-      deployment: { fundDeployer },
-      fund: { denominationAsset },
-      accounts: [fundOwner, buyer],
-    } = await provider.snapshot(snapshot);
-
-    const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
-      fundOwner,
-      denominationAsset,
-    });
-
-    // Pause the release
-    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    // The call should fail
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        buyer,
-        denominationAsset,
-      }),
-    ).rejects.toBeRevertedWith('Fund is paused');
-
-    // Override the pause
-    await comptrollerProxy.connect(fundOwner).setOverridePause(true);
-
-    // The call should then succeed
-    await expect(
-      buyShares({
-        comptrollerProxy,
-        buyer,
-        denominationAsset,
-      }),
-    ).resolves.toBeReceipt();
-  });
 });
 
 describe('buySharesOnBehalf', () => {

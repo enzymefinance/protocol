@@ -136,7 +136,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
-    expect(lendReceipt).toCostAround('489905');
+    expect(lendReceipt).toCostAround('482015');
   });
 });
 

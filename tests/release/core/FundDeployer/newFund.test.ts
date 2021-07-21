@@ -1,12 +1,5 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import {
-  ComptrollerLib,
-  FundDeployer,
-  ProtocolFeeTracker,
-  ReleaseStatusTypes,
-  StandardToken,
-  VaultLib,
-} from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer, ProtocolFeeTracker, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   createNewFund,
   generateFeeManagerConfigWithMockFees,
@@ -20,26 +13,14 @@ import { BigNumber, BytesLike, constants } from 'ethers';
 let fork: ProtocolDeployment;
 
 describe('unhappy paths', () => {
-  let fundDeployer: FundDeployer;
-
   beforeEach(async () => {
     fork = await deployProtocolFixture();
-    fundDeployer = fork.deployment.fundDeployer;
   });
 
   // No empty _fundOwner validated by VaultLib.init()
   // No bad _denominationAsset validated by ComptrollerLib.init()
 
-  it('does not allow the release status to be Paused', async () => {
-    // Pause the release
-    await fundDeployer.setReleaseStatus(ReleaseStatusTypes.Paused);
-
-    await expect(
-      fundDeployer.createNewFund(randomAddress(), '', fork.config.weth, 0, constants.HashZero, constants.HashZero),
-    ).rejects.toBeRevertedWith('Release is not Live');
-  });
-
-  it('does not allow the release status to be PreLaunch', async () => {
+  it('does not allow ownership handoff to not be incomplete', async () => {
     const {
       assetFinalityResolver,
       chainlinkPriceFeed,
@@ -62,7 +43,7 @@ describe('unhappy paths', () => {
       policyManager,
       valueInterpreter,
       vaultLib,
-      setReleaseStatusLive: false, // Do NOT set release status to Live
+      setReleaseLive: false, // Do NOT set the release live
       setOnDispatcher: true, // Do set as the current release on the Dispatcher
     });
 
@@ -75,7 +56,7 @@ describe('unhappy paths', () => {
         constants.HashZero,
         constants.HashZero,
       ),
-    ).rejects.toBeRevertedWith('Release is not Live');
+    ).rejects.toBeRevertedWith('Release is not yet live');
   });
 });
 
