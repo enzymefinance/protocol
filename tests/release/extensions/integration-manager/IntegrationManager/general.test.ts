@@ -297,7 +297,7 @@ describe('callOnExtension actions', () => {
       });
 
       // Remove the assets
-      removeTrackedAssetsFromVault({
+      await removeTrackedAssetsFromVault({
         signer: fundOwner,
         comptrollerProxy,
         integrationManager,

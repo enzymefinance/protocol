@@ -1548,22 +1548,22 @@
     istanbul-lib-coverage "^3.0.0"
     uuid "^8.3.1"
 
-"@enzymefinance/ethers@0.0.10", "@enzymefinance/ethers@^0.0.10":
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/@enzymefinance/ethers/-/ethers-0.0.10.tgz#34ed7a9c5771d355e676c99b617ab676ba99d000"
-  integrity sha512-J6kEpp7LcS3usn2ZSE80og54YQDaEDBrpnoLzDh+ZysXFXYOXLSev/zGny1zhRCfRxiJ789CmwQQ4v2DfMNOcQ==
+"@enzymefinance/ethers@0.0.12", "@enzymefinance/ethers@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@enzymefinance/ethers/-/ethers-0.0.12.tgz#59f05e398ce2282410328163f01989a1c10d2b51"
+  integrity sha512-+/lzcNXXoixVrQCrL+PUGmXX1zkgkaJBKnsoxeglquZ6mw4zRTfn7Wg8f6cENTSMSAooBNQgof5Oq0r3wFCZcw==
   dependencies:
     "@babel/runtime" "^7.14.6"
 
-"@enzymefinance/hardhat@^0.0.21":
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.21.tgz#fceabcc4817e369a5faf9d334e8a5541d731a24e"
-  integrity sha512-Ld8+zJyKHWovyejIRkglt53PJvLTYwYUUSolIzW6wvt9nG2xSLPHO2X5uUmcWnp6byE/72AGZA63aY8o1BfflQ==
+"@enzymefinance/hardhat@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.23.tgz#76a3c9e0602ae6188223c13a002b2099db653d27"
+  integrity sha512-HiO3/M8UOMxCYRivGkkzdL6OGtu1VFTQLcTJVbxFj2RPv58c3i8wMXjAOAxaOLgYRHQTi6DAx3upcBAGxLdAUg==
   dependencies:
     "@babel/runtime" "^7.14.6"
     "@enzymefinance/codegen" "0.0.6"
     "@enzymefinance/coverage" "0.0.7"
-    "@enzymefinance/ethers" "0.0.10"
+    "@enzymefinance/ethers" "0.0.12"
     deepmerge "^4.2.2"
     fs-extra "^10.0.0"
     glob "^7.1.7"
