@@ -36,6 +36,8 @@ interface IComptroller {
 
     function getDenominationAsset() external view returns (address);
 
+    function getExternalPositionManager() external view returns (address);
+
     function getIntegrationManager() external view returns (address);
 
     function getVaultProxy() external view returns (address);

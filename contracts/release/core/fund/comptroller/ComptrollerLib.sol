@@ -1171,7 +1171,12 @@ contract ComptrollerLib is IComptroller {
 
     /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
     /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
-    function getExternalPositionManager() public view returns (address externalPositionManager_) {
+    function getExternalPositionManager()
+        public
+        view
+        override
+        returns (address externalPositionManager_)
+    {
         return EXTERNAL_POSITION_MANAGER;
     }
 
