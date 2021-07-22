@@ -1,11 +1,11 @@
-import { SynthetixPriceFeedArgs } from '@enzymefinance/protocol';
+import { SynthetixPriceFeed, SynthetixPriceFeedArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, log },
     ethers: { getSigners },
   } = hre;
 
@@ -13,17 +13,22 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const fundDeployer = await get('FundDeployer');
 
-  await deploy('SynthetixPriceFeed', {
-    args: [
-      fundDeployer.address,
-      config.synthetix.addressResolver,
-      config.synthetix.susd,
-      Object.values(config.synthetix.synths),
-    ] as SynthetixPriceFeedArgs,
+  const synthetixPriceFeed = await deploy('SynthetixPriceFeed', {
+    args: [fundDeployer.address, config.synthetix.addressResolver, config.synthetix.susd] as SynthetixPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
+
+  if (synthetixPriceFeed.newlyDeployed) {
+    const synthetixPriceFeedInstance = new SynthetixPriceFeed(synthetixPriceFeed.address, deployer);
+    const synths = [config.synthetix.susd, ...Object.values(config.synthetix.synths)];
+
+    if (!!synths.length) {
+      log('Registering synths');
+      await synthetixPriceFeedInstance.addSynths(synths);
+    }
+  }
 };
 
 fn.tags = ['Release', 'SynthetixPriceFeed'];

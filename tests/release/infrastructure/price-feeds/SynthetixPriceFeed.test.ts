@@ -1,4 +1,4 @@
-import { AddressLike, extractEvent } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   ISynthetixAddressResolver,
   ISynthetixExchangeRates,
@@ -206,12 +206,6 @@ describe('synths registry', () => {
       ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
-    it('does not allow an empty _synths param', async () => {
-      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
-
-      await expect(synthetixPriceFeed.addSynths([])).rejects.toBeRevertedWith('Empty _synths');
-    });
-
     it('does not allow an already-set Synth', async () => {
       const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
@@ -231,7 +225,6 @@ describe('synths registry', () => {
         fork.deployment.dispatcher,
         fork.config.synthetix.addressResolver,
         fork.config.synthetix.susd,
-        [],
       );
 
       // The Synths should not be supported assets initially
@@ -272,78 +265,39 @@ describe('synths registry', () => {
     });
   });
 
-  describe('updateSynthCurrencyKeys', () => {
-    it('does not allow an empty _synths param', async () => {
-      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
-
-      await expect(synthetixPriceFeed.updateSynthCurrencyKeys([])).rejects.toBeRevertedWith('Empty _synths');
-    });
-
+  describe('removeSynths', () => {
     it('does not allow an unset Synth', async () => {
       const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
 
-      await expect(synthetixPriceFeed.updateSynthCurrencyKeys([fork.config.primitives.dai])).rejects.toBeRevertedWith(
-        'Synth not set',
-      );
+      await expect(synthetixPriceFeed.removeSynths([randomAddress()])).rejects.toBeRevertedWith('Synth not set');
     });
 
-    it('does not allow a Synth that has the correct currencyKey', async () => {
+    it('happy path', async () => {
       const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
+      const synthsToRemove = [fork.config.synthetix.synths.sbtc, fork.config.synthetix.synths.seth];
+      const synthsToRemoveCurrenyKeys = await synthetixPriceFeed.getCurrencyKeysForSynths(synthsToRemove);
 
-      await expect(
-        synthetixPriceFeed.updateSynthCurrencyKeys([fork.config.synthetix.synths.sbtc]),
-      ).rejects.toBeRevertedWith('Synth has correct currencyKey');
-    });
+      for (const synth of synthsToRemove) {
+        expect(await synthetixPriceFeed.isSupportedAsset(synth)).toBe(true);
+      }
 
-    xit('updates multiple Synths and emits an event per updated Synth (called by random user)', async () => {
-      /*
-      const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
-      const [arbitraryUser] = fork.accounts;
+      const receipt = await synthetixPriceFeed.removeSynths(synthsToRemove);
 
-      // Add the new Synths so they are supported
-      await synthetixPriceFeed.addSynths([newSynth1, newSynth2]);
-      expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(true);
-      expect(await synthetixPriceFeed.isSupportedAsset(newSynth2)).toBe(true);
-
-      // Update the Synth currency keys in Synthetix
-      const altSynth1CurrencyKey = utils.formatBytes32String('sMOCK1-ALT');
-      const altSynth2CurrencyKey = utils.formatBytes32String('sMOCK2-ALT');
-      await newSynth1.setCurrencyKey(altSynth1CurrencyKey);
-      await newSynth2.setCurrencyKey(altSynth2CurrencyKey);
-
-      // Update the new Synths (from a random user)
-      const updateSynthsTx = await synthetixPriceFeed
-        .connect(arbitraryUser)
-        .updateSynthCurrencyKeys([newSynth1, newSynth2]);
-
-      // The new currencyKey should be stored for each Synth
-      expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth1)).toBe(altSynth1CurrencyKey);
-      expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth2)).toBe(altSynth2CurrencyKey);
-      expect(
-        await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2]),
-      ).toMatchFunctionOutput(synthetixPriceFeed.getCurrencyKeysForSynths, [
-        altSynth1CurrencyKey,
-        altSynth2CurrencyKey,
-      ]);
-
-      // The tokens should still be supported assets
-      expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(true);
-      expect(await synthetixPriceFeed.isSupportedAsset(newSynth2)).toBe(true);
+      // The synths should no longer be supported and their currencyKey values should not be stored
+      for (const synth of synthsToRemove) {
+        expect(await synthetixPriceFeed.isSupportedAsset(synth)).toBe(false);
+        expect(await synthetixPriceFeed.getCurrencyKeyForSynth(synth)).toBe(constants.HashZero);
+      }
 
       // The correct event should have been emitted for each Synth
-      const events = extractEvent(updateSynthsTx, 'SynthCurrencyKeyUpdated');
-      expect(events.length).toBe(2);
-      expect(events[0]).toMatchEventArgs({
-        synth: newSynth1,
-        prevCurrencyKey: newSynth1CurrencyKey,
-        nextCurrencyKey: altSynth1CurrencyKey,
-      });
-      expect(events[1]).toMatchEventArgs({
-        synth: newSynth2,
-        prevCurrencyKey: newSynth2CurrencyKey,
-        nextCurrencyKey: altSynth2CurrencyKey,
-      });
-    */
+      const events = extractEvent(receipt, 'SynthRemoved');
+      expect(events.length).toBe(synthsToRemove.length);
+      for (const i in synthsToRemove) {
+        expect(events[i]).toMatchEventArgs({
+          synth: synthsToRemove[i],
+          currencyKey: synthsToRemoveCurrenyKeys[i],
+        });
+      }
     });
   });
 });
