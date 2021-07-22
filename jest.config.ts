@@ -1,14 +1,22 @@
+const coverage = JSON.parse(process.env.COVERAGE || 'false');
+const common = {
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  globals: {
+    'ts-jest': {
+      babelConfig: true,
+      diagnostics: false,
+    },
+  },
+  preset: '@enzymefinance/hardhat',
+  testEnvironmentOptions: {
+    coverage,
+  },
+};
+
 function project(name: string, roots: string[]) {
   return {
+    ...common,
     displayName: name,
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-    globals: {
-      'ts-jest': {
-        babelConfig: true,
-        diagnostics: false,
-      },
-    },
-    preset: '@enzymefinance/hardhat',
     roots,
   };
 }

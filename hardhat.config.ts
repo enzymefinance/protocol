@@ -22,6 +22,12 @@ function accounts(networkName: string) {
 
 const mnemonic = 'test test test test test test test test test test test junk';
 
+// Set the block gas limit and default gas. When testing with code coverage reporting,
+// we double the gas limit & default gas to allow for large contracts with instrumentalisation
+// injected.
+const coverage = JSON.parse(process.env.COVERAGE || 'false');
+const gas = 12450000 * (coverage ? 2 : 1);
+
 const config: HardhatUserConfig = {
   codeCoverage: {
     exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
@@ -94,11 +100,9 @@ const config: HardhatUserConfig = {
         blockNumber: 12836323, // July 16, 2021
         url: node('mainnet'),
       },
-      gas: 9500000,
+      blockGasLimit: gas,
+      gas,
       gasPrice: 0, // TODO: Consider removing this again.
-      ...(process.env.COVERAGE && {
-        allowUnlimitedContractSize: true,
-      }),
     },
     kovan: {
       accounts: accounts('kovan'),

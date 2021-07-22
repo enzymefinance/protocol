@@ -16,7 +16,19 @@ jobs:
 
     strategy:
       matrix:
-        project: ['persistent', 'core', 'infrastructure', 'fee', 'policy', 'integration','external', 'peripheral', 'utils', 'e2e']
+        project:
+          [
+            'persistent',
+            'core',
+            'infrastructure',
+            'fee',
+            'policy',
+            'integration',
+            'external',
+            'peripheral',
+            'utils',
+            'e2e',
+          ]
 
     steps:
       - name: Check out repository
@@ -25,7 +37,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -80,7 +92,7 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          node-version: 14
+          node-version: 16
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -128,7 +140,7 @@ jobs:
   #     - name: Set up node
   #       uses: actions/setup-node@v2
   #       with:
-  #         node-version: 14
+  #         node-version: 16
 
   #     - name: Get yarn cache directory path
   #       id: yarn-cache-dir-path
@@ -165,7 +177,7 @@ jobs:
   #     - name: Instrument and test with code coverage enabled
   #       run: yarn coverage
   #       env:
-  #         MAINNET_ARCHIVE_NODE: ${{ secrets.MAINNET_ARCHIVE_NODE }}
+  #         ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
 
   #     - name: Coveralls
   #       uses: coverallsapp/github-action@master
