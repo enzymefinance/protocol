@@ -464,3 +464,45 @@ describe('receiveCallFromComptroller', () => {
     });
   });
 });
+
+describe('updateExternalPositionTypesInfo', () => {
+  it('updates externalPositionTypesInfo', async () => {
+    const externalPositionManager = fork.deployment.externalPositionManager;
+    const externalPositionFactory = fork.deployment.externalPositionFactory;
+
+    const randomLib = randomAddress();
+    const randomParser = randomAddress();
+
+    const externalPositionCounter = await externalPositionFactory.getPositionTypeCounter();
+
+    await externalPositionManager.updateExternalPositionTypesInfo(
+      [externalPositionCounter.sub('1')],
+      [randomLib],
+      [randomParser],
+    );
+
+    expect(
+      await externalPositionManager.getExternalPositionLibForType(externalPositionCounter.sub('1')),
+    ).toMatchAddress(randomLib);
+    expect(
+      await externalPositionManager.getExternalPositionParserForType(externalPositionCounter.sub('1')),
+    ).toMatchAddress(randomParser);
+  });
+
+  it('reverts if the caller is not the FundDeployerOwner', async () => {
+    const [, randomCaller] = fork.accounts;
+    const externalPositionManager = fork.deployment.externalPositionManager;
+    const externalPositionFactory = fork.deployment.externalPositionFactory;
+
+    const randomLib = randomAddress();
+    const randomParser = randomAddress();
+
+    const externalPositionCounter = await externalPositionFactory.getPositionTypeCounter();
+
+    await expect(
+      externalPositionManager
+        .connect(randomCaller)
+        .updateExternalPositionTypesInfo([externalPositionCounter.sub('1')], [randomLib], [randomParser]),
+    ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+  });
+});
