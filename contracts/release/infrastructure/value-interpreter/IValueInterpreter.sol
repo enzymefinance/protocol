@@ -26,4 +26,10 @@ interface IValueInterpreter {
         uint256[] calldata,
         address
     ) external returns (uint256);
+
+    function isSupportedAsset(address) external view returns (bool);
+
+    function isSupportedDerivativeAsset(address) external view returns (bool);
+
+    function isSupportedPrimitiveAsset(address) external view returns (bool);
 }

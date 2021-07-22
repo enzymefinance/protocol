@@ -17,7 +17,6 @@ import "../../../../interfaces/IUniswapV2Pair.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../../../../utils/MathHelpers.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
-import "../../primitives/IPrimitivePriceFeed.sol";
 import "../../utils/UniswapV2PoolTokenValueCalculator.sol";
 import "../IDerivativePriceFeed.sol";
 
@@ -40,23 +39,17 @@ contract UniswapV2PoolPriceFeed is
     }
 
     uint256 private constant POOL_TOKEN_UNIT = 10**18;
-    address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable FACTORY;
-    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
 
     mapping(address => PoolTokenInfo) private poolTokenToInfo;
 
     constructor(
         address _fundDeployer,
-        address _derivativePriceFeed,
-        address _primitivePriceFeed,
         address _valueInterpreter,
         address _factory
     ) public FundDeployerOwnerMixin(_fundDeployer) {
-        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         FACTORY = _factory;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         VALUE_INTERPRETER = _valueInterpreter;
     }
 
@@ -123,7 +116,7 @@ contract UniswapV2PoolPriceFeed is
         // The quote asset of the value lookup must be a supported primitive asset,
         // so we cycle through the tokens until reaching a primitive.
         // If neither is a primitive, will revert at the ValueInterpreter
-        if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_token0)) {
+        if (IValueInterpreter(VALUE_INTERPRETER).isSupportedPrimitiveAsset(_token0)) {
             token1RateAmount_ = 10**_token1Decimals;
             token0RateAmount_ = ValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
                 _token1,
@@ -163,12 +156,7 @@ contract UniswapV2PoolPriceFeed is
             address token1 = uniswapV2Pair.token1();
 
             require(
-                __poolTokenIsSupportable(
-                    DERIVATIVE_PRICE_FEED,
-                    PRIMITIVE_PRICE_FEED,
-                    token0,
-                    token1
-                ),
+                __poolTokenIsSupportable(token0, token1),
                 "addPoolTokens: Unsupported pool token"
             );
 
@@ -186,27 +174,20 @@ contract UniswapV2PoolPriceFeed is
     /// @dev Helper to determine if a pool token is supportable, based on whether price feeds are
     /// available for its underlying feeds. At least one of the underlying tokens must be
     /// a supported primitive asset, and the other must be a primitive or derivative.
-    function __poolTokenIsSupportable(
-        address _derivativePriceFeed,
-        address _primitivePriceFeed,
-        address _token0,
-        address _token1
-    ) private view returns (bool isSupportable_) {
-        IDerivativePriceFeed derivativePriceFeedContract = IDerivativePriceFeed(
-            _derivativePriceFeed
-        );
-        IPrimitivePriceFeed primitivePriceFeedContract = IPrimitivePriceFeed(_primitivePriceFeed);
+    function __poolTokenIsSupportable(address _token0, address _token1)
+        private
+        view
+        returns (bool isSupportable_)
+    {
+        IValueInterpreter valueInterpreterContract = IValueInterpreter(VALUE_INTERPRETER);
 
-        if (primitivePriceFeedContract.isSupportedAsset(_token0)) {
-            if (
-                primitivePriceFeedContract.isSupportedAsset(_token1) ||
-                derivativePriceFeedContract.isSupportedAsset(_token1)
-            ) {
+        if (valueInterpreterContract.isSupportedPrimitiveAsset(_token0)) {
+            if (valueInterpreterContract.isSupportedAsset(_token1)) {
                 return true;
             }
         } else if (
-            derivativePriceFeedContract.isSupportedAsset(_token0) &&
-            primitivePriceFeedContract.isSupportedAsset(_token1)
+            valueInterpreterContract.isSupportedDerivativeAsset(_token0) &&
+            valueInterpreterContract.isSupportedPrimitiveAsset(_token1)
         ) {
             return true;
         }
@@ -217,12 +198,6 @@ contract UniswapV2PoolPriceFeed is
     ///////////////////
     // STATE GETTERS //
     ///////////////////
-
-    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable value
-    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
-    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
-        return DERIVATIVE_PRICE_FEED;
-    }
 
     /// @notice Gets the `FACTORY` variable value
     /// @return factory_ The `FACTORY` variable value
@@ -251,12 +226,6 @@ contract UniswapV2PoolPriceFeed is
         returns (address token0_, address token1_)
     {
         return (poolTokenToInfo[_poolToken].token0, poolTokenToInfo[_poolToken].token1);
-    }
-
-    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable value
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
-    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
-        return PRIMITIVE_PRICE_FEED;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable value

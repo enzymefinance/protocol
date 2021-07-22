@@ -62,7 +62,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(93200));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(86000));
   });
 });
 
@@ -71,10 +71,6 @@ describe('constructor', () => {
     const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
 
     expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(fork.config.uniswap.factory);
-    expect(await uniswapV2PoolPriceFeed.getDerivativePriceFeed()).toMatchAddress(
-      fork.deployment.aggregatedDerivativePriceFeed,
-    );
-    expect(await uniswapV2PoolPriceFeed.getPrimitivePriceFeed()).toMatchAddress(fork.deployment.chainlinkPriceFeed);
     expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
 
     for (const poolToken of Object.values(fork.config.uniswap.pools)) {

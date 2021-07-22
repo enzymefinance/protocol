@@ -24,7 +24,6 @@ async function createNewFundOnPrevRelease({
   const prevFundDeployer = await createFundDeployer({
     deployer: fork.deployer,
     assetFinalityResolver: fork.deployment.assetFinalityResolver,
-    chainlinkPriceFeed: fork.deployment.chainlinkPriceFeed,
     externalPositionManager: fork.deployment.externalPositionManager,
     dispatcher: fork.deployment.dispatcher,
     feeManager: fork.deployment.feeManager,
@@ -80,7 +79,6 @@ describe('createMigrationRequest', () => {
     it('does not allow ownership handoff to not be incomplete', async () => {
       const {
         assetFinalityResolver,
-        chainlinkPriceFeed,
         externalPositionManager,
         dispatcher,
         feeManager,
@@ -92,7 +90,6 @@ describe('createMigrationRequest', () => {
       const nonLiveFundDeployer = await createFundDeployer({
         deployer: fork.deployer,
         assetFinalityResolver,
-        chainlinkPriceFeed,
         externalPositionManager,
         dispatcher,
         feeManager,

@@ -57,7 +57,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(95700));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(93000));
   });
 });
 
@@ -145,7 +145,6 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
-    const aggregatedDerivativePriceFeed = fork.deployment.aggregatedDerivativePriceFeed;
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     const valueInterpreter = fork.deployment.valueInterpreter;
 
@@ -156,7 +155,7 @@ describe('expected values', () => {
 
     // Add curveLPToken to price feed
     await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
-    await aggregatedDerivativePriceFeed.addDerivatives([curveLPToken], [curvePriceFeed]);
+    await valueInterpreter.addDerivatives([curveLPToken], [curvePriceFeed]);
 
     // Get value in terms of invariant proxy asset for easy comparison
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue

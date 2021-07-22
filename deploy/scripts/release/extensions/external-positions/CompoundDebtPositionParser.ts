@@ -9,11 +9,10 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
 
   const compoundPriceFeed = await get('CompoundPriceFeed');
-  const aggregatedDerivativePriceFeed = await get('AggregatedDerivativePriceFeed');
-  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
+  const valueInterpreter = await get('ValueInterpreter');
 
   await deploy('CompoundDebtPositionParser', {
-    args: [compoundPriceFeed.address, aggregatedDerivativePriceFeed.address, chainlinkPriceFeed.address],
+    args: [compoundPriceFeed.address, valueInterpreter.address],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -21,5 +20,5 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'CompoundDebtPositionParser'];
-fn.dependencies = ['Config', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed', 'CompoundPriceFeed'];
+fn.dependencies = ['CompoundPriceFeed', 'Config', 'ValueInterpreter'];
 export default fn;

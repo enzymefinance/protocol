@@ -1,8 +1,4 @@
-import {
-  AggregatedDerivativePriceFeed,
-  UniswapV2PoolPriceFeed,
-  UniswapV2PoolPriceFeedArgs,
-} from '@enzymefinance/protocol';
+import { UniswapV2PoolPriceFeed, UniswapV2PoolPriceFeedArgs, ValueInterpreter } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -16,18 +12,10 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
   const fundDeployer = await get('FundDeployer');
-  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
   const valueInterpreter = await get('ValueInterpreter');
-  const derivativePriceFeed = await get('AggregatedDerivativePriceFeed');
 
   const uniswapPoolPriceFeed = await deploy('UniswapV2PoolPriceFeed', {
-    args: [
-      fundDeployer.address,
-      derivativePriceFeed.address,
-      chainlinkPriceFeed.address,
-      valueInterpreter.address,
-      config.uniswap.factory,
-    ] as UniswapV2PoolPriceFeedArgs,
+    args: [fundDeployer.address, valueInterpreter.address, config.uniswap.factory] as UniswapV2PoolPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -41,8 +29,8 @@ const fn: DeployFunction = async function (hre) {
       const uniswapPoolPriceFeedInstance = new UniswapV2PoolPriceFeed(uniswapPoolPriceFeed.address, deployer);
       await uniswapPoolPriceFeedInstance.addPoolTokens(pools);
 
-      const derivativePriceFeedInstance = new AggregatedDerivativePriceFeed(derivativePriceFeed.address, deployer);
-      await derivativePriceFeedInstance.addDerivatives(
+      const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
+      await valueInterpreterInstance.addDerivatives(
         pools,
         pools.map(() => uniswapPoolPriceFeed.address),
       );
@@ -51,6 +39,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'UniswapV2PoolPriceFeed'];
-fn.dependencies = ['Config', 'FundDeployer', 'AggregatedDerivativePriceFeed', 'ChainlinkPriceFeed', 'ValueInterpreter'];
+fn.dependencies = ['Config', 'FundDeployer', 'ValueInterpreter'];
 
 export default fn;

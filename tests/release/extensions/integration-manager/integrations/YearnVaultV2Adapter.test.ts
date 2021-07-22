@@ -186,7 +186,7 @@ describe('lend', () => {
       preTxUnderlyingBalance.sub(outgoingUnderlyingAmount).add(preTxAdapterUnderlyingBalance),
     );
 
-    expect(lendReceipt).toCostAround('290413');
+    expect(lendReceipt).toCostAround('287348');
   });
 });
 

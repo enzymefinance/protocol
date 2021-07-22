@@ -12,7 +12,6 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
 
   const assetFinalityResolver = await get('AssetFinalityResolver');
-  const chainlinkPriceFeed = await get('ChainlinkPriceFeed');
   const dispatcher = await get('Dispatcher');
   const externalPositionManager = await get('ExternalPositionManager');
   const feeManager = await get('FeeManager');
@@ -32,7 +31,6 @@ const fn: DeployFunction = async function (hre) {
       feeManager.address,
       integrationManager.address,
       policyManager.address,
-      chainlinkPriceFeed.address,
       assetFinalityResolver.address,
       config.primitives.mln,
     ] as ComptrollerLibArgs,
@@ -51,7 +49,6 @@ const fn: DeployFunction = async function (hre) {
 fn.tags = ['Release', 'ComptrollerLib'];
 fn.dependencies = [
   'AssetFinalityResolver',
-  'ChainlinkPriceFeed',
   'Config',
   'Dispatcher',
   'ExternalPositionManager',

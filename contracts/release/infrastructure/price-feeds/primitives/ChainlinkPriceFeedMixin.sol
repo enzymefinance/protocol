@@ -15,13 +15,11 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../interfaces/IChainlinkAggregator.sol";
-import "../../../utils/FundDeployerOwnerMixin.sol";
-import "./IPrimitivePriceFeed.sol";
 
-/// @title ChainlinkPriceFeed Contract
+/// @title ChainlinkPriceFeedMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Chainlink oracles as price sources
-contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
+abstract contract ChainlinkPriceFeedMixin {
     using SafeMath for uint256;
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
@@ -34,12 +32,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
     );
 
     event PrimitiveRemoved(address indexed primitive);
-
-    event PrimitiveUpdated(
-        address indexed primitive,
-        address prevAggregator,
-        address nextAggregator
-    );
 
     event StalePrimitiveRemoved(address indexed primitive);
 
@@ -60,34 +52,34 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
     mapping(address => uint256) private primitiveToUnit;
 
-    constructor(
-        address _fundDeployer,
-        address _wethToken,
-        address _ethUsdAggregator,
-        address[] memory _primitives,
-        address[] memory _aggregators,
-        RateAsset[] memory _rateAssets
-    ) public FundDeployerOwnerMixin(_fundDeployer) {
+    constructor(address _wethToken) public {
         WETH_TOKEN = _wethToken;
         staleRateThreshold = 25 hours; // 24 hour heartbeat + 1hr buffer
-        __setEthUsdAggregator(_ethUsdAggregator);
-        if (_primitives.length > 0) {
-            __addPrimitives(_primitives, _aggregators, _rateAssets);
-        }
     }
 
-    // EXTERNAL FUNCTIONS
+    // PUBLIC FUNCTIONS
+
+    /// @notice Checks whether the current rate is considered stale for the specified aggregator
+    /// @param _aggregator The Chainlink aggregator of which to check staleness
+    /// @return rateIsStale_ True if the rate is considered stale
+    function rateIsStale(address _aggregator) public view returns (bool rateIsStale_) {
+        return
+            IChainlinkAggregator(_aggregator).latestTimestamp() <
+            block.timestamp.sub(staleRateThreshold);
+    }
+
+    // INTERNAL FUNCTIONS
 
     /// @notice Calculates the value of a base asset in terms of a quote asset (using a canonical rate)
     /// @param _baseAsset The base asset
     /// @param _baseAssetAmount The base asset amount to convert
     /// @param _quoteAsset The quote asset
     /// @return quoteAssetAmount_ The equivalent quote asset amount
-    function calcCanonicalValue(
+    function __calcCanonicalValue(
         address _baseAsset,
         uint256 _baseAssetAmount,
         address _quoteAsset
-    ) external view override returns (uint256 quoteAssetAmount_) {
+    ) internal view returns (uint256 quoteAssetAmount_) {
         // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
@@ -106,17 +98,19 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
             );
     }
 
-    /// @notice Checks whether an asset is a supported primitive of the price feed
-    /// @param _asset The asset to check
-    /// @return isSupported_ True if the asset is a supported primitive
-    function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
-        return _asset == WETH_TOKEN || primitiveToAggregatorInfo[_asset].aggregator != address(0);
-    }
+    /// @dev Helper to set the `ethUsdAggregator` value
+    function __setEthUsdAggregator(address _nextEthUsdAggregator) internal {
+        address prevEthUsdAggregator = ethUsdAggregator;
+        require(
+            _nextEthUsdAggregator != prevEthUsdAggregator,
+            "__setEthUsdAggregator: Value already set"
+        );
 
-    /// @notice Sets the `ehUsdAggregator` variable value
-    /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
-    function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyFundDeployerOwner {
-        __setEthUsdAggregator(_nextEthUsdAggregator);
+        __validateAggregator(_nextEthUsdAggregator);
+
+        ethUsdAggregator = _nextEthUsdAggregator;
+
+        emit EthUsdAggregatorSet(prevEthUsdAggregator, _nextEthUsdAggregator);
     }
 
     // PRIVATE FUNCTIONS
@@ -237,63 +231,16 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         return IChainlinkAggregator(aggregator).latestAnswer();
     }
 
-    /// @dev Helper to set the `ethUsdAggregator` value
-    function __setEthUsdAggregator(address _nextEthUsdAggregator) private {
-        address prevEthUsdAggregator = ethUsdAggregator;
-        require(
-            _nextEthUsdAggregator != prevEthUsdAggregator,
-            "__setEthUsdAggregator: Value already set"
-        );
-
-        __validateAggregator(_nextEthUsdAggregator);
-
-        ethUsdAggregator = _nextEthUsdAggregator;
-
-        emit EthUsdAggregatorSet(prevEthUsdAggregator, _nextEthUsdAggregator);
-    }
-
     /////////////////////////
     // PRIMITIVES REGISTRY //
     /////////////////////////
 
-    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
-    /// @param _primitives The primitives to add
-    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
-    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
-    function addPrimitives(
-        address[] calldata _primitives,
-        address[] calldata _aggregators,
-        RateAsset[] calldata _rateAssets
-    ) external onlyFundDeployerOwner {
-        require(_primitives.length > 0, "addPrimitives: _primitives cannot be empty");
-
-        __addPrimitives(_primitives, _aggregators, _rateAssets);
-    }
-
-    /// @notice Removes a list of primitives from the feed
-    /// @param _primitives The primitives to remove
-    function removePrimitives(address[] calldata _primitives) external onlyFundDeployerOwner {
-        require(_primitives.length > 0, "removePrimitives: _primitives cannot be empty");
-
-        for (uint256 i; i < _primitives.length; i++) {
-            require(
-                primitiveToAggregatorInfo[_primitives[i]].aggregator != address(0),
-                "removePrimitives: Primitive not yet added"
-            );
-
-            delete primitiveToAggregatorInfo[_primitives[i]];
-            delete primitiveToUnit[_primitives[i]];
-
-            emit PrimitiveRemoved(_primitives[i]);
-        }
-    }
+    // EXTERNAL FUNCTIONS
 
     /// @notice Removes stale primitives from the feed
     /// @param _primitives The stale primitives to remove
     /// @dev Callable by anybody
     function removeStalePrimitives(address[] calldata _primitives) external {
-        require(_primitives.length > 0, "removeStalePrimitives: _primitives cannot be empty");
-
         for (uint256 i; i < _primitives.length; i++) {
             address aggregatorAddress = primitiveToAggregatorInfo[_primitives[i]].aggregator;
             require(aggregatorAddress != address(0), "removeStalePrimitives: Invalid primitive");
@@ -306,64 +253,17 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         }
     }
 
-    /// @notice Sets the `staleRateThreshold` variable
-    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
-    function setStaleRateThreshold(uint256 _nextStaleRateThreshold)
-        external
-        onlyFundDeployerOwner
-    {
-        uint256 prevStaleRateThreshold = staleRateThreshold;
-        require(
-            _nextStaleRateThreshold != prevStaleRateThreshold,
-            "__setStaleRateThreshold: Value already set"
-        );
+    // INTERNAL FUNCTIONS
 
-        staleRateThreshold = _nextStaleRateThreshold;
-
-        emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
-    }
-
-    /// @notice Updates the aggregators for given primitives
-    /// @param _primitives The primitives to update
+    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
+    /// @param _primitives The primitives to add
     /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
-    function updatePrimitives(address[] calldata _primitives, address[] calldata _aggregators)
-        external
-        onlyFundDeployerOwner
-    {
-        require(_primitives.length > 0, "updatePrimitives: _primitives cannot be empty");
-        require(
-            _primitives.length == _aggregators.length,
-            "updatePrimitives: Unequal _primitives and _aggregators array lengths"
-        );
-
-        for (uint256 i; i < _primitives.length; i++) {
-            address prevAggregator = primitiveToAggregatorInfo[_primitives[i]].aggregator;
-            require(prevAggregator != address(0), "updatePrimitives: Primitive not yet added");
-            require(_aggregators[i] != prevAggregator, "updatePrimitives: Value already set");
-
-            __validateAggregator(_aggregators[i]);
-
-            primitiveToAggregatorInfo[_primitives[i]].aggregator = _aggregators[i];
-
-            emit PrimitiveUpdated(_primitives[i], prevAggregator, _aggregators[i]);
-        }
-    }
-
-    /// @notice Checks whether the current rate is considered stale for the specified aggregator
-    /// @param _aggregator The Chainlink aggregator of which to check staleness
-    /// @return rateIsStale_ True if the rate is considered stale
-    function rateIsStale(address _aggregator) public view returns (bool rateIsStale_) {
-        return
-            IChainlinkAggregator(_aggregator).latestTimestamp() <
-            block.timestamp.sub(staleRateThreshold);
-    }
-
-    /// @dev Helper to add primitives to the feed
+    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
     function __addPrimitives(
-        address[] memory _primitives,
-        address[] memory _aggregators,
-        RateAsset[] memory _rateAssets
-    ) private {
+        address[] calldata _primitives,
+        address[] calldata _aggregators,
+        RateAsset[] calldata _rateAssets
+    ) internal {
         require(
             _primitives.length == _aggregators.length,
             "__addPrimitives: Unequal _primitives and _aggregators array lengths"
@@ -373,7 +273,7 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
             "__addPrimitives: Unequal _primitives and _rateAssets array lengths"
         );
 
-        for (uint256 i = 0; i < _primitives.length; i++) {
+        for (uint256 i; i < _primitives.length; i++) {
             require(
                 primitiveToAggregatorInfo[_primitives[i]].aggregator == address(0),
                 "__addPrimitives: Value already set"
@@ -394,10 +294,40 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         }
     }
 
+    /// @notice Removes a list of primitives from the feed
+    /// @param _primitives The primitives to remove
+    function __removePrimitives(address[] calldata _primitives) internal {
+        for (uint256 i; i < _primitives.length; i++) {
+            require(
+                primitiveToAggregatorInfo[_primitives[i]].aggregator != address(0),
+                "removePrimitives: Primitive not yet added"
+            );
+
+            delete primitiveToAggregatorInfo[_primitives[i]];
+            delete primitiveToUnit[_primitives[i]];
+
+            emit PrimitiveRemoved(_primitives[i]);
+        }
+    }
+
+    /// @notice Sets the `staleRateThreshold` variable
+    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
+    function __setStaleRateThreshold(uint256 _nextStaleRateThreshold) internal {
+        uint256 prevStaleRateThreshold = staleRateThreshold;
+        require(
+            _nextStaleRateThreshold != prevStaleRateThreshold,
+            "__setStaleRateThreshold: Value already set"
+        );
+
+        staleRateThreshold = _nextStaleRateThreshold;
+
+        emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
+    }
+
+    // PRIVATE FUNCTIONS
+
     /// @dev Helper to validate an aggregator by checking its return values for the expected interface
     function __validateAggregator(address _aggregator) private view {
-        require(_aggregator != address(0), "__validateAggregator: Empty _aggregator");
-
         require(
             IChainlinkAggregator(_aggregator).latestAnswer() > 0,
             "__validateAggregator: No rate detected"
@@ -432,12 +362,6 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         return staleRateThreshold;
     }
 
-    /// @notice Gets the `WETH_TOKEN` variable value
-    /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() external view returns (address wethToken_) {
-        return WETH_TOKEN;
-    }
-
     /// @notice Gets the rateAsset variable value for a primitive
     /// @return rateAsset_ The rateAsset variable value
     /// @dev This isn't strictly necessary as WETH_TOKEN will be undefined and thus
@@ -463,5 +387,24 @@ contract ChainlinkPriceFeed is IPrimitivePriceFeed, FundDeployerOwnerMixin {
         }
 
         return primitiveToUnit[_primitive];
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets the aggregator for a primitive
+    /// @param _primitive The primitive asset for which to get the aggregator value
+    /// @return aggregator_ The aggregator address
+    function getAggregatorForPrimitive(address _primitive)
+        public
+        view
+        returns (address aggregator_)
+    {
+        return primitiveToAggregatorInfo[_primitive].aggregator;
+    }
+
+    /// @notice Gets the `WETH_TOKEN` variable value
+    /// @return wethToken_ The `WETH_TOKEN` variable value
+    function getWethToken() public view returns (address wethToken_) {
+        return WETH_TOKEN;
     }
 }

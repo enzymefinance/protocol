@@ -10,11 +10,13 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../price-feeds/derivatives/IAggregatedDerivativePriceFeed.sol";
+import "../../utils/FundDeployerOwnerMixin.sol";
+import "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../price-feeds/primitives/IPrimitivePriceFeed.sol";
+import "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";
 import "./IValueInterpreter.sol";
 
 /// @title ValueInterpreter Contract
@@ -25,16 +27,19 @@ import "./IValueInterpreter.sol";
 /// is immutable in this contract and only has one type of value. Including the "live" versions of
 /// functions only serves as a placeholder for infrastructural components and plugins (e.g., policies)
 /// to explicitly define the types of values that they should (and will) be using in a future release.
-contract ValueInterpreter is IValueInterpreter {
+contract ValueInterpreter is
+    IValueInterpreter,
+    FundDeployerOwnerMixin,
+    AggregatedDerivativePriceFeedMixin,
+    ChainlinkPriceFeedMixin
+{
     using SafeMath for uint256;
 
-    address private immutable AGGREGATED_DERIVATIVE_PRICE_FEED;
-    address private immutable PRIMITIVE_PRICE_FEED;
-
-    constructor(address _primitivePriceFeed, address _aggregatedDerivativePriceFeed) public {
-        AGGREGATED_DERIVATIVE_PRICE_FEED = _aggregatedDerivativePriceFeed;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
-    }
+    constructor(address _fundDeployer, address _wethToken)
+        public
+        FundDeployerOwnerMixin(_fundDeployer)
+        ChainlinkPriceFeedMixin(_wethToken)
+    {}
 
     // EXTERNAL FUNCTIONS
 
@@ -55,7 +60,7 @@ contract ValueInterpreter is IValueInterpreter {
             "calcCanonicalAssetsTotalValue: Arrays unequal lengths"
         );
         require(
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_quoteAsset),
+            isSupportedPrimitiveAsset(_quoteAsset),
             "calcCanonicalAssetsTotalValue: Unsupported _quoteAsset"
         );
 
@@ -66,6 +71,8 @@ contract ValueInterpreter is IValueInterpreter {
 
         return value_;
     }
+
+    // PUBLIC FUNCTIONS
 
     /// @notice Calculates the value of a given amount of one asset in terms of another asset
     /// @param _baseAsset The asset from which to convert
@@ -84,11 +91,18 @@ contract ValueInterpreter is IValueInterpreter {
         }
 
         require(
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_quoteAsset),
+            isSupportedPrimitiveAsset(_quoteAsset),
             "calcCanonicalAssetValue: Unsupported _quoteAsset"
         );
 
         return __calcAssetValue(_baseAsset, _amount, _quoteAsset);
+    }
+
+    /// @notice Checks whether an asset is a supported asset
+    /// @param _asset The asset to check
+    /// @return isSupported_ True if the asset is a supported asset
+    function isSupportedAsset(address _asset) public view override returns (bool isSupported_) {
+        return isSupportedPrimitiveAsset(_asset) || isSupportedDerivativeAsset(_asset);
     }
 
     // PRIVATE FUNCTIONS
@@ -105,20 +119,12 @@ contract ValueInterpreter is IValueInterpreter {
         }
 
         // Handle case that asset is a primitive
-        if (IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_baseAsset)) {
-            return
-                IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).calcCanonicalValue(
-                    _baseAsset,
-                    _amount,
-                    _quoteAsset
-                );
+        if (isSupportedPrimitiveAsset(_baseAsset)) {
+            return __calcCanonicalValue(_baseAsset, _amount, _quoteAsset);
         }
 
         // Handle case that asset is a derivative
-        address derivativePriceFeed = IAggregatedDerivativePriceFeed(
-            AGGREGATED_DERIVATIVE_PRICE_FEED
-        )
-            .getPriceFeedForDerivative(_baseAsset);
+        address derivativePriceFeed = getPriceFeedForDerivative(_baseAsset);
         if (derivativePriceFeed != address(0)) {
             return __calcDerivativeValue(derivativePriceFeed, _baseAsset, _amount, _quoteAsset);
         }
@@ -157,23 +163,112 @@ contract ValueInterpreter is IValueInterpreter {
         }
     }
 
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
+    ////////////////////////////
+    // PRIMITIVES (CHAINLINK) //
+    ////////////////////////////
 
-    /// @notice Gets the `AGGREGATED_DERIVATIVE_PRICE_FEED` variable
-    /// @return aggregatedDerivativePriceFeed_ The `AGGREGATED_DERIVATIVE_PRICE_FEED` variable value
-    function getAggregatedDerivativePriceFeed()
-        external
-        view
-        returns (address aggregatedDerivativePriceFeed_)
-    {
-        return AGGREGATED_DERIVATIVE_PRICE_FEED;
+    /// @notice Adds a list of primitives with the given aggregator and rateAsset values
+    /// @param _primitives The primitives to add
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
+    function addPrimitives(
+        address[] calldata _primitives,
+        address[] calldata _aggregators,
+        RateAsset[] calldata _rateAssets
+    ) external onlyFundDeployerOwner {
+        __addPrimitives(_primitives, _aggregators, _rateAssets);
     }
 
-    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
-    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
-        return PRIMITIVE_PRICE_FEED;
+    /// @notice Removes a list of primitives from the feed
+    /// @param _primitives The primitives to remove
+    function removePrimitives(address[] calldata _primitives) external onlyFundDeployerOwner {
+        __removePrimitives(_primitives);
+    }
+
+    /// @notice Sets the `ehUsdAggregator` variable value
+    /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
+    function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyFundDeployerOwner {
+        __setEthUsdAggregator(_nextEthUsdAggregator);
+    }
+
+    /// @notice Sets the `staleRateThreshold` variable
+    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
+    function setStaleRateThreshold(uint256 _nextStaleRateThreshold)
+        external
+        onlyFundDeployerOwner
+    {
+        __setStaleRateThreshold(_nextStaleRateThreshold);
+    }
+
+    /// @notice Updates a list of primitives with the given aggregator and rateAsset values
+    /// @param _primitives The primitives to update
+    /// @param _aggregators The ordered aggregators corresponding to the list of _primitives
+    /// @param _rateAssets The ordered rate assets corresponding to the list of _primitives
+    function updatePrimitives(
+        address[] calldata _primitives,
+        address[] calldata _aggregators,
+        RateAsset[] calldata _rateAssets
+    ) external onlyFundDeployerOwner {
+        __removePrimitives(_primitives);
+        __addPrimitives(_primitives, _aggregators, _rateAssets);
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Checks whether an asset is a supported primitive
+    /// @param _asset The asset to check
+    /// @return isSupported_ True if the asset is a supported primitive
+    function isSupportedPrimitiveAsset(address _asset)
+        public
+        view
+        override
+        returns (bool isSupported_)
+    {
+        return _asset == getWethToken() || getAggregatorForPrimitive(_asset) != address(0);
+    }
+
+    ////////////////////////////////////
+    // DERIVATIVE PRICE FEED REGISTRY //
+    ////////////////////////////////////
+
+    /// @notice Adds a list of derivatives with the given price feed values
+    /// @param _derivatives The derivatives to add
+    /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
+    function addDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
+        external
+        onlyFundDeployerOwner
+    {
+        __addDerivatives(_derivatives, _priceFeeds);
+    }
+
+    /// @notice Removes a list of derivatives
+    /// @param _derivatives The derivatives to remove
+    function removeDerivatives(address[] calldata _derivatives) external onlyFundDeployerOwner {
+        __removeDerivatives(_derivatives);
+    }
+
+    /// @notice Updates a list of derivatives with the given price feed values
+    /// @param _derivatives The derivatives to update
+    /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
+    function updateDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
+        external
+        onlyFundDeployerOwner
+    {
+        __removeDerivatives(_derivatives);
+        __addDerivatives(_derivatives, _priceFeeds);
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Checks whether an asset is a supported derivative
+    /// @param _asset The asset to check
+    /// @return isSupported_ True if the asset is a supported derivative
+    function isSupportedDerivativeAsset(address _asset)
+        public
+        view
+        override
+        returns (bool isSupported_)
+    {
+        return getPriceFeedForDerivative(_asset) != address(0);
     }
 }

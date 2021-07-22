@@ -31,14 +31,9 @@ export * from './codegen/FeeManager';
 export * from './codegen/IntegrationManager';
 export * from './codegen/PolicyManager';
 
-// Primitive price feeds
-export * from './codegen/IPrimitivePriceFeed';
-export * from './codegen/ChainlinkPriceFeed';
-
 // Derivative price feeds
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
-export * from './codegen/AggregatedDerivativePriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/IdlePriceFeed';

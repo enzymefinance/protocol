@@ -308,7 +308,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    expect(lendReceipt).toCostAround('837478');
+    expect(lendReceipt).toCostAround('834401');
   });
 });
 

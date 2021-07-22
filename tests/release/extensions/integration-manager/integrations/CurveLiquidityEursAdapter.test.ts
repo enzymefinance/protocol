@@ -770,7 +770,7 @@ describe('redeem', () => {
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
 
     // Add eurs as a supported asset
-    await fork.deployment.chainlinkPriceFeed.addPrimitives(
+    await fork.deployment.valueInterpreter.addPrimitives(
       [fork.config.unsupportedAssets.eurs],
       [eurUsdAggregator],
       [ChainlinkRateAsset.USD],
@@ -849,7 +849,7 @@ describe('redeem', () => {
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
 
     // Add eurs as a supported asset
-    await fork.deployment.chainlinkPriceFeed.addPrimitives(
+    await fork.deployment.valueInterpreter.addPrimitives(
       [fork.config.unsupportedAssets.eurs],
       [eurUsdAggregator],
       [ChainlinkRateAsset.USD],
@@ -989,7 +989,7 @@ describe('unstakeAndRedeem', () => {
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
 
     // Add eurs as a supported asset
-    await fork.deployment.chainlinkPriceFeed.addPrimitives(
+    await fork.deployment.valueInterpreter.addPrimitives(
       [fork.config.unsupportedAssets.eurs],
       [eurUsdAggregator],
       [ChainlinkRateAsset.USD],
@@ -1070,7 +1070,7 @@ describe('unstakeAndRedeem', () => {
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
 
     // Add eurs as a supported asset
-    await fork.deployment.chainlinkPriceFeed.addPrimitives(
+    await fork.deployment.valueInterpreter.addPrimitives(
       [fork.config.unsupportedAssets.eurs],
       [eurUsdAggregator],
       [ChainlinkRateAsset.USD],

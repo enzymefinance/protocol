@@ -56,26 +56,12 @@ async function snapshot() {
 describe('constructor', () => {
   it('sets state vars', async () => {
     const {
-      deployment: {
-        aggregatedDerivativePriceFeed,
-        chainlinkPriceFeed,
-        integrationManager,
-        fundDeployer,
-        policyManager,
-      },
+      deployment: { integrationManager, fundDeployer, policyManager, valueInterpreter },
     } = await provider.snapshot(snapshot);
 
-    const getDerivativePriceFeedCall = await integrationManager.getDerivativePriceFeed();
-    expect(getDerivativePriceFeedCall).toMatchAddress(aggregatedDerivativePriceFeed);
-
-    const getFundDeployerCall = await integrationManager.getFundDeployer();
-    expect(getFundDeployerCall).toMatchAddress(fundDeployer);
-
-    const getPolicyManagerCall = await integrationManager.getPolicyManager();
-    expect(getPolicyManagerCall).toMatchAddress(policyManager);
-
-    const getPrimitivePriceFeedCall = await integrationManager.getPrimitivePriceFeed();
-    expect(getPrimitivePriceFeedCall).toMatchAddress(chainlinkPriceFeed);
+    expect(await integrationManager.getFundDeployer()).toMatchAddress(fundDeployer);
+    expect(await integrationManager.getPolicyManager()).toMatchAddress(policyManager);
+    expect(await integrationManager.getValueInterpreter()).toMatchAddress(valueInterpreter);
   });
 });
 

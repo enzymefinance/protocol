@@ -38,12 +38,11 @@ async function snapshot() {
     deployment.dispatcher,
     randomAddress(), // ProtocolFeeReserve
     mockFundDeployer,
-    randomAddress(), // ValueInterpreter
+    deployment.valueInterpreter,
     mockExternalPositionManager,
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,
-    deployment.chainlinkPriceFeed,
     randomAddress(), // AssetFinalityResolver
     config.primitives.mln,
   );

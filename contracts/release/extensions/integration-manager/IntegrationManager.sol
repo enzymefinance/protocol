@@ -14,8 +14,7 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
+import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../../utils/AssetHelpers.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
@@ -54,19 +53,16 @@ contract IntegrationManager is
         uint256[] spendAssetAmounts
     );
 
-    address private immutable DERIVATIVE_PRICE_FEED;
     address private immutable POLICY_MANAGER;
-    address private immutable PRIMITIVE_PRICE_FEED;
+    address private immutable VALUE_INTERPRETER;
 
     constructor(
         address _fundDeployer,
         address _policyManager,
-        address _derivativePriceFeed,
-        address _primitivePriceFeed
+        address _valueInterpreter
     ) public FundDeployerOwnerMixin(_fundDeployer) {
-        DERIVATIVE_PRICE_FEED = _derivativePriceFeed;
         POLICY_MANAGER = _policyManager;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
+        VALUE_INTERPRETER = _valueInterpreter;
     }
 
     /////////////
@@ -132,7 +128,10 @@ contract IntegrationManager is
         );
 
         for (uint256 i; i < assets.length; i++) {
-            require(__isSupportedAsset(assets[i]), "__addTrackedAssetsToVault: Unsupported asset");
+            require(
+                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(assets[i]),
+                "__addTrackedAssetsToVault: Unsupported asset"
+            );
 
             __addTrackedAsset(_comptrollerProxy, assets[i]);
         }
@@ -317,13 +316,6 @@ contract IntegrationManager is
         return ERC20(_asset).balanceOf(_vaultProxy);
     }
 
-    /// @dev Helper to check if an asset is supported
-    function __isSupportedAsset(address _asset) private view returns (bool isSupported_) {
-        return
-            IPrimitivePriceFeed(PRIMITIVE_PRICE_FEED).isSupportedAsset(_asset) ||
-            IDerivativePriceFeed(DERIVATIVE_PRICE_FEED).isSupportedAsset(_asset);
-    }
-
     /// @dev Helper for the internal actions to take prior to executing CoI
     function __preProcessCoI(
         address _comptrollerProxy,
@@ -375,7 +367,7 @@ contract IntegrationManager is
         preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i; i < incomingAssets_.length; i++) {
             require(
-                __isSupportedAsset(incomingAssets_[i]),
+                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(incomingAssets_[i]),
                 "__preProcessCoI: Non-receivable incoming asset"
             );
 
@@ -479,21 +471,15 @@ contract IntegrationManager is
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `DERIVATIVE_PRICE_FEED` variable
-    /// @return derivativePriceFeed_ The `DERIVATIVE_PRICE_FEED` variable value
-    function getDerivativePriceFeed() external view returns (address derivativePriceFeed_) {
-        return DERIVATIVE_PRICE_FEED;
-    }
-
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() external view returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 
-    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
-    function getPrimitivePriceFeed() external view returns (address primitivePriceFeed_) {
-        return PRIMITIVE_PRICE_FEED;
+    /// @notice Gets the `VALUE_INTERPRETER` variable
+    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
+    function getValueInterpreter() external view returns (address valueInterpreter_) {
+        return VALUE_INTERPRETER;
     }
 }

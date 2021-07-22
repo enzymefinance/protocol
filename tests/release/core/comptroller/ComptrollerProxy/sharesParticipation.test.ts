@@ -57,7 +57,7 @@ async function snapshot() {
   });
 
   const reentrancyToken = await MockReentrancyToken.deploy(deployer);
-  await deployment.chainlinkPriceFeed.addPrimitives(
+  await deployment.valueInterpreter.addPrimitives(
     [reentrancyToken],
     [config.chainlink.aggregators.dai[0]],
     [config.chainlink.aggregators.dai[1]],
@@ -149,7 +149,6 @@ describe('buyShares', () => {
     const nextFundDeployer = await createFundDeployer({
       deployer,
       assetFinalityResolver: deployment.assetFinalityResolver,
-      chainlinkPriceFeed: deployment.chainlinkPriceFeed,
       dispatcher: deployment.dispatcher,
       feeManager: deployment.feeManager,
       integrationManager: deployment.integrationManager,
@@ -339,7 +338,6 @@ describe('buyShares', () => {
     const nextFundDeployer = await createFundDeployer({
       deployer,
       assetFinalityResolver: deployment.assetFinalityResolver,
-      chainlinkPriceFeed: deployment.chainlinkPriceFeed,
       dispatcher: deployment.dispatcher,
       feeManager: deployment.feeManager,
       integrationManager: deployment.integrationManager,
@@ -1350,7 +1348,6 @@ describe('sharesActionTimelock', () => {
       deployer,
       deployment: {
         assetFinalityResolver,
-        chainlinkPriceFeed,
         externalPositionManager,
         dispatcher,
         feeManager,
@@ -1397,7 +1394,6 @@ describe('sharesActionTimelock', () => {
     const nextFundDeployer = await createFundDeployer({
       deployer,
       assetFinalityResolver,
-      chainlinkPriceFeed,
       externalPositionManager,
       dispatcher,
       feeManager,

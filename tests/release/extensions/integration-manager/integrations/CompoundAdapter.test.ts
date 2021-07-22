@@ -277,7 +277,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostAround('431042');
+    expect(lendReceipt).toCostAround('427977');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -302,7 +302,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostAround('378012');
+    expect(lendReceipt).toCostAround('374947');
   });
 });
 

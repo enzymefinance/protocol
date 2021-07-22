@@ -23,7 +23,6 @@ describe('unhappy paths', () => {
   it('does not allow ownership handoff to not be incomplete', async () => {
     const {
       assetFinalityResolver,
-      chainlinkPriceFeed,
       externalPositionManager,
       dispatcher,
       feeManager,
@@ -35,7 +34,6 @@ describe('unhappy paths', () => {
     const nonLiveFundDeployer = await createFundDeployer({
       deployer: fork.deployer,
       assetFinalityResolver,
-      chainlinkPriceFeed,
       externalPositionManager,
       dispatcher,
       feeManager,

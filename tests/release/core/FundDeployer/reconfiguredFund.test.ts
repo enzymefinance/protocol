@@ -300,7 +300,6 @@ describe('executeReconfiguration', () => {
       const nextFundDeployer = await createFundDeployer({
         deployer: fork.deployer,
         assetFinalityResolver: fork.deployment.assetFinalityResolver,
-        chainlinkPriceFeed: fork.deployment.chainlinkPriceFeed,
         externalPositionManager: fork.deployment.externalPositionManager,
         dispatcher: fork.deployment.dispatcher,
         feeManager: fork.deployment.feeManager,

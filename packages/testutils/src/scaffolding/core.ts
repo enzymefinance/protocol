@@ -1,6 +1,5 @@
 import {
   AssetFinalityResolver,
-  ChainlinkPriceFeed,
   ComptrollerLib,
   ExternalPositionManager,
   Dispatcher,
@@ -19,7 +18,6 @@ import { Signer } from 'ethers';
 export async function createFundDeployer({
   deployer,
   assetFinalityResolver,
-  chainlinkPriceFeed,
   externalPositionManager,
   dispatcher,
   feeManager,
@@ -32,7 +30,6 @@ export async function createFundDeployer({
 }: {
   deployer: Signer;
   assetFinalityResolver: AssetFinalityResolver;
-  chainlinkPriceFeed: ChainlinkPriceFeed;
   externalPositionManager: ExternalPositionManager;
   dispatcher: Dispatcher;
   feeManager: FeeManager;
@@ -58,7 +55,6 @@ export async function createFundDeployer({
     feeManager,
     integrationManager,
     policyManager,
-    chainlinkPriceFeed,
     assetFinalityResolver,
     await vaultLib.getMlnToken(),
   );

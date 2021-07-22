@@ -81,7 +81,6 @@ describe('activateForFund', () => {
       deployment: {
         assetFinalityResolver,
         fundDeployer,
-        chainlinkPriceFeed,
         externalPositionManager,
         dispatcher,
         feeManager,
@@ -108,7 +107,6 @@ describe('activateForFund', () => {
     const nextFundDeployer = await createFundDeployer({
       deployer,
       assetFinalityResolver,
-      chainlinkPriceFeed,
       externalPositionManager,
       dispatcher,
       feeManager,

@@ -20,7 +20,6 @@ import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
 import "../../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
-import "../../../infrastructure/price-feeds/primitives/IPrimitivePriceFeed.sol";
 import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../../fund-deployer/IFundDeployer.sol";
@@ -85,7 +84,6 @@ contract ComptrollerLib is IComptroller {
     address private immutable INTEGRATION_MANAGER;
     address private immutable MLN_TOKEN;
     address private immutable POLICY_MANAGER;
-    address private immutable PRIMITIVE_PRICE_FEED;
     address private immutable PROTOCOL_FEE_RESERVE;
     address private immutable VALUE_INTERPRETER;
 
@@ -181,7 +179,6 @@ contract ComptrollerLib is IComptroller {
         address _feeManager,
         address _integrationManager,
         address _policyManager,
-        address _primitivePriceFeed,
         address _assetFinalityResolver,
         address _mlnToken
     ) public {
@@ -192,7 +189,6 @@ contract ComptrollerLib is IComptroller {
         FUND_DEPLOYER = _fundDeployer;
         INTEGRATION_MANAGER = _integrationManager;
         MLN_TOKEN = _mlnToken;
-        PRIMITIVE_PRICE_FEED = _primitivePriceFeed;
         POLICY_MANAGER = _policyManager;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         VALUE_INTERPRETER = _valueInterpreter;
@@ -409,7 +405,7 @@ contract ComptrollerLib is IComptroller {
     function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
         require(getDenominationAsset() == address(0), "init: Already initialized");
         require(
-            IPrimitivePriceFeed(getPrimitivePriceFeed()).isSupportedAsset(_denominationAsset),
+            IValueInterpreter(getValueInterpreter()).isSupportedPrimitiveAsset(_denominationAsset),
             "init: Bad denomination asset"
         );
 
@@ -1207,12 +1203,6 @@ contract ComptrollerLib is IComptroller {
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() public view returns (address policyManager_) {
         return POLICY_MANAGER;
-    }
-
-    /// @notice Gets the `PRIMITIVE_PRICE_FEED` variable
-    /// @return primitivePriceFeed_ The `PRIMITIVE_PRICE_FEED` variable value
-    function getPrimitivePriceFeed() public view returns (address primitivePriceFeed_) {
-        return PRIMITIVE_PRICE_FEED;
     }
 
     /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable

@@ -19,7 +19,6 @@ describe('constructor', () => {
     expect(await comptrollerLib.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
     expect(await comptrollerLib.getMlnToken()).toMatchAddress(fork.config.primitives.mln);
     expect(await comptrollerLib.getPolicyManager()).toMatchAddress(fork.deployment.policyManager);
-    expect(await comptrollerLib.getPrimitivePriceFeed()).toMatchAddress(fork.deployment.chainlinkPriceFeed);
     expect(await comptrollerLib.getProtocolFeeReserve()).toMatchAddress(fork.deployment.protocolFeeReserveProxy);
     expect(await comptrollerLib.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
   });
@@ -35,7 +34,6 @@ describe('destruct calls', () => {
       randomAddress(),
       randomAddress(),
       mockFundDeployer,
-      randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),
