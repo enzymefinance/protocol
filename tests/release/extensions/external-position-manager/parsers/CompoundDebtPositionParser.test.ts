@@ -191,10 +191,6 @@ describe('parseAssetsForAction', () => {
 describe('parseInitArgs', () => {
   it('return expected result', async () => {
     const compoundDebtPositionParser = fork.deployment.compoundDebtPositionParser;
-    const mockVault = randomAddress();
-    const expectedResult = encodeArgs(['address'], [mockVault]);
-
-    const result = await compoundDebtPositionParser.parseInitArgs.args(mockVault, '0x00').call();
-    expect(result).toEqual(expectedResult);
+    expect(await compoundDebtPositionParser.parseInitArgs.args(randomAddress(), '0x00').call()).toEqual('0x');
   });
 });

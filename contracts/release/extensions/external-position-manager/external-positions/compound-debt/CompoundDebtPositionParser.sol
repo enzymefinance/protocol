@@ -68,15 +68,14 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
     }
 
-    /// @notice Parse and validate input argumens to be used at the `init` function
-    /// @param _vaultProxy Address of the VaultProxy that owns the ExternalPosition
-    /// @return initArgs_ Arguments that will be passed as an argument to the ExternalPosition's `init` function
-    function parseInitArgs(address _vaultProxy, bytes memory)
+    /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
+    /// @return initArgs_ Parsed and encoded args for ExternalPositionProxy.init()
+    function parseInitArgs(address, bytes memory)
         external
         override
         returns (bytes memory initArgs_)
     {
-        return abi.encode(_vaultProxy);
+        return "";
     }
 
     // PRIVATE FUNCTIONS
@@ -126,7 +125,6 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
         );
 
         for (uint256 i; i < _cTokens.length; i++) {
-            // No need to assert from an address(0) tokenFromCToken since assets[i] cannot be '0' at this point.
             require(
                 CompoundPriceFeed(getCompoundPriceFeed()).getTokenFromCToken(_cTokens[i]) ==
                     _tokens[i],

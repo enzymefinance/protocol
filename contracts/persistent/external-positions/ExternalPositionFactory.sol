@@ -36,8 +36,8 @@ contract ExternalPositionFactory {
 
     uint256 private positionTypeCounter;
     mapping(uint256 => string) private positionTypeIdToLabel;
-    mapping(address => bool) private accountToIsPositionDeployer;
     mapping(address => bool) private accountToIsExternalPositionProxy;
+    mapping(address => bool) private accountToIsPositionDeployer;
 
     modifier onlyDispatcherOwner {
         require(
@@ -68,7 +68,7 @@ contract ExternalPositionFactory {
         );
 
         externalPositionProxy_ = address(
-            new ExternalPositionProxy(_constructData, _vaultProxy, _typeId, _constructLib)
+            new ExternalPositionProxy(_vaultProxy, _typeId, _constructLib, _constructData)
         );
 
         accountToIsExternalPositionProxy[externalPositionProxy_] = true;
@@ -135,7 +135,7 @@ contract ExternalPositionFactory {
         for (uint256 i; i < _accounts.length; i++) {
             require(
                 isPositionDeployer(_accounts[i]),
-                "addPositionDeployers: Account is not a position deployer"
+                "removePositionDeployers: Account is not a position deployer"
             );
 
             accountToIsPositionDeployer[_accounts[i]] = false;
@@ -161,6 +161,17 @@ contract ExternalPositionFactory {
         return positionTypeIdToLabel[_typeId];
     }
 
+    /// @notice Checks if an account is an external position proxy
+    /// @param _account The account to check
+    /// @return isExternalPositionProxy_ True if the account is an externalPositionProxy
+    function isExternalPositionProxy(address _account)
+        external
+        view
+        returns (bool isExternalPositionProxy_)
+    {
+        return accountToIsExternalPositionProxy[_account];
+    }
+
     // PUBLIC FUNCTIONS
 
     /// @notice Gets the `DISPATCHER` variable
@@ -173,17 +184,6 @@ contract ExternalPositionFactory {
     /// @return positionTypeCounter_ The `positionTypeCounter` variable value
     function getPositionTypeCounter() public view returns (uint256 positionTypeCounter_) {
         return positionTypeCounter;
-    }
-
-    /// @notice Checks if an account is an external position proxy
-    /// @param _account The account to check
-    /// @return isExternalPositionProxy_ True if the account is an externalPositionProxy
-    function isExternalPositionProxy(address _account)
-        external
-        view
-        returns (bool isExternalPositionProxy_)
-    {
-        return accountToIsExternalPositionProxy[_account];
     }
 
     /// @notice Checks if an account is a position deployer

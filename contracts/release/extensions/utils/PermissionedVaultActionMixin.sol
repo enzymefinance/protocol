@@ -18,7 +18,7 @@ import "../../core/fund/vault/IVault.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for extensions that can make permissioned vault calls
 abstract contract PermissionedVaultActionMixin {
-    /// @notice Adds a new external position
+    /// @notice Adds an external position to active external positions
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _externalPosition The external position to be added
     function __addExternalPosition(address _comptrollerProxy, address _externalPosition) internal {
@@ -95,7 +95,7 @@ abstract contract PermissionedVaultActionMixin {
         );
     }
 
-    /// @notice Removes a external position from the vaultProxy
+    /// @notice Removes an external position from the vaultProxy
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _externalPosition The ExternalPosition to remove
     function __removeExternalPosition(address _comptrollerProxy, address _externalPosition)

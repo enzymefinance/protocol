@@ -496,6 +496,11 @@ contract VaultLib is VaultLibBase2, IVault {
         uint256[] memory _amountsToTransfer,
         address[] memory _assetsToReceive
     ) private {
+        require(
+            isActiveExternalPosition(_externalPosition),
+            "__callOnExternalPosition: Not an active external position"
+        );
+
         for (uint256 i; i < _assetsToTransfer.length; i++) {
             __withdrawAssetTo(_assetsToTransfer[i], _externalPosition, _amountsToTransfer[i]);
         }
@@ -632,13 +637,13 @@ contract VaultLib is VaultLibBase2, IVault {
         return nominatedOwner;
     }
 
-    /// @notice Gets the `externalPositions` variable
-    /// @return externalPositions_ The `externalPositions` variable value
+    /// @notice Gets the `activeExternalPositions` variable
+    /// @return activeExternalPositions_ The `activeExternalPositions` variable value
     function getActiveExternalPositions()
         external
         view
         override
-        returns (address[] memory externalPositions_)
+        returns (address[] memory activeExternalPositions_)
     {
         return activeExternalPositions;
     }
@@ -649,7 +654,7 @@ contract VaultLib is VaultLibBase2, IVault {
         return trackedAssets;
     }
 
-    /// @notice Check whether a external position is active on the vault
+    /// @notice Check whether an external position is active on the vault
     /// @param _externalPosition The externalPosition to check
     /// @return isActiveExternalPosition_ True if the address is an active external position on the vault
     function isActiveExternalPosition(address _externalPosition)

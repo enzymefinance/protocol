@@ -37,10 +37,11 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     }
 
     /// @notice Initializes the external position
+    /// @dev Nothing to initialize for this contract
     function init(bytes memory) external override {}
 
     /// @notice Receives and executes a call from the Vault
-    /// @param _actionData Encoded data to execute the action.
+    /// @param _actionData Encoded data to execute the action
     function receiveCallFromVault(bytes memory _actionData) external override {
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
@@ -63,26 +64,21 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
     /// @dev Adds assets as collateral
     function __addCollateralAssets(address[] memory _assets, uint256[] memory _amounts) private {
-        uint256[] memory enterMarketErrorCodes = ICompoundComptroller(COMPOUND_COMPTROLLER)
+        uint256[] memory enterMarketErrorCodes = ICompoundComptroller(getCompoundComptroller())
             .enterMarkets(_assets);
 
         for (uint256 i; i < _assets.length; i++) {
-            // Include asset in the local collateral list if not included
-            if (!assetToIsCollateral[_assets[i]]) {
-                assetToIsCollateral[_assets[i]] = true;
-                collateralAssets.push(_assets[i]);
-            }
-
-            // Include assets as collateral on Compound
-            address[] memory assetArray = new address[](1);
-            assetArray[0] = _assets[i];
-
             require(
                 enterMarketErrorCodes[i] == 0,
                 "__addCollateralAssets: Error while calling enterMarkets on Compound"
             );
 
-            emit CollateralAssetAdded(_assets[i], _amounts[i], "");
+            if (!assetIsCollateral(_assets[i])) {
+                assetToIsCollateral[_assets[i]] = true;
+                collateralAssets.push(_assets[i]);
+            }
+
+            emit CollateralAssetAdded(_assets[i], _amounts[i]);
         }
     }
 
@@ -95,25 +91,24 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         address[] memory cTokens = abi.decode(_data, (address[]));
 
         for (uint256 i; i < _assets.length; i++) {
-            // Once verified, cache the pair if it has not been done yet
             require(
                 ICERC20(cTokens[i]).borrow(_amounts[i]) == 0,
                 "__borrowAssets: Problem while borrowing from Compound"
             );
 
-            if (_assets[i] == WETH_TOKEN) {
-                IWETH(payable(WETH_TOKEN)).deposit{value: _amounts[i]}();
-            }
-
-            // NOTE: This pair cToken/Token is considered to be already verified from the source
+            // The cToken-token pair is already validated by the parser
             if (getCTokenFromBorrowedAsset(_assets[i]) == address(0)) {
                 borrowedAssetToCToken[_assets[i]] = cTokens[i];
                 borrowedAssets.push(_assets[i]);
             }
 
+            if (_assets[i] == getWethToken()) {
+                IWETH(payable(getWethToken())).deposit{value: _amounts[i]}();
+            }
+
             ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
 
-            emit BorrowedAsset(_assets[i], _amounts[i], _data);
+            emit AssetBorrowed(_assets[i], _amounts[i]);
         }
     }
 
@@ -123,7 +118,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     {
         for (uint256 i; i < _assets.length; i++) {
             require(
-                assetToIsCollateral[_assets[i]],
+                assetIsCollateral(_assets[i]),
                 "__removeCollateralAssets: Asset is not collateral"
             );
 
@@ -136,7 +131,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
             ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
 
-            emit CollateralAssetRemoved(_assets[i], _amounts[i], "");
+            emit CollateralAssetRemoved(_assets[i], _amounts[i]);
         }
     }
 
@@ -164,15 +159,15 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
             ICERC20(cTokens[i]).accrueInterest();
             uint256 borrowBalance = ICERC20(cTokens[i]).borrowBalanceStored(address(this));
 
-            // Repaid amount doesn't cover the full balance
             if (_amounts[i] < borrowBalance) {
+                // Repaid amount doesn't cover the full balance
                 __repayBorrowedAsset(cTokens[i], _assets[i], _amounts[i]);
             } else {
                 // Amount covers the full borrow balance, so it can be removed from borrowed balances
                 __repayBorrowedAsset(cTokens[i], _assets[i], borrowBalance);
 
                 // Reset borrowed asset cToken and remove it from the list of borrowed assets
-                borrowedAssetToCToken[_assets[i]] = address(0);
+                delete borrowedAssetToCToken[_assets[i]];
                 borrowedAssets.removeStorageItem(_assets[i]);
 
                 // Send back the remaining token amount after paying the loan
@@ -181,7 +176,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
                 }
             }
 
-            emit BorrowedAssetRepaid(_assets[i], _amounts[i], _data);
+            emit BorrowedAssetRepaid(_assets[i], _amounts[i]);
         }
     }
 
@@ -191,8 +186,8 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         address _token,
         uint256 _amount
     ) private {
-        if (_token == WETH_TOKEN) {
-            IWETH(payable(WETH_TOKEN)).withdraw(_amount);
+        if (_token == getWethToken()) {
+            IWETH(payable(getWethToken())).withdraw(_amount);
             ICEther(_cToken).repayBorrow{value: _amount}();
         } else {
             ERC20(_token).safeApprove(_cToken, _amount);
@@ -207,6 +202,8 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    // EXTERNAL FUNCTIONS
 
     /// @notice Retrieves the borrowed assets and balances of the current external position
     /// @return assets_ Assets with an active loan
@@ -245,15 +242,17 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         return (assets_, amounts_);
     }
 
+    // PUBLIC FUNCTIONS
+
     /// @notice Checks whether an asset is collateral
     /// @return isCollateral True if the asset is part of the collateral assets of the external position
-    function assetIsCollateral(address _asset) external view returns (bool isCollateral) {
+    function assetIsCollateral(address _asset) public view returns (bool isCollateral) {
         return assetToIsCollateral[_asset];
     }
 
     /// @notice Gets the `COMPOUND_COMPTROLLER` variable
     /// @return compoundComptroller_ The `COMPOUND_COMPTROLLER` variable value
-    function getCompoundComptroller() external view returns (address compoundComptroller_) {
+    function getCompoundComptroller() public view returns (address compoundComptroller_) {
         return COMPOUND_COMPTROLLER;
     }
 
@@ -270,7 +269,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
     /// @notice Gets the `WETH_TOKEN` variable
     /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() external view returns (address wethToken_) {
+    function getWethToken() public view returns (address wethToken_) {
         return WETH_TOKEN;
     }
 }

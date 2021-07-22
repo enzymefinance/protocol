@@ -13,15 +13,17 @@ pragma solidity 0.6.12;
 
 /// @title IExternalPositionParser Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Interface for all external position valitators
+/// @notice Interface for all external position parsers
 interface IExternalPositionParser {
-    function parseAssetsForAction(uint256, bytes memory)
+    function parseAssetsForAction(uint256 _actionId, bytes memory _encodedActionArgs)
         external
         returns (
-            address[] memory,
-            uint256[] memory,
-            address[] memory
+            address[] memory assetsToTransfer_,
+            uint256[] memory amountsToTransfer_,
+            address[] memory assetsToReceive_
         );
 
-    function parseInitArgs(address, bytes memory) external returns (bytes memory);
+    function parseInitArgs(address _vaultProxy, bytes memory _initializationData)
+        external
+        returns (bytes memory initArgs_);
 }

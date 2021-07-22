@@ -97,7 +97,7 @@ contract ExternalPositionManager is
         if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
             __createExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.CallOnExternalPosition)) {
-            __executeCallOnExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
+            __executeCallOnExternalPosition(_caller, comptrollerProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
             __executeRemoveExternalPosition(_caller, comptrollerProxy, _callArgs);
         } else if (
@@ -118,7 +118,10 @@ contract ExternalPositionManager is
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
-        (uint256 typeId, bytes memory initArgs) = abi.decode(_callArgs, (uint256, bytes));
+        (uint256 typeId, bytes memory initializationData) = abi.decode(
+            _callArgs,
+            (uint256, bytes)
+        );
 
         address parser = getExternalPositionParserForType(typeId);
         require(parser != address(0), "__createExternalPosition: Invalid typeId");
@@ -126,17 +129,18 @@ contract ExternalPositionManager is
         IPolicyManager(getPolicyManager()).validatePolicies(
             _comptrollerProxy,
             IPolicyManager.PolicyHook.CreateExternalPosition,
-            abi.encode(_caller, typeId, initArgs)
+            abi.encode(_caller, typeId, initializationData)
         );
 
-        bytes memory initData = IExternalPositionParser(parser).parseInitArgs(
+        // Pass in _vaultProxy in case the external position requires it during init() or further operations
+        bytes memory initArgs = IExternalPositionParser(parser).parseInitArgs(
             _vaultProxy,
-            initArgs
+            initializationData
         );
 
         bytes memory constructData = abi.encodeWithSelector(
             IExternalPosition.init.selector,
-            initData
+            initArgs
         );
 
         address externalPosition = ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
@@ -161,17 +165,11 @@ contract ExternalPositionManager is
     function __executeCallOnExternalPosition(
         address _caller,
         address _comptrollerProxy,
-        address _vaultProxy,
         bytes memory _callArgs
     ) private {
         (address payable externalPosition, uint256 actionId, bytes memory actionArgs) = abi.decode(
             _callArgs,
             (address, uint256, bytes)
-        );
-
-        require(
-            IVault(_vaultProxy).isActiveExternalPosition(externalPosition),
-            "__executeCallOnExternalPosition: External position is not valid"
         );
 
         address parser = getExternalPositionParserForType(
@@ -284,14 +282,14 @@ contract ExternalPositionManager is
     ) external onlyFundDeployerOwner {
         require(
             _typeIds.length == _parsers.length && _libs.length == _parsers.length,
-            "updateTypesInfo: Unequal arrays"
+            "updateExternalPositionTypesInfo: Unequal arrays"
         );
 
         for (uint256 i; i < _typeIds.length; i++) {
             require(
                 _typeIds[i] <
-                    ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).getPositionTypeCounter(),
-                "updateTypesInfo: Type does not exist"
+                    ExternalPositionFactory(getExternalPositionFactory()).getPositionTypeCounter(),
+                "updateExternalPositionTypesInfo: Type does not exist"
             );
 
             typeIdToTypeInfo[_typeIds[i]] = ExternalPositionTypeInfo({

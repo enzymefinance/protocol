@@ -24,24 +24,23 @@ contract ExternalPositionProxy is IExternalPositionProxy {
     receive() external payable {}
 
     constructor(
-        bytes memory _constructData,
         address _vaultProxy,
-        uint256 _externalPositionType,
-        address _initialLib
+        uint256 _typeId,
+        address _constructLib,
+        bytes memory _constructData
     ) public {
         VAULT_PROXY = _vaultProxy;
-        EXTERNAL_POSITION_TYPE = _externalPositionType;
+        EXTERNAL_POSITION_TYPE = _typeId;
 
-        (bool success, bytes memory returnData) = _initialLib.delegatecall(_constructData);
+        (bool success, bytes memory returnData) = _constructLib.delegatecall(_constructData);
 
         require(success, string(returnData));
     }
 
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
-        address contractLogic = IExternalPositionVault(VAULT_PROXY).getExternalPositionLibForType(
-            EXTERNAL_POSITION_TYPE
-        );
+        address contractLogic = IExternalPositionVault(getVaultProxy())
+            .getExternalPositionLibForType(getExternalPositionType());
         assembly {
             calldatacopy(0x0, 0x0, calldatasize())
             let success := delegatecall(
@@ -68,12 +67,11 @@ contract ExternalPositionProxy is IExternalPositionProxy {
     /// @param _data The bytes data variable to be decoded at the External Position
     function receiveCallFromVault(bytes calldata _data) external {
         require(
-            msg.sender == VAULT_PROXY,
+            msg.sender == getVaultProxy(),
             "receiveCallFromVault: Only the vault can make this call"
         );
-        address contractLogic = IExternalPositionVault(VAULT_PROXY).getExternalPositionLibForType(
-            EXTERNAL_POSITION_TYPE
-        );
+        address contractLogic = IExternalPositionVault(getVaultProxy())
+            .getExternalPositionLibForType(getExternalPositionType());
         (bool success, bytes memory returnData) = contractLogic.delegatecall(
             abi.encodeWithSelector(IExternalPosition.receiveCallFromVault.selector, _data)
         );
@@ -88,7 +86,7 @@ contract ExternalPositionProxy is IExternalPositionProxy {
     /// @notice Gets the `EXTERNAL_POSITION_TYPE` variable
     /// @return externalPositionType_ The `EXTERNAL_POSITION_TYPE` variable value
     function getExternalPositionType()
-        external
+        public
         view
         override
         returns (uint256 externalPositionType_)
@@ -98,7 +96,7 @@ contract ExternalPositionProxy is IExternalPositionProxy {
 
     /// @notice Gets the `VAULT_PROXY` variable
     /// @return vaultProxy_ The `VAULT_PROXY` variable value
-    function getVaultProxy() external view override returns (address vaultProxy_) {
+    function getVaultProxy() public view override returns (address vaultProxy_) {
         return VAULT_PROXY;
     }
 }

@@ -20,15 +20,13 @@ pragma solidity 0.6.12;
 /// e.g., `CompoundDebtPositionLibBase2 is CompoundDebtPositionLibBase1`
 
 contract CompoundDebtPositionLibBase1 {
-    event BorrowedAsset(address indexed asset, uint256 amount, bytes data);
+    event AssetBorrowed(address indexed asset, uint256 amount);
 
-    event BorrowedAssetRepaid(address indexed asset, uint256 amount, bytes data);
+    event BorrowedAssetRepaid(address indexed asset, uint256 amount);
 
-    event CollateralAssetAdded(address indexed asset, uint256 amount, bytes data);
+    event CollateralAssetAdded(address indexed asset, uint256 amount);
 
-    event CollateralAssetRemoved(address indexed asset, uint256 amount, bytes data);
-
-    address internal vaultProxy;
+    event CollateralAssetRemoved(address indexed asset, uint256 amount);
 
     address[] internal borrowedAssets;
     address[] internal collateralAssets;

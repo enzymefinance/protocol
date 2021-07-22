@@ -10,7 +10,6 @@
 */
 
 pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
 
 /// @title IExternalPositionManager interface
 /// @author Enzyme Council <security@enzyme.finance>
