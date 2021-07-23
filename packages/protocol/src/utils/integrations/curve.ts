@@ -10,7 +10,6 @@ export const curveMinterMintManySelector = sighash(utils.FunctionFragment.fromSt
 export const curveMinterToggleApproveMintSelector = sighash(
   utils.FunctionFragment.fromString('toggle_approve_mint(address)'),
 );
-
 // exchanges
 
 export function curveTakeOrderArgs({
@@ -35,9 +34,9 @@ export function curveTakeOrderArgs({
 // aave pool
 
 export enum CurveAavePoolAssetIndex {
-  AaveDai,
-  AaveUsdc,
-  AaveUsdt,
+  AaveDai = '0',
+  AaveUsdc = '1',
+  AaveUsdt = '2',
 }
 
 export function curveAaveLendAndStakeArgs({

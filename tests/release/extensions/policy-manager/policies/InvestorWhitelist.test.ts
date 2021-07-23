@@ -57,7 +57,9 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await investorWhitelist.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([PolicyHook.PostBuyShares]);
+    expect(implementedHooksCall).toMatchFunctionOutput(investorWhitelist.implementedHooks.fragment, [
+      PolicyHook.PostBuyShares,
+    ]);
   });
 });
 

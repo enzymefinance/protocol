@@ -36,7 +36,10 @@ describe('constructor', () => {
       );
     }
 
-    expect(await entranceRateDirectFee.getSettlementType()).toBe(FeeSettlementType.Direct);
+    expect(await entranceRateDirectFee.getSettlementType()).toMatchFunctionOutput(
+      entranceRateDirectFee.getSettlementType.fragment,
+      FeeSettlementType.Direct,
+    );
   });
 });
 

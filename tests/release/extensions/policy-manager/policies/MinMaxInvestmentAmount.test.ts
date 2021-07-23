@@ -82,7 +82,9 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await minMaxInvestment.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([PolicyHook.PostBuyShares]);
+    expect(implementedHooksCall).toMatchFunctionOutput(minMaxInvestment.implementedHooks.fragment, [
+      PolicyHook.PostBuyShares,
+    ]);
   });
 });
 

@@ -3,9 +3,9 @@ import { BytesLike } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 export enum IntegrationManagerActionId {
-  CallOnIntegration,
-  AddTrackedAssetsToVault,
-  RemoveTrackedAssetsFromVault,
+  CallOnIntegration = '0',
+  AddTrackedAssetsToVault = '1',
+  RemoveTrackedAssetsFromVault = '2',
 }
 
 export function addTrackedAssetsToVaultArgs({ assets }: { assets: AddressLike[] }) {

@@ -52,7 +52,9 @@ describe('constructor', () => {
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await assetWhitelist.implementedHooks();
-    expect(implementedHooksCall).toMatchObject([PolicyHook.PostCallOnIntegration]);
+    expect(implementedHooksCall).toMatchFunctionOutput(assetWhitelist.implementedHooks.fragment, [
+      PolicyHook.PostCallOnIntegration,
+    ]);
   });
 });
 

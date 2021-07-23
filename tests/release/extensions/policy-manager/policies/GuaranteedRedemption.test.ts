@@ -57,7 +57,9 @@ describe('constructor', () => {
     );
 
     const implementedHooksResult = await guaranteedRedemption.implementedHooks();
-    expect(implementedHooksResult).toMatchObject([PolicyHook.PostCallOnIntegration]);
+    expect(implementedHooksResult).toMatchFunctionOutput(guaranteedRedemption.implementedHooks.fragment, [
+      PolicyHook.PostCallOnIntegration,
+    ]);
 
     expect(await guaranteedRedemption.adapterCanBlockRedemption(fork.deployment.synthetixAdapter)).toBe(true);
   });

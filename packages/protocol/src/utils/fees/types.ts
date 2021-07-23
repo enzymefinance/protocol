@@ -8,17 +8,17 @@ export enum FeeHook {
 }
 
 export enum FeeManagerActionId {
-  InvokeContinuousHook,
-  PayoutSharesOutstandingForFees,
+  InvokeContinuousHook = '0',
+  PayoutSharesOutstandingForFees = '1',
 }
 
 export enum FeeSettlementType {
-  None,
-  Direct,
-  Mint,
-  Burn,
-  MintSharesOutstanding,
-  BurnSharesOutstanding,
+  None = '0',
+  Direct = '1',
+  Mint = '2',
+  Burn = '3',
+  MintSharesOutstanding = '4',
+  BurnSharesOutstanding = '5',
 }
 
 export interface FeeSharesDueInfo {

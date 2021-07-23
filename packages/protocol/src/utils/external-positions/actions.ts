@@ -3,21 +3,21 @@ import { BigNumberish, BytesLike } from 'ethers';
 import { encodeArgs } from '../..';
 
 export enum ExternalPositionManagerActionId {
-  CreateExternalPosition,
-  CallOnExternalPosition,
-  RemoveExternalPosition,
-  ReactivateExternalPosition,
+  CreateExternalPosition = '0',
+  CallOnExternalPosition = '1',
+  RemoveExternalPosition = '2',
+  ReactivateExternalPosition = '3',
 }
 
 export enum ExternalPositionActionId {
-  AddCollateralAssets,
-  RemoveCollateralAssets,
-  BorrowAsset,
-  RepayBorrowedAssets,
+  AddCollateralAssets = '0',
+  RemoveCollateralAssets = '1',
+  BorrowAsset = '2',
+  RepayBorrowedAssets = '3',
 }
 
 export enum ExternalPositionProtocolId {
-  CompoundDebtPosition,
+  CompoundDebtPosition = '0',
 }
 
 export function externalPositionActionArgs({
@@ -34,11 +34,11 @@ export function externalPositionActionArgs({
 
 export function externalPositionCallArgs({
   externalPositionProxy = randomAddress(),
-  actionId = 0,
+  actionId = ExternalPositionActionId.AddCollateralAssets,
   encodedCallArgs,
 }: {
   externalPositionProxy?: AddressLike;
-  actionId?: Number;
+  actionId?: ExternalPositionActionId;
   encodedCallArgs: BytesLike;
 }) {
   return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, encodedCallArgs]);

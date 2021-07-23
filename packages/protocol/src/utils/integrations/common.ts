@@ -4,9 +4,9 @@ import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';
 
 export enum SpendAssetsHandleType {
-  None,
-  Approve,
-  Transfer,
+  None = '0',
+  Approve = '1',
+  Transfer = '2',
 }
 
 export const claimRewardsFragment = utils.FunctionFragment.fromString('claimRewards(address,bytes,bytes)');

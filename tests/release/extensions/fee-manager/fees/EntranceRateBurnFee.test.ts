@@ -30,7 +30,10 @@ describe('config', () => {
       });
     }
 
-    expect(await entranceRateBurnFee.getSettlementType()).toBe(FeeSettlementType.Burn);
+    expect(await entranceRateBurnFee.getSettlementType()).toMatchFunctionOutput(
+      entranceRateBurnFee.getSettlementType.fragment,
+      FeeSettlementType.Burn,
+    );
   });
 });
 
