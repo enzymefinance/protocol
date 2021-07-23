@@ -1,7 +1,7 @@
 import { AddressLike, resolveAddress } from '@enzymefinance/ethers';
 import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
-import { buildTypedData, encodeTypedDataDigest } from 'ethers-eip712';
 import { encodeArgs, encodeFunctionData } from '../encoding';
+import { isTypedDataSigner } from '../signer';
 
 export interface UnsignedZeroExV2Order {
   exchangeAddress: string;
@@ -89,20 +89,10 @@ export async function createUnsignedZeroExV2Order({
 }
 
 export async function signZeroExV2Order(order: UnsignedZeroExV2Order, signer: Signer): Promise<SignedZeroExV2Order> {
-  const orderTypedData = createZeroExV2OrderTypedData(order);
-  const orderHashHex = encodeTypedDataDigest(orderTypedData);
-  const signature = await signer.signMessage(orderHashHex);
-  const split = utils.splitSignature(signature);
-  const type = utils.hexlify(3); // ETHSign
-  const joined = utils.hexlify(utils.concat([utils.hexlify(split.v), split.r, split.s, type]));
+  if (!isTypedDataSigner(signer)) {
+    throw new Error('Signer does not support typed data');
+  }
 
-  return {
-    ...order,
-    signature: joined,
-  };
-}
-
-export function createZeroExV2OrderTypedData(order: UnsignedZeroExV2Order) {
   const domain = {
     name: '0x Protocol',
     version: '2',
@@ -126,7 +116,15 @@ export function createZeroExV2OrderTypedData(order: UnsignedZeroExV2Order) {
     ],
   };
 
-  return buildTypedData(domain, types, 'Order', order);
+  const signature = await signer._signTypedData(domain, types, order);
+  const split = utils.splitSignature(signature);
+  const type = utils.hexlify(2); // EIP712
+  const joined = utils.hexlify(utils.concat([utils.hexlify(split.v), split.r, split.s, type]));
+
+  return {
+    ...order,
+    signature: joined,
+  };
 }
 
 export function encodeZeroExV2Order(order: SignedZeroExV2Order) {

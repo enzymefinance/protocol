@@ -8,3 +8,4 @@ export * from './external-positions';
 export * from './migrations';
 export * from './protocol-fees';
 export * from './vaultCalls';
+export * from './signer';
