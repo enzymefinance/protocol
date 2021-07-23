@@ -97,8 +97,7 @@ describe('isSupportedAsset', () => {
 });
 
 describe('expected values', () => {
-  // TODO: assess why the expected value jumps around
-  xit('returns the expected value from the valueInterpreter (18-decimal underlying)', async () => {
+  it('returns the expected value from the valueInterpreter (18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const idleDai = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
     const dai = new StandardToken(fork.config.primitives.dai, provider);
@@ -108,7 +107,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(idleDai, idleTokenUnit, dai).call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1043195920281923431');
+    expect(canonicalAssetValue).toBeAroundBigNumber('1055046802123867539', '0.03');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {

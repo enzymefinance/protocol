@@ -114,35 +114,6 @@ describe('constructor', () => {
 });
 
 describe('calcUnderlyingValues', () => {
-  // TODO: Do not use a mock contract for these.
-  xit('revert on invalid rate', async () => {
-    /*
-    const {
-    deployer,
-    addressResolver: addressResolverAddress,
-    synthetixPriceFeed,
-    newSynth1,
-    newSynth1CurrencyKey,
-    } = await provider.snapshot(snapshot);
-    const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
-
-    await synthetixPriceFeed.addSynths([newSynth1]);
-
-    // const addressResolver = new MockSynthetixIntegratee(addressResolverAddress, deployer);
-    const synthetixAddressResolver = new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider);
-    const exchangeRatesAddress = await addressResolver.requireAndGetAddress(
-      utils.formatBytes32String('ExchangeRates'),
-      '',
-    );
-
-    const exchangeRates = new MockSynthetixPriceSource(exchangeRatesAddress, deployer);
-    await exchangeRates.setRate(newSynth1CurrencyKey, '0');
-
-    const calcUnderlyingValues = synthetixPriceFeed.calcUnderlyingValues.args(newSynth1, utils.parseEther('1')).call();
-    await expect(calcUnderlyingValues).rejects.toBeRevertedWith('calcUnderlyingValues: _derivative rate is not valid');
-    */
-  });
-
   it('returns rate for underlying token', async () => {
     const synthetixPriceFeed = fork.deployment.synthetixPriceFeed;
     const sbtc = new StandardToken(fork.config.synthetix.synths.sbtc, provider);

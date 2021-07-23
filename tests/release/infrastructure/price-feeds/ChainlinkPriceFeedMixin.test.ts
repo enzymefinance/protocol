@@ -218,22 +218,6 @@ describe('addPrimitives', () => {
     );
   });
 
-  xit('reverts when latest answer is zero', async () => {
-    /*
-    const valueInterpreter = fork.deployment.valueInterpreter;
-
-    // Set latest answer on aggregator mock to be 0
-    const latestTimestamp = (await provider.getBlock('latest')).timestamp;
-    const latestAnswer = 0;
-
-    await aggregatorMocks[0].setLatestAnswer(latestAnswer, latestTimestamp);
-
-    await expect(
-      valueInterpreter.addPrimitives([primitiveMocks[0]], [aggregatorMocks[0]], [0]),
-    ).rejects.toBeRevertedWith('No rate detected');
-    */
-  });
-
   it('works as expected when adding a primitive and emit an event', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const unregisteredMockToken = await MockToken.deploy(fork.deployer, 'Mock Token', 'MOCK', 6);
