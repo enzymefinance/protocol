@@ -1555,22 +1555,22 @@
   dependencies:
     "@babel/runtime" "^7.14.6"
 
-"@enzymefinance/hardhat@^0.0.23":
-  version "0.0.23"
-  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.23.tgz#76a3c9e0602ae6188223c13a002b2099db653d27"
-  integrity sha512-HiO3/M8UOMxCYRivGkkzdL6OGtu1VFTQLcTJVbxFj2RPv58c3i8wMXjAOAxaOLgYRHQTi6DAx3upcBAGxLdAUg==
+"@enzymefinance/hardhat@^0.0.24":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@enzymefinance/hardhat/-/hardhat-0.0.24.tgz#0cf7cf9a3fd59bc8a101cb0a48f108d720bce031"
+  integrity sha512-Us9qsp6AqErwugxmwetD4jXkbkrr0LbUBJD5l9YQYoHTX1rE1vCNQ/bWZ0El8PPhoYOGm9Uz+/HhKkXu2Mu+Bw==
   dependencies:
     "@babel/runtime" "^7.14.6"
     "@enzymefinance/codegen" "0.0.6"
     "@enzymefinance/coverage" "0.0.7"
     "@enzymefinance/ethers" "0.0.12"
+    "@nomiclabs/hardhat-ethers" "^2.0.2"
     deepmerge "^4.2.2"
     fs-extra "^10.0.0"
     glob "^7.1.7"
     hardhat "^2.4.3"
     hardhat-contract-sizer "^2.0.3"
     hardhat-deploy "^0.8.11"
-    hardhat-deploy-ethers "^0.3.0-beta.10"
     istanbul-lib-report "^3.0.0"
     istanbul-reports "^3.0.2"
     jest-diff "^27.0.6"
@@ -2448,6 +2448,11 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.4"
     fastq "^1.6.0"
+
+"@nomiclabs/hardhat-ethers@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.2.tgz#c472abcba0c5185aaa4ad4070146e95213c68511"
+  integrity sha512-6quxWe8wwS4X5v3Au8q1jOvXYEPkS1Fh+cME5u6AwNdnI4uERvPlVjlgRWzpnb+Rrt1l/cEqiNRH9GlsBMSDQg==
 
 "@openzeppelin/contracts@^3.4.1":
   version "3.4.1"
@@ -5542,11 +5547,6 @@ hardhat-contract-sizer@^2.0.3:
   dependencies:
     cli-table3 "^0.6.0"
     colors "^1.4.0"
-
-hardhat-deploy-ethers@^0.3.0-beta.10:
-  version "0.3.0-beta.10"
-  resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.10.tgz#bccfcf635d380bbab3638960f6739fe4d396fc5f"
-  integrity sha512-TeyriUshRZ7XVHOjMsDtTozIrdwLf3Bw+oZRYNhXdG/eut5HeDhjUFPfRlG7TI1lSLvkcB5dt7OxOtPYKDOxTg==
 
 hardhat-deploy@^0.8.11:
   version "0.8.11"
