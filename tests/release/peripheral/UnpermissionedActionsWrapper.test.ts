@@ -45,11 +45,11 @@ async function snapshot() {
 describe('calcNetShareValueForFund', () => {
   it('correctly handles a valid call', async () => {
     const {
-      deployment: { fundActionsWrapper },
+      deployment: { unpermissionedActionsWrapper },
       comptrollerProxy,
     } = await provider.snapshot(snapshot);
 
-    const netShareValue = await fundActionsWrapper.calcNetShareValueForFund.args(comptrollerProxy).call();
+    const netShareValue = await unpermissionedActionsWrapper.calcNetShareValueForFund.args(comptrollerProxy).call();
     expect(netShareValue).toEqBigNumber(utils.parseEther('1'));
   });
 });

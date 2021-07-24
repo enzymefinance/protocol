@@ -9,16 +9,15 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('correctly sets state vars', async () => {
-    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
+    const depositWrapper = fork.deployment.depositWrapper;
 
-    expect(await fundActionsWrapper.getFeeManager()).toMatchAddress(fork.deployment.feeManager);
-    expect(await fundActionsWrapper.getWethToken()).toMatchAddress(fork.config.weth);
+    expect(await depositWrapper.getWethToken()).toMatchAddress(fork.config.weth);
   });
 });
 
-describe('exchangeAndBuyShares', () => {
+describe('exchangeEthAndBuyShares', () => {
   it('handles a WETH denominationAsset', async () => {
-    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
+    const depositWrapper = fork.deployment.depositWrapper;
     const denominationAsset = new StandardToken(fork.config.weth, provider);
     const [fundOwner, buyer] = fork.accounts;
 
@@ -27,12 +26,14 @@ describe('exchangeAndBuyShares', () => {
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      // Use a shares action timelock to assure DepositWrapper has correct permissions
+      sharesActionTimelock: 1000,
     });
 
     const investmentEth = utils.parseEther('2');
-    await fundActionsWrapper
+    await depositWrapper
       .connect(buyer)
-      .exchangeAndBuyShares.args(
+      .exchangeEthAndBuyShares.args(
         comptrollerProxy,
         denominationAsset,
         1,
@@ -45,13 +46,10 @@ describe('exchangeAndBuyShares', () => {
       .send();
 
     expect(await vaultProxy.balanceOf(buyer)).toEqBigNumber(investmentEth);
-
-    // The weth allowance of the comptrollerProxy should now be cached
-    expect(await fundActionsWrapper.accountHasMaxWethAllowance(comptrollerProxy)).toBe(true);
   });
 
   it('handles a mon-WETH, non-18 decimal denominationAsset', async () => {
-    const fundActionsWrapper = fork.deployment.fundActionsWrapper;
+    const depositWrapper = fork.deployment.depositWrapper;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner, buyer] = fork.accounts;
@@ -64,12 +62,14 @@ describe('exchangeAndBuyShares', () => {
       fundOwner,
       fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      // Use a shares action timelock to assure DepositWrapper has correct permissions
+      sharesActionTimelock: 1000,
     });
 
-    // Seed fundActionsWrapper contract with WETH that will not be used in the tx,
+    // Seed depositWrapper contract with WETH that will not be used in the tx,
     // to test refund
     const unusedWethSeedAmount = utils.parseEther('10');
-    await weth.transfer(fundActionsWrapper, unusedWethSeedAmount);
+    await weth.transfer(depositWrapper, unusedWethSeedAmount);
 
     const investmentEth = utils.parseEther('2');
     const uniswapPath = [fork.config.weth, denominationAsset];
@@ -81,15 +81,15 @@ describe('exchangeAndBuyShares', () => {
       investmentEth,
       1,
       uniswapPath,
-      fundActionsWrapper,
+      depositWrapper,
       BigNumber.from((await provider.getBlock('latest')).timestamp).add(300),
     ]);
 
     // Attempting to execute the exchange and buy shares with a too-high minInvestmentAmount should fail
     await expect(
-      fundActionsWrapper
+      depositWrapper
         .connect(buyer)
-        .exchangeAndBuyShares.args(
+        .exchangeEthAndBuyShares.args(
           comptrollerProxy,
           denominationAsset,
           1,
@@ -104,9 +104,9 @@ describe('exchangeAndBuyShares', () => {
 
     // Execute the exchange and buy shares action with the exact expected investmentAmount
     const preTxBuyerEthBalance = await provider.getBalance(buyer.address);
-    await fundActionsWrapper
+    await depositWrapper
       .connect(buyer)
-      .exchangeAndBuyShares.args(
+      .exchangeEthAndBuyShares.args(
         comptrollerProxy,
         denominationAsset,
         1,
@@ -126,8 +126,5 @@ describe('exchangeAndBuyShares', () => {
 
     // The buyer should have received an eth refund
     expect(await provider.getBalance(buyer.address)).toBeGtBigNumber(preTxBuyerEthBalance.sub(investmentEth));
-
-    // The weth allowance of the UniswapV2Router2 should now be cached
-    expect(await fundActionsWrapper.accountHasMaxWethAllowance(uniswapRouter)).toBe(true);
   });
 });

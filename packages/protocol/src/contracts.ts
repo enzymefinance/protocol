@@ -80,7 +80,8 @@ export * from './codegen/MinMaxInvestment';
 export * from './codegen/InvestorWhitelist';
 
 // Peripheral
-export * from './codegen/FundActionsWrapper';
+export * from './codegen/DepositWrapper';
+export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
 export * from './codegen/TestAddressArrayLib';
