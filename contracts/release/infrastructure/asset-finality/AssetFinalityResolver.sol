@@ -46,13 +46,13 @@ contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin
             return;
         }
 
-        bytes32[] memory currencyKeys = SynthetixPriceFeed(synthetixPriceFeed)
+        bytes32[] memory currencyKeys = SynthetixPriceFeed(getSynthetixPriceFeed())
             .getCurrencyKeysForSynths(_assets);
         address synthetixExchanger;
         for (uint256 i; i < _assets.length; i++) {
             if (currencyKeys[i] != 0) {
                 if (synthetixExchanger == address(0)) {
-                    synthetixExchanger = ISynthetixAddressResolver(SYNTHETIX_ADDRESS_RESOLVER)
+                    synthetixExchanger = ISynthetixAddressResolver(getSynthetixAddressResolver())
                         .requireAndGetAddress(
                         "Exchanger",
                         "finalizeAssets: Missing Synthetix Exchanger"
@@ -89,7 +89,7 @@ contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin
     /// @notice Gets the `SYNTHETIX_ADDRESS_RESOLVER` variable
     /// @return synthetixAddressResolver_ The `SYNTHETIX_ADDRESS_RESOLVER` variable value
     function getSynthetixAddressResolver()
-        external
+        public
         view
         returns (address synthetixAddressResolver_)
     {
@@ -98,7 +98,7 @@ contract AssetFinalityResolver is IAssetFinalityResolver, FundDeployerOwnerMixin
 
     /// @notice Gets the `synthetixPriceFeed` variable
     /// @return synthetixPriceFeed_ The `synthetixPriceFeed` variable value
-    function getSynthetixPriceFeed() external view returns (address synthetixPriceFeed_) {
+    function getSynthetixPriceFeed() public view returns (address synthetixPriceFeed_) {
         return synthetixPriceFeed;
     }
 }

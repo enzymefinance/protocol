@@ -197,17 +197,20 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// Ownership is handed-off when the creator calls setReleaseLive().
     function getOwner() public view override returns (address owner_) {
         if (!releaseIsLive()) {
-            return CREATOR;
+            return getCreator();
         }
 
-        return IDispatcher(DISPATCHER).getOwner();
+        return IDispatcher(getDispatcher()).getOwner();
     }
 
     /// @notice Sets the release as live
     /// @dev A live release allows funds to be created and migrated once this contract
     /// is set as the Dispatcher.currentFundDeployer
     function setReleaseLive() external {
-        require(msg.sender == CREATOR, "setReleaseLive: Only the creator can call this function");
+        require(
+            msg.sender == getCreator(),
+            "setReleaseLive: Only the creator can call this function"
+        );
         require(!releaseIsLive(), "setReleaseLive: Already live");
 
         // All pseudo-constants should be set
@@ -255,7 +258,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
 
-        IDispatcher(DISPATCHER).signalMigration(
+        IDispatcher(getDispatcher()).signalMigration(
             _vaultProxy,
             comptrollerProxy_,
             getVaultLib(),
@@ -293,7 +296,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _policyManagerConfigData
         );
 
-        vaultProxy_ = IDispatcher(DISPATCHER).deployVaultProxy(
+        vaultProxy_ = IDispatcher(getDispatcher()).deployVaultProxy(
             getVaultLib(),
             _fundOwner,
             comptrollerProxy_,
@@ -327,7 +330,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes calldata _policyManagerConfigData
     ) external onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
         require(
-            IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
+            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) ==
+                address(this),
             "createReconfigurationRequest: VaultProxy not on this release"
         );
         require(
@@ -436,7 +440,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         );
         // Not technically necessary, but a nice assurance
         require(
-            IDispatcher(DISPATCHER).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
+            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) ==
+                address(this),
             "executeReconfiguration: _vaultProxy is no longer on this release"
         );
 
@@ -479,7 +484,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         external
         onlyMigrator(_vaultProxy)
     {
-        IDispatcher(DISPATCHER).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
+        IDispatcher(getDispatcher()).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
     }
 
     /// @notice Executes fund migration
@@ -489,7 +494,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         external
         onlyMigrator(_vaultProxy)
     {
-        IDispatcher dispatcherContract = IDispatcher(DISPATCHER);
+        IDispatcher dispatcherContract = IDispatcher(getDispatcher());
 
         (, address comptrollerProxy, , ) = dispatcherContract
             .getMigrationRequestDetailsForVaultProxy(_vaultProxy);
@@ -642,17 +647,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the `CREATOR` variable value
-    /// @return creator_ The `CREATOR` variable value
-    function getCreator() external view returns (address creator_) {
-        return CREATOR;
-    }
-
-    /// @notice Gets the `DISPATCHER` variable value
-    /// @return dispatcher_ The `DISPATCHER` variable value
-    function getDispatcher() external view returns (address dispatcher_) {
-        return DISPATCHER;
-    }
+    // EXTERNAL FUNCTIONS
 
     /// @notice Checks if a contract call is allowed
     /// @param _contract The contract of the call to check
@@ -679,6 +674,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @return comptrollerLib_ The `comptrollerLib` variable value
     function getComptrollerLib() public view returns (address comptrollerLib_) {
         return comptrollerLib;
+    }
+
+    /// @notice Gets the `CREATOR` variable value
+    /// @return creator_ The `CREATOR` variable value
+    function getCreator() public view returns (address creator_) {
+        return CREATOR;
+    }
+
+    /// @notice Gets the `DISPATCHER` variable value
+    /// @return dispatcher_ The `DISPATCHER` variable value
+    function getDispatcher() public view returns (address dispatcher_) {
+        return DISPATCHER;
     }
 
     /// @notice Gets the `protocolFeeTracker` variable value

@@ -121,7 +121,7 @@ contract IntegrationManager is
     ) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             _comptrollerProxy,
             IPolicyManager.PolicyHook.AddTrackedAssets,
             abi.encode(_caller, assets)
@@ -129,7 +129,7 @@ contract IntegrationManager is
 
         for (uint256 i; i < assets.length; i++) {
             require(
-                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(assets[i]),
+                IValueInterpreter(getValueInterpreter()).isSupportedAsset(assets[i]),
                 "__addTrackedAssetsToVault: Unsupported asset"
             );
 
@@ -146,7 +146,7 @@ contract IntegrationManager is
     ) private {
         address[] memory assets = abi.decode(_callArgs, (address[]));
 
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             _comptrollerProxy,
             IPolicyManager.PolicyHook.RemoveTrackedAssets,
             abi.encode(_caller, assets)
@@ -195,7 +195,7 @@ contract IntegrationManager is
             integrationData
         );
 
-        IPolicyManager(POLICY_MANAGER).validatePolicies(
+        IPolicyManager(getPolicyManager()).validatePolicies(
             _comptrollerProxy,
             IPolicyManager.PolicyHook.PostCallOnIntegration,
             abi.encode(
@@ -367,7 +367,7 @@ contract IntegrationManager is
         preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i; i < incomingAssets_.length; i++) {
             require(
-                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(incomingAssets_[i]),
+                IValueInterpreter(getValueInterpreter()).isSupportedAsset(incomingAssets_[i]),
                 "__preProcessCoI: Non-receivable incoming asset"
             );
 
@@ -473,13 +473,13 @@ contract IntegrationManager is
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
-    function getPolicyManager() external view returns (address policyManager_) {
+    function getPolicyManager() public view returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getValueInterpreter() external view returns (address valueInterpreter_) {
+    function getValueInterpreter() public view returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
     }
 }

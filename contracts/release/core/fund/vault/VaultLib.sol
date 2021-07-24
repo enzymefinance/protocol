@@ -81,7 +81,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @dev If a VaultProxy receives ETH, immediately wrap into WETH.
     /// Will not be able to receive ETH via .transfer() or .send() due to limited gas forwarding.
     receive() external payable {
-        IWETH(payable(WETH_TOKEN)).deposit{value: payable(address(this)).balance}();
+        IWETH(payable(getWethToken())).deposit{value: payable(address(this)).balance}();
     }
 
     /////////////
@@ -654,24 +654,6 @@ contract VaultLib is VaultLibBase2, IVault {
         return trackedAssets;
     }
 
-    /// @notice Check whether an external position is active on the vault
-    /// @param _externalPosition The externalPosition to check
-    /// @return isActiveExternalPosition_ True if the address is an active external position on the vault
-    function isActiveExternalPosition(address _externalPosition)
-        public
-        view
-        override
-        returns (bool isActiveExternalPosition_)
-    {
-        return externalPositionToIsActive[_externalPosition];
-    }
-
-    /// @notice Gets the `WETH_TOKEN` variable
-    /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() external view returns (address wethToken_) {
-        return WETH_TOKEN;
-    }
-
     // PUBLIC FUNCTIONS
 
     /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
@@ -704,6 +686,18 @@ contract VaultLib is VaultLibBase2, IVault {
         return PROTOCOL_FEE_TRACKER;
     }
 
+    /// @notice Check whether an external position is active on the vault
+    /// @param _externalPosition The externalPosition to check
+    /// @return isActiveExternalPosition_ True if the address is an active external position on the vault
+    function isActiveExternalPosition(address _externalPosition)
+        public
+        view
+        override
+        returns (bool isActiveExternalPosition_)
+    {
+        return externalPositionToIsActive[_externalPosition];
+    }
+
     /// @notice Checks whether an account is an allowed asset manager
     /// @param _who The account to check
     /// @return isAssetManager_ True if the account is an allowed asset manager
@@ -727,5 +721,11 @@ contract VaultLib is VaultLibBase2, IVault {
         returns (bool sharesAreFreelyTransferable_)
     {
         return freelyTransferableShares;
+    }
+
+    /// @notice Gets the `WETH_TOKEN` variable
+    /// @return wethToken_ The `WETH_TOKEN` variable value
+    function getWethToken() public view returns (address wethToken_) {
+        return WETH_TOKEN;
     }
 }

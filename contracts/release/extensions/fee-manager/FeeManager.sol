@@ -70,11 +70,12 @@ contract FeeManager is
 
     /// @notice Activate already-configured fees for use in the calling fund
     function activateForFund(bool) external override {
-        address vaultProxy = __setValidatedVaultProxy(msg.sender);
+        address comptrollerProxy = msg.sender;
+        address vaultProxy = __setValidatedVaultProxy(comptrollerProxy);
 
-        address[] memory enabledFees = comptrollerProxyToFees[msg.sender];
+        address[] memory enabledFees = getEnabledFeesForFund(comptrollerProxy);
         for (uint256 i; i < enabledFees.length; i++) {
-            IFee(enabledFees[i]).activateForFund(msg.sender, vaultProxy);
+            IFee(enabledFees[i]).activateForFund(comptrollerProxy, vaultProxy);
         }
     }
 
@@ -84,7 +85,7 @@ contract FeeManager is
         address vaultProxy = getVaultProxyForFund(comptrollerProxy);
 
         // Force payout of remaining shares outstanding
-        address[] memory fees = comptrollerProxyToFees[comptrollerProxy];
+        address[] memory fees = getEnabledFeesForFund(comptrollerProxy);
         for (uint256 i; i < fees.length; i++) {
             __payoutSharesOutstanding(comptrollerProxy, vaultProxy, fees[i]);
         }
@@ -181,7 +182,7 @@ contract FeeManager is
         uint256 _gavOrZero,
         bool _updateFees
     ) private {
-        address[] memory fees = comptrollerProxyToFees[_comptrollerProxy];
+        address[] memory fees = getEnabledFeesForFund(_comptrollerProxy);
         if (fees.length == 0) {
             return;
         }
@@ -369,7 +370,7 @@ contract FeeManager is
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return enabledFees_ An array of enabled fee addresses
     function getEnabledFeesForFund(address _comptrollerProxy)
-        external
+        public
         view
         returns (address[] memory enabledFees_)
     {

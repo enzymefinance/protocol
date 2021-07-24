@@ -32,7 +32,7 @@ abstract contract AggregatedDerivativePriceFeedMixin {
         internal
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        address derivativePriceFeed = derivativeToPriceFeed[_derivative];
+        address derivativePriceFeed = getPriceFeedForDerivative(_derivative);
         require(
             derivativePriceFeed != address(0),
             "calcUnderlyingValues: _derivative is not supported"
@@ -62,7 +62,7 @@ abstract contract AggregatedDerivativePriceFeedMixin {
 
         for (uint256 i = 0; i < _derivatives.length; i++) {
             require(
-                derivativeToPriceFeed[_derivatives[i]] == address(0),
+                getPriceFeedForDerivative(_derivatives[i]) == address(0),
                 "__addDerivatives: Already added"
             );
 
@@ -79,7 +79,7 @@ abstract contract AggregatedDerivativePriceFeedMixin {
     function __removeDerivatives(address[] memory _derivatives) internal {
         for (uint256 i = 0; i < _derivatives.length; i++) {
             require(
-                derivativeToPriceFeed[_derivatives[i]] != address(0),
+                getPriceFeedForDerivative(_derivatives[i]) != address(0),
                 "removeDerivatives: Derivative not yet added"
             );
 

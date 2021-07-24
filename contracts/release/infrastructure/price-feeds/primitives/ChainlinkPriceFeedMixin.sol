@@ -10,7 +10,6 @@
 */
 
 pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -65,7 +64,7 @@ abstract contract ChainlinkPriceFeedMixin {
     function rateIsStale(address _aggregator) public view returns (bool rateIsStale_) {
         return
             IChainlinkAggregator(_aggregator).latestTimestamp() <
-            block.timestamp.sub(staleRateThreshold);
+            block.timestamp.sub(getStaleRateThreshold());
     }
 
     // INTERNAL FUNCTIONS
@@ -83,10 +82,10 @@ abstract contract ChainlinkPriceFeedMixin {
         // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
-        require(baseAssetRate > 0, "calcCanonicalValue: Invalid base asset rate");
+        require(baseAssetRate > 0, "__calcCanonicalValue: Invalid base asset rate");
 
         int256 quoteAssetRate = __getLatestRateData(_quoteAsset);
-        require(quoteAssetRate > 0, "calcCanonicalValue: Invalid quote asset rate");
+        require(quoteAssetRate > 0, "__calcCanonicalValue: Invalid quote asset rate");
 
         return
             __calcConversionAmount(
@@ -100,7 +99,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
     /// @dev Helper to set the `ethUsdAggregator` value
     function __setEthUsdAggregator(address _nextEthUsdAggregator) internal {
-        address prevEthUsdAggregator = ethUsdAggregator;
+        address prevEthUsdAggregator = getEthUsdAggregator();
         require(
             _nextEthUsdAggregator != prevEthUsdAggregator,
             "__setEthUsdAggregator: Value already set"
@@ -140,7 +139,7 @@ abstract contract ChainlinkPriceFeedMixin {
                 );
         }
 
-        int256 ethPerUsdRate = IChainlinkAggregator(ethUsdAggregator).latestAnswer();
+        int256 ethPerUsdRate = IChainlinkAggregator(getEthUsdAggregator()).latestAnswer();
         require(ethPerUsdRate > 0, "__calcConversionAmount: Bad ethUsd rate");
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
@@ -221,11 +220,11 @@ abstract contract ChainlinkPriceFeedMixin {
 
     /// @dev Helper to get the latest rate for a given primitive
     function __getLatestRateData(address _primitive) private view returns (int256 rate_) {
-        if (_primitive == WETH_TOKEN) {
+        if (_primitive == getWethToken()) {
             return int256(ETH_UNIT);
         }
 
-        address aggregator = primitiveToAggregatorInfo[_primitive].aggregator;
+        address aggregator = getAggregatorForPrimitive(_primitive);
         require(aggregator != address(0), "__getLatestRateData: Primitive does not exist");
 
         return IChainlinkAggregator(aggregator).latestAnswer();
@@ -242,7 +241,7 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @dev Callable by anybody
     function removeStalePrimitives(address[] calldata _primitives) external {
         for (uint256 i; i < _primitives.length; i++) {
-            address aggregatorAddress = primitiveToAggregatorInfo[_primitives[i]].aggregator;
+            address aggregatorAddress = getAggregatorForPrimitive(_primitives[i]);
             require(aggregatorAddress != address(0), "removeStalePrimitives: Invalid primitive");
             require(rateIsStale(aggregatorAddress), "removeStalePrimitives: Rate is not stale");
 
@@ -275,7 +274,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
         for (uint256 i; i < _primitives.length; i++) {
             require(
-                primitiveToAggregatorInfo[_primitives[i]].aggregator == address(0),
+                getAggregatorForPrimitive(_primitives[i]) == address(0),
                 "__addPrimitives: Value already set"
             );
 
@@ -299,8 +298,8 @@ abstract contract ChainlinkPriceFeedMixin {
     function __removePrimitives(address[] calldata _primitives) internal {
         for (uint256 i; i < _primitives.length; i++) {
             require(
-                primitiveToAggregatorInfo[_primitives[i]].aggregator != address(0),
-                "removePrimitives: Primitive not yet added"
+                getAggregatorForPrimitive(_primitives[i]) != address(0),
+                "__removePrimitives: Primitive not yet added"
             );
 
             delete primitiveToAggregatorInfo[_primitives[i]];
@@ -313,7 +312,7 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @notice Sets the `staleRateThreshold` variable
     /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
     function __setStaleRateThreshold(uint256 _nextStaleRateThreshold) internal {
-        uint256 prevStaleRateThreshold = staleRateThreshold;
+        uint256 prevStaleRateThreshold = getStaleRateThreshold();
         require(
             _nextStaleRateThreshold != prevStaleRateThreshold,
             "__setStaleRateThreshold: Value already set"
@@ -339,27 +338,21 @@ abstract contract ChainlinkPriceFeedMixin {
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the aggregatorInfo variable value for a primitive
-    /// @param _primitive The primitive asset for which to get the aggregatorInfo value
-    /// @return aggregatorInfo_ The aggregatorInfo value
-    function getAggregatorInfoForPrimitive(address _primitive)
-        external
+    /// @notice Gets the aggregator for a primitive
+    /// @param _primitive The primitive asset for which to get the aggregator value
+    /// @return aggregator_ The aggregator address
+    function getAggregatorForPrimitive(address _primitive)
+        public
         view
-        returns (AggregatorInfo memory aggregatorInfo_)
+        returns (address aggregator_)
     {
-        return primitiveToAggregatorInfo[_primitive];
+        return primitiveToAggregatorInfo[_primitive].aggregator;
     }
 
     /// @notice Gets the `ethUsdAggregator` variable value
     /// @return ethUsdAggregator_ The `ethUsdAggregator` variable value
-    function getEthUsdAggregator() external view returns (address ethUsdAggregator_) {
+    function getEthUsdAggregator() public view returns (address ethUsdAggregator_) {
         return ethUsdAggregator;
-    }
-
-    /// @notice Gets the `staleRateThreshold` variable value
-    /// @return staleRateThreshold_ The `staleRateThreshold` variable value
-    function getStaleRateThreshold() external view returns (uint256 staleRateThreshold_) {
-        return staleRateThreshold;
     }
 
     /// @notice Gets the rateAsset variable value for a primitive
@@ -372,34 +365,27 @@ abstract contract ChainlinkPriceFeedMixin {
         view
         returns (RateAsset rateAsset_)
     {
-        if (_primitive == WETH_TOKEN) {
+        if (_primitive == getWethToken()) {
             return RateAsset.ETH;
         }
 
         return primitiveToAggregatorInfo[_primitive].rateAsset;
     }
 
+    /// @notice Gets the `staleRateThreshold` variable value
+    /// @return staleRateThreshold_ The `staleRateThreshold` variable value
+    function getStaleRateThreshold() public view returns (uint256 staleRateThreshold_) {
+        return staleRateThreshold;
+    }
+
     /// @notice Gets the unit variable value for a primitive
     /// @return unit_ The unit variable value
     function getUnitForPrimitive(address _primitive) public view returns (uint256 unit_) {
-        if (_primitive == WETH_TOKEN) {
+        if (_primitive == getWethToken()) {
             return ETH_UNIT;
         }
 
         return primitiveToUnit[_primitive];
-    }
-
-    // PUBLIC FUNCTIONS
-
-    /// @notice Gets the aggregator for a primitive
-    /// @param _primitive The primitive asset for which to get the aggregator value
-    /// @return aggregator_ The aggregator address
-    function getAggregatorForPrimitive(address _primitive)
-        public
-        view
-        returns (address aggregator_)
-    {
-        return primitiveToAggregatorInfo[_primitive].aggregator;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable value

@@ -22,11 +22,6 @@ import "./IValueInterpreter.sol";
 /// @title ValueInterpreter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interprets price feeds to provide covert value between asset pairs
-/// @dev This contract contains several "live" value calculations, which for this release are simply
-/// aliases to their "canonical" value counterparts since the only primitive price feed (Chainlink)
-/// is immutable in this contract and only has one type of value. Including the "live" versions of
-/// functions only serves as a placeholder for infrastructural components and plugins (e.g., policies)
-/// to explicitly define the types of values that they should (and will) be using in a future release.
 contract ValueInterpreter is
     IValueInterpreter,
     FundDeployerOwnerMixin,

@@ -34,12 +34,12 @@ const expectedGasCosts = {
     weth: 329846,
   },
   'buy shares: max assets': {
-    usdc: 1323806,
-    weth: 1258781,
+    usdc: 1329139,
+    weth: 1263103,
   },
   'calc gav: 20 assets': {
-    usdc: 1047486,
-    weth: 993845,
+    usdc: 1052487,
+    weth: 997894,
   },
   'calc gav: denomination asset only': {
     usdc: 79832,

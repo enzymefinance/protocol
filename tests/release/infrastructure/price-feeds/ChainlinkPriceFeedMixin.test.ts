@@ -33,10 +33,7 @@ async function loadPrimitiveAggregator({
   valueInterpreter: ValueInterpreter;
   primitive: AddressLike;
 }) {
-  return new IChainlinkAggregator(
-    (await valueInterpreter.getAggregatorInfoForPrimitive(primitive)).aggregator,
-    provider,
-  );
+  return new IChainlinkAggregator(await valueInterpreter.getAggregatorForPrimitive(primitive), provider);
 }
 
 async function swapDaiAggregatorForUsd({
@@ -173,11 +170,13 @@ describe('constructor', () => {
 
     // Check primitives setup
     for (const symbol of Object.keys(fork.config.primitives)) {
-      const storedPrimitive = await valueInterpreter.getAggregatorInfoForPrimitive(fork.config.primitives[symbol]);
-      expect(storedPrimitive).toMatchFunctionOutput(valueInterpreter.getAggregatorInfoForPrimitive, {
-        aggregator: fork.config.chainlink.aggregators[symbol][0],
-        rateAsset: fork.config.chainlink.aggregators[symbol][1],
-      });
+      expect(await valueInterpreter.getAggregatorForPrimitive(fork.config.primitives[symbol])).toMatchAddress(
+        fork.config.chainlink.aggregators[symbol][0],
+      );
+      expect(await valueInterpreter.getRateAssetForPrimitive(fork.config.primitives[symbol])).toMatchFunctionOutput(
+        valueInterpreter.getRateAssetForPrimitive,
+        fork.config.chainlink.aggregators[symbol][1],
+      );
     }
 
     // FundDeployerOwnerMixin
@@ -240,11 +239,11 @@ describe('addPrimitives', () => {
       unit: primitiveUnit,
     });
 
-    const info = await valueInterpreter.getAggregatorInfoForPrimitive(unregisteredMockToken);
-    expect(info).toMatchFunctionOutput(valueInterpreter.getAggregatorInfoForPrimitive, {
-      aggregator: unusedAggregator,
+    expect(await valueInterpreter.getAggregatorForPrimitive(unregisteredMockToken)).toMatchAddress(unusedAggregator);
+    expect(await valueInterpreter.getRateAssetForPrimitive(unregisteredMockToken)).toMatchFunctionOutput(
+      valueInterpreter.getRateAssetForPrimitive,
       rateAsset,
-    });
+    );
     expect(await valueInterpreter.getUnitForPrimitive(unregisteredMockToken)).toEqBigNumber(primitiveUnit);
   });
 
@@ -315,12 +314,12 @@ describe('updatePrimitives', () => {
         primitive: primitivesToUpdate[i],
       });
 
-      expect(await valueInterpreter.getAggregatorInfoForPrimitive(primitivesToUpdate[i])).toMatchFunctionOutput(
-        valueInterpreter.getAggregatorInfoForPrimitive,
-        {
-          aggregator: aggregatorsToUpdate[i],
-          rateAsset: rateAssetsToUpdate[i],
-        },
+      expect(await valueInterpreter.getAggregatorForPrimitive(primitivesToUpdate[i])).toMatchAddress(
+        aggregatorsToUpdate[i],
+      );
+      expect(await valueInterpreter.getRateAssetForPrimitive(primitivesToUpdate[i])).toMatchFunctionOutput(
+        valueInterpreter.getRateAssetForPrimitive,
+        rateAssetsToUpdate[i],
       );
     }
   });
@@ -359,11 +358,8 @@ describe('removePrimitives', () => {
 
     expect(await valueInterpreter.getUnitForPrimitive(dai)).toEqBigNumber(0);
 
-    const info = await valueInterpreter.getAggregatorInfoForPrimitive(dai);
-    expect(info).toMatchFunctionOutput(valueInterpreter.getAggregatorInfoForPrimitive, {
-      aggregator: constants.AddressZero,
-      rateAsset: 0,
-    });
+    expect(await valueInterpreter.getAggregatorForPrimitive(dai)).toMatchAddress(constants.AddressZero);
+    expect(await valueInterpreter.getRateAssetForPrimitive(dai)).toBe(0);
   });
 });
 
@@ -397,11 +393,10 @@ describe('removeStalePrimitives', () => {
     const events = extractEvent(receipt, 'StalePrimitiveRemoved');
     expect(events).toHaveLength(primitivesToRemove.length);
     for (let i = 0; i < primitivesToRemove.length; i++) {
-      const aggregatorInfo = await valueInterpreter.getAggregatorInfoForPrimitive(primitivesToRemove[i]);
-      expect(aggregatorInfo).toMatchFunctionOutput(valueInterpreter.getAggregatorInfoForPrimitive, {
-        aggregator: constants.AddressZero,
-        rateAsset: 0,
-      });
+      expect(await valueInterpreter.getAggregatorForPrimitive(primitivesToRemove[i])).toMatchAddress(
+        constants.AddressZero,
+      );
+      expect(await valueInterpreter.getRateAssetForPrimitive(primitivesToRemove[i])).toBe(0);
 
       expect(events[i]).toMatchEventArgs({ primitive: resolveAddress(primitivesToRemove[i]) });
     }
