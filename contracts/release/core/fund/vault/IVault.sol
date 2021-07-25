@@ -49,6 +49,8 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault, IExternalP
 
     function canManageAssets(address) external view returns (bool);
 
+    function canRelayCalls(address) external view returns (bool);
+
     function getAccessor() external view returns (address);
 
     function getOwner() external view returns (address);

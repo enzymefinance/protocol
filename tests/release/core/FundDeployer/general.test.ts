@@ -26,6 +26,9 @@ describe('constructor', () => {
     for (const [contract, selector, dataHash] of fork.config.vaultCalls) {
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
     }
+
+    // GasRelayRecipientMixin
+    expect(await fundDeployer.getGasRelayPaymasterFactory()).toMatchAddress(fork.deployment.gasRelayPaymasterFactory);
   });
 });
 
@@ -34,7 +37,11 @@ describe('pseudo-constant setters', () => {
 
   beforeEach(async () => {
     // Create a new FundDeployer that does not yet have pseudo-constants set
-    fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+    fundDeployer = await FundDeployer.deploy(
+      fork.deployer,
+      fork.deployment.dispatcher,
+      fork.deployment.gasRelayPaymasterFactory,
+    );
   });
 
   describe('setComptrollerLib', () => {
@@ -134,12 +141,16 @@ describe('setReleaseLive', () => {
     mockDispatcher = await Dispatcher.mock(fork.deployer);
     await mockDispatcher.getOwner.returns(dispatcherOwner);
 
-    fundDeployer = await FundDeployer.deploy(creator, mockDispatcher);
+    fundDeployer = await FundDeployer.deploy(creator, mockDispatcher, fork.deployment.gasRelayPaymasterFactory);
   });
 
   describe('before setting pseudo-constants', () => {
     it('cannot be called before comptrollerLib is set', async () => {
-      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+      const fundDeployer = await FundDeployer.deploy(
+        fork.deployer,
+        fork.deployment.dispatcher,
+        fork.deployment.gasRelayPaymasterFactory,
+      );
 
       // Set other necessary vars
       await fundDeployer.setProtocolFeeTracker(randomAddress());
@@ -149,7 +160,11 @@ describe('setReleaseLive', () => {
     });
 
     it('cannot be called before protocolFeeTracker is set', async () => {
-      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+      const fundDeployer = await FundDeployer.deploy(
+        fork.deployer,
+        fork.deployment.dispatcher,
+        fork.deployment.gasRelayPaymasterFactory,
+      );
 
       // Set other necessary vars
       await fundDeployer.setComptrollerLib(randomAddress());
@@ -159,7 +174,11 @@ describe('setReleaseLive', () => {
     });
 
     it('cannot be called before vaultLib is set', async () => {
-      const fundDeployer = await FundDeployer.deploy(fork.deployer, fork.deployment.dispatcher);
+      const fundDeployer = await FundDeployer.deploy(
+        fork.deployer,
+        fork.deployment.dispatcher,
+        fork.deployment.gasRelayPaymasterFactory,
+      );
 
       // Set other necessary vars
       await fundDeployer.setComptrollerLib(randomAddress());

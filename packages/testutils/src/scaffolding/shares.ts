@@ -30,7 +30,11 @@ export interface RedeemSharesInKindParams {
   assetsToSkip?: AddressLike[];
 }
 
-export async function buyShares({
+export async function buyShares(options: BuySharesParams) {
+  return (await buySharesFunction(options)).send();
+}
+
+export async function buySharesFunction({
   comptrollerProxy,
   denominationAsset,
   buyer,
@@ -47,7 +51,7 @@ export async function buyShares({
 
   await denominationAsset.connect(buyer).approve(comptrollerProxy, investmentAmount);
 
-  return comptrollerProxy.connect(buyer).buyShares(investmentAmount, minSharesQuantity);
+  return comptrollerProxy.connect(buyer).buyShares.args(investmentAmount, minSharesQuantity).ref;
 }
 
 export async function redeemSharesForSpecificAssets({

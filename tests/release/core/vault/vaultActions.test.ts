@@ -20,6 +20,7 @@ describe('AddExternalPosition', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -65,6 +66,7 @@ describe('AddExternalPosition', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -103,6 +105,7 @@ describe('AddTrackedAsset', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -126,6 +129,7 @@ describe('AddTrackedAsset', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -161,6 +165,7 @@ describe('AddTrackedAsset', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -197,6 +202,7 @@ describe('ApproveAssetSpender', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -224,6 +230,7 @@ describe('ApproveAssetSpender', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -272,6 +279,7 @@ describe('BurnShares', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -322,6 +330,7 @@ describe('MintShares', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -364,6 +373,7 @@ describe('RemoveExternalPosition', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -418,6 +428,7 @@ describe('RemoveTrackedAsset', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -467,6 +478,7 @@ describe('TransferShares', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -511,6 +523,7 @@ describe('WithdrawAssetTo', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -537,6 +550,7 @@ describe('WithdrawAssetTo', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,

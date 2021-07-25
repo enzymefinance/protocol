@@ -74,6 +74,7 @@ const config: HardhatUserConfig = {
       'ICurveRegistry',
       'ICurveStableSwapSteth',
       'IYearnVaultV2',
+      'IGsnRelayHub',
     ],
     options: {
       ignoreContractsWithoutAbi: true,
@@ -96,12 +97,12 @@ const config: HardhatUserConfig = {
         count: 5,
         mnemonic,
       },
+      chainId: 1,
       forking: {
         blockNumber: 12836323, // July 16, 2021
         url: node('mainnet'),
       },
       blockGasLimit: gas,
-      gas,
       gasPrice: 0, // TODO: Consider removing this again.
     },
     kovan: {

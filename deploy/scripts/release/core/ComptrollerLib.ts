@@ -16,6 +16,7 @@ const fn: DeployFunction = async function (hre) {
   const externalPositionManager = await get('ExternalPositionManager');
   const feeManager = await get('FeeManager');
   const fundDeployer = await get('FundDeployer');
+  const gasRelayPaymasterFactory = await get('GasRelayPaymasterFactory');
   const integrationManager = await get('IntegrationManager');
   const policyManager = await get('PolicyManager');
   const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
@@ -32,7 +33,9 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       policyManager.address,
       assetFinalityResolver.address,
+      gasRelayPaymasterFactory.address,
       config.primitives.mln,
+      config.weth,
     ] as ComptrollerLibArgs,
     from: deployer.address,
     log: true,
@@ -54,6 +57,7 @@ fn.dependencies = [
   'ExternalPositionManager',
   'FeeManager',
   'FundDeployer',
+  'GasRelayPaymasterFactory',
   'IntegrationManager',
   'PolicyManager',
   'ProtocolFeeReserve',

@@ -38,7 +38,7 @@ export function encodeZeroExV2AssetData(token: AddressLike) {
   return encodeFunctionData(zeroExV2AssetFragment, [lowerCaseAddress]);
 }
 
-export async function createUnsignedZeroExV2Order({
+export function createUnsignedZeroExV2Order({
   exchange,
   maker,
   feeRecipientAddress,
@@ -59,7 +59,7 @@ export async function createUnsignedZeroExV2Order({
   makerAsset: AddressLike;
   takerAsset: AddressLike;
   expirationTimeSeconds: BigNumberish;
-}): Promise<UnsignedZeroExV2Order> {
+}): UnsignedZeroExV2Order {
   const makerAddress = resolveAddress(maker).toLowerCase();
   const exchangeAddress = resolveAddress(exchange).toLowerCase();
   const makerAssetAddress = resolveAddress(makerAsset).toLowerCase();

@@ -12,4 +12,5 @@ setToCostLessThanTolerance(0.03); // 3%
 beforeAll(async () => {
   (global as any).whales = await unlockAllWhales();
   (global as any).fork = await deployProtocolFixture();
+  await (global as any).provider.send('hardhat_impersonateAccount', [(global as any).fork.config.gsn.relayWorker]);
 });

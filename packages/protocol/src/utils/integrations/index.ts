@@ -10,3 +10,4 @@ export * from './uniswapV2';
 export * from './uniswapV3';
 export * from './yearn';
 export * from './zeroExV2';
+export * from './gasRelayer';

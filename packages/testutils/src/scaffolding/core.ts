@@ -5,6 +5,7 @@ import {
   Dispatcher,
   FeeManager,
   FundDeployer,
+  GasRelayPaymasterFactory,
   IntegrationManager,
   PolicyManager,
   ProtocolFeeTracker,
@@ -21,6 +22,7 @@ export async function createFundDeployer({
   externalPositionManager,
   dispatcher,
   feeManager,
+  gasRelayPaymasterFactory,
   integrationManager,
   policyManager,
   valueInterpreter,
@@ -33,6 +35,7 @@ export async function createFundDeployer({
   externalPositionManager: ExternalPositionManager;
   dispatcher: Dispatcher;
   feeManager: FeeManager;
+  gasRelayPaymasterFactory: GasRelayPaymasterFactory;
   integrationManager: IntegrationManager;
   policyManager: PolicyManager;
   valueInterpreter: ValueInterpreter;
@@ -40,11 +43,13 @@ export async function createFundDeployer({
   setOnDispatcher?: boolean;
   setReleaseLive?: boolean;
 }) {
-  const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher);
+  const mlnToken = await vaultLib.getMlnToken();
+  const wethToken = await vaultLib.getWethToken();
 
   // TODO: Shortcut for now, can pass in param later
   const protocolFeeReserve = await vaultLib.getProtocolFeeReserve();
 
+  const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher, gasRelayPaymasterFactory);
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,
@@ -56,8 +61,11 @@ export async function createFundDeployer({
     integrationManager,
     policyManager,
     assetFinalityResolver,
-    await vaultLib.getMlnToken(),
+    gasRelayPaymasterFactory,
+    mlnToken,
+    wethToken,
   );
+
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 
   const nextProtocolFeeTracker = await ProtocolFeeTracker.deploy(deployer, nextFundDeployer);
@@ -66,6 +74,7 @@ export async function createFundDeployer({
   const nextVaultLib = await VaultLib.deploy(
     deployer,
     externalPositionManager,
+    await vaultLib.getGasRelayPaymasterFactory(),
     await vaultLib.getProtocolFeeReserve(),
     nextProtocolFeeTracker,
     await vaultLib.getMlnToken(),

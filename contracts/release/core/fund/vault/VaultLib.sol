@@ -18,6 +18,7 @@ import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
 import "../../../interfaces/IWETH.sol";
@@ -33,7 +34,7 @@ import "./IVault.sol";
 /// but only tracked assets are used in gav calculations.
 /// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
 /// from SharesTokenBase via VaultLibBase2
-contract VaultLib is VaultLibBase2, IVault {
+contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
@@ -60,17 +61,18 @@ contract VaultLib is VaultLibBase2, IVault {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the owner can call this function");
+        require(__msgSender() == owner, "Only the owner can call this function");
         _;
     }
 
     constructor(
         address _externalPositionManager,
+        address _gasRelayPaymasterFactory,
         address _protocolFeeReserve,
         address _protocolFeeTracker,
         address _mlnToken,
         address _wethToken
-    ) public {
+    ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         MLN_TOKEN = _mlnToken;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
@@ -214,10 +216,7 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @notice Updates the accessor during a config change within this release
     /// @param _nextAccessor The next accessor
     function setAccessorForFundReconfiguration(address _nextAccessor) external override {
-        require(
-            msg.sender == IDispatcher(creator).getFundDeployerForVaultProxy(address(this)),
-            "Only the FundDeployer can make this call"
-        );
+        require(msg.sender == getFundDeployer(), "Only the FundDeployer can make this call");
 
         __setAccessor(_nextAccessor);
     }
@@ -613,9 +612,16 @@ contract VaultLib is VaultLibBase2, IVault {
         return _who == getOwner() || isAssetManager(_who);
     }
 
+    /// @notice Checks whether an account can use gas relaying
+    /// @param _who The account to check
+    /// @return canRelayCalls_ True if the account can use gas relaying on this fund
+    function canRelayCalls(address _who) external view override returns (bool canRelayCalls_) {
+        return _who == getOwner() || isAssetManager(_who) || _who == getMigrator();
+    }
+
     /// @notice Gets the `accessor` variable
     /// @return accessor_ The `accessor` variable value
-    function getAccessor() external view override returns (address accessor_) {
+    function getAccessor() public view override returns (address accessor_) {
         return accessor;
     }
 
@@ -627,7 +633,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @notice Gets the `migrator` variable
     /// @return migrator_ The `migrator` variable value
-    function getMigrator() external view returns (address migrator_) {
+    function getMigrator() public view returns (address migrator_) {
         return migrator;
     }
 
@@ -660,6 +666,12 @@ contract VaultLib is VaultLibBase2, IVault {
     /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
     function getExternalPositionManager() public view returns (address externalPositionManager_) {
         return EXTERNAL_POSITION_MANAGER;
+    }
+
+    /// @notice Gets the vaults fund deployer
+    /// @return fundDeployer_ The fund deployer contract associated with this vault
+    function getFundDeployer() public view returns (address fundDeployer_) {
+        return IDispatcher(creator).getFundDeployerForVaultProxy(address(this));
     }
 
     /// @notice Gets the `MLN_TOKEN` variable

@@ -152,6 +152,7 @@ describe('setAccessorForFundReconfiguration', () => {
       await VaultLib.deploy(
         fork.deployer,
         fork.deployment.externalPositionManager,
+        fork.deployment.gasRelayPaymasterFactory,
         fork.deployment.protocolFeeReserveProxy,
         fork.deployment.protocolFeeTracker,
         fork.config.primitives.mln,
@@ -205,6 +206,7 @@ describe('buyBackProtocolFeeShares', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -308,6 +310,7 @@ describe('payProtocolFee', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       protocolFeeTracker,
       fork.config.primitives.mln,
@@ -586,6 +589,7 @@ describe('asset managers', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -692,6 +696,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -715,6 +720,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -738,6 +744,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -761,6 +768,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -784,6 +792,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,
@@ -807,6 +816,7 @@ describe('Comptroller calls to vault actions', () => {
     const vaultLib = await VaultLib.deploy(
       fork.deployer,
       fork.deployment.externalPositionManager,
+      fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
       fork.config.primitives.mln,

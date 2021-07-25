@@ -51,6 +51,7 @@ import {
   AssetFinalityResolver,
   ProtocolFeeReserveLib,
   ProtocolFeeTracker,
+  GasRelayPaymasterFactory,
   ExternalPositionFactory,
 } from '@enzymefinance/protocol';
 
@@ -131,6 +132,7 @@ export async function deployProtocolFixture() {
     protocolFeeReserveLib: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveLib'].address, deployer),
     protocolFeeReserveProxy: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveProxy'].address, deployer),
     protocolFeeTracker: new ProtocolFeeTracker(fixture['ProtocolFeeTracker'].address, deployer),
+    gasRelayPaymasterFactory: new GasRelayPaymasterFactory(fixture['GasRelayPaymasterFactory'].address, deployer),
   } as const;
 
   return {

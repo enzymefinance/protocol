@@ -97,6 +97,10 @@ export * from './codegen/MockToken';
 export * from './codegen/MockReentrancyToken';
 export * from './codegen/MockChainlinkPriceSource';
 
+// Gas relayer
+export * from './codegen/GasRelayPaymasterFactory';
+export * from './codegen/GasRelayPaymasterLib';
+
 // External interfaces
 export * from './codegen/ICERC20';
 export * from './codegen/ICEther';
@@ -106,6 +110,7 @@ export * from './codegen/ICurveLiquidityGaugeV2';
 export * from './codegen/ICurveLiquidityPool';
 export * from './codegen/ICurveRegistry';
 export * from './codegen/ICurveStableSwapSteth';
+export * from './codegen/IGsnRelayHub';
 export * from './codegen/IIdleTokenV4';
 export * from './codegen/ISynthetixAddressResolver';
 export * from './codegen/ISynthetixExchangeRates';

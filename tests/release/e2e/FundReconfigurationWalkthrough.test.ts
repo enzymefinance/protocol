@@ -25,12 +25,12 @@ import { utils } from 'ethers';
 
 const expectedGasCosts = {
   'signal reconfiguration': {
-    usdc: 476526,
-    weth: 474322,
+    usdc: 485819,
+    weth: 483565,
   },
   'execute reconfiguration': {
-    usdc: 423255,
-    weth: 392744,
+    usdc: 436010,
+    weth: 405443,
   },
 } as const;
 

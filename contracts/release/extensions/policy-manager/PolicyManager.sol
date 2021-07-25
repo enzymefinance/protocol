@@ -13,6 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../core/fund/vault/IVault.sol";
+import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/ExtensionBase.sol";
@@ -27,7 +28,12 @@ import "./IPolicyManager.sol";
 /// Policies that restrict current investors can only be added upon fund setup, migration, or reconfiguration.
 /// Policies that restrict new investors or asset management actions can be added at any time.
 /// Policies themselves specify whether or not they are allowed to be updated or removed.
-contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin {
+contract PolicyManager is
+    IPolicyManager,
+    ExtensionBase,
+    FundDeployerOwnerMixin,
+    GasRelayRecipientMixin
+{
     using AddressArrayLib for address[];
 
     event PolicyDisabledForFund(address indexed comptrollerProxy, address indexed policy);
@@ -42,13 +48,17 @@ contract PolicyManager is IPolicyManager, ExtensionBase, FundDeployerOwnerMixin 
 
     modifier onlyFundOwner(address _comptrollerProxy) {
         require(
-            msg.sender == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
+            __msgSender() == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
             "Only the fund owner can call this function"
         );
         _;
     }
 
-    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
+    constructor(address _fundDeployer, address _gasRelayPaymasterFactory)
+        public
+        FundDeployerOwnerMixin(_fundDeployer)
+        GasRelayRecipientMixin(_gasRelayPaymasterFactory)
+    {}
 
     // EXTERNAL FUNCTIONS
 

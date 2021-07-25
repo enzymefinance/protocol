@@ -70,6 +70,9 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     expect(await policyManager.getOwner()).toMatchAddress(await fundDeployer.getOwner());
+
+    // GasRelayRecipientMixin
+    expect(await policyManager.getGasRelayPaymasterFactory()).toMatchAddress(fork.deployment.gasRelayPaymasterFactory);
   });
 });
 
@@ -84,6 +87,7 @@ describe('activateForFund', () => {
         externalPositionManager,
         dispatcher,
         feeManager,
+        gasRelayPaymasterFactory,
         integrationManager,
         policyManager,
         valueInterpreter,
@@ -110,6 +114,7 @@ describe('activateForFund', () => {
       externalPositionManager,
       dispatcher,
       feeManager,
+      gasRelayPaymasterFactory,
       integrationManager,
       policyManager,
       valueInterpreter,

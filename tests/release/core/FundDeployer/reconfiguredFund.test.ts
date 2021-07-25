@@ -303,6 +303,7 @@ describe('executeReconfiguration', () => {
         externalPositionManager: fork.deployment.externalPositionManager,
         dispatcher: fork.deployment.dispatcher,
         feeManager: fork.deployment.feeManager,
+        gasRelayPaymasterFactory: fork.deployment.gasRelayPaymasterFactory,
         integrationManager: fork.deployment.integrationManager,
         policyManager: fork.deployment.policyManager,
         valueInterpreter: fork.deployment.valueInterpreter,

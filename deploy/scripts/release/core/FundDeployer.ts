@@ -12,9 +12,10 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
   const dispatcher = await get('Dispatcher');
+  const gasRelayPaymasterFactory = await get('GasRelayPaymasterFactory');
 
   const fundDeployer = await deploy('FundDeployer', {
-    args: [dispatcher.address] as FundDeployerArgs,
+    args: [dispatcher.address, gasRelayPaymasterFactory.address] as FundDeployerArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -35,6 +36,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'FundDeployer'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Config', 'Dispatcher', 'GasRelayPaymasterFactory'];
 
 export default fn;

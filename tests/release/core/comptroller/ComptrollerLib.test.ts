@@ -21,6 +21,9 @@ describe('constructor', () => {
     expect(await comptrollerLib.getPolicyManager()).toMatchAddress(fork.deployment.policyManager);
     expect(await comptrollerLib.getProtocolFeeReserve()).toMatchAddress(fork.deployment.protocolFeeReserveProxy);
     expect(await comptrollerLib.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
+
+    // GasRelayRecipientMixin
+    expect(await comptrollerLib.getGasRelayPaymasterFactory()).toMatchAddress(fork.deployment.gasRelayPaymasterFactory);
   });
 });
 
@@ -34,6 +37,8 @@ describe('destruct calls', () => {
       randomAddress(),
       randomAddress(),
       mockFundDeployer,
+      randomAddress(),
+      randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),

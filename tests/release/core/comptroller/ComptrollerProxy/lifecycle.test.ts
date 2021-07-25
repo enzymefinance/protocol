@@ -44,7 +44,9 @@ async function snapshot() {
     mockIntegrationManager,
     mockPolicyManager,
     randomAddress(), // AssetFinalityResolver
+    deployment.gasRelayPaymasterFactory, // GasRelayPaymasterFactory
     config.primitives.mln,
+    config.weth,
   );
 
   // Deploy configured ComptrollerProxy

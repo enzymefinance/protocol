@@ -1,4 +1,4 @@
-import { AddressLike, extractEvent } from '@enzymefinance/ethers';
+import { extractEvent } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
@@ -13,6 +13,7 @@ import {
   assertEvent,
   assertNoEvent,
   buyShares,
+  calcMlnValueAndBurnAmountForSharesBuyback,
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
@@ -20,7 +21,7 @@ import {
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import { BigNumber, BigNumberish } from 'ethers';
 
 // Use a half year for fees just to not use exactly 1 year
 const halfYearInSeconds = (60 * 60 * 24 * 365.25) / 2;
@@ -451,33 +452,3 @@ describe('auto-buybacks', () => {
     });
   });
 });
-
-// TODO: move to helper util file?
-async function calcMlnValueAndBurnAmountForSharesBuyback({
-  valueInterpreter,
-  mln,
-  denominationAsset,
-  sharesSupply,
-  gav,
-  buybackSharesAmount,
-}: {
-  valueInterpreter: ValueInterpreter;
-  mln: AddressLike;
-  denominationAsset: AddressLike;
-  sharesSupply: BigNumberish;
-  gav: BigNumberish;
-  buybackSharesAmount: BigNumberish;
-}) {
-  // Calculate expected mlnValue of shares to buyback
-  // TODO: calcGrossShareValue can also be a helper util
-  const grossShareValue = BigNumber.from(gav).mul(utils.parseEther('1')).div(sharesSupply);
-  const denominationAssetValueOfBuyback = grossShareValue.mul(buybackSharesAmount).div(utils.parseEther('1'));
-  const mlnValueOfBuyback = await valueInterpreter.calcCanonicalAssetValue
-    .args(denominationAsset, denominationAssetValueOfBuyback, mln)
-    .call();
-
-  // 50% discount
-  const mlnAmountToBurn = mlnValueOfBuyback.div(2);
-
-  return { mlnValue: mlnValueOfBuyback, mlnAmountToBurn };
-}

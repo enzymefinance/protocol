@@ -52,7 +52,7 @@ describe('parseAssetsForAction', () => {
     const takerFee = BigNumber.from(7);
     const takerAssetFillAmount = BigNumber.from(11);
 
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker: fork.deployer,
       feeRecipientAddress,
@@ -92,7 +92,7 @@ describe('parseAssetsForAction', () => {
     const takerAssetFillAmount = BigNumber.from(2);
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -143,7 +143,7 @@ describe('parseAssetsForAction', () => {
       .div(takerAssetAmount)
       .sub(expectedTakerFee);
 
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -190,7 +190,7 @@ describe('parseAssetsForAction', () => {
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -238,7 +238,7 @@ describe('parseAssetsForAction', () => {
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker: deployer,
       feeRecipientAddress,
@@ -341,7 +341,7 @@ describe('takeOrder', () => {
     // Seed the maker and create a 0x order
     await incomingAsset.transfer(maker, makerAssetAmount);
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
@@ -410,7 +410,7 @@ describe('takeOrder', () => {
     // Seed the maker and create a 0x order
     await incomingAsset.transfer(maker, makerAssetAmount);
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
@@ -478,7 +478,7 @@ describe('takeOrder', () => {
     // Seed the maker and create a 0x order
     await incomingAsset.transfer(maker, makerAssetAmount);
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
-    const unsignedOrder = await createUnsignedZeroExV2Order({
+    const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
       maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,

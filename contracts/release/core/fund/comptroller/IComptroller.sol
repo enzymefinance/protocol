@@ -38,6 +38,10 @@ interface IComptroller {
 
     function getExternalPositionManager() external view returns (address);
 
+    function getFundDeployer() external view returns (address);
+
+    function getGasRelayPaymaster() external view returns (address);
+
     function getIntegrationManager() external view returns (address);
 
     function getVaultProxy() external view returns (address);
@@ -53,6 +57,8 @@ interface IComptroller {
     ) external;
 
     function preTransferSharesHookFreelyTransferable(address) external view;
+
+    function setGasRelayPaymaster(address) external;
 
     function setVaultProxy(address) external;
 }

@@ -229,6 +229,11 @@ const synthetixDelegateApprovals = '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f';
 
 // prettier-ignore
 const mainnetConfig: DeploymentConfig = {
+  gsn: {
+    relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
+    relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',
+    trustedForwarder: '0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA',
+  },
   aave: {
     atokens,
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',

@@ -14,9 +14,10 @@ pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../persistent/dispatcher/IMigrationHookHandler.sol";
+import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
-import "../fund/comptroller/IComptroller.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
+import "../fund/comptroller/IComptroller.sol";
 import "../fund/vault/IVault.sol";
 import "./IFundDeployer.sol";
 
@@ -26,7 +27,7 @@ import "./IFundDeployer.sol";
 /// It primarily coordinates fund deployment and fund migration, but
 /// it is also deferred to for contract access control and for allowed calls
 /// that can be made with a fund's VaultProxy as the msg.sender.
-contract FundDeployer is IFundDeployer, IMigrationHookHandler {
+contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipientMixin {
     event BuySharesOnBehalfCallerDeregistered(address caller);
 
     event BuySharesOnBehalfCallerRegistered(address caller);
@@ -121,10 +122,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     }
 
     modifier onlyMigrator(address _vaultProxy) {
-        require(
-            IVault(_vaultProxy).canMigrate(msg.sender),
-            "Only a permissioned migrator can call this function"
-        );
+        __assertIsMigrator(_vaultProxy, __msgSender());
+        _;
+    }
+
+    modifier onlyMigratorNotRelayable(address _vaultProxy) {
+        __assertIsMigrator(_vaultProxy, msg.sender);
         _;
     }
 
@@ -138,7 +141,17 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         _;
     }
 
-    constructor(address _dispatcher) public {
+    function __assertIsMigrator(address _vaultProxy, address _who) private view {
+        require(
+            IVault(_vaultProxy).canMigrate(_who),
+            "Only a permissioned migrator can call this function"
+        );
+    }
+
+    constructor(address _dispatcher, address _gasRelayPaymasterFactory)
+        public
+        GasRelayRecipientMixin(_gasRelayPaymasterFactory)
+    {
         // Validate constants
         require(
             ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")),
@@ -246,10 +259,16 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData,
         bool _bypassPrevReleaseFailure
-    ) external onlyLiveRelease onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
+    )
+        external
+        onlyLiveRelease
+        onlyMigratorNotRelayable(_vaultProxy)
+        returns (address comptrollerProxy_)
+    {
         // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
 
         comptrollerProxy_ = __deployComptrollerProxy(
+            msg.sender,
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
@@ -288,8 +307,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         bytes calldata _policyManagerConfigData
     ) external onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
         // _fundOwner is validated by VaultLib.__setOwner()
+        address canonicalSender = __msgSender();
 
         comptrollerProxy_ = __deployComptrollerProxy(
+            canonicalSender,
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
@@ -309,7 +330,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(vaultProxy_);
 
-        emit NewFundCreated(msg.sender, vaultProxy_, comptrollerProxy_);
+        emit NewFundCreated(canonicalSender, vaultProxy_, comptrollerProxy_);
 
         return (comptrollerProxy_, vaultProxy_);
     }
@@ -328,7 +349,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external onlyMigrator(_vaultProxy) returns (address comptrollerProxy_) {
+    ) external returns (address comptrollerProxy_) {
+        address canonicalSender = __msgSender();
+        __assertIsMigrator(_vaultProxy, canonicalSender);
         require(
             IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) ==
                 address(this),
@@ -340,6 +363,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         );
 
         comptrollerProxy_ = __deployComptrollerProxy(
+            canonicalSender,
             _denominationAsset,
             _sharesActionTimelock,
             _feeManagerConfigData,
@@ -355,7 +379,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         });
 
         emit ReconfigurationRequestCreated(
-            msg.sender,
+            canonicalSender,
             _vaultProxy,
             comptrollerProxy_,
             executableTimestamp
@@ -366,6 +390,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
     /// @dev Helper function to deploy a configured ComptrollerProxy
     function __deployComptrollerProxy(
+        address _canonicalSender,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
         bytes memory _feeManagerConfigData,
@@ -388,7 +413,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         }
 
         emit ComptrollerProxyDeployed(
-            msg.sender,
+            _canonicalSender,
             comptrollerProxy_,
             _denominationAsset,
             _sharesActionTimelock,
@@ -447,6 +472,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         // Unwind and destroy the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
         address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
+        address paymaster = IComptroller(prevComptrollerProxy).getGasRelayPaymaster();
         IComptroller(prevComptrollerProxy).destructActivated();
 
         // Execute the reconfiguration
@@ -454,6 +480,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         // Activate the new ComptrollerProxy
         IComptroller(request.nextComptrollerProxy).activate(true);
+        if (paymaster != address(0)) {
+            IComptroller(request.nextComptrollerProxy).setGasRelayPaymaster(paymaster);
+        }
 
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
@@ -482,7 +511,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while canceling migration
     function cancelMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
-        onlyMigrator(_vaultProxy)
+        onlyMigratorNotRelayable(_vaultProxy)
     {
         IDispatcher(getDispatcher()).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
     }
@@ -492,7 +521,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while executing migration
     function executeMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
-        onlyMigrator(_vaultProxy)
+        onlyMigratorNotRelayable(_vaultProxy)
     {
         IDispatcher dispatcherContract = IDispatcher(getDispatcher());
 

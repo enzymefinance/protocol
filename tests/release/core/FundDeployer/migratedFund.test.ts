@@ -27,6 +27,7 @@ async function createNewFundOnPrevRelease({
     externalPositionManager: fork.deployment.externalPositionManager,
     dispatcher: fork.deployment.dispatcher,
     feeManager: fork.deployment.feeManager,
+    gasRelayPaymasterFactory: fork.deployment.gasRelayPaymasterFactory,
     integrationManager: fork.deployment.integrationManager,
     policyManager: fork.deployment.policyManager,
     valueInterpreter: fork.deployment.valueInterpreter,
@@ -86,6 +87,7 @@ describe('createMigrationRequest', () => {
         policyManager,
         valueInterpreter,
         vaultLib,
+        gasRelayPaymasterFactory,
       } = fork.deployment;
       const nonLiveFundDeployer = await createFundDeployer({
         deployer: fork.deployer,
@@ -97,6 +99,7 @@ describe('createMigrationRequest', () => {
         policyManager,
         valueInterpreter,
         vaultLib,
+        gasRelayPaymasterFactory,
         setReleaseLive: false, // Do NOT set release as live
         setOnDispatcher: true, // Do set as the current release on the Dispatcher
       });

@@ -5,6 +5,7 @@ import {
   ComptrollerProxy,
   encodeFunctionData,
   FundDeployer,
+  GasRelayPaymasterLib,
   StandardToken,
   VaultLib,
   VaultProxy,
@@ -207,4 +208,28 @@ export async function createVaultProxy({
   const vaultProxyContract = await VaultProxy.deploy(signer, constructData, vaultLib);
 
   return new VaultLib(vaultProxyContract, fundAccessor);
+}
+
+export async function setupGasRelayerPaymaster({
+  signer,
+  vaultProxy,
+  fundAccessor,
+  weth,
+  startingBalance = utils.parseUnits('10', 18),
+}: {
+  signer: SignerWithAddress;
+  vaultProxy: AddressLike;
+  fundAccessor: AddressLike;
+  weth: StandardToken;
+  startingBalance?: BigNumberish;
+}) {
+  await weth.transfer(vaultProxy, startingBalance);
+  const comptrollerProxy = new ComptrollerLib(fundAccessor, signer);
+  const receipt = await comptrollerProxy.deployGasRelayPaymaster();
+
+  const eventArgs = assertEvent(receipt, 'GasRelayPaymasterSet', {
+    gasRelayPaymaster: expect.any(String) as string,
+  });
+
+  return new GasRelayPaymasterLib(eventArgs.gasRelayPaymaster, signer);
 }

@@ -13,12 +13,14 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const externalPositionManager = await get('ExternalPositionManager');
   const fundDeployer = await get('FundDeployer');
+  const gasRelayPaymasterFactory = await get('GasRelayPaymasterFactory');
   const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
   const protocolFeeTracker = await get('ProtocolFeeTracker');
 
   const vaultLib = await deploy('VaultLib', {
     args: [
       externalPositionManager.address,
+      gasRelayPaymasterFactory.address,
       protocolFeeReserveProxy.address,
       protocolFeeTracker.address,
       config.primitives.mln,
@@ -37,6 +39,12 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'VaultLib'];
-fn.dependencies = ['Config', 'ExternalPositionManager', 'ProtocolFeeReserve', 'ProtocolFeeTracker'];
+fn.dependencies = [
+  'Config',
+  'ExternalPositionManager',
+  'GasRelayPaymasterFactory',
+  'ProtocolFeeReserve',
+  'ProtocolFeeTracker',
+];
 
 export default fn;
