@@ -3,7 +3,7 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
-  entranceRateFeeConfigArgs,
+  entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   investorWhitelistArgs,
   managementFeeConfigArgs,
@@ -30,12 +30,12 @@ const expectedGasCosts = {
     weth: 327083,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 353923,
-    weth: 338998,
+    usdc: 356352,
+    weth: 341255,
   },
   'buy shares: max assets': {
-    usdc: 1337876,
-    weth: 1271840,
+    usdc: 1340865,
+    weth: 1274819,
   },
   'calc gav: 20 assets': {
     usdc: 1052487,
@@ -47,8 +47,8 @@ const expectedGasCosts = {
   },
 
   'create fund': {
-    usdc: 923035,
-    weth: 912526,
+    usdc: 926433,
+    weth: 915924,
   },
 
   'redeem partial shares: max assets': {
@@ -104,16 +104,16 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const rate = utils.parseEther('0.01');
       const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
-      const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
+      const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
       const performanceFeeSettings = performanceFeeConfigArgs({
         rate: utils.parseEther('0.1'),
         period: 365 * 24 * 60 * 60,
       });
-      const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
+      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
 
       const feeManagerConfig = feeManagerConfigArgs({
         fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
-        settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
+        settings: [managementFeeSettings, performanceFeeSettings, entranceRateBurnFeeSettings],
       });
 
       // TODO: add policies

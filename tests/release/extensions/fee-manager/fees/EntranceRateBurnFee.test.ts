@@ -8,7 +8,7 @@ import {
   EntranceRateBurnFee,
   FeeHook,
   FeeSettlementType,
-  entranceRateFeeConfigArgs,
+  entranceRateBurnFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
@@ -46,7 +46,7 @@ describe('settle', () => {
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('.1'); // 10%
-    const entranceRateFeeConfig = entranceRateFeeConfigArgs(rate);
+    const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate });
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);

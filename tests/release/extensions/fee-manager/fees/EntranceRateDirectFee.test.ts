@@ -1,6 +1,6 @@
 /*
  * @file Only tests the EntranceRateDirectFee functionality not covered by
- * the EntranceRateFeeBase tests, i.e., the use of settlement type
+ * the EntranceRateFeeBase tests
  */
 
 import { randomAddress } from '@enzymefinance/ethers';
@@ -8,12 +8,18 @@ import {
   EntranceRateDirectFee,
   FeeHook,
   FeeSettlementType,
-  entranceRateFeeConfigArgs,
+  entranceRateDirectFeeConfigArgs,
   entranceRateFeeSharesDue,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, utils } from 'ethers';
+
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('has correct config', async () => {
@@ -43,16 +49,49 @@ describe('constructor', () => {
   });
 });
 
+// Tests that the override of this function works properly
+describe('addFundSettings', () => {
+  const comptrollerProxyAddress = randomAddress();
+  const feeRecipient = randomAddress();
+  const rate = utils.parseEther('1');
+  let entranceRateDirectFee: EntranceRateDirectFee;
+  let EOAFeeManager: SignerWithAddress, randomUser: SignerWithAddress;
+
+  beforeEach(async () => {
+    [EOAFeeManager, randomUser] = fork.accounts;
+    entranceRateDirectFee = await EntranceRateDirectFee.deploy(fork.deployer, EOAFeeManager);
+  });
+
+  it('can only be called by the FeeManager', async () => {
+    await expect(
+      entranceRateDirectFee
+        .connect(randomUser)
+        .addFundSettings(comptrollerProxyAddress, entranceRateDirectFeeConfigArgs({ rate, recipient: feeRecipient })),
+    ).rejects.toBeRevertedWith('Only the FeeManger can make this call');
+  });
+
+  it('correctly handles valid call', async () => {
+    await entranceRateDirectFee
+      .connect(EOAFeeManager)
+      .addFundSettings(comptrollerProxyAddress, entranceRateDirectFeeConfigArgs({ rate, recipient: feeRecipient }));
+
+    // Assert rate has been set
+    expect(await entranceRateDirectFee.getRateForFund(comptrollerProxyAddress)).toEqBigNumber(rate);
+
+    // Assert the specified fee recipient has been set
+    expect(await entranceRateDirectFee.getRecipientForFund(comptrollerProxyAddress)).toMatchAddress(feeRecipient);
+  });
+});
+
 describe('settle', () => {
   it('correctly handles valid call', async () => {
-    const fork = await deployProtocolFixture();
     const [EOAFeeManager] = fork.accounts;
     const standaloneEntranceRateFee = await EntranceRateDirectFee.deploy(fork.deployer, EOAFeeManager);
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('.1'); // 10%
-    const entranceRateFeeConfig = await entranceRateFeeConfigArgs(rate);
+    const entranceRateFeeConfig = entranceRateDirectFeeConfigArgs({ rate });
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
@@ -61,7 +100,7 @@ describe('settle', () => {
     const buyer = randomAddress();
     const sharesBought = utils.parseEther('2');
     const investmentAmount = utils.parseEther('2');
-    const settlementData = await settlePostBuySharesArgs({
+    const settlementData = settlePostBuySharesArgs({
       buyer,
       sharesBought,
       investmentAmount,

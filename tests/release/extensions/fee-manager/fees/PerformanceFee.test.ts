@@ -1,4 +1,4 @@
-import { AddressLike, extractEvent, MockContract } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   FeeHook,
@@ -259,9 +259,12 @@ describe('addFundSettings', () => {
   });
 
   it('correctly handles valid call', async () => {
+    const feeRecipient = randomAddress();
+
     const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
       period: performanceFeePeriod,
+      recipient: feeRecipient,
     });
 
     const receipt = await mockFeeManager.forward(
@@ -270,7 +273,7 @@ describe('addFundSettings', () => {
       performanceFeeConfig,
     );
 
-    // Assert correct event was emitted
+    // Assert correct events were emitted
     assertEvent(receipt, 'FundSettingsAdded', {
       comptrollerProxy: mockComptrollerProxy,
       rate: performanceFeeRate,
@@ -278,17 +281,20 @@ describe('addFundSettings', () => {
     });
 
     // Assert state
-    const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(mockComptrollerProxy);
+    expect(await performanceFee.getFeeInfoForFund(mockComptrollerProxy)).toMatchFunctionOutput(
+      performanceFee.getFeeInfoForFund,
+      {
+        rate: performanceFeeRate,
+        period: performanceFeePeriod,
+        activated: BigNumber.from(0),
+        lastPaid: BigNumber.from(0),
+        highWaterMark: BigNumber.from(0),
+        lastSharePrice: BigNumber.from(0),
+        aggregateValueDue: BigNumber.from(0),
+      },
+    );
 
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
-      rate: performanceFeeRate,
-      period: performanceFeePeriod,
-      activated: BigNumber.from(0),
-      lastPaid: BigNumber.from(0),
-      highWaterMark: BigNumber.from(0),
-      lastSharePrice: BigNumber.from(0),
-      aggregateValueDue: BigNumber.from(0),
-    });
+    expect(await performanceFee.getRecipientForFund(mockComptrollerProxy)).toMatchAddress(feeRecipient);
   });
 });
 

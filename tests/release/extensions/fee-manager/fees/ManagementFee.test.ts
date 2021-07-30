@@ -1,4 +1,4 @@
-import { AddressLike, extractEvent, MockContract } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
@@ -44,7 +44,7 @@ async function deployAndConfigureStandaloneManagementFee(
 
   if (comptrollerProxy != '0x') {
     // Add fee settings for ComptrollerProxy
-    const managementFeeConfig = managementFeeConfigArgs(scaledPerSecondRate);
+    const managementFeeConfig = managementFeeConfigArgs({ scaledPerSecondRate });
     await managementFee.addFundSettings(comptrollerProxy, managementFeeConfig);
   }
 
@@ -85,7 +85,7 @@ describe('addFundSettings', () => {
 
   it('can only be called by the FeeManager', async () => {
     const [randomUser] = fork.accounts;
-    const managementFeeConfig = managementFeeConfigArgs(scaledPerSecondRate);
+    const managementFeeConfig = managementFeeConfigArgs({ scaledPerSecondRate });
 
     await expect(
       managementFee.connect(randomUser).addFundSettings(mockComptrollerProxy, managementFeeConfig),
@@ -93,7 +93,9 @@ describe('addFundSettings', () => {
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const managementFeeConfig = managementFeeConfigArgs(scaledPerSecondRate);
+    const feeRecipient = randomAddress();
+    const managementFeeConfig = managementFeeConfigArgs({ scaledPerSecondRate, recipient: feeRecipient });
+
     const receipt = await managementFee.addFundSettings(mockComptrollerProxy, managementFeeConfig);
 
     // Assert the FundSettingsAdded event was emitted
@@ -103,11 +105,16 @@ describe('addFundSettings', () => {
     });
 
     // managementFeeRate should be set for comptrollerProxy
-    const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
-    expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
-      scaledPerSecondRate,
-      lastSettled: BigNumber.from(0),
-    });
+    expect(await managementFee.getFeeInfoForFund(mockComptrollerProxy)).toMatchFunctionOutput(
+      managementFee.getFeeInfoForFund,
+      {
+        scaledPerSecondRate,
+        lastSettled: BigNumber.from(0),
+      },
+    );
+
+    // The specified fee recipient should be set
+    expect(await managementFee.getRecipientForFund(mockComptrollerProxy)).toMatchAddress(feeRecipient);
   });
 });
 

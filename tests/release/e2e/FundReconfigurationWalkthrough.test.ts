@@ -2,7 +2,7 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
-  entranceRateFeeConfigArgs,
+  entranceRateBurnFeeConfigArgs,
   FeeManagerActionId,
   feeManagerConfigArgs,
   FundDeployer,
@@ -25,12 +25,12 @@ import { utils } from 'ethers';
 
 const expectedGasCosts = {
   'signal reconfiguration': {
-    usdc: 485819,
-    weth: 483565,
+    usdc: 488279,
+    weth: 486025,
   },
   'execute reconfiguration': {
-    usdc: 436010,
-    weth: 405443,
+    usdc: 438233,
+    weth: 407666,
   },
 } as const;
 
@@ -59,16 +59,18 @@ describe.each([['weth' as const], ['usdc' as const]])(
           : new StandardToken(fork.config.primitives[denominationAssetId], whales[denominationAssetId]);
 
       // Create a fund with management and performance fee
-      const managementFeeSettings = managementFeeConfigArgs(convertRateToScaledPerSecondRate(utils.parseEther('0.01')));
+      const managementFeeSettings = managementFeeConfigArgs({
+        scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')),
+      });
       const performanceFeeSettings = performanceFeeConfigArgs({
         rate: utils.parseEther('0.1'),
         period: 365 * 24 * 60 * 60,
       });
-      const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
+      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
 
       feeManagerConfig = feeManagerConfigArgs({
         fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
-        settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
+        settings: [managementFeeSettings, performanceFeeSettings, entranceRateBurnFeeSettings],
       });
 
       // Buy shares in the fund for the fund owner

@@ -1,10 +1,19 @@
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import { AddressLike } from '@enzymefinance/ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { max } from '../bignumber';
 import { encodeArgs } from '../encoding';
 import { FeeHook } from './types';
 
-export function performanceFeeConfigArgs({ rate, period }: { rate: BigNumberish; period: BigNumberish }) {
-  return encodeArgs(['uint256', 'uint256'], [rate, period]);
+export function performanceFeeConfigArgs({
+  rate,
+  period,
+  recipient = constants.AddressZero,
+}: {
+  rate: BigNumberish;
+  period: BigNumberish;
+  recipient?: AddressLike;
+}) {
+  return encodeArgs(['uint256', 'uint256', 'address'], [rate, period, recipient]);
 }
 
 export interface PerformanceFeeSharesDueInfo {

@@ -16,11 +16,12 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../core/fund/vault/VaultLib.sol";
 import "../../../utils/MakerDaoMath.sol";
 import "./utils/FeeBase.sol";
+import "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A management fee with a configurable annual rate
-contract ManagementFee is FeeBase, MakerDaoMath {
+contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     using SafeMath for uint256;
 
     event ActivatedForMigratedFund(address indexed comptrollerProxy);
@@ -70,7 +71,10 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         override
         onlyFeeManager
     {
-        uint256 scaledPerSecondRate = abi.decode(_settingsData, (uint256));
+        (uint256 scaledPerSecondRate, address recipient) = abi.decode(
+            _settingsData,
+            (uint256, address)
+        );
         require(
             scaledPerSecondRate > 0,
             "addFundSettings: scaledPerSecondRate must be greater than 0"
@@ -82,6 +86,10 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         });
 
         emit FundSettingsAdded(_comptrollerProxy, scaledPerSecondRate);
+
+        if (recipient != address(0)) {
+            __setRecipientForFund(_comptrollerProxy, recipient);
+        }
     }
 
     /// @notice Settle the fee and calculate shares due
@@ -164,6 +172,20 @@ contract ManagementFee is FeeBase, MakerDaoMath {
         }
 
         return (false, false);
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets the recipient of the fee for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy contract for the fund
+    /// @return recipient_ The recipient
+    function getRecipientForFund(address _comptrollerProxy)
+        public
+        view
+        override(FeeBase, SettableFeeRecipientBase)
+        returns (address recipient_)
+    {
+        return SettableFeeRecipientBase.getRecipientForFund(_comptrollerProxy);
     }
 
     ///////////////////

@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../FeeManager.sol";
 import "./utils/FeeBase.sol";
+import "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title PerformanceFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -26,7 +27,7 @@ import "./utils/FeeBase.sol";
 /// @dev This contract assumes that all shares in the VaultProxy are shares outstanding,
 /// which is fine for this release. Even if they are not, they are still shares that
 /// are only claimable by the fund owner.
-contract PerformanceFee is FeeBase {
+contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
@@ -93,14 +94,17 @@ contract PerformanceFee is FeeBase {
 
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _settingsData Encoded settings to apply to the policy for the fund
+    /// @param _settingsData Encoded settings to apply to the fee for a fund
     /// @dev `highWaterMark`, `lastSharePrice`, and `activated` are set during activation
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
         external
         override
         onlyFeeManager
     {
-        (uint256 feeRate, uint256 feePeriod) = abi.decode(_settingsData, (uint256, uint256));
+        (uint256 feeRate, uint256 feePeriod, address recipient) = abi.decode(
+            _settingsData,
+            (uint256, uint256, address)
+        );
         require(feeRate > 0, "addFundSettings: feeRate must be greater than 0");
         require(feePeriod > 0, "addFundSettings: feePeriod must be greater than 0");
 
@@ -115,6 +119,10 @@ contract PerformanceFee is FeeBase {
         });
 
         emit FundSettingsAdded(_comptrollerProxy, feeRate, feePeriod);
+
+        if (recipient != address(0)) {
+            __setRecipientForFund(_comptrollerProxy, recipient);
+        }
     }
 
     /// @notice Checks whether the shares outstanding for the fee can be paid out, and updates
@@ -281,6 +289,18 @@ contract PerformanceFee is FeeBase {
     }
 
     // PUBLIC FUNCTIONS
+
+    /// @notice Gets the recipient of the fee for a given fund
+    /// @param _comptrollerProxy The ComptrollerProxy contract for the fund
+    /// @return recipient_ The recipient
+    function getRecipientForFund(address _comptrollerProxy)
+        public
+        view
+        override(FeeBase, SettableFeeRecipientBase)
+        returns (address recipient_)
+    {
+        return SettableFeeRecipientBase.getRecipientForFund(_comptrollerProxy);
+    }
 
     /// @notice Checks whether the shares outstanding can be paid out
     /// @param _comptrollerProxy The ComptrollerProxy of the fund

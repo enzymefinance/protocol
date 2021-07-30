@@ -43,11 +43,12 @@ abstract contract EntranceRateFeeBase is FeeBase {
 
     // EXTERNAL FUNCTIONS
 
-    /// @notice Add the fee settings for a fund
+    /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _settingsData Encoded settings to apply to the policy for a fund
+    /// @param _settingsData Encoded settings to apply to the fee for a fund
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
-        external
+        public
+        virtual
         override
         onlyFeeManager
     {

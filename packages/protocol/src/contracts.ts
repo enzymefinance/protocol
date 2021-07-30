@@ -88,6 +88,7 @@ export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
 export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
+export * from './codegen/TestUpdatableFeeRecipientBase';
 
 // Mocks
 export * from './codegen/MockVaultLib';

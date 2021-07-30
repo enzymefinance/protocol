@@ -2,7 +2,7 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
-  entranceRateFeeConfigArgs,
+  entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
@@ -51,16 +51,16 @@ describe('Walkthrough a fund migration', () => {
     const rate = utils.parseEther('0.01');
     const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
 
-    const managementFeeSettings = managementFeeConfigArgs(scaledPerSecondRate);
+    const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
     const performanceFeeSettings = performanceFeeConfigArgs({
       rate: utils.parseEther('0.1'),
       period: 365 * 24 * 60 * 60,
     });
-    const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
+    const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
 
     const feeManagerConfig = feeManagerConfigArgs({
       fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
-      settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
+      settings: [managementFeeSettings, performanceFeeSettings, entranceRateBurnFeeSettings],
     });
 
     // TODO: add policies

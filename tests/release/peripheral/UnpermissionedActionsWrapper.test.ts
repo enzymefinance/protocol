@@ -1,6 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  entranceRateFeeConfigArgs,
+  entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
@@ -13,16 +13,16 @@ async function snapshot() {
   const { accounts, deployment, config } = await deployProtocolFixture();
 
   // Get mock fees and mock policies data with which to configure funds
-  const managementFeeSettings = managementFeeConfigArgs(utils.parseEther('0.01'));
+  const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate: utils.parseEther('0.01') });
   const performanceFeeSettings = performanceFeeConfigArgs({
     rate: utils.parseEther('0.1'),
     period: 365 * 24 * 60 * 60,
   });
-  const entranceRateFeeSettings = entranceRateFeeConfigArgs(utils.parseEther('0.05'));
+  const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
 
   const feeManagerConfig = feeManagerConfigArgs({
     fees: [deployment.managementFee, deployment.performanceFee, deployment.entranceRateBurnFee],
-    settings: [managementFeeSettings, performanceFeeSettings, entranceRateFeeSettings],
+    settings: [managementFeeSettings, performanceFeeSettings, entranceRateBurnFeeSettings],
   });
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({

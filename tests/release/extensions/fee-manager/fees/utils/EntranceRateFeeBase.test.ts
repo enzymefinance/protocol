@@ -1,12 +1,12 @@
 /*
- * @file Uses the EntranceRateDirectFee to test the basic functionality of an EntranceRateFeeBase
+ * @file Uses the EntranceRateBurnFee to test the basic functionality of an EntranceRateFeeBase
  * that does not rely on settlement type
  */
 
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  EntranceRateDirectFee,
-  entranceRateFeeConfigArgs,
+  EntranceRateBurnFee,
+  entranceRateBurnFeeConfigArgs,
   FeeHook,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
@@ -16,7 +16,7 @@ import { utils } from 'ethers';
 async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
   const [EOAFeeManager] = fork.accounts.slice(-1);
 
-  let entranceRateFee = await EntranceRateDirectFee.deploy(fork.deployer, EOAFeeManager);
+  let entranceRateFee = await EntranceRateBurnFee.deploy(fork.deployer, EOAFeeManager);
   entranceRateFee = entranceRateFee.connect(EOAFeeManager);
 
   return entranceRateFee;
@@ -24,7 +24,7 @@ async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
 
 describe('addFundSettings', () => {
   let fork: ProtocolDeployment;
-  let entranceRateFee: EntranceRateDirectFee;
+  let entranceRateFee: EntranceRateBurnFee;
 
   beforeAll(async () => {
     fork = await deployProtocolFixture();
@@ -33,7 +33,7 @@ describe('addFundSettings', () => {
 
   it('can only be called by the FeeManager', async () => {
     const [randomUser] = fork.accounts;
-    const entranceRateFeeConfig = await entranceRateFeeConfigArgs(1);
+    const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate: 1 });
 
     await expect(
       entranceRateFee.connect(randomUser).addFundSettings(randomAddress(), entranceRateFeeConfig),
@@ -44,7 +44,7 @@ describe('addFundSettings', () => {
     // Add fee config for a random comptrollerProxyAddress
     const comptrollerProxyAddress = randomAddress();
     const rate = utils.parseEther('1');
-    const entranceRateFeeConfig = await entranceRateFeeConfigArgs(rate);
+    const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate });
     const receipt = await entranceRateFee.addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
 
     // Assert the FundSettingsAdded event was emitted

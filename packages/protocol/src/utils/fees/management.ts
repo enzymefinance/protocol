@@ -1,5 +1,6 @@
+import { AddressLike } from '@enzymefinance/ethers';
 import { Decimal } from 'decimal.js';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants, utils } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 export const managementFeeDigits = 27;
@@ -9,8 +10,14 @@ export const secondsPerYear = 365 * 24 * 60 * 60;
 
 Decimal.set({ precision: 2 * managementFeeDigits });
 
-export function managementFeeConfigArgs(scaledPerSecondRate: BigNumberish) {
-  return encodeArgs(['uint256'], [scaledPerSecondRate]);
+export function managementFeeConfigArgs({
+  scaledPerSecondRate,
+  recipient = constants.AddressZero,
+}: {
+  scaledPerSecondRate: BigNumberish;
+  recipient?: AddressLike;
+}) {
+  return encodeArgs(['uint256', 'address'], [scaledPerSecondRate, recipient]);
 }
 
 export function convertRateToScaledPerSecondRate(rate: BigNumberish) {
