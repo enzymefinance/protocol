@@ -8,7 +8,7 @@ import {
   externalPositionCallArgs,
   externalPositionActionArgs,
   ExternalPositionManagerActionId,
-  ExternalPositionActionId,
+  CompoundDebtPositionActionId,
   externalPositionRemoveArgs,
 } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
@@ -59,7 +59,7 @@ export async function addCollateral({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    actionId: ExternalPositionActionId.AddCollateralAssets,
+    actionId: CompoundDebtPositionActionId.AddCollateralAssets,
     encodedCallArgs: actionArgs,
   });
 
@@ -95,7 +95,7 @@ export async function removeCollateral({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    actionId: ExternalPositionActionId.RemoveCollateralAssets,
+    actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
     encodedCallArgs: actionArgs,
   });
 
@@ -132,7 +132,7 @@ export async function borrow({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    actionId: ExternalPositionActionId.BorrowAsset,
+    actionId: CompoundDebtPositionActionId.BorrowAsset,
     encodedCallArgs: actionArgs,
   });
 
@@ -168,7 +168,7 @@ export async function repayBorrow({
 
   const callArgs = externalPositionCallArgs({
     externalPositionProxy,
-    actionId: ExternalPositionActionId.RepayBorrowedAssets,
+    actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
     encodedCallArgs: actionArgs,
   });
 

@@ -2,7 +2,7 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   encodeArgs,
   externalPositionActionArgs,
-  ExternalPositionActionId,
+  CompoundDebtPositionActionId,
   StandardToken,
 } from '@enzymefinance/protocol';
 import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
@@ -52,7 +52,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.AddCollateralAssets, actionArgs)
+      .args(CompoundDebtPositionActionId.AddCollateralAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -75,7 +75,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.RemoveCollateralAssets, actionArgs)
+      .args(CompoundDebtPositionActionId.RemoveCollateralAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -98,7 +98,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.BorrowAsset, actionArgs)
+      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -121,7 +121,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.BorrowAsset, actionArgs)
+      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
 
     await expect(result).rejects.toBeRevertedWith('Bad token cToken pair');
@@ -140,7 +140,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.RepayBorrowedAssets, actionArgs)
+      .args(CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -163,7 +163,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.RepayBorrowedAssets, actionArgs)
+      .args(CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
       .call();
 
     await expect(result).rejects.toBeRevertedWith('Bad token cToken pair');
@@ -182,7 +182,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(ExternalPositionActionId.BorrowAsset, actionArgs)
+      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
     await expect(result).rejects.toBeRevertedWith('Unsupported asset');
   });

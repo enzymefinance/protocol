@@ -9,7 +9,7 @@ export enum ExternalPositionManagerActionId {
   ReactivateExternalPosition = '3',
 }
 
-export enum ExternalPositionActionId {
+export enum CompoundDebtPositionActionId {
   AddCollateralAssets = '0',
   RemoveCollateralAssets = '1',
   BorrowAsset = '2',
@@ -34,11 +34,11 @@ export function externalPositionActionArgs({
 
 export function externalPositionCallArgs({
   externalPositionProxy = randomAddress(),
-  actionId = ExternalPositionActionId.AddCollateralAssets,
+  actionId,
   encodedCallArgs,
 }: {
   externalPositionProxy?: AddressLike;
-  actionId?: ExternalPositionActionId;
+  actionId?: String;
   encodedCallArgs: BytesLike;
 }) {
   return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, encodedCallArgs]);
