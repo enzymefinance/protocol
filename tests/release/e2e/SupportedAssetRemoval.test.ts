@@ -12,9 +12,11 @@ import {
   VaultLib,
 } from '@enzymefinance/protocol';
 import { buyShares, createNewFund, redeemSharesInKind, uniswapV2TakeOrder } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber } from 'ethers';
 
 // Note: One fork is used for the entire test suite, so test ordering is important
+
+const FIVE_PERCENT = BigNumber.from(500);
 
 let integrationManager: IntegrationManager,
   revertingPriceFeed: RevertingPriceFeed,
@@ -45,7 +47,7 @@ beforeAll(async () => {
       fees: [fork.deployment.performanceFee],
       settings: [
         performanceFeeConfigArgs({
-          rate: utils.parseEther('.05'),
+          rate: FIVE_PERCENT,
           period: 1,
         }),
       ],

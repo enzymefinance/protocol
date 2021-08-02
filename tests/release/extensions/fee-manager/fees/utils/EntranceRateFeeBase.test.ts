@@ -11,7 +11,9 @@ import {
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
+const TEN_PERCENT = BigNumber.from(1000);
 
 async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
   const [EOAFeeManager] = fork.accounts.slice(-1);
@@ -43,7 +45,7 @@ describe('addFundSettings', () => {
   it('correctly handles valid call', async () => {
     // Add fee config for a random comptrollerProxyAddress
     const comptrollerProxyAddress = randomAddress();
-    const rate = utils.parseEther('1');
+    const rate = TEN_PERCENT;
     const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate });
     const receipt = await entranceRateFee.addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);
 
@@ -75,7 +77,7 @@ describe('settle', () => {
     const entranceRateFee = await deployStandaloneEntranceRateFee(fork);
     const [randomUser] = fork.accounts;
 
-    const settlementData = await settlePostBuySharesArgs({
+    const settlementData = settlePostBuySharesArgs({
       buyer: randomAddress(),
       investmentAmount: utils.parseEther('1'),
       sharesBought: utils.parseEther('1'),

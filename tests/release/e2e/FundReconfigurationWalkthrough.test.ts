@@ -21,7 +21,10 @@ import {
   getAssetUnit,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
+const FIVE_PERCENT = BigNumber.from(500);
+const TEN_PERCENT = BigNumber.from(1000);
 
 const expectedGasCosts = {
   'signal reconfiguration': {
@@ -63,10 +66,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
         scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')),
       });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        rate: utils.parseEther('0.1'),
+        rate: TEN_PERCENT,
         period: 365 * 24 * 60 * 60,
       });
-      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
+      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
       feeManagerConfig = feeManagerConfigArgs({
         fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],

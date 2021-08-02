@@ -15,6 +15,8 @@ import {
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
+const TEN_PERCENT = BigNumber.from(1000);
+
 describe('config', () => {
   it('has correct config', async () => {
     const entranceRateBurnFee = fork.deployment.entranceRateBurnFee;
@@ -45,7 +47,7 @@ describe('settle', () => {
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
-    const rate = utils.parseEther('.1'); // 10%
+    const rate = TEN_PERCENT;
     const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate });
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)

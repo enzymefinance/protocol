@@ -22,6 +22,9 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, utils } from 'ethers';
 
+const FIVE_PERCENT = BigNumber.from(500);
+const TEN_PERCENT = BigNumber.from(1000);
+const ONE_HUNDRED_PERCENT = BigNumber.from(10000);
 const tempTolerance = 10000;
 
 const expectedGasCosts = {
@@ -101,15 +104,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('creates a new fund', async () => {
       // fees
-      const rate = utils.parseEther('0.01');
-      const scaledPerSecondRate = convertRateToScaledPerSecondRate(rate);
-
+      const scaledPerSecondRate = convertRateToScaledPerSecondRate(utils.parseEther('0.01')); // 1%
       const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        rate: utils.parseEther('0.1'),
+        rate: TEN_PERCENT,
         period: 365 * 24 * 60 * 60,
       });
-      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
+      const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
       const feeManagerConfig = feeManagerConfigArgs({
         fees: [fork.deployment.managementFee, fork.deployment.performanceFee, fork.deployment.entranceRateBurnFee],
@@ -154,8 +155,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
         denominationAsset,
       });
 
-      const rate = utils.parseEther('0.05');
-      const rateDivisor = utils.parseEther('1');
+      const rate = FIVE_PERCENT;
+      const rateDivisor = ONE_HUNDRED_PERCENT;
       const expectedFee = utils.parseUnits('1', denominationAssetDecimals).mul(rate).div(rateDivisor.add(rate));
 
       expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(

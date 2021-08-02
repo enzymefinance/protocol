@@ -7,7 +7,10 @@ import {
   WETH,
 } from '@enzymefinance/protocol';
 import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
+const FIVE_PERCENT = BigNumber.from(500);
+const TEN_PERCENT = BigNumber.from(1000);
 
 async function snapshot() {
   const { accounts, deployment, config } = await deployProtocolFixture();
@@ -15,10 +18,10 @@ async function snapshot() {
   // Get mock fees and mock policies data with which to configure funds
   const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate: utils.parseEther('0.01') });
   const performanceFeeSettings = performanceFeeConfigArgs({
-    rate: utils.parseEther('0.1'),
+    rate: TEN_PERCENT,
     period: 365 * 24 * 60 * 60,
   });
-  const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: utils.parseEther('0.05') });
+  const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
   const feeManagerConfig = feeManagerConfigArgs({
     fees: [deployment.managementFee, deployment.performanceFee, deployment.entranceRateBurnFee],

@@ -24,7 +24,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
 
     event Settled(address indexed comptrollerProxy, address indexed payer, uint256 sharesQuantity);
 
-    uint256 private constant RATE_DIVISOR = 10**18;
+    uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     IFeeManager.SettlementType private immutable SETTLEMENT_TYPE;
 
     mapping(address => uint256) private comptrollerProxyToRate;
@@ -54,6 +54,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
     {
         uint256 rate = abi.decode(_settingsData, (uint256));
         require(rate > 0, "addFundSettings: Fee rate must be >0");
+        require(rate < ONE_HUNDRED_PERCENT, "addFundSettings: Fee rate max exceeded");
 
         comptrollerProxyToRate[_comptrollerProxy] = rate;
 
@@ -86,7 +87,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
         (payer_, , sharesBought) = __decodePostBuySharesSettlementData(_settlementData);
 
         uint256 rate = comptrollerProxyToRate[_comptrollerProxy];
-        sharesDue_ = sharesBought.mul(rate).div(RATE_DIVISOR.add(rate));
+        sharesDue_ = sharesBought.mul(rate).div(ONE_HUNDRED_PERCENT.add(rate));
 
         if (sharesDue_ == 0) {
             return (IFeeManager.SettlementType.None, address(0), 0);

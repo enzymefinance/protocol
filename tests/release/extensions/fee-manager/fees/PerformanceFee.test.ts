@@ -23,6 +23,11 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, BigNumberish, BytesLike, constants, utils } from 'ethers';
 
+const FIVE_PERCENT = BigNumber.from(500);
+const TEN_PERCENT = BigNumber.from(1000);
+const ONE_HUNDRED_PERCENT = BigNumber.from(10000);
+const SHARES_UNIT = utils.parseEther('1');
+
 async function createMocksForPerformanceFeeConfig(fork: ProtocolDeployment) {
   const deployer = fork.deployer;
   // Mock a FeeManager
@@ -240,7 +245,7 @@ describe('addFundSettings', () => {
     mockComptrollerProxy = mocks.mockComptrollerProxy;
     mockFeeManager = mocks.mockFeeManager;
 
-    performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeeRate = TEN_PERCENT;
     performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
     performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, { mockFeeManager });
   });
@@ -316,7 +321,7 @@ describe('activateForFund', () => {
     mockVaultProxy = mocks.mockVaultProxy;
     mockDenominationAsset = mocks.mockDenominationAsset;
 
-    performanceFeeRate = utils.parseEther('.1'); // 10%
+    performanceFeeRate = TEN_PERCENT;
     performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
     performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
       mockComptrollerProxy,
@@ -380,7 +385,7 @@ describe('payout', () => {
     mockVaultProxy = mocks.mockVaultProxy;
     mockDenominationAsset = mocks.mockDenominationAsset;
 
-    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    const performanceFeeRate = TEN_PERCENT;
     performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
     performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
       mockComptrollerProxy,
@@ -524,7 +529,7 @@ describe('payoutAllowed', () => {
     mockFeeManager = mocks.mockFeeManager;
     mockDenominationAsset = mocks.mockDenominationAsset;
 
-    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    const performanceFeeRate = TEN_PERCENT;
     performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
     performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
       mockComptrollerProxy,
@@ -632,7 +637,7 @@ describe('settle', () => {
     mockFeeManager = mocks.mockFeeManager;
     mockDenominationAsset = mocks.mockDenominationAsset;
 
-    const performanceFeeRate = utils.parseEther('.1'); // 10%
+    const performanceFeeRate = TEN_PERCENT;
     const performanceFeePeriod = BigNumber.from(60 * 60 * 24 * 365); // 365 days
     performanceFee = await deployAndConfigureStandalonePerformanceFee(fork, {
       mockComptrollerProxy,
@@ -821,7 +826,7 @@ describe('integration', () => {
         fees: [performanceFee],
         settings: [
           performanceFeeConfigArgs({
-            rate: utils.parseEther('.05'),
+            rate: FIVE_PERCENT,
             period: BigNumber.from(60 * 60 * 24 * 365), // 365 days
           }),
         ],
@@ -881,11 +886,11 @@ describe('integration', () => {
     );
     const feeInfo3 = await performanceFee.getFeeInfoForFund(comptrollerProxy);
     expect(feeInfo3.lastSharePrice).toEqBigNumber(
-      gavPostRedeem2.mul(utils.parseEther('1')).div(sharesSupplyNetSharesOutstanding),
+      gavPostRedeem2.mul(SHARES_UNIT).div(sharesSupplyNetSharesOutstanding),
     );
     // This is 1 wei less than expected
     expect(feeInfo3.aggregateValueDue).toEqBigNumber(
-      feeInfo3.rate.mul(gavIncreaseAmount).div(utils.parseEther('1')).sub(1),
+      feeInfo3.rate.mul(gavIncreaseAmount).div(ONE_HUNDRED_PERCENT).sub(1),
     );
   });
 });

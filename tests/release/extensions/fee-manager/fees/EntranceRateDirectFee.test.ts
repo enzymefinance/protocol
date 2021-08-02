@@ -16,6 +16,8 @@ import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymef
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, utils } from 'ethers';
 
+const TEN_PERCENT = BigNumber.from(1000);
+
 let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -53,7 +55,7 @@ describe('constructor', () => {
 describe('addFundSettings', () => {
   const comptrollerProxyAddress = randomAddress();
   const feeRecipient = randomAddress();
-  const rate = utils.parseEther('1');
+  const rate = TEN_PERCENT;
   let entranceRateDirectFee: EntranceRateDirectFee;
   let EOAFeeManager: SignerWithAddress, randomUser: SignerWithAddress;
 
@@ -90,7 +92,7 @@ describe('settle', () => {
 
     // Add fee settings for a random ComptrollerProxy address
     const comptrollerProxyAddress = randomAddress();
-    const rate = utils.parseEther('.1'); // 10%
+    const rate = TEN_PERCENT;
     const entranceRateFeeConfig = entranceRateDirectFeeConfigArgs({ rate });
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)

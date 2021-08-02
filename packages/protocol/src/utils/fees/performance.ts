@@ -52,7 +52,7 @@ export function performanceFeeSharesDue({
     redeemSharesSharesAmount?: BigNumberish;
   };
 }): PerformanceFeeSharesDueInfo {
-  const rateDivisor = utils.parseEther('1');
+  const rateDivisor = 10000;
   const shareUnit = utils.parseEther('1');
   const netSharesSupply = BigNumber.from(totalSharesSupply).sub(totalSharesOutstanding);
 

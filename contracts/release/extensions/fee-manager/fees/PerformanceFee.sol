@@ -65,7 +65,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         uint256 aggregateValueDue;
     }
 
-    uint256 private constant RATE_DIVISOR = 10**18;
+    uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARE_UNIT = 10**18;
 
     mapping(address => FeeInfo) private comptrollerProxyToFeeInfo;
@@ -106,6 +106,9 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
             (uint256, uint256, address)
         );
         require(feeRate > 0, "addFundSettings: feeRate must be greater than 0");
+        // Unlike most other fees, there could be a case for using a rate of exactly 100%,
+        // i.e., pay out all profits to a specified recipient
+        require(feeRate <= ONE_HUNDRED_PERCENT, "addFundSettings: feeRate max exceeded");
         require(feePeriod > 0, "addFundSettings: feePeriod must be greater than 0");
 
         comptrollerProxyToFeeInfo[_comptrollerProxy] = FeeInfo({
@@ -348,7 +351,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
             .div(int256(SHARE_UNIT));
 
         int256 valueDueSinceLastSettled = superHWMValueSinceLastSettled.mul(int256(_feeRate)).div(
-            int256(RATE_DIVISOR)
+            int256(ONE_HUNDRED_PERCENT)
         );
 
         return
@@ -468,9 +471,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         uint256 _gav,
         uint256 _nextAggregateValueDue
     ) private view returns (int256 sharesDue_) {
-        // If _nextAggregateValueDue > _gav, then no shares can be created.
-        // This is a known limitation of the model, which is only reached for unrealistically
-        // high performance fee rates (> 100%). A revert is allowed in such a case.
+        // _nextAggregateValueDue should never be greater than _gav, as the max fee rate is 100%
         uint256 sharesDueForAggregateValueDue = _nextAggregateValueDue.mul(_netSharesSupply).div(
             _gav.sub(_nextAggregateValueDue)
         );

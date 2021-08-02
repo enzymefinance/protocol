@@ -1,5 +1,5 @@
 import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import { BigNumber, BigNumberish, constants } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 export function entranceRateBurnFeeConfigArgs({ rate }: { rate: BigNumberish }) {
@@ -17,5 +17,5 @@ export function entranceRateDirectFeeConfigArgs({
 }
 
 export function entranceRateFeeSharesDue({ rate, sharesBought }: { rate: BigNumberish; sharesBought: BigNumberish }) {
-  return BigNumber.from(sharesBought).mul(rate).div(utils.parseEther('1').add(rate));
+  return BigNumber.from(sharesBought).mul(rate).div(BigNumber.from(10000).add(rate));
 }

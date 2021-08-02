@@ -22,10 +22,10 @@ export function managementFeeConfigArgs({
 
 export function convertRateToScaledPerSecondRate(rate: BigNumberish) {
   const rateD = new Decimal(utils.formatEther(rate));
-  const effectivRate = rateD.div(new Decimal(1).minus(rateD));
+  const effectiveRate = rateD.div(new Decimal(1).minus(rateD));
 
   const factor = new Decimal(1)
-    .plus(effectivRate)
+    .plus(effectiveRate)
     .pow(1 / secondsPerYear)
     .toSignificantDigits(managementFeeDigits)
     .mul(managementFeeScaleDecimal);
