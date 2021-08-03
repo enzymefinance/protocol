@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 2.0.11
+
+### Patch Changes
+
+- bdeed3fe: Upgrading dependencies
+
 ## 2.0.10
 
 ### Patch Changes
