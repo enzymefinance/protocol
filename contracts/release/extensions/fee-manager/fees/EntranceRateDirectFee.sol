@@ -16,7 +16,7 @@ import "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title EntranceRateDirectFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice An EntranceRateFee that transfers the fee shares to the fund manager
+/// @notice An EntranceRateFee that transfers the fee shares to a recipient
 contract EntranceRateDirectFee is EntranceRateFeeBase, UpdatableFeeRecipientBase {
     constructor(address _feeManager)
         public
