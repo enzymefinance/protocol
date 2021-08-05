@@ -1,4 +1,5 @@
 import { DeployFunction } from 'hardhat-deploy/types';
+import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -7,12 +8,13 @@ const fn: DeployFunction = async function (hre) {
   } = hre;
 
   const deployer = (await getSigners())[0];
+  const config = await loadConfig(hre);
 
   const compoundPriceFeed = await get('CompoundPriceFeed');
   const valueInterpreter = await get('ValueInterpreter');
 
   await deploy('CompoundDebtPositionParser', {
-    args: [compoundPriceFeed.address, valueInterpreter.address],
+    args: [compoundPriceFeed.address, config.primitives.comp, valueInterpreter.address],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

@@ -28,11 +28,17 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
+    address private immutable COMP_TOKEN;
     address private immutable COMPOUND_COMPTROLLER;
     address private immutable WETH_TOKEN;
 
-    constructor(address _compoundComptroller, address _weth) public {
+    constructor(
+        address _compoundComptroller,
+        address _compToken,
+        address _weth
+    ) public {
         COMPOUND_COMPTROLLER = _compoundComptroller;
+        COMP_TOKEN = _compToken;
         WETH_TOKEN = _weth;
     }
 
@@ -49,6 +55,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
             actionArgs,
             (address[], uint256[], bytes)
         );
+
         if (actionId == uint256(ExternalPositionActions.AddCollateral)) {
             __addCollateralAssets(assets, amounts);
         } else if (actionId == uint256(ExternalPositionActions.RemoveCollateral)) {
@@ -57,6 +64,8 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
             __borrowAssets(assets, amounts, data);
         } else if (actionId == uint256(ExternalPositionActions.RepayBorrow)) {
             __repayBorrowedAssets(assets, amounts, data);
+        } else if (actionId == uint256(ExternalPositionActions.ClaimComp)) {
+            __claimComp();
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
@@ -110,6 +119,15 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
             emit AssetBorrowed(_assets[i], _amounts[i]);
         }
+    }
+
+    /// @dev Claims the COMP_TOKEN accrued in all markets
+    function __claimComp() private {
+        ICompoundComptroller(getCompoundComptroller()).claimComp(address(this));
+
+        ERC20 compToken = ERC20(getCompToken());
+
+        compToken.safeTransfer(msg.sender, compToken.balanceOf(address(this)));
     }
 
     /// @dev Removes assets from collateral
@@ -254,6 +272,12 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     /// @return compoundComptroller_ The `COMPOUND_COMPTROLLER` variable value
     function getCompoundComptroller() public view returns (address compoundComptroller_) {
         return COMPOUND_COMPTROLLER;
+    }
+
+    /// @notice Gets the `COMP_TOKEN` variable
+    /// @return compToken_ The `COMP_TOKEN` variable value
+    function getCompToken() public view returns (address compToken_) {
+        return COMP_TOKEN;
     }
 
     /// @notice Returns the cToken of a given borrowed asset

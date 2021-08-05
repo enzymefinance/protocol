@@ -21,11 +21,17 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Compound Debt Positions
 contract CompoundDebtPositionParser is IExternalPositionParser {
+    address private immutable COMP_TOKEN;
     address private immutable COMPOUND_PRICE_FEED;
     address private immutable VALUE_INTERPRETER;
 
-    constructor(address _compoundPriceFeed, address _valueInterpreter) public {
+    constructor(
+        address _compoundPriceFeed,
+        address _compToken,
+        address _valueInterpreter
+    ) public {
         COMPOUND_PRICE_FEED = _compoundPriceFeed;
+        COMP_TOKEN = _compToken;
         VALUE_INTERPRETER = _valueInterpreter;
     }
 
@@ -63,6 +69,9 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
             _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RemoveCollateral)
         ) {
             assetsToReceive_ = assets;
+        } else if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.ClaimComp)) {
+            assetsToReceive_ = new address[](1);
+            assetsToReceive_[0] = getCompToken();
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -141,6 +150,12 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
     /// @return compoundPriceFeed_ The `COMPOUND_PRICE_FEED` variable value
     function getCompoundPriceFeed() public view returns (address compoundPriceFeed_) {
         return COMPOUND_PRICE_FEED;
+    }
+
+    /// @notice Gets the `COMP_TOKEN` variable
+    /// @return compToken_ The `COMP_TOKEN` variable value
+    function getCompToken() public view returns (address compToken_) {
+        return COMP_TOKEN;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable

@@ -143,6 +143,37 @@ export async function borrow({
   return borrowTx;
 }
 
+export async function claimComp({
+  comptrollerProxy,
+  externalPositionManager,
+  fundOwner,
+  externalPositionProxy,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  vaultProxy: VaultLib;
+  externalPositionManager: ExternalPositionManager;
+  fundOwner: SignerWithAddress;
+  externalPositionProxy: AddressLike;
+}) {
+  const actionArgs = externalPositionActionArgs({
+    assets: [],
+    amounts: [],
+    data: '0x',
+  });
+
+  const callArgs = externalPositionCallArgs({
+    externalPositionProxy,
+    actionId: CompoundDebtPositionActionId.ClaimComp,
+    encodedCallArgs: actionArgs,
+  });
+
+  const claimCompTx = comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+
+  return claimCompTx;
+}
+
 export async function repayBorrow({
   comptrollerProxy,
   externalPositionManager,

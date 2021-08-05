@@ -35,6 +35,8 @@ describe('constructor', () => {
     const compoundDebtPositionParser = fork.deployment.compoundDebtPositionParser;
 
     expect(await compoundDebtPositionParser.getCompoundPriceFeed()).toMatchAddress(fork.deployment.compoundPriceFeed);
+    expect(await compoundDebtPositionParser.getCompToken()).toMatchAddress(fork.config.primitives.comp);
+    expect(await compoundDebtPositionParser.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
   });
 });
 
@@ -105,6 +107,28 @@ describe('parseAssetsForAction', () => {
       assetsToTransfer_: [],
       amountsToTransfer_: [],
       assetsToReceive_: assets,
+    });
+  });
+
+  it('generates expected output for claimComp', async () => {
+    const compoundDebtPositionParser = fork.deployment.compoundDebtPositionParser;
+    const assets = [fork.config.primitives.dai];
+    const amounts = [1];
+
+    const actionArgs = externalPositionActionArgs({
+      assets,
+      amounts,
+      data: '0x',
+    });
+
+    const result = await compoundDebtPositionParser.parseAssetsForAction
+      .args(CompoundDebtPositionActionId.ClaimComp, actionArgs)
+      .call();
+
+    expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
+      assetsToTransfer_: [],
+      amountsToTransfer_: [],
+      assetsToReceive_: [fork.config.primitives.comp],
     });
   });
 

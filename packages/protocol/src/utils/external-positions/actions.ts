@@ -14,6 +14,7 @@ export enum CompoundDebtPositionActionId {
   RemoveCollateralAssets = '1',
   BorrowAsset = '2',
   RepayBorrowedAssets = '3',
+  ClaimComp = '4',
 }
 
 export enum ExternalPositionProtocolId {

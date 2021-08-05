@@ -6,6 +6,7 @@ import {
   compoundLend,
   createNewFund,
   deployProtocolFixture,
+  ICompoundComptroller,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
 
@@ -14,6 +15,7 @@ import hre from 'hardhat';
 import {
   addCollateral,
   borrow,
+  claimComp,
   createExternalPosition,
   removeCollateral,
   repayBorrow,
@@ -710,6 +712,103 @@ describe('receiveCallFromVault', () => {
         .args(borrowedAssets[0])
         .call();
       expect(tokenFromCBorrowedAssetAfter).toMatchAddress(constants.AddressZero);
+    });
+  });
+
+  describe('claimComp', () => {
+    beforeEach(async () => {
+      const [fundOwner] = fork.accounts;
+
+      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [ceth.address];
+
+      const borrowedAssets = [weth.address];
+      const borrowedAmounts = [lentAmount.div(10)];
+
+      await addCollateral({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        fundOwner,
+        externalPositionProxy: compoundDebtPosition.address,
+        assets: collateralAssets,
+        amounts: collateralAmounts,
+        cTokens: collateralAssets,
+      });
+
+      await borrow({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        fundOwner,
+        externalPositionProxy: compoundDebtPosition.address,
+        assets: borrowedAssets,
+        amounts: borrowedAmounts,
+        cTokens: collateralAssets,
+      });
+    });
+
+    it('works as expected when called to claim existing unclaimed rewards', async () => {
+      const [fundOwner] = fork.accounts;
+
+      const compToken = new StandardToken(fork.config.primitives.comp, provider);
+
+      const secondsToWarp = 100000000;
+      await provider.send('evm_increaseTime', [secondsToWarp]);
+      await provider.send('evm_mine', []);
+
+      const compVaultBalanceBefore = await compToken.balanceOf(vaultProxyUsed);
+      const compExternalPositionBalanceBefore = await compToken.balanceOf(compoundDebtPosition.address);
+
+      await claimComp({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        fundOwner,
+        externalPositionProxy: compoundDebtPosition.address,
+      });
+
+      const compVaultBalanceAfter = await compToken.balanceOf(vaultProxyUsed);
+      const compExternalPositionBalanceAfter = await compToken.balanceOf(compoundDebtPosition.address);
+
+      expect(compVaultBalanceBefore).toEqBigNumber(0);
+      expect(compExternalPositionBalanceBefore).toEqBigNumber(0);
+      expect(compVaultBalanceAfter).toBeGtBigNumber(0);
+      expect(compExternalPositionBalanceAfter).toEqBigNumber(0);
+    });
+
+    it('works as expected when called to claim existing unclaimed rewards from a third party address', async () => {
+      const [fundOwner] = fork.accounts;
+
+      const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
+
+      const compoundComptroller = new ICompoundComptroller(compoundComptrollerAddress, fork.deployer);
+
+      const compToken = new StandardToken(fork.config.primitives.comp, provider);
+
+      const secondsToWarp = 100000000;
+      await provider.send('evm_increaseTime', [secondsToWarp]);
+      await provider.send('evm_mine', []);
+
+      await compoundComptroller.claimComp(compoundDebtPosition.address);
+
+      const compVaultBalanceBefore = await compToken.balanceOf(vaultProxyUsed);
+      const compExternalPositionBalanceBefore = await compToken.balanceOf(compoundDebtPosition.address);
+
+      await claimComp({
+        comptrollerProxy: comptrollerProxyUsed,
+        vaultProxy: vaultProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        fundOwner,
+        externalPositionProxy: compoundDebtPosition.address,
+      });
+
+      const compVaultBalanceAfter = await compToken.balanceOf(vaultProxyUsed);
+      const compExternalPositionBalanceAfter = await compToken.balanceOf(compoundDebtPosition.address);
+
+      expect(compVaultBalanceBefore).toEqBigNumber(0);
+      expect(compExternalPositionBalanceBefore).toBeGtBigNumber(0);
+      expect(compVaultBalanceAfter).toBeGtBigNumber(0);
+      expect(compExternalPositionBalanceAfter).toEqBigNumber(0);
     });
   });
 });
