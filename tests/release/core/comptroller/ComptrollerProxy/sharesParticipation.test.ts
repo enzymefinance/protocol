@@ -521,7 +521,7 @@ describe('redeem', () => {
           signer: investor,
           quantity: redeemQuantity,
         }),
-      ).rejects.toBeRevertedWith('Insufficient shares');
+      ).rejects.toBeRevertedWith('burn amount exceeds balance');
     });
   });
 

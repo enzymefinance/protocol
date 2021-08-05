@@ -1134,36 +1134,32 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         ERC20 sharesContract = ERC20(address(vaultProxyContract));
 
+        uint256 preFeesRedeemerSharesBalance = sharesContract.balanceOf(_redeemer);
+
         if (_sharesQuantityInput == type(uint256).max) {
-            sharesToRedeem_ = sharesContract.balanceOf(_redeemer);
+            sharesToRedeem_ = preFeesRedeemerSharesBalance;
         } else {
             sharesToRedeem_ = _sharesQuantityInput;
         }
         require(sharesToRedeem_ > 0, "__redeemSharesSetup: No shares to redeem");
 
-        // Note that if a fee with `SettlementType.Direct` is charged here (i.e., not `Mint`),
-        // then those fee shares will be transferred from the user's balance rather
-        // than reallocated from the sharesToRedeem_.
         __preRedeemSharesHook(_redeemer, sharesToRedeem_, _forSpecifiedAssets, _gavIfCalculated);
+
+        // Update the redemption amount if fees were charged (or accrued) to the redeemer
+        uint256 postFeesRedeemerSharesBalance = sharesContract.balanceOf(_redeemer);
+        if (_sharesQuantityInput == type(uint256).max) {
+            sharesToRedeem_ = postFeesRedeemerSharesBalance;
+        } else if (postFeesRedeemerSharesBalance < preFeesRedeemerSharesBalance) {
+            sharesToRedeem_ = sharesToRedeem_.sub(
+                preFeesRedeemerSharesBalance.sub(postFeesRedeemerSharesBalance)
+            );
+        }
 
         // Pay the protocol fee after running other fees, but before burning shares
         vaultProxyContract.payProtocolFee();
 
         if (_gavIfCalculated > 0 && doesAutoProtocolFeeSharesBuyback()) {
             __buyBackMaxProtocolFeeShares(address(vaultProxyContract), _gavIfCalculated);
-        }
-
-        uint256 postHookSharesBalance = sharesContract.balanceOf(_redeemer);
-        if (_sharesQuantityInput == type(uint256).max) {
-            // If the user is redeeming all of their shares (i.e., max uint), then their sharesToRedeem
-            // is reassigned to their current full balance
-            sharesToRedeem_ = postHookSharesBalance;
-        } else {
-            // Check sharesToRedeem_ against the user's balance after settling fees
-            require(
-                sharesToRedeem_ <= postHookSharesBalance,
-                "__redeemSharesSetup: Insufficient shares"
-            );
         }
 
         // Destroy the shares after getting the shares supply
