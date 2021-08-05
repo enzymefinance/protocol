@@ -10,7 +10,7 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const feeManager = await get('FeeManager');
 
-  await deploy('EntranceRateBurnFee', {
+  await deploy('EntranceRateDirectFee', {
     args: [feeManager.address] as FeeManagerArgs,
     from: deployer.address,
     linkedData: {
@@ -21,7 +21,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Fees', 'EntranceRateBurnFee'];
+fn.tags = ['Release', 'Fees', 'EntranceRateDirectFee'];
 fn.dependencies = ['FeeManager'];
 
 export default fn;
