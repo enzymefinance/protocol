@@ -398,7 +398,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         // For both Continuous and BuySharesCompleted hooks, _gav and shares supply will not change,
         // we only need additional calculations for PreRedeemShares
         if (_hook == IFeeManager.FeeHook.PreRedeemShares) {
-            (, uint256 sharesDecrease) = __decodePreRedeemSharesSettlementData(_settlementData);
+            (, uint256 sharesDecrease, ) = __decodePreRedeemSharesSettlementData(_settlementData);
 
             // Shares have not yet been burned
             nextNetSharesSupply = nextNetSharesSupply.sub(sharesDecrease);
