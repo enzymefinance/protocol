@@ -5,8 +5,8 @@ import {
   encodeArgs,
   ExternalPositionManager,
   VaultLib,
-  externalPositionCallArgs,
-  externalPositionActionArgs,
+  callOnExternalPositionArgs,
+  compoundExternalPositionActionArgs,
   ExternalPositionManagerActionId,
   CompoundDebtPositionActionId,
   externalPositionRemoveArgs,
@@ -51,13 +51,13 @@ export async function addCollateral({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = externalPositionActionArgs({
+  const actionArgs = compoundExternalPositionActionArgs({
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = externalPositionCallArgs({
+  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.AddCollateralAssets,
     encodedCallArgs: actionArgs,
@@ -87,13 +87,13 @@ export async function removeCollateral({
   externalPositionProxy: AddressLike;
   cTokens: AddressLike[];
 }) {
-  const actionArgs = externalPositionActionArgs({
+  const actionArgs = compoundExternalPositionActionArgs({
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = externalPositionCallArgs({
+  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
     encodedCallArgs: actionArgs,
@@ -124,13 +124,13 @@ export async function borrow({
   amounts: BigNumberish[];
   cTokens: AddressLike[];
 }) {
-  const actionArgs = externalPositionActionArgs({
+  const actionArgs = compoundExternalPositionActionArgs({
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = externalPositionCallArgs({
+  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.BorrowAsset,
     encodedCallArgs: actionArgs,
@@ -155,13 +155,13 @@ export async function claimComp({
   fundOwner: SignerWithAddress;
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = externalPositionActionArgs({
+  const actionArgs = compoundExternalPositionActionArgs({
     assets: [],
     amounts: [],
     data: '0x',
   });
 
-  const callArgs = externalPositionCallArgs({
+  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.ClaimComp,
     encodedCallArgs: actionArgs,
@@ -191,13 +191,13 @@ export async function repayBorrow({
   externalPositionProxy: AddressLike;
   cTokens: AddressLike[];
 }) {
-  const actionArgs = externalPositionActionArgs({
+  const actionArgs = compoundExternalPositionActionArgs({
     assets,
     amounts,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = externalPositionCallArgs({
+  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
     encodedCallArgs: actionArgs,
@@ -225,7 +225,7 @@ export async function removeExternalPosition({
     externalPositionProxy,
   });
 
-  const callArgs = externalPositionCallArgs({ externalPositionProxy, encodedCallArgs: actionArgs });
+  const callArgs = callOnExternalPositionArgs({ externalPositionProxy, encodedCallArgs: actionArgs });
 
   const removeExternalPositionTx = comptrollerProxy
     .connect(fundOwner)

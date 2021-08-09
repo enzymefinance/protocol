@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   encodeArgs,
-  externalPositionActionArgs,
+  compoundExternalPositionActionArgs,
   CompoundDebtPositionActionId,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -47,7 +47,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [randomAddress()];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -70,7 +70,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [randomAddress()];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -93,7 +93,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [fork.config.compound.ctokens.cdai];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -115,7 +115,7 @@ describe('parseAssetsForAction', () => {
     const assets = [fork.config.primitives.dai];
     const amounts = [1];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: '0x',
@@ -138,7 +138,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [randomAddress()];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -157,7 +157,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [fork.config.compound.ctokens.cdai];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -180,7 +180,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [randomAddress()];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),
@@ -199,7 +199,7 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
     const cTokens = [fork.config.compound.ctokens.cdai];
 
-    const actionArgs = externalPositionActionArgs({
+    const actionArgs = compoundExternalPositionActionArgs({
       assets,
       amounts,
       data: encodeArgs(['address[]'], [cTokens]),

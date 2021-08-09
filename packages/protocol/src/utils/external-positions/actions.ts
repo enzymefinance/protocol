@@ -17,11 +17,18 @@ export enum CompoundDebtPositionActionId {
   ClaimComp = '4',
 }
 
+export enum MockGenericExternalPositionActionId {
+  AddManagedAssets = '0',
+  RemoveManagedAssets = '1',
+  AddDebtAssets = '2',
+  RemoveDebtAssets = '3',
+}
+
 export enum ExternalPositionProtocolId {
   CompoundDebtPosition = '0',
 }
 
-export function externalPositionActionArgs({
+export function compoundExternalPositionActionArgs({
   assets,
   amounts,
   data,
@@ -33,7 +40,17 @@ export function externalPositionActionArgs({
   return encodeArgs(['address[]', 'uint256[]', 'bytes'], [assets, amounts, data]);
 }
 
-export function externalPositionCallArgs({
+export function mockGenericExternalPositionActionArgs({
+  assets,
+  amounts,
+}: {
+  assets: AddressLike[];
+  amounts: BigNumberish[];
+}) {
+  return encodeArgs(['address[]', 'uint256[]'], [assets, amounts]);
+}
+
+export function callOnExternalPositionArgs({
   externalPositionProxy = randomAddress(),
   actionId,
   encodedCallArgs,

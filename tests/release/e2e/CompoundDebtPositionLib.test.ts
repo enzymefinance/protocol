@@ -3,23 +3,21 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { CompoundDebtPositionLib, ComptrollerLib, ICERC20, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
+  addCollateral,
+  borrow,
+  createExternalPosition,
+  removeCollateral,
+  repayBorrow,
   compoundLend,
   createNewFund,
   deployProtocolFixture,
   ICompoundComptroller,
   ProtocolDeployment,
+  claimComp,
 } from '@enzymefinance/testutils';
 
 import { utils, BigNumber, constants } from 'ethers';
 import hre from 'hardhat';
-import {
-  addCollateral,
-  borrow,
-  claimComp,
-  createExternalPosition,
-  removeCollateral,
-  repayBorrow,
-} from '@enzymefinance/testutils/src/scaffolding/extensions/external-positions';
 
 let vaultProxyUsed: VaultLib;
 let comptrollerProxyUsed: ComptrollerLib;

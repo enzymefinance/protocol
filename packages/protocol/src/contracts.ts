@@ -25,6 +25,7 @@ export * from './codegen/ValueInterpreter';
 
 // Extensions
 export * from './codegen/IExtension';
+export * from './codegen/IExternalPosition';
 export * from './codegen/ExternalPositionFactory';
 export * from './codegen/ExternalPositionManager';
 export * from './codegen/FeeManager';
@@ -64,6 +65,7 @@ export * from './codegen/ZeroExV2Adapter';
 // External positions
 export * from './codegen/CompoundDebtPositionParser';
 export * from './codegen/CompoundDebtPositionLib';
+export * from './codegen/IExternalPositionParser';
 
 // Fees
 export * from './codegen/IFee';
@@ -94,6 +96,8 @@ export * from './codegen/TestUpdatableFeeRecipientBase';
 export * from './codegen/MockVaultLib';
 export * from './codegen/MockGenericAdapter';
 export * from './codegen/MockGenericIntegratee';
+export * from './codegen/MockGenericExternalPositionLib';
+export * from './codegen/MockGenericExternalPositionParser';
 export * from './codegen/MockToken';
 export * from './codegen/MockReentrancyToken';
 export * from './codegen/MockChainlinkPriceSource';

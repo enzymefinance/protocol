@@ -44,6 +44,7 @@ const config: HardhatUserConfig = {
     include: [
       // Explicitly allow inclusion of core release interfaces.
       'IExternalPosition',
+      'IExternalPositionParser',
       'IDerivativePriceFeed',
       'IExtension',
       'IIntegrationAdapter',

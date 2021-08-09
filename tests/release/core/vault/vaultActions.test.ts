@@ -1,8 +1,20 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { encodeArgs, StandardToken, VaultAction, VaultLib } from '@enzymefinance/protocol';
+import {
+  encodeArgs,
+  StandardToken,
+  MockGenericExternalPositionLib,
+  VaultAction,
+  VaultLib,
+  ExternalPositionManagerActionId,
+  callOnExternalPositionArgs,
+  mockGenericExternalPositionActionArgs,
+  MockGenericExternalPositionActionId,
+} from '@enzymefinance/protocol';
 import {
   assertEvent,
+  createNewFund,
   createVaultProxy,
+  createMockExternalPosition,
   deployProtocolFixture,
   getAssetUnit,
   ProtocolDeployment,
@@ -321,7 +333,62 @@ describe('BurnShares', () => {
 });
 
 describe('CallOnExternalPosition', () => {
-  it.todo('write tests');
+  it('works as expected', async () => {
+    const [fundOwner] = fork.accounts;
+    const externalPositionManager = fork.deployment.externalPositionManager;
+    const externalPositionFactory = fork.deployment.externalPositionFactory;
+    const seedAmount = utils.parseEther('1');
+
+    const { vaultProxy, comptrollerProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+    });
+
+    const assetsToTransfer = [new StandardToken(fork.config.primitives.dai, whales.dai)];
+    const assetsToReceive = [new StandardToken(fork.config.primitives.mln, whales.mln)];
+    const amountsToTransfer = [1];
+
+    await assetsToTransfer[0].transfer(vaultProxy, seedAmount);
+
+    const { externalPositionProxy } = await createMockExternalPosition({
+      comptrollerProxy,
+      externalPositionManager,
+      externalPositionFactory,
+      fundOwner,
+      defaultActionAssetsToTransfer: assetsToTransfer,
+      defaultActionAmountsToTransfer: amountsToTransfer,
+      defaultActionAssetsToReceive: assetsToReceive,
+      deployer: fork.deployer,
+    });
+
+    const actionArgs = mockGenericExternalPositionActionArgs({
+      assets: [assetsToTransfer[0]],
+      amounts: [amountsToTransfer[0]],
+    });
+
+    const callArgs = callOnExternalPositionArgs({
+      externalPositionProxy,
+      actionId: MockGenericExternalPositionActionId.AddManagedAssets,
+      encodedCallArgs: actionArgs,
+    });
+
+    await comptrollerProxy
+      .connect(fundOwner)
+      .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+
+    // External position was properly called
+    const externalPositionInstance = new MockGenericExternalPositionLib(externalPositionProxy, fork.deployer);
+
+    expect((await externalPositionInstance.getManagedAssets.call()).assets_).toEqual([assetsToTransfer[0].address]);
+
+    // VaultProxy transferred amounts to transfer
+    expect(await assetsToTransfer[0].balanceOf(vaultProxy.address)).toEqBigNumber(seedAmount.sub(amountsToTransfer[0]));
+
+    // Assets to receive are added as a new tracked asset at the vault
+    expect(await vaultProxy.isTrackedAsset(assetsToReceive[0])).toBe(true);
+  });
 });
 
 describe('MintShares', () => {
