@@ -89,7 +89,7 @@ describe('Walkthrough a fund migration', () => {
 
     const rate = FIVE_PERCENT;
     const rateDivisor = ONE_HUNDRED_PERCENT;
-    const expectedFee = utils.parseEther('1').mul(rate).div(rateDivisor.add(rate));
+    const expectedFee = utils.parseEther('1').mul(rate).div(rateDivisor);
 
     expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(utils.parseEther('1').sub(expectedFee));
   });

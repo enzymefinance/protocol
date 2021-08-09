@@ -157,7 +157,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const rate = FIVE_PERCENT;
       const rateDivisor = ONE_HUNDRED_PERCENT;
-      const expectedFee = utils.parseUnits('1', denominationAssetDecimals).mul(rate).div(rateDivisor.add(rate));
+      const expectedFee = utils.parseUnits('1', denominationAssetDecimals).mul(rate).div(rateDivisor);
 
       expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(
         utils.parseUnits('1', denominationAssetDecimals).sub(expectedFee),
@@ -347,24 +347,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('buy shares: max assets', async () => {
-      const investmentAmount = utils.parseUnits('1', denominationAssetDecimals);
-
-      const grossShareValue = await comptrollerProxy.calcGrossShareValue.call();
-      const minSharesQuantity = investmentAmount
-        .mul(utils.parseEther('1'))
-        .div(grossShareValue)
-        .mul(95) // deduct 5% for safety
-        .div(100);
-
       const buySharesTx = await buyShares({
         comptrollerProxy,
         buyer: anotherInvestor,
         denominationAsset,
-        investmentAmount,
-        minSharesQuantity,
       });
-
-      expect(await vaultProxy.balanceOf(anotherInvestor)).toBeGteBigNumber(minSharesQuantity);
 
       expect(buySharesTx).toCostAround(expectedGasCosts['buy shares: max assets'][denominationAssetId]);
     });
