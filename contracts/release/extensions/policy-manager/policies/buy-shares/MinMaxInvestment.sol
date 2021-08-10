@@ -12,13 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./utils/PostBuySharesValidatePolicyBase.sol";
+import "../utils/PolicyBase.sol";
 
 /// @title MinMaxInvestment Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that restricts the amount of the fund's denomination asset that a user can
 /// send in a single call to buy shares in a fund
-contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
+contract MinMaxInvestment is PolicyBase {
     event FundSettingsSet(
         address indexed comptrollerProxy,
         uint256 minInvestmentAmount,
@@ -55,6 +55,20 @@ contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {
         return "MIN_MAX_INVESTMENT";
+    }
+
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
+        external
+        pure
+        override
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostBuyShares;
+
+        return implementedHooks_;
     }
 
     /// @notice Updates the policy settings for a fund
@@ -102,7 +116,7 @@ contract MinMaxInvestment is PostBuySharesValidatePolicyBase {
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (, uint256 investmentAmount, , ) = __decodeRuleArgs(_encodedArgs);
+        (, uint256 investmentAmount, , ) = __decodePostBuySharesValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, investmentAmount);
     }

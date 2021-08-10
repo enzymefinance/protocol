@@ -12,12 +12,12 @@
 pragma solidity 0.6.12;
 
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/PostBuySharesValidatePolicyBase.sol";
+import "../utils/PolicyBase.sol";
 
 /// @title InvestorWhitelist Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of investors to buy shares in a fund
-contract InvestorWhitelist is PostBuySharesValidatePolicyBase, AddressListPolicyMixin {
+contract InvestorWhitelist is PolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Adds the initial policy settings for a fund
@@ -41,6 +41,20 @@ contract InvestorWhitelist is PostBuySharesValidatePolicyBase, AddressListPolicy
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {
         return "INVESTOR_WHITELIST";
+    }
+
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
+        external
+        pure
+        override
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostBuyShares;
+
+        return implementedHooks_;
     }
 
     /// @notice Updates the policy settings for a fund
@@ -75,7 +89,7 @@ contract InvestorWhitelist is PostBuySharesValidatePolicyBase, AddressListPolicy
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (address buyer, , , ) = __decodeRuleArgs(_encodedArgs);
+        (address buyer, , , ) = __decodePostBuySharesValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, buyer);
     }

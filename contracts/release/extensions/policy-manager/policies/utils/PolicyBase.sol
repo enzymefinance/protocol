@@ -47,6 +47,147 @@ abstract contract PolicyBase is IPolicy {
         revert("updateFundSettings: Updates not allowed for this policy");
     }
 
+    //////////////////////////////
+    // VALIDATION DATA DECODING //
+    //////////////////////////////
+
+    /// @dev Helper to parse validation arguments from encoded data for AddTrackedAssets policy hook
+    function __decodeAddTrackedAssetsValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (address caller_, address[] memory assets_)
+    {
+        return abi.decode(_validationData, (address, address[]));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for CreateExternalPosition policy hook
+    function __decodeCreateExternalPositionValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address caller_,
+            uint256 typeId_,
+            bytes memory initializationData_
+        )
+    {
+        return abi.decode(_validationData, (address, uint256, bytes));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for PreTransferShares policy hook
+    function __decodePreTransferSharesValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address sender_,
+            address recipient_,
+            uint256 amount_
+        )
+    {
+        return abi.decode(_validationData, (address, address, uint256));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for PostBuyShares policy hook
+    function __decodePostBuySharesValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address buyer_,
+            uint256 investmentAmount_,
+            uint256 sharesIssued_,
+            uint256 gav_
+        )
+    {
+        return abi.decode(_validationData, (address, uint256, uint256, uint256));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for PostCallOnExternalPosition policy hook
+    function __decodePostCallOnExternalPositionValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address caller_,
+            address externalPosition_,
+            address[] memory assetsToTransfer_,
+            uint256[] memory amountsToTransfer_,
+            address[] memory assetsToReceive_,
+            bytes memory encodedActionData_
+        )
+    {
+        return
+            abi.decode(
+                _validationData,
+                (address, address, address[], uint256[], address[], bytes)
+            );
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for PostCallOnIntegration policy hook
+    function __decodePostCallOnIntegrationValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address caller_,
+            address adapter_,
+            bytes4 selector_,
+            address[] memory incomingAssets_,
+            uint256[] memory incomingAssetAmounts_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_
+        )
+    {
+        return
+            abi.decode(
+                _validationData,
+                (address, address, bytes4, address[], uint256[], address[], uint256[])
+            );
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for ReactivateExternalPosition policy hook
+    function __decodeReactivateExternalPositionValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (address caller_, address externalPosition_)
+    {
+        return abi.decode(_validationData, (address, address));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for RedeemSharesForSpecificAssets policy hook
+    function __decodeRedeemSharesForSpecificAssetsValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (
+            address redeemer_,
+            address recipient_,
+            uint256 sharesToRedeemPostFees_,
+            address[] memory assets_,
+            uint256[] memory assetAmounts_,
+            uint256 gavPreRedeem_
+        )
+    {
+        return
+            abi.decode(
+                _validationData,
+                (address, address, uint256, address[], uint256[], uint256)
+            );
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for RemoveExternalPosition policy hook
+    function __decodeRemoveExternalPositionValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (address caller_, address externalPosition_)
+    {
+        return abi.decode(_validationData, (address, address));
+    }
+
+    /// @dev Helper to parse validation arguments from encoded data for RemoveTrackedAssets policy hook
+    function __decodeRemoveTrackedAssetsValidationData(bytes memory _validationData)
+        internal
+        pure
+        returns (address caller_, address[] memory assets_)
+    {
+        return abi.decode(_validationData, (address, address[]));
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////

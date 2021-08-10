@@ -14,13 +14,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
-import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
+import "../utils/PolicyBase.sol";
 
 /// @title GuaranteedRedemption Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that guarantees that shares will either be continuously redeemable or
 /// redeemable within a predictable daily window by preventing trading during a configurable daily period
-contract GuaranteedRedemption is PostCallOnIntegrationValidatePolicyBase, FundDeployerOwnerMixin {
+contract GuaranteedRedemption is PolicyBase, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event AdapterAdded(address adapter);
@@ -95,6 +95,20 @@ contract GuaranteedRedemption is PostCallOnIntegrationValidatePolicyBase, FundDe
         return "GUARANTEED_REDEMPTION";
     }
 
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
+        external
+        pure
+        override
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostCallOnIntegration;
+
+        return implementedHooks_;
+    }
+
     /// @notice Checks whether a particular condition passes the rule for a particular fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _adapter The adapter for which to check the rule
@@ -163,7 +177,7 @@ contract GuaranteedRedemption is PostCallOnIntegrationValidatePolicyBase, FundDe
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (, address adapter, , , , , ) = __decodeRuleArgs(_encodedArgs);
+        (, address adapter, , , , , ) = __decodePostCallOnIntegrationValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, adapter);
     }

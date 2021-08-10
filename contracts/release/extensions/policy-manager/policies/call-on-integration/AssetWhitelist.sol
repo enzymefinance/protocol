@@ -15,12 +15,12 @@ import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
-import "./utils/PostCallOnIntegrationValidatePolicyBase.sol";
+import "../utils/PolicyBase.sol";
 
 /// @title AssetWhitelist Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows a configurable whitelist of assets in a fund's holdings
-contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListPolicyMixin {
+contract AssetWhitelist is PolicyBase, AddressListPolicyMixin {
     using AddressArrayLib for address[];
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
@@ -61,6 +61,20 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
         return "ASSET_WHITELIST";
     }
 
+    /// @notice Gets the implemented PolicyHooks for a policy
+    /// @return implementedHooks_ The implemented PolicyHooks
+    function implementedHooks()
+        external
+        pure
+        override
+        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
+    {
+        implementedHooks_ = new IPolicyManager.PolicyHook[](1);
+        implementedHooks_[0] = IPolicyManager.PolicyHook.PostCallOnIntegration;
+
+        return implementedHooks_;
+    }
+
     /// @notice Checks whether a particular condition passes the rule for a particular fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _assets The assets with which to check the rule
@@ -88,7 +102,15 @@ contract AssetWhitelist is PostCallOnIntegrationValidatePolicyBase, AddressListP
         IPolicyManager.PolicyHook,
         bytes calldata _encodedArgs
     ) external override returns (bool isValid_) {
-        (, , , address[] memory incomingAssets, , , ) = __decodeRuleArgs(_encodedArgs);
+        (
+            ,
+            ,
+            ,
+            address[] memory incomingAssets,
+            ,
+            ,
+
+        ) = __decodePostCallOnIntegrationValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, incomingAssets);
     }
