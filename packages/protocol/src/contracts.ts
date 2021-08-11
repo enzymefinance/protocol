@@ -71,6 +71,8 @@ export * from './codegen/IExternalPositionParser';
 export * from './codegen/IFee';
 export * from './codegen/EntranceRateBurnFee';
 export * from './codegen/EntranceRateDirectFee';
+export * from './codegen/ExitRateBurnFee';
+export * from './codegen/ExitRateDirectFee';
 export * from './codegen/ManagementFee';
 export * from './codegen/PerformanceFee';
 
