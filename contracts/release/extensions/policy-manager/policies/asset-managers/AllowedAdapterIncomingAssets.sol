@@ -11,32 +11,14 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../core/fund/vault/VaultLib.sol";
-import "../../../../utils/AddressArrayLib.sol";
 import "../utils/AddressListPolicyMixin.sol";
 import "../utils/PolicyBase.sol";
 
-/// @title AssetWhitelist Contract
+/// @title AllowedAdapterIncomingAssets Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A policy that only allows a configurable whitelist of assets in a fund's holdings
-contract AssetWhitelist is PolicyBase, AddressListPolicyMixin {
-    using AddressArrayLib for address[];
-
+/// @notice A policy that limits assets that can be received via an adapter action
+contract AllowedAdapterIncomingAssets is PolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
-
-    /// @notice Validates and initializes a policy as necessary prior to fund activation
-    /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    function activateForFund(address _comptrollerProxy) external override onlyPolicyManager {
-        require(
-            passesRule(
-                _comptrollerProxy,
-                VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy()))
-                    .getTrackedAssets()
-            ),
-            "activateForFund: Non-whitelisted asset detected"
-        );
-    }
 
     /// @notice Add the initial policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
@@ -46,19 +28,13 @@ contract AssetWhitelist is PolicyBase, AddressListPolicyMixin {
         override
         onlyPolicyManager
     {
-        address[] memory assets = abi.decode(_encodedSettings, (address[]));
-        require(
-            assets.contains(ComptrollerLib(_comptrollerProxy).getDenominationAsset()),
-            "addFundSettings: Must whitelist denominationAsset"
-        );
-
         __addToList(_comptrollerProxy, abi.decode(_encodedSettings, (address[])));
     }
 
     /// @notice Provides a constant string identifier for a policy
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {
-        return "ASSET_WHITELIST";
+        return "ALLOWED_ADAPTER_INCOMING_ASSETS";
     }
 
     /// @notice Gets the implemented PolicyHooks for a policy

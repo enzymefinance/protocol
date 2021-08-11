@@ -2,7 +2,7 @@ import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish } from 'ethers';
 import { encodeArgs } from '../encoding';
 
-export function assetWhitelistArgs(assets: AddressLike[]) {
+export function allowedAdapterIncomingAssetsArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
 }
 
