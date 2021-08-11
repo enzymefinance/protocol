@@ -1,4 +1,4 @@
-import { InvestorWhitelistArgs } from '@enzymefinance/protocol';
+import { AllowedDepositRecipientsArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -10,8 +10,8 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const policyManager = await get('PolicyManager');
 
-  await deploy('InvestorWhitelist', {
-    args: [policyManager.address] as InvestorWhitelistArgs,
+  await deploy('AllowedDepositRecipients', {
+    args: [policyManager.address] as AllowedDepositRecipientsArgs,
     from: deployer.address,
     linkedData: {
       type: 'POLICY',
@@ -21,7 +21,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Policies', 'InvestorWhitelist'];
+fn.tags = ['Release', 'Policies', 'AllowedDepositRecipients'];
 fn.dependencies = ['PolicyManager'];
 
 export default fn;

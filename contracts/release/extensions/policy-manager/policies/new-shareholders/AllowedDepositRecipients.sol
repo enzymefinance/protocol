@@ -14,10 +14,10 @@ pragma solidity 0.6.12;
 import "../utils/AddressListPolicyMixin.sol";
 import "../utils/PolicyBase.sol";
 
-/// @title InvestorWhitelist Contract
+/// @title AllowedDepositRecipients Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A policy that only allows a configurable whitelist of investors to buy shares in a fund
-contract InvestorWhitelist is PolicyBase, AddressListPolicyMixin {
+/// @notice A policy that limits the accounts that can receive shares via deposit
+contract AllowedDepositRecipients is PolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Adds the initial policy settings for a fund
@@ -40,7 +40,7 @@ contract InvestorWhitelist is PolicyBase, AddressListPolicyMixin {
     /// @notice Provides a constant string identifier for a policy
     /// @return identifier_ The identifer string
     function identifier() external pure override returns (string memory identifier_) {
-        return "INVESTOR_WHITELIST";
+        return "ALLOWED_DEPOSIT_RECIPIENTS";
     }
 
     /// @notice Gets the implemented PolicyHooks for a policy
@@ -94,7 +94,7 @@ contract InvestorWhitelist is PolicyBase, AddressListPolicyMixin {
         return passesRule(_comptrollerProxy, buyer);
     }
 
-    /// @dev Helper to update the investor whitelist by adding and/or removing addresses
+    /// @dev Helper to update the allowed deposit recipients list by adding and/or removing addresses
     function __updateList(address _comptrollerProxy, bytes memory _settingsData) private {
         (address[] memory itemsToAdd, address[] memory itemsToRemove) = abi.decode(
             _settingsData,

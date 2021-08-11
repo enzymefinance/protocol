@@ -16,7 +16,7 @@ export function guaranteedRedemptionArgs({
   return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
 }
 
-export function investorWhitelistArgs({
+export function allowedDepositRecipientsArgs({
   investorsToAdd = [],
   investorsToRemove = [],
 }: {

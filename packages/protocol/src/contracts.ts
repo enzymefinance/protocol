@@ -79,9 +79,9 @@ export * from './codegen/PerformanceFee';
 // Policies
 export * from './codegen/IPolicy';
 export * from './codegen/AllowedAdapterIncomingAssets';
+export * from './codegen/AllowedDepositRecipients';
 export * from './codegen/GuaranteedRedemption';
 export * from './codegen/MinMaxInvestment';
-export * from './codegen/InvestorWhitelist';
 
 // Peripheral
 export * from './codegen/DepositWrapper';
