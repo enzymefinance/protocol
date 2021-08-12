@@ -28,6 +28,7 @@ export * from './codegen/IExtension';
 export * from './codegen/IExternalPosition';
 export * from './codegen/ExternalPositionFactory';
 export * from './codegen/ExternalPositionManager';
+export * from './codegen/IExternalPositionProxy';
 export * from './codegen/FeeManager';
 export * from './codegen/IntegrationManager';
 export * from './codegen/PolicyManager';

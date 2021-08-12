@@ -32,9 +32,9 @@ export async function createMockExternalPosition({
   deployer: SignerWithAddress;
 }) {
   const vaultProxy = new VaultLib(await comptrollerProxy.getVaultProxy(), deployer);
+  const typeId = await externalPositionFactory.getPositionTypeCounter();
 
   await externalPositionFactory.addNewPositionTypes(['TEST']);
-  const typeId = (await vaultProxy.getActiveExternalPositions()).length;
 
   const mockGenericExternalPositionLib = await MockGenericExternalPositionLib.deploy(deployer);
   const mockExternalPositionParser = await MockGenericExternalPositionParser.deploy(deployer);
@@ -63,6 +63,7 @@ export async function createMockExternalPosition({
   const externalPositionProxy = (await vaultProxy.getActiveExternalPositions())[0];
 
   return {
+    typeId,
     mockGenericExternalPositionLib,
     mockExternalPositionParser,
     externalPositionProxy,
