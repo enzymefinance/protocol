@@ -5,7 +5,7 @@ import {
   convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
-  allowedDepositRecipientsArgs,
+  allowedDepositRecipientsPolicyArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
   StandardToken,
@@ -133,13 +133,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(createFundTx.receipt).toCostAround(expectedGasCosts['create fund'][denominationAssetId]);
     });
 
-    it('enables the AllowedDepositRecipients policy for the fund', async () => {
+    it('enables the AllowedDepositRecipientsPolicy policy for the fund', async () => {
       const enabled = await fork.deployment.policyManager
         .connect(manager)
         .enablePolicyForFund.args(
           comptrollerProxy.address,
-          fork.deployment.allowedDepositRecipients,
-          allowedDepositRecipientsArgs({
+          fork.deployment.allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({
             investorsToAdd: [randomAddress(), randomAddress(), investor.address],
           }),
         )
@@ -332,13 +332,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(grossShareValueAfter).toBeGtBigNumber(grossShareValueBefore);
     });
 
-    it('changes the AllowedDepositRecipients', async () => {
+    it('changes the AllowedDepositRecipientsPolicy', async () => {
       await fork.deployment.policyManager
         .connect(manager)
         .updatePolicySettingsForFund.args(
           comptrollerProxy.address,
-          fork.deployment.allowedDepositRecipients,
-          allowedDepositRecipientsArgs({
+          fork.deployment.allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({
             investorsToAdd: [anotherInvestor],
             investorsToRemove: [investor],
           }),

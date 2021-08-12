@@ -14,10 +14,10 @@ pragma solidity 0.6.12;
 import "../utils/AddressListPolicyMixin.sol";
 import "../utils/PolicyBase.sol";
 
-/// @title AllowedDepositRecipients Contract
+/// @title AllowedDepositRecipientsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits the accounts that can receive shares via deposit
-contract AllowedDepositRecipients is PolicyBase, AddressListPolicyMixin {
+contract AllowedDepositRecipientsPolicy is PolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Adds the initial policy settings for a fund

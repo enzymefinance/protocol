@@ -78,10 +78,10 @@ export * from './codegen/PerformanceFee';
 
 // Policies
 export * from './codegen/IPolicy';
-export * from './codegen/AllowedAdapterIncomingAssets';
-export * from './codegen/AllowedDepositRecipients';
-export * from './codegen/GuaranteedRedemption';
-export * from './codegen/MinMaxInvestment';
+export * from './codegen/AllowedAdapterIncomingAssetsPolicy';
+export * from './codegen/AllowedDepositRecipientsPolicy';
+export * from './codegen/GuaranteedRedemptionPolicy';
+export * from './codegen/MinMaxInvestmentPolicy';
 
 // Peripheral
 export * from './codegen/DepositWrapper';

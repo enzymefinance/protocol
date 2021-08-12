@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
-  guaranteedRedemptionArgs,
+  guaranteedRedemptionPolicyArgs,
   ISynthetixAddressResolver,
   ISynthetixExchanger,
   policyManagerConfigArgs,
@@ -63,11 +63,11 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   it('creates a new fund with sUSD as its denomination asset', async () => {
     // TODO: add fees?
 
-    // Set GuaranteedRedemption policy with redemption window starting immediately
+    // Set GuaranteedRedemptionPolicy policy with redemption window starting immediately
     const policyManagerConfig = policyManagerConfigArgs({
-      policies: [fork.deployment.guaranteedRedemption],
+      policies: [fork.deployment.guaranteedRedemptionPolicy],
       settings: [
-        guaranteedRedemptionArgs({
+        guaranteedRedemptionPolicyArgs({
           duration: [100],
           startTimestamp: (await provider.getBlock('latest')).timestamp,
         }),
@@ -137,7 +137,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
   });
 
   it('warps beyond the redemption window', async () => {
-    const duration = (await fork.deployment.guaranteedRedemption.getRedemptionWindowForFund(comptrollerProxy)).duration;
+    const duration = (await fork.deployment.guaranteedRedemptionPolicy.getRedemptionWindowForFund(comptrollerProxy))
+      .duration;
     await provider.send('evm_increaseTime', [duration.toNumber()]);
     await provider.send('evm_mine', []);
   });

@@ -14,11 +14,11 @@ pragma experimental ABIEncoderV2;
 
 import "../utils/PolicyBase.sol";
 
-/// @title MinMaxInvestment Contract
+/// @title MinMaxInvestmentPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that restricts the amount of the fund's denomination asset that a user can
 /// send in a single call to buy shares in a fund
-contract MinMaxInvestment is PolicyBase {
+contract MinMaxInvestmentPolicy is PolicyBase {
     event FundSettingsSet(
         address indexed comptrollerProxy,
         uint256 minInvestmentAmount,

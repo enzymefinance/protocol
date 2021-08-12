@@ -1,4 +1,4 @@
-import { AllowedAdapterIncomingAssetsArgs } from '@enzymefinance/protocol';
+import { AllowedAdapterIncomingAssetsPolicyArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -10,8 +10,8 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const policyManager = await get('PolicyManager');
 
-  await deploy('AllowedAdapterIncomingAssets', {
-    args: [policyManager.address] as AllowedAdapterIncomingAssetsArgs,
+  await deploy('AllowedAdapterIncomingAssetsPolicy', {
+    args: [policyManager.address] as AllowedAdapterIncomingAssetsPolicyArgs,
     from: deployer.address,
     linkedData: {
       type: 'POLICY',
@@ -21,7 +21,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Policies', 'AllowedAdapterIncomingAssets'];
+fn.tags = ['Release', 'Policies', 'AllowedAdapterIncomingAssetsPolicy'];
 fn.dependencies = ['PolicyManager'];
 
 export default fn;

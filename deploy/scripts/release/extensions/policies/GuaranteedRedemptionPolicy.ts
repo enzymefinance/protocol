@@ -1,4 +1,4 @@
-import { GuaranteedRedemptionArgs } from '@enzymefinance/protocol';
+import { GuaranteedRedemptionPolicyArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -14,13 +14,13 @@ const fn: DeployFunction = async function (hre) {
   const policyManager = await get('PolicyManager');
   const fundDeployer = await get('FundDeployer');
 
-  await deploy('GuaranteedRedemption', {
+  await deploy('GuaranteedRedemptionPolicy', {
     args: [
       policyManager.address,
       fundDeployer.address,
       config.policies.guaranteedRedemption.redemptionWindowBuffer,
       [],
-    ] as GuaranteedRedemptionArgs,
+    ] as GuaranteedRedemptionPolicyArgs,
     from: deployer.address,
     linkedData: {
       type: 'POLICY',
@@ -30,7 +30,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Policies', 'GuaranteedRedemption'];
+fn.tags = ['Release', 'Policies', 'GuaranteedRedemptionPolicy'];
 fn.dependencies = ['PolicyManager'];
 
 export default fn;

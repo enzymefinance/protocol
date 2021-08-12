@@ -16,11 +16,11 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/PolicyBase.sol";
 
-/// @title GuaranteedRedemption Contract
+/// @title GuaranteedRedemptionPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that guarantees that shares will either be continuously redeemable or
 /// redeemable within a predictable daily window by preventing trading during a configurable daily period
-contract GuaranteedRedemption is PolicyBase, FundDeployerOwnerMixin {
+contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event AdapterAdded(address adapter);

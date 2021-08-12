@@ -14,10 +14,10 @@ pragma solidity 0.6.12;
 import "../utils/AddressListPolicyMixin.sol";
 import "../utils/PolicyBase.sol";
 
-/// @title AllowedAdapterIncomingAssets Contract
+/// @title AllowedAdapterIncomingAssetsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits assets that can be received via an adapter action
-contract AllowedAdapterIncomingAssets is PolicyBase, AddressListPolicyMixin {
+contract AllowedAdapterIncomingAssetsPolicy is PolicyBase, AddressListPolicyMixin {
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
     /// @notice Add the initial policy settings for a fund

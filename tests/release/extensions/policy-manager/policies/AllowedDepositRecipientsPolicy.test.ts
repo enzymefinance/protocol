@@ -1,7 +1,7 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import {
-  AllowedDepositRecipients,
-  allowedDepositRecipientsArgs,
+  AllowedDepositRecipientsPolicy,
+  allowedDepositRecipientsPolicyArgs,
   PolicyHook,
   validateRulePostBuySharesArgs,
 } from '@enzymefinance/protocol';
@@ -9,21 +9,21 @@ import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymef
 
 async function addFundSettings({
   comptrollerProxy,
-  allowedDepositRecipients,
+  allowedDepositRecipientsPolicy,
   investorsToAdd,
 }: {
   comptrollerProxy: AddressLike;
-  allowedDepositRecipients: AllowedDepositRecipients;
+  allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
   investorsToAdd: AddressLike[];
 }) {
-  const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+  const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
     investorsToAdd,
   });
 
-  await allowedDepositRecipients.addFundSettings(comptrollerProxy, allowedDepositRecipientsConfig);
+  await allowedDepositRecipientsPolicy.addFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig);
 }
 
-async function deployAndConfigureStandaloneAllowedDepositRecipients(
+async function deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(
   fork: ProtocolDeployment,
   {
     comptrollerProxy = '0x',
@@ -35,29 +35,29 @@ async function deployAndConfigureStandaloneAllowedDepositRecipients(
 ) {
   const [EOAPolicyManager] = fork.accounts.slice(-1);
 
-  let allowedDepositRecipients = await AllowedDepositRecipients.deploy(fork.deployer, EOAPolicyManager);
-  allowedDepositRecipients = allowedDepositRecipients.connect(EOAPolicyManager);
+  let allowedDepositRecipientsPolicy = await AllowedDepositRecipientsPolicy.deploy(fork.deployer, EOAPolicyManager);
+  allowedDepositRecipientsPolicy = allowedDepositRecipientsPolicy.connect(EOAPolicyManager);
 
   if (comptrollerProxy != '0x') {
     await addFundSettings({
       comptrollerProxy,
-      allowedDepositRecipients,
+      allowedDepositRecipientsPolicy,
       investorsToAdd,
     });
   }
 
-  return allowedDepositRecipients;
+  return allowedDepositRecipientsPolicy;
 }
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const allowedDepositRecipients = fork.deployment.allowedDepositRecipients;
+    const allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    const getPolicyManagerCall = await allowedDepositRecipients.getPolicyManager();
+    const getPolicyManagerCall = await allowedDepositRecipientsPolicy.getPolicyManager();
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
-    const implementedHooksCall = await allowedDepositRecipients.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(allowedDepositRecipients.implementedHooks.fragment, [
+    const implementedHooksCall = await allowedDepositRecipientsPolicy.implementedHooks();
+    expect(implementedHooksCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.implementedHooks.fragment, [
       PolicyHook.PostBuyShares,
     ]);
   });
@@ -67,34 +67,39 @@ describe('addFundSettings', () => {
   let fork: ProtocolDeployment;
   let comptrollerProxy: AddressLike;
   let allowedInvestors: AddressLike[];
-  let allowedDepositRecipients: AllowedDepositRecipients;
+  let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
 
   beforeAll(async () => {
     fork = await deployProtocolFixture();
     comptrollerProxy = randomAddress();
     allowedInvestors = [randomAddress(), randomAddress()];
 
-    allowedDepositRecipients = await deployAndConfigureStandaloneAllowedDepositRecipients(fork, {});
+    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {});
   });
 
   it('can only be called by the PolicyManager', async () => {
     const [randomUser] = fork.accounts;
 
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToAdd: allowedInvestors,
     });
 
     await expect(
-      allowedDepositRecipients.connect(randomUser).addFundSettings(comptrollerProxy, allowedDepositRecipientsConfig),
+      allowedDepositRecipientsPolicy
+        .connect(randomUser)
+        .addFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToAdd: allowedInvestors,
     });
 
-    const receipt = await allowedDepositRecipients.addFundSettings(comptrollerProxy, allowedDepositRecipientsConfig);
+    const receipt = await allowedDepositRecipientsPolicy.addFundSettings(
+      comptrollerProxy,
+      allowedDepositRecipientsPolicyConfig,
+    );
 
     // Assert the AddressesAdded event was emitted
     assertEvent(receipt, 'AddressesAdded', {
@@ -103,8 +108,8 @@ describe('addFundSettings', () => {
     });
 
     // List should be the allowed investors
-    const getListCall = await allowedDepositRecipients.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipients.getList, allowedInvestors);
+    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, allowedInvestors);
   });
 
   it.todo('handles a valid call (re-enabled policy)');
@@ -113,9 +118,9 @@ describe('addFundSettings', () => {
 describe('canDisable', () => {
   it('returns true', async () => {
     const fork = await deployProtocolFixture();
-    const allowedDepositRecipients = await deployAndConfigureStandaloneAllowedDepositRecipients(fork, {});
+    const allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {});
 
-    expect(await allowedDepositRecipients.canDisable()).toBe(true);
+    expect(await allowedDepositRecipientsPolicy.canDisable()).toBe(true);
   });
 });
 
@@ -123,14 +128,14 @@ describe('updateFundSettings', () => {
   let fork: ProtocolDeployment;
   let comptrollerProxy: AddressLike;
   let currentAllowedInvestors: AddressLike[];
-  let allowedDepositRecipients: AllowedDepositRecipients;
+  let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
 
   beforeAll(async () => {
     fork = await deployProtocolFixture();
     comptrollerProxy = randomAddress();
     currentAllowedInvestors = [randomAddress(), randomAddress()];
 
-    allowedDepositRecipients = await deployAndConfigureStandaloneAllowedDepositRecipients(fork, {
+    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {
       comptrollerProxy,
       investorsToAdd: currentAllowedInvestors,
     });
@@ -139,23 +144,28 @@ describe('updateFundSettings', () => {
   it('can only be called by the policy manager', async () => {
     const [randomUser] = fork.accounts;
 
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToAdd: [randomAddress()],
     });
 
     await expect(
-      allowedDepositRecipients.connect(randomUser).updateFundSettings(comptrollerProxy, allowedDepositRecipientsConfig),
+      allowedDepositRecipientsPolicy
+        .connect(randomUser)
+        .updateFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
   it('correctly handles adding items only', async () => {
     const investorsToAdd = [randomAddress(), randomAddress()];
 
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToAdd,
     });
 
-    const receipt = await allowedDepositRecipients.updateFundSettings(comptrollerProxy, allowedDepositRecipientsConfig);
+    const receipt = await allowedDepositRecipientsPolicy.updateFundSettings(
+      comptrollerProxy,
+      allowedDepositRecipientsPolicyConfig,
+    );
 
     currentAllowedInvestors = currentAllowedInvestors.concat(investorsToAdd);
 
@@ -166,18 +176,21 @@ describe('updateFundSettings', () => {
     });
 
     // List should include both previous allowed investors and new investors
-    const getListCall = await allowedDepositRecipients.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipients.getList, currentAllowedInvestors);
+    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
   });
 
   it('correctly handles removing items only', async () => {
     const [investorToRemove] = currentAllowedInvestors;
 
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToRemove: [investorToRemove],
     });
 
-    const receipt = await allowedDepositRecipients.updateFundSettings(comptrollerProxy, allowedDepositRecipientsConfig);
+    const receipt = await allowedDepositRecipientsPolicy.updateFundSettings(
+      comptrollerProxy,
+      allowedDepositRecipientsPolicyConfig,
+    );
 
     currentAllowedInvestors[0] = currentAllowedInvestors[currentAllowedInvestors.length - 1];
     currentAllowedInvestors = currentAllowedInvestors.slice(0, -1);
@@ -189,8 +202,8 @@ describe('updateFundSettings', () => {
     });
 
     // List should remove investor from previously allowed investors
-    const getListCall = await allowedDepositRecipients.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipients.getList, currentAllowedInvestors);
+    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
   });
 
   it('correctly handles both adding and removing items', async () => {
@@ -203,18 +216,18 @@ describe('updateFundSettings', () => {
     const investorsToAdd = [newInvestor, overlappingInvestor];
     const investorsToRemove = [investorToRemove, overlappingInvestor];
 
-    const allowedDepositRecipientsConfig = allowedDepositRecipientsArgs({
+    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
       investorsToAdd,
       investorsToRemove,
     });
 
-    await allowedDepositRecipients.updateFundSettings(comptrollerProxy, allowedDepositRecipientsConfig);
+    await allowedDepositRecipientsPolicy.updateFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig);
 
     currentAllowedInvestors = [newInvestor, ...remainingInvestors];
 
     // Final list should have removed one investor and added one investor
-    const getListCall = await allowedDepositRecipients.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipients.getList, currentAllowedInvestors);
+    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
+    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
   });
 });
 
@@ -222,14 +235,14 @@ describe('validateRule', () => {
   let fork: ProtocolDeployment;
   let comptrollerProxy: AddressLike;
   let allowedInvestors: AddressLike[];
-  let allowedDepositRecipients: AllowedDepositRecipients;
+  let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
 
   beforeAll(async () => {
     fork = await deployProtocolFixture();
     comptrollerProxy = randomAddress();
     allowedInvestors = [randomAddress(), randomAddress()];
 
-    allowedDepositRecipients = await deployAndConfigureStandaloneAllowedDepositRecipients(fork, {
+    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {
       comptrollerProxy,
       investorsToAdd: allowedInvestors,
     });
@@ -244,7 +257,7 @@ describe('validateRule', () => {
       sharesIssued: 1,
     });
 
-    const validateRuleCall = await allowedDepositRecipients.validateRule
+    const validateRuleCall = await allowedDepositRecipientsPolicy.validateRule
       .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 
@@ -260,7 +273,7 @@ describe('validateRule', () => {
       sharesIssued: 1,
     });
 
-    const validateRuleCall = await allowedDepositRecipients.validateRule
+    const validateRuleCall = await allowedDepositRecipientsPolicy.validateRule
       .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
       .call();
 

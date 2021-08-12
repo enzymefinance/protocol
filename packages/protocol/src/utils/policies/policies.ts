@@ -2,11 +2,11 @@ import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish } from 'ethers';
 import { encodeArgs } from '../encoding';
 
-export function allowedAdapterIncomingAssetsArgs(assets: AddressLike[]) {
+export function allowedAdapterIncomingAssetsPolicyArgs(assets: AddressLike[]) {
   return encodeArgs(['address[]'], [assets]);
 }
 
-export function guaranteedRedemptionArgs({
+export function guaranteedRedemptionPolicyArgs({
   startTimestamp,
   duration,
 }: {
@@ -16,7 +16,7 @@ export function guaranteedRedemptionArgs({
   return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
 }
 
-export function allowedDepositRecipientsArgs({
+export function allowedDepositRecipientsPolicyArgs({
   investorsToAdd = [],
   investorsToRemove = [],
 }: {
@@ -26,7 +26,7 @@ export function allowedDepositRecipientsArgs({
   return encodeArgs(['address[]', 'address[]'], [investorsToAdd, investorsToRemove]);
 }
 
-export function minMaxInvestmentArgs({
+export function minMaxInvestmentPolicyArgs({
   minInvestmentAmount,
   maxInvestmentAmount,
 }: {

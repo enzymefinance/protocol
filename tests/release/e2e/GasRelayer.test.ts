@@ -8,8 +8,8 @@ import {
   GasRelayPaymasterLib,
   IGsnRelayHub,
   IntegrationManagerActionId,
-  AllowedDepositRecipients,
-  allowedDepositRecipientsArgs,
+  AllowedDepositRecipientsPolicy,
+  allowedDepositRecipientsPolicyArgs,
   PolicyManager,
   sighash,
   StandardToken,
@@ -563,11 +563,11 @@ describe('expected relayable txs', () => {
   });
   describe('PolicyManager', () => {
     let policyManager: PolicyManager;
-    let allowedDepositRecipients: AllowedDepositRecipients;
+    let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
 
     beforeEach(async () => {
       policyManager = fork.deployment.policyManager;
-      allowedDepositRecipients = fork.deployment.allowedDepositRecipients;
+      allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
     });
 
     it('does not allow an unauthorized function', async () => {
@@ -590,8 +590,8 @@ describe('expected relayable txs', () => {
         .connect(fundOwner)
         .enablePolicyForFund.args(
           newFund.comptrollerProxy,
-          allowedDepositRecipients,
-          allowedDepositRecipientsArgs({ investorsToAdd: [randomAddress()] }),
+          allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
         );
 
       // Note this is the paymaster of the "old" fund
@@ -614,8 +614,8 @@ describe('expected relayable txs', () => {
         .connect(fundOwner)
         .enablePolicyForFund.args(
           comptrollerProxy,
-          allowedDepositRecipients,
-          allowedDepositRecipientsArgs({ investorsToAdd: [randomAddress()] }),
+          allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
         );
 
       const receipt = await relayTransaction({
@@ -628,7 +628,7 @@ describe('expected relayable txs', () => {
       // Policy should be added
       expect(
         await policyManager.getEnabledPoliciesForFund(comptrollerProxy),
-      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipients]);
+      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipientsPolicy]);
     });
 
     it('happy path: updatePolicySettingsForFund', async () => {
@@ -637,24 +637,24 @@ describe('expected relayable txs', () => {
         .connect(fundOwner)
         .enablePolicyForFund(
           comptrollerProxy,
-          allowedDepositRecipients,
-          allowedDepositRecipientsArgs({ investorsToAdd: [randomAddress()] }),
+          allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
         );
       expect(
         await policyManager.getEnabledPoliciesForFund(comptrollerProxy),
-      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipients]);
+      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipientsPolicy]);
 
       const newInvestor = randomAddress();
 
       // Investor should not yet be in list
-      expect(await allowedDepositRecipients.isInList(comptrollerProxy, newInvestor)).toBe(false);
+      expect(await allowedDepositRecipientsPolicy.isInList(comptrollerProxy, newInvestor)).toBe(false);
 
       const sendFunction = policyManager
         .connect(fundOwner)
         .updatePolicySettingsForFund.args(
           comptrollerProxy,
-          allowedDepositRecipients,
-          allowedDepositRecipientsArgs({ investorsToAdd: [newInvestor] }),
+          allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [newInvestor] }),
         );
 
       await relayTransaction({
@@ -665,7 +665,7 @@ describe('expected relayable txs', () => {
       });
 
       // Investor should now be added to list
-      expect(await allowedDepositRecipients.isInList(comptrollerProxy, newInvestor)).toBe(true);
+      expect(await allowedDepositRecipientsPolicy.isInList(comptrollerProxy, newInvestor)).toBe(true);
     });
 
     it('happy path: disablePolicyForFund', async () => {
@@ -673,12 +673,12 @@ describe('expected relayable txs', () => {
         .connect(fundOwner)
         .enablePolicyForFund(
           comptrollerProxy,
-          allowedDepositRecipients,
-          allowedDepositRecipientsArgs({ investorsToAdd: [randomAddress()] }),
+          allowedDepositRecipientsPolicy,
+          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
         );
       const sendFunction = policyManager
         .connect(fundOwner)
-        .disablePolicyForFund.args(comptrollerProxy, allowedDepositRecipients);
+        .disablePolicyForFund.args(comptrollerProxy, allowedDepositRecipientsPolicy);
 
       const receipt = await relayTransaction({
         sendFunction,
