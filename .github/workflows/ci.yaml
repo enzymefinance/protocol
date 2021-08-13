@@ -4,10 +4,12 @@ on:
     branches:
       - current
       - next
+      - audit/*
   pull_request:
     branches:
       - current
       - next
+      - audit/*
 
 jobs:
   test:
