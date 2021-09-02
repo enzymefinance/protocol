@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.0
+
+### Major Changes
+
+- 3a27d558: Entering pre-release phase for Sulu
+
 ## 2.0.3
 
 ### Patch Changes
