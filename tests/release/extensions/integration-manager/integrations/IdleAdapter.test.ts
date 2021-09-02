@@ -388,7 +388,7 @@ describe('redeem', () => {
     // Assert the absolute amount of govTokensEarned, since some individual rewards could be 0.
     expect(totalGovTokenVaultBalances).toBeGtBigNumber(0);
 
-    expect(redeemReceipt).toCostAround('761516');
+    expect(redeemReceipt).toCostAround('771716');
   });
 });
 

@@ -1,0 +1,9 @@
+{
+  "mode": "pre",
+  "tag": "next",
+  "initialVersions": {
+    "@enzymefinance/protocol": "3.0.0",
+    "@enzymefinance/testutils": "3.0.0"
+  },
+  "changesets": []
+}

@@ -1,6 +1,6 @@
 {
   "name": "@enzymefinance/protocol",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "description": "Technology Regulated and Operated Investment Funds",
   "author": "Enzyme Council DAO <council@enzyme.finance>",
   "license": "GPL-3.0",
@@ -34,9 +34,9 @@
     "Solidity"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.14.8",
-    "@enzymefinance/ethers": "^0.0.12",
+    "@babel/runtime": "^7.15.3",
+    "@enzymefinance/ethers": "^1.0.0",
     "decimal.js": "^10.3.1",
-    "ethers": "^5.4.1"
+    "ethers": "^5.4.6"
   }
 }

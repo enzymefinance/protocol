@@ -79,13 +79,8 @@ describe('addDerivatives', () => {
   });
 
   it('adds a set of new derivatives with price feeds', async () => {
-    const {
-      mockDerivative1,
-      mockDerivative2,
-      mockDerivativePriceFeed1,
-      mockDerivativePriceFeed2,
-      valueInterpreter,
-    } = await provider.snapshot(snapshot);
+    const { mockDerivative1, mockDerivative2, mockDerivativePriceFeed1, mockDerivativePriceFeed2, valueInterpreter } =
+      await provider.snapshot(snapshot);
 
     // Define which asset each mock price feed supports
     await mockDerivativePriceFeed1.isSupportedAsset.given(mockDerivative1).returns(true);
@@ -159,13 +154,8 @@ describe('updateDerivatives', () => {
   });
 
   it('happy path', async () => {
-    const {
-      valueInterpreter,
-      mockDerivative1,
-      mockDerivative2,
-      mockDerivativePriceFeed1,
-      mockDerivativePriceFeed2,
-    } = await provider.snapshot(snapshot);
+    const { valueInterpreter, mockDerivative1, mockDerivative2, mockDerivativePriceFeed1, mockDerivativePriceFeed2 } =
+      await provider.snapshot(snapshot);
 
     // Add both derivatives to the aggregate feed using mockDerivativePriceFeed1
     await mockDerivativePriceFeed1.isSupportedAsset.given(mockDerivative1).returns(true);

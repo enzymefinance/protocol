@@ -626,9 +626,10 @@ describe('expected relayable txs', () => {
       });
       assertDidRelaySuccessfully(receipt);
       // Policy should be added
-      expect(
-        await policyManager.getEnabledPoliciesForFund(comptrollerProxy),
-      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipientsPolicy]);
+      expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toMatchFunctionOutput(
+        policyManager.getEnabledPoliciesForFund,
+        [allowedDepositRecipientsPolicy],
+      );
     });
 
     it('happy path: updatePolicySettingsForFund', async () => {
@@ -640,9 +641,10 @@ describe('expected relayable txs', () => {
           allowedDepositRecipientsPolicy,
           allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
         );
-      expect(
-        await policyManager.getEnabledPoliciesForFund(comptrollerProxy),
-      ).toMatchFunctionOutput(policyManager.getEnabledPoliciesForFund, [allowedDepositRecipientsPolicy]);
+      expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toMatchFunctionOutput(
+        policyManager.getEnabledPoliciesForFund,
+        [allowedDepositRecipientsPolicy],
+      );
 
       const newInvestor = randomAddress();
 

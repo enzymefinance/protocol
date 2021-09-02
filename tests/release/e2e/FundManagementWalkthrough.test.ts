@@ -29,16 +29,16 @@ const tempTolerance = 10000;
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 348901,
-    weth: 327083,
+    usdc: 359188,
+    weth: 337370,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 356352,
-    weth: 341255,
+    usdc: 366469,
+    weth: 351362,
   },
   'buy shares: max assets': {
-    usdc: 1340865,
-    weth: 1274819,
+    usdc: 1350443,
+    weth: 1284454,
   },
   'calc gav: 20 assets': {
     usdc: 1052487,
@@ -48,22 +48,18 @@ const expectedGasCosts = {
     usdc: 79832,
     weth: 70297,
   },
-
   'create fund': {
     usdc: 926433,
     weth: 915924,
   },
-
   'redeem partial shares: max assets': {
-    usdc: 2491398,
+    usdc: 2495070,
     weth: 2427636,
   },
-
   'redeem all shares: max assets': {
-    usdc: 1993610,
-    weth: 1952390,
+    usdc: 2006498,
+    weth: 1965174,
   },
-
   'trade on Uniswap: max assets': {
     usdc: 254437,
     weth: 228643,

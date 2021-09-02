@@ -5,6 +5,7 @@
 .*
 !.env.example
 !.changeset
+!.husky
 !.github
 !.gitignore
 !.gitattributes

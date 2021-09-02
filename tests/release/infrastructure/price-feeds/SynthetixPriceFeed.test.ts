@@ -92,7 +92,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(178000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(270000));
   });
 });
 
@@ -211,12 +211,10 @@ describe('synths registry', () => {
       // The currencyKey should be stored for each Synth
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth1)).toBe(newSynth1CurrencyKey);
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth2)).toBe(newSynth2CurrencyKey);
-      expect(
-        await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2]),
-      ).toMatchFunctionOutput(synthetixPriceFeed.getCurrencyKeysForSynths, [
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      ]);
+      expect(await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2])).toMatchFunctionOutput(
+        synthetixPriceFeed.getCurrencyKeysForSynths,
+        [newSynth1CurrencyKey, newSynth2CurrencyKey],
+      );
 
       // The tokens should now be supported assets
       expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(true);

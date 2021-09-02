@@ -100,9 +100,11 @@ describe('init', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const { comptrollerProxy, sharesActionTimelock, supportedAsset: denominationAsset } = await provider.snapshot(
-      snapshot,
-    );
+    const {
+      comptrollerProxy,
+      sharesActionTimelock,
+      supportedAsset: denominationAsset,
+    } = await provider.snapshot(snapshot);
 
     // ComptrollerProxy has already been created (and init() called),
     // so we just need to assert state and expected calls

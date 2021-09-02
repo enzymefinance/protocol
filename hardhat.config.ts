@@ -106,6 +106,7 @@ const config: HardhatUserConfig = {
       },
       blockGasLimit: gas,
       gasPrice: 0, // TODO: Consider removing this again.
+      initialBaseFeePerGas: 0,
     },
     kovan: {
       accounts: accounts('kovan'),

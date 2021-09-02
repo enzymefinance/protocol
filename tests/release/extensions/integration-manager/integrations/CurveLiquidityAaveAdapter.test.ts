@@ -674,15 +674,11 @@ xdescribe('lendAndStake', () => {
       useUnderlyings: true,
     });
 
-    const [
-      postTxDaiBalance,
-      postTxUsdcBalance,
-      postTxUsdtBalance,
-      postTxLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [dai, usdc, usdt, liquidityGaugeToken],
-    });
+    const [postTxDaiBalance, postTxUsdcBalance, postTxUsdtBalance, postTxLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [dai, usdc, usdt, liquidityGaugeToken],
+      });
 
     // Assert the amounts spent and received
     expect(postTxDaiBalance).toEqBigNumber(preTxDaiBalance.sub(outgoingAaveDaiAmount));
@@ -795,15 +791,11 @@ xdescribe('redeem', () => {
       useUnderlyings: false, // Unnecessary, but explicit for test
     });
 
-    const [
-      postTxAaveDaiBalance,
-      postTxAaveUsdcBalance,
-      postTxAaveUsdtBalance,
-      postTxLpTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [adai, ausdc, ausdt, lpToken],
-    });
+    const [postTxAaveDaiBalance, postTxAaveUsdcBalance, postTxAaveUsdtBalance, postTxLpTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [adai, ausdc, ausdt, lpToken],
+      });
 
     // Assert the amounts spent and received
     expect(postTxLpTokenBalance).toEqBigNumber(preTxLpTokenBalance.sub(outgoingLPTokenAmount));
@@ -920,15 +912,11 @@ xdescribe('unstakeAndRedeem', () => {
       useUnderlyings: false, // Unnecessary, but explicit for test
     });
 
-    const [
-      postTxAaveDaiBalance,
-      postTxAaveUsdcBalance,
-      postTxAaveUsdtBalance,
-      postTxLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [adai, ausdc, ausdt, liquidityGaugeToken],
-    });
+    const [postTxAaveDaiBalance, postTxAaveUsdcBalance, postTxAaveUsdtBalance, postTxLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [adai, ausdc, ausdt, liquidityGaugeToken],
+      });
 
     // Assert the amounts spent and received
     expect(postTxLiquidityGaugeTokenBalance).toEqBigNumber(
@@ -986,15 +974,11 @@ xdescribe('unstakeAndRedeem', () => {
       useUnderlyings: true,
     });
 
-    const [
-      postTxDaiBalance,
-      postTxUsdcBalance,
-      postTxUsdtBalance,
-      postTxLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [dai, usdc, usdt, liquidityGaugeToken],
-    });
+    const [postTxDaiBalance, postTxUsdcBalance, postTxUsdtBalance, postTxLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [dai, usdc, usdt, liquidityGaugeToken],
+      });
 
     // Assert the amounts spent and received
     expect(postTxLiquidityGaugeTokenBalance).toEqBigNumber(

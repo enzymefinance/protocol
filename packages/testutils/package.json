@@ -1,7 +1,6 @@
 {
   "name": "@enzymefinance/testutils",
-  "version": "2.0.0",
-  "private": true,
+  "version": "3.0.0",
   "main": "dist/enzymefinance-testutils.cjs.js",
   "module": "dist/enzymefinance-testutils.esm.js",
   "browser": {
@@ -9,10 +8,10 @@
     "./dist/enzymefinance-testutils.esm.js": "./dist/enzymefinance-testutils.browser.esm.js"
   },
   "dependencies": {
-    "@babel/runtime": "^7.14.8",
-    "@enzymefinance/ethers": "^0.0.12",
-    "@enzymefinance/hardhat": "^0.0.24",
-    "@enzymefinance/protocol": "^2.0.3",
-    "ethers": "^5.4.1"
+    "@babel/runtime": "^7.15.3",
+    "@enzymefinance/ethers": "^1.0.0",
+    "@enzymefinance/hardhat": "^1.0.0",
+    "@enzymefinance/protocol": "^3.0.0",
+    "ethers": "^5.4.6"
   }
 }
