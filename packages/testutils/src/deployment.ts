@@ -55,6 +55,7 @@ import {
   ProtocolFeeTracker,
   GasRelayPaymasterFactory,
   ExternalPositionFactory,
+  AddressListRegistry,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -137,6 +138,7 @@ export async function deployProtocolFixture() {
     protocolFeeReserveProxy: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveProxy'].address, deployer),
     protocolFeeTracker: new ProtocolFeeTracker(fixture['ProtocolFeeTracker'].address, deployer),
     gasRelayPaymasterFactory: new GasRelayPaymasterFactory(fixture['GasRelayPaymasterFactory'].address, deployer),
+    addressListRegistry: new AddressListRegistry(fixture['AddressListRegistry'].address, deployer),
   } as const;
 
   return {

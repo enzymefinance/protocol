@@ -8,6 +8,9 @@ export * from './codegen/VaultProxy';
 // Persistent release interfaces
 export * from './codegen/IMigrationHookHandler';
 
+// Persistent
+export * from './codegen/AddressListRegistry';
+
 // Release core
 export * from './codegen/FundDeployer';
 export * from './codegen/ComptrollerLib';

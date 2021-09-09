@@ -1,3 +1,4 @@
+export * from './addressListRegistry';
 export * from './encoding';
 export * from './sighash';
 export * from './bignumber';
