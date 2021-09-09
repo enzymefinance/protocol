@@ -58,6 +58,7 @@ import {
   AddressListRegistry,
   AllowedAdaptersPolicy,
   AllowedAssetsForRedemptionPolicy,
+  AllowedSharesTransferRecipientsPolicy,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -143,6 +144,7 @@ export async function deployProtocolFixture() {
     addressListRegistry: new AddressListRegistry(fixture['AddressListRegistry'].address, deployer),
     allowedAdaptersPolicy: new AllowedAdaptersPolicy(fixture['AllowedAdaptersPolicy'].address, deployer),
     allowedAssetsForRedemptionPolicy: new AllowedAssetsForRedemptionPolicy(fixture['AllowedAssetsForRedemptionPolicy'].address, deployer),
+    allowedSharesTransferRecipientsPolicy: new AllowedSharesTransferRecipientsPolicy(fixture['AllowedSharesTransferRecipientsPolicy'].address, deployer),
   } as const;
 
   return {
