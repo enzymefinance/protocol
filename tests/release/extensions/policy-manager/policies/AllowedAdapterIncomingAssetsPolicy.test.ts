@@ -1,203 +1,140 @@
-import { AddressLike, randomAddress, MockContract } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
   AllowedAdapterIncomingAssetsPolicy,
-  allowedAdapterIncomingAssetsPolicyArgs,
   ComptrollerLib,
+  IntegrationManager,
+  MockGenericAdapter,
+  MockGenericIntegratee,
   PolicyHook,
-  validateRulePostCoIArgs,
+  policyManagerConfigArgs,
+  StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { createNewFund, deployProtocolFixture, mockGenericSwap, ProtocolDeployment } from '@enzymefinance/testutils';
 
-async function createMocksForAllowedAdapterIncomingAssetsPolicyConfig(
-  fork: ProtocolDeployment,
-  denominationAsset: AddressLike,
-) {
-  const mockVaultProxy = await VaultLib.mock(fork.deployer);
-  await mockVaultProxy.getTrackedAssets.returns([]);
-
-  const mockComptrollerProxy = await ComptrollerLib.mock(fork.deployer);
-  await mockComptrollerProxy.getDenominationAsset.returns(denominationAsset);
-
-  await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
-
-  return { mockComptrollerProxy, mockVaultProxy };
-}
-
-async function deployAndConfigureStandaloneAllowedAdapterIncomingAssetsPolicy(
-  fork: ProtocolDeployment,
-  {
-    comptrollerProxy = '0x',
-    assetsToAdd = [],
-  }: {
-    comptrollerProxy?: AddressLike;
-    assetsToAdd?: AddressLike[];
-  },
-) {
-  const [EOAPolicyManager] = fork.accounts.slice(-1);
-
-  let allowedAdapterIncomingAssetsPolicy = await AllowedAdapterIncomingAssetsPolicy.deploy(
-    fork.deployer,
-    EOAPolicyManager,
-  );
-  allowedAdapterIncomingAssetsPolicy = allowedAdapterIncomingAssetsPolicy.connect(EOAPolicyManager);
-
-  if (assetsToAdd.length != 0) {
-    const allowedAdapterIncomingAssetsPolicyConfig = allowedAdapterIncomingAssetsPolicyArgs(assetsToAdd);
-    await allowedAdapterIncomingAssetsPolicy.addFundSettings(
-      comptrollerProxy,
-      allowedAdapterIncomingAssetsPolicyConfig,
-    );
-  }
-  return allowedAdapterIncomingAssetsPolicy;
-}
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
     const allowedAdapterIncomingAssetsPolicy = fork.deployment.allowedAdapterIncomingAssetsPolicy;
 
-    const getPolicyManagerCall = await allowedAdapterIncomingAssetsPolicy.getPolicyManager();
-    expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
+    expect(await allowedAdapterIncomingAssetsPolicy.getPolicyManager()).toMatchAddress(fork.deployment.policyManager);
 
-    const implementedHooksCall = await allowedAdapterIncomingAssetsPolicy.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(allowedAdapterIncomingAssetsPolicy.implementedHooks.fragment, [
-      PolicyHook.PostCallOnIntegration,
-    ]);
-  });
-});
-
-describe('addFundSettings', () => {
-  let fork: ProtocolDeployment;
-  let mockComptrollerProxy: MockContract<ComptrollerLib>;
-  let allowedAssets: AddressLike[];
-  let allowedAdapterIncomingAssetsPolicy: AllowedAdapterIncomingAssetsPolicy;
-  let denominationAsset: AddressLike;
-
-  beforeAll(async () => {
-    fork = await deployProtocolFixture();
-    denominationAsset = randomAddress();
-    allowedAssets = [denominationAsset, randomAddress(), randomAddress()];
-
-    const mocks = await createMocksForAllowedAdapterIncomingAssetsPolicyConfig(fork, denominationAsset);
-    mockComptrollerProxy = mocks.mockComptrollerProxy;
-
-    allowedAdapterIncomingAssetsPolicy = await deployAndConfigureStandaloneAllowedAdapterIncomingAssetsPolicy(fork, {});
-  });
-
-  it('can only be called by the PolicyManager', async () => {
-    const [randomUser] = fork.accounts;
-
-    const allowedAdapterIncomingAssetsPolicyConfig = allowedAdapterIncomingAssetsPolicyArgs(allowedAssets);
-
-    await expect(
-      allowedAdapterIncomingAssetsPolicy
-        .connect(randomUser)
-        .addFundSettings(mockComptrollerProxy, allowedAdapterIncomingAssetsPolicyConfig),
-    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
-  });
-
-  it('sets initial config values for fund and fires events', async () => {
-    const allowedAdapterIncomingAssetsPolicyConfig = allowedAdapterIncomingAssetsPolicyArgs(allowedAssets);
-    const receipt = await allowedAdapterIncomingAssetsPolicy.addFundSettings(
-      mockComptrollerProxy,
-      allowedAdapterIncomingAssetsPolicyConfig,
+    // AddressListRegistryPolicyBase
+    expect(await allowedAdapterIncomingAssetsPolicy.getAddressListRegistry()).toMatchAddress(
+      fork.deployment.addressListRegistry,
     );
-
-    // Assert the AddressesAdded event was emitted
-    assertEvent(receipt, 'AddressesAdded', {
-      comptrollerProxy: mockComptrollerProxy,
-      items: allowedAssets,
-    });
-
-    // List should be the allowed assets
-    const getListCall = await allowedAdapterIncomingAssetsPolicy.getList(mockComptrollerProxy);
-    expect(getListCall).toMatchObject(allowedAssets);
   });
 });
 
 describe('canDisable', () => {
   it('returns false', async () => {
-    const fork = await deployProtocolFixture();
-    const allowedAdapterIncomingAssetsPolicy = await deployAndConfigureStandaloneAllowedAdapterIncomingAssetsPolicy(
-      fork,
-      {},
-    );
+    expect(await fork.deployment.allowedAdapterIncomingAssetsPolicy.canDisable()).toBe(false);
+  });
+});
 
-    expect(await allowedAdapterIncomingAssetsPolicy.canDisable()).toBe(false);
+describe('implementsHooks', () => {
+  it('returns only the correct hook', async () => {
+    const allowedAdapterIncomingAssetsPolicy = fork.deployment.allowedAdapterIncomingAssetsPolicy;
+
+    expect(await allowedAdapterIncomingAssetsPolicy.implementedHooks()).toMatchFunctionOutput(
+      allowedAdapterIncomingAssetsPolicy.implementedHooks.fragment,
+      [PolicyHook.PostCallOnIntegration],
+    );
   });
 });
 
 describe('updateFundSettings', () => {
   it('does not allow updates', async () => {
-    const fork = await deployProtocolFixture();
-    const allowedAdapterIncomingAssetsPolicy = await deployAndConfigureStandaloneAllowedAdapterIncomingAssetsPolicy(
-      fork,
-      {},
-    );
-
-    await expect(allowedAdapterIncomingAssetsPolicy.updateFundSettings(randomAddress(), '0x')).rejects.toBeRevertedWith(
-      'Updates not allowed for this policy',
-    );
+    await expect(
+      fork.deployment.allowedAdapterIncomingAssetsPolicy.updateFundSettings(randomAddress(), '0x'),
+    ).rejects.toBeRevertedWith('Updates not allowed for this policy');
   });
 });
 
+// List search condition: All items must be in at least one list
 describe('validateRule', () => {
-  let fork: ProtocolDeployment;
-  let mockComptrollerProxy: MockContract<ComptrollerLib>;
-  let allowedAssets: AddressLike[];
-  let allowedAdapterIncomingAssetsPolicy: AllowedAdapterIncomingAssetsPolicy;
-  let denominationAsset: AddressLike;
+  let fundOwner: SignerWithAddress;
+  let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+  let mockGenericAdapter: MockGenericAdapter, mockGenericIntegratee: MockGenericIntegratee;
+  let allowedAdapterIncomingAssetsPolicy: AllowedAdapterIncomingAssetsPolicy, integrationManager: IntegrationManager;
+  let allowedAsset1: StandardToken, allowedAsset2: StandardToken, notAllowedAsset: StandardToken;
 
-  beforeAll(async () => {
-    fork = await deployProtocolFixture();
-    denominationAsset = randomAddress();
-    allowedAssets = [denominationAsset, randomAddress(), randomAddress()];
+  beforeEach(async () => {
+    [fundOwner] = fork.accounts;
+    allowedAdapterIncomingAssetsPolicy = fork.deployment.allowedAdapterIncomingAssetsPolicy;
+    integrationManager = fork.deployment.integrationManager;
 
-    const mocks = await createMocksForAllowedAdapterIncomingAssetsPolicyConfig(fork, denominationAsset);
-    mockComptrollerProxy = mocks.mockComptrollerProxy;
+    mockGenericIntegratee = await MockGenericIntegratee.deploy(fork.deployer);
+    mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
-    allowedAdapterIncomingAssetsPolicy = await deployAndConfigureStandaloneAllowedAdapterIncomingAssetsPolicy(fork, {
-      comptrollerProxy: mockComptrollerProxy,
-      assetsToAdd: allowedAssets,
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    allowedAsset1 = denominationAsset;
+    allowedAsset2 = new StandardToken(fork.config.primitives.mln, whales.mln);
+    notAllowedAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+
+    const newFundRes = await createNewFund({
+      signer: fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+      fundOwner,
+      policyManagerConfig: policyManagerConfigArgs({
+        policies: [allowedAdapterIncomingAssetsPolicy],
+        settings: [
+          addressListRegistryPolicyArgs({
+            existingListIds: [0], // Include empty list to test inclusion in 1 list only
+            newListsArgs: [
+              {
+                updateType: AddressListUpdateType.None,
+                initialItems: [allowedAsset1, allowedAsset2],
+              },
+            ],
+          }),
+        ],
+      }),
     });
+    comptrollerProxy = newFundRes.comptrollerProxy;
+    vaultProxy = newFundRes.vaultProxy;
   });
 
-  it('returns true if an asset is allowed', async () => {
-    // Only the incoming assets arg matters for this policy
-    const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
-      adapter: constants.AddressZero,
-      selector: utils.randomBytes(4),
-      incomingAssets: [allowedAssets[0]], // good incoming asset
-      incomingAssetAmounts: [],
-      spendAssets: [],
-      spendAssetAmounts: [],
-    });
+  it('does not allow an unlisted asset', async () => {
+    const incomingAssetAmount = 123;
+    await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
+    await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
+    await notAllowedAsset.transfer(mockGenericIntegratee, incomingAssetAmount);
 
-    const validateRuleCall = await allowedAdapterIncomingAssetsPolicy.validateRule
-      .args(mockComptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
-      .call();
-
-    expect(validateRuleCall).toBe(true);
+    await expect(
+      mockGenericSwap({
+        comptrollerProxy,
+        vaultProxy,
+        integrationManager,
+        fundOwner,
+        mockGenericAdapter,
+        incomingAssets: [allowedAsset1, allowedAsset2, notAllowedAsset],
+        actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount, incomingAssetAmount],
+      }),
+    ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_ADAPTER_INCOMING_ASSETS');
   });
 
-  it('returns false if an asset is not allowed', async () => {
-    // Only the incoming assets arg matters for this policy
-    const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
-      adapter: constants.AddressZero,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()], // good incoming asset
-      incomingAssetAmounts: [],
-      spendAssets: [],
-      spendAssetAmounts: [],
+  it('allows listed assets', async () => {
+    const incomingAssetAmount = 123;
+    await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
+    await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
+
+    await mockGenericSwap({
+      comptrollerProxy,
+      vaultProxy,
+      integrationManager,
+      fundOwner,
+      mockGenericAdapter,
+      incomingAssets: [allowedAsset1, allowedAsset2],
+      actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount],
     });
-
-    const validateRuleCall = await allowedAdapterIncomingAssetsPolicy.validateRule
-      .args(mockComptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
-      .call();
-
-    expect(validateRuleCall).toBe(false);
   });
 });

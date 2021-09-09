@@ -10,26 +10,20 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-import "../utils/AddressListPolicyMixin.sol";
-import "../utils/PolicyBase.sol";
+import "../utils/AddressListRegistryPolicyBase.sol";
 
 /// @title AllowedDepositRecipientsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits the accounts that can receive shares via deposit
-contract AllowedDepositRecipientsPolicy is PolicyBase, AddressListPolicyMixin {
-    constructor(address _policyManager) public PolicyBase(_policyManager) {}
+contract AllowedDepositRecipientsPolicy is AddressListRegistryPolicyBase {
+    constructor(address _policyManager, address _addressListRegistry)
+        public
+        AddressListRegistryPolicyBase(_policyManager, _addressListRegistry)
+    {}
 
-    /// @notice Adds the initial policy settings for a fund
-    /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _encodedSettings Encoded settings to apply to a fund
-    function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
-        external
-        override
-        onlyPolicyManager
-    {
-        __updateList(_comptrollerProxy, _encodedSettings);
-    }
+    // EXTERNAL FUNCTIONS
 
     /// @notice Whether or not the policy can be disabled
     /// @return canDisable_ True if the policy can be disabled
@@ -60,24 +54,13 @@ contract AllowedDepositRecipientsPolicy is PolicyBase, AddressListPolicyMixin {
     /// @notice Updates the policy settings for a fund
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
+    /// @dev Used to assign a new list (not update items in that list)
     function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
         external
         override
         onlyPolicyManager
     {
-        __updateList(_comptrollerProxy, _encodedSettings);
-    }
-
-    /// @notice Checks whether a particular condition passes the rule for a particular fund
-    /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _investor The investor for which to check the rule
-    /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy, address _investor)
-        public
-        view
-        returns (bool isValid_)
-    {
-        return isInList(_comptrollerProxy, _investor);
+        __updateListsForFund(_comptrollerProxy, _encodedSettings);
     }
 
     /// @notice Apply the rule with the specified parameters of a PolicyHook
@@ -94,20 +77,21 @@ contract AllowedDepositRecipientsPolicy is PolicyBase, AddressListPolicyMixin {
         return passesRule(_comptrollerProxy, buyer);
     }
 
-    /// @dev Helper to update the allowed deposit recipients list by adding and/or removing addresses
-    function __updateList(address _comptrollerProxy, bytes memory _settingsData) private {
-        (address[] memory itemsToAdd, address[] memory itemsToRemove) = abi.decode(
-            _settingsData,
-            (address[], address[])
-        );
+    // PUBLIC FUNCTIONS
 
-        // If an address is in both add and remove arrays, they will not be in the final list.
-        // We do not check for uniqueness between the two arrays for efficiency.
-        if (itemsToAdd.length > 0) {
-            __addToList(_comptrollerProxy, itemsToAdd);
-        }
-        if (itemsToRemove.length > 0) {
-            __removeFromList(_comptrollerProxy, itemsToRemove);
-        }
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _recipient The recipient of shares from the deposit
+    /// @return isValid_ True if the rule passes
+    function passesRule(address _comptrollerProxy, address _recipient)
+        public
+        view
+        returns (bool isValid_)
+    {
+        return
+            AddressListRegistry(getAddressListRegistry()).isInSomeOfLists(
+                getListIdsForFund(_comptrollerProxy),
+                _recipient
+            );
     }
 }

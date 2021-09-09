@@ -8,10 +8,11 @@ const fn: DeployFunction = async function (hre) {
   } = hre;
 
   const deployer = (await getSigners())[0];
+  const addressListRegistry = await get('AddressListRegistry');
   const policyManager = await get('PolicyManager');
 
   await deploy('AllowedDepositRecipientsPolicy', {
-    args: [policyManager.address] as AllowedDepositRecipientsPolicyArgs,
+    args: [policyManager.address, addressListRegistry.address] as AllowedDepositRecipientsPolicyArgs,
     from: deployer.address,
     linkedData: {
       type: 'POLICY',
@@ -22,6 +23,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'Policies', 'AllowedDepositRecipientsPolicy'];
-fn.dependencies = ['PolicyManager'];
+fn.dependencies = ['AddressListRegistry', 'PolicyManager'];
 
 export default fn;

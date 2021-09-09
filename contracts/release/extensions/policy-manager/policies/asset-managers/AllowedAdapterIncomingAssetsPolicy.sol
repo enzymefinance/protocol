@@ -10,29 +10,23 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
-import "../utils/AddressListPolicyMixin.sol";
-import "../utils/PolicyBase.sol";
+import "../utils/AddressListRegistryPolicyBase.sol";
 
 /// @title AllowedAdapterIncomingAssetsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits assets that can be received via an adapter action
-contract AllowedAdapterIncomingAssetsPolicy is PolicyBase, AddressListPolicyMixin {
-    constructor(address _policyManager) public PolicyBase(_policyManager) {}
+contract AllowedAdapterIncomingAssetsPolicy is AddressListRegistryPolicyBase {
+    constructor(address _policyManager, address _addressListRegistry)
+        public
+        AddressListRegistryPolicyBase(_policyManager, _addressListRegistry)
+    {}
 
-    /// @notice Add the initial policy settings for a fund
-    /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _encodedSettings Encoded settings to apply to a fund
-    function addFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
-        external
-        override
-        onlyPolicyManager
-    {
-        __addToList(_comptrollerProxy, abi.decode(_encodedSettings, (address[])));
-    }
+    // EXTERNAL FUNCTIONS
 
     /// @notice Provides a constant string identifier for a policy
-    /// @return identifier_ The identifer string
+    /// @return identifier_ The identifier string
     function identifier() external pure override returns (string memory identifier_) {
         return "ALLOWED_ADAPTER_INCOMING_ASSETS";
     }
@@ -49,24 +43,6 @@ contract AllowedAdapterIncomingAssetsPolicy is PolicyBase, AddressListPolicyMixi
         implementedHooks_[0] = IPolicyManager.PolicyHook.PostCallOnIntegration;
 
         return implementedHooks_;
-    }
-
-    /// @notice Checks whether a particular condition passes the rule for a particular fund
-    /// @param _comptrollerProxy The fund's ComptrollerProxy address
-    /// @param _assets The assets with which to check the rule
-    /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy, address[] memory _assets)
-        public
-        view
-        returns (bool isValid_)
-    {
-        for (uint256 i; i < _assets.length; i++) {
-            if (!isInList(_comptrollerProxy, _assets[i])) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /// @notice Apply the rule with the specified parameters of a PolicyHook
@@ -89,5 +65,23 @@ contract AllowedAdapterIncomingAssetsPolicy is PolicyBase, AddressListPolicyMixi
         ) = __decodePostCallOnIntegrationValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, incomingAssets);
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Checks whether a particular condition passes the rule for a particular fund
+    /// @param _comptrollerProxy The fund's ComptrollerProxy address
+    /// @param _assets The assets for which to check the rule
+    /// @return isValid_ True if the rule passes
+    function passesRule(address _comptrollerProxy, address[] memory _assets)
+        public
+        view
+        returns (bool isValid_)
+    {
+        return
+            AddressListRegistry(getAddressListRegistry()).areAllInSomeOfLists(
+                getListIdsForFund(_comptrollerProxy),
+                _assets
+            );
     }
 }

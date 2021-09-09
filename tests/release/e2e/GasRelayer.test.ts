@@ -9,11 +9,12 @@ import {
   IGsnRelayHub,
   IntegrationManagerActionId,
   AllowedDepositRecipientsPolicy,
-  allowedDepositRecipientsPolicyArgs,
+  addressListRegistryPolicyArgs,
   PolicyManager,
   sighash,
   StandardToken,
   VaultLib,
+  AddressListUpdateType,
 } from '@enzymefinance/protocol';
 import {
   createNewFund,
@@ -586,13 +587,13 @@ describe('expected relayable txs', () => {
         amounts: [wethUnit],
       });
       await newFund.comptrollerProxy.deployGasRelayPaymaster();
-      const sendFunction = policyManager
-        .connect(fundOwner)
-        .enablePolicyForFund.args(
-          newFund.comptrollerProxy,
-          allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
-        );
+      const sendFunction = policyManager.connect(fundOwner).enablePolicyForFund.args(
+        newFund.comptrollerProxy,
+        allowedDepositRecipientsPolicy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+        }),
+      );
 
       // Note this is the paymaster of the "old" fund
       const receipt = await relayTransaction({
@@ -610,13 +611,13 @@ describe('expected relayable txs', () => {
     });
 
     it('happy path: enablePolicyForFund', async () => {
-      const sendFunction = policyManager
-        .connect(fundOwner)
-        .enablePolicyForFund.args(
-          comptrollerProxy,
-          allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
-        );
+      const sendFunction = policyManager.connect(fundOwner).enablePolicyForFund.args(
+        comptrollerProxy,
+        allowedDepositRecipientsPolicy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+        }),
+      );
 
       const receipt = await relayTransaction({
         sendFunction,
@@ -634,13 +635,13 @@ describe('expected relayable txs', () => {
 
     it('happy path: updatePolicySettingsForFund', async () => {
       // add policy to fund
-      await policyManager
-        .connect(fundOwner)
-        .enablePolicyForFund(
-          comptrollerProxy,
-          allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
-        );
+      await policyManager.connect(fundOwner).enablePolicyForFund(
+        comptrollerProxy,
+        allowedDepositRecipientsPolicy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+        }),
+      );
       expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toMatchFunctionOutput(
         policyManager.getEnabledPoliciesForFund,
         [allowedDepositRecipientsPolicy],
@@ -649,15 +650,15 @@ describe('expected relayable txs', () => {
       const newInvestor = randomAddress();
 
       // Investor should not yet be in list
-      expect(await allowedDepositRecipientsPolicy.isInList(comptrollerProxy, newInvestor)).toBe(false);
+      expect(await allowedDepositRecipientsPolicy.passesRule(comptrollerProxy, newInvestor)).toBe(false);
 
-      const sendFunction = policyManager
-        .connect(fundOwner)
-        .updatePolicySettingsForFund.args(
-          comptrollerProxy,
-          allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [newInvestor] }),
-        );
+      const sendFunction = policyManager.connect(fundOwner).updatePolicySettingsForFund.args(
+        comptrollerProxy,
+        allowedDepositRecipientsPolicy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [newInvestor] }],
+        }),
+      );
 
       await relayTransaction({
         sendFunction,
@@ -667,17 +668,17 @@ describe('expected relayable txs', () => {
       });
 
       // Investor should now be added to list
-      expect(await allowedDepositRecipientsPolicy.isInList(comptrollerProxy, newInvestor)).toBe(true);
+      expect(await allowedDepositRecipientsPolicy.passesRule(comptrollerProxy, newInvestor)).toBe(true);
     });
 
     it('happy path: disablePolicyForFund', async () => {
-      await policyManager
-        .connect(fundOwner)
-        .enablePolicyForFund(
-          comptrollerProxy,
-          allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({ investorsToAdd: [randomAddress()] }),
-        );
+      await policyManager.connect(fundOwner).enablePolicyForFund(
+        comptrollerProxy,
+        allowedDepositRecipientsPolicy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+        }),
+      );
       const sendFunction = policyManager
         .connect(fundOwner)
         .disablePolicyForFund.args(comptrollerProxy, allowedDepositRecipientsPolicy);

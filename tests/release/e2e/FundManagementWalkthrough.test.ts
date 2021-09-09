@@ -5,11 +5,12 @@ import {
   convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
-  allowedDepositRecipientsPolicyArgs,
+  addressListRegistryPolicyArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
   StandardToken,
   VaultLib,
+  AddressListUpdateType,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVault,
@@ -29,16 +30,16 @@ const tempTolerance = 10000;
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 359188,
-    weth: 337370,
+    usdc: 371463,
+    weth: 349645,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 366469,
-    weth: 351362,
+    usdc: 378744,
+    weth: 363647,
   },
   'buy shares: max assets': {
-    usdc: 1350443,
-    weth: 1284454,
+    usdc: 1362959,
+    weth: 1296901,
   },
   'calc gav: 20 assets': {
     usdc: 1052487,
@@ -135,8 +136,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
         .enablePolicyForFund.args(
           comptrollerProxy.address,
           fork.deployment.allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({
-            investorsToAdd: [randomAddress(), randomAddress(), investor.address],
+          addressListRegistryPolicyArgs({
+            newListsArgs: [
+              {
+                updateType: AddressListUpdateType.None,
+                initialItems: [randomAddress(), randomAddress(), investor.address],
+              },
+            ],
           }),
         )
         .send();
@@ -334,9 +340,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
         .updatePolicySettingsForFund.args(
           comptrollerProxy.address,
           fork.deployment.allowedDepositRecipientsPolicy,
-          allowedDepositRecipientsPolicyArgs({
-            investorsToAdd: [anotherInvestor],
-            investorsToRemove: [investor],
+          addressListRegistryPolicyArgs({
+            newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [anotherInvestor] }],
           }),
         )
         .send();

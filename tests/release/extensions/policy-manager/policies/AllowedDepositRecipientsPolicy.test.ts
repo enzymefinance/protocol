@@ -1,282 +1,176 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
+  addressListRegistryPolicyArgs,
   AllowedDepositRecipientsPolicy,
-  allowedDepositRecipientsPolicyArgs,
   PolicyHook,
-  validateRulePostBuySharesArgs,
+  ComptrollerLib,
+  StandardToken,
+  policyManagerConfigArgs,
+  PolicyManager,
+  AddressListUpdateType,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
 
-async function addFundSettings({
-  comptrollerProxy,
-  allowedDepositRecipientsPolicy,
-  investorsToAdd,
-}: {
-  comptrollerProxy: AddressLike;
-  allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
-  investorsToAdd: AddressLike[];
-}) {
-  const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-    investorsToAdd,
-  });
-
-  await allowedDepositRecipientsPolicy.addFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig);
-}
-
-async function deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(
-  fork: ProtocolDeployment,
-  {
-    comptrollerProxy = '0x',
-    investorsToAdd = [],
-  }: {
-    comptrollerProxy?: AddressLike;
-    investorsToAdd?: AddressLike[];
-  },
-) {
-  const [EOAPolicyManager] = fork.accounts.slice(-1);
-
-  let allowedDepositRecipientsPolicy = await AllowedDepositRecipientsPolicy.deploy(fork.deployer, EOAPolicyManager);
-  allowedDepositRecipientsPolicy = allowedDepositRecipientsPolicy.connect(EOAPolicyManager);
-
-  if (comptrollerProxy != '0x') {
-    await addFundSettings({
-      comptrollerProxy,
-      allowedDepositRecipientsPolicy,
-      investorsToAdd,
-    });
-  }
-
-  return allowedDepositRecipientsPolicy;
-}
+let fork: ProtocolDeployment;
+beforeEach(async () => {
+  fork = await deployProtocolFixture();
+});
 
 describe('constructor', () => {
   it('sets state vars', async () => {
     const allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    const getPolicyManagerCall = await allowedDepositRecipientsPolicy.getPolicyManager();
-    expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
+    expect(await allowedDepositRecipientsPolicy.getPolicyManager()).toMatchAddress(fork.deployment.policyManager);
 
-    const implementedHooksCall = await allowedDepositRecipientsPolicy.implementedHooks();
-    expect(implementedHooksCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.implementedHooks.fragment, [
-      PolicyHook.PostBuyShares,
-    ]);
-  });
-});
-
-describe('addFundSettings', () => {
-  let fork: ProtocolDeployment;
-  let comptrollerProxy: AddressLike;
-  let allowedInvestors: AddressLike[];
-  let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
-
-  beforeAll(async () => {
-    fork = await deployProtocolFixture();
-    comptrollerProxy = randomAddress();
-    allowedInvestors = [randomAddress(), randomAddress()];
-
-    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {});
-  });
-
-  it('can only be called by the PolicyManager', async () => {
-    const [randomUser] = fork.accounts;
-
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToAdd: allowedInvestors,
-    });
-
-    await expect(
-      allowedDepositRecipientsPolicy
-        .connect(randomUser)
-        .addFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig),
-    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
-  });
-
-  it('sets initial config values for fund and fires events', async () => {
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToAdd: allowedInvestors,
-    });
-
-    const receipt = await allowedDepositRecipientsPolicy.addFundSettings(
-      comptrollerProxy,
-      allowedDepositRecipientsPolicyConfig,
+    // AddressListRegistryPolicyBase
+    expect(await allowedDepositRecipientsPolicy.getAddressListRegistry()).toMatchAddress(
+      fork.deployment.addressListRegistry,
     );
-
-    // Assert the AddressesAdded event was emitted
-    assertEvent(receipt, 'AddressesAdded', {
-      comptrollerProxy,
-      items: allowedInvestors,
-    });
-
-    // List should be the allowed investors
-    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, allowedInvestors);
   });
-
-  it.todo('handles a valid call (re-enabled policy)');
 });
 
 describe('canDisable', () => {
   it('returns true', async () => {
-    const fork = await deployProtocolFixture();
-    const allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {});
+    expect(await fork.deployment.allowedDepositRecipientsPolicy.canDisable()).toBe(true);
+  });
+});
 
-    expect(await allowedDepositRecipientsPolicy.canDisable()).toBe(true);
+describe('implementsHooks', () => {
+  it('returns only the correct hook', async () => {
+    const allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
+
+    expect(await allowedDepositRecipientsPolicy.implementedHooks()).toMatchFunctionOutput(
+      allowedDepositRecipientsPolicy.implementedHooks.fragment,
+      [PolicyHook.PostBuyShares],
+    );
   });
 });
 
 describe('updateFundSettings', () => {
-  let fork: ProtocolDeployment;
-  let comptrollerProxy: AddressLike;
-  let currentAllowedInvestors: AddressLike[];
-  let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
+  const newListAddress = randomAddress();
+  let fundOwner: SignerWithAddress;
+  let policyManager: PolicyManager, allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
+  let comptrollerProxy: ComptrollerLib;
 
-  beforeAll(async () => {
-    fork = await deployProtocolFixture();
-    comptrollerProxy = randomAddress();
-    currentAllowedInvestors = [randomAddress(), randomAddress()];
+  beforeEach(async () => {
+    [fundOwner] = fork.accounts;
+    allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
+    policyManager = fork.deployment.policyManager;
 
-    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {
-      comptrollerProxy,
-      investorsToAdd: currentAllowedInvestors,
+    const newFundRes = await createNewFund({
+      signer: fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundOwner,
+      policyManagerConfig: policyManagerConfigArgs({
+        policies: [allowedDepositRecipientsPolicy],
+        settings: [
+          addressListRegistryPolicyArgs({
+            newListsArgs: [
+              {
+                updateType: AddressListUpdateType.None,
+                initialItems: [],
+              },
+            ],
+          }),
+        ],
+      }),
     });
+    comptrollerProxy = newFundRes.comptrollerProxy;
   });
 
-  it('can only be called by the policy manager', async () => {
-    const [randomUser] = fork.accounts;
-
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToAdd: [randomAddress()],
-    });
-
+  it('does not allow calling directly', async () => {
     await expect(
-      allowedDepositRecipientsPolicy
-        .connect(randomUser)
-        .updateFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig),
+      allowedDepositRecipientsPolicy.updateFundSettings(
+        comptrollerProxy,
+        addressListRegistryPolicyArgs({
+          newListsArgs: [
+            {
+              updateType: AddressListUpdateType.None,
+              initialItems: [newListAddress],
+            },
+          ],
+        }),
+      ),
     ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
   });
 
-  it('correctly handles adding items only', async () => {
-    const investorsToAdd = [randomAddress(), randomAddress()];
+  it('happy path', async () => {
+    expect(await allowedDepositRecipientsPolicy.passesRule(comptrollerProxy, newListAddress)).toBe(false);
 
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToAdd,
-    });
-
-    const receipt = await allowedDepositRecipientsPolicy.updateFundSettings(
+    await policyManager.connect(fundOwner).updatePolicySettingsForFund(
       comptrollerProxy,
-      allowedDepositRecipientsPolicyConfig,
+      allowedDepositRecipientsPolicy,
+      addressListRegistryPolicyArgs({
+        newListsArgs: [
+          {
+            updateType: AddressListUpdateType.None,
+            initialItems: [newListAddress],
+          },
+        ],
+      }),
     );
 
-    currentAllowedInvestors = currentAllowedInvestors.concat(investorsToAdd);
-
-    // Assert the AddressesAdded event was emitted
-    assertEvent(receipt, 'AddressesAdded', {
-      comptrollerProxy,
-      items: investorsToAdd,
-    });
-
-    // List should include both previous allowed investors and new investors
-    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
-  });
-
-  it('correctly handles removing items only', async () => {
-    const [investorToRemove] = currentAllowedInvestors;
-
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToRemove: [investorToRemove],
-    });
-
-    const receipt = await allowedDepositRecipientsPolicy.updateFundSettings(
-      comptrollerProxy,
-      allowedDepositRecipientsPolicyConfig,
-    );
-
-    currentAllowedInvestors[0] = currentAllowedInvestors[currentAllowedInvestors.length - 1];
-    currentAllowedInvestors = currentAllowedInvestors.slice(0, -1);
-
-    // Assert the AddressesRemoved event was emitted
-    assertEvent(receipt, 'AddressesRemoved', {
-      comptrollerProxy,
-      items: [investorToRemove],
-    });
-
-    // List should remove investor from previously allowed investors
-    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
-  });
-
-  it('correctly handles both adding and removing items', async () => {
-    const [investorToRemove, ...remainingInvestors] = currentAllowedInvestors;
-
-    // If an address is in both add and remove arrays, they should not be in the final list.
-    // We do not currently check for uniqueness between the two arrays for efficiency.
-    const newInvestor = randomAddress();
-    const overlappingInvestor = randomAddress();
-    const investorsToAdd = [newInvestor, overlappingInvestor];
-    const investorsToRemove = [investorToRemove, overlappingInvestor];
-
-    const allowedDepositRecipientsPolicyConfig = allowedDepositRecipientsPolicyArgs({
-      investorsToAdd,
-      investorsToRemove,
-    });
-
-    await allowedDepositRecipientsPolicy.updateFundSettings(comptrollerProxy, allowedDepositRecipientsPolicyConfig);
-
-    currentAllowedInvestors = [newInvestor, ...remainingInvestors];
-
-    // Final list should have removed one investor and added one investor
-    const getListCall = await allowedDepositRecipientsPolicy.getList(comptrollerProxy);
-    expect(getListCall).toMatchFunctionOutput(allowedDepositRecipientsPolicy.getList, currentAllowedInvestors);
+    expect(await allowedDepositRecipientsPolicy.passesRule(comptrollerProxy, newListAddress)).toBe(true);
   });
 });
 
+// List search condition: The item must be in at least one list
 describe('validateRule', () => {
-  let fork: ProtocolDeployment;
-  let comptrollerProxy: AddressLike;
-  let allowedInvestors: AddressLike[];
+  let fundOwner: SignerWithAddress,
+    allowedDepositRecipient: SignerWithAddress,
+    nonAllowedDepositRecipient: SignerWithAddress;
   let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
+  let comptrollerProxy: ComptrollerLib;
+  let denominationAsset: StandardToken;
 
-  beforeAll(async () => {
-    fork = await deployProtocolFixture();
-    comptrollerProxy = randomAddress();
-    allowedInvestors = [randomAddress(), randomAddress()];
+  beforeEach(async () => {
+    [fundOwner, allowedDepositRecipient, nonAllowedDepositRecipient] = fork.accounts;
+    allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    allowedDepositRecipientsPolicy = await deployAndConfigureStandaloneAllowedDepositRecipientsPolicy(fork, {
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+
+    const newFundRes = await createNewFund({
+      signer: fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset,
+      fundOwner,
+      policyManagerConfig: policyManagerConfigArgs({
+        policies: [allowedDepositRecipientsPolicy],
+        settings: [
+          addressListRegistryPolicyArgs({
+            existingListIds: [0], // Include empty list to test inclusion in 1 list only
+            newListsArgs: [
+              {
+                updateType: AddressListUpdateType.None,
+                initialItems: [allowedDepositRecipient],
+              },
+            ],
+          }),
+        ],
+      }),
+    });
+    comptrollerProxy = newFundRes.comptrollerProxy;
+  });
+
+  it('does not allow an unlisted recipient', async () => {
+    await expect(
+      buyShares({
+        comptrollerProxy,
+        denominationAsset,
+        buyer: nonAllowedDepositRecipient,
+        seedBuyer: true,
+      }),
+    ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_DEPOSIT_RECIPIENTS');
+  });
+
+  it('allows a listed recipient', async () => {
+    await buyShares({
       comptrollerProxy,
-      investorsToAdd: allowedInvestors,
+      denominationAsset,
+      buyer: allowedDepositRecipient,
+      seedBuyer: true,
     });
-  });
-
-  it('returns true if an investor is allowed', async () => {
-    // Only the buyer arg matters for this policy
-    const postBuySharesArgs = validateRulePostBuySharesArgs({
-      buyer: allowedInvestors[0], // good buyer
-      fundGav: 0,
-      investmentAmount: 1,
-      sharesIssued: 1,
-    });
-
-    const validateRuleCall = await allowedDepositRecipientsPolicy.validateRule
-      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
-      .call();
-
-    expect(validateRuleCall).toBe(true);
-  });
-
-  it('returns false if an investor is not allowed', async () => {
-    // Only the buyer arg matters for this policy
-    const postBuySharesArgs = validateRulePostBuySharesArgs({
-      buyer: randomAddress(), // bad buyer
-      fundGav: 0,
-      investmentAmount: 1,
-      sharesIssued: 1,
-    });
-
-    const validateRuleCall = await allowedDepositRecipientsPolicy.validateRule
-      .args(comptrollerProxy, PolicyHook.PostBuyShares, postBuySharesArgs)
-      .call();
-
-    expect(validateRuleCall).toBe(false);
   });
 });

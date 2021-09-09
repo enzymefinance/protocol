@@ -1,9 +1,27 @@
 import { AddressLike } from '@enzymefinance/ethers';
 import { BigNumberish } from 'ethers';
+import { AddressListUpdateType } from '../addressListRegistry';
 import { encodeArgs } from '../encoding';
 
-export function allowedAdapterIncomingAssetsPolicyArgs(assets: AddressLike[]) {
-  return encodeArgs(['address[]'], [assets]);
+export function addressListRegistryPolicyArgs({
+  existingListIds = [],
+  newListsArgs = [],
+}: {
+  existingListIds?: BigNumberish[];
+  newListsArgs?: {
+    updateType: AddressListUpdateType;
+    initialItems: AddressLike[];
+  }[];
+}) {
+  return encodeArgs(
+    ['uint256[]', 'bytes[]'],
+    [
+      existingListIds,
+      newListsArgs.map(({ updateType, initialItems }) =>
+        encodeArgs(['uint256', 'address[]'], [updateType, initialItems]),
+      ),
+    ],
+  );
 }
 
 export function guaranteedRedemptionPolicyArgs({
@@ -14,16 +32,6 @@ export function guaranteedRedemptionPolicyArgs({
   duration: BigNumberish;
 }) {
   return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
-}
-
-export function allowedDepositRecipientsPolicyArgs({
-  investorsToAdd = [],
-  investorsToRemove = [],
-}: {
-  investorsToAdd?: AddressLike[];
-  investorsToRemove?: AddressLike[];
-} = {}) {
-  return encodeArgs(['address[]', 'address[]'], [investorsToAdd, investorsToRemove]);
 }
 
 export function minMaxInvestmentPolicyArgs({
