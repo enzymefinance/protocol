@@ -441,12 +441,22 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         sharesActionTimelock = _sharesActionTimelock;
     }
 
+    /// @notice Sets the VaultProxy
+    /// @param _vaultProxy The VaultProxy contract
+    /// @dev No need to assert anything beyond FundDeployer access.
+    /// Called atomically with init(), but after ComptrollerProxy has been deployed.
+    function setVaultProxy(address _vaultProxy) external override onlyFundDeployer {
+        vaultProxy = _vaultProxy;
+
+        emit VaultProxySet(_vaultProxy);
+    }
+
     /// @notice Configure the extensions of a fund
     /// @param _feeManagerConfigData Encoded config for fees to enable
     /// @param _policyManagerConfigData Encoded config for policies to enable
     /// @dev No need to assert anything beyond FundDeployer access.
-    /// Called atomically with init(), but after ComptrollerLib has been deployed,
-    /// giving access to its state and interface
+    /// Called atomically with init(), but after ComptrollerProxy has been deployed and VaultProxy has been set,
+    /// giving access to their states and interfaces.
     function configureExtensions(
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
@@ -457,16 +467,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         if (_policyManagerConfigData.length > 0) {
             IExtension(getPolicyManager()).setConfigForFund(_policyManagerConfigData);
         }
-    }
-
-    /// @notice Sets the VaultProxy
-    /// @param _vaultProxy The VaultProxy contract
-    /// @dev No need to assert anything beyond FundDeployer access.
-    /// Called atomically with init(), but after ComptrollerLib and VaultLib have both been deployed.
-    function setVaultProxy(address _vaultProxy) external override onlyFundDeployer {
-        vaultProxy = _vaultProxy;
-
-        emit VaultProxySet(_vaultProxy);
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`

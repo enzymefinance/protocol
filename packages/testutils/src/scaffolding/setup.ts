@@ -96,8 +96,6 @@ export async function createMigrationRequest({
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    feeManagerConfigData: utils.hexlify(feeManagerConfigData),
-    policyManagerConfigData: utils.hexlify(policyManagerConfigData),
   });
 
   return {
@@ -127,8 +125,6 @@ export async function createNewFund({
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    feeManagerConfigData: utils.hexlify(feeManagerConfig),
-    policyManagerConfigData: utils.hexlify(policyManagerConfig),
   });
 
   const comptrollerProxy = new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer);
@@ -180,8 +176,6 @@ export async function createReconfigurationRequest({
     comptrollerProxy: expect.any(String) as string,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
-    feeManagerConfigData: utils.hexlify(feeManagerConfigData),
-    policyManagerConfigData: utils.hexlify(policyManagerConfigData),
   });
 
   return {
