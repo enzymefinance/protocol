@@ -11,10 +11,13 @@
 
 pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./EthConstantMixin.sol";
 
 abstract contract SwapperBase is EthConstantMixin {
+    using SafeERC20 for ERC20;
+
     receive() external payable {}
 
     function __swapAssets(
@@ -55,25 +58,29 @@ abstract contract SwapperBase is EthConstantMixin {
         for (uint256 i = 0; i < _assetsToIntegratee.length; i++) {
             address asset = _assetsToIntegratee[i];
             uint256 amount = _assetsToIntegrateeAmounts[i];
+
             require(asset != address(0), "__swap: empty value in _assetsToIntegratee");
             require(amount > 0, "__swap: empty value in _assetsToIntegrateeAmounts");
+
             // Incoming ETH amounts can be ignored
             if (asset == ETH_ADDRESS) {
                 continue;
             }
-            ERC20(asset).transferFrom(_trader, address(this), amount);
+            ERC20(asset).safeTransferFrom(_trader, address(this), amount);
         }
 
         // Distribute outgoing assets
         for (uint256 i = 0; i < _assetsFromIntegratee.length; i++) {
             address asset = _assetsFromIntegratee[i];
             uint256 amount = _assetsFromIntegrateeAmounts[i];
+
             require(asset != address(0), "__swap: empty value in _assetsFromIntegratee");
             require(amount > 0, "__swap: empty value in _assetsFromIntegrateeAmounts");
+
             if (asset == ETH_ADDRESS) {
                 _trader.transfer(amount);
             } else {
-                ERC20(asset).transfer(_trader, amount);
+                ERC20(asset).safeTransfer(_trader, amount);
             }
         }
     }

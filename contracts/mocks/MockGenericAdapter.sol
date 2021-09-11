@@ -232,7 +232,7 @@ contract MockGenericAdapter is AdapterBase {
         ) = __decodeCallArgs(_callArgs);
 
         for (uint256 i; i < spendAssets.length; i++) {
-            ERC20(spendAssets[i]).approve(INTEGRATEE, actualSpendAssetAmounts[i]);
+            ERC20(spendAssets[i]).safeApprove(INTEGRATEE, actualSpendAssetAmounts[i]);
         }
         IMockGenericIntegratee(INTEGRATEE).swap(
             spendAssets,
