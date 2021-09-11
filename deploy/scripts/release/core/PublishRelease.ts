@@ -23,7 +23,8 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release'];
-fn.dependencies = ['Dispatcher', 'FundDeployer', 'ProtocolFeeTracker'];
+// Include PostDeployment so the handoff gets run afterwards
+fn.dependencies = ['Dispatcher', 'FundDeployer', 'PostDeployment', 'ProtocolFeeTracker'];
 fn.runAtTheEnd = true;
 
 // NOTE: On mainnet, this is part of the hand over / release routine.
