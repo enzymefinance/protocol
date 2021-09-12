@@ -5,7 +5,7 @@ import {
   addNewAssetsToFund,
   addCollateral,
   borrow,
-  createExternalPosition,
+  createCompoundDebtPosition,
   removeCollateral,
   repayBorrow,
   compoundLend,
@@ -48,10 +48,10 @@ beforeEach(async () => {
 
   const vaultUsed = new VaultLib(vaultProxy.address, hre.ethers.provider);
 
-  await createExternalPosition({
+  await createCompoundDebtPosition({
     comptrollerProxy,
     externalPositionManager: fork.deployment.externalPositionManager,
-    fundOwner,
+    signer: fundOwner,
   });
 
   const compoundDebtPositionProxyAddress = (await vaultUsed.getActiveExternalPositions.call())[0];

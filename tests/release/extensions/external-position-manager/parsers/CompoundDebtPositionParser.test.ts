@@ -5,9 +5,13 @@ import {
   CompoundDebtPositionActionId,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import {
+  createCompoundDebtPosition,
+  createNewFund,
+  deployProtocolFixture,
+  ProtocolDeployment,
+} from '@enzymefinance/testutils';
 import hre from 'hardhat';
-import { createExternalPosition } from '@enzymefinance/testutils/src/scaffolding/extensions/external-positions';
 import { randomAddress } from '@enzymefinance/ethers';
 
 let fork: ProtocolDeployment;
@@ -23,10 +27,10 @@ beforeEach(async () => {
     denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
-  await createExternalPosition({
+  await createCompoundDebtPosition({
     comptrollerProxy,
     externalPositionManager: fork.deployment.externalPositionManager,
-    fundOwner,
+    signer: fundOwner,
   });
 });
 

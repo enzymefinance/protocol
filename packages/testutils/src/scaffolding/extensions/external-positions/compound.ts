@@ -9,29 +9,28 @@ import {
   compoundExternalPositionActionArgs,
   ExternalPositionManagerActionId,
   CompoundDebtPositionActionId,
-  externalPositionRemoveArgs,
+  ExternalPositionType,
 } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
+import { createExternalPosition } from './actions';
 
-const protocol = 0;
+// TODO: re-namespace all functions with `CompoundDebtPosition`
 
-export async function createExternalPosition({
+export async function createCompoundDebtPosition({
+  signer,
   comptrollerProxy,
   externalPositionManager,
-  fundOwner,
 }: {
+  signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
-  fundOwner: SignerWithAddress;
 }) {
-  const createExternalPositionTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(
-      externalPositionManager,
-      ExternalPositionManagerActionId.CreateExternalPosition,
-      encodeArgs(['uint256', 'bytes'], [protocol, '0x']),
-    );
-  return createExternalPositionTx;
+  return createExternalPosition({
+    signer,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionTypeId: ExternalPositionType.CompoundDebtPosition,
+  });
 }
 
 export async function addCollateral({
@@ -208,28 +207,4 @@ export async function repayBorrow({
     .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
 
   return repayTx;
-}
-
-export async function removeExternalPosition({
-  comptrollerProxy,
-  externalPositionManager,
-  fundOwner,
-  externalPositionProxy,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  externalPositionManager: ExternalPositionManager;
-  fundOwner: SignerWithAddress;
-  externalPositionProxy: AddressLike;
-}) {
-  const actionArgs = externalPositionRemoveArgs({
-    externalPositionProxy,
-  });
-
-  const callArgs = callOnExternalPositionArgs({ externalPositionProxy, encodedCallArgs: actionArgs });
-
-  const removeExternalPositionTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.RemoveExternalPosition, callArgs);
-
-  return removeExternalPositionTx;
 }
