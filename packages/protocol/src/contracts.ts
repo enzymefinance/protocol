@@ -89,6 +89,7 @@ export * from './codegen/AllowedDepositRecipientsPolicy';
 export * from './codegen/AllowedSharesTransferRecipientsPolicy';
 export * from './codegen/GuaranteedRedemptionPolicy';
 export * from './codegen/MinMaxInvestmentPolicy';
+export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 
 // Peripheral
 export * from './codegen/DepositWrapper';

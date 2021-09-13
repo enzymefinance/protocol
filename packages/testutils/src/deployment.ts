@@ -59,6 +59,7 @@ import {
   AllowedAdaptersPolicy,
   AllowedAssetsForRedemptionPolicy,
   AllowedSharesTransferRecipientsPolicy,
+  OnlyUntrackDustOrPricelessAssetsPolicy,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -145,6 +146,7 @@ export async function deployProtocolFixture() {
     allowedAdaptersPolicy: new AllowedAdaptersPolicy(fixture['AllowedAdaptersPolicy'].address, deployer),
     allowedAssetsForRedemptionPolicy: new AllowedAssetsForRedemptionPolicy(fixture['AllowedAssetsForRedemptionPolicy'].address, deployer),
     allowedSharesTransferRecipientsPolicy: new AllowedSharesTransferRecipientsPolicy(fixture['AllowedSharesTransferRecipientsPolicy'].address, deployer),
+    onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
   } as const;
 
   return {
