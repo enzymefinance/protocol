@@ -24,6 +24,14 @@ export function addressListRegistryPolicyArgs({
   );
 }
 
+export function allowedExternalPositionTypesPolicyArgs({
+  externalPositionTypeIds,
+}: {
+  externalPositionTypeIds: BigNumberish[];
+}) {
+  return encodeArgs(['uint256[]'], [externalPositionTypeIds]);
+}
+
 export function guaranteedRedemptionPolicyArgs({
   startTimestamp,
   duration,
