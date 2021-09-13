@@ -5,8 +5,9 @@ import {
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
   encodeArgs,
+  sighash,
 } from '@enzymefinance/protocol';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 
 export function vaultCallCurveMinterMint({
   comptrollerProxy,
@@ -54,5 +55,21 @@ export function vaultCallCurveMinterToggleApproveMint({
     minter,
     curveMinterToggleApproveMintSelector,
     encodeArgs(['address'], [account]),
+  );
+}
+
+export function vaultCallStartAssetBypassTimelock({
+  comptrollerProxy,
+  contract,
+  asset,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  contract: AddressLike;
+  asset: AddressLike;
+}) {
+  return comptrollerProxy.vaultCallOnContract(
+    contract,
+    sighash(utils.FunctionFragment.fromString('startAssetBypassTimelock(address)')),
+    encodeArgs(['address'], [asset]),
   );
 }

@@ -97,6 +97,7 @@ export * from './codegen/UnpermissionedActionsWrapper';
 // Test contracts
 export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestPeggedDerivativesPriceFeed';
+export * from './codegen/TestPricelessAssetBypassMixin';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
 export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
 export * from './codegen/TestUpdatableFeeRecipientBase';
