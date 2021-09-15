@@ -2,6 +2,7 @@
   "name": "@enzymefinance/protocol-monorepo-root",
   "private": true,
   "workspaces": [
+    "contracts",
     "packages/*"
   ],
   "preconstruct": {
