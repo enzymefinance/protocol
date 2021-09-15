@@ -12,7 +12,7 @@ import {
   TrackedAssetsAdapter,
 } from '@enzymefinance/protocol';
 
-export async function addTrackedAssets({
+export function addTrackedAssets({
   comptrollerProxy,
   integrationManager,
   fundOwner,
@@ -32,16 +32,12 @@ export async function addTrackedAssets({
     encodedCallArgs: args,
   });
 
-  const addTrackedAssetsTx = comptrollerProxy
+  return comptrollerProxy
     .connect(fundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-
-  await expect(addTrackedAssetsTx).resolves.toBeReceipt();
-
-  return addTrackedAssetsTx;
 }
 
-export async function removeTrackedAssets({
+export function removeTrackedAssets({
   comptrollerProxy,
   integrationManager,
   fundOwner,

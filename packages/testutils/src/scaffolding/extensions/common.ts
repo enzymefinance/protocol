@@ -16,15 +16,6 @@ export async function callOnExtension({
   callArgs?: BytesLike;
   signer?: SignerWithAddress;
 }) {
-  let callOnExtensionTx: any;
-
-  if (signer) {
-    callOnExtensionTx = comptrollerProxy.connect(signer).callOnExtension(extension, actionId, callArgs);
-  } else {
-    callOnExtensionTx = comptrollerProxy.callOnExtension(extension, actionId, callArgs);
-  }
-
-  await expect(callOnExtensionTx).resolves.toBeReceipt();
-
-  return callOnExtensionTx;
+  const connectedComptrollerProxy = signer ? comptrollerProxy.connect(signer) : comptrollerProxy;
+  return connectedComptrollerProxy.callOnExtension(extension, actionId, callArgs);
 }

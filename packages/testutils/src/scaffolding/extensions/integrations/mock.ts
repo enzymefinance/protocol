@@ -108,11 +108,7 @@ export async function mockGenericSwap({
     encodedCallArgs: swapArgs,
   });
 
-  const swapTx = comptrollerProxy
+  return comptrollerProxy
     .connect(fundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
-
-  await expect(swapTx).resolves.toBeReceipt();
-
-  return swapTx;
 }

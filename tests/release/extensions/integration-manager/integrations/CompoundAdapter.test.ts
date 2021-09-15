@@ -76,7 +76,7 @@ async function assertCompoundLend({
 
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [cToken, token],
+    assets: [cToken as any, token],
   });
 
   const lendReceipt = await compoundLend({
@@ -93,7 +93,7 @@ async function assertCompoundLend({
   const rate = await cToken.exchangeRateStored();
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [cToken, token],
+    assets: [cToken as any, token],
   });
 
   const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
@@ -140,7 +140,7 @@ async function assertCompoundRedeem({
 
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [token, cToken],
+    assets: [token, cToken as any],
   });
 
   const rateBefore = await cToken.exchangeRateStored();
@@ -161,7 +161,7 @@ async function assertCompoundRedeem({
 
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [token, cToken],
+    assets: [token, cToken as any],
   });
 
   // Get exchange rate after tx (the rate is updated right after)
