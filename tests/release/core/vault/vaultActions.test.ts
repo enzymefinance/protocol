@@ -5,18 +5,15 @@ import {
   MockGenericExternalPositionLib,
   VaultAction,
   VaultLib,
-  ExternalPositionManagerActionId,
-  callOnExternalPositionArgs,
-  mockGenericExternalPositionActionArgs,
-  MockGenericExternalPositionActionId,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
+  createMockExternalPosition,
   createNewFund,
   createVaultProxy,
-  createMockExternalPosition,
   deployProtocolFixture,
   getAssetUnit,
+  mockExternalPositionAddManagedAssets,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -363,20 +360,14 @@ describe('CallOnExternalPosition', () => {
       deployer: fork.deployer,
     });
 
-    const actionArgs = mockGenericExternalPositionActionArgs({
+    await mockExternalPositionAddManagedAssets({
+      signer: fundOwner,
+      comptrollerProxy,
+      externalPositionManager,
+      externalPositionProxy,
       assets: [assetsToTransfer[0]],
       amounts: [amountsToTransfer[0]],
     });
-
-    const callArgs = callOnExternalPositionArgs({
-      externalPositionProxy,
-      actionId: MockGenericExternalPositionActionId.AddManagedAssets,
-      encodedCallArgs: actionArgs,
-    });
-
-    await comptrollerProxy
-      .connect(fundOwner)
-      .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
 
     // External position was properly called
     const externalPositionInstance = new MockGenericExternalPositionLib(externalPositionProxy, fork.deployer);

@@ -13,8 +13,12 @@ import {
   externalPositionReactivateArgs,
   validateRuleReactivateExternalPositionArgs,
 } from '@enzymefinance/protocol';
-import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { addCollateral } from '@enzymefinance/testutils/src/scaffolding/extensions/external-positions';
+import {
+  compoundDebtPositionAddCollateral,
+  createNewFund,
+  deployProtocolFixture,
+  ProtocolDeployment,
+} from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 let mockComptrollerProxy: any;
@@ -183,7 +187,7 @@ describe('receiveCallFromComptroller', () => {
       const activeExternalPosition = (await vaultProxy.getActiveExternalPositions.call())[0];
 
       // Add collateral twice to check it does not fail calling markets twice with the same assets
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -193,7 +197,7 @@ describe('receiveCallFromComptroller', () => {
         cTokens: [randomCToken],
       });
 
-      // actionArgs include assets[] amounts[] and extra data encodedd
+      // actionArgs include assets[] amounts[] and extra data encoded
       const actionArgs = encodeArgs(
         ['address[]', 'uint256[]', 'bytes'],
         [collateralAssets, [1], encodeArgs(['address[]'], [[randomCToken]])],

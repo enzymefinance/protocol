@@ -3,17 +3,17 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import { CompoundDebtPositionLib, ComptrollerLib, ICERC20, StandardToken, VaultLib } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
-  addCollateral,
-  borrow,
-  createCompoundDebtPosition,
-  removeCollateral,
-  repayBorrow,
+  compoundDebtPositionAddCollateral,
+  compoundDebtPositionBorrow,
+  compoundDebtPositionClaimComp,
+  compoundDebtPositionRemoveCollateral,
+  compoundDebtPositionRepayBorrow,
   compoundLend,
+  createCompoundDebtPosition,
   createNewFund,
   deployProtocolFixture,
   ICompoundComptroller,
   ProtocolDeployment,
-  claimComp,
 } from '@enzymefinance/testutils';
 
 import { utils, BigNumber, constants } from 'ethers';
@@ -112,7 +112,7 @@ describe('receiveCallFromVault', () => {
       const vaultProxyCollateralBalanceBefore = await cdai.balanceOf(vaultProxyUsed.address);
 
       // Add collateral twice to check it does not fail calling markets twice with the same assets
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -122,7 +122,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      const addCollateralReceipt = await addCollateral({
+      const addCollateralReceipt = await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -161,7 +161,7 @@ describe('receiveCallFromVault', () => {
       const externalPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition.address);
       const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -198,7 +198,7 @@ describe('receiveCallFromVault', () => {
       const collateralAssetsToBeRemoved = [cdai.address];
       const collateralAmountsToBeRemoved = [BigNumber.from('10')];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -211,7 +211,7 @@ describe('receiveCallFromVault', () => {
       const externalPositionBalanceBefore = await cdai.balanceOf(compoundDebtPosition);
       const vaultBalanceBefore = await cdai.balanceOf(vaultProxyUsed);
 
-      const removeCollateralReceipt = await removeCollateral({
+      const removeCollateralReceipt = await compoundDebtPositionRemoveCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -248,7 +248,7 @@ describe('receiveCallFromVault', () => {
       const collateralAssetsToBeRemoved = [ceth.address];
       const collateralAmountsToBeRemoved = [BigNumber.from('10')];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -261,7 +261,7 @@ describe('receiveCallFromVault', () => {
       const externalPositionBalanceBefore = await ceth.balanceOf(compoundDebtPosition);
       const vaultBalanceBefore = await ceth.balanceOf(vaultProxyUsed);
 
-      await removeCollateral({
+      await compoundDebtPositionRemoveCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -293,7 +293,7 @@ describe('receiveCallFromVault', () => {
       const collateralAmounts = [BigNumber.from('1000')];
       const collateralAssets = [cdai.address];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -306,7 +306,7 @@ describe('receiveCallFromVault', () => {
       const collateralAssetsStoredBefore = (await compoundDebtPosition.getManagedAssets.call()).assets_;
       expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
-      await removeCollateral({
+      await compoundDebtPositionRemoveCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -327,7 +327,7 @@ describe('receiveCallFromVault', () => {
       const collateralAssets = [cdai.address];
       const unaddedCollateralAssets = [weth.address];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -340,7 +340,7 @@ describe('receiveCallFromVault', () => {
       const collateralAssetsStoredBefore = (await compoundDebtPosition.getManagedAssets.call()).assets_;
       expect(collateralAssetsStoredBefore.length).toStrictEqual(1);
 
-      const removeCollateralTx = removeCollateral({
+      const removeCollateralTx = compoundDebtPositionRemoveCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -366,7 +366,7 @@ describe('receiveCallFromVault', () => {
       // Ensure the amount borrowed is much lower than collateral
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -378,7 +378,7 @@ describe('receiveCallFromVault', () => {
 
       const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
-      const borrowReceipt = await borrow({
+      const borrowReceipt = await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -412,7 +412,7 @@ describe('receiveCallFromVault', () => {
       const borrowedAssets = [weth.address];
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -424,7 +424,7 @@ describe('receiveCallFromVault', () => {
 
       const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
-      const borrowReceipt = await borrow({
+      const borrowReceipt = await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -461,7 +461,7 @@ describe('receiveCallFromVault', () => {
       // Ensure the amount borrowed is much lower than collateral
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -471,7 +471,7 @@ describe('receiveCallFromVault', () => {
         cTokens: [randomAddress()],
       });
 
-      const borrowTx = borrow({
+      const borrowTx = compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -494,7 +494,7 @@ describe('receiveCallFromVault', () => {
 
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -504,7 +504,7 @@ describe('receiveCallFromVault', () => {
         cTokens: [randomAddress()],
       });
 
-      const borrowTx = borrow({
+      const borrowTx = compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -532,7 +532,7 @@ describe('receiveCallFromVault', () => {
       const borrowedAssetsToBeRepaid = [dai.address];
       const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -542,7 +542,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      await borrow({
+      await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -556,7 +556,7 @@ describe('receiveCallFromVault', () => {
       const borrowedBalancesBefore = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
-      const repayBorrowReceipt = await repayBorrow({
+      const repayBorrowReceipt = await compoundDebtPositionRepayBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -597,7 +597,7 @@ describe('receiveCallFromVault', () => {
       const borrowedAssetsToBeRepaid = [weth.address];
       const borrowedAmountsToBeRepaid = [utils.parseUnits('0.01', await dai.decimals())];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -607,7 +607,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      await borrow({
+      await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -621,7 +621,7 @@ describe('receiveCallFromVault', () => {
       const borrowedBalancesBefore = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
-      const repayBorrowReceipt = await repayBorrow({
+      const repayBorrowReceipt = await compoundDebtPositionRepayBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -659,7 +659,7 @@ describe('receiveCallFromVault', () => {
       const borrowedAssets = [weth.address];
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -669,7 +669,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      await borrow({
+      await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -693,7 +693,7 @@ describe('receiveCallFromVault', () => {
         .call();
       expect(tokenFromCBorrowedAssetBefore).toMatchAddress(collateralAssets[0]);
 
-      await repayBorrow({
+      await compoundDebtPositionRepayBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -723,7 +723,7 @@ describe('receiveCallFromVault', () => {
       const borrowedAssets = [weth.address];
       const borrowedAmounts = [lentAmount.div(10)];
 
-      await addCollateral({
+      await compoundDebtPositionAddCollateral({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         fundOwner,
@@ -733,7 +733,7 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
-      await borrow({
+      await compoundDebtPositionBorrow({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -757,7 +757,7 @@ describe('receiveCallFromVault', () => {
       const compVaultBalanceBefore = await compToken.balanceOf(vaultProxyUsed);
       const compExternalPositionBalanceBefore = await compToken.balanceOf(compoundDebtPosition.address);
 
-      await claimComp({
+      await compoundDebtPositionClaimComp({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -792,7 +792,7 @@ describe('receiveCallFromVault', () => {
       const compVaultBalanceBefore = await compToken.balanceOf(vaultProxyUsed);
       const compExternalPositionBalanceBefore = await compToken.balanceOf(compoundDebtPosition.address);
 
-      await claimComp({
+      await compoundDebtPositionClaimComp({
         comptrollerProxy: comptrollerProxyUsed,
         vaultProxy: vaultProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,

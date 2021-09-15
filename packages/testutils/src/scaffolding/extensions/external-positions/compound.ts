@@ -5,107 +5,47 @@ import {
   encodeArgs,
   ExternalPositionManager,
   VaultLib,
-  callOnExternalPositionArgs,
   compoundExternalPositionActionArgs,
-  ExternalPositionManagerActionId,
   CompoundDebtPositionActionId,
   ExternalPositionType,
 } from '@enzymefinance/protocol';
 import { BigNumberish } from 'ethers';
-import { createExternalPosition } from './actions';
+import { callOnExternalPosition, createExternalPosition } from './actions';
 
-// TODO: re-namespace all functions with `CompoundDebtPosition`
-
-export async function createCompoundDebtPosition({
-  signer,
+export async function compoundDebtPositionAddCollateral({
   comptrollerProxy,
   externalPositionManager,
+  fundOwner,
+  assets,
+  amounts,
+  externalPositionProxy,
+  cTokens,
 }: {
-  signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
+  fundOwner: SignerWithAddress;
+  assets: AddressLike[];
+  cTokens: AddressLike[];
+  amounts: BigNumberish[];
+  externalPositionProxy: AddressLike;
 }) {
-  return createExternalPosition({
-    signer,
+  const actionArgs = compoundExternalPositionActionArgs({
+    assets,
+    amounts,
+    data: encodeArgs(['address[]'], [cTokens]),
+  });
+
+  return callOnExternalPosition({
+    signer: fundOwner,
     comptrollerProxy,
     externalPositionManager,
-    externalPositionTypeId: ExternalPositionType.CompoundDebtPosition,
-  });
-}
-
-export async function addCollateral({
-  comptrollerProxy,
-  externalPositionManager,
-  fundOwner,
-  assets,
-  amounts,
-  externalPositionProxy,
-  cTokens,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  externalPositionManager: ExternalPositionManager;
-  fundOwner: SignerWithAddress;
-  assets: AddressLike[];
-  cTokens: AddressLike[];
-  amounts: BigNumberish[];
-  externalPositionProxy: AddressLike;
-}) {
-  const actionArgs = compoundExternalPositionActionArgs({
-    assets,
-    amounts,
-    data: encodeArgs(['address[]'], [cTokens]),
-  });
-
-  const callArgs = callOnExternalPositionArgs({
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.AddCollateralAssets,
-    encodedCallArgs: actionArgs,
+    actionArgs,
   });
-
-  const addCollateralTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
-
-  return addCollateralTx;
 }
 
-export async function removeCollateral({
-  comptrollerProxy,
-  externalPositionManager,
-  fundOwner,
-  assets,
-  amounts,
-  externalPositionProxy,
-  cTokens,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  externalPositionManager: ExternalPositionManager;
-  fundOwner: SignerWithAddress;
-  assets: AddressLike[];
-  amounts: BigNumberish[];
-  externalPositionProxy: AddressLike;
-  cTokens: AddressLike[];
-}) {
-  const actionArgs = compoundExternalPositionActionArgs({
-    assets,
-    amounts,
-    data: encodeArgs(['address[]'], [cTokens]),
-  });
-
-  const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
-    encodedCallArgs: actionArgs,
-  });
-
-  const removeCollateralTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
-
-  return removeCollateralTx;
-}
-
-export async function borrow({
+export async function compoundDebtPositionBorrow({
   comptrollerProxy,
   externalPositionManager,
   fundOwner,
@@ -129,20 +69,17 @@ export async function borrow({
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = callOnExternalPositionArgs({
+  return callOnExternalPosition({
+    signer: fundOwner,
+    comptrollerProxy,
+    externalPositionManager,
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.BorrowAsset,
-    encodedCallArgs: actionArgs,
+    actionArgs,
   });
-
-  const borrowTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
-
-  return borrowTx;
 }
 
-export async function claimComp({
+export async function compoundDebtPositionClaimComp({
   comptrollerProxy,
   externalPositionManager,
   fundOwner,
@@ -160,20 +97,17 @@ export async function claimComp({
     data: '0x',
   });
 
-  const callArgs = callOnExternalPositionArgs({
+  return callOnExternalPosition({
+    signer: fundOwner,
+    comptrollerProxy,
+    externalPositionManager,
     externalPositionProxy,
     actionId: CompoundDebtPositionActionId.ClaimComp,
-    encodedCallArgs: actionArgs,
+    actionArgs,
   });
-
-  const claimCompTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
-
-  return claimCompTx;
 }
 
-export async function repayBorrow({
+export async function compoundDebtPositionRemoveCollateral({
   comptrollerProxy,
   externalPositionManager,
   fundOwner,
@@ -196,15 +130,62 @@ export async function repayBorrow({
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const callArgs = callOnExternalPositionArgs({
+  return callOnExternalPosition({
+    signer: fundOwner,
+    comptrollerProxy,
+    externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
-    encodedCallArgs: actionArgs,
+    actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
+    actionArgs,
+  });
+}
+
+export async function compoundDebtPositionRepayBorrow({
+  comptrollerProxy,
+  externalPositionManager,
+  fundOwner,
+  assets,
+  amounts,
+  externalPositionProxy,
+  cTokens,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  externalPositionManager: ExternalPositionManager;
+  fundOwner: SignerWithAddress;
+  assets: AddressLike[];
+  amounts: BigNumberish[];
+  externalPositionProxy: AddressLike;
+  cTokens: AddressLike[];
+}) {
+  const actionArgs = compoundExternalPositionActionArgs({
+    assets,
+    amounts,
+    data: encodeArgs(['address[]'], [cTokens]),
   });
 
-  const repayTx = comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+  return callOnExternalPosition({
+    signer: fundOwner,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionProxy,
+    actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
+    actionArgs,
+  });
+}
 
-  return repayTx;
+export async function createCompoundDebtPosition({
+  signer,
+  comptrollerProxy,
+  externalPositionManager,
+}: {
+  signer: SignerWithAddress;
+  comptrollerProxy: ComptrollerLib;
+  externalPositionManager: ExternalPositionManager;
+}) {
+  return createExternalPosition({
+    signer,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionTypeId: ExternalPositionType.CompoundDebtPosition,
+  });
 }

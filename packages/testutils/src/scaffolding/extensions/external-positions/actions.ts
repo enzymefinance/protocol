@@ -1,6 +1,7 @@
 import { AddressLike, extractEvent } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
+  callOnExternalPositionArgs,
   ComptrollerLib,
   encodeArgs,
   ExternalPositionManager,
@@ -10,6 +11,32 @@ import {
   IExternalPositionProxy,
 } from '@enzymefinance/protocol';
 import { BigNumberish, BytesLike } from 'ethers';
+
+export async function callOnExternalPosition({
+  signer,
+  comptrollerProxy,
+  externalPositionManager,
+  externalPositionProxy,
+  actionId,
+  actionArgs,
+}: {
+  signer: SignerWithAddress;
+  comptrollerProxy: ComptrollerLib;
+  externalPositionManager: ExternalPositionManager;
+  externalPositionProxy: AddressLike;
+  actionId: BigNumberish;
+  actionArgs: BytesLike;
+}) {
+  const callArgs = callOnExternalPositionArgs({
+    externalPositionProxy,
+    actionId,
+    actionArgs,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+}
 
 export async function createExternalPosition({
   signer,

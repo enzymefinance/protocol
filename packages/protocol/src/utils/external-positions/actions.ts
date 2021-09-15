@@ -28,6 +28,26 @@ export enum ExternalPositionProtocolId {
   CompoundDebtPosition = '0',
 }
 
+export function callOnExternalPositionArgs({
+  externalPositionProxy = randomAddress(),
+  actionId,
+  actionArgs,
+}: {
+  externalPositionProxy?: AddressLike;
+  actionId: BigNumberish;
+  actionArgs: BytesLike;
+}) {
+  return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, actionArgs]);
+}
+
+export function externalPositionReactivateArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {
+  return encodeArgs(['address'], [externalPositionProxy]);
+}
+
+export function externalPositionRemoveArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {
+  return encodeArgs(['address'], [externalPositionProxy]);
+}
+
 export function compoundExternalPositionActionArgs({
   assets,
   amounts,
@@ -48,24 +68,4 @@ export function mockGenericExternalPositionActionArgs({
   amounts: BigNumberish[];
 }) {
   return encodeArgs(['address[]', 'uint256[]'], [assets, amounts]);
-}
-
-export function callOnExternalPositionArgs({
-  externalPositionProxy = randomAddress(),
-  actionId,
-  encodedCallArgs,
-}: {
-  externalPositionProxy?: AddressLike;
-  actionId?: String;
-  encodedCallArgs: BytesLike;
-}) {
-  return encodeArgs(['address', 'uint256', 'bytes'], [externalPositionProxy, actionId, encodedCallArgs]);
-}
-
-export function externalPositionReactivateArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {
-  return encodeArgs(['address'], [externalPositionProxy]);
-}
-
-export function externalPositionRemoveArgs({ externalPositionProxy }: { externalPositionProxy: AddressLike }) {
-  return encodeArgs(['address'], [externalPositionProxy]);
 }
