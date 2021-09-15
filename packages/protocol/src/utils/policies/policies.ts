@@ -32,6 +32,10 @@ export function allowedExternalPositionTypesPolicyArgs({
   return encodeArgs(['uint256[]'], [externalPositionTypeIds]);
 }
 
+export function cumulativeSlippageTolerancePolicyArgs({ tolerance }: { tolerance: BigNumberish }) {
+  return encodeArgs(['uint256'], [tolerance]);
+}
+
 export function guaranteedRedemptionPolicyArgs({
   startTimestamp,
   duration,

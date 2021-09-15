@@ -17,6 +17,7 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const fundDeployer = await get('FundDeployer');
   const onlyUntrackDustOrPricelessAssetsPolicy = await get('OnlyUntrackDustOrPricelessAssetsPolicy');
+  const cumulativeSlippageTolerancePolicy = await get('CumulativeSlippageTolerancePolicy');
 
   const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
 
@@ -25,6 +26,11 @@ const fn: DeployFunction = async function (hre) {
     ...config.vaultCalls,
     [
       onlyUntrackDustOrPricelessAssetsPolicy.address,
+      pricelessAssetBypassStartAssetBypassTimelockSelector,
+      vaultCallAnyDataHash,
+    ],
+    [
+      cumulativeSlippageTolerancePolicy.address,
       pricelessAssetBypassStartAssetBypassTimelockSelector,
       vaultCallAnyDataHash,
     ],
@@ -39,7 +45,7 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release'];
-fn.dependencies = ['FundDeployer', 'OnlyUntrackDustOrPricelessAssetsPolicy'];
+fn.dependencies = ['FundDeployer', 'OnlyUntrackDustOrPricelessAssetsPolicy', 'CumulativeSlippageTolerancePolicy'];
 fn.runAtTheEnd = true;
 
 export default fn;

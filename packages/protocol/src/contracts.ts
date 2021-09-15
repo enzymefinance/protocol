@@ -89,6 +89,7 @@ export * from './codegen/AllowedAssetsForRedemptionPolicy';
 export * from './codegen/AllowedDepositRecipientsPolicy';
 export * from './codegen/AllowedExternalPositionTypesPolicy';
 export * from './codegen/AllowedSharesTransferRecipientsPolicy';
+export * from './codegen/CumulativeSlippageTolerancePolicy';
 export * from './codegen/GuaranteedRedemptionPolicy';
 export * from './codegen/MinMaxInvestmentPolicy';
 export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
