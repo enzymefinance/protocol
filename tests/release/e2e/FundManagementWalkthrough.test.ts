@@ -272,7 +272,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         vaultProxy,
         integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
+        uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
         path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
         outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
         minIncomingAssetAmount: BigNumber.from(1),

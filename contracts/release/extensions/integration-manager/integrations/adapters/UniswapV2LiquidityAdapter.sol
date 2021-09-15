@@ -15,10 +15,10 @@ import "../../../../interfaces/IUniswapV2Factory.sol";
 import "../utils/actions/UniswapV2ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
-/// @title UniswapV2Adapter Contract
+/// @title UniswapV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Adapter for interacting with Uniswap v2
-contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
+/// @notice Adapter for interacting with Uniswap v2 liquidity provision
+contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     address private immutable FACTORY;
 
     constructor(
@@ -86,23 +86,6 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
         );
     }
 
-    /// @notice Trades assets on Uniswap
-    /// @param _vaultProxy The VaultProxy of the calling fund
-    /// @param _actionData Data specific to this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
-        (
-            address[] memory path,
-            uint256 outgoingAssetAmount,
-            uint256 minIncomingAssetAmount
-        ) = __decodeTakeOrderCallArgs(_actionData);
-
-        __uniswapV2Swap(_vaultProxy, outgoingAssetAmount, minIncomingAssetAmount, path);
-    }
-
     /////////////////////////////
     // PARSE ASSETS FOR METHOD //
     /////////////////////////////
@@ -136,8 +119,6 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
             return __parseAssetsForLend(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
             return __parseAssetsForRedeem(_actionData);
-        } else if (_selector == TAKE_ORDER_SELECTOR) {
-            return __parseAssetsForTakeOrder(_actionData);
         }
 
         revert("parseAssetsForAction: _selector invalid");
@@ -233,46 +214,6 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
         );
     }
 
-    /// @dev Helper function to parse spend and incoming assets from encoded call args
-    /// during takeOrder() calls
-    function __parseAssetsForTakeOrder(bytes calldata _actionData)
-        private
-        pure
-        returns (
-            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_,
-            uint256[] memory minIncomingAssetAmounts_
-        )
-    {
-        (
-            address[] memory path,
-            uint256 outgoingAssetAmount,
-            uint256 minIncomingAssetAmount
-        ) = __decodeTakeOrderCallArgs(_actionData);
-
-        require(path.length >= 2, "__parseAssetsForTakeOrder: _path must be >= 2");
-
-        spendAssets_ = new address[](1);
-        spendAssets_[0] = path[0];
-        spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = outgoingAssetAmount;
-
-        incomingAssets_ = new address[](1);
-        incomingAssets_[0] = path[path.length - 1];
-        minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
-
-        return (
-            IIntegrationManager.SpendAssetsHandleType.Transfer,
-            spendAssets_,
-            spendAssetAmounts_,
-            incomingAssets_,
-            minIncomingAssetAmounts_
-        );
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the lend encoded call arguments
@@ -300,19 +241,6 @@ contract UniswapV2Adapter is AdapterBase, UniswapV2ActionsMixin {
         )
     {
         return abi.decode(_actionData, (uint256, address[2], uint256[2]));
-    }
-
-    /// @dev Helper to decode the take order encoded call arguments
-    function __decodeTakeOrderCallArgs(bytes memory _actionData)
-        private
-        pure
-        returns (
-            address[] memory path_,
-            uint256 outgoingAssetAmount_,
-            uint256 minIncomingAssetAmount_
-        )
-    {
-        return abi.decode(_actionData, (address[], uint256, uint256));
     }
 
     ///////////////////

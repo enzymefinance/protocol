@@ -48,7 +48,7 @@ describe('derivative gas costs', () => {
       vaultProxy,
       integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
+      uniswapV2LiquidityAdapter: fork.deployment.uniswapV2LiquidityAdapter,
       tokenA: weth,
       tokenB: mln,
       amountADesired: initialTokenAmount.div(2),

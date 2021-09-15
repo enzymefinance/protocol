@@ -9,7 +9,8 @@ import {
   redeemSelector,
   StandardToken,
   takeOrderSelector,
-  UniswapV2Adapter,
+  UniswapV2ExchangeAdapter,
+  UniswapV2LiquidityAdapter,
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
@@ -32,7 +33,7 @@ export async function uniswapV2Lend({
   vaultProxy,
   integrationManager,
   fundOwner,
-  uniswapV2Adapter,
+  uniswapV2LiquidityAdapter,
   tokenA,
   tokenB,
   amountADesired,
@@ -46,7 +47,7 @@ export async function uniswapV2Lend({
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  uniswapV2Adapter: UniswapV2Adapter;
+  uniswapV2LiquidityAdapter: UniswapV2LiquidityAdapter;
   tokenA: StandardToken;
   tokenB: StandardToken;
   amountADesired: BigNumberish;
@@ -73,7 +74,7 @@ export async function uniswapV2Lend({
   });
 
   const callArgs = callOnIntegrationArgs({
-    adapter: uniswapV2Adapter,
+    adapter: uniswapV2LiquidityAdapter,
     selector: lendSelector,
     encodedCallArgs: lendArgs,
   });
@@ -90,7 +91,7 @@ export async function uniswapV2Redeem({
   comptrollerProxy,
   integrationManager,
   fundOwner,
-  uniswapV2Adapter,
+  uniswapV2LiquidityAdapter,
   poolTokenAmount,
   tokenA,
   tokenB,
@@ -100,7 +101,7 @@ export async function uniswapV2Redeem({
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  uniswapV2Adapter: UniswapV2Adapter;
+  uniswapV2LiquidityAdapter: UniswapV2LiquidityAdapter;
   poolTokenAmount: BigNumberish;
   tokenA: AddressLike;
   tokenB: AddressLike;
@@ -115,7 +116,7 @@ export async function uniswapV2Redeem({
     amountBMin,
   });
   const callArgs = callOnIntegrationArgs({
-    adapter: uniswapV2Adapter,
+    adapter: uniswapV2LiquidityAdapter,
     selector: redeemSelector,
     encodedCallArgs: redeemArgs,
   });
@@ -133,7 +134,7 @@ export async function uniswapV2TakeOrder({
   vaultProxy,
   integrationManager,
   fundOwner,
-  uniswapV2Adapter,
+  uniswapV2ExchangeAdapter,
   path,
   outgoingAssetAmount,
   minIncomingAssetAmount,
@@ -143,7 +144,7 @@ export async function uniswapV2TakeOrder({
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  uniswapV2Adapter: UniswapV2Adapter;
+  uniswapV2ExchangeAdapter: UniswapV2ExchangeAdapter;
   path: StandardToken[];
   outgoingAssetAmount: BigNumberish;
   minIncomingAssetAmount: BigNumberish;
@@ -160,7 +161,7 @@ export async function uniswapV2TakeOrder({
     minIncomingAssetAmount,
   });
   const callArgs = callOnIntegrationArgs({
-    adapter: uniswapV2Adapter,
+    adapter: uniswapV2ExchangeAdapter,
     selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
   });

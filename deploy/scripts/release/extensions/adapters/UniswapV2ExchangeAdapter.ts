@@ -1,4 +1,4 @@
-import { UniswapV2AdapterArgs } from '@enzymefinance/protocol';
+import { UniswapV2ExchangeAdapterArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -13,8 +13,8 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const integrationManager = await get('IntegrationManager');
 
-  await deploy('UniswapV2Adapter', {
-    args: [integrationManager.address, config.uniswap.router, config.uniswap.factory] as UniswapV2AdapterArgs,
+  await deploy('UniswapV2ExchangeAdapter', {
+    args: [integrationManager.address, config.uniswap.router] as UniswapV2ExchangeAdapterArgs,
     from: deployer.address,
     linkedData: {
       type: 'ADAPTER',
@@ -24,7 +24,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Adapters', 'UniswapV2Adapter'];
+fn.tags = ['Release', 'Adapters', 'UniswapV2ExchangeAdapter'];
 fn.dependencies = ['Config', 'IntegrationManager'];
 
 export default fn;

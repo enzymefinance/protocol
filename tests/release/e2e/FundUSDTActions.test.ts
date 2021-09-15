@@ -45,7 +45,7 @@ describe('adapters', () => {
       vaultProxy,
       integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2Adapter: fork.deployment.uniswapV2Adapter,
+      uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
       path,
       outgoingAssetAmount,
       minIncomingAssetAmount: amountsOut[1],
