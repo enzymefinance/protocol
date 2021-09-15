@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.1
+
+### Patch Changes
+
+- a18335ad: Upgrade dependencies and including new policies.
+
 ## 4.0.0-next.0
 
 ### Major Changes
