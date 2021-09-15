@@ -1,5 +1,11 @@
 # @enzymefinance/testutils
 
+## 3.0.2
+
+### Patch Changes
+
+- ccad45f0: Removed jest expect assertions from testutils package.
+
 ## 3.0.1
 
 ### Patch Changes
