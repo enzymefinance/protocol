@@ -87,13 +87,8 @@ describe('addFundSettings', () => {
   });
 
   it('does not allow the denomination asset to be blacklisted', async () => {
-    const {
-      assetBlacklist,
-      blacklistedAssets,
-      denominationAssetAddress,
-      mockComptrollerProxy,
-      EOAPolicyManager,
-    } = await provider.snapshot(snapshot);
+    const { assetBlacklist, blacklistedAssets, denominationAssetAddress, mockComptrollerProxy, EOAPolicyManager } =
+      await provider.snapshot(snapshot);
 
     const assetBlacklistConfig = assetBlacklistArgs([...blacklistedAssets, denominationAssetAddress]);
 
@@ -137,12 +132,8 @@ describe('updateFundSettings', () => {
 
 describe('activateForFund', () => {
   it('does not allow a blacklisted asset in the fund trackedAssets', async () => {
-    const {
-      permissionedAssetBlacklist,
-      blacklistedAssets,
-      mockComptrollerProxy,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { permissionedAssetBlacklist, blacklistedAssets, mockComptrollerProxy, mockVaultProxy } =
+      await provider.snapshot(snapshot);
 
     // Activation should pass if a blacklisted asset is not a trackedAsset
     await mockVaultProxy.getTrackedAssets.returns([randomAddress()]);

@@ -1341,14 +1341,11 @@ describe('claimRewardsAndReinvest', () => {
     await crv.transfer(vaultProxy, utils.parseEther('2'));
     await ldo.transfer(vaultProxy, utils.parseEther('3'));
 
-    const [
-      preClaimRewardsCrvBalance,
-      preClaimRewardsLdoBalance,
-      preClaimRewardsLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, liquidityGaugeToken],
-    });
+    const [preClaimRewardsCrvBalance, preClaimRewardsLdoBalance, preClaimRewardsLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, liquidityGaugeToken],
+      });
 
     // Assert rewards tokens start with non-0 balances
     expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
@@ -1379,14 +1376,11 @@ describe('claimRewardsAndReinvest', () => {
       useFullBalances: false,
     });
 
-    const [
-      postClaimRewardsCrvBalance,
-      postClaimRewardsLdoBalance,
-      postClaimRewardsLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, liquidityGaugeToken],
-    });
+    const [postClaimRewardsCrvBalance, postClaimRewardsLdoBalance, postClaimRewardsLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, liquidityGaugeToken],
+      });
 
     // Assert only the newly claimed balances of reward tokens were used
     expect(postClaimRewardsCrvBalance).toEqBigNumber(preClaimRewardsCrvBalance);
@@ -1435,14 +1429,11 @@ describe('claimRewardsAndReinvest', () => {
     await crv.transfer(vaultProxy, utils.parseEther('2'));
     await ldo.transfer(vaultProxy, utils.parseEther('3'));
 
-    const [
-      preClaimRewardsCrvBalance,
-      preClaimRewardsLdoBalance,
-      preClaimRewardsLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, liquidityGaugeToken],
-    });
+    const [preClaimRewardsCrvBalance, preClaimRewardsLdoBalance, preClaimRewardsLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, liquidityGaugeToken],
+      });
 
     // Assert rewards tokens start with non-0 balances
     expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
@@ -1473,14 +1464,11 @@ describe('claimRewardsAndReinvest', () => {
       useFullBalances: true,
     });
 
-    const [
-      postClaimRewardsCrvBalance,
-      postClaimRewardsLdoBalance,
-      postClaimRewardsLiquidityGaugeTokenBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, liquidityGaugeToken],
-    });
+    const [postClaimRewardsCrvBalance, postClaimRewardsLdoBalance, postClaimRewardsLiquidityGaugeTokenBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, liquidityGaugeToken],
+      });
 
     // Assert entire vault balances of reward tokens were used
     expect(postClaimRewardsCrvBalance).toEqBigNumber(0);
@@ -1531,14 +1519,11 @@ describe('claimRewardsAndSwap', () => {
     await crv.transfer(vaultProxy, utils.parseEther('2'));
     await ldo.transfer(vaultProxy, utils.parseEther('3'));
 
-    const [
-      preClaimRewardsCrvBalance,
-      preClaimRewardsLdoBalance,
-      preClaimRewardsIncomingAssetBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, incomingAsset],
-    });
+    const [preClaimRewardsCrvBalance, preClaimRewardsLdoBalance, preClaimRewardsIncomingAssetBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, incomingAsset],
+      });
 
     // Assert rewards tokens start with non-0 balances
     expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
@@ -1570,14 +1555,11 @@ describe('claimRewardsAndSwap', () => {
       incomingAsset: incomingAsset,
     });
 
-    const [
-      postClaimRewardsCrvBalance,
-      postClaimRewardsLdoBalance,
-      postClaimRewardsIncomingAssetBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, incomingAsset],
-    });
+    const [postClaimRewardsCrvBalance, postClaimRewardsLdoBalance, postClaimRewardsIncomingAssetBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, incomingAsset],
+      });
 
     // Assert only the newly claimed balances of reward tokens were used
     expect(postClaimRewardsCrvBalance).toEqBigNumber(preClaimRewardsCrvBalance);
@@ -1626,14 +1608,11 @@ describe('claimRewardsAndSwap', () => {
     await crv.transfer(vaultProxy, utils.parseEther('2'));
     await ldo.transfer(vaultProxy, utils.parseEther('3'));
 
-    const [
-      preClaimRewardsCrvBalance,
-      preClaimRewardsLdoBalance,
-      preClaimRewardsIncomingAssetBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, incomingAsset],
-    });
+    const [preClaimRewardsCrvBalance, preClaimRewardsLdoBalance, preClaimRewardsIncomingAssetBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, incomingAsset],
+      });
 
     // Assert rewards tokens start with non-0 balances
     expect(preClaimRewardsCrvBalance).toBeGtBigNumber(0);
@@ -1665,14 +1644,11 @@ describe('claimRewardsAndSwap', () => {
       incomingAsset,
     });
 
-    const [
-      postClaimRewardsCrvBalance,
-      postClaimRewardsLdoBalance,
-      postClaimRewardsIncomingAssetBalance,
-    ] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [crv, ldo, incomingAsset],
-    });
+    const [postClaimRewardsCrvBalance, postClaimRewardsLdoBalance, postClaimRewardsIncomingAssetBalance] =
+      await getAssetBalances({
+        account: vaultProxy,
+        assets: [crv, ldo, incomingAsset],
+      });
 
     // Assert entire vault balances of reward tokens were used
     expect(postClaimRewardsCrvBalance).toEqBigNumber(0);

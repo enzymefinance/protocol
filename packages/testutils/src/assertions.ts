@@ -11,7 +11,7 @@ export function assertEvent<TResult = any>(
   expect(receipt).toHaveEmittedWith(event, match);
 
   const args = events.shift()?.args;
-  return ((args as unknown) as typeof match)!;
+  return (args as unknown as typeof match)!;
 }
 
 export function assertNoEvent(receipt: ContractReceipt<any>, event: string | utils.EventFragment) {

@@ -176,13 +176,8 @@ describe('synths registry', () => {
     it.todo('does not allow an asset without a currencyKey');
 
     it('adds multiple Synths and emits an event per added Synth', async () => {
-      const {
-        synthetixPriceFeed,
-        newSynth1,
-        newSynth2,
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      } = await provider.snapshot(snapshot);
+      const { synthetixPriceFeed, newSynth1, newSynth2, newSynth1CurrencyKey, newSynth2CurrencyKey } =
+        await provider.snapshot(snapshot);
 
       // The Synths should not be supported assets initially
       expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(false);
@@ -194,12 +189,10 @@ describe('synths registry', () => {
       // The currencyKey should be stored for each Synth
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth1)).toBe(newSynth1CurrencyKey);
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth2)).toBe(newSynth2CurrencyKey);
-      expect(
-        await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2]),
-      ).toMatchFunctionOutput(synthetixPriceFeed.getCurrencyKeysForSynths, [
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      ]);
+      expect(await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2])).toMatchFunctionOutput(
+        synthetixPriceFeed.getCurrencyKeysForSynths,
+        [newSynth1CurrencyKey, newSynth2CurrencyKey],
+      );
 
       // The tokens should now be supported assets
       expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(true);
@@ -244,14 +237,8 @@ describe('synths registry', () => {
     });
 
     it('updates multiple Synths and emits an event per updated Synth (called by random user)', async () => {
-      const {
-        arbitraryUser,
-        synthetixPriceFeed,
-        newSynth1,
-        newSynth2,
-        newSynth1CurrencyKey,
-        newSynth2CurrencyKey,
-      } = await provider.snapshot(snapshot);
+      const { arbitraryUser, synthetixPriceFeed, newSynth1, newSynth2, newSynth1CurrencyKey, newSynth2CurrencyKey } =
+        await provider.snapshot(snapshot);
 
       // Add the new Synths so they are supported
       await synthetixPriceFeed.addSynths([newSynth1, newSynth2]);
@@ -272,12 +259,10 @@ describe('synths registry', () => {
       // The new currencyKey should be stored for each Synth
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth1)).toBe(altSynth1CurrencyKey);
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(newSynth2)).toBe(altSynth2CurrencyKey);
-      expect(
-        await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2]),
-      ).toMatchFunctionOutput(synthetixPriceFeed.getCurrencyKeysForSynths, [
-        altSynth1CurrencyKey,
-        altSynth2CurrencyKey,
-      ]);
+      expect(await synthetixPriceFeed.getCurrencyKeysForSynths([newSynth1, newSynth2])).toMatchFunctionOutput(
+        synthetixPriceFeed.getCurrencyKeysForSynths,
+        [altSynth1CurrencyKey, altSynth2CurrencyKey],
+      );
 
       // The tokens should still be supported assets
       expect(await synthetixPriceFeed.isSupportedAsset(newSynth1)).toBe(true);

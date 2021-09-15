@@ -109,15 +109,8 @@ describe('addTrackedAsset', () => {
   });
 
   it('does not allow exceeding the tracked assets limit', async () => {
-    const {
-      fundOwner,
-      weth,
-      dispatcher,
-      fundDeployer,
-      integrationManager,
-      trackedAssetsAdapter,
-      config,
-    } = await provider.snapshot(snapshot);
+    const { fundOwner, weth, dispatcher, fundDeployer, integrationManager, trackedAssetsAdapter, config } =
+      await provider.snapshot(snapshot);
 
     // Reset the deployed FundDeployer as the currentFundDeployer
     await dispatcher.setCurrentFundDeployer(fundDeployer);

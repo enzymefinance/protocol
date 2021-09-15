@@ -76,12 +76,8 @@ describe('constructor', () => {
 
 describe('calcCanonicalAssetValue', () => {
   it('returns the correct value for a primitive base asset', async () => {
-    const {
-      mockPrimitive1,
-      mockPrimitive2,
-      mockPrimitivePriceFeed,
-      valueInterpreterWithMocks,
-    } = await provider.snapshot(snapshot);
+    const { mockPrimitive1, mockPrimitive2, mockPrimitivePriceFeed, valueInterpreterWithMocks } =
+      await provider.snapshot(snapshot);
 
     // Set Primitive Price feed to return 1 quote asset unit
     await mockPrimitivePriceFeed.calcCanonicalValue
@@ -136,12 +132,8 @@ describe('calcCanonicalAssetValue', () => {
   });
 
   it('does not allow a derivative with an unsupported underlying asset', async () => {
-    const {
-      mockDerivative,
-      mockPrimitive1,
-      mockDerivativePriceFeed,
-      valueInterpreterWithMocks,
-    } = await provider.snapshot(snapshot);
+    const { mockDerivative, mockPrimitive1, mockDerivativePriceFeed, valueInterpreterWithMocks } =
+      await provider.snapshot(snapshot);
 
     const badUnderlying = randomAddress();
     await mockDerivativePriceFeed.calcUnderlyingValues

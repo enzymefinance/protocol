@@ -84,13 +84,8 @@ describe('parseAssetsForMethod', () => {
     const incomingAsset = randomAddress();
     const args = addTrackedAssetsArgs([incomingAsset]);
 
-    const {
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args);
+    const { spendAssetsHandleType_, incomingAssets_, spendAssets_, spendAssetAmounts_, minIncomingAssetAmounts_ } =
+      await trackedAssetsAdapter.parseAssetsForMethod(addTrackedAssetsSelector, args);
 
     expect({
       spendAssetsHandleType_,
@@ -115,13 +110,8 @@ describe('parseAssetsForMethod', () => {
     const spendAsset = randomAddress();
     const args = removeTrackedAssetsArgs([spendAsset]);
 
-    const {
-      spendAssetsHandleType_,
-      incomingAssets_,
-      spendAssets_,
-      spendAssetAmounts_,
-      minIncomingAssetAmounts_,
-    } = await trackedAssetsAdapter.parseAssetsForMethod(removeTrackedAssetsSelector, args);
+    const { spendAssetsHandleType_, incomingAssets_, spendAssets_, spendAssetAmounts_, minIncomingAssetAmounts_ } =
+      await trackedAssetsAdapter.parseAssetsForMethod(removeTrackedAssetsSelector, args);
 
     expect({
       spendAssetsHandleType_,

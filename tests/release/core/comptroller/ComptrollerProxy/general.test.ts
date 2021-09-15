@@ -175,13 +175,8 @@ describe('vaultCallOnContract', () => {
   });
 
   it('does not allow a call to an unregistered contract', async () => {
-    const {
-      mockExternalContract,
-      registeredVaultCallSelector,
-      fundOwner,
-      denominationAsset,
-      fundDeployer,
-    } = await provider.snapshot(snapshot);
+    const { mockExternalContract, registeredVaultCallSelector, fundOwner, denominationAsset, fundDeployer } =
+      await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -200,13 +195,8 @@ describe('vaultCallOnContract', () => {
   });
 
   it('does not allow a paused release, unless overridePause is set', async () => {
-    const {
-      mockExternalContract,
-      registeredVaultCallSelector,
-      fundOwner,
-      denominationAsset,
-      fundDeployer,
-    } = await provider.snapshot(snapshot);
+    const { mockExternalContract, registeredVaultCallSelector, fundOwner, denominationAsset, fundDeployer } =
+      await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,

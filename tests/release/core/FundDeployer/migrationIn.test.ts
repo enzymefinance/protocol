@@ -101,12 +101,8 @@ describe('signalMigration', () => {
   });
 
   it('can only be called by a permissioned migrator of the vault', async () => {
-    const {
-      arbitraryComptrollerProxyCreator,
-      fundDeployer,
-      denominationAsset,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { arbitraryComptrollerProxyCreator, fundDeployer, denominationAsset, vaultProxyAddress } =
+      await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createMigratedFundConfig({
       signer: arbitraryComptrollerProxyCreator,
@@ -131,14 +127,8 @@ describe('signalMigration', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      dispatcher,
-      fundDeployer,
-      vaultLib,
-      fundOwner,
-      nextComptrollerProxy,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { dispatcher, fundDeployer, vaultLib, fundOwner, nextComptrollerProxy, vaultProxyAddress } =
+      await provider.snapshot(snapshot);
 
     await fundDeployer.connect(fundOwner).signalMigration(vaultProxyAddress, nextComptrollerProxy);
 
@@ -154,14 +144,8 @@ describe('signalMigration', () => {
 
 describe('executeMigration', () => {
   it('can only be called by a permissioned migrator of the vault', async () => {
-    const {
-      arbitraryUser,
-      dispatcher,
-      fundDeployer,
-      denominationAsset,
-      fundOwner,
-      vaultProxyAddress,
-    } = await provider.snapshot(snapshot);
+    const { arbitraryUser, dispatcher, fundDeployer, denominationAsset, fundOwner, vaultProxyAddress } =
+      await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createMigratedFundConfig({
       signer: fundOwner,

@@ -99,13 +99,8 @@ describe('activateForFund', () => {
 
   // i.e., a new fund
   it('correctly handles valid call for a fund with no shares (does nothing)', async () => {
-    const {
-      EOAFeeManager,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      scaledPerSecondRate,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, mockComptrollerProxy, mockVaultProxy, scaledPerSecondRate, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     // Activate fund
     await standaloneManagementFee.connect(EOAFeeManager).activateForFund(mockComptrollerProxy, mockVaultProxy);
@@ -120,13 +115,8 @@ describe('activateForFund', () => {
 
   // i.e., a migrated fund
   it('correctly handles valid call for a fund with no shares (sets lastSettled)', async () => {
-    const {
-      EOAFeeManager,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      scaledPerSecondRate,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, mockComptrollerProxy, mockVaultProxy, scaledPerSecondRate, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     // Set the shares supply to be > 0
     await mockVaultProxy.totalSupply.returns(1);
@@ -157,12 +147,8 @@ describe('addFundSettings', () => {
   });
 
   it('sets initial config values for fund and fires events', async () => {
-    const {
-      EOAFeeManager,
-      scaledPerSecondRate,
-      mockComptrollerProxy,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, scaledPerSecondRate, mockComptrollerProxy, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     const managementFeeConfig = managementFeeConfigArgs(scaledPerSecondRate);
     const receipt = await standaloneManagementFee
@@ -203,13 +189,8 @@ describe('settle', () => {
   });
 
   it('correctly handles shares supply of 0', async () => {
-    const {
-      EOAFeeManager,
-      scaledPerSecondRate,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, scaledPerSecondRate, mockComptrollerProxy, mockVaultProxy, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     // Check the return value via a call
     const settleCall = await standaloneManagementFee
@@ -244,13 +225,8 @@ describe('settle', () => {
   });
 
   it('correctly handles shares supply > 0', async () => {
-    const {
-      EOAFeeManager,
-      scaledPerSecondRate,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, scaledPerSecondRate, mockComptrollerProxy, mockVaultProxy, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     // Settle while shares supply is 0 to set lastSettled
     const receiptOne = await standaloneManagementFee
@@ -317,13 +293,8 @@ describe('settle', () => {
   });
 
   it('correctly handles shares outstanding > 0', async () => {
-    const {
-      EOAFeeManager,
-      scaledPerSecondRate,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      standaloneManagementFee,
-    } = await provider.snapshot(snapshot);
+    const { EOAFeeManager, scaledPerSecondRate, mockComptrollerProxy, mockVaultProxy, standaloneManagementFee } =
+      await provider.snapshot(snapshot);
 
     // Settle while shares supply is 0 to set lastSettled
     const receiptOne = await standaloneManagementFee

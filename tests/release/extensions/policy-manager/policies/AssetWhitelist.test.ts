@@ -93,12 +93,8 @@ describe('addFundSettings', () => {
   });
 
   it('requires that the denomination asset be whitelisted', async () => {
-    const {
-      unconfiguredAssetWhitelist,
-      denominationAssetAddress,
-      mockComptrollerProxy,
-      whitelistedAssets,
-    } = await provider.snapshot(snapshot);
+    const { unconfiguredAssetWhitelist, denominationAssetAddress, mockComptrollerProxy, whitelistedAssets } =
+      await provider.snapshot(snapshot);
 
     const assetWhitelistConfig = assetWhitelistArgs(
       whitelistedAssets.filter((asset) => asset != denominationAssetAddress),
@@ -141,12 +137,8 @@ describe('updateFundSettings', () => {
 
 describe('activateForFund', () => {
   it('does not allow a non-whitelisted asset in the fund trackedAssets', async () => {
-    const {
-      configuredAssetWhitelist,
-      whitelistedAssets,
-      mockComptrollerProxy,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { configuredAssetWhitelist, whitelistedAssets, mockComptrollerProxy, mockVaultProxy } =
+      await provider.snapshot(snapshot);
 
     // Activation should pass if trackedAssets are only whitelisted assets
     await mockVaultProxy.getTrackedAssets.returns(whitelistedAssets);
@@ -162,12 +154,8 @@ describe('activateForFund', () => {
 
 describe('validateRule', () => {
   it('returns true if an asset is in the whitelist', async () => {
-    const {
-      configuredAssetWhitelist,
-      mockComptrollerProxy,
-      mockVaultProxy,
-      whitelistedAssets,
-    } = await provider.snapshot(snapshot);
+    const { configuredAssetWhitelist, mockComptrollerProxy, mockVaultProxy, whitelistedAssets } =
+      await provider.snapshot(snapshot);
 
     // Only the incoming assets arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({

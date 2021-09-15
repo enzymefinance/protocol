@@ -292,12 +292,8 @@ describe('constructor', () => {
 
 describe('addFundSettings', () => {
   it('can only be called by the FeeManager', async () => {
-    const {
-      performanceFeePeriod,
-      performanceFeeRate,
-      mockComptrollerProxy,
-      standalonePerformanceFee,
-    } = await provider.snapshot(snapshot);
+    const { performanceFeePeriod, performanceFeeRate, mockComptrollerProxy, standalonePerformanceFee } =
+      await provider.snapshot(snapshot);
 
     const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
@@ -310,13 +306,8 @@ describe('addFundSettings', () => {
   });
 
   it('correctly handles valid call', async () => {
-    const {
-      performanceFeePeriod,
-      performanceFeeRate,
-      mockComptrollerProxy,
-      mockFeeManager,
-      standalonePerformanceFee,
-    } = await provider.snapshot(snapshot);
+    const { performanceFeePeriod, performanceFeeRate, mockComptrollerProxy, mockFeeManager, standalonePerformanceFee } =
+      await provider.snapshot(snapshot);
 
     const performanceFeeConfig = performanceFeeConfigArgs({
       rate: performanceFeeRate,
