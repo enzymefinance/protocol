@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 3.0.0
+
+### Major Changes
+
+- 65ce0f49: Publishing testutils alongside protocol package.
+
 ## 2.0.11
 
 ### Patch Changes
