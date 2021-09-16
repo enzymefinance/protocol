@@ -46,6 +46,16 @@ export function guaranteedRedemptionPolicyArgs({
   return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
 }
 
+export function minAssetBalancesPostRedemptionPolicyArgs({
+  assets,
+  minBalances,
+}: {
+  assets: AddressLike[];
+  minBalances: BigNumberish[];
+}) {
+  return encodeArgs(['address[]', 'uint256[]'], [assets, minBalances]);
+}
+
 export function minMaxInvestmentPolicyArgs({
   minInvestmentAmount,
   maxInvestmentAmount,
