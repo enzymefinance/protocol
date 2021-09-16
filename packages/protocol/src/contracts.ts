@@ -93,6 +93,7 @@ export * from './codegen/CumulativeSlippageTolerancePolicy';
 export * from './codegen/GuaranteedRedemptionPolicy';
 export * from './codegen/MinAssetBalancesPostRedemptionPolicy';
 export * from './codegen/MinMaxInvestmentPolicy';
+export * from './codegen/OnlyRemoveDustExternalPositionPolicy';
 export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 
 // Peripheral

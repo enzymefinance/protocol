@@ -63,6 +63,7 @@ import {
   AllowedSharesTransferRecipientsPolicy,
   CumulativeSlippageTolerancePolicy,
   MinAssetBalancesPostRedemptionPolicy,
+  OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
 } from '@enzymefinance/protocol';
 
@@ -154,6 +155,7 @@ export async function deployProtocolFixture() {
     allowedSharesTransferRecipientsPolicy: new AllowedSharesTransferRecipientsPolicy(fixture['AllowedSharesTransferRecipientsPolicy'].address, deployer),
     cumulativeSlippageTolerancePolicy: new CumulativeSlippageTolerancePolicy(fixture['CumulativeSlippageTolerancePolicy'].address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture['MinAssetBalancesPostRedemptionPolicy'].address, deployer),
+    onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture['OnlyRemoveDustExternalPositionPolicy'].address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
   } as const;
 
