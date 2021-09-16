@@ -130,6 +130,12 @@ describe('validateRule', () => {
     });
   });
 
+  it('cannot be called by a random user', async () => {
+    await expect(
+      onlyUntrackDustOrPricelessAssetsPolicy.validateRule(comptrollerProxy, 0, '0x'),
+    ).rejects.toBeRevertedWith('Only the PolicyManager can make this call');
+  });
+
   it('does not allow any asset amount that is greater than the dust value', async () => {
     // Add enough of one of the assetsToUntrack to put it over the dust threshold.
     // Sending 2% of the threshold accomplishes this.

@@ -111,6 +111,7 @@ contract MinMaxInvestmentPolicy is PolicyBase {
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
+    /// @dev onlyPolicyManager validation not necessary, as state is not updated and no events are fired
     function validateRule(
         address _comptrollerProxy,
         IPolicyManager.PolicyHook,
