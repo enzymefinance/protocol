@@ -22,6 +22,8 @@ import "../utils/PricelessAssetBypassMixin.sol";
 /// @title CumulativeSlippageTolerancePolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits cumulative slippage (i.e., value loss) via adapter actions
+/// @dev Slippage tolerance and accumulation values use 10^18 rather than 10^19 (the greatest 10^n uint64 value)
+/// since it is a more natural and common in rates elsewhere
 contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMixin {
     using SafeMath for uint256;
 
@@ -33,12 +35,12 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
     event FundSettingsSet(address indexed comptrollerProxy, uint256 tolerance);
 
     struct PolicyInfo {
-        uint16 tolerance;
-        uint16 cumulativeSlippage;
+        uint64 tolerance;
+        uint64 cumulativeSlippage;
         uint128 lastSlippageTimestamp;
     }
 
-    uint256 private constant ONE_HUNDRED_PERCENT = 10000;
+    uint256 private constant ONE_HUNDRED_PERCENT = 1 ether; // 10 ** 18
 
     address private immutable ADDRESS_LIST_REGISTRY;
     uint256 private immutable BYPASSABLE_ADAPTERS_LIST_ID;
@@ -80,7 +82,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
         override
         onlyPolicyManager
     {
-        uint16 tolerance = abi.decode(_encodedSettings, (uint16));
+        uint64 tolerance = abi.decode(_encodedSettings, (uint64));
         require(tolerance < ONE_HUNDRED_PERCENT, "addFundSettings: Max tolerance exceeded");
 
         comptrollerProxyToPolicyInfo[_comptrollerProxy] = PolicyInfo({
@@ -226,7 +228,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
         // Add the new slippage
         nextCumulativeSlippage_ = nextCumulativeSlippage_.add(_newSlippage);
 
-        policyInfo.cumulativeSlippage = uint16(nextCumulativeSlippage_);
+        policyInfo.cumulativeSlippage = uint64(nextCumulativeSlippage_);
         policyInfo.lastSlippageTimestamp = uint128(block.timestamp);
 
         emit CumulativeSlippageUpdatedForFund(_comptrollerProxy, nextCumulativeSlippage_);

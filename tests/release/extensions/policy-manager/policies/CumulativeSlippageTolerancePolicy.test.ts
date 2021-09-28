@@ -6,15 +6,17 @@ import {
   MockGenericAdapter,
   MockGenericIntegratee,
   ONE_DAY_IN_SECONDS,
-  ONE_HUNDRED_PERCENT_IN_BPS,
+  ONE_HUNDRED_PERCENT_IN_WEI,
+  ONE_ONE_HUNDREDTH_PERCENT_IN_WEI,
   PolicyHook,
   policyManagerConfigArgs,
   CumulativeSlippageTolerancePolicy,
   cumulativeSlippageTolerancePolicyArgs,
   StandardToken,
-  TEN_PERCENT_IN_BPS,
+  TEN_PERCENT_IN_WEI,
   VaultLib,
   ValueInterpreter,
+  FIVE_PERCENT_IN_WEI,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -89,7 +91,7 @@ describe('addFundSettings', () => {
           policies: [cumulativeSlippageTolerancePolicy],
           settings: [
             cumulativeSlippageTolerancePolicyArgs({
-              tolerance: ONE_HUNDRED_PERCENT_IN_BPS,
+              tolerance: ONE_HUNDRED_PERCENT_IN_WEI,
             }),
           ],
         }),
@@ -158,7 +160,7 @@ describe('updateFundSettings', () => {
 });
 
 describe('validateRule', () => {
-  const tolerance = TEN_PERCENT_IN_BPS;
+  const tolerance = TEN_PERCENT_IN_WEI;
   let fundOwner: SignerWithAddress;
   let mockGenericAdapter: MockGenericAdapter, mockGenericIntegratee: MockGenericIntegratee;
   let integrationManager: IntegrationManager, valueInterpreter: ValueInterpreter;
@@ -228,11 +230,11 @@ describe('validateRule', () => {
 
     // Reaffirm expected 10% tolerance
     expect((await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy)).tolerance).toEqBigNumber(
-      TEN_PERCENT_IN_BPS,
+      TEN_PERCENT_IN_WEI,
     );
 
     // FIRST SWAP - Exact tolerance limit
-    const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10); // 10% slippage (non-substantially greater)
+    const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10).add(1); // exactly 10% slippage, after rounding up
     const firstSwapReceipt = await mockGenericSwap({
       comptrollerProxy,
       vaultProxy,
@@ -247,7 +249,7 @@ describe('validateRule', () => {
 
     // Assert state
     const postFirstSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
-    expect(postFirstSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(TEN_PERCENT_IN_BPS);
+    expect(postFirstSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(TEN_PERCENT_IN_WEI);
     expect(postFirstSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(await transactionTimestamp(firstSwapReceipt));
 
     // Assert event
@@ -257,7 +259,7 @@ describe('validateRule', () => {
     });
 
     // SECOND SWAP - 0.01% slippage trade
-    const secondSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9999).div(10000); // 0.01% slippage (non-substantially greater)
+    const secondSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9999).div(10000).add(1); // 0.01% slippage
 
     // Executing immediately should fail
     await expect(
@@ -293,9 +295,12 @@ describe('validateRule', () => {
       actualSpendAssetAmounts: [outgoingAssetAmount],
     });
 
-    // The cumulative loss should be roughly 50% of the original loss (i.e., 5%) plus the new loss (i.e., 0.1%)
+    // The cumulative loss should be roughly 50% of the original loss (i.e., 5%) plus roughly the new loss (i.e., 0.01%)
     const postSecondSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
-    expect(postSecondSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(501);
+    expect(postSecondSwapPolicyInfo.cumulativeSlippage).toBeAroundBigNumber(
+      FIVE_PERCENT_IN_WEI.add(ONE_ONE_HUNDREDTH_PERCENT_IN_WEI),
+      ONE_ONE_HUNDREDTH_PERCENT_IN_WEI.div(100),
+    );
     expect(postSecondSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(await transactionTimestamp(secondSwapReceipt));
 
     // Assert event
@@ -327,16 +332,19 @@ describe('validateRule', () => {
       amounts: outgoingAssetAmounts.map((amount) => amount.mul(10)),
     });
 
-    // Rounds amount down, so should be slightly less or equal to the outgoingAssetAmount
-    const zeroSlippageIncomingAssetsDenominationAssetAmount = await valueInterpreter.calcCanonicalAssetsTotalValue
-      .args(outgoingAssets, outgoingAssetAmounts, denominationAsset)
-      .call();
+    // Rounds amounts up, so should be slightly greater or equal to the outgoingAssetAmount
+    const zeroSlippageIncomingAssetsDenominationAssetAmount = (
+      await valueInterpreter.calcCanonicalAssetsTotalValue
+        .args(outgoingAssets, outgoingAssetAmounts, denominationAsset)
+        .call()
+    ).add(1);
     const zeroSlippageIncomingAssetAmounts = await Promise.all(
-      incomingAssets.map(
-        async (asset) =>
+      incomingAssets.map(async (asset) =>
+        (
           await valueInterpreter.calcCanonicalAssetValue
             .args(denominationAsset, zeroSlippageIncomingAssetsDenominationAssetAmount.div(2), asset)
-            .call(),
+            .call()
+        ).add(1),
       ),
     );
 
@@ -345,9 +353,9 @@ describe('validateRule', () => {
       await incomingAssets[i].transfer(mockGenericIntegratee, zeroSlippageIncomingAssetAmounts[i].mul(10));
     }
 
-    // FIRST SWAP - Exact tolerance limit
+    // FIRST SWAP - Approx tolerance limit (each rounded up)
     const firstSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
-      amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_BPS).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_BPS),
+      amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_WEI).add(1),
     );
     const firstSwapReceipt = await mockGenericSwap({
       comptrollerProxy,
@@ -365,7 +373,10 @@ describe('validateRule', () => {
     // Assert state
     const postFirstSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
     expect(postFirstSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(firstSwapTimestamp);
-    expect(postFirstSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(tolerance);
+    expect(postFirstSwapPolicyInfo.cumulativeSlippage).toBeAroundBigNumber(
+      tolerance,
+      ONE_ONE_HUNDREDTH_PERCENT_IN_WEI.div(100),
+    );
 
     // Assert events
     assertEvent(firstSwapReceipt, cumulativeSlippageTolerancePolicy.abi.getEvent('CumulativeSlippageUpdatedForFund'), {
@@ -376,9 +387,10 @@ describe('validateRule', () => {
     // SECOND SWAP - insignificant amount, still under tolerance
 
     // An immediate second swap with negligible slippage should still go through and not update the cumulative slippage
-    // Slippage < 0.01%
+    // 1 / (10 * ONE_HUNDRED_PERCENT_IN_WEI) to an insignificant amount
+    const insignificantPrecision = ONE_HUNDRED_PERCENT_IN_WEI.mul(10);
     const secondSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
-      amount.mul(BigNumber.from(99999)).div(100000),
+      amount.mul(insignificantPrecision.sub(1)).div(insignificantPrecision),
     );
     await mockGenericSwap({
       comptrollerProxy,
@@ -399,7 +411,9 @@ describe('validateRule', () => {
 
     // THIRD SWAP - FAILURE - 0.01% above cumulative loss tolerance
     const thirdSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
-      amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_BPS).sub(1)).div(ONE_HUNDRED_PERCENT_IN_BPS),
+      amount
+        .mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(ONE_ONE_HUNDREDTH_PERCENT_IN_WEI))
+        .div(ONE_HUNDRED_PERCENT_IN_WEI),
     );
 
     // Swap should fail as tolerance is exceeded
