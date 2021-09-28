@@ -172,15 +172,19 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
 
     /// @dev Helper to pull WETH from the associated vault to top up to the max ETH deposit in the relay hub
     function __depositMax() private {
-        uint256 amount = DEPOSIT.sub(getRelayHubDeposit());
+        uint256 prevDeposit = getRelayHubDeposit();
 
-        IGasRelayPaymasterDepositor(getParentComptroller()).pullWethForGasRelayer(amount);
+        if (prevDeposit < DEPOSIT) {
+            uint256 amount = DEPOSIT.sub(prevDeposit);
 
-        IWETH(getWethToken()).withdraw(amount);
+            IGasRelayPaymasterDepositor(getParentComptroller()).pullWethForGasRelayer(amount);
 
-        IGsnRelayHub(getHubAddr()).depositFor{value: amount}(address(this));
+            IWETH(getWethToken()).withdraw(amount);
 
-        emit Deposited(amount);
+            IGsnRelayHub(getHubAddr()).depositFor{value: amount}(address(this));
+
+            emit Deposited(amount);
+        }
     }
 
     /// @dev Helper to get the ComptrollerProxy for a given VaultProxy
