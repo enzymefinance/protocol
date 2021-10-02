@@ -174,7 +174,11 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
             // Accrue interest to get the current borrow balance
             // NOTE: Used instead of borrow-balance-current: https://compound.finance/docs/ctokens#borrow-balance
-            ICERC20(cTokens[i]).accrueInterest();
+            require(
+                ICERC20(cTokens[i]).accrueInterest() == 0,
+                "__repayBorrowedAssets: Error while calling accrueInterest"
+            );
+
             uint256 borrowBalance = ICERC20(cTokens[i]).borrowBalanceStored(address(this));
 
             if (_amounts[i] < borrowBalance) {
