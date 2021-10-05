@@ -91,7 +91,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
     /// @notice Checks whether the paymaster will pay for a given relayed tx
     /// @param _relayRequest The full relay request structure
     /// @return context_ The tx signer and the fn sig, encoded so that it can be passed to `postRelayCall`
-    /// @return rejectOnRecipientRevert_ ALways false
+    /// @return rejectOnRecipientRevert_ Always false
     function preRelayedCall(
         IGsnTypes.RelayRequest calldata _relayRequest,
         bytes calldata,
