@@ -148,7 +148,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
         require(
             msg.sender == IVault(vaultProxy).getOwner() ||
                 msg.sender == __getComptrollerForVault(vaultProxy),
-            "shutdownRelayer: Only owner or comptroller is authorized"
+            "withdrawBalance: Only owner or comptroller is authorized"
         );
 
         IGsnRelayHub(getHubAddr()).withdraw(getRelayHubDeposit(), payable(address(this)));
