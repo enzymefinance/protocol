@@ -265,6 +265,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     {
         // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
 
+        require(
+            !IDispatcher(getDispatcher()).hasMigrationRequest(_vaultProxy),
+            "createMigrationRequest: A MigrationRequest already exists"
+        );
+
         comptrollerProxy_ = __deployComptrollerProxy(
             msg.sender,
             _denominationAsset,

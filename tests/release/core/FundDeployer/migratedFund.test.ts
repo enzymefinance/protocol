@@ -115,6 +115,29 @@ describe('createMigrationRequest', () => {
         ),
       ).rejects.toBeRevertedWith('Release is not yet live');
     });
+
+    it('does not allow a VaultProxy that has a pending migration request', async () => {
+      const [fundOwner] = fork.accounts;
+
+      const { vaultProxy } = await createNewFundOnPrevRelease({ fork, fundOwner });
+
+      await createMigrationRequest({
+        signer: fundOwner,
+        fundDeployer,
+        vaultProxy,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      });
+
+      // The second request should fail as the first request is already created and pending
+      await expect(
+        createMigrationRequest({
+          signer: fundOwner,
+          fundDeployer,
+          vaultProxy,
+          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        }),
+      ).rejects.toBeRevertedWith('A MigrationRequest already exists');
+    });
   });
 
   describe('happy paths', () => {
