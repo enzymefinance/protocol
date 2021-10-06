@@ -41,7 +41,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
 
     event BuyBackMaxProtocolFeeSharesFailed(
-        bytes failureReturnData,
+        bytes indexed failureReturnData,
         uint256 sharesAmount,
         uint256 buybackValueInMln,
         uint256 gav
@@ -55,8 +55,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     event PayProtocolFeeDuringDestructFailed();
 
     event PreRedeemSharesHookFailed(
-        bytes failureReturnData,
-        address redeemer,
+        bytes indexed failureReturnData,
+        address indexed redeemer,
         uint256 sharesAmount
     );
 
