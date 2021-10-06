@@ -575,7 +575,11 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @dev Standard implementation of ERC20's transfer().
     /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
-    function transfer(address _recipient, uint256 _amount) public override returns (bool) {
+    function transfer(address _recipient, uint256 _amount)
+        public
+        override
+        returns (bool success_)
+    {
         __invokePreTransferSharesHook(msg.sender, _recipient, _amount);
 
         return super.transfer(_recipient, _amount);
@@ -587,7 +591,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         address _sender,
         address _recipient,
         uint256 _amount
-    ) public override returns (bool) {
+    ) public override returns (bool success_) {
         __invokePreTransferSharesHook(_sender, _recipient, _amount);
 
         return super.transferFrom(_sender, _recipient, _amount);
