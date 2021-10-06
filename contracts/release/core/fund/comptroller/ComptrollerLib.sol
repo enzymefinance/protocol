@@ -82,6 +82,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     // Constants and immutables - shared by all proxies
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARES_UNIT = 10**18;
+    address
+        private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS = 0x000000000000000000000000000000000000aaaa;
     address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DISPATCHER;
     address private immutable EXTERNAL_POSITION_MANAGER;
@@ -1060,7 +1062,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             percentagesTotal = percentagesTotal.add(_payoutAssetPercentages[i]);
 
             // Used to explicitly specify less than 100% in total _payoutAssetPercentages
-            if (_payoutAssets[i] == address(0)) {
+            if (_payoutAssets[i] == SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS) {
                 continue;
             }
 

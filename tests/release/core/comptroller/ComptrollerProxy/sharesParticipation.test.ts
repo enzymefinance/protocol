@@ -18,6 +18,7 @@ import {
   validateRuleRedeemSharesForSpecificAssetsArgs,
   VaultLib,
   WETH,
+  SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -777,7 +778,7 @@ describe('redeem', () => {
       });
 
       // Define the redemption parameters
-      const payoutAssets = [denominationAsset, constants.AddressZero];
+      const payoutAssets = [denominationAsset, SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS];
       const oneHundredPercent = 10000;
       const payoutAssetPercentages = [9000, 1000]; // 90% and 10%
 
