@@ -30,16 +30,16 @@ const tempTolerance = 10000;
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 371463,
-    weth: 349645,
+    usdc: 375185,
+    weth: 351805,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 378744,
-    weth: 363647,
+    usdc: 382456,
+    weth: 365807,
   },
   'buy shares: max assets': {
-    usdc: 1362959,
-    weth: 1296901,
+    usdc: 1366612,
+    weth: 1299002,
   },
   'calc gav: 20 assets': {
     usdc: 1052487,

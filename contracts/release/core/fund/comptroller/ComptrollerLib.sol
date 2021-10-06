@@ -743,7 +743,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         uint256 gav = calcGav(true);
 
-        // Gives Extensions a chance to run logic prior to the minting of bought shares
+        // Gives Extensions a chance to run logic prior to the minting of bought shares.
+        // Fees implementing this hook should be aware that
+        // it might be the case that _investmentAmount != actualInvestmentAmount,
+        // if the denomination asset charges a transfer fee, for example.
         __preBuySharesHook(_buyer, _investmentAmount, gav);
 
         // Pay the protocol fee after running other fees, but before minting new shares
@@ -752,30 +755,30 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             __buyBackMaxProtocolFeeShares(vaultProxyCopy, gav);
         }
 
-        // Calculate the amount of shares to issue with the investment amount
-        address denominationAssetCopy = getDenominationAsset();
-        uint256 sharePrice = __calcGrossShareValue(
-            gav,
-            ERC20(vaultProxyCopy).totalSupply(),
-            10**uint256(ERC20(denominationAssetCopy).decimals())
-        );
-        uint256 sharesIssued = _investmentAmount.mul(SHARES_UNIT).div(sharePrice);
-
-        // Mint shares to the buyer
-        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
-        IVault(vaultProxyCopy).mintShares(_buyer, sharesIssued);
-
         // Transfer the investment asset to the fund.
-        // Does not follow the checks-effects-interactions pattern, but it is preferred
-        // to have the final state of the VaultProxy prior to running __postBuySharesHook().
-        ERC20(denominationAssetCopy).safeTransferFrom(
+        // Does not follow the checks-effects-interactions pattern, but it is necessary to
+        // do this delta balance calculation before calculating shares to mint.
+        uint256 receivedInvestmentAmount = __transferFromWithReceivedAmount(
+            getDenominationAsset(),
             _canonicalSender,
             vaultProxyCopy,
             _investmentAmount
         );
 
+        // Calculate the amount of shares to issue with the investment amount
+        uint256 sharePrice = __calcGrossShareValue(
+            gav,
+            ERC20(vaultProxyCopy).totalSupply(),
+            10**uint256(ERC20(getDenominationAsset()).decimals())
+        );
+        uint256 sharesIssued = receivedInvestmentAmount.mul(SHARES_UNIT).div(sharePrice);
+
+        // Mint shares to the buyer
+        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
+        IVault(vaultProxyCopy).mintShares(_buyer, sharesIssued);
+
         // Gives Extensions a chance to run logic after shares are issued
-        __postBuySharesHook(_buyer, _investmentAmount, sharesIssued, gav);
+        __postBuySharesHook(_buyer, receivedInvestmentAmount, sharesIssued, gav);
 
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
@@ -789,7 +792,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             acctToLastSharesBoughtTimestamp[_buyer] = block.timestamp;
         }
 
-        emit SharesBought(_buyer, _investmentAmount, sharesIssued, sharesReceived_);
+        emit SharesBought(_buyer, receivedInvestmentAmount, sharesIssued, sharesReceived_);
 
         return sharesReceived_;
     }
@@ -829,6 +832,20 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             IPolicyManager.PolicyHook.PostBuyShares,
             abi.encode(_buyer, _investmentAmount, _sharesIssued, gav)
         );
+    }
+
+    /// @dev Helper to execute ERC20.transferFrom() while calculating the actual amount received
+    function __transferFromWithReceivedAmount(
+        address _asset,
+        address _sender,
+        address _recipient,
+        uint256 _transferAmount
+    ) private returns (uint256 receivedAmount_) {
+        uint256 preTransferRecipientBalance = ERC20(_asset).balanceOf(_recipient);
+
+        ERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
+
+        return ERC20(_asset).balanceOf(_recipient).sub(preTransferRecipientBalance);
     }
 
     // REDEEM SHARES
