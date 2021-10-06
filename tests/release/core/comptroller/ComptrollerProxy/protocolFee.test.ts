@@ -245,7 +245,7 @@ describe('auto-buybacks', () => {
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.any(String),
+        failureReturnData: expect.anything(),
         sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
         gav,
@@ -280,7 +280,7 @@ describe('auto-buybacks', () => {
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.any(String),
+        failureReturnData: expect.anything(),
         sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
         gav,
@@ -318,7 +318,7 @@ describe('auto-buybacks', () => {
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.any(String),
+        failureReturnData: expect.anything(),
         sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
         gav,

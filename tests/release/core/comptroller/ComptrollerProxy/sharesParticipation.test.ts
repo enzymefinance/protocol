@@ -1156,7 +1156,7 @@ describe('redeem', () => {
       });
 
       assertEvent(receipt, 'PreRedeemSharesHookFailed', {
-        failureReturnData: expect.any(String),
+        failureReturnData: expect.anything(),
         redeemer: investor,
         sharesAmount: investmentAmount,
       });
