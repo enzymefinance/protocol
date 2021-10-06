@@ -19,7 +19,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 abstract contract MathHelpers {
     using SafeMath for uint256;
 
-    /// @dev Calculates a proportional value relative to a known ratio
+    /// @dev Calculates a proportional value relative to a known ratio.
+    /// Caller is responsible as-necessary for:
+    /// 1. validating _quantity1 to be non-zero
+    /// 2. validating relativeQuantity2_ to be non-zero
     function __calcRelativeQuantity(
         uint256 _quantity1,
         uint256 _quantity2,
