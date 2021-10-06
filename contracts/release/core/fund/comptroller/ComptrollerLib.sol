@@ -250,11 +250,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _contract The contract to call
     /// @param _selector The selector to call
     /// @param _encodedArgs The encoded arguments for the call
+    /// @return returnData_ The data returned by the call
     function vaultCallOnContract(
         address _contract,
         bytes4 _selector,
         bytes calldata _encodedArgs
-    ) external onlyOwner {
+    ) external onlyOwner returns (bytes memory returnData_) {
         require(
             IFundDeployer(getFundDeployer()).isAllowedVaultCall(
                 _contract,
@@ -264,10 +265,11 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             "vaultCallOnContract: Not allowed"
         );
 
-        IVault(getVaultProxy()).callOnContract(
-            _contract,
-            abi.encodePacked(_selector, _encodedArgs)
-        );
+        return
+            IVault(getVaultProxy()).callOnContract(
+                _contract,
+                abi.encodePacked(_selector, _encodedArgs)
+            );
     }
 
     /// @dev Helper to check if a VaultProxy has a pending migration or reconfiguration request

@@ -268,13 +268,18 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Makes an arbitrary call with this contract as the sender
     /// @param _contract The contract to call
     /// @param _callData The call data for the call
+    /// @return returnData_ The data returned by the call
     function callOnContract(address _contract, bytes calldata _callData)
         external
         override
         onlyAccessor
+        returns (bytes memory returnData_)
     {
-        (bool success, bytes memory returnData) = _contract.call(_callData);
-        require(success, string(returnData));
+        bool success;
+        (success, returnData_) = _contract.call(_callData);
+        require(success, string(returnData_));
+
+        return returnData_;
     }
 
     /// @notice Mints fund shares to a particular account

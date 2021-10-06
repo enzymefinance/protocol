@@ -45,7 +45,7 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault, IExternalP
         uint256
     ) external;
 
-    function callOnContract(address, bytes calldata) external;
+    function callOnContract(address, bytes calldata) external returns (bytes memory);
 
     function canManageAssets(address) external view returns (bool);
 
