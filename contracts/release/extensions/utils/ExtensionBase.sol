@@ -19,6 +19,11 @@ import "../IExtension.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base class for an extension
 abstract contract ExtensionBase is IExtension {
+    event ValidatedVaultProxySetForFund(
+        address indexed comptrollerProxy,
+        address indexed vaultProxy
+    );
+
     mapping(address => address) internal comptrollerProxyToVaultProxy;
 
     /// @notice Allows extension to run logic during fund activation
@@ -71,6 +76,8 @@ abstract contract ExtensionBase is IExtension {
         );
 
         comptrollerProxyToVaultProxy[_comptrollerProxy] = vaultProxy_;
+
+        emit ValidatedVaultProxySetForFund(_comptrollerProxy, vaultProxy_);
 
         return vaultProxy_;
     }
