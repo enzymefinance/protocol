@@ -1,4 +1,4 @@
-import { FeeManagerArgs } from '@enzymefinance/protocol';
+import { ExitRateBurnFeeArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
   const feeManager = await get('FeeManager');
 
   await deploy('ExitRateBurnFee', {
-    args: [feeManager.address] as FeeManagerArgs,
+    args: [feeManager.address] as ExitRateBurnFeeArgs,
     from: deployer.address,
     linkedData: {
       type: 'FEE',

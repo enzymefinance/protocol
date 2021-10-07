@@ -1,4 +1,4 @@
-import { FeeManagerArgs } from '@enzymefinance/protocol';
+import { PerformanceFeeArgs } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
   const feeManager = await get('FeeManager');
 
   await deploy('PerformanceFee', {
-    args: [feeManager.address] as FeeManagerArgs,
+    args: [feeManager.address] as PerformanceFeeArgs,
     from: deployer.address,
     linkedData: {
       type: 'FEE',
