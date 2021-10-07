@@ -36,7 +36,11 @@ contract PolicyManager is
 {
     using AddressArrayLib for address[];
 
-    event PolicyDisabledForFund(address indexed comptrollerProxy, address indexed policy);
+    event PolicyDisabledOnHookForFund(
+        address indexed comptrollerProxy,
+        address indexed policy,
+        PolicyHook indexed hook
+    );
 
     event PolicyEnabledForFund(
         address indexed comptrollerProxy,
@@ -87,15 +91,16 @@ contract PolicyManager is
     {
         require(IPolicy(_policy).canDisable(), "disablePolicyForFund: _policy cannot be disabled");
 
-        bool disabled;
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
-            disabled = comptrollerProxyToHookToPolicies[_comptrollerProxy][implementedHooks[i]]
-                .removeStorageItem(_policy);
-        }
-        require(disabled, "disablePolicyForFund: _policy is not enabled");
 
-        emit PolicyDisabledForFund(_comptrollerProxy, _policy);
+                bool disabled
+             = comptrollerProxyToHookToPolicies[_comptrollerProxy][implementedHooks[i]]
+                .removeStorageItem(_policy);
+            if (disabled) {
+                emit PolicyDisabledOnHookForFund(_comptrollerProxy, _policy, implementedHooks[i]);
+            }
+        }
     }
 
     /// @notice Enables a policy for a fund

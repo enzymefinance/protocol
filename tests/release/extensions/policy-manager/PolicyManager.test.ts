@@ -182,6 +182,10 @@ describe('disablePolicyForFund', () => {
       policyManagerConfig,
     } = await provider.snapshot(snapshot);
 
+    // Confirm the policy implements some hooks
+    const implementedHooks = await mockPostBuySharesPolicy.implementedHooks();
+    expect(implementedHooks.length).toBeGtBigNumber(0);
+
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
       signer: fundOwner,
@@ -205,7 +209,7 @@ describe('disablePolicyForFund', () => {
       .disablePolicyForFund(comptrollerProxy, mockPostBuySharesPolicy);
 
     // Assert that the policy is disabled for the fund
-    for (const hook of await mockPostBuySharesPolicy.implementedHooks()) {
+    for (const hook of implementedHooks) {
       expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, mockPostBuySharesPolicy)).toBe(
         false,
       );
@@ -215,8 +219,15 @@ describe('disablePolicyForFund', () => {
     );
 
     // Assert that the proper event has been emitted
-    const disablePolicyEvent = policyManager.abi.getEvent('PolicyDisabledForFund');
-    assertEvent(receipt, disablePolicyEvent, { comptrollerProxy, policy: mockPostBuySharesPolicy });
+    const policyDisabledEvents = extractEvent(receipt, policyManager.abi.getEvent('PolicyDisabledOnHookForFund'));
+    expect(policyDisabledEvents.length).toBe(implementedHooks.length);
+    for (const i in implementedHooks) {
+      expect(policyDisabledEvents[0]).toMatchEventArgs({
+        comptrollerProxy,
+        policy: mockPostBuySharesPolicy,
+        hook: implementedHooks[i],
+      });
+    }
   });
 });
 
