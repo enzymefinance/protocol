@@ -48,6 +48,8 @@ contract PolicyManager is
         bytes settingsData
     );
 
+    uint256 private constant POLICY_HOOK_COUNT = 10;
+
     mapping(address => mapping(PolicyHook => address[])) private comptrollerProxyToHookToPolicies;
 
     modifier onlyFundOwner(address _comptrollerProxy) {
@@ -234,7 +236,11 @@ contract PolicyManager is
     }
 
     /// @dev Helper to get all the hooks available to policies
-    function __getAllPolicyHooks() private pure returns (PolicyHook[10] memory hooks_) {
+    function __getAllPolicyHooks()
+        private
+        pure
+        returns (PolicyHook[POLICY_HOOK_COUNT] memory hooks_)
+    {
         return [
             PolicyHook.PostBuyShares,
             PolicyHook.PostCallOnIntegration,
@@ -273,7 +279,7 @@ contract PolicyManager is
         view
         returns (address[] memory enabledPolicies_)
     {
-        PolicyHook[10] memory hooks = __getAllPolicyHooks();
+        PolicyHook[POLICY_HOOK_COUNT] memory hooks = __getAllPolicyHooks();
 
         for (uint256 i; i < hooks.length; i++) {
             enabledPolicies_ = enabledPolicies_.mergeArray(
