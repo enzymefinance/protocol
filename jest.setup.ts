@@ -1,9 +1,12 @@
 import {
+  setIgnoreGasMatchers,
   setToBeAroundBigNumberTolerance,
   setToCostAroundTolerance,
   setToCostLessThanTolerance,
 } from '@enzymefinance/hardhat';
 import { deployProtocolFixture, unlockAllWhales } from '@enzymefinance/testutils';
+
+setIgnoreGasMatchers(true);
 
 setToBeAroundBigNumberTolerance(0.01); // 1%
 setToCostAroundTolerance(1000); // 1000 gas units
