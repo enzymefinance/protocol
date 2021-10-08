@@ -180,7 +180,11 @@ contract ExternalPositionManager is
             address[] memory assetsToTransfer,
             uint256[] memory amountsToTransfer,
             address[] memory assetsToReceive
-        ) = IExternalPositionParser(parser).parseAssetsForAction(actionId, actionArgs);
+        ) = IExternalPositionParser(parser).parseAssetsForAction(
+            externalPosition,
+            actionId,
+            actionArgs
+        );
 
         bytes memory encodedActionData = abi.encode(actionId, actionArgs);
 

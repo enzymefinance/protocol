@@ -12,9 +12,11 @@ import {
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import hre from 'hardhat';
-import { randomAddress } from '@enzymefinance/ethers';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 
 let fork: ProtocolDeployment;
+let externalPositionProxyUsed: AddressLike;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   const [fundOwner] = fork.accounts;
@@ -27,11 +29,13 @@ beforeEach(async () => {
     denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
   });
 
-  await createCompoundDebtPosition({
+  const { externalPositionProxy } = await createCompoundDebtPosition({
     comptrollerProxy,
     externalPositionManager: fork.deployment.externalPositionManager,
     signer: fundOwner,
   });
+
+  externalPositionProxyUsed = externalPositionProxy;
 });
 
 describe('constructor', () => {
@@ -58,7 +62,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.AddCollateralAssets, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.AddCollateralAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -81,7 +85,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.RemoveCollateralAssets, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.RemoveCollateralAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -104,7 +108,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -126,7 +130,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.ClaimComp, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.ClaimComp, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -149,7 +153,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
 
     await expect(result).rejects.toBeRevertedWith('Bad token cToken pair');
@@ -168,7 +172,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = await compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
@@ -191,7 +195,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.RepayBorrowedAssets, actionArgs)
       .call();
 
     await expect(result).rejects.toBeRevertedWith('Bad token cToken pair');
@@ -210,7 +214,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const result = compoundDebtPositionParser.parseAssetsForAction
-      .args(CompoundDebtPositionActionId.BorrowAsset, actionArgs)
+      .args(externalPositionProxyUsed, CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
     await expect(result).rejects.toBeRevertedWith('Unsupported asset');
   });

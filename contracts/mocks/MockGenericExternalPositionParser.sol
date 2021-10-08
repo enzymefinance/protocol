@@ -28,7 +28,11 @@ contract MockGenericExternalPositionParser is IExternalPositionParser {
     mapping(uint256 => AssetsForAction) private actionIdToAssetsForAction;
 
     /// @dev Returns the default assetsForAction stored for a given actionID
-    function parseAssetsForAction(uint256 _actionId, bytes memory)
+    function parseAssetsForAction(
+        address,
+        uint256 _actionId,
+        bytes memory
+    )
         external
         override
         returns (

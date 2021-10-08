@@ -41,7 +41,11 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
     /// @return assetsToTransfer_ The assets to be transfered from the Vault
     /// @return amountsToTransfer_ The amounts to be transfered from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(uint256 _actionId, bytes memory _encodedActionArgs)
+    function parseAssetsForAction(
+        address,
+        uint256 _actionId,
+        bytes memory _encodedActionArgs
+    )
         external
         override
         returns (
