@@ -421,7 +421,13 @@ describe('executeReconfiguration', () => {
       });
 
       it('correctly calls the lifecycle destructActivated() function for the old ComptrollerProxy', async () => {
-        expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContract();
+        const { deactivateFeeManagerGasLimit_, payProtocolFeeGasLimit_ } =
+          await fundDeployer.getGasLimitsForDestructCall();
+
+        expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContractWith(
+          deactivateFeeManagerGasLimit_,
+          payProtocolFeeGasLimit_,
+        );
       });
 
       it('correctly calls the lifecycle activate() function for the new ComptrollerProxy', async () => {

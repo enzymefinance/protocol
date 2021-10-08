@@ -30,7 +30,7 @@ interface IComptroller {
 
     function configureExtensions(bytes calldata, bytes calldata) external;
 
-    function destructActivated() external;
+    function destructActivated(uint256, uint256) external;
 
     function destructUnactivated() external;
 

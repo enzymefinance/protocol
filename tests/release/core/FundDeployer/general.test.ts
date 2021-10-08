@@ -23,6 +23,14 @@ describe('constructor', () => {
     expect(await fundDeployer.getProtocolFeeTracker()).toMatchAddress(protocolFeeTracker);
     expect(await fundDeployer.getVaultLib()).toMatchAddress(vaultLib);
 
+    expect(await fundDeployer.getGasLimitsForDestructCall()).toMatchFunctionOutput(
+      fundDeployer.getGasLimitsForDestructCall,
+      {
+        deactivateFeeManagerGasLimit_: 300000,
+        payProtocolFeeGasLimit_: 200000,
+      },
+    );
+
     for (const [contract, selector, dataHash] of fork.config.vaultCalls) {
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
     }

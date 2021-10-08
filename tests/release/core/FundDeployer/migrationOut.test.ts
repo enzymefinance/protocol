@@ -114,7 +114,13 @@ describe('implementMigrationOutHook', () => {
         mockNextAccessor,
         mockNextVaultLib,
       );
-      expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContract();
+
+      const { deactivateFeeManagerGasLimit_, payProtocolFeeGasLimit_ } =
+        await fundDeployer.getGasLimitsForDestructCall();
+      expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContractWith(
+        deactivateFeeManagerGasLimit_,
+        payProtocolFeeGasLimit_,
+      );
     });
   });
 });

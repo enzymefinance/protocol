@@ -273,7 +273,7 @@ describe('destructActivated', () => {
   it('can only be called by FundDeployer', async () => {
     const { comptrollerProxy } = await provider.snapshot(snapshot);
 
-    await expect(comptrollerProxy.destructActivated()).rejects.toBeRevertedWith('Only FundDeployer callable');
+    await expect(comptrollerProxy.destructActivated(1, 1)).rejects.toBeRevertedWith('Only FundDeployer callable');
   });
 
   it('correctly handles valid call', async () => {
@@ -290,7 +290,7 @@ describe('destructActivated', () => {
     expect(preGetDenominationAssetCall).toBeTruthy();
 
     // Destruct fund
-    await mockFundDeployer.forward(comptrollerProxy.destructActivated);
+    await mockFundDeployer.forward(comptrollerProxy.destructActivated, 1, 1);
 
     // Assert state has been wiped by assuring call now reverts
     await expect(comptrollerProxy.getDenominationAsset()).rejects.toBeReverted();
