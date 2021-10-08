@@ -624,32 +624,27 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         private
         returns (uint256 value_)
     {
-        (
-            address[] memory collateralAssets,
-            uint256[] memory collateralBalances
-        ) = IExternalPosition(_externalPosition).getManagedAssets();
+        (address[] memory managedAssets, uint256[] memory managedAmounts) = IExternalPosition(
+            _externalPosition
+        )
+            .getManagedAssets();
 
-        uint256 collateralValue = IValueInterpreter(getValueInterpreter())
-            .calcCanonicalAssetsTotalValue(
-            collateralAssets,
-            collateralBalances,
-            getDenominationAsset()
-        );
+        uint256 managedValue = IValueInterpreter(getValueInterpreter())
+            .calcCanonicalAssetsTotalValue(managedAssets, managedAmounts, getDenominationAsset());
 
-        (address[] memory borrowedAssets, uint256[] memory borrowedBalances) = IExternalPosition(
+        (address[] memory debtAssets, uint256[] memory debtAmounts) = IExternalPosition(
             _externalPosition
         )
             .getDebtAssets();
 
-        uint256 borrowedValue = IValueInterpreter(getValueInterpreter())
-            .calcCanonicalAssetsTotalValue(
-            borrowedAssets,
-            borrowedBalances,
+        uint256 debtValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
+            debtAssets,
+            debtAmounts,
             getDenominationAsset()
         );
 
-        if (collateralValue > borrowedValue) {
-            value_ = collateralValue.sub(borrowedValue);
+        if (managedValue > debtValue) {
+            value_ = managedValue.sub(debtValue);
         }
 
         return value_;
