@@ -455,24 +455,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         emit VaultProxySet(_vaultProxy);
     }
 
-    /// @notice Configure the extensions of a fund
-    /// @param _feeManagerConfigData Encoded config for fees to enable
-    /// @param _policyManagerConfigData Encoded config for policies to enable
-    /// @dev No need to assert anything beyond FundDeployer access.
-    /// Called atomically with init(), but after ComptrollerProxy has been deployed and VaultProxy has been set,
-    /// giving access to their states and interfaces.
-    function configureExtensions(
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external override onlyFundDeployer {
-        if (_feeManagerConfigData.length > 0) {
-            IExtension(getFeeManager()).setConfigForFund(_feeManagerConfigData);
-        }
-        if (_policyManagerConfigData.length > 0) {
-            IExtension(getPolicyManager()).setConfigForFund(_policyManagerConfigData);
-        }
-    }
-
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`
     /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
@@ -498,9 +480,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         IVault(vaultProxyCopy).addTrackedAsset(getDenominationAsset());
 
         // Activate extensions
-        IExtension(getExternalPositionManager()).activateForFund(_isMigration);
         IExtension(getFeeManager()).activateForFund(_isMigration);
-        IExtension(getIntegrationManager()).activateForFund(_isMigration);
         IExtension(getPolicyManager()).activateForFund(_isMigration);
     }
 
@@ -1314,7 +1294,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `FEE_MANAGER` variable
     /// @return feeManager_ The `FEE_MANAGER` variable value
-    function getFeeManager() public view returns (address feeManager_) {
+    function getFeeManager() public view override returns (address feeManager_) {
         return FEE_MANAGER;
     }
 
@@ -1338,7 +1318,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
-    function getPolicyManager() public view returns (address policyManager_) {
+    function getPolicyManager() public view override returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 

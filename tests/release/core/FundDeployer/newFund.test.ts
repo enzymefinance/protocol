@@ -1,14 +1,7 @@
 import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import { ComptrollerLib, FundDeployer, ProtocolFeeTracker, StandardToken, VaultLib } from '@enzymefinance/protocol';
-import {
-  createNewFund,
-  generateFeeManagerConfigWithMockFees,
-  generatePolicyManagerConfigWithMockPolicies,
-  createFundDeployer,
-  deployProtocolFixture,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
-import { BigNumber, BytesLike, constants } from 'ethers';
+import { createNewFund, createFundDeployer, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import { BigNumber, constants } from 'ethers';
 
 let fork: ProtocolDeployment;
 
@@ -92,10 +85,6 @@ describe('happy paths', () => {
       vaultProxy = fundRes.vaultProxy;
     });
 
-    it('does NOT call the lifecycle configureExtensions() function', async () => {
-      expect(comptrollerProxy.configureExtensions).not.toHaveBeenCalledOnContract();
-    });
-
     it('correctly calls the lifecycle setVaultProxy() function', async () => {
       expect(comptrollerProxy.setVaultProxy).toHaveBeenCalledOnContractWith(vaultProxy);
     });
@@ -119,71 +108,5 @@ describe('happy paths', () => {
       expect(await vaultProxy.getOwner()).toMatchAddress(fundOwner);
       expect(await vaultProxy.name()).toEqual(fundName);
     });
-  });
-
-  describe('Policies only (no fees)', () => {
-    let fundDeployer: FundDeployer;
-    let comptrollerProxy: ComptrollerLib;
-    let policyManagerConfig: BytesLike;
-
-    beforeAll(async () => {
-      fork = await deployProtocolFixture();
-
-      const [signer] = fork.accounts;
-      fundDeployer = fork.deployment.fundDeployer;
-
-      policyManagerConfig = await generatePolicyManagerConfigWithMockPolicies({
-        deployer: fork.deployer,
-      });
-
-      // Note that events are asserted within helper
-      const fundRes = await createNewFund({
-        signer,
-        fundDeployer,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-        policyManagerConfig,
-      });
-
-      comptrollerProxy = fundRes.comptrollerProxy;
-    });
-
-    it('correctly calls the lifecycle configureExtensions() function with only policies data', async () => {
-      expect(comptrollerProxy.configureExtensions).toHaveBeenCalledOnContractWith('0x', policyManagerConfig);
-    });
-
-    // Other assertions already covered by first test case
-  });
-
-  describe('Fees only (no policies)', () => {
-    let fundDeployer: FundDeployer;
-    let comptrollerProxy: ComptrollerLib;
-    let feeManagerConfig: BytesLike;
-
-    beforeAll(async () => {
-      fork = await deployProtocolFixture();
-
-      const [signer] = fork.accounts;
-      fundDeployer = fork.deployment.fundDeployer;
-
-      feeManagerConfig = await generateFeeManagerConfigWithMockFees({
-        deployer: fork.deployer,
-      });
-
-      // Note that events are asserted within helper
-      const fundRes = await createNewFund({
-        signer,
-        fundDeployer,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
-        feeManagerConfig,
-      });
-
-      comptrollerProxy = fundRes.comptrollerProxy;
-    });
-
-    it('correctly calls the lifecycle configureExtensions() function with only fees data', async () => {
-      expect(comptrollerProxy.configureExtensions).toHaveBeenCalledOnContractWith(feeManagerConfig, '0x');
-    });
-
-    // Other assertions already covered by first test case
   });
 });

@@ -14,6 +14,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../persistent/dispatcher/IMigrationHookHandler.sol";
+import "../../extensions/IExtension.sol";
 import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../fund/comptroller/ComptrollerProxy.sol";
@@ -325,7 +326,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
 
-        __configureExtensions(comptrollerProxy_, _feeManagerConfigData, _policyManagerConfigData);
+        __configureExtensions(
+            comptrollerProxy_,
+            _vaultProxy,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
 
         IDispatcher(getDispatcher()).signalMigration(
             _vaultProxy,
@@ -375,7 +381,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
         comptrollerContract.setVaultProxy(vaultProxy_);
 
-        __configureExtensions(comptrollerProxy_, _feeManagerConfigData, _policyManagerConfigData);
+        __configureExtensions(
+            comptrollerProxy_,
+            vaultProxy_,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
 
         comptrollerContract.activate(false);
 
@@ -421,7 +432,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
 
-        __configureExtensions(comptrollerProxy_, _feeManagerConfigData, _policyManagerConfigData);
+        __configureExtensions(
+            comptrollerProxy_,
+            _vaultProxy,
+            _feeManagerConfigData,
+            _policyManagerConfigData
+        );
 
         uint256 executableTimestamp = block.timestamp + getReconfigurationTimelock();
         vaultProxyToReconfigurationRequest[_vaultProxy] = ReconfigurationRequest({
@@ -442,15 +458,36 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @dev Helper function to configure the Extensions for a given ComptrollerProxy
     function __configureExtensions(
         address _comptrollerProxy,
+        address _vaultProxy,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData
     ) private {
-        if (_feeManagerConfigData.length > 0 || _policyManagerConfigData.length > 0) {
-            IComptroller(_comptrollerProxy).configureExtensions(
-                _feeManagerConfigData,
-                _policyManagerConfigData
+        // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
+        if (_feeManagerConfigData.length > 0) {
+            IExtension(IComptroller(_comptrollerProxy).getFeeManager()).setConfigForFund(
+                _comptrollerProxy,
+                _vaultProxy,
+                _feeManagerConfigData
             );
         }
+
+        // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
+        // In the future, we can consider caching conditionally.
+        IExtension(IComptroller(_comptrollerProxy).getExternalPositionManager()).setConfigForFund(
+            _comptrollerProxy,
+            _vaultProxy,
+            ""
+        );
+        IExtension(IComptroller(_comptrollerProxy).getIntegrationManager()).setConfigForFund(
+            _comptrollerProxy,
+            _vaultProxy,
+            ""
+        );
+        IExtension(IComptroller(_comptrollerProxy).getPolicyManager()).setConfigForFund(
+            _comptrollerProxy,
+            _vaultProxy,
+            _policyManagerConfigData
+        );
     }
 
     /// @dev Helper function to deploy a configured ComptrollerProxy

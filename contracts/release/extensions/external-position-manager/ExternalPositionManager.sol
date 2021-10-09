@@ -14,7 +14,6 @@ pragma solidity 0.6.12;
 import "../../../persistent/external-positions/ExternalPositionFactory.sol";
 import "../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../persistent/external-positions/IExternalPositionProxy.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
@@ -27,8 +26,7 @@ import "./IExternalPositionManager.sol";
 contract ExternalPositionManager is
     IExternalPositionManager,
     ExtensionBase,
-    PermissionedVaultActionMixin,
-    FundDeployerOwnerMixin
+    PermissionedVaultActionMixin
 {
     event CallOnExternalPositionExecutedForFund(
         address indexed caller,
@@ -60,7 +58,7 @@ contract ExternalPositionManager is
         address _fundDeployer,
         address _externalPositionFactory,
         address _policyManager
-    ) public FundDeployerOwnerMixin(_fundDeployer) {
+    ) public ExtensionBase(_fundDeployer) {
         EXTERNAL_POSITION_FACTORY = _externalPositionFactory;
         POLICY_MANAGER = _policyManager;
     }
@@ -69,10 +67,20 @@ contract ExternalPositionManager is
     // GENERAL //
     /////////////
 
-    /// @notice Activates the extension by storing the VaultProxy
-    function activateForFund(bool) external override {
-        __setValidatedVaultProxy(msg.sender);
+    /// @notice Enables the ExternalPositionManager to be used by a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    function setConfigForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes calldata
+    ) external override onlyFundDeployer {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
     }
+
+    ///////////////////////////////
+    // CALL-ON-EXTENSION ACTIONS //
+    ///////////////////////////////
 
     /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
     /// @param _caller The user who called for this action
@@ -85,8 +93,11 @@ contract ExternalPositionManager is
     ) external override {
         address comptrollerProxy = msg.sender;
 
-        address vaultProxy = comptrollerProxyToVaultProxy[comptrollerProxy];
-        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
+        // This validation comes at negligible cost but is not strictly necessary,
+        // as all actions below call permissioned actions on the VaultProxy,
+        // which will fail for an invalid ComptrollerProxy
+        address vaultProxy = getVaultProxyForFund(comptrollerProxy);
+        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not valid");
 
         require(
             IVault(vaultProxy).canManageAssets(_caller),

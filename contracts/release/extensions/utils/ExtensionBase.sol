@@ -11,20 +11,26 @@
 
 pragma solidity 0.6.12;
 
-import "../../core/fund/comptroller/IComptroller.sol";
-import "../../core/fund/vault/IVault.sol";
+import "../../utils/FundDeployerOwnerMixin.sol";
 import "../IExtension.sol";
 
 /// @title ExtensionBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base class for an extension
-abstract contract ExtensionBase is IExtension {
+abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
     event ValidatedVaultProxySetForFund(
         address indexed comptrollerProxy,
         address indexed vaultProxy
     );
 
     mapping(address => address) internal comptrollerProxyToVaultProxy;
+
+    modifier onlyFundDeployer() {
+        require(msg.sender == getFundDeployer(), "Only the FundDeployer can make this call");
+        _;
+    }
+
+    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
 
     /// @notice Allows extension to run logic during fund activation
     /// @dev Unimplemented by default, may be overridden.
@@ -51,35 +57,19 @@ abstract contract ExtensionBase is IExtension {
 
     /// @notice Allows extension to run logic during fund configuration
     /// @dev Unimplemented by default, may be overridden.
-    function setConfigForFund(bytes calldata) external virtual override {
+    function setConfigForFund(
+        address,
+        address,
+        bytes calldata
+    ) external virtual override {
         return;
     }
 
-    /// @dev Helper to validate a ComptrollerProxy-VaultProxy relation, which we store for both
-    /// gas savings and to guarantee a spoofed ComptrollerProxy does not change getVaultProxy().
-    /// Will revert without reason if the expected interfaces do not exist.
-    function __setValidatedVaultProxy(address _comptrollerProxy)
-        internal
-        returns (address vaultProxy_)
-    {
-        require(
-            comptrollerProxyToVaultProxy[_comptrollerProxy] == address(0),
-            "__setValidatedVaultProxy: Already set"
-        );
+    /// @dev Helper to store the validated ComptrollerProxy-VaultProxy relation
+    function __setValidatedVaultProxy(address _comptrollerProxy, address _vaultProxy) internal {
+        comptrollerProxyToVaultProxy[_comptrollerProxy] = _vaultProxy;
 
-        vaultProxy_ = IComptroller(_comptrollerProxy).getVaultProxy();
-        require(vaultProxy_ != address(0), "__setValidatedVaultProxy: Missing vaultProxy");
-
-        require(
-            _comptrollerProxy == IVault(vaultProxy_).getAccessor(),
-            "__setValidatedVaultProxy: Not the VaultProxy accessor"
-        );
-
-        comptrollerProxyToVaultProxy[_comptrollerProxy] = vaultProxy_;
-
-        emit ValidatedVaultProxySetForFund(_comptrollerProxy, vaultProxy_);
-
-        return vaultProxy_;
+        emit ValidatedVaultProxySetForFund(_comptrollerProxy, _vaultProxy);
     }
 
     ///////////////////

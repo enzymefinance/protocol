@@ -125,43 +125,6 @@ describe('init', () => {
   });
 });
 
-describe('configureExtensions', () => {
-  it('can only be called by FundDeployer', async () => {
-    const { comptrollerProxy } = await provider.snapshot(snapshot);
-
-    await expect(comptrollerProxy.configureExtensions('0x', '0x')).rejects.toBeRevertedWith(
-      'Only FundDeployer callable',
-    );
-  });
-
-  it('correctly handles valid call (no extensions)', async () => {
-    const { comptrollerProxy, mockFeeManager, mockFundDeployer, mockPolicyManager } = await provider.snapshot(snapshot);
-
-    await mockFundDeployer.forward(comptrollerProxy.configureExtensions, '0x', '0x');
-
-    // No calls should have been made, because no extension configuration data exists
-    expect(mockFeeManager.setConfigForFund).not.toHaveBeenCalledOnContract();
-    expect(mockPolicyManager.setConfigForFund).not.toHaveBeenCalledOnContract();
-  });
-
-  it('correctly handles valid call (two extensions)', async () => {
-    const {
-      comptrollerProxy,
-      feeManagerConfigData,
-      mockFeeManager,
-      mockFundDeployer,
-      mockPolicyManager,
-      policyManagerConfigData,
-    } = await provider.snapshot(snapshot);
-
-    await mockFundDeployer.forward(comptrollerProxy.configureExtensions, feeManagerConfigData, policyManagerConfigData);
-
-    // Assert expected calls
-    expect(mockFeeManager.setConfigForFund).toHaveBeenCalledOnContractWith(feeManagerConfigData);
-    expect(mockPolicyManager.setConfigForFund).toHaveBeenCalledOnContractWith(policyManagerConfigData);
-  });
-});
-
 describe('setVaultProxy', () => {
   it('can only be called by FundDeployer', async () => {
     const { comptrollerProxy } = await provider.snapshot(snapshot);
@@ -197,14 +160,8 @@ describe('activate', () => {
   });
 
   it('correctly handles valid call (new fund)', async () => {
-    const {
-      comptrollerProxy,
-      mockFeeManager,
-      mockFundDeployer,
-      mockIntegrationManager,
-      mockPolicyManager,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
+    const { comptrollerProxy, mockFeeManager, mockFundDeployer, mockPolicyManager, mockVaultProxy } =
+      await provider.snapshot(snapshot);
 
     // Set VaultProxy
     await mockFundDeployer.forward(comptrollerProxy.setVaultProxy, mockVaultProxy);
@@ -218,7 +175,6 @@ describe('activate', () => {
     );
 
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(false);
-    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContractWith(false);
     expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContractWith(false);
 
     // Should not have called the path for activation of migrated funds
@@ -230,7 +186,6 @@ describe('activate', () => {
       comptrollerProxy,
       mockFeeManager,
       mockFundDeployer,
-      mockIntegrationManager,
       mockPolicyManager,
       mockVaultProxy,
       mockVaultProxyOwner,
@@ -264,7 +219,6 @@ describe('activate', () => {
     );
 
     expect(mockFeeManager.activateForFund).toHaveBeenCalledOnContractWith(true);
-    expect(mockIntegrationManager.activateForFund).toHaveBeenCalledOnContractWith(true);
     expect(mockPolicyManager.activateForFund).toHaveBeenCalledOnContractWith(true);
   });
 });

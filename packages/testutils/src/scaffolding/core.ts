@@ -21,10 +21,7 @@ export async function createFundDeployer({
   assetFinalityResolver,
   externalPositionManager,
   dispatcher,
-  feeManager,
   gasRelayPaymasterFactory,
-  integrationManager,
-  policyManager,
   valueInterpreter,
   vaultLib,
   setOnDispatcher = true,
@@ -50,16 +47,33 @@ export async function createFundDeployer({
   const protocolFeeReserve = await vaultLib.getProtocolFeeReserve();
 
   const nextFundDeployer = await FundDeployer.deploy(deployer, dispatcher, gasRelayPaymasterFactory);
+
+  // Re-deploy extensions with new FundDeployer
+  const nextPolicyManager = await PolicyManager.deploy(deployer, nextFundDeployer, gasRelayPaymasterFactory);
+  const nextExternalPositionManager = await ExternalPositionManager.deploy(
+    deployer,
+    nextFundDeployer,
+    await externalPositionManager.getExternalPositionFactory(),
+    nextPolicyManager,
+  );
+  const nextFeeManager = await FeeManager.deploy(deployer, nextFundDeployer);
+  const nextIntegrationManager = await IntegrationManager.deploy(
+    deployer,
+    nextFundDeployer,
+    nextPolicyManager,
+    valueInterpreter,
+  );
+
   const nextComptrollerLib = await ComptrollerLib.deploy(
     deployer,
     dispatcher,
     protocolFeeReserve,
     nextFundDeployer,
     valueInterpreter,
-    externalPositionManager,
-    feeManager,
-    integrationManager,
-    policyManager,
+    nextExternalPositionManager,
+    nextFeeManager,
+    nextIntegrationManager,
+    nextPolicyManager,
     assetFinalityResolver,
     gasRelayPaymasterFactory,
     mlnToken,

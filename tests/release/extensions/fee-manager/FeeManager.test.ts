@@ -80,18 +80,10 @@ describe('constructor', () => {
 });
 
 describe('activateForFund', () => {
-  it('stores the validated VaultProxy and calls `activateForFund()` on each Fee', async () => {
-    const {
-      deployment: { feeManager },
-      fees,
-      createFund,
-    } = await provider.snapshot(snapshot);
+  it('happy path', async () => {
+    const { fees, createFund } = await provider.snapshot(snapshot);
 
     const { vaultProxy, comptrollerProxy } = await createFund();
-
-    // Stores the ComptrollerProxy-VaultProxy pairing
-    const getVaultProxyForFundCall = await feeManager.getVaultProxyForFund(comptrollerProxy);
-    expect(getVaultProxyForFundCall).toMatchAddress(vaultProxy);
 
     // Calls each enabled fee to activate
     for (const fee of Object.values(fees)) {
@@ -244,6 +236,17 @@ describe('receiveCallFromComptroller', () => {
 });
 
 describe('setConfigForFund', () => {
+  it('does not allow a random caller', async () => {
+    const {
+      accounts: [randomUser],
+      deployment: { feeManager },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      feeManager.connect(randomUser).setConfigForFund(constants.AddressZero, constants.AddressZero, '0x'),
+    ).rejects.toBeRevertedWith('Only the FundDeployer can make this call');
+  });
+
   it('does not allow unequal fees and settingsData array lengths', async () => {
     const {
       denominationAsset,
@@ -300,7 +303,7 @@ describe('setConfigForFund', () => {
     await expect(createNewFundCall).rejects.toBeRevertedWith('fees cannot include duplicates');
   });
 
-  it('calls `addFundSettings` on each Fee, adds all fees to storage, and fires the correct event per Fee', async () => {
+  it('happy path', async () => {
     const {
       denominationAsset,
       accounts: [fundOwner],
@@ -316,7 +319,7 @@ describe('setConfigForFund', () => {
       settings: feesSettingsData,
     });
 
-    const { comptrollerProxy, receipt } = await createNewFund({
+    const { comptrollerProxy, receipt, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer,
@@ -325,6 +328,7 @@ describe('setConfigForFund', () => {
     });
 
     // Assert state for fund
+    expect(await feeManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
     const getEnabledFeesForFundCall = await feeManager.getEnabledFeesForFund(comptrollerProxy);
     expect(getEnabledFeesForFundCall).toMatchFunctionOutput(feeManager.getEnabledFeesForFund, fees);
 

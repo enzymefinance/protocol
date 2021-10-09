@@ -65,59 +65,36 @@ describe('constructor', () => {
   });
 });
 
-describe('activateForFund', () => {
-  it('does not allow an already active fund', async () => {
+describe('setConfigForFund', () => {
+  it('does not allow a random caller', async () => {
     const {
+      accounts: [randomUser],
       deployment: { integrationManager },
-      mockComptrollerProxy,
     } = await provider.snapshot(snapshot);
 
-    // Should pass the first time
-    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).resolves.toBeReceipt();
-
-    // Should fail a second time
-    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
-      'Already set',
-    );
+    await expect(
+      integrationManager.connect(randomUser).setConfigForFund(constants.AddressZero, constants.AddressZero, '0x'),
+    ).rejects.toBeRevertedWith('Only the FundDeployer can make this call');
   });
 
-  it('does not allow a missing vaultProxy', async () => {
+  it('happy path', async () => {
     const {
-      deployment: { integrationManager },
-      mockComptrollerProxy,
+      accounts: [fundOwner],
+      deployment: { integrationManager, fundDeployer },
+      config: {
+        primitives: { usdc },
+      },
     } = await provider.snapshot(snapshot);
 
-    await mockComptrollerProxy.getVaultProxy.returns(constants.AddressZero);
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer,
+      denominationAsset: new StandardToken(usdc, provider),
+    });
 
-    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
-      'Missing vaultProxy',
-    );
-  });
-
-  it('does not allow a vaultProxy for which the sender is not the accessor', async () => {
-    const {
-      deployment: { integrationManager },
-      mockComptrollerProxy,
-      mockVaultProxy,
-    } = await provider.snapshot(snapshot);
-
-    await mockVaultProxy.getAccessor.returns(randomAddress());
-
-    await expect(mockComptrollerProxy.forward(integrationManager.activateForFund, false)).rejects.toBeRevertedWith(
-      'Not the VaultProxy accessor',
-    );
-  });
-
-  it('correctly handles a valid call', async () => {
-    const {
-      deployment: { integrationManager },
-      fund: { comptrollerProxy, vaultProxy },
-    } = await provider.snapshot(snapshot);
-
-    // Stores the ComptrollerProxy-VaultProxy pairing
-    const getVaultProxyForFundCall = await integrationManager.getVaultProxyForFund(comptrollerProxy);
-
-    expect(getVaultProxyForFundCall).toMatchAddress(vaultProxy);
+    // Assert state
+    expect(await integrationManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
   });
 });
 

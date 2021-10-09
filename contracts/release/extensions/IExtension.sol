@@ -25,5 +25,9 @@ interface IExtension {
         bytes calldata _callArgs
     ) external;
 
-    function setConfigForFund(bytes calldata _configData) external;
+    function setConfigForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes calldata _configData
+    ) external;
 }

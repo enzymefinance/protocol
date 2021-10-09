@@ -19,6 +19,7 @@ import {
   deployProtocolFixture,
   ProtocolDeployment,
 } from '@enzymefinance/testutils';
+import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
 let mockComptrollerProxy: any;
@@ -47,6 +48,32 @@ describe('constructor', () => {
     expect(await externalPositionManager.getExternalPositionParserForType(0)).toMatchAddress(
       compoundDebtPositionParser.address,
     );
+  });
+});
+
+describe('setConfigForFund', () => {
+  it('does not allow a random caller', async () => {
+    const [randomUser] = fork.accounts;
+    const externalPositionManager = fork.deployment.externalPositionManager;
+
+    await expect(
+      externalPositionManager.connect(randomUser).setConfigForFund(constants.AddressZero, constants.AddressZero, '0x'),
+    ).rejects.toBeRevertedWith('Only the FundDeployer can make this call');
+  });
+
+  it('happy path', async () => {
+    const [fundOwner] = fork.accounts;
+    const externalPositionManager = fork.deployment.externalPositionManager;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      signer: fundOwner,
+      fundOwner,
+      fundDeployer: fork.deployment.fundDeployer,
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    });
+
+    // Assert state
+    expect(await externalPositionManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
   });
 });
 

@@ -16,7 +16,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../utils/AddressArrayLib.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
 import "./IFee.sol";
@@ -28,12 +27,7 @@ import "./IFeeManager.sol";
 /// @dev Any arbitrary fee is allowed by default, so all participants must be aware of
 /// their fund's configuration, especially whether they use official fees only.
 /// Fees can only be added upon fund setup, migration, or reconfiguration.
-contract FeeManager is
-    IFeeManager,
-    ExtensionBase,
-    FundDeployerOwnerMixin,
-    PermissionedVaultActionMixin
-{
+contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
@@ -63,14 +57,14 @@ contract FeeManager is
     mapping(address => mapping(address => uint256))
         private comptrollerProxyToFeeToSharesOutstanding;
 
-    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
+    constructor(address _fundDeployer) public ExtensionBase(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 
     /// @notice Activate already-configured fees for use in the calling fund
     function activateForFund(bool) external override {
         address comptrollerProxy = msg.sender;
-        address vaultProxy = __setValidatedVaultProxy(comptrollerProxy);
+        address vaultProxy = getVaultProxyForFund(comptrollerProxy);
 
         address[] memory enabledFees = getEnabledFeesForFund(comptrollerProxy);
         for (uint256 i; i < enabledFees.length; i++) {
@@ -79,6 +73,7 @@ contract FeeManager is
     }
 
     /// @notice Deactivate fees for a fund
+    /// @dev There will be no fees if the caller is not a valid ComptrollerProxy
     function deactivateForFund() external override {
         address comptrollerProxy = msg.sender;
         address vaultProxy = getVaultProxyForFund(comptrollerProxy);
@@ -123,12 +118,19 @@ contract FeeManager is
     }
 
     /// @notice Enable and configure fees for use in the calling fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
-    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
-    /// The order of `fees` determines the order in which fees of the same FeeHook will be applied.
+    /// @dev The order of `fees` determines the order in which fees of the same FeeHook will be applied.
     /// It is recommended to run ManagementFee before PerformanceFee in order to achieve precise
     /// PerformanceFee calcs.
-    function setConfigForFund(bytes calldata _configData) external override {
+    function setConfigForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes calldata _configData
+    ) external override onlyFundDeployer {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
+
         (address[] memory fees, bytes[] memory settingsData) = abi.decode(
             _configData,
             (address[], bytes[])
@@ -144,12 +146,12 @@ contract FeeManager is
         // Enable each fee with settings
         for (uint256 i; i < fees.length; i++) {
             // Set fund config on fee
-            IFee(fees[i]).addFundSettings(msg.sender, settingsData[i]);
+            IFee(fees[i]).addFundSettings(_comptrollerProxy, settingsData[i]);
 
             // Enable fee for fund
-            comptrollerProxyToFees[msg.sender].push(fees[i]);
+            comptrollerProxyToFees[_comptrollerProxy].push(fees[i]);
 
-            emit FeeEnabledForFund(msg.sender, fees[i], settingsData[i]);
+            emit FeeEnabledForFund(_comptrollerProxy, fees[i], settingsData[i]);
         }
     }
 

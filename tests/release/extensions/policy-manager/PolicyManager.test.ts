@@ -77,7 +77,7 @@ describe('constructor', () => {
 });
 
 describe('activateForFund', () => {
-  it('stores the validated VaultProxy and calls `activateForFund()` on each policy (migrated fund only)', async () => {
+  it('happy path', async () => {
     // create fund with policies
     const {
       deployer,
@@ -406,9 +406,22 @@ describe('enablePolicyForFund', () => {
 });
 
 describe('setConfigForFund', () => {
+  it('does not allow a random caller', async () => {
+    const {
+      accounts: [randomUser],
+      deployment: { policyManager },
+    } = await provider.snapshot(snapshot);
+
+    await expect(
+      policyManager.connect(randomUser).setConfigForFund(constants.AddressZero, constants.AddressZero, '0x'),
+    ).rejects.toBeRevertedWith('Only the FundDeployer can make this call');
+  });
+
   it('does not allow unequal policies and settingsData array lengths', async () => {
     const {
-      deployment: { policyManager },
+      denominationAsset,
+      accounts: [fundOwner],
+      deployment: { fundDeployer },
       policies: { mockPostBuySharesPolicy },
     } = await provider.snapshot(snapshot);
 
@@ -416,35 +429,18 @@ describe('setConfigForFund', () => {
     const policiesSettings = [utils.randomBytes(10), utils.randomBytes(12), utils.randomBytes(20)];
     const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
 
-    const setConfigForFundCall = policyManager.setConfigForFund(policyManagerConfig);
-
-    await expect(setConfigForFundCall).rejects.toBeRevertedWith('policies and settingsData array lengths unequal');
+    await expect(
+      createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        policyManagerConfig,
+      }),
+    ).rejects.toBeRevertedWith('policies and settingsData array lengths unequal');
   });
 
-  it('does not allow an already enabled policy', async () => {
-    const {
-      deployment: { policyManager },
-      policies: { mockPostBuySharesPolicy },
-    } = await provider.snapshot(snapshot);
-
-    // Create config for mockPostBuySharesPolicy
-    const policies = [mockPostBuySharesPolicy];
-    const policiesSettings = [utils.randomBytes(10)];
-    const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
-
-    // Call the setConfigForFund with initial config
-    await policyManager.setConfigForFund(policyManagerConfig);
-
-    // Create new config with an already enabled policy
-    const newPoliciesSettings = [utils.randomBytes(20)];
-    const newPolicyManagerConfig = policyManagerConfigArgs({ policies, settings: newPoliciesSettings });
-
-    // Call the setConfigForFund with this new config
-    const newSetConfigForFundCall = policyManager.setConfigForFund(newPolicyManagerConfig);
-    await expect(newSetConfigForFundCall).rejects.toBeRevertedWith('Policy is already enabled');
-  });
-
-  it('adds specified policies, calls `addFundSettings` on each with the correct params, and emits an event for each', async () => {
+  it('happy path', async () => {
     const {
       deployment: { fundDeployer, policyManager },
       fundOwner,
@@ -454,7 +450,7 @@ describe('setConfigForFund', () => {
       policyManagerConfig,
     } = await provider.snapshot(snapshot);
 
-    const { comptrollerProxy, receipt } = await createNewFund({
+    const { comptrollerProxy, receipt, vaultProxy } = await createNewFund({
       signer: fundOwner,
       fundOwner,
       fundDeployer,
@@ -463,6 +459,7 @@ describe('setConfigForFund', () => {
     });
 
     // Assert state for fund
+    expect(await policyManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
     for (const policy of orderedPolicies) {
       for (const hook of await policy.implementedHooks()) {
         expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, policy)).toBe(true);

@@ -17,7 +17,6 @@ import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import "../../utils/AddressArrayLib.sol";
 import "../../utils/AssetHelpers.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
@@ -34,7 +33,6 @@ import "./IIntegrationManager.sol";
 contract IntegrationManager is
     IIntegrationManager,
     ExtensionBase,
-    FundDeployerOwnerMixin,
     PermissionedVaultActionMixin,
     AssetHelpers
 {
@@ -60,7 +58,7 @@ contract IntegrationManager is
         address _fundDeployer,
         address _policyManager,
         address _valueInterpreter
-    ) public FundDeployerOwnerMixin(_fundDeployer) {
+    ) public ExtensionBase(_fundDeployer) {
         POLICY_MANAGER = _policyManager;
         VALUE_INTERPRETER = _valueInterpreter;
     }
@@ -69,9 +67,15 @@ contract IntegrationManager is
     // GENERAL //
     /////////////
 
-    /// @notice Activates the extension by storing the VaultProxy
-    function activateForFund(bool) external override {
-        __setValidatedVaultProxy(msg.sender);
+    /// @notice Enables the IntegrationManager to be used by a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
+    function setConfigForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes calldata
+    ) external override onlyFundDeployer {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
     }
 
     ///////////////////////////////
@@ -89,11 +93,11 @@ contract IntegrationManager is
     ) external override {
         address comptrollerProxy = msg.sender;
 
-        // Since we validate and store the ComptrollerProxy-VaultProxy pairing during
-        // activateForFund(), this function does not require further validation of the
-        // sending ComptrollerProxy
-        address vaultProxy = comptrollerProxyToVaultProxy[comptrollerProxy];
-        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not active");
+        // This validation comes at negligible cost but is not strictly necessary,
+        // as all actions below call permissioned actions on the VaultProxy,
+        // which will fail for an invalid ComptrollerProxy
+        address vaultProxy = getVaultProxyForFund(comptrollerProxy);
+        require(vaultProxy != address(0), "receiveCallFromComptroller: Fund is not valid");
 
         require(
             IVault(vaultProxy).canManageAssets(_caller),
@@ -176,6 +180,15 @@ contract IntegrationManager is
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
+        // Validating the ComptrollerProxy is the active VaultProxy.accessor()
+        // protects against corner cases of lingering permissions on adapters issued
+        // via VaultLib.callOnContract() that could otherwise be called from an
+        // undestructed ComptrollerProxy
+        require(
+            _comptrollerProxy == IVault(_vaultProxy).getAccessor(),
+            "receiveCallFromComptroller: Fund is not active"
+        );
+
         (
             address adapter,
             bytes4 selector,

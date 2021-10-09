@@ -12,10 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../utils/AddressArrayLib.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
 import "../utils/ExtensionBase.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";
@@ -28,12 +28,7 @@ import "./IPolicyManager.sol";
 /// Policies that restrict current investors can only be added upon fund setup, migration, or reconfiguration.
 /// Policies that restrict new investors or asset management actions can be added at any time.
 /// Policies themselves specify whether or not they are allowed to be updated or removed.
-contract PolicyManager is
-    IPolicyManager,
-    ExtensionBase,
-    FundDeployerOwnerMixin,
-    GasRelayRecipientMixin
-{
+contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
 
     event PolicyDisabledOnHookForFund(
@@ -54,7 +49,7 @@ contract PolicyManager is
 
     modifier onlyFundOwner(address _comptrollerProxy) {
         require(
-            __msgSender() == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
+            __msgSender() == IVault(getVaultProxyForFund(_comptrollerProxy)).getOwner(),
             "Only the fund owner can call this function"
         );
         _;
@@ -62,7 +57,7 @@ contract PolicyManager is
 
     constructor(address _fundDeployer, address _gasRelayPaymasterFactory)
         public
-        FundDeployerOwnerMixin(_fundDeployer)
+        ExtensionBase(_fundDeployer)
         GasRelayRecipientMixin(_gasRelayPaymasterFactory)
     {}
 
@@ -70,13 +65,15 @@ contract PolicyManager is
 
     /// @notice Validates and initializes policies as necessary prior to fund activation
     /// @param _isMigratedFund True if the fund is migrating to this release
-    /// @dev Caller is expected to be a valid ComptrollerProxy, but there isn't a need to validate.
+    /// @dev There will be no enabledPolicies if the caller is not a valid ComptrollerProxy
     function activateForFund(bool _isMigratedFund) external override {
+        address comptrollerProxy = msg.sender;
+
         // Policies must assert that they are congruent with migrated vault state
         if (_isMigratedFund) {
-            address[] memory enabledPolicies = getEnabledPoliciesForFund(msg.sender);
+            address[] memory enabledPolicies = getEnabledPoliciesForFund(comptrollerProxy);
             for (uint256 i; i < enabledPolicies.length; i++) {
-                __activatePolicyForFund(msg.sender, enabledPolicies[i]);
+                __activatePolicyForFund(comptrollerProxy, enabledPolicies[i]);
             }
         }
     }
@@ -86,7 +83,7 @@ contract PolicyManager is
     /// @param _policy The policy address to disable
     /// @dev If an arbitrary policy changes its `implementedHooks()` return values after it is
     /// already enabled on a fund, then this will not correctly disable the policy from any
-    /// removed hook values
+    /// removed hook values.
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external
         onlyFundOwner(_comptrollerProxy)
@@ -131,9 +128,21 @@ contract PolicyManager is
     }
 
     /// @notice Enable policies for use in a fund
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
-    /// @dev Only called during init() on ComptrollerProxy deployment
-    function setConfigForFund(bytes calldata _configData) external override {
+    function setConfigForFund(
+        address _comptrollerProxy,
+        address _vaultProxy,
+        bytes calldata _configData
+    ) external override onlyFundDeployer {
+        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
+
+        // In case there are no policies yet
+        if (_configData.length == 0) {
+            return;
+        }
+
         (address[] memory policies, bytes[] memory settingsData) = abi.decode(
             _configData,
             (address[], bytes[])
@@ -148,7 +157,7 @@ contract PolicyManager is
         // Enable each policy with settings
         for (uint256 i; i < policies.length; i++) {
             __enablePolicyForFund(
-                msg.sender,
+                _comptrollerProxy,
                 policies[i],
                 settingsData[i],
                 IPolicy(policies[i]).implementedHooks()

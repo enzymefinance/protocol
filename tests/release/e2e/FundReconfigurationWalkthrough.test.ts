@@ -28,12 +28,12 @@ const TEN_PERCENT = BigNumber.from(1000);
 
 const expectedGasCosts = {
   'signal reconfiguration': {
-    usdc: 480448,
-    weth: 478194,
+    usdc: 591615,
+    weth: 589361,
   },
   'execute reconfiguration': {
-    usdc: 505671,
-    weth: 475104,
+    usdc: 427031,
+    weth: 396464,
   },
 } as const;
 
