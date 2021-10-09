@@ -9,7 +9,6 @@
     file that was distributed with this source code.
 */
 
-import "../../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
 import "../IExternalPositionParser.sol";

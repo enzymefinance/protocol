@@ -13,7 +13,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../utils/AddressArrayLib.sol";
