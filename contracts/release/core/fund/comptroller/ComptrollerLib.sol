@@ -1252,6 +1252,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     function shutdownGasRelayPaymaster() external onlyOwnerNotRelayable {
         IGasRelayPaymaster(gasRelayPaymaster).withdrawBalance();
 
+        IVault(vaultProxy).addTrackedAsset(getWethToken());
+
         delete gasRelayPaymaster;
 
         emit GasRelayPaymasterSet(address(0));
