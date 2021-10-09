@@ -419,7 +419,7 @@ describe('auto-buybacks', () => {
       const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
         signer: fundOwner,
-        quantity: 1000,
+        quantity: (await vaultProxy.balanceOf(fundOwner)).div(10000),
         payoutAssets: [denominationAsset],
         payoutAssetPercentages: [10000],
       });

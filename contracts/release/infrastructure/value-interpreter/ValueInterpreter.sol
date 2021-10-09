@@ -14,6 +14,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../utils/FundDeployerOwnerMixin.sol";
+import "../../utils/MathHelpers.sol";
 import "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";
@@ -26,9 +27,14 @@ contract ValueInterpreter is
     IValueInterpreter,
     FundDeployerOwnerMixin,
     AggregatedDerivativePriceFeedMixin,
-    ChainlinkPriceFeedMixin
+    ChainlinkPriceFeedMixin,
+    MathHelpers
 {
     using SafeMath for uint256;
+
+    // Used to only tolerate a max rounding discrepancy of 0.01%
+    // when converting values via an inverse rate
+    uint256 private constant MIN_INVERSE_RATE_AMOUNT = 10000;
 
     constructor(address _fundDeployer, address _wethToken)
         public
@@ -44,7 +50,8 @@ contract ValueInterpreter is
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The sum value of _baseAssets, denominated in the _quoteAsset
     /// @dev Does not alter protocol state,
-    /// but not a view because calls to price feeds can potentially update third party state
+    /// but not a view because calls to price feeds can potentially update third party state.
+    /// Does not handle a derivative quote asset.
     function calcCanonicalAssetsTotalValue(
         address[] memory _baseAssets,
         uint256[] memory _amounts,
@@ -75,7 +82,8 @@ contract ValueInterpreter is
     /// @param _quoteAsset The asset to which to convert
     /// @return value_ The equivalent quantity in the _quoteAsset
     /// @dev Does not alter protocol state,
-    /// but not a view because calls to price feeds can potentially update third party state
+    /// but not a view because calls to price feeds can potentially update third party state.
+    /// See also __calcPrimitiveToDerivativeValue() for important notes regarding a derivative _quoteAsset.
     function calcCanonicalAssetValue(
         address _baseAsset,
         uint256 _amount,
@@ -85,12 +93,15 @@ contract ValueInterpreter is
             return _amount;
         }
 
-        require(
-            isSupportedPrimitiveAsset(_quoteAsset),
-            "calcCanonicalAssetValue: Unsupported _quoteAsset"
-        );
+        if (isSupportedPrimitiveAsset(_quoteAsset)) {
+            return __calcAssetValue(_baseAsset, _amount, _quoteAsset);
+        } else if (
+            isSupportedDerivativeAsset(_quoteAsset) && isSupportedPrimitiveAsset(_baseAsset)
+        ) {
+            return __calcPrimitiveToDerivativeValue(_baseAsset, _amount, _quoteAsset);
+        }
 
-        return __calcAssetValue(_baseAsset, _amount, _quoteAsset);
+        revert("calcCanonicalAssetValue: Unsupported conversion");
     }
 
     /// @notice Checks whether an asset is a supported asset
@@ -156,6 +167,45 @@ contract ValueInterpreter is
 
             value_ = value_.add(underlyingValue);
         }
+    }
+
+    /// @dev Helper to calculate the value of a primitive base asset in a derivative quote asset.
+    /// Assumes that the _primitiveBaseAsset and _derivativeQuoteAsset have been validated as supported.
+    /// Callers of this function should be aware of the following points, and take precautions as-needed,
+    /// such as prohibiting a derivative quote asset:
+    /// - The returned value will be slightly less the actual canonical value due to the conversion formula's
+    /// handling of the intermediate inverse rate (see comments below).
+    /// - If the assets involved have an extreme rate and/or have a low ERC20.decimals() value,
+    /// the inverse rate might not be considered "sufficient", and will revert.
+    function __calcPrimitiveToDerivativeValue(
+        address _primitiveBaseAsset,
+        uint256 _primitiveBaseAssetAmount,
+        address _derivativeQuoteAsset
+    ) private returns (uint256 value_) {
+        uint256 derivativeUnit = 10**uint256(ERC20(_derivativeQuoteAsset).decimals());
+
+        address derivativePriceFeed = getPriceFeedForDerivative(_derivativeQuoteAsset);
+        uint256 primitiveAmountForDerivativeUnit = __calcDerivativeValue(
+            derivativePriceFeed,
+            _derivativeQuoteAsset,
+            derivativeUnit,
+            _primitiveBaseAsset
+        );
+        // Only tolerate a max rounding discrepancy
+        require(
+            primitiveAmountForDerivativeUnit > MIN_INVERSE_RATE_AMOUNT,
+            "__calcPrimitiveToDerivativeValue: Insufficient rate"
+        );
+
+        // Adds `1` to primitiveAmountForDerivativeUnit so that the final return value is
+        // slightly less than the actual value, which is congruent with how all other
+        // asset conversions are floored in the protocol.
+        return
+            __calcRelativeQuantity(
+                primitiveAmountForDerivativeUnit.add(1),
+                derivativeUnit,
+                _primitiveBaseAssetAmount
+            );
     }
 
     ////////////////////////////

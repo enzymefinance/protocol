@@ -1068,6 +1068,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
                 _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
                 _payoutAssets[i]
             );
+            // Guards against corner case of primitive-to-derivative asset conversion that floors to 0,
+            // or redeeming a very low shares amount and/or percentage where asset value owed is 0
+            require(
+                payoutAmounts_[i] > 0,
+                "__payoutSpecifiedAssetPercentages: Zero amount for asset"
+            );
 
             vaultProxyContract.withdrawAssetTo(_payoutAssets[i], _recipient, payoutAmounts_[i]);
         }

@@ -1,24 +1,25 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  ComptrollerLib,
   calcProtocolFeeSharesDue,
+  ComptrollerLib,
   encodeArgs,
   FeeHook,
   feeManagerConfigArgs,
   FundDeployer,
   MockReentrancyToken,
+  ONE_HUNDRED_PERCENT_IN_BPS,
   PolicyHook,
   PolicyManager,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
   settlePreRedeemSharesArgs,
+  SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS,
   StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
   VaultLib,
   WETH,
-  SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -625,6 +626,51 @@ describe('redeem', () => {
       ).rejects.toBeRevertedWith('Percents must total 100%');
     });
 
+    it('does not allow a specified asset payout amount of 0', async () => {
+      const {
+        fund: { denominationAsset },
+        deployment: { fundDeployer },
+        accounts: [fundOwner, investor],
+        config: {
+          primitives: { mln },
+        },
+      } = await provider.snapshot(snapshot);
+
+      const investorInvestmentAmount = await getAssetUnit(denominationAsset);
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        // Buy shares with fundOwner to inflate share pool and decrease investor owed gav
+        investment: {
+          buyer: fundOwner,
+          investmentAmount: investorInvestmentAmount.mul(10),
+        },
+      });
+
+      // Buy a relatively small amount of shares for the investor to guarantee they can redeem one wei of shares with no owed value
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        investmentAmount: investorInvestmentAmount,
+      });
+
+      const zeroBalanceAsset = new StandardToken(mln, whales.mln);
+      expect(await zeroBalanceAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
+
+      await expect(
+        redeemSharesForSpecificAssets({
+          comptrollerProxy,
+          signer: investor,
+          quantity: 1,
+          payoutAssets: [zeroBalanceAsset],
+          payoutAssetPercentages: [10000],
+        }),
+      ).rejects.toBeRevertedWith('Zero amount for asset');
+    });
+
     it('happy path: full shares balance, with no protocol fee', async () => {
       const {
         fund: { denominationAsset },
@@ -757,6 +803,90 @@ describe('redeem', () => {
         }),
         preTxGav,
       );
+    });
+
+    it('happy path: derivative asset (no protocol fee)', async () => {
+      const {
+        deployment: { fundDeployer, integrationManager, protocolFeeTracker, valueInterpreter },
+        accounts: [fundOwner, investor],
+        config: {
+          primitives: { usdc },
+          compound: {
+            ctokens: { cdai },
+          },
+        },
+      } = await provider.snapshot(snapshot);
+
+      // Turn off the protocol fee
+      await protocolFeeTracker.setFeeBpsDefault(0);
+
+      // Create a new fund, invested in by the fund manager and an investor
+      const denominationAsset = new StandardToken(usdc, whales.usdc);
+      const { comptrollerProxy, vaultProxy } = await createNewFund({
+        signer: fundOwner,
+        fundOwner,
+        fundDeployer,
+        denominationAsset,
+        investment: {
+          buyer: fundOwner,
+          seedBuyer: true,
+        },
+      });
+
+      await buyShares({
+        comptrollerProxy,
+        buyer: investor,
+        denominationAsset,
+        seedBuyer: true,
+      });
+
+      // Define the redemption parameters
+      const recipient = randomAddress();
+      const payoutAsset = new StandardToken(cdai, whales.cdai);
+
+      // Send and track the redemption asset with the equivalent values as the denomination asset balance,
+      // so that redeeming half the shares should result in withdrawing almost all of the payoutAsset
+      const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
+
+      await addNewAssetsToFund({
+        comptrollerProxy,
+        signer: fundOwner,
+        integrationManager,
+        assets: [payoutAsset],
+        amounts: [
+          await valueInterpreter.calcCanonicalAssetValue
+            .args(denominationAsset, preTxVaultDenominationAssetBalance, payoutAsset)
+            .call(),
+        ],
+      });
+
+      // Calculate the expected shares redeemed and gav owed prior to redemption
+      const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(2);
+      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
+
+      // Redeem all of the investor's shares
+      await redeemSharesForSpecificAssets({
+        comptrollerProxy,
+        signer: investor,
+        recipient,
+        quantity: expectedSharesRedeemed,
+        payoutAssets: [payoutAsset],
+        payoutAssetPercentages: [ONE_HUNDRED_PERCENT_IN_BPS],
+      });
+
+      // Calculate the expected payout amounts
+      const expectedPayoutAmount = await valueInterpreter.calcCanonicalAssetValue
+        .args(denominationAsset, gavOwed, payoutAsset)
+        .call();
+      expect(expectedPayoutAmount).toBeGtBigNumber(0);
+
+      // Assert that the new GAV is roughly the old gav minus gav owed
+      // The actual GAV will be slightly lower than the expected GAV, due to rounding during the primitive-to-derivative price conversion
+      expect(await comptrollerProxy.calcGav.args(true).call()).toBeAroundBigNumber(preTxGav.sub(gavOwed), 100);
+
+      // Assert the recipient has received the expected assets and balances
+      expect(await payoutAsset.balanceOf(recipient)).toEqBigNumber(expectedPayoutAmount);
     });
 
     it('happy path: explicitly claim less than 100% of owed gav', async () => {
