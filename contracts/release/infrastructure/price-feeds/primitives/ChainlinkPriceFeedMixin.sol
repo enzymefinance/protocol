@@ -32,10 +32,6 @@ abstract contract ChainlinkPriceFeedMixin {
 
     event PrimitiveRemoved(address indexed primitive);
 
-    event StalePrimitiveRemoved(address indexed primitive);
-
-    event StaleRateThresholdSet(uint256 prevStaleRateThreshold, uint256 nextStaleRateThreshold);
-
     enum RateAsset {ETH, USD}
 
     struct AggregatorInfo {
@@ -44,27 +40,17 @@ abstract contract ChainlinkPriceFeedMixin {
     }
 
     uint256 private constant ETH_UNIT = 10**18;
+
+    uint256 private immutable STALE_RATE_THRESHOLD;
     address private immutable WETH_TOKEN;
 
     address private ethUsdAggregator;
-    uint256 private staleRateThreshold;
     mapping(address => AggregatorInfo) private primitiveToAggregatorInfo;
     mapping(address => uint256) private primitiveToUnit;
 
-    constructor(address _wethToken) public {
+    constructor(address _wethToken, uint256 _staleRateThreshold) public {
+        STALE_RATE_THRESHOLD = _staleRateThreshold;
         WETH_TOKEN = _wethToken;
-        staleRateThreshold = 25 hours; // 24 hour heartbeat + 1hr buffer
-    }
-
-    // PUBLIC FUNCTIONS
-
-    /// @notice Checks whether the current rate is considered stale for the specified aggregator
-    /// @param _aggregator The Chainlink aggregator of which to check staleness
-    /// @return rateIsStale_ True if the rate is considered stale
-    function rateIsStale(address _aggregator) public view returns (bool rateIsStale_) {
-        return
-            IChainlinkAggregator(_aggregator).latestTimestamp() <
-            block.timestamp.sub(getStaleRateThreshold());
     }
 
     // INTERNAL FUNCTIONS
@@ -139,8 +125,12 @@ abstract contract ChainlinkPriceFeedMixin {
                 );
         }
 
-        int256 ethPerUsdRate = IChainlinkAggregator(getEthUsdAggregator()).latestAnswer();
+        (, int256 ethPerUsdRate, , uint256 ethPerUsdRateLastUpdatedAt, ) = IChainlinkAggregator(
+            getEthUsdAggregator()
+        )
+            .latestRoundData();
         require(ethPerUsdRate > 0, "__calcConversionAmount: Bad ethUsd rate");
+        __validateRateIsNotStale(ethPerUsdRateLastUpdatedAt);
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
         if (baseAssetRateAsset == RateAsset.ETH) {
@@ -227,32 +217,24 @@ abstract contract ChainlinkPriceFeedMixin {
         address aggregator = getAggregatorForPrimitive(_primitive);
         require(aggregator != address(0), "__getLatestRateData: Primitive does not exist");
 
-        return IChainlinkAggregator(aggregator).latestAnswer();
+        uint256 rateUpdatedAt;
+        (, rate_, , rateUpdatedAt, ) = IChainlinkAggregator(aggregator).latestRoundData();
+        __validateRateIsNotStale(rateUpdatedAt);
+
+        return rate_;
+    }
+
+    /// @dev Helper to validate that a rate is not from a round considered to be stale
+    function __validateRateIsNotStale(uint256 _latestUpdatedAt) private view {
+        require(
+            _latestUpdatedAt >= block.timestamp.sub(getStaleRateThreshold()),
+            "__validateRateIsNotStale: Stale rate detected"
+        );
     }
 
     /////////////////////////
     // PRIMITIVES REGISTRY //
     /////////////////////////
-
-    // EXTERNAL FUNCTIONS
-
-    /// @notice Removes stale primitives from the feed
-    /// @param _primitives The stale primitives to remove
-    /// @dev Callable by anybody
-    function removeStalePrimitives(address[] calldata _primitives) external {
-        for (uint256 i; i < _primitives.length; i++) {
-            address aggregatorAddress = getAggregatorForPrimitive(_primitives[i]);
-            require(aggregatorAddress != address(0), "removeStalePrimitives: Invalid primitive");
-            require(rateIsStale(aggregatorAddress), "removeStalePrimitives: Rate is not stale");
-
-            delete primitiveToAggregatorInfo[_primitives[i]];
-            delete primitiveToUnit[_primitives[i]];
-
-            emit StalePrimitiveRemoved(_primitives[i]);
-        }
-    }
-
-    // INTERNAL FUNCTIONS
 
     /// @notice Adds a list of primitives with the given aggregator and rateAsset values
     /// @param _primitives The primitives to add
@@ -309,29 +291,14 @@ abstract contract ChainlinkPriceFeedMixin {
         }
     }
 
-    /// @notice Sets the `staleRateThreshold` variable
-    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
-    function __setStaleRateThreshold(uint256 _nextStaleRateThreshold) internal {
-        uint256 prevStaleRateThreshold = getStaleRateThreshold();
-        require(
-            _nextStaleRateThreshold != prevStaleRateThreshold,
-            "__setStaleRateThreshold: Value already set"
-        );
-
-        staleRateThreshold = _nextStaleRateThreshold;
-
-        emit StaleRateThresholdSet(prevStaleRateThreshold, _nextStaleRateThreshold);
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to validate an aggregator by checking its return values for the expected interface
     function __validateAggregator(address _aggregator) private view {
-        require(
-            IChainlinkAggregator(_aggregator).latestAnswer() > 0,
-            "__validateAggregator: No rate detected"
-        );
-        require(!rateIsStale(_aggregator), "__validateAggregator: Stale rate detected");
+        (, int256 answer, , uint256 updatedAt, ) = IChainlinkAggregator(_aggregator)
+            .latestRoundData();
+        require(answer > 0, "__validateAggregator: No rate detected");
+        __validateRateIsNotStale(updatedAt);
     }
 
     ///////////////////
@@ -372,10 +339,10 @@ abstract contract ChainlinkPriceFeedMixin {
         return primitiveToAggregatorInfo[_primitive].rateAsset;
     }
 
-    /// @notice Gets the `staleRateThreshold` variable value
-    /// @return staleRateThreshold_ The `staleRateThreshold` variable value
+    /// @notice Gets the `STALE_RATE_THRESHOLD` variable value
+    /// @return staleRateThreshold_ The `STALE_RATE_THRESHOLD` value
     function getStaleRateThreshold() public view returns (uint256 staleRateThreshold_) {
-        return staleRateThreshold;
+        return STALE_RATE_THRESHOLD;
     }
 
     /// @notice Gets the unit variable value for a primitive

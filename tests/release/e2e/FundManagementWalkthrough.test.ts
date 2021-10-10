@@ -38,12 +38,12 @@ const expectedGasCosts = {
     weth: 359608,
   },
   'buy shares: max assets': {
-    usdc: 1360424,
-    weth: 1292711,
+    usdc: 1427227,
+    weth: 1328068,
   },
   'calc gav: 20 assets': {
-    usdc: 1052487,
-    weth: 997894,
+    usdc: 1119268,
+    weth: 1033190,
   },
   'calc gav: denomination asset only': {
     usdc: 79832,
@@ -54,12 +54,12 @@ const expectedGasCosts = {
     weth: 889940,
   },
   'redeem partial shares: max assets': {
-    usdc: 2495355,
-    weth: 2427636,
+    usdc: 2562191,
+    weth: 2466944,
   },
   'redeem all shares: max assets': {
-    usdc: 2006498,
-    weth: 1965174,
+    usdc: 2073538,
+    weth: 2000643,
   },
   'trade on Uniswap: max assets': {
     usdc: 255482,

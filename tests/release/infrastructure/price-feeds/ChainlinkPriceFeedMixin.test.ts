@@ -1,4 +1,4 @@
-import { AddressLike, extractEvent, randomAddress, resolveAddress } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   IChainlinkAggregator,
@@ -34,6 +34,12 @@ async function loadPrimitiveAggregator({
   primitive: AddressLike;
 }) {
   return new IChainlinkAggregator(await valueInterpreter.getAggregatorForPrimitive(primitive), provider);
+}
+
+async function makeAllRatesStale({ valueInterpreter }: { valueInterpreter: ValueInterpreter }) {
+  const staleRateThreshold = await valueInterpreter.getStaleRateThreshold();
+  await provider.send('evm_increaseTime', [staleRateThreshold.toNumber()]);
+  await provider.send('evm_mine', []);
 }
 
 async function swapDaiAggregatorForUsd({
@@ -97,7 +103,7 @@ describe('primitives gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(36000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(38000));
   });
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
@@ -148,7 +154,7 @@ describe('primitives gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(56000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(60000));
   });
 });
 
@@ -215,6 +221,18 @@ describe('addPrimitives', () => {
     await expect(valueInterpreter.addPrimitives(primitives, aggregators, rateAssets)).rejects.toBeRevertedWith(
       'Value already set',
     );
+  });
+
+  it('reverts when the primitive rate is stale', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const unregisteredMockToken = await MockToken.deploy(fork.deployer, 'Mock Token', 'MOCK', 6);
+    const unusedAggregator = new IChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
+
+    await makeAllRatesStale({ valueInterpreter });
+
+    await expect(
+      valueInterpreter.addPrimitives([unregisteredMockToken], [unusedAggregator], [ChainlinkRateAsset.ETH]),
+    ).rejects.toBeRevertedWith('Stale rate detected');
   });
 
   it('works as expected when adding a primitive and emit an event', async () => {
@@ -363,46 +381,6 @@ describe('removePrimitives', () => {
   });
 });
 
-describe('removeStalePrimitives', () => {
-  it('reverts when primitives have not yet been added', async () => {
-    const valueInterpreter = fork.deployment.valueInterpreter;
-
-    // Call remove on a random (non added) address
-    await expect(valueInterpreter.removeStalePrimitives([randomAddress()])).rejects.toBeRevertedWith(
-      'Invalid primitive',
-    );
-  });
-
-  it('allows a random user to remove a stale primitive based on the timestamp, and fires the correct event', async () => {
-    const [arbitraryUser] = fork.accounts;
-    const valueInterpreter = fork.deployment.valueInterpreter;
-
-    const primitivesToRemove = [fork.config.primitives.dai, fork.config.primitives.usdc];
-
-    // Should fail initially because the rate is not stale
-    await expect(
-      valueInterpreter.connect(arbitraryUser).removeStalePrimitives(primitivesToRemove),
-    ).rejects.toBeRevertedWith('Rate is not stale');
-
-    // Should succeed after warping beyond staleness threshold
-    await provider.send('evm_increaseTime', [60 * 60 * 49]);
-    await provider.send('evm_mine', []);
-    const receipt = await valueInterpreter.connect(arbitraryUser).removeStalePrimitives(primitivesToRemove);
-
-    // Assert that the primitive has been removed from storage, and that the correct event fired
-    const events = extractEvent(receipt, 'StalePrimitiveRemoved');
-    expect(events).toHaveLength(primitivesToRemove.length);
-    for (let i = 0; i < primitivesToRemove.length; i++) {
-      expect(await valueInterpreter.getAggregatorForPrimitive(primitivesToRemove[i])).toMatchAddress(
-        constants.AddressZero,
-      );
-      expect(await valueInterpreter.getRateAssetForPrimitive(primitivesToRemove[i])).toBe(0);
-
-      expect(events[i]).toMatchEventArgs({ primitive: resolveAddress(primitivesToRemove[i]) });
-    }
-  });
-});
-
 describe('setEthUsdAggregator', () => {
   it('properly sets eth/usd aggregator', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
@@ -444,6 +422,32 @@ describe('getCanonicalRate', () => {
 
   it.todo('reverts when there is a negative or zero value for the intermediary asset (ETH/USD)');
 
+  it('reverts when base asset rate is stale (no intermediary eth/usd)', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new StandardToken(fork.config.weth, fork.deployer);
+
+    await makeAllRatesStale({ valueInterpreter });
+
+    await expect(valueInterpreter.calcCanonicalAssetValue(usdc, 1, weth)).rejects.toBeRevertedWith(
+      'Stale rate detected',
+    );
+  });
+
+  it('reverts when quote asset rate is stale (no intermediary eth/usd)', async () => {
+    const valueInterpreter = fork.deployment.valueInterpreter;
+    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new StandardToken(fork.config.weth, fork.deployer);
+
+    await makeAllRatesStale({ valueInterpreter });
+
+    await expect(valueInterpreter.calcCanonicalAssetValue(weth, 1, usdc)).rejects.toBeRevertedWith(
+      'Stale rate detected',
+    );
+  });
+
+  it.todo('reverts when intermediary eth/usd aggregator rate is stale');
+
   // USDC/ETH and WETH/ETH
   it('works as expected when calling getCanonicalRate (equal rate asset)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
@@ -460,7 +464,7 @@ describe('getCanonicalRate', () => {
 
     // Get rates
     const ethRate = utils.parseEther('1');
-    const usdcRate = await usdcAggregator.latestAnswer();
+    const usdcRate = (await usdcAggregator.latestRoundData())[1];
 
     // Base: weth |  Quote: usdc
     const expectedRate = wethUnit.mul(ethRate).div(wethUnit).mul(usdcUnit).div(usdcRate);
@@ -490,9 +494,9 @@ describe('getCanonicalRate', () => {
     const usdcUnit = utils.parseUnits('1', await usdc.decimals());
 
     // Calculate Rates
-    const ethRate = await ethUSDAggregator.latestAnswer();
-    const usdcRate = await usdcAggregator.latestAnswer();
-    const daiRate = await daiAggregator.latestAnswer();
+    const ethRate = (await ethUSDAggregator.latestRoundData())[1];
+    const usdcRate = (await usdcAggregator.latestRoundData())[1];
+    const daiRate = (await daiAggregator.latestRoundData())[1];
 
     // USD rate to ETH rate
     // Base: dai |  Quote: usdc
@@ -512,38 +516,6 @@ describe('getCanonicalRate', () => {
       .div(daiRate);
     const canonicalRateUsdcDai = await valueInterpreter.calcCanonicalAssetValue.args(usdc, usdcUnit, dai).call();
     expect(canonicalRateUsdcDai).toEqBigNumber(expectedRateUsdcDai);
-  });
-});
-
-describe('setStaleRateThreshold', () => {
-  it('does not allow its prev value', async () => {
-    const valueInterpreter = fork.deployment.valueInterpreter;
-
-    const storedStaleRateThreshold = await valueInterpreter.getStaleRateThreshold();
-
-    await expect(valueInterpreter.setStaleRateThreshold(storedStaleRateThreshold)).rejects.toBeRevertedWith(
-      'Value already set',
-    );
-  });
-
-  it('properly sets value', async () => {
-    const valueInterpreter = fork.deployment.valueInterpreter;
-
-    // Get stored staleRateThreshold
-    const storedStaleRateThreshold = await valueInterpreter.getStaleRateThreshold();
-
-    // Set new value to 1 day
-    const newStaleThreshold = 60 * 60 * 24;
-    const setStaleRateThresholdReceipt = await valueInterpreter.setStaleRateThreshold(newStaleThreshold);
-
-    //Check events
-    const updatedStaleRateThreshold = await valueInterpreter.getStaleRateThreshold();
-    expect(updatedStaleRateThreshold).toEqBigNumber(newStaleThreshold);
-
-    assertEvent(setStaleRateThresholdReceipt, 'StaleRateThresholdSet', {
-      prevStaleRateThreshold: storedStaleRateThreshold,
-      nextStaleRateThreshold: newStaleThreshold,
-    });
   });
 });
 

@@ -36,10 +36,14 @@ contract ValueInterpreter is
     // when converting values via an inverse rate
     uint256 private constant MIN_INVERSE_RATE_AMOUNT = 10000;
 
-    constructor(address _fundDeployer, address _wethToken)
+    constructor(
+        address _fundDeployer,
+        address _wethToken,
+        uint256 _chainlinkStaleRateThreshold
+    )
         public
         FundDeployerOwnerMixin(_fundDeployer)
-        ChainlinkPriceFeedMixin(_wethToken)
+        ChainlinkPriceFeedMixin(_wethToken, _chainlinkStaleRateThreshold)
     {}
 
     // EXTERNAL FUNCTIONS
@@ -234,15 +238,6 @@ contract ValueInterpreter is
     /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
     function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyFundDeployerOwner {
         __setEthUsdAggregator(_nextEthUsdAggregator);
-    }
-
-    /// @notice Sets the `staleRateThreshold` variable
-    /// @param _nextStaleRateThreshold The next `staleRateThreshold` value
-    function setStaleRateThreshold(uint256 _nextStaleRateThreshold)
-        external
-        onlyFundDeployerOwner
-    {
-        __setStaleRateThreshold(_nextStaleRateThreshold);
     }
 
     /// @notice Updates a list of primitives with the given aggregator and rateAsset values
