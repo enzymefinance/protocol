@@ -890,7 +890,7 @@ describe('integration', () => {
     );
     // This is 1 wei less than expected
     expect(feeInfo3.aggregateValueDue).toEqBigNumber(
-      feeInfo3.rate.mul(gavIncreaseAmount).div(ONE_HUNDRED_PERCENT).sub(1),
+      BigNumber.from(feeInfo3.rate).mul(gavIncreaseAmount).div(ONE_HUNDRED_PERCENT).sub(1),
     );
   });
 });

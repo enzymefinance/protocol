@@ -56,10 +56,10 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     );
 
     struct FeeInfo {
-        uint256 rate;
-        uint256 period;
-        uint256 activated;
-        uint256 lastPaid;
+        uint16 rate;
+        uint64 period;
+        uint64 activated;
+        uint64 lastPaid;
         uint256 highWaterMark;
         uint256 lastSharePrice;
         uint256 aggregateValueDue;
@@ -87,7 +87,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
 
         feeInfo.highWaterMark = grossSharePrice;
         feeInfo.lastSharePrice = grossSharePrice;
-        feeInfo.activated = block.timestamp;
+        feeInfo.activated = uint64(block.timestamp);
 
         emit ActivatedForFund(_comptrollerProxy, grossSharePrice);
     }
@@ -101,9 +101,9 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         override
         onlyFeeManager
     {
-        (uint256 feeRate, uint256 feePeriod, address recipient) = abi.decode(
+        (uint16 feeRate, uint64 feePeriod, address recipient) = abi.decode(
             _settingsData,
-            (uint256, uint256, address)
+            (uint16, uint64, address)
         );
         require(feeRate > 0, "addFundSettings: feeRate must be greater than 0");
         // Unlike most other fees, there could be a case for using a rate of exactly 100%,
@@ -143,7 +143,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         }
 
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
-        feeInfo.lastPaid = block.timestamp;
+        feeInfo.lastPaid = uint64(block.timestamp);
 
         uint256 prevHighWaterMark = feeInfo.highWaterMark;
         uint256 nextHighWaterMark = __calcUint256Max(feeInfo.lastSharePrice, prevHighWaterMark);
