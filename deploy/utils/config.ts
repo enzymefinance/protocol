@@ -32,11 +32,6 @@ export interface DeploymentConfig {
     ethusd: string;
     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
   };
-  wdgld: {
-    wdgld: string;
-    ethusd: string;
-    xauusd: string;
-  };
   synthetix: {
     snx: string;
     susd: string;

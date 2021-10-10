@@ -222,7 +222,6 @@ const unsupportedAssets = {
 };
 
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
-const xauUsdAggregator = '0x214eD9Da11D2fbe465a6fc601a91E62EbEc1a0D6';
 
 const curveMinter = '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0';
 const synthetixDelegateApprovals = '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f';
@@ -323,11 +322,6 @@ const mainnetConfig: DeploymentConfig = {
     router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
   },
   unsupportedAssets,
-  wdgld: {
-    ethusd: ethUsdAggregator,
-    wdgld: '0x123151402076fc819B7564510989e475c9cD93CA',
-    xauusd: xauUsdAggregator,
-  },
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   yearn: {
     vaultV2: {

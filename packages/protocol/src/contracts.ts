@@ -47,7 +47,6 @@ export * from './codegen/RevertingPriceFeed';
 export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/SynthetixPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';
-export * from './codegen/WdgldPriceFeed';
 export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters

@@ -51,11 +51,9 @@ const fn: DeployFunction = async function (hre) {
     const lidoStethPriceFeed = await get('LidoStethPriceFeed');
     const stakehoundEthPriceFeed = await get('StakehoundEthPriceFeed');
     const synthetixPriceFeed = await get('SynthetixPriceFeed');
-    const wdgldPriceFeed = await get('WdgldPriceFeed');
     const yearnVaultV2PriceFeed = await get('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
-      [config.wdgld.wdgld, wdgldPriceFeed.address],
       [config.compound.ceth, compoundPriceFeed.address],
       [config.lido.steth, lidoStethPriceFeed.address],
       [config.stakehound.steth, stakehoundEthPriceFeed.address],
@@ -94,7 +92,6 @@ fn.dependencies = [
   'LidoStethPriceFeed',
   'StakehoundEthPriceFeed',
   'SynthetixPriceFeed',
-  'WdgldPriceFeed',
   'YearnVaultV2PriceFeed',
 ];
 
