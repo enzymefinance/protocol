@@ -77,6 +77,12 @@ contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
             return;
         }
 
+        // Require start timestamp to be in the past for simpler logic
+        require(
+            startTimestamp < block.timestamp,
+            "addFundSettings: startTimestamp must be in past"
+        );
+
         // Use 23 hours instead of 1 day to allow up to 1 hr of redemptionWindowBuffer
         require(
             duration > 0 && duration <= 23 hours,
@@ -135,12 +141,10 @@ contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
             redemptionWindow.startTimestamp
         );
 
-        // A fund can't trade during its redemption window, nor in the buffer beforehand.
-        // The lower bound is only relevant when the startTimestamp is in the future,
-        // so we check it last.
+        // A fund can't trade during its redemption window, nor in the buffer beforehand
         if (
-            block.timestamp >= latestRedemptionWindowStart.add(redemptionWindow.duration) ||
-            block.timestamp <= latestRedemptionWindowStart.sub(redemptionWindowBuffer)
+            block.timestamp > latestRedemptionWindowStart.add(redemptionWindow.duration) &&
+            block.timestamp < latestRedemptionWindowStart.add(ONE_DAY).sub(redemptionWindowBuffer)
         ) {
             return true;
         }
@@ -193,10 +197,6 @@ contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
         view
         returns (uint256 latestRedemptionWindowStart_)
     {
-        if (block.timestamp <= _startTimestamp) {
-            return _startTimestamp;
-        }
-
         uint256 timeSinceStartTimestamp = block.timestamp.sub(_startTimestamp);
         uint256 timeSincePeriodStart = timeSinceStartTimestamp.mod(ONE_DAY);
 

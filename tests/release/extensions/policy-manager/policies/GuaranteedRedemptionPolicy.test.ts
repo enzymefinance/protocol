@@ -3,6 +3,7 @@ import { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   GuaranteedRedemptionPolicy,
   guaranteedRedemptionPolicyArgs,
+  ONE_DAY_IN_SECONDS,
   PolicyHook,
   validateRulePostCoIArgs,
 } from '@enzymefinance/protocol';
@@ -109,6 +110,19 @@ describe('addFundSettings', () => {
     await expect(
       guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
     ).rejects.toBeRevertedWith('duration must be between 1 second and 23 hours');
+  });
+
+  it('does not allow a startTimestamp in the future', async () => {
+    const latestBlock = await provider.getBlock('latest');
+    const futureTimestamp = BigNumber.from(latestBlock.timestamp).add(100);
+
+    const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
+      startTimestamp: futureTimestamp,
+      duration: constants.Zero,
+    });
+    await expect(
+      guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
+    ).rejects.toBeRevertedWith('startTimestamp must be in past');
   });
 
   it('does not allow duration to be >23 hours', async () => {
@@ -314,40 +328,6 @@ describe('validateRule', () => {
     expect(validateRuleResult).toBe(true);
   });
 
-  it('returns true if the adapter is listed and the current time is before the first redemption window', async () => {
-    const latestBlock = await provider.getBlock('latest');
-    const now = BigNumber.from(latestBlock.timestamp);
-
-    // Approximate the difference between now and the block.timestamp in validateRule by adding 5 seconds
-    await addFundSettings({
-      comptrollerProxy,
-      guaranteedRedemptionPolicy,
-      startTimestamp: now.add(fork.config.policies.guaranteedRedemption.redemptionWindowBuffer).add(BigNumber.from(5)),
-      duration: 300,
-    });
-
-    const adapter = randomAddress();
-
-    await guaranteedRedemptionPolicy.connect(fork.deployer).addRedemptionBlockingAdapters([adapter]);
-
-    // Only the adapter arg matters for this policy
-    const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
-      adapter,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
-      incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
-      spendAssetAmounts: [1],
-    });
-
-    const validateRuleResult = await guaranteedRedemptionPolicy.validateRule
-      .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
-      .call();
-
-    expect(validateRuleResult).toBe(true);
-  });
-
   it('returns true if the adapter is listed and current time is beyond the last redemption window', async () => {
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
@@ -357,7 +337,7 @@ describe('validateRule', () => {
       comptrollerProxy,
       guaranteedRedemptionPolicy,
       startTimestamp: now.sub(duration),
-      duration: 300,
+      duration,
     });
 
     const adapter = randomAddress();
@@ -380,6 +360,16 @@ describe('validateRule', () => {
       .call();
 
     expect(validateRuleResult).toBe(true);
+
+    // Should still return true in 24 hours
+    await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
+    await provider.send('evm_mine', []);
+
+    expect(
+      await guaranteedRedemptionPolicy.validateRule
+        .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
+        .call(),
+    ).toBe(true);
   });
 
   it('returns false if the adapter is listed and the redemption window is not defined', async () => {
@@ -413,7 +403,7 @@ describe('validateRule', () => {
     await addFundSettings({
       comptrollerProxy,
       guaranteedRedemptionPolicy,
-      startTimestamp: now.add(duration),
+      startTimestamp: now,
       duration,
     });
 
@@ -437,19 +427,37 @@ describe('validateRule', () => {
       .call();
 
     expect(validateRuleResult).toBe(false);
+
+    // Should still return false in 24 hours
+    await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
+    await provider.send('evm_mine', []);
+
+    expect(
+      await guaranteedRedemptionPolicy.validateRule
+        .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
+        .call(),
+    ).toBe(false);
   });
 
   it('returns false if the adapter is listed and current time is within the redemption window buffer', async () => {
     const latestBlock = await provider.getBlock('latest');
     const now = BigNumber.from(latestBlock.timestamp);
-    const duration = BigNumber.from(300);
+    const duration = BigNumber.from(1000);
 
     await addFundSettings({
       comptrollerProxy,
       guaranteedRedemptionPolicy,
-      startTimestamp: now.add(BigNumber.from(10)), // approximate to block.timestamp in validateRule by adding 10 seconds
+      startTimestamp: now,
       duration,
     });
+
+    // Confirm the buffer is greater than the time to warp prior to the window
+    const secondsBeforeWindow = 60;
+    expect(await guaranteedRedemptionPolicy.getRedemptionWindowBuffer()).toBeGtBigNumber(secondsBeforeWindow);
+
+    // Warp 24 hours to immediately before the next pre-window buffer period
+    await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS - secondsBeforeWindow]);
+    await provider.send('evm_mine', []);
 
     const adapter = randomAddress();
 
@@ -471,6 +479,16 @@ describe('validateRule', () => {
       .call();
 
     expect(validateRuleResult).toBe(false);
+
+    // Should still return false in 24 hours
+    await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
+    await provider.send('evm_mine', []);
+
+    expect(
+      await guaranteedRedemptionPolicy.validateRule
+        .args(comptrollerProxy, PolicyHook.PostCallOnIntegration, postCoIArgs)
+        .call(),
+    ).toBe(false);
   });
 });
 
