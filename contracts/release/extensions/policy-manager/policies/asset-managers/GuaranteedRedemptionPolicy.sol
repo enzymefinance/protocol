@@ -29,15 +29,15 @@ contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
 
     event FundSettingsSet(
         address indexed comptrollerProxy,
-        uint256 startTimestamp,
-        uint256 duration
+        uint128 startTimestamp,
+        uint128 duration
     );
 
     event RedemptionWindowBufferSet(uint256 prevBuffer, uint256 nextBuffer);
 
     struct RedemptionWindow {
-        uint256 startTimestamp;
-        uint256 duration;
+        uint128 startTimestamp;
+        uint128 duration;
     }
 
     uint256 private constant ONE_DAY = 24 * 60 * 60;
@@ -67,9 +67,9 @@ contract GuaranteedRedemptionPolicy is PolicyBase, FundDeployerOwnerMixin {
         override
         onlyPolicyManager
     {
-        (uint256 startTimestamp, uint256 duration) = abi.decode(
+        (uint128 startTimestamp, uint128 duration) = abi.decode(
             _encodedSettings,
-            (uint256, uint256)
+            (uint128, uint128)
         );
 
         if (startTimestamp == 0) {
