@@ -24,7 +24,7 @@ import "../../../interfaces/IUniswapV2Pair.sol";
 abstract contract UniswapV2PoolTokenValueCalculator {
     using SafeMath for uint256;
 
-    uint256 private constant POOL_TOKEN_UNIT = 10**18;
+    uint256 internal constant UNISWAP_V2_POOL_TOKEN_UNIT = 10**18;
 
     // INTERNAL FUNCTIONS
 
@@ -72,8 +72,8 @@ abstract contract UniswapV2PoolTokenValueCalculator {
             }
         }
         return (
-            _reserve0.mul(POOL_TOKEN_UNIT).div(totalSupply),
-            _reserve1.mul(POOL_TOKEN_UNIT).div(totalSupply)
+            _reserve0.mul(UNISWAP_V2_POOL_TOKEN_UNIT).div(totalSupply),
+            _reserve1.mul(UNISWAP_V2_POOL_TOKEN_UNIT).div(totalSupply)
         );
     }
 

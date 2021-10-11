@@ -38,7 +38,6 @@ contract UniswapV2PoolPriceFeed is
         uint8 token1Decimals;
     }
 
-    uint256 private constant POOL_TOKEN_UNIT = 10**18;
     address private immutable FACTORY;
     address private immutable VALUE_INTERPRETER;
 
@@ -90,8 +89,12 @@ contract UniswapV2PoolPriceFeed is
 
         // Define normalized rates for each underlying
         underlyingAmounts_ = new uint256[](2);
-        underlyingAmounts_[0] = _derivativeAmount.mul(token0DenormalizedRate).div(POOL_TOKEN_UNIT);
-        underlyingAmounts_[1] = _derivativeAmount.mul(token1DenormalizedRate).div(POOL_TOKEN_UNIT);
+        underlyingAmounts_[0] = _derivativeAmount.mul(token0DenormalizedRate).div(
+            UNISWAP_V2_POOL_TOKEN_UNIT
+        );
+        underlyingAmounts_[1] = _derivativeAmount.mul(token1DenormalizedRate).div(
+            UNISWAP_V2_POOL_TOKEN_UNIT
+        );
 
         return (underlyings_, underlyingAmounts_);
     }
