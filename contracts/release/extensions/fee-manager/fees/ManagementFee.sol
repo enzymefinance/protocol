@@ -26,7 +26,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
 
     event ActivatedForMigratedFund(address indexed comptrollerProxy);
 
-    event FundSettingsAdded(address indexed comptrollerProxy, uint256 scaledPerSecondRate);
+    event FundSettingsAdded(address indexed comptrollerProxy, uint128 scaledPerSecondRate);
 
     event Settled(
         address indexed comptrollerProxy,
@@ -35,8 +35,10 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     );
 
     struct FeeInfo {
-        uint256 scaledPerSecondRate;
-        uint256 lastSettled;
+        // The scaled rate representing 99.99% is under 10^28,
+        // thus `uint128 scaledPerSecondRate` is sufficient for any reasonable fee rate
+        uint128 scaledPerSecondRate;
+        uint128 lastSettled;
     }
 
     uint256 private constant RATE_SCALE_BASE = 10**27;
@@ -57,7 +59,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     {
         // It is only necessary to set `lastSettled` for a migrated fund
         if (VaultLib(payable(_vaultProxy)).totalSupply() > 0) {
-            comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
+            comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = uint128(block.timestamp);
 
             emit ActivatedForMigratedFund(_comptrollerProxy);
         }
@@ -71,9 +73,9 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
         override
         onlyFeeManager
     {
-        (uint256 scaledPerSecondRate, address recipient) = abi.decode(
+        (uint128 scaledPerSecondRate, address recipient) = abi.decode(
             _settingsData,
-            (uint256, address)
+            (uint128, address)
         );
         require(
             scaledPerSecondRate > 0,
@@ -143,7 +145,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
         // Must settle even when no shares are due, for the case that settlement is being
         // done when there are no shares in the fund (i.e. at the first investment, or at the
         // first investment after all shares have been redeemed)
-        comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = block.timestamp;
+        comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = uint128(block.timestamp);
         emit Settled(_comptrollerProxy, sharesDue_, secondsSinceSettlement);
 
         if (sharesDue_ == 0) {
