@@ -23,6 +23,7 @@ const fn: DeployFunction = async function (hre) {
     from: deployer.address,
     linkedData: {
       type: 'ADAPTER',
+      nonSlippageAdapter: true,
     },
     log: true,
     skipIfAlreadyDeployed: true,

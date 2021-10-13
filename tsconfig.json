@@ -62,6 +62,7 @@
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
   },
-  "include": ["tests", "tests/types.d.ts"],
+  "files": ["hardhat.config.ts", "jest.config.ts", "jest.setup.ts"],
+  "include": ["deploy", "tests", "tests/types.d.ts"],
   "exclude": ["node_modules"]
 }
