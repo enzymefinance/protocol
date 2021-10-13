@@ -553,6 +553,11 @@ describe('receiveCallFromVault', () => {
         cTokens: collateralAssets,
       });
 
+      // Warp some time to ensure there is an accruedInterest > 0
+      const secondsToWarp = 100000000;
+      await provider.send('evm_increaseTime', [secondsToWarp]);
+      await provider.send('evm_mine', []);
+
       const borrowedBalancesBefore = (await compoundDebtPosition.getDebtAssets.call()).amounts_[0];
       const vaultBalanceBefore = await dai.balanceOf(vaultProxyUsed);
 
