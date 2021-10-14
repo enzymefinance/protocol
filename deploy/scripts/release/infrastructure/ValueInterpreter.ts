@@ -1,4 +1,10 @@
-import { ValueInterpreterArgs, ValueInterpreter, ONE_YEAR_IN_SECONDS } from '@enzymefinance/protocol';
+import {
+  ValueInterpreterArgs,
+  ValueInterpreter,
+  ONE_YEAR_IN_SECONDS,
+  ONE_DAY_IN_SECONDS,
+  ONE_HOUR_IN_SECONDS,
+} from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { loadConfig } from '../../../utils/config';
 
@@ -12,9 +18,10 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const fundDeployer = await get('FundDeployer');
 
-  // TODO: define this setting conditionally, either in Mainnet config or here
-  // For tests, it's convenient to use a value far in the future
-  const chainlinkStaleRateThreshold = ONE_YEAR_IN_SECONDS * 10;
+  const chainlinkStaleRateThreshold = hre.network.live
+    ? ONE_DAY_IN_SECONDS + ONE_HOUR_IN_SECONDS
+    : ONE_YEAR_IN_SECONDS * 10;
+
   const valueInterpreter = await deploy('ValueInterpreter', {
     args: [fundDeployer.address, config.weth, chainlinkStaleRateThreshold] as ValueInterpreterArgs,
     from: deployer.address,
