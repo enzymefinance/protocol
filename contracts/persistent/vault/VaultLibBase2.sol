@@ -24,6 +24,8 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event AssetManagerRemoved(address manager);
 
+    event EthReceived(address indexed sender, uint256 amount);
+
     event ExternalPositionAdded(address indexed externalPosition);
 
     event ExternalPositionRemoved(address indexed externalPosition);

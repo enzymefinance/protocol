@@ -83,7 +83,10 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @dev If a VaultProxy receives ETH, immediately wrap into WETH.
     /// Will not be able to receive ETH via .transfer() or .send() due to limited gas forwarding.
     receive() external payable {
-        IWETH(payable(getWethToken())).deposit{value: payable(address(this)).balance}();
+        uint256 ethAmount = payable(address(this)).balance;
+        IWETH(payable(getWethToken())).deposit{value: ethAmount}();
+
+        emit EthReceived(msg.sender, ethAmount);
     }
 
     /////////////
