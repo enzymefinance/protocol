@@ -3,7 +3,7 @@
   "commit": false,
   "linked": [["@enzymefinance/*"]],
   "access": "public",
-  "baseBranch": "next",
+  "baseBranch": "v4",
   "updateInternalDependencies": "patch",
   "ignore": []
 }

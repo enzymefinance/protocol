@@ -14,15 +14,9 @@ All pull requests must be made against the private development repo.
 
 ## Git Branching Model
 
-We essentially follow the principles of this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/), where `master` is replaced by `current` and `develop` is replaced by `next`.
+We essentially follow the principles of this [Git branching model](http://nvie.com/posts/a-successful-git-branching-model/), but with no `develop` branch and every release having its own `v~` (e.g., `v1`, `v2`) branch instead of a `master` branch.
 
-`current` is the branch with the smart contracts that represent the full current release active on Ethereum mainnet.
-
-`next` is the branch under active development, which will become the next release on Ethereum mainnet.
-
-Because releases are dependent on deployed smart contracts, the only kinds of code that can be merged directly into `current` are new contracts that do not depend on changes to already-deployed production code (e.g., a new DeFi adapter or a new derivative price feed), or changes to non-production code (e.g., docs or additional test coverage necessary to accompany new contracts).
-
-Any breaking changes to production contracts should be introduced by branching off of `next`.
+Because releases are dependent on deployed smart contracts, the only kinds of code that can be merged directly into branches of already-deployed releases are contracts that do not depend on changes to already-deployed production code (e.g., a new DeFi adapter or a new derivative price feed), or changes to non-production code (e.g., docs or additional test coverage necessary to accompany new contracts).
 
 Each branch name should be prefixed with either `feat/`, `fix/`, `refactor/`, `chore/`, `test/`, or `docs/` depending on the type of work that is being done:
 

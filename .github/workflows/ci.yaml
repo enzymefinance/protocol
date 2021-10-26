@@ -2,15 +2,12 @@ name: CI
 on:
   push:
     branches:
-      - current
-      - next
+      - v[1-9]+
       - audit/*
   pull_request:
     branches:
-      - current
-      - next
+      - v[1-9]+
       - audit/*
-
 jobs:
   test:
     name: Test
