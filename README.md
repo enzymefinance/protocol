@@ -25,9 +25,15 @@ yarn compile
 
 ## Test
 
+First, create a `.env` file by copying `.env.example`. Input your Ethereum node endpoint info as-needed (generally, only setting `ETHEREUM_NODE_MAINNET` is fine).
+
+Then, you can run tests. The full test suite can be run with:
+
 ```sh
 yarn test
 ```
+
+Note that tests might fail on the first runs while building a cache for the fork block, due to timeout. Continue to run tests as-needed, which will build the cache.
 
 ## Contribute
 
