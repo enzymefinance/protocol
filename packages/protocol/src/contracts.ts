@@ -10,6 +10,7 @@ export * from './codegen/IMigrationHookHandler';
 
 // Persistent
 export * from './codegen/AddressListRegistry';
+export * from './codegen/FundValueCalculatorRouter';
 
 // Release core
 export * from './codegen/FundDeployer';
@@ -95,6 +96,7 @@ export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 
 // Peripheral
 export * from './codegen/DepositWrapper';
+export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts

@@ -24,48 +24,11 @@ contract UnpermissionedActionsWrapper {
         FEE_MANAGER = _feeManager;
     }
 
-    // EXTERNAL FUNCTIONS
-
-    /// @notice Calculates the net value of 1 unit of shares in the fund's denomination asset
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @return netShareValue_ The amount of the denomination asset per share
-    /// @dev Accounts for fees outstanding. This is a convenience function for external consumption
-    /// that can be used to determine the cost of purchasing shares at any given point in time.
-    /// It essentially just bundles settling all fees that implement the Continuous hook and then
-    /// looking up the gross share value.
-    function calcNetShareValueForFund(address _comptrollerProxy)
-        external
-        returns (uint256 netShareValue_)
-    {
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        comptrollerProxyContract.callOnExtension(getFeeManager(), 0, "");
-
-        return comptrollerProxyContract.calcGrossShareValue(false);
-    }
-
-    /// @notice Invokes the Continuous fee hook on all specified fees, and then attempts to payout
-    /// any shares outstanding on those fees
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _fees The fees for which to run these actions
-    /// @dev This is just a wrapper to execute two callOnExtension() actions atomically, in sequence.
-    /// The caller must pass in the fees that they want to run this logic on.
-    function invokeContinuousFeeHookAndPayoutSharesOutstandingForFund(
-        address _comptrollerProxy,
-        address[] calldata _fees
-    ) external {
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-
-        comptrollerProxyContract.callOnExtension(getFeeManager(), 0, "");
-        comptrollerProxyContract.callOnExtension(getFeeManager(), 1, abi.encode(_fees));
-    }
-
-    // PUBLIC FUNCTIONS
-
     /// @notice Gets all fees that implement the `Continuous` fee hook for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return continuousFees_ The fees that implement the `Continuous` fee hook
     function getContinuousFeesForFund(address _comptrollerProxy)
-        public
+        external
         view
         returns (address[] memory continuousFees_)
     {
@@ -100,6 +63,22 @@ contract UnpermissionedActionsWrapper {
         }
 
         return continuousFees_;
+    }
+
+    /// @notice Invokes the Continuous fee hook on all specified fees, and then attempts to payout
+    /// any shares outstanding on those fees
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _fees The fees for which to run these actions
+    /// @dev This is just a wrapper to execute two callOnExtension() actions atomically, in sequence.
+    /// The caller must pass in the fees that they want to run this logic on.
+    function invokeContinuousFeeHookAndPayoutSharesOutstandingForFund(
+        address _comptrollerProxy,
+        address[] calldata _fees
+    ) external {
+        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
+
+        comptrollerProxyContract.callOnExtension(getFeeManager(), 0, "");
+        comptrollerProxyContract.callOnExtension(getFeeManager(), 1, abi.encode(_fees));
     }
 
     ///////////////////

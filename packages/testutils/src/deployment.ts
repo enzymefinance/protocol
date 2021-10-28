@@ -63,6 +63,8 @@ import {
   MinAssetBalancesPostRedemptionPolicy,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
+  FundValueCalculatorRouter,
+  FundValueCalculator,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -152,6 +154,8 @@ export async function deployProtocolFixture() {
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture['MinAssetBalancesPostRedemptionPolicy'].address, deployer),
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture['OnlyRemoveDustExternalPositionPolicy'].address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
+    fundValueCalculatorRouter: new FundValueCalculatorRouter(fixture['FundValueCalculatorRouter'].address, deployer),
+    fundValueCalculator: new FundValueCalculator(fixture['FundValueCalculator'].address, deployer),
   } as const;
 
   return {
