@@ -2,11 +2,11 @@ name: CI
 on:
   push:
     branches:
-      - v[1-9]+
+      - v[1-9]*
       - audit/*
   pull_request:
     branches:
-      - v[1-9]+
+      - v[1-9]*
       - audit/*
 jobs:
   test:
