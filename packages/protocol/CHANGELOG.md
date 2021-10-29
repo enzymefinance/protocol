@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.2
+
+### Patch Changes
+
+- a0b65d53: Publishing post-audit packages.
+
 ## 4.0.0-next.1
 
 ### Patch Changes
