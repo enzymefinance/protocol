@@ -27,8 +27,14 @@ contract FundValueCalculatorRouter {
 
     mapping(address => address) private fundDeployerToFundValueCalculator;
 
-    constructor(address _dispatcher) public {
+    constructor(
+        address _dispatcher,
+        address[] memory _fundDeployers,
+        address[] memory _fundValueCalculators
+    ) public {
         DISPATCHER = _dispatcher;
+
+        __setFundValueCalculators(_fundDeployers, _fundValueCalculators);
     }
 
     // EXTERNAL FUNCTIONS
@@ -165,30 +171,6 @@ contract FundValueCalculatorRouter {
             );
     }
 
-    /// @notice Sets FundValueCalculator instances for a list of FundDeployer instances
-    /// @param _fundDeployers The FundDeployer instances
-    /// @param _fundValueCalculators The FundValueCalculator instances corresponding
-    /// to each instance in _fundDeployers
-    function setFundValueCalculators(
-        address[] memory _fundDeployers,
-        address[] memory _fundValueCalculators
-    ) external {
-        require(
-            msg.sender == IDispatcher(getDispatcher()).getOwner(),
-            "Only the Dispatcher owner can call this function"
-        );
-        require(
-            _fundDeployers.length == _fundValueCalculators.length,
-            "setFundValueCalculators: Unequal array lengths"
-        );
-
-        for (uint256 i; i < _fundDeployers.length; i++) {
-            fundDeployerToFundValueCalculator[_fundDeployers[i]] = _fundValueCalculators[i];
-
-            emit FundValueCalculatorUpdated(_fundDeployers[i], _fundValueCalculators[i]);
-        }
-    }
-
     // PUBLIC FUNCTIONS
 
     /// @notice Gets the FundValueCalculator instance to use for a given fund
@@ -209,6 +191,43 @@ contract FundValueCalculatorRouter {
         );
 
         return IFundValueCalculator(fundValueCalculator);
+    }
+
+    ////////////////////////////
+    // FUND VALUE CALCULATORS //
+    ////////////////////////////
+
+    /// @notice Sets FundValueCalculator instances for a list of FundDeployer instances
+    /// @param _fundDeployers The FundDeployer instances
+    /// @param _fundValueCalculators The FundValueCalculator instances corresponding
+    /// to each instance in _fundDeployers
+    function setFundValueCalculators(
+        address[] memory _fundDeployers,
+        address[] memory _fundValueCalculators
+    ) external {
+        require(
+            msg.sender == IDispatcher(getDispatcher()).getOwner(),
+            "Only the Dispatcher owner can call this function"
+        );
+
+        __setFundValueCalculators(_fundDeployers, _fundValueCalculators);
+    }
+
+    /// @dev Helper to set FundValueCalculator addresses respectively for given FundDeployers
+    function __setFundValueCalculators(
+        address[] memory _fundDeployers,
+        address[] memory _fundValueCalculators
+    ) private {
+        require(
+            _fundDeployers.length == _fundValueCalculators.length,
+            "__setFundValueCalculators: Unequal array lengths"
+        );
+
+        for (uint256 i; i < _fundDeployers.length; i++) {
+            fundDeployerToFundValueCalculator[_fundDeployers[i]] = _fundValueCalculators[i];
+
+            emit FundValueCalculatorUpdated(_fundDeployers[i], _fundValueCalculators[i]);
+        }
     }
 
     ///////////////////

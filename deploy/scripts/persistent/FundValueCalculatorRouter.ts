@@ -11,7 +11,8 @@ const fn: DeployFunction = async function (hre) {
   const dispatcher = await get('Dispatcher');
 
   await deploy('FundValueCalculatorRouter', {
-    args: [dispatcher.address] as FundValueCalculatorRouterArgs,
+    // TODO: update with all FundValueCalculator instances?
+    args: [dispatcher.address, [], []] as FundValueCalculatorRouterArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
