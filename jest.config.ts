@@ -32,6 +32,7 @@ const projects = [
   project('peripheral', ['tests/release/peripheral']),
   project('utils', ['tests/release/utils']),
   project('e2e', ['tests/release/e2e']),
+  project('ci-excluded', ['tests/release/excluded']),
 ].filter((project) => !!project);
 
 export default {

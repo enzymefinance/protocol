@@ -394,7 +394,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toCostAround('439769');
+      expect(borrowReceipt).toCostAround('450680');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {
@@ -440,7 +440,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toCostAround('434596');
+      expect(borrowReceipt).toCostAround('441329');
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
       expect(getDebtAssetsCall).toMatchFunctionOutput(compoundDebtPosition.getManagedAssets.fragment, {

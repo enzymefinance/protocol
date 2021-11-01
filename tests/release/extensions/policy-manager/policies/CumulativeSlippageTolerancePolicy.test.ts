@@ -234,7 +234,7 @@ describe('validateRule', () => {
     );
 
     // FIRST SWAP - Exact tolerance limit
-    const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10).add(1); // exactly 10% slippage, after rounding up
+    const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10).add(2); // exactly 10% slippage, after rounding up
     const firstSwapReceipt = await mockGenericSwap({
       comptrollerProxy,
       vaultProxy,
@@ -259,7 +259,7 @@ describe('validateRule', () => {
     });
 
     // SECOND SWAP - 0.01% slippage trade
-    const secondSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9999).div(10000).add(1); // 0.01% slippage
+    const secondSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9999).div(10000).add(2); // 0.01% slippage
 
     // Executing immediately should fail
     await expect(
@@ -337,14 +337,14 @@ describe('validateRule', () => {
       await valueInterpreter.calcCanonicalAssetsTotalValue
         .args(outgoingAssets, outgoingAssetAmounts, denominationAsset)
         .call()
-    ).add(1);
+    ).add(2);
     const zeroSlippageIncomingAssetAmounts = await Promise.all(
       incomingAssets.map(async (asset) =>
         (
           await valueInterpreter.calcCanonicalAssetValue
             .args(denominationAsset, zeroSlippageIncomingAssetsDenominationAssetAmount.div(2), asset)
             .call()
-        ).add(1),
+        ).add(2),
       ),
     );
 
@@ -355,7 +355,7 @@ describe('validateRule', () => {
 
     // FIRST SWAP - Approx tolerance limit (each rounded up)
     const firstSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
-      amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_WEI).add(1),
+      amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_WEI).add(2),
     );
     const firstSwapReceipt = await mockGenericSwap({
       comptrollerProxy,
@@ -390,7 +390,7 @@ describe('validateRule', () => {
     // 1 / (10 * ONE_HUNDRED_PERCENT_IN_WEI) to an insignificant amount
     const insignificantPrecision = ONE_HUNDRED_PERCENT_IN_WEI.mul(10);
     const secondSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
-      amount.mul(insignificantPrecision.sub(1)).div(insignificantPrecision),
+      amount.mul(insignificantPrecision.sub(2)).div(insignificantPrecision),
     );
     await mockGenericSwap({
       comptrollerProxy,

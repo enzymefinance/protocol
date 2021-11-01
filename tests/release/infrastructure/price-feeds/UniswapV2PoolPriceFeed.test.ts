@@ -1,3 +1,4 @@
+import { AddressLike } from '@enzymefinance/ethers';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import {
   ProtocolDeployment,
@@ -62,7 +63,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(90000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(91229));
   });
 });
 
@@ -73,7 +74,7 @@ describe('constructor', () => {
     expect(await uniswapV2PoolPriceFeed.getFactory()).toMatchAddress(fork.config.uniswap.factory);
     expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
 
-    for (const poolToken of Object.values(fork.config.uniswap.pools)) {
+    for (const poolToken of Object.values(fork.config.uniswap.pools) as AddressLike[]) {
       const pairContract = new IUniswapV2Pair(poolToken, provider);
       const token0 = await pairContract.token0();
       const token1 = await pairContract.token1();
@@ -106,7 +107,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['73894532231345', '38492473356460301046925'],
+      underlyingAmounts_: ['114705993926399', '27314859240249774389844'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -175,9 +176,9 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on July 16, 2021 was worth about $147M
+      // usdc/weth on Oct 26, 2021 was worth about $230M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toEqBigNumber('147718343352075');
+      expect(canonicalAssetValue).toEqBigNumber('229068505740569');
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -195,9 +196,9 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on July 16, 2021 was worth about $140
+      // knc/weth on Oct 26, 2021 was worth about $235
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toEqBigNumber('140713575671083187930');
+      expect(canonicalAssetValue).toEqBigNumber('238908671338793606176');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

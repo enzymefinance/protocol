@@ -466,7 +466,7 @@ describe('vault call registry', () => {
 
     it('does not allow an already registered vaultCall', async () => {
       const { fundDeployer } = fork.deployment;
-      const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0];
+      const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0] as any;
 
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
 

@@ -101,7 +101,7 @@ const config: HardhatUserConfig = {
       },
       chainId: 1,
       forking: {
-        blockNumber: 12836323, // July 16, 2021
+        blockNumber: 13495000, // Oct 26, 2021
         url: node('mainnet'),
       },
       blockGasLimit: gas,

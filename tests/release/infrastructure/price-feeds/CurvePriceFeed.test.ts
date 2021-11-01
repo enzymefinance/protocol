@@ -57,7 +57,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(93000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(94484));
   });
 });
 
@@ -95,7 +95,7 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    expect(calcUnderlyingValuesTx).toCostAround('95281');
+    expect(calcUnderlyingValuesTx).toCostAround('96789');
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -124,7 +124,7 @@ describe('calcUnderlyingValues', () => {
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
-    expect(calcUnderlyingValuesTx).toCostAround('64300');
+    expect(calcUnderlyingValuesTx).toCostAround('62649');
   });
 });
 
@@ -141,7 +141,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of WETH (10^18)
-    expect(canonicalAssetValue).toEqBigNumber('1017280108059536953');
+    expect(canonicalAssetValue).toEqBigNumber('1025533237089447185');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
@@ -163,7 +163,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of USDC (10^6)
-    expect(canonicalAssetValue).toEqBigNumber('1018048');
+    expect(canonicalAssetValue).toEqBigNumber('1019311');
   });
 });
 

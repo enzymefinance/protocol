@@ -536,7 +536,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1002326');
+      expect(canonicalAssetValue).toEqBigNumber('1007003');
     });
 
     // SUSD/ETH and USDC/ETH
@@ -554,7 +554,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1004177');
+      expect(canonicalAssetValue).toEqBigNumber('992864');
     });
   });
 
@@ -571,17 +571,17 @@ describe('expected values', () => {
       const quoteDecimals = await ren.decimals();
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // bnb/usd on July, 2021 was about $312
-      // ren/usd on July, 2021 was about $0.32
-      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
-      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
-      // 1 bnb was about 722 REN
+      // bnb/usd on Oct 26, 2021 was about $488
+      // ren/usd on Oct 26, 2021 was about $1.12
+      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2021-10-26&end_date=2021-10-26>
+      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2021-10-26&end_date=2021-10-26>
+      // 1 bnb was about 435 ren
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('979940887055536316777');
+      expect(canonicalAssetValue).toEqBigNumber('408713255655946650795');
     });
   });
 
@@ -607,7 +607,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('1003798757802592790');
+      expect(canonicalAssetValue).toEqBigNumber('1000011557023930509');
     });
 
     // USDC/ETH and DAI/USD
@@ -631,7 +631,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('999623218725174672');
+      expect(canonicalAssetValue).toEqBigNumber('1007198612178924905');
     });
   });
 
@@ -657,7 +657,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('996215618147497394');
+      expect(canonicalAssetValue).toEqBigNumber('999988443109632749');
     });
 
     // DAI/USD and USDC/ETH
@@ -681,7 +681,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1000376');
+      expect(canonicalAssetValue).toEqBigNumber('992852');
     });
   });
 });

@@ -1,4 +1,4 @@
-import { randomAddress } from '@enzymefinance/ethers';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import { IIdleTokenV4, StandardToken } from '@enzymefinance/protocol';
 import {
   buyShares,
@@ -20,7 +20,7 @@ describe('constructor', () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
 
     // Assert each derivative is properly registered
-    for (const idleTokenAddress of Object.values(fork.config.idle)) {
+    for (const idleTokenAddress of Object.values(fork.config.idle) as AddressLike[]) {
       const idleToken = new IIdleTokenV4(idleTokenAddress, provider);
       expect(await idlePriceFeed.isSupportedAsset(idleToken)).toBe(true);
       expect(await idlePriceFeed.getUnderlyingForDerivative(idleToken)).toMatchAddress(await idleToken.token());
@@ -122,7 +122,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1062592');
+    expect(canonicalAssetValue).toEqBigNumber('1075991');
   });
 });
 
@@ -168,6 +168,6 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(225000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(208405));
   });
 });

@@ -92,7 +92,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(272000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(224058));
   });
 });
 
@@ -104,7 +104,7 @@ describe('constructor', () => {
     expect(await synthetixPriceFeed.getSUSD()).toMatchAddress(fork.config.primitives.susd);
 
     // TODO: can check this more precisely by calling Synthetix
-    for (const synth of Object.values(fork.config.synthetix.synths)) {
+    for (const synth of Object.values(fork.config.synthetix.synths) as AddressLike[]) {
       expect(await synthetixPriceFeed.getCurrencyKeyForSynth(synth)).not.toBe(constants.HashZero);
     }
 
@@ -283,14 +283,14 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // sbtc/usd price at July 16, 2020 had a price of ca. $32500
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16#panel>
+    // sbtc/usd price at Oct 26, 2020 had a price of ca. $63600
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-10-26&end_date=2021-10-26#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('31931382264446721234605');
+    expect(canonicalAssetValue).toEqBigNumber('61534524833024660644991');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
@@ -304,13 +304,12 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // sbtc/usd price at July 16, 2020 had a price of $32500
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16#panel>
+    // See sbtc/usd historical price above
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('31934452377');
+    expect(canonicalAssetValue).toEqBigNumber('61541743544');
   });
 });

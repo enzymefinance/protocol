@@ -1,4 +1,4 @@
-import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { IDerivativePriceFeed, MockToken } from '@enzymefinance/protocol';
 import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
@@ -50,13 +50,13 @@ describe('constructor', () => {
     } = await provider.snapshot(snapshot);
 
     // Check compound
-    for (const cToken of Object.values(compoundTokens)) {
+    for (const cToken of Object.values(compoundTokens) as AddressLike[]) {
       const storedPriceFeed = await valueInterpreter.getPriceFeedForDerivative(cToken);
       expect(storedPriceFeed).toMatchAddress(compoundPriceFeed);
     }
 
     // Check uniswapV2
-    for (const lpToken of Object.values(uniswapV2PoolTokens)) {
+    for (const lpToken of Object.values(uniswapV2PoolTokens) as AddressLike[]) {
       const storedPriceFeed = await valueInterpreter.getPriceFeedForDerivative(lpToken);
       expect(storedPriceFeed).toMatchAddress(uniswapV2PoolPriceFeed);
     }

@@ -204,10 +204,11 @@ describe('expected values', () => {
 
     // cDai/usd price on July 16, 2021 was about 0,0216 USD.
     // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
+    // Numbers beyond this date will only be slightly higher.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('21514109123317253');
+    expect(canonicalAssetValue).toEqBigNumber('21674950320613463');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
@@ -222,9 +223,10 @@ describe('expected values', () => {
 
     // cUsdc/usd price on July 16, 2021 was about 0,0221 USD.
     // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-07-16&end_date=2021-07-16>
+    // Numbers beyond this date will only be slightly higher.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('22079');
+    expect(canonicalAssetValue).toEqBigNumber('22290');
   });
 });

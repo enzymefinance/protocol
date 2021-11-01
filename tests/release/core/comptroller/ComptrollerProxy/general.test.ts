@@ -52,7 +52,7 @@ describe('vaultCallOnContract', () => {
     });
 
     // Use the first allowed vault call
-    const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0];
+    const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0] as any;
 
     await expect(
       comptrollerProxy.connect(randomUser).vaultCallOnContract(contract, selector, dataHash),

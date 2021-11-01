@@ -1,4 +1,4 @@
-import { randomAddress } from '@enzymefinance/ethers';
+import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 import { IYearnVaultV2, StandardToken } from '@enzymefinance/protocol';
 import { deployProtocolFixture, getAssetUnit, ProtocolDeployment } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
@@ -13,7 +13,7 @@ describe('constructor', () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
 
     // Assert each derivative is properly registered
-    for (const yVaultAddress of Object.values(fork.config.yearn.vaultV2.yVaults)) {
+    for (const yVaultAddress of Object.values(fork.config.yearn.vaultV2.yVaults) as AddressLike[]) {
       const yVault = new IYearnVaultV2(yVaultAddress, provider);
       expect(await yearnVaultV2PriceFeed.isSupportedAsset(yVault)).toBe(true);
       expect(await yearnVaultV2PriceFeed.getUnderlyingForDerivative(yVault)).toMatchAddress(await yVault.token());
@@ -104,7 +104,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1054299170832643720');
+    expect(canonicalAssetValue).toEqBigNumber('1071594513314087964');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
@@ -121,7 +121,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1063610');
+    expect(canonicalAssetValue).toEqBigNumber('1080381');
   });
 });
 
