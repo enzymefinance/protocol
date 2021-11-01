@@ -26,6 +26,7 @@
     "format:prettier": "yarn lint:prettier --write",
     "format:eslint": "yarn lint:eslint --fix",
     "format:solhint": "yarn lint:solhint --fix",
+    "pretest": "yarn build",
     "test": "NODE_OPTIONS=\"--max_old_space_size=4096\" TS_JEST_DISABLE_VER_CHECKER=true jest",
     "deploy:kovan": "hardhat deploy --network kovan",
     "export:kovan": "hardhat export --network kovan --export deployments/kovan.json",
