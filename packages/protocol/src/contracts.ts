@@ -11,6 +11,7 @@ export * from './codegen/IMigrationHookHandler';
 // Persistent
 export * from './codegen/AddressListRegistry';
 export * from './codegen/FundValueCalculatorRouter';
+export * from './codegen/FundValueCalculatorUsdWrapper';
 
 // Release core
 export * from './codegen/FundDeployer';

@@ -17,7 +17,7 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Peripheral', 'FundValueCalculator'];
+fn.tags = ['Release', 'OffChain', 'FundValueCalculator'];
 fn.dependencies = ['FeeManager', 'ProtocolFeeTracker', 'ValueInterpreter'];
 
 export default fn;

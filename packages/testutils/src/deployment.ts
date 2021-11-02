@@ -64,6 +64,7 @@ import {
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
   FundValueCalculatorRouter,
+  FundValueCalculatorUsdWrapper,
   FundValueCalculator,
 } from '@enzymefinance/protocol';
 
@@ -155,6 +156,7 @@ export async function deployProtocolFixture() {
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture['OnlyRemoveDustExternalPositionPolicy'].address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
     fundValueCalculatorRouter: new FundValueCalculatorRouter(fixture['FundValueCalculatorRouter'].address, deployer),
+    fundValueCalculatorUsdWrapper: new FundValueCalculatorUsdWrapper(fixture['FundValueCalculatorUsdWrapper'].address, deployer),
     fundValueCalculator: new FundValueCalculator(fixture['FundValueCalculator'].address, deployer),
   } as const;
 
