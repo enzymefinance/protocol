@@ -22,6 +22,7 @@ const projects = [
   project('fee', ['tests/release/extensions/fee-manager']),
   project('peripheral', ['tests/release/peripheral']),
   project('e2e', ['tests/release/e2e']),
+  project('off-chain', ['tests/release/off-chain']),
 ].filter((project) => !!project);
 
 export default {

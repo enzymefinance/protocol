@@ -56,6 +56,7 @@ import {
   MinMaxInvestment,
   InvestorWhitelist,
   GuaranteedRedemption,
+  FundValueCalculator,
 } from '@enzymefinance/protocol';
 
 import { DeploymentConfig } from '../../../deploy/utils/config';
@@ -137,6 +138,7 @@ export async function deployProtocolFixture() {
     minMaxInvestment: new MinMaxInvestment(fixture['MinMaxInvestment'].address, deployer),
     investorWhitelist: new InvestorWhitelist(fixture['InvestorWhitelist'].address, deployer),
     guaranteedRedemption: new GuaranteedRedemption(fixture['GuaranteedRedemption'].address, deployer),
+    fundValueCalculator: new FundValueCalculator(fixture['FundValueCalculator'].address, deployer),
   } as const;
 
   return {

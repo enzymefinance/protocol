@@ -14,7 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        project: ['persistent', 'core', 'infrastructure', 'fee', 'policy', 'integration', 'peripheral', 'e2e']
+        project:
+          ['persistent', 'core', 'infrastructure', 'fee', 'policy', 'integration', 'peripheral', 'e2e', 'off-chain']
 
     steps:
       - name: Check out repository

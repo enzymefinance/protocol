@@ -86,6 +86,7 @@ export * from './codegen/AuthUserExecutedSharesRequestorFactory';
 export * from './codegen/AuthUserExecutedSharesRequestorLib';
 export * from './codegen/AuthUserExecutedSharesRequestorProxy';
 export * from './codegen/FundActionsWrapper';
+export * from './codegen/FundValueCalculator';
 
 // Test contracts
 export * from './codegen/TestPeggedDerivativesPriceFeed';
