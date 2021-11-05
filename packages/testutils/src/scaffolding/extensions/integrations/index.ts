@@ -4,6 +4,7 @@ export * from './curve';
 export * from './idle';
 export * from './mock';
 export * from './paraSwapV4';
+export * from './poolTogetherV4';
 export * from './synthetix';
 export * from './trackedAssets';
 export * from './uniswapV2';

@@ -74,6 +74,9 @@ export interface DeploymentConfig {
     augustusSwapper: string;
     tokenTransferProxy: string;
   };
+  poolTogetherV4: {
+    ptTokens: Record<string, [string, string]>;
+  };
   stakehound: {
     steth: string;
   };

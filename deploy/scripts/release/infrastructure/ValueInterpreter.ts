@@ -59,6 +59,7 @@ const fn: DeployFunction = async function (hre) {
     const compoundPriceFeed = await get('CompoundPriceFeed');
     const idlePriceFeed = await get('IdlePriceFeed');
     const lidoStethPriceFeed = await get('LidoStethPriceFeed');
+    const poolTogetherV4PriceFeed = await get('PoolTogetherV4PriceFeed');
     const stakehoundEthPriceFeed = await get('StakehoundEthPriceFeed');
     const synthetixPriceFeed = await get('SynthetixPriceFeed');
     const yearnVaultV2PriceFeed = await get('YearnVaultV2PriceFeed');
@@ -76,6 +77,9 @@ const fn: DeployFunction = async function (hre) {
         (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
       ),
       ...Object.values(config.idle).map((idleToken) => [idleToken, idlePriceFeed.address] as [string, string]),
+      ...Object.values(config.poolTogetherV4.ptTokens).map(
+        ([ptToken]) => [ptToken, poolTogetherV4PriceFeed.address] as [string, string],
+      ),
       ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
       ...Object.values(config.yearn.vaultV2.yVaults).map(
         (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
@@ -100,6 +104,7 @@ fn.dependencies = [
   'CompoundPriceFeed',
   'IdlePriceFeed',
   'LidoStethPriceFeed',
+  'PoolTogetherV4PriceFeed',
   'StakehoundEthPriceFeed',
   'SynthetixPriceFeed',
   'YearnVaultV2PriceFeed',

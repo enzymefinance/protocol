@@ -29,6 +29,8 @@ it('whales have adequate balances', async () => {
     ceth: fork.config.compound.ceth,
     cuni: fork.config.compound.ctokens.cuni,
     cusdc: fork.config.compound.ctokens.cusdc,
+    // ptTokens
+    ptUsdc: fork.config.poolTogetherV4.ptTokens.ptUsdc[0],
     // synths
     seth: fork.config.synthetix.synths.seth,
     seur: fork.config.synthetix.synths.seur,

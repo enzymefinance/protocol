@@ -302,6 +302,11 @@ const mainnetConfig: DeploymentConfig = {
       redemptionWindowBuffer: 300,
     },
   },
+  poolTogetherV4: {
+    ptTokens: {
+      ptUsdc: ["0xdd4d117723C257CEe402285D3aCF218E9A8236E1", primitives.usdc] as [string, string]
+    }
+  },
   primitives,
   stakehound: {
     steth: '0xdfe66b14d37c77f4e9b180ceb433d1b164f0281d'
