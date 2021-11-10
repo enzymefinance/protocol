@@ -10,6 +10,7 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "../dispatcher/IDispatcher.sol";
 
@@ -22,6 +23,8 @@ contract AddressListRegistry {
     event ItemAddedToList(uint256 indexed id, address item);
 
     event ItemRemovedFromList(uint256 indexed id, address item);
+
+    event ListAttested(uint256 indexed id, string description);
 
     event ListCreated(
         address indexed creator,
@@ -49,13 +52,7 @@ contract AddressListRegistry {
     ListInfo[] private lists;
 
     modifier onlyListOwner(uint256 _id) {
-        address owner = getListOwner(_id);
-        require(
-            msg.sender == owner ||
-                (owner == getDispatcher() &&
-                    msg.sender == IDispatcher(getDispatcher()).getOwner()),
-            "Only callable by list owner"
-        );
+        require(__isListOwner(msg.sender, _id), "Only callable by list owner");
         _;
     }
 
@@ -79,6 +76,25 @@ contract AddressListRegistry {
         );
 
         __addToList(_id, _items);
+    }
+
+    /// @notice Attests active ownership for lists and (optionally) a description of each list's content
+    /// @param _ids The ids of the lists
+    /// @param _descriptions The descriptions of the lists' content
+    /// @dev Since UserA can create a list on behalf of UserB, this function provides a mechanism
+    /// for UserB to attest to their management of the items therein. It will not be visible
+    /// on-chain, but will be available in event logs.
+    function attestLists(uint256[] calldata _ids, string[] calldata _descriptions) external {
+        require(_ids.length == _descriptions.length, "attestLists: Unequal arrays");
+
+        for (uint256 i; i < _ids.length; i++) {
+            require(
+                __isListOwner(msg.sender, _ids[i]),
+                "attestLists: Only callable by list owner"
+            );
+
+            emit ListAttested(_ids[i], _descriptions[i]);
+        }
     }
 
     /// @notice Creates a new list
@@ -162,6 +178,14 @@ contract AddressListRegistry {
                 emit ItemAddedToList(_id, _items[i]);
             }
         }
+    }
+
+    /// @dev Helper to check if an account is the owner of a given list
+    function __isListOwner(address _who, uint256 _id) private view returns (bool isListOwner_) {
+        address owner = getListOwner(_id);
+        return
+            _who == owner ||
+            (owner == getDispatcher() && _who == IDispatcher(getDispatcher()).getOwner());
     }
 
     /////////////////
