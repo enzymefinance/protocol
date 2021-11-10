@@ -130,7 +130,32 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
     },
-    version: '0.6.12',
+    compilers: [
+      {
+        version: '0.7.6',
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.6.12',
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
   },
 };
 

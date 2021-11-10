@@ -330,7 +330,8 @@ const mainnetConfig: DeploymentConfig = {
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   },
   uniswapV3: {
-    router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
+    router: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
+    nonFungiblePositionManager: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
   },
   unsupportedAssets,
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',

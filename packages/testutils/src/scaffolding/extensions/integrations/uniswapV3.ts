@@ -34,7 +34,8 @@ export async function uniswapV3TakeOrder({
 }) {
   if (seedFund) {
     // Seed the VaultProxy with enough outgoingAsset for the tx
-    await pathAddresses[0].transfer(await comptrollerProxy.getVaultProxy(), outgoingAssetAmount);
+    const vaultProxy = await comptrollerProxy.getVaultProxy();
+    await pathAddresses[0].transfer(vaultProxy, outgoingAssetAmount);
   }
 
   const takeOrderArgs = uniswapV3TakeOrderArgs({

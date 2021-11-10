@@ -1,7 +1,8 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "0.6.12"],
+    "compiler-version": ["error", "0.6.12 || 0.7.6"],
+    "func-visibility": ["error", { "ignoreConstructors": true }],
     "no-empty-blocks": "off",
     "not-rely-on-time": "off",
     "avoid-low-level-calls": "off",

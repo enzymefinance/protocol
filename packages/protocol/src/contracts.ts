@@ -73,6 +73,8 @@ export * from './codegen/ZeroExV2Adapter';
 export * from './codegen/CompoundDebtPositionParser';
 export * from './codegen/CompoundDebtPositionLib';
 export * from './codegen/IExternalPositionParser';
+export * from './codegen/UniswapV3LiquidityPositionParser';
+export * from './codegen/UniswapV3LiquidityPositionLib';
 
 // Fees
 export * from './codegen/IFee';

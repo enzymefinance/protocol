@@ -144,7 +144,7 @@ describe('receiveCallFromComptroller', () => {
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       });
 
-      const callArgs = encodeArgs(['uint256', 'bytes'], [1, '0x']);
+      const callArgs = encodeArgs(['uint256', 'bytes'], [999, '0x']);
 
       await expect(
         comptrollerProxy

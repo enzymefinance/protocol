@@ -92,6 +92,7 @@ export interface DeploymentConfig {
   };
   uniswapV3: {
     router: string;
+    nonFungiblePositionManager: string;
   };
   yearn: {
     vaultV2: {

@@ -9,6 +9,10 @@ const fn: DeployFunction = async function (hre) {
 
   const compoundDebtPositionLib = await get('CompoundDebtPositionLib');
   const compoundDebtPositionParser = await get('CompoundDebtPositionParser');
+
+  const uniswapV3ExternalPositionLib = await get('UniswapV3LiquidityPositionLib');
+  const uniswapV3ExternalPositionParser = await get('UniswapV3LiquidityPositionParser');
+
   const deployer = (await getSigners())[0];
   const fundDeployer = await get('FundDeployer');
   const externalPositionFactory = await get('ExternalPositionFactory');
@@ -26,13 +30,19 @@ const fn: DeployFunction = async function (hre) {
     const externalPositionFactoryInstance = new ExternalPositionFactory(externalPositionFactory.address, deployer);
 
     await externalPositionFactoryInstance.addPositionDeployers([externalPositionManager]);
-    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT']);
+    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY']);
 
     const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
       [0],
       [compoundDebtPositionLib],
       [compoundDebtPositionParser],
+    );
+
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [1],
+      [uniswapV3ExternalPositionLib],
+      [uniswapV3ExternalPositionParser],
     );
   }
 };
@@ -45,6 +55,8 @@ fn.dependencies = [
   'ChainlinkPriceFeed',
   'ExternalPositionFactory',
   'PolicyManager',
+  'UniswapV3LiquidityPositionLib',
+  'UniswapV3LiquidityPositionParser',
 ];
 
 export default fn;
