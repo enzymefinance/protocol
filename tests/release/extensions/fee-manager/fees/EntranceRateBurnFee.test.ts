@@ -6,10 +6,10 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   EntranceRateBurnFee,
-  FeeHook,
-  FeeSettlementType,
   entranceRateBurnFeeConfigArgs,
   entranceRateFeeSharesDue,
+  FeeHook,
+  FeeSettlementType,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -59,13 +59,13 @@ describe('settle', () => {
     const investmentAmount = utils.parseEther('2');
     const settlementData = settlePostBuySharesArgs({
       buyer,
-      sharesBought,
       investmentAmount,
+      sharesBought,
     });
 
     // Get the expected shares due for the settlement
     const expectedSharesDueForCall = entranceRateFeeSharesDue({
-      rate: rate,
+      rate,
       sharesBought,
     });
 
@@ -76,8 +76,8 @@ describe('settle', () => {
       .call();
 
     expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle, {
-      settlementType_: FeeSettlementType.Burn,
       payer_: buyer,
+      settlementType_: FeeSettlementType.Burn,
       sharesDue_: expectedSharesDueForCall,
     });
 

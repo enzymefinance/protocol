@@ -1,18 +1,15 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  encodeArgs,
-  compoundExternalPositionActionArgs,
   CompoundDebtPositionActionId,
+  compoundExternalPositionActionArgs,
+  encodeArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
-import {
-  createCompoundDebtPosition,
-  createNewFund,
-  deployProtocolFixture,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createCompoundDebtPosition, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import hre from 'hardhat';
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
 
 let fork: ProtocolDeployment;
 let externalPositionProxyUsed: AddressLike;
@@ -23,10 +20,10 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy } = await createNewFund({
-    signer: fundOwner as SignerWithAddress,
-    fundOwner,
-    fundDeployer: fork.deployment.fundDeployer,
     denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+    fundDeployer: fork.deployment.fundDeployer,
+    fundOwner,
+    signer: fundOwner as SignerWithAddress,
   });
 
   const { externalPositionProxy } = await createCompoundDebtPosition({
@@ -56,8 +53,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [randomAddress()];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -66,9 +63,9 @@ describe('parseAssetsForAction', () => {
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
-      assetsToTransfer_: assets,
       amountsToTransfer_: amounts,
       assetsToReceive_: [],
+      assetsToTransfer_: assets,
     });
   });
 
@@ -79,8 +76,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [randomAddress()];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -89,9 +86,9 @@ describe('parseAssetsForAction', () => {
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
-      assetsToTransfer_: [],
       amountsToTransfer_: [],
       assetsToReceive_: assets,
+      assetsToTransfer_: [],
     });
   });
 
@@ -102,8 +99,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [fork.config.compound.ctokens.cdai];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -112,9 +109,9 @@ describe('parseAssetsForAction', () => {
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
-      assetsToTransfer_: [],
       amountsToTransfer_: [],
       assetsToReceive_: assets,
+      assetsToTransfer_: [],
     });
   });
 
@@ -124,8 +121,8 @@ describe('parseAssetsForAction', () => {
     const amounts = [1];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: '0x',
     });
 
@@ -134,9 +131,9 @@ describe('parseAssetsForAction', () => {
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
-      assetsToTransfer_: [],
       amountsToTransfer_: [],
       assetsToReceive_: [fork.config.primitives.comp],
+      assetsToTransfer_: [],
     });
   });
 
@@ -147,8 +144,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [randomAddress()];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -166,8 +163,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [fork.config.compound.ctokens.cdai];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -176,9 +173,9 @@ describe('parseAssetsForAction', () => {
       .call();
 
     expect(result).toMatchFunctionOutput(compoundDebtPositionParser.parseAssetsForAction, {
-      assetsToTransfer_: assets,
       amountsToTransfer_: amounts,
       assetsToReceive_: [],
+      assetsToTransfer_: assets,
     });
   });
 
@@ -189,8 +186,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [randomAddress()];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 
@@ -208,8 +205,8 @@ describe('parseAssetsForAction', () => {
     const cTokens = [fork.config.compound.ctokens.cdai];
 
     const actionArgs = compoundExternalPositionActionArgs({
-      assets,
       amounts,
+      assets,
       data: encodeArgs(['address[]'], [cTokens]),
     });
 

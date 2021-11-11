@@ -1,6 +1,8 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
 import { IYearnVaultV2, StandardToken } from '@enzymefinance/protocol';
-import { deployProtocolFixture, getAssetUnit, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;

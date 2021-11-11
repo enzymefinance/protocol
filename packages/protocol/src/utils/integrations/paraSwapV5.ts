@@ -1,5 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumberish, BytesLike, utils } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
+import { utils } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 // named ~Interface to disambiguate from ParaSwapV5Adapter contract

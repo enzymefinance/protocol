@@ -1,5 +1,6 @@
-import { PoolTogetherV4PriceFeed, PoolTogetherV4PriceFeedArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { PoolTogetherV4PriceFeedArgs } from '@enzymefinance/protocol';
+import { PoolTogetherV4PriceFeed } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 

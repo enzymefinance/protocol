@@ -1,13 +1,12 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
   convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVault,
@@ -56,8 +55,8 @@ describe('Walkthrough a fund migration', () => {
 
     const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
     const performanceFeeSettings = performanceFeeConfigArgs({
-      rate: TEN_PERCENT,
       period: 365 * 24 * 60 * 60,
+      rate: TEN_PERCENT,
     });
     const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
@@ -69,11 +68,11 @@ describe('Walkthrough a fund migration', () => {
     // TODO: add policies
 
     const createFundTx = await createNewFund({
-      signer: manager,
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner: manager,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner: manager,
+      signer: manager,
     });
 
     comptrollerProxy = createFundTx.comptrollerProxy;
@@ -82,8 +81,8 @@ describe('Walkthrough a fund migration', () => {
 
   it('buys shares of the fund', async () => {
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
     });
 
@@ -120,10 +119,10 @@ describe('Walkthrough a fund migration', () => {
     ];
 
     await addTrackedAssetsToVault({
-      signer: manager,
+      assets,
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      assets,
+      signer: manager,
     });
 
     // Use this loop instead of addNewAssetsToFund() to make debugging easier
@@ -146,8 +145,8 @@ describe('Walkthrough a fund migration', () => {
 
     await redeemSharesInKind({
       comptrollerProxy,
-      signer: investor,
       quantity: redeemQuantity,
+      signer: investor,
     });
 
     preMigrationShareBalance = await vaultProxy.balanceOf(investor);

@@ -1,4 +1,5 @@
-import { assertEvent, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -32,10 +33,10 @@ describe('buyBackSharesViaTrustedVaultProxy', () => {
       .buyBackSharesViaTrustedVaultProxy(sharesAmount, mlnValue, gav);
 
     assertEvent(receipt, 'SharesBoughtBack', {
-      vaultProxy: vaultProxySigner,
-      sharesAmount,
-      mlnValue,
       mlnBurned: mlnAmountToBurn,
+      mlnValue,
+      sharesAmount,
+      vaultProxy: vaultProxySigner,
     });
   });
 });

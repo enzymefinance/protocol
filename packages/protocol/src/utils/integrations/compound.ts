@@ -1,5 +1,6 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumberish } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 // Note: arguments are valid for both Lend and Redeem functions

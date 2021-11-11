@@ -1,5 +1,7 @@
-import { ComptrollerLibArgs, FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { ComptrollerLibArgs } from '@enzymefinance/protocol';
+import { FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {

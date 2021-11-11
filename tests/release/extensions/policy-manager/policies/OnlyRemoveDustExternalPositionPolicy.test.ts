@@ -1,15 +1,14 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   ExternalPositionManager,
-  ONE_DAY_IN_SECONDS,
   OnlyRemoveDustExternalPositionPolicy,
-  PolicyHook,
-  policyManagerConfigArgs,
-  StandardToken,
   ValueInterpreter,
 } from '@enzymefinance/protocol';
+import { ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createMockExternalPosition,
   createNewFund,
@@ -17,11 +16,10 @@ import {
   mockExternalPositionAddDebtAssets,
   mockExternalPositionAddManagedAssets,
   mockExternalPositionRemoveManagedAssets,
-  ProtocolDeployment,
   removeExternalPosition,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
-import { BigNumber } from 'ethers';
+import type { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -97,14 +95,14 @@ describe('validateRule', () => {
     weth = new StandardToken(fork.config.weth, provider);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [onlyRemoveDustExternalPositionPolicy],
         settings: ['0x'],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
 
@@ -114,13 +112,13 @@ describe('validateRule', () => {
 
     const { externalPositionProxy } = await createMockExternalPosition({
       comptrollerProxy,
-      externalPositionManager,
-      externalPositionFactory: fork.deployment.externalPositionFactory,
-      fundOwner,
-      defaultActionAssetsToTransfer: [],
       defaultActionAmountsToTransfer: [],
       defaultActionAssetsToReceive: [],
+      defaultActionAssetsToTransfer: [],
       deployer: fork.deployer,
+      externalPositionFactory: fork.deployment.externalPositionFactory,
+      externalPositionManager,
+      fundOwner,
     });
 
     mockExternalPositionProxyAddress = externalPositionProxy;
@@ -136,28 +134,28 @@ describe('validateRule', () => {
     // Add more weth as debt asset than managed asset
 
     await mockExternalPositionAddManagedAssets({
-      signer: fundOwner,
+      amounts: [1],
+      assets: [weth],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [weth],
-      amounts: [1],
+      signer: fundOwner,
     });
 
     await mockExternalPositionAddDebtAssets({
-      signer: fundOwner,
+      amounts: [2],
+      assets: [weth],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [weth],
-      amounts: [2],
+      signer: fundOwner,
     });
 
     await removeExternalPosition({
-      signer: fundOwner,
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
+      signer: fundOwner,
     });
   });
 
@@ -165,48 +163,48 @@ describe('validateRule', () => {
     // First, add 'dust threshold plus 2 wei' as managed asset, and 1 wei as debt asset so the position is exactly 1 wei over the dust threshold
 
     await mockExternalPositionAddDebtAssets({
-      signer: fundOwner,
+      amounts: [1],
+      assets: [weth],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [weth],
-      amounts: [1],
+      signer: fundOwner,
     });
 
     await mockExternalPositionAddManagedAssets({
-      signer: fundOwner,
+      amounts: [dustToleranceInWeth.add(2)],
+      assets: [weth],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [weth],
-      amounts: [dustToleranceInWeth.add(2)],
+      signer: fundOwner,
     });
 
     // Tx should fail at 1 wei too great
     await expect(
       removeExternalPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
         externalPositionProxy: mockExternalPositionProxyAddress,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ONLY_REMOVE_DUST_EXTERNAL_POSITION');
 
     // After removing 1 wei from managed assets, the tx should succeed
     await mockExternalPositionRemoveManagedAssets({
-      signer: fundOwner,
+      amounts: [1],
+      assets: [weth],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [weth],
-      amounts: [1],
+      signer: fundOwner,
     });
 
     await removeExternalPosition({
-      signer: fundOwner,
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
+      signer: fundOwner,
     });
   });
 
@@ -218,12 +216,12 @@ describe('validateRule', () => {
       .args(weth, dustToleranceInWeth, pricelessAsset)
       .call();
     await mockExternalPositionAddManagedAssets({
-      signer: fundOwner,
+      amounts: [dustThresholdInPricelessAsset.mul(2)],
+      assets: [pricelessAsset],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
-      assets: [pricelessAsset],
-      amounts: [dustThresholdInPricelessAsset.mul(2)],
+      signer: fundOwner,
     });
 
     // Remove the managed asset's price
@@ -231,17 +229,17 @@ describe('validateRule', () => {
 
     await expect(
       removeExternalPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
         externalPositionProxy: mockExternalPositionProxyAddress,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Invalid asset not bypassable');
 
     await vaultCallStartAssetBypassTimelock({
+      asset: pricelessAsset,
       comptrollerProxy,
       contract: onlyRemoveDustExternalPositionPolicy,
-      asset: pricelessAsset,
     });
 
     // Same untracking tx should work within the allowed asset bypass window
@@ -250,10 +248,10 @@ describe('validateRule', () => {
     ]);
 
     await removeExternalPosition({
-      signer: fundOwner,
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: mockExternalPositionProxyAddress,
+      signer: fundOwner,
     });
   });
 });

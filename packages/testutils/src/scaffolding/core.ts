@@ -1,18 +1,20 @@
-import {
+import type {
   AssetFinalityResolver,
+  Dispatcher,
+  GasRelayPaymasterFactory,
+  ValueInterpreter,
+} from '@enzymefinance/protocol';
+import {
   ComptrollerLib,
   ExternalPositionManager,
-  Dispatcher,
   FeeManager,
   FundDeployer,
-  GasRelayPaymasterFactory,
   IntegrationManager,
   PolicyManager,
   ProtocolFeeTracker,
-  ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { Signer } from 'ethers';
+import type { Signer } from 'ethers';
 
 // TODO: Should refactor this function to take all deployment contracts and set up everything by default,
 // unless overrides are passed-in

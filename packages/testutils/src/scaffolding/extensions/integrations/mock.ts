@@ -1,17 +1,15 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   IntegrationManager,
-  VaultLib,
   MockGenericAdapter,
   StandardToken,
-  sighash,
-  callOnIntegrationArgs,
-  encodeArgs,
-  IntegrationManagerActionId,
+  VaultLib,
 } from '@enzymefinance/protocol';
-import { BigNumberish, BytesLike, utils } from 'ethers';
+import { callOnIntegrationArgs, encodeArgs, IntegrationManagerActionId, sighash } from '@enzymefinance/protocol';
+import type { BigNumberish, BytesLike } from 'ethers';
+import { utils } from 'ethers';
 
 export const mockGenericRemoveOnlySelector = sighash(
   utils.FunctionFragment.fromString('removeOnly(address,bytes,bytes)'),
@@ -94,18 +92,18 @@ export async function mockGenericSwap({
   }
 
   const swapArgs = mockGenericSwapArgs({
-    spendAssets,
-    maxSpendAssetAmounts,
+    actualIncomingAssetAmounts,
     actualSpendAssetAmounts,
     incomingAssets,
+    maxSpendAssetAmounts,
     minIncomingAssetAmounts,
-    actualIncomingAssetAmounts,
+    spendAssets,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: mockGenericAdapter,
-    selector,
     encodedCallArgs: swapArgs,
+    selector,
   });
 
   const swapTx = comptrollerProxy

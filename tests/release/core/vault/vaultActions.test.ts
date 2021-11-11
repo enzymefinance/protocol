@@ -1,11 +1,12 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   encodeArgs,
-  StandardToken,
   MockGenericExternalPositionLib,
+  StandardToken,
   VaultAction,
   VaultLib,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createMockExternalPosition,
@@ -14,7 +15,6 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockExternalPositionAddManagedAssets,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -37,10 +37,10 @@ describe('AddExternalPosition', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Add 19 tracked assets
@@ -84,10 +84,10 @@ describe('AddExternalPosition', () => {
     const externalPosition = randomAddress();
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const receipt = await vaultProxy.receiveValidatedVaultAction(
@@ -122,10 +122,10 @@ describe('AddTrackedAsset', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(
@@ -146,10 +146,10 @@ describe('AddTrackedAsset', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Add 20 tracked assets
@@ -183,10 +183,10 @@ describe('AddTrackedAsset', () => {
     const asset = randomAddress();
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Add a random asset
@@ -219,10 +219,10 @@ describe('ApproveAssetSpender', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(
@@ -247,10 +247,10 @@ describe('ApproveAssetSpender', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const spender = randomAddress();
@@ -296,10 +296,10 @@ describe('BurnShares', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const target = randomAddress();
@@ -337,10 +337,10 @@ describe('CallOnExternalPosition', () => {
     const seedAmount = utils.parseEther('1');
 
     const { vaultProxy, comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const assetsToTransfer = [new StandardToken(fork.config.primitives.dai, whales.dai)];
@@ -351,22 +351,22 @@ describe('CallOnExternalPosition', () => {
 
     const { externalPositionProxy } = await createMockExternalPosition({
       comptrollerProxy,
-      externalPositionManager,
-      externalPositionFactory,
-      fundOwner,
-      defaultActionAssetsToTransfer: assetsToTransfer,
       defaultActionAmountsToTransfer: amountsToTransfer,
       defaultActionAssetsToReceive: assetsToReceive,
+      defaultActionAssetsToTransfer: assetsToTransfer,
       deployer: fork.deployer,
+      externalPositionFactory,
+      externalPositionManager,
+      fundOwner,
     });
 
     await mockExternalPositionAddManagedAssets({
-      signer: fundOwner,
+      amounts: [amountsToTransfer[0]],
+      assets: [assetsToTransfer[0]],
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy,
-      assets: [assetsToTransfer[0]],
-      amounts: [amountsToTransfer[0]],
+      signer: fundOwner,
     });
 
     // External position was properly called
@@ -396,10 +396,10 @@ describe('MintShares', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const target = randomAddress();
@@ -439,10 +439,10 @@ describe('RemoveExternalPosition', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const externalPositionToRemove = randomAddress();
@@ -494,10 +494,10 @@ describe('RemoveTrackedAsset', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     const assetToRemove = randomAddress();
@@ -544,10 +544,10 @@ describe('TransferShares', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Mint shares to fromAccount
@@ -589,10 +589,10 @@ describe('WithdrawAssetTo', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(
@@ -617,10 +617,10 @@ describe('WithdrawAssetTo', () => {
     const asset = new StandardToken(fork.config.weth, whales.weth);
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Seed the vault with the asset
@@ -647,9 +647,9 @@ describe('WithdrawAssetTo', () => {
 
     // Assert the correct event was emitted
     assertEvent(receipt, 'AssetWithdrawn', {
+      amount,
       asset,
       target,
-      amount,
     });
   });
 });

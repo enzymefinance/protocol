@@ -1,27 +1,27 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
   convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
-  addressListRegistryPolicyArgs,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
   StandardToken,
-  VaultLib,
-  AddressListUpdateType,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addTrackedAssetsToVault,
   buyShares,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
   redeemSharesInKind,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 const FIVE_PERCENT = BigNumber.from(500);
 const TEN_PERCENT = BigNumber.from(1000);
@@ -53,13 +53,13 @@ const expectedGasCosts = {
     usdc: 898369,
     weth: 887852,
   },
-  'redeem partial shares: max assets': {
-    usdc: 2474210,
-    weth: 2379076,
-  },
   'redeem all shares: max assets': {
     usdc: 1985478,
     weth: 1912745,
+  },
+  'redeem partial shares: max assets': {
+    usdc: 2474210,
+    weth: 2379076,
   },
   'trade on Uniswap: max assets': {
     usdc: 255482,
@@ -104,8 +104,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const scaledPerSecondRate = convertRateToScaledPerSecondRate(utils.parseEther('0.01')); // 1%
       const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        rate: TEN_PERCENT,
         period: 365 * 24 * 60 * 60,
+        rate: TEN_PERCENT,
       });
       const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
@@ -117,11 +117,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
       // TODO: add policies
 
       const createFundTx = await createNewFund({
-        signer: manager,
-        fundDeployer: fork.deployment.fundDeployer,
-        fundOwner: manager,
         denominationAsset,
         feeManagerConfig,
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner: manager,
+        signer: manager,
       });
 
       comptrollerProxy = createFundTx.comptrollerProxy;
@@ -139,8 +139,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
           addressListRegistryPolicyArgs({
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [randomAddress(), randomAddress(), investor.address],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
@@ -152,8 +152,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('buys shares of a fund', async () => {
       const buySharesTx = await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
       });
 
@@ -175,8 +175,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const minSharesAmount = utils.parseUnits('0.00001', denominationAssetDecimals);
       const buySharesTx = await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
       });
 
@@ -212,10 +212,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       ];
 
       await addTrackedAssetsToVault({
-        signer: manager,
+        assets,
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets,
+        signer: manager,
       });
 
       // Use this loop instead of addNewAssetsToFund() to make debugging easier
@@ -240,10 +240,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
       ];
 
       await addTrackedAssetsToVault({
-        signer: manager,
+        assets: compoundAssets,
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: compoundAssets,
+        signer: manager,
       });
 
       // Use this loop instead of addNewAssetsToFund() to make debugging easier
@@ -269,13 +269,13 @@ describe.each([['weth' as const], ['usdc' as const]])(
     it('trades on Uniswap', async () => {
       const receipt = await uniswapV2TakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
-        path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
-        outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
+        integrationManager: fork.deployment.integrationManager,
         minIncomingAssetAmount: BigNumber.from(1),
+        outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
+        path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
+        uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
+        vaultProxy,
       });
 
       expect(receipt).toCostAround(expectedGasCosts['trade on Uniswap: max assets'][denominationAssetId]);
@@ -303,8 +303,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const redeemed = await redeemSharesInKind({
         comptrollerProxy,
-        signer: investor,
         quantity: redeemQuantity,
+        signer: investor,
       });
 
       const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
@@ -341,7 +341,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
           comptrollerProxy.address,
           fork.deployment.allowedDepositRecipientsPolicy,
           addressListRegistryPolicyArgs({
-            newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [anotherInvestor] }],
+            newListsArgs: [{ initialItems: [anotherInvestor], updateType: AddressListUpdateType.None }],
           }),
         )
         .send();
@@ -349,8 +349,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('buy shares: max assets', async () => {
       const buySharesTx = await buyShares({
-        comptrollerProxy,
         buyer: anotherInvestor,
+        comptrollerProxy,
         denominationAsset,
       });
 

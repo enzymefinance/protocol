@@ -1,7 +1,9 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { encodeFunctionData, ProtocolFeeReserveLib, ProtocolFeeReserveProxy } from '@enzymefinance/protocol';
-import { assertEvent, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 
 async function createProtocolFeeReserveProxy({
   signer,
@@ -22,6 +24,7 @@ async function createProtocolFeeReserveProxy({
 
   return {
     protocolFeeReserveProxy: new ProtocolFeeReserveLib(protocolFeeReserveProxyContract, signer),
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     receipt: protocolFeeReserveProxyContract.deployment!,
   };
 }
@@ -37,9 +40,9 @@ describe('ProtocolFeeReserveLibBaseCore', () => {
 
     it('can only be called once', async () => {
       const { protocolFeeReserveProxy } = await createProtocolFeeReserveProxy({
-        signer: fork.deployer,
-        protocolFeeReserveLib: fork.deployment.protocolFeeReserveLib,
         dispatcher: dispatcherAddress,
+        protocolFeeReserveLib: fork.deployment.protocolFeeReserveLib,
+        signer: fork.deployer,
       });
 
       // Should fail calling init() directly as it has already been called during deployment
@@ -52,9 +55,9 @@ describe('ProtocolFeeReserveLibBaseCore', () => {
       const protocolFeeReserveLib = fork.deployment.protocolFeeReserveLib;
 
       const { receipt, protocolFeeReserveProxy } = await createProtocolFeeReserveProxy({
-        signer: fork.deployer,
-        protocolFeeReserveLib,
         dispatcher: dispatcherAddress,
+        protocolFeeReserveLib,
+        signer: fork.deployer,
       });
 
       expect(await protocolFeeReserveProxy.getDispatcher()).toMatchAddress(dispatcherAddress);

@@ -1,24 +1,20 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
-  externalPositionRemoveArgs,
-  ExternalPositionManagerActionId,
-  VaultLib,
-  PolicyHook,
-  validateRuleCreateExternalPositionArgs,
-  validateRuleRemoveExternalPositionArgs,
-  StandardToken,
-  validateRulePostCallOnExternalPositionArgs,
   encodeArgs,
+  ExternalPositionManagerActionId,
   externalPositionReactivateArgs,
+  externalPositionRemoveArgs,
+  PolicyHook,
+  StandardToken,
+  validateRuleCreateExternalPositionArgs,
+  validateRulePostCallOnExternalPositionArgs,
   validateRuleReactivateExternalPositionArgs,
+  validateRuleRemoveExternalPositionArgs,
+  VaultLib,
 } from '@enzymefinance/protocol';
-import {
-  compoundDebtPositionAddCollateral,
-  createNewFund,
-  deployProtocolFixture,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { compoundDebtPositionAddCollateral, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -66,10 +62,10 @@ describe('setConfigForFund', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Assert state
@@ -83,10 +79,10 @@ describe('receiveCallFromComptroller', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fork.deployer,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fork.deployer,
     });
 
     const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
@@ -103,10 +99,10 @@ describe('receiveCallFromComptroller', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fork.deployer,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fork.deployer,
     });
 
     const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
@@ -138,10 +134,10 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const callArgs = encodeArgs(['uint256', 'bytes'], [999, '0x']);
@@ -159,10 +155,10 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const callArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
@@ -176,8 +172,8 @@ describe('receiveCallFromComptroller', () => {
         PolicyHook.CreateExternalPosition,
         validateRuleCreateExternalPositionArgs({
           caller: fundOwner,
-          typeId: 0,
           initArgs: '0x',
+          typeId: 0,
         }),
       );
     });
@@ -191,10 +187,10 @@ describe('receiveCallFromComptroller', () => {
       const cdai = new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       // Use CompoundDebtPosition as an example ExternalPosition to receive the Policy
@@ -215,13 +211,13 @@ describe('receiveCallFromComptroller', () => {
 
       // Add collateral twice to check it does not fail calling markets twice with the same assets
       await compoundDebtPositionAddCollateral({
+        amounts: [1],
+        assets: collateralAssets,
+        cTokens: [randomCToken],
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
-        fundOwner,
         externalPositionProxy: activeExternalPosition,
-        assets: collateralAssets,
-        amounts: [1],
-        cTokens: [randomCToken],
+        fundOwner,
       });
 
       // actionArgs include assets[] amounts[] and extra data encoded
@@ -238,12 +234,12 @@ describe('receiveCallFromComptroller', () => {
         comptrollerProxy,
         PolicyHook.PostCallOnExternalPosition,
         validateRulePostCallOnExternalPositionArgs({
-          caller: fundOwner,
-          externalPosition: activeExternalPosition,
-          assetsToTransfer: collateralAssets,
           amountsToTransfer: [1],
           assetsToReceive: [],
+          assetsToTransfer: collateralAssets,
+          caller: fundOwner,
           encodedActionData,
+          externalPosition: activeExternalPosition,
         }),
       );
     });
@@ -256,10 +252,10 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       // Create an external position
@@ -324,10 +320,10 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const reactivateExternalPositionArgs = externalPositionReactivateArgs({
@@ -350,10 +346,10 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy: comptrollerProxy1, vaultProxy: vaultProxy1 } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const createPositionCallArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
@@ -369,10 +365,10 @@ describe('receiveCallFromComptroller', () => {
 
       // Create a second vault to include the external position created for the first vault
       const { comptrollerProxy: comptrollerProxy2 } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const activeExternalPositionsBefore = await vaultProxy1.getActiveExternalPositions.call();
@@ -401,10 +397,10 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const createPositionCallArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);
@@ -456,10 +452,10 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fork.deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fork.deployer,
       });
 
       const createExternalPositionArgs = encodeArgs(['uint256', 'bytes'], [0, '0x']);

@@ -1,12 +1,7 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
-import {
-  buyShares,
-  createNewFund,
-  curveStethLend,
-  ProtocolDeployment,
-  deployProtocolFixture,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, curveStethLend, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -22,18 +17,18 @@ describe('derivative gas costs', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -45,12 +40,12 @@ describe('derivative gas costs', () => {
     // Seed fund and use max of half of the weth balance to get the LP token
     await curveStethLend({
       comptrollerProxy,
-      integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter: fork.deployment.curveLiquidityStethAdapter,
-      outgoingWethAmount: initialTokenAmount.div(2),
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount: initialTokenAmount.div(2),
     });
 
     // Get the calcGav() cost including the LP token
@@ -235,17 +230,17 @@ describe('derivatives registry', () => {
       expect(await curvePriceFeed.getDerivativeInfo(newDerivatives[0])).toMatchFunctionOutput(
         getDerivativeInfoFragment,
         {
-          pool: curvePool,
           invariantProxyAsset,
           invariantProxyAssetDecimals,
+          pool: curvePool,
         },
       );
       expect(await curvePriceFeed.getDerivativeInfo(newDerivatives[1])).toMatchFunctionOutput(
         getDerivativeInfoFragment,
         {
-          pool: curvePool,
           invariantProxyAsset,
           invariantProxyAssetDecimals,
+          pool: curvePool,
         },
       );
 
@@ -258,16 +253,16 @@ describe('derivatives registry', () => {
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
         derivative: newDerivatives[0],
-        pool: curvePool,
         invariantProxyAsset,
         invariantProxyAssetDecimals,
+        pool: curvePool,
       });
 
       expect(events[1]).toMatchEventArgs({
         derivative: newDerivatives[1],
-        pool: curvePool,
         invariantProxyAsset,
         invariantProxyAssetDecimals,
+        pool: curvePool,
       });
     });
   });

@@ -1,5 +1,6 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BytesLike } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BytesLike } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export enum IntegrationManagerActionId {

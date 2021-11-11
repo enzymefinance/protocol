@@ -1,13 +1,15 @@
-import { ContractReceipt, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import type { ContractReceipt } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
+import { StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createFundDeployer,
   createMigrationRequest,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
@@ -22,27 +24,27 @@ async function createNewFundOnPrevRelease({
 }) {
   // Create old release, set as live and current fund deployer
   const prevFundDeployer = await createFundDeployer({
-    deployer: fork.deployer,
     assetFinalityResolver: fork.deployment.assetFinalityResolver,
-    externalPositionManager: fork.deployment.externalPositionManager,
+    deployer: fork.deployer,
     dispatcher: fork.deployment.dispatcher,
+    externalPositionManager: fork.deployment.externalPositionManager,
     feeManager: fork.deployment.feeManager,
     gasRelayPaymasterFactory: fork.deployment.gasRelayPaymasterFactory,
     integrationManager: fork.deployment.integrationManager,
     policyManager: fork.deployment.policyManager,
+    setOnDispatcher: true,
+    setReleaseLive: true,
     valueInterpreter: fork.deployment.valueInterpreter,
     vaultLib: fork.deployment.vaultLib,
-    setReleaseLive: true,
-    setOnDispatcher: true,
   });
 
   // Create fund on old release
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner,
-    fundDeployer: prevFundDeployer,
-    fundOwner,
-    fundName: 'My Fund',
     denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    fundDeployer: prevFundDeployer,
+    fundName: 'My Fund',
+    fundOwner,
+    signer: fundOwner,
   });
 
   // Switch dispatcher back to the canonical fund deployer
@@ -69,10 +71,10 @@ describe('createMigrationRequest', () => {
 
       await expect(
         createMigrationRequest({
-          signer: randomUser,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: randomUser,
+          vaultProxy,
         }),
       ).rejects.toBeRevertedWith('Only a permissioned migrator can call this function');
     });
@@ -90,18 +92,21 @@ describe('createMigrationRequest', () => {
         gasRelayPaymasterFactory,
       } = fork.deployment;
       const nonLiveFundDeployer = await createFundDeployer({
-        deployer: fork.deployer,
         assetFinalityResolver,
-        externalPositionManager,
+        deployer: fork.deployer,
         dispatcher,
+        externalPositionManager,
         feeManager,
+        gasRelayPaymasterFactory,
         integrationManager,
         policyManager,
+        // Do NOT set release as live
+        setOnDispatcher: true,
+
+        setReleaseLive: false,
+
         valueInterpreter,
-        vaultLib,
-        gasRelayPaymasterFactory,
-        setReleaseLive: false, // Do NOT set release as live
-        setOnDispatcher: true, // Do set as the current release on the Dispatcher
+        vaultLib, // Do set as the current release on the Dispatcher
       });
 
       await expect(
@@ -122,19 +127,19 @@ describe('createMigrationRequest', () => {
       const { vaultProxy } = await createNewFundOnPrevRelease({ fork, fundOwner });
 
       await createMigrationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // The second request should fail as the first request is already created and pending
       await expect(
         createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         }),
       ).rejects.toBeRevertedWith('A MigrationRequest already exists');
     });
@@ -161,12 +166,12 @@ describe('createMigrationRequest', () => {
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
         const migratedFundRes = await createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
+          bypassPrevReleaseFailure: false,
           denominationAsset,
+          fundDeployer,
           sharesActionTimelock,
-          bypassPrevReleaseFailure: false, // Not necessary to define, but explicit
+          signer: fundOwner,
+          vaultProxy, // Not necessary to define, but explicit
         });
 
         nextComptrollerProxy = migratedFundRes.comptrollerProxy;
@@ -189,9 +194,9 @@ describe('createMigrationRequest', () => {
 
       it('correctly emits the MigrationRequestCreated event', async () => {
         assertEvent(createMigrationRequestReceipt, 'MigrationRequestCreated', {
+          comptrollerProxy: nextComptrollerProxy,
           creator: fundOwner,
           vaultProxy,
-          comptrollerProxy: nextComptrollerProxy,
         });
       });
 
@@ -221,11 +226,11 @@ describe('createMigrationRequest', () => {
         await vaultProxy.setMigrator(migrator);
 
         const migratedFundRes = await createMigrationRequest({
-          signer: migrator,
-          fundDeployer,
-          vaultProxy,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
           bypassPrevReleaseFailure: true,
+          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: migrator,
+          vaultProxy,
         });
 
         nextComptrollerProxy = migratedFundRes.comptrollerProxy;
@@ -259,10 +264,10 @@ describe('executeMigration', () => {
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
     });
 
@@ -287,10 +292,10 @@ describe('executeMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         nextComptrollerProxy = migratedFundRes.comptrollerProxy;
@@ -332,10 +337,10 @@ describe('executeMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         // Warp to migratable time
@@ -371,10 +376,10 @@ describe('cancelMigration', () => {
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
     });
 
@@ -399,10 +404,10 @@ describe('cancelMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         nextComptrollerProxy = migratedFundRes.comptrollerProxy;
@@ -432,10 +437,10 @@ describe('cancelMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         // Set the migrator

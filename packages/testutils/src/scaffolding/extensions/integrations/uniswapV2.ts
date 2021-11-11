@@ -1,22 +1,25 @@
-import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  callOnIntegrationArgs,
+import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
+import { contract } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   IntegrationManager,
+  StandardToken,
+  UniswapV2ExchangeAdapter,
+  UniswapV2LiquidityAdapter,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  callOnIntegrationArgs,
   IntegrationManagerActionId,
   lendSelector,
   redeemSelector,
-  StandardToken,
   takeOrderSelector,
-  UniswapV2ExchangeAdapter,
-  UniswapV2LiquidityAdapter,
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
   uniswapV2TakeOrderArgs,
-  VaultLib,
 } from '@enzymefinance/protocol';
-import { BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
 
 export interface UniswapV2Factory extends Contract<UniswapV2Factory> {
   createPair: Send<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
@@ -64,19 +67,19 @@ export async function uniswapV2Lend({
   }
 
   const lendArgs = uniswapV2LendArgs({
-    tokenA,
-    tokenB,
     amountADesired,
-    amountBDesired,
     amountAMin,
+    amountBDesired,
     amountBMin,
     minPoolTokenAmount,
+    tokenA,
+    tokenB,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2LiquidityAdapter,
-    selector: lendSelector,
     encodedCallArgs: lendArgs,
+    selector: lendSelector,
   });
 
   const lendTx = comptrollerProxy
@@ -109,16 +112,16 @@ export async function uniswapV2Redeem({
   amountBMin: BigNumberish;
 }) {
   const redeemArgs = uniswapV2RedeemArgs({
+    amountAMin,
+    amountBMin,
     poolTokenAmount,
     tokenA,
     tokenB,
-    amountAMin,
-    amountBMin,
   });
   const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2LiquidityAdapter,
-    selector: redeemSelector,
     encodedCallArgs: redeemArgs,
+    selector: redeemSelector,
   });
 
   const redeemTx = comptrollerProxy
@@ -156,14 +159,14 @@ export async function uniswapV2TakeOrder({
   }
 
   const takeOrderArgs = uniswapV2TakeOrderArgs({
-    path,
-    outgoingAssetAmount,
     minIncomingAssetAmount,
+    outgoingAssetAmount,
+    path,
   });
   const callArgs = callOnIntegrationArgs({
     adapter: uniswapV2ExchangeAdapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy

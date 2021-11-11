@@ -1,5 +1,6 @@
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
-import { createNewFund, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -22,12 +23,12 @@ describe('exchangeEthAndBuyShares', () => {
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       // Use a shares action timelock to assure DepositWrapper has correct permissions
       sharesActionTimelock: 1000,
+      signer: fundOwner,
     });
 
     const investmentEth = utils.parseEther('2');
@@ -58,12 +59,12 @@ describe('exchangeEthAndBuyShares', () => {
     const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       // Use a shares action timelock to assure DepositWrapper has correct permissions
       sharesActionTimelock: 1000,
+      signer: fundOwner,
     });
 
     // Seed depositWrapper contract with WETH that will not be used in the tx,

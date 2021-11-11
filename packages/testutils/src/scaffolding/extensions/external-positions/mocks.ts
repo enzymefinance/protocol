@@ -1,18 +1,17 @@
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ExternalPositionFactory, ExternalPositionManager } from '@enzymefinance/protocol/src';
 import {
-  ComptrollerLib,
   encodeArgs,
   ExternalPositionManagerActionId,
-  ExternalPositionFactory,
-  ExternalPositionManager,
   mockGenericExternalPositionActionArgs,
   MockGenericExternalPositionActionId,
   MockGenericExternalPositionLib,
   MockGenericExternalPositionParser,
   VaultLib,
 } from '@enzymefinance/protocol/src';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+
 import { callOnExternalPosition } from './actions';
 
 export async function createMockExternalPosition({
@@ -66,11 +65,11 @@ export async function createMockExternalPosition({
   const externalPositionProxy = (await vaultProxy.getActiveExternalPositions())[0];
 
   return {
-    typeId,
-    mockGenericExternalPositionLib,
-    mockExternalPositionParser,
     externalPositionProxy,
+    mockExternalPositionParser,
+    mockGenericExternalPositionLib,
     receipt,
+    typeId,
   };
 }
 
@@ -90,17 +89,17 @@ export async function mockExternalPositionAddDebtAssets({
   amounts: BigNumberish[];
 }) {
   const actionArgs = mockGenericExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
   });
 
   return callOnExternalPosition({
-    signer,
+    actionArgs,
+    actionId: MockGenericExternalPositionActionId.AddDebtAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: MockGenericExternalPositionActionId.AddDebtAssets,
-    actionArgs,
+    signer,
   });
 }
 
@@ -120,17 +119,17 @@ export async function mockExternalPositionAddManagedAssets({
   amounts: BigNumberish[];
 }) {
   const actionArgs = mockGenericExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
   });
 
   return callOnExternalPosition({
-    signer,
+    actionArgs,
+    actionId: MockGenericExternalPositionActionId.AddManagedAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: MockGenericExternalPositionActionId.AddManagedAssets,
-    actionArgs,
+    signer,
   });
 }
 
@@ -150,17 +149,17 @@ export async function mockExternalPositionRemoveDebtAssets({
   amounts: BigNumberish[];
 }) {
   const actionArgs = mockGenericExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
   });
 
   return callOnExternalPosition({
-    signer,
+    actionArgs,
+    actionId: MockGenericExternalPositionActionId.RemoveDebtAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: MockGenericExternalPositionActionId.RemoveDebtAssets,
-    actionArgs,
+    signer,
   });
 }
 
@@ -180,16 +179,16 @@ export async function mockExternalPositionRemoveManagedAssets({
   amounts: BigNumberish[];
 }) {
   const actionArgs = mockGenericExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
   });
 
   return callOnExternalPosition({
-    signer,
+    actionArgs,
+    actionId: MockGenericExternalPositionActionId.RemoveManagedAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: MockGenericExternalPositionActionId.RemoveManagedAssets,
-    actionArgs,
+    signer,
   });
 }

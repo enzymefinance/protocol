@@ -1,10 +1,7 @@
-import {
-  ONE_DAY_IN_SECONDS,
-  CumulativeSlippageTolerancePolicyArgs,
-  AddressListRegistry,
-  AddressListUpdateType,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { CumulativeSlippageTolerancePolicyArgs } from '@enzymefinance/protocol';
+import { AddressListRegistry, AddressListUpdateType, ONE_DAY_IN_SECONDS } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {

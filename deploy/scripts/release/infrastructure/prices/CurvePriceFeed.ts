@@ -1,5 +1,6 @@
-import { CurvePriceFeed, CurvePriceFeedArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { CurvePriceFeedArgs } from '@enzymefinance/protocol';
+import { CurvePriceFeed } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 

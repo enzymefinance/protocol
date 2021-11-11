@@ -1,5 +1,5 @@
-import { FundValueCalculatorRouterArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { FundValueCalculatorRouterArgs } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {

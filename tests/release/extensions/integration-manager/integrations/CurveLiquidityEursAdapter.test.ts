@@ -1,22 +1,23 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
+  ChainlinkRateAsset,
   claimRewardsSelector,
-  curveEursLendArgs,
   curveEursLendAndStakeArgs,
+  curveEursLendArgs,
   curveEursRedeemArgs,
   curveEursStakeArgs,
-  curveEursUnstakeArgs,
   curveEursUnstakeAndRedeemArgs,
+  curveEursUnstakeArgs,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   stakeSelector,
   StandardToken,
-  unstakeSelector,
   unstakeAndRedeemSelector,
-  ChainlinkRateAsset,
+  unstakeSelector,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   curveEursClaimRewards,
@@ -29,7 +30,6 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  ProtocolDeployment,
   vaultCallCurveMinterToggleApproveMint,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -98,11 +98,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.None,
-        spendAssets_: [],
-        spendAssetAmounts_: [],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
+        spendAssetAmounts_: [],
+        spendAssetsHandleType_: SpendAssetsHandleType.None,
+        spendAssets_: [],
       });
     });
   });
@@ -117,18 +117,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveEursLendArgs({
+          minIncomingLPTokenAmount,
           outgoingEursAmount,
           outgoingSeurAmount: BigNumber.from(0),
-          minIncomingLPTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.unsupportedAssets.eurs],
-        spendAssetAmounts_: [outgoingEursAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingEursAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.unsupportedAssets.eurs],
       });
     });
 
@@ -141,18 +141,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveEursLendArgs({
+          minIncomingLPTokenAmount,
           outgoingEursAmount: BigNumber.from(0),
           outgoingSeurAmount,
-          minIncomingLPTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.synthetix.synths.seur],
-        spendAssetAmounts_: [outgoingSeurAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingSeurAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.synthetix.synths.seur],
       });
     });
 
@@ -166,18 +166,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveEursLendArgs({
+          minIncomingLPTokenAmount,
           outgoingEursAmount,
           outgoingSeurAmount,
-          minIncomingLPTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
-        spendAssetAmounts_: [outgoingEursAmount, outgoingSeurAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingEursAmount, outgoingSeurAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
       });
     });
   });
@@ -192,18 +192,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveEursLendAndStakeArgs({
+          minIncomingLiquidityGaugeTokenAmount,
           outgoingEursAmount,
           outgoingSeurAmount: BigNumber.from(0),
-          minIncomingLiquidityGaugeTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.unsupportedAssets.eurs],
-        spendAssetAmounts_: [outgoingEursAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingEursAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.unsupportedAssets.eurs],
       });
     });
 
@@ -216,18 +216,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveEursLendAndStakeArgs({
+          minIncomingLiquidityGaugeTokenAmount,
           outgoingEursAmount: BigNumber.from(0),
           outgoingSeurAmount,
-          minIncomingLiquidityGaugeTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.synthetix.synths.seur],
-        spendAssetAmounts_: [outgoingSeurAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingSeurAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.synthetix.synths.seur],
       });
     });
 
@@ -241,18 +241,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveEursLendAndStakeArgs({
+          minIncomingLiquidityGaugeTokenAmount,
           outgoingEursAmount,
           outgoingSeurAmount,
-          minIncomingLiquidityGaugeTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
-        spendAssetAmounts_: [outgoingEursAmount, outgoingSeurAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingEursAmount, outgoingSeurAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
       });
     });
   });
@@ -268,19 +268,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveEursRedeemArgs({
-          outgoingLPTokenAmount,
           minIncomingEursAmount,
           minIncomingSeurAmount,
+          outgoingLPTokenAmount,
           receiveSingleAsset: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
         minIncomingAssetAmounts_: [minIncomingEursAmount, minIncomingSeurAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
       });
     });
 
@@ -293,19 +293,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveEursRedeemArgs({
-          outgoingLPTokenAmount,
           minIncomingEursAmount,
           minIncomingSeurAmount: BigNumber.from(0),
+          outgoingLPTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.unsupportedAssets.eurs],
         minIncomingAssetAmounts_: [minIncomingEursAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
       });
     });
 
@@ -318,19 +318,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveEursRedeemArgs({
-          outgoingLPTokenAmount,
           minIncomingEursAmount: BigNumber.from(0),
           minIncomingSeurAmount,
+          outgoingLPTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.synthetix.synths.seur],
         minIncomingAssetAmounts_: [minIncomingSeurAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
       });
     });
   });
@@ -349,11 +349,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
         minIncomingAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.lpToken],
       });
     });
   });
@@ -372,11 +372,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.curve.pools.eurs.lpToken],
         minIncomingAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
       });
     });
   });
@@ -392,19 +392,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveEursUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
           minIncomingEursAmount,
           minIncomingSeurAmount,
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.unsupportedAssets.eurs, fork.config.synthetix.synths.seur],
         minIncomingAssetAmounts_: [minIncomingEursAmount, minIncomingSeurAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
       });
     });
 
@@ -417,19 +417,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveEursUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
           minIncomingEursAmount,
           minIncomingSeurAmount: BigNumber.from(0),
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.unsupportedAssets.eurs],
         minIncomingAssetAmounts_: [minIncomingEursAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
       });
     });
 
@@ -442,19 +442,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveEursUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
           minIncomingEursAmount: BigNumber.from(0),
           minIncomingSeurAmount,
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityEursAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.synthetix.synths.seur],
         minIncomingAssetAmounts_: [minIncomingSeurAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.eurs.liquidityGaugeToken],
       });
     });
   });
@@ -468,10 +468,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs
@@ -482,12 +482,12 @@ describe('lend', () => {
 
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [postTxEursBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -508,10 +508,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingSeurAmount = sEurUnit.mul(2);
@@ -523,12 +523,12 @@ describe('lend', () => {
 
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount: BigNumber.from(0),
       outgoingSeurAmount,
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [postTxSeurBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -550,10 +550,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingEursAmount = eursUnit.mul(3);
@@ -568,12 +568,12 @@ describe('lend', () => {
 
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount,
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [postTxEursBalance, postTxSeurBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -597,10 +597,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs
@@ -611,12 +611,12 @@ describe('lendAndStake', () => {
 
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [postTxEursBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -637,10 +637,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of seur
@@ -653,12 +653,12 @@ describe('lendAndStake', () => {
 
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount: BigNumber.from(0),
       outgoingSeurAmount,
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [postTxSeurBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -680,10 +680,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and seur
@@ -699,12 +699,12 @@ describe('lendAndStake', () => {
 
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount,
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [postTxEursBalance, postTxSeurBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -729,10 +729,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend for lpTokens
@@ -740,12 +740,12 @@ describe('redeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxSeurBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -759,12 +759,12 @@ describe('redeem', () => {
     await expect(
       curveEursRedeem({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
         curveLiquidityEursAdapter,
-        outgoingLPTokenAmount,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
         minIncomingEursAmount: BigNumber.from(1),
         minIncomingSeurAmount: BigNumber.from(1),
+        outgoingLPTokenAmount,
         receiveSingleAsset: false,
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
@@ -779,12 +779,12 @@ describe('redeem', () => {
     // Redeem should now succeed
     await curveEursRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLPTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(1),
       minIncomingSeurAmount: BigNumber.from(1),
+      outgoingLPTokenAmount,
       receiveSingleAsset: false,
     });
 
@@ -808,10 +808,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend for lpTokens
@@ -819,12 +819,12 @@ describe('redeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -838,12 +838,12 @@ describe('redeem', () => {
     await expect(
       curveEursRedeem({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
         curveLiquidityEursAdapter,
-        outgoingLPTokenAmount,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
         minIncomingEursAmount: BigNumber.from(1),
         minIncomingSeurAmount: BigNumber.from(0),
+        outgoingLPTokenAmount,
         receiveSingleAsset: true,
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
@@ -858,12 +858,12 @@ describe('redeem', () => {
     // Redeem should now succeed
     await curveEursRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLPTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(1),
       minIncomingSeurAmount: BigNumber.from(0),
+      outgoingLPTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -888,10 +888,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend for lpTokens
@@ -899,12 +899,12 @@ describe('redeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxSeurBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -916,12 +916,12 @@ describe('redeem', () => {
 
     await curveEursRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLPTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(0),
       minIncomingSeurAmount: BigNumber.from(1),
+      outgoingLPTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -948,10 +948,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend and stake for liquidity gauge tokens
@@ -959,12 +959,12 @@ describe('unstakeAndRedeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxSeurBalance, preTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -978,12 +978,12 @@ describe('unstakeAndRedeem', () => {
     await expect(
       curveEursUnstakeAndRedeem({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
         curveLiquidityEursAdapter,
-        outgoingLiquidityGaugeTokenAmount,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
         minIncomingEursAmount: BigNumber.from(1),
         minIncomingSeurAmount: BigNumber.from(1),
+        outgoingLiquidityGaugeTokenAmount,
         receiveSingleAsset: false,
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
@@ -998,12 +998,12 @@ describe('unstakeAndRedeem', () => {
     // Redeem should now succeed
     await curveEursUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLiquidityGaugeTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(1),
       minIncomingSeurAmount: BigNumber.from(1),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: false,
     });
 
@@ -1029,10 +1029,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend for lpTokens
@@ -1040,12 +1040,12 @@ describe('unstakeAndRedeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -1059,12 +1059,12 @@ describe('unstakeAndRedeem', () => {
     await expect(
       curveEursUnstakeAndRedeem({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
-        fundOwner,
         curveLiquidityEursAdapter,
-        outgoingLiquidityGaugeTokenAmount,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
         minIncomingEursAmount: BigNumber.from(1),
         minIncomingSeurAmount: BigNumber.from(0),
+        outgoingLiquidityGaugeTokenAmount,
         receiveSingleAsset: true,
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
@@ -1079,12 +1079,12 @@ describe('unstakeAndRedeem', () => {
     // Redeem should now succeed
     await curveEursUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLiquidityGaugeTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(1),
       minIncomingSeurAmount: BigNumber.from(0),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -1109,10 +1109,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.eurs.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of eurs and lend for lpTokens
@@ -1120,12 +1120,12 @@ describe('unstakeAndRedeem', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     const [preTxEursBalance, preTxSeurBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -1137,12 +1137,12 @@ describe('unstakeAndRedeem', () => {
 
     await curveEursUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
-      outgoingLiquidityGaugeTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingEursAmount: BigNumber.from(0),
       minIncomingSeurAmount: BigNumber.from(1),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -1169,10 +1169,10 @@ describe('stake and unstake', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.eurs.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // First, acquire some lpTokens by lending on Curve
@@ -1181,12 +1181,12 @@ describe('stake and unstake', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount.mul(2));
     await curveEursLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLPTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLPTokenAmount: BigNumber.from(1),
     });
 
     // Stake the LP tokens
@@ -1195,9 +1195,9 @@ describe('stake and unstake', () => {
 
     await curveEursStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLPTokenAmount: stakeLPTokenAmount,
     });
 
@@ -1214,9 +1214,9 @@ describe('stake and unstake', () => {
     const unstakeLiquidityGaugeTokenAmount = stakeLPTokenAmount.div(2);
     await curveEursUnstake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLiquidityGaugeTokenAmount: unstakeLiquidityGaugeTokenAmount,
     });
 
@@ -1241,10 +1241,10 @@ describe('claimRewards', () => {
     const eurs = new StandardToken(fork.config.unsupportedAssets.eurs, whales.eurs);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Lend and stake to start accruing rewards
@@ -1252,12 +1252,12 @@ describe('claimRewards', () => {
     await eurs.transfer(vaultProxy, outgoingEursAmount);
     await curveEursLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
       outgoingEursAmount,
       outgoingSeurAmount: BigNumber.from(0),
-      minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
     });
 
     // TODO: check if call fails if no rewards available
@@ -1272,17 +1272,17 @@ describe('claimRewards', () => {
 
     // Approve the adapter to claim $CRV rewards on behalf of the vault
     await vaultCallCurveMinterToggleApproveMint({
+      account: curveLiquidityEursAdapter,
       comptrollerProxy,
       minter: fork.config.curve.minter,
-      account: curveLiquidityEursAdapter,
     });
 
     // Claim all earned rewards
     await curveEursClaimRewards({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityEursAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
     });
 
     const [postClaimRewardsCrvBalance] = await getAssetBalances({

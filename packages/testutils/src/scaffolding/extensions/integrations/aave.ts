@@ -1,17 +1,15 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AaveAdapter, ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import {
-  AaveAdapter,
   aaveLendArgs,
   aaveRedeemArgs,
   callOnIntegrationArgs,
-  ComptrollerLib,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
   redeemSelector,
-  StandardToken,
 } from '@enzymefinance/protocol';
-import { BigNumberish, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { utils } from 'ethers';
 
 export async function aaveLend({
   comptrollerProxy,
@@ -35,8 +33,8 @@ export async function aaveLend({
 
   const callArgs = callOnIntegrationArgs({
     adapter: aaveAdapter,
-    selector: lendSelector,
     encodedCallArgs: lendArgs,
+    selector: lendSelector,
   });
 
   const lendTx = comptrollerProxy
@@ -68,8 +66,8 @@ export async function aaveRedeem({
 
   const callArgs = callOnIntegrationArgs({
     adapter: aaveAdapter,
-    selector: redeemSelector,
     encodedCallArgs: redeemArgs,
+    selector: redeemSelector,
   });
 
   const redeemTx = comptrollerProxy

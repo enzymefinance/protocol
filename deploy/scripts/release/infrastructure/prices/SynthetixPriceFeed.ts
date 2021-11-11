@@ -1,5 +1,6 @@
-import { SynthetixPriceFeed, SynthetixPriceFeedArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { SynthetixPriceFeedArgs } from '@enzymefinance/protocol';
+import { SynthetixPriceFeed } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 

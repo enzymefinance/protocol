@@ -8,8 +8,8 @@ import {
   IMigrationHookHandler,
   MockVaultLib,
   payoutSharesOutstandingForFeesArgs,
-  settlePreBuySharesArgs,
   settlePostBuySharesArgs,
+  settlePreBuySharesArgs,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -47,23 +47,23 @@ async function snapshot() {
     });
 
     return createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: deployment.fundDeployer,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer: deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
   };
 
   return {
     accounts: remainingAccounts,
-    deployer,
     config,
+    createFund,
+    denominationAsset,
+    deployer,
     deployment,
     fees,
-    denominationAsset,
     fundOwner,
-    createFund,
   };
 }
 
@@ -109,8 +109,8 @@ describe('deactivateForFund', () => {
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       seedBuyer: true,
     });
@@ -123,10 +123,10 @@ describe('deactivateForFund', () => {
       feeAmount,
     );
     await callOnExtension({
-      signer: fundOwner,
+      actionId: FeeManagerActionId.InvokeContinuousHook,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
+      signer: fundOwner,
     });
     expect(
       await feeManager.getFeeSharesOutstandingForFund(comptrollerProxy, mockContinuousFeeSettleOnly),
@@ -157,7 +157,7 @@ describe('deactivateForFund', () => {
 
     // Proper events are fired
     assertEvent(receipt, feeManager.abi.getEvent('SharesOutstandingPaidForFund'), {
-      comptrollerProxy: comptrollerProxy,
+      comptrollerProxy,
       fee: mockContinuousFeeSettleOnly,
       payee: fundOwner,
       sharesDue: feeAmount,
@@ -184,7 +184,7 @@ describe('receiveCallFromComptroller', () => {
 
     // Calling with invalid actionID
     const actionId = 123;
-    const callOnExtensionCall = callOnExtension({ comptrollerProxy, extension: feeManager, actionId });
+    const callOnExtensionCall = callOnExtension({ actionId, comptrollerProxy, extension: feeManager });
     await expect(callOnExtensionCall).rejects.toBeRevertedWith('Invalid _actionId');
   });
 
@@ -202,8 +202,8 @@ describe('receiveCallFromComptroller', () => {
 
     // Buy shares of the fund so that fees accrue
     await buyShares({
-      comptrollerProxy,
       buyer: fundInvestor,
+      comptrollerProxy,
       denominationAsset,
       seedBuyer: true,
     });
@@ -217,19 +217,19 @@ describe('receiveCallFromComptroller', () => {
 
     // Settling the fee
     const receipt = await callOnExtension({
+      actionId: FeeManagerActionId.InvokeContinuousHook,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Check that the FeeSettledForFund event has been emitted
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
     assertEvent(receipt, feeSettledForFundEvent, {
-      settlementType: FeeSettlementType.Mint,
       comptrollerProxy,
       fee: mockContinuousFeeSettleOnly,
-      payer: constants.AddressZero,
       payee: fundOwner,
+      payer: constants.AddressZero,
+      settlementType: FeeSettlementType.Mint,
       sharesDue: expect.anything(),
     });
   });
@@ -260,16 +260,16 @@ describe('setConfigForFund', () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), constants.HashZero];
 
     const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
+      fees,
       settings: feesSettingsData,
     });
 
     const createNewFundCall = createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     await expect(createNewFundCall).rejects.toBeRevertedWith('fees and settingsData array lengths unequal');
@@ -288,16 +288,16 @@ describe('setConfigForFund', () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(10)];
 
     const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
+      fees,
       settings: feesSettingsData,
     });
 
     const createNewFundCall = createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     await expect(createNewFundCall).rejects.toBeRevertedWith('fees cannot include duplicates');
@@ -315,16 +315,16 @@ describe('setConfigForFund', () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), constants.HashZero];
 
     const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
+      fees,
       settings: feesSettingsData,
     });
 
     const { comptrollerProxy, receipt, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Assert state for fund
@@ -379,16 +379,16 @@ describe('invokeHook', () => {
     const feesSettingsData = [utils.randomBytes(10)];
 
     const feeManagerConfig = feeManagerConfigArgs({
-      fees: fees,
+      fees,
       settings: feesSettingsData,
     });
 
     await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
       feeManagerConfig,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const invokeHookCall = feeManager.invokeHook(FeeHook.Continuous, utils.randomBytes(10), 0);
@@ -407,17 +407,17 @@ describe('invokeHook', () => {
 
     // Buy shares
     await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       seedBuyer: true,
     });
 
     // Settle fees without having defined fee settlement
     const receipt = await callOnExtension({
+      actionId: FeeManagerActionId.InvokeContinuousHook,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Assert that no "FeeSettledForFund" event was emitted
@@ -441,8 +441,8 @@ describe('invokeHook', () => {
 
         // Buying shares
         await buyShares({
-          comptrollerProxy,
           buyer,
+          comptrollerProxy,
           denominationAsset,
           seedBuyer: true,
         });
@@ -458,9 +458,9 @@ describe('invokeHook', () => {
 
         // Settle fee
         const receipt = await callOnExtension({
+          actionId: FeeManagerActionId.InvokeContinuousHook,
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHook,
         });
 
         // Assert that no "FeeSettledForFund" event was emitted
@@ -506,8 +506,8 @@ describe('invokeHook', () => {
         // Buy shares with active fee
         const investmentAmount = await getAssetUnit(denominationAsset);
         const receipt = await buyShares({
-          comptrollerProxy,
           buyer,
+          comptrollerProxy,
           denominationAsset,
           seedBuyer: true,
         });
@@ -517,9 +517,9 @@ describe('invokeHook', () => {
         assertEvent(receipt, feeSettledForFundEvent, {
           comptrollerProxy,
           fee: mockPostBuySharesFee,
-          settlementType,
-          payer: buyer,
           payee: fundOwner,
+          payer: buyer,
+          settlementType,
           sharesDue: feeAmount,
         });
 
@@ -560,8 +560,8 @@ describe('invokeHook', () => {
         const investmentAmount = await getAssetUnit(denominationAsset);
         const expectedSharesReceived = utils.parseEther('1').sub(feeAmount);
         const receipt = await buyShares({
-          comptrollerProxy,
           buyer,
+          comptrollerProxy,
           denominationAsset,
           investmentAmount,
           seedBuyer: true,
@@ -571,11 +571,11 @@ describe('invokeHook', () => {
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
 
         assertEvent(receipt, feeSettledForFundEvent, {
-          comptrollerProxy: comptrollerProxy,
+          comptrollerProxy,
           fee: mockPostBuySharesFee,
-          settlementType,
-          payer: buyer,
           payee: constants.AddressZero,
+          payer: buyer,
+          settlementType,
           sharesDue: feeAmount,
         });
 
@@ -610,8 +610,8 @@ describe('invokeHook', () => {
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
-          comptrollerProxy,
           buyer,
+          comptrollerProxy,
           denominationAsset,
           seedBuyer: true,
         });
@@ -626,20 +626,20 @@ describe('invokeHook', () => {
 
         // Settle continuous fees with active fee
         const receipt = await callOnExtension({
-          signer: randomUser,
+          actionId: FeeManagerActionId.InvokeContinuousHook,
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHook,
+          signer: randomUser,
         });
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
         assertEvent(receipt, feeSettledForFundEvent, {
-          comptrollerProxy: comptrollerProxy,
+          comptrollerProxy,
           fee: mockContinuousFeeSettleOnly,
-          settlementType,
-          payer: constants.AddressZero,
           payee: fundOwner,
+          payer: constants.AddressZero,
+          settlementType,
           sharesDue: feeAmount,
         });
 
@@ -670,8 +670,8 @@ describe('invokeHook', () => {
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
-          comptrollerProxy,
           buyer,
+          comptrollerProxy,
           denominationAsset,
           seedBuyer: true,
         });
@@ -691,20 +691,20 @@ describe('invokeHook', () => {
 
         // Settle continuous fees with active fee
         const receipt = await callOnExtension({
-          signer: randomUser,
+          actionId: FeeManagerActionId.InvokeContinuousHook,
           comptrollerProxy,
           extension: feeManager,
-          actionId: FeeManagerActionId.InvokeContinuousHook,
+          signer: randomUser,
         });
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
         assertEvent(receipt, feeSettledForFundEvent, {
-          comptrollerProxy: comptrollerProxy,
+          comptrollerProxy,
           fee: mockContinuousFeeSettleOnly,
-          settlementType,
-          payer: constants.AddressZero,
           payee: vaultProxy,
+          payer: constants.AddressZero,
+          settlementType,
           sharesDue: feeAmount,
         });
 
@@ -747,8 +747,8 @@ describe('invokeHook', () => {
       // Seed fund with initial fund shares,
       // to give a non-zero totalSupply (so that minting new shares is allowed)
       await buyShares({
-        comptrollerProxy,
         buyer,
+        comptrollerProxy,
         denominationAsset,
         seedBuyer: true,
       });
@@ -770,10 +770,10 @@ describe('invokeHook', () => {
       );
 
       await callOnExtension({
-        signer: randomUser,
+        actionId: FeeManagerActionId.InvokeContinuousHook,
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHook,
+        signer: randomUser,
       });
 
       const postMintSharesOutstanding = await feeManager.getFeeSharesOutstandingForFund(
@@ -788,10 +788,10 @@ describe('invokeHook', () => {
       const settlementType = FeeSettlementType.BurnSharesOutstanding;
       await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, burnFeeAmount);
       const receipt = await callOnExtension({
-        signer: randomUser,
+        actionId: FeeManagerActionId.InvokeContinuousHook,
         comptrollerProxy,
         extension: feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHook,
+        signer: randomUser,
       });
 
       // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
@@ -799,9 +799,9 @@ describe('invokeHook', () => {
       assertEvent(receipt, feeSettledForFundEvent, {
         comptrollerProxy,
         fee: mockContinuousFeeSettleOnly,
-        settlementType,
-        payer: vaultProxy,
         payee: constants.AddressZero,
+        payer: vaultProxy,
+        settlementType,
         sharesDue: burnFeeAmount,
       });
 
@@ -844,8 +844,8 @@ describe('invokeHook', () => {
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount,
       seedBuyer: true,
@@ -910,18 +910,18 @@ describe('__InvokeContinuousHook', () => {
 
     // Seed fund so it has a non-zero GAV
     await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount,
       seedBuyer: true,
     });
 
     await callOnExtension({
-      signer: randomUser,
+      actionId: FeeManagerActionId.InvokeContinuousHook,
       comptrollerProxy,
       extension: feeManager,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
+      signer: randomUser,
     });
 
     // Assert called settle on mockContinuousFeeSettleOnly with gav as 0
@@ -970,8 +970,8 @@ describe('__payoutSharesOutstandingForFees', () => {
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       seedBuyer: true,
     });
@@ -998,9 +998,9 @@ describe('__payoutSharesOutstandingForFees', () => {
 
     // Settle once via callOnExtension to mint shares outstanding with no payout
     await callOnExtension({
+      actionId: FeeManagerActionId.InvokeContinuousHook,
       comptrollerProxy,
       extension,
-      actionId: FeeManagerActionId.InvokeContinuousHook,
     });
 
     // Define params for payout shares outstanding calls
@@ -1009,10 +1009,10 @@ describe('__payoutSharesOutstandingForFees', () => {
 
     // Attempting to payout should not mint shares while `payout` returns false
     await callOnExtension({
-      comptrollerProxy,
-      extension,
       actionId,
       callArgs,
+      comptrollerProxy,
+      extension,
     });
     expect(await vaultProxy.balanceOf(fee1Recipient)).toEqBigNumber(preTxFee1RecipientBalance);
     expect(await vaultProxy.balanceOf(fee2Recipient)).toEqBigNumber(preTxFee2RecipientBalance);
@@ -1023,10 +1023,10 @@ describe('__payoutSharesOutstandingForFees', () => {
 
     // Payout fees
     const receipt = await callOnExtension({
-      comptrollerProxy,
-      extension,
       actionId,
       callArgs,
+      comptrollerProxy,
+      extension,
     });
 
     // Record prior shares balances

@@ -1,6 +1,9 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { ComptrollerLib, FundDeployer, ProtocolFeeTracker, StandardToken, VaultLib } from '@enzymefinance/protocol';
-import { createNewFund, createFundDeployer, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { ComptrollerLib, FundDeployer, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
+import { StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createFundDeployer, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -26,18 +29,20 @@ describe('unhappy paths', () => {
       vaultLib,
     } = fork.deployment;
     const nonLiveFundDeployer = await createFundDeployer({
-      deployer: fork.deployer,
       assetFinalityResolver,
-      externalPositionManager,
+      deployer: fork.deployer,
       dispatcher,
+      externalPositionManager,
       feeManager,
       gasRelayPaymasterFactory,
       integrationManager,
       policyManager,
+      // Do NOT set the release live
+      setOnDispatcher: true,
+
+      setReleaseLive: false,
       valueInterpreter,
-      vaultLib,
-      setReleaseLive: false, // Do NOT set the release live
-      setOnDispatcher: true, // Do set as the current release on the Dispatcher
+      vaultLib, // Do set as the current release on the Dispatcher
     });
 
     await expect(
@@ -73,12 +78,12 @@ describe('happy paths', () => {
 
       // Note that events are asserted within helper
       const fundRes = await createNewFund({
-        signer,
-        fundDeployer,
-        fundOwner,
-        fundName,
         denominationAsset,
+        fundDeployer,
+        fundName,
+        fundOwner,
         sharesActionTimelock,
+        signer,
       });
 
       comptrollerProxy = fundRes.comptrollerProxy;

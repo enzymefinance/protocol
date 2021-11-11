@@ -1,18 +1,21 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  addressListRegistryPolicyArgs,
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   AllowedSharesTransferRecipientsPolicy,
-  PolicyHook,
   ComptrollerLib,
-  StandardToken,
-  policyManagerConfigArgs,
   PolicyManager,
-  AddressListUpdateType,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { buyShares, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { BigNumberish } from 'ethers';
+import {
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
+  PolicyHook,
+  policyManagerConfigArgs,
+  StandardToken,
+} from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { BigNumberish } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -63,9 +66,8 @@ describe('updateFundSettings', () => {
     policyManager = fork.deployment.policyManager;
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedSharesTransferRecipientsPolicy],
@@ -73,13 +75,14 @@ describe('updateFundSettings', () => {
           addressListRegistryPolicyArgs({
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
@@ -91,8 +94,8 @@ describe('updateFundSettings', () => {
         addressListRegistryPolicyArgs({
           newListsArgs: [
             {
-              updateType: AddressListUpdateType.None,
               initialItems: [newListAddress],
+              updateType: AddressListUpdateType.None,
             },
           ],
         }),
@@ -109,8 +112,8 @@ describe('updateFundSettings', () => {
       addressListRegistryPolicyArgs({
         newListsArgs: [
           {
-            updateType: AddressListUpdateType.None,
             initialItems: [newListAddress],
+            updateType: AddressListUpdateType.None,
           },
         ],
       }),
@@ -139,9 +142,8 @@ describe('validateRule', () => {
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedSharesTransferRecipientsPolicy],
@@ -150,20 +152,21 @@ describe('validateRule', () => {
             existingListIds: [0], // Include empty list to test inclusion in 1 list only
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [allowedSharesTransferRecipient],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
     vaultProxy = newFundRes.vaultProxy;
 
     await buyShares({
+      buyer: sharesTransferSender,
       comptrollerProxy: newFundRes.comptrollerProxy,
       denominationAsset,
-      buyer: sharesTransferSender,
       seedBuyer: true,
     });
 

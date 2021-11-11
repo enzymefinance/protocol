@@ -1,15 +1,13 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
-  ComptrollerLib,
-  IntegrationManager,
   IntegrationManagerActionId,
-  StandardToken,
   takeOrderSelector,
   uniswapV3TakeOrderArgs,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumber, BigNumberish } from 'ethers';
 
 export async function uniswapV3TakeOrder({
   comptrollerProxy,
@@ -39,16 +37,16 @@ export async function uniswapV3TakeOrder({
   }
 
   const takeOrderArgs = uniswapV3TakeOrderArgs({
+    minIncomingAssetAmount,
+    outgoingAssetAmount,
     pathAddresses,
     pathFees,
-    outgoingAssetAmount,
-    minIncomingAssetAmount,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: uniswapV3Adapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy

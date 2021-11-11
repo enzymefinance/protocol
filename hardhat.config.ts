@@ -2,18 +2,20 @@ import 'dotenv/config';
 import '@enzymefinance/hardhat/plugin';
 
 import { utils } from 'ethers';
-import { HardhatUserConfig } from 'hardhat/types';
+import type { HardhatUserConfig } from 'hardhat/types';
 
 function node(networkName: string) {
   const fallback = 'http://localhost:8545';
   const uppercase = networkName.toUpperCase();
   const uri = process.env[`ETHEREUM_NODE_${uppercase}`] || process.env.ETHEREUM_NODE || fallback;
+
   return uri.replace('{{NETWORK}}', networkName);
 }
 
 function accounts(networkName: string) {
   const uppercase = networkName.toUpperCase();
   const accounts = process.env[`ETHEREUM_ACCOUNTS_${uppercase}`] || process.env.ETHEREUM_ACCOUNTS || '';
+
   return accounts
     .split(',')
     .map((account) => account.trim())
@@ -99,12 +101,12 @@ const config: HardhatUserConfig = {
         count: 5,
         mnemonic,
       },
+      blockGasLimit: gas,
       chainId: 1,
       forking: {
         blockNumber: 13495000, // Oct 26, 2021
         url: node('mainnet'),
       },
-      blockGasLimit: gas,
       gasPrice: 0, // TODO: Consider removing this again.
       initialBaseFeePerGas: 0,
     },
@@ -121,6 +123,32 @@ const config: HardhatUserConfig = {
     deploy: 'deploy/scripts',
   },
   solidity: {
+    compilers: [
+      {
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+        version: '0.7.6',
+      },
+      {
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+        version: '0.6.12',
+      },
+    ],
     settings: {
       optimizer: {
         details: {
@@ -130,32 +158,6 @@ const config: HardhatUserConfig = {
         runs: 200,
       },
     },
-    compilers: [
-      {
-        version: '0.7.6',
-        settings: {
-          optimizer: {
-            details: {
-              yul: false,
-            },
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-      {
-        version: '0.6.12',
-        settings: {
-          optimizer: {
-            details: {
-              yul: false,
-            },
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
-    ],
   },
 };
 

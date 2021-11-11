@@ -1,5 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, constants } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export function entranceRateBurnFeeConfigArgs({ rate }: { rate: BigNumberish }) {

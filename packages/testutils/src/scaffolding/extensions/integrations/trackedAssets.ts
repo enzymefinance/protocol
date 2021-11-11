@@ -1,9 +1,8 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IntegrationManager } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVaultArgs,
-  ComptrollerLib,
-  IntegrationManager,
   IntegrationManagerActionId,
   removeTrackedAssetsFromVaultArgs,
 } from '@enzymefinance/protocol';

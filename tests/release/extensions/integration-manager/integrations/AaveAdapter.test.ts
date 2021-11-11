@@ -8,7 +8,8 @@ import {
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { createNewFund, ProtocolDeployment, getAssetBalances, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, getAssetBalances } from '@enzymefinance/testutils';
 import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { BigNumber, utils } from 'ethers';
 
@@ -66,11 +67,11 @@ describe('parseAssetsForAction', () => {
     const result = await aaveAdapter.parseAssetsForAction(randomAddress(), lendSelector, args);
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [aToken.address],
-      spendAssets_: [outgoingToken],
-      spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount.sub(roundingBuffer)],
+      spendAssetAmounts_: [amount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingToken],
     });
   });
 
@@ -88,11 +89,11 @@ describe('parseAssetsForAction', () => {
     const result = await aaveAdapter.parseAssetsForAction(randomAddress(), redeemSelector, args);
 
     expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [token],
-      spendAssets_: [aToken],
-      spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount.sub(roundingBuffer)],
+      spendAssetAmounts_: [amount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [aToken],
     });
   });
 });
@@ -102,10 +103,10 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -120,12 +121,12 @@ describe('lend', () => {
     });
 
     const lendReceipt = await aaveLend({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      aaveAdapter: fork.deployment.aaveAdapter,
       aToken,
+      aaveAdapter: fork.deployment.aaveAdapter,
       amount,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -145,10 +146,10 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
@@ -163,12 +164,12 @@ describe('redeem', () => {
     });
 
     const redeemReceipt = await aaveRedeem({
-      comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      aaveAdapter: fork.deployment.aaveAdapter,
       aToken,
+      aaveAdapter: fork.deployment.aaveAdapter,
       amount,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

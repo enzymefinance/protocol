@@ -1,6 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumberish } from 'ethers';
-import { AddressListUpdateType } from '../addressListRegistry';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+
+import type { AddressListUpdateType } from '../addressListRegistry';
 import { encodeArgs } from '../encoding';
 
 export function addressListRegistryPolicyArgs({

@@ -1,12 +1,15 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   MinMaxInvestmentPolicy,
   minMaxInvestmentPolicyArgs,
   PolicyHook,
   validateRulePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { BigNumberish, utils } from 'ethers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { BigNumberish } from 'ethers';
+import { utils } from 'ethers';
 
 async function addFundSettings({
   comptrollerProxy,
@@ -20,8 +23,8 @@ async function addFundSettings({
   maxInvestmentAmount: BigNumberish;
 }) {
   const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-    minInvestmentAmount,
     maxInvestmentAmount,
+    minInvestmentAmount,
   });
 
   await minMaxInvestmentPolicy.addFundSettings(comptrollerProxy, minMaxInvestmentPolicyConfig);
@@ -39,8 +42,8 @@ async function updateFundSettings({
   maxInvestmentAmount: BigNumberish;
 }) {
   const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-    minInvestmentAmount,
     maxInvestmentAmount,
+    minInvestmentAmount,
   });
 
   await minMaxInvestmentPolicy.updateFundSettings(comptrollerProxy, minMaxInvestmentPolicyConfig);
@@ -66,11 +69,12 @@ async function deployAndConfigureStandaloneMinMaxInvestmentPolicy(
   if (comptrollerProxy != '0x') {
     await addFundSettings({
       comptrollerProxy,
-      minMaxInvestmentPolicy,
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
+      minMaxInvestmentPolicy,
     });
   }
+
   return minMaxInvestmentPolicy;
 }
 
@@ -103,8 +107,8 @@ describe('addFundSettings', () => {
     const [randomUser] = fork.accounts;
 
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
+      minInvestmentAmount: utils.parseEther('1'),
     });
 
     await expect(
@@ -115,8 +119,8 @@ describe('addFundSettings', () => {
   it('does not allow minInvestmentAmount to be greater than or equal to maxInvestmentAmount unless maxInvestmentAmount is 0', async () => {
     {
       const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-        minInvestmentAmount: utils.parseEther('1'),
         maxInvestmentAmount: utils.parseEther('1'),
+        minInvestmentAmount: utils.parseEther('1'),
       });
 
       await expect(
@@ -125,8 +129,8 @@ describe('addFundSettings', () => {
     }
 
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount: utils.parseEther('2'),
       maxInvestmentAmount: utils.parseEther('1'),
+      minInvestmentAmount: utils.parseEther('2'),
     });
 
     await expect(
@@ -139,23 +143,23 @@ describe('addFundSettings', () => {
     const maxInvestmentAmount = utils.parseEther('2');
 
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
 
     const receipt = await minMaxInvestmentPolicy.addFundSettings(comptrollerProxy, minMaxInvestmentPolicyConfig);
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
 
     const fundSettings = await minMaxInvestmentPolicy.getFundSettings(comptrollerProxy);
 
     expect(fundSettings).toMatchFunctionOutput(minMaxInvestmentPolicy.getFundSettings, {
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
   });
 });
@@ -184,8 +188,8 @@ describe('updateFundSettings', () => {
     const [randomUser] = fork.accounts;
 
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
+      minInvestmentAmount: utils.parseEther('1'),
     });
 
     await expect(
@@ -196,8 +200,8 @@ describe('updateFundSettings', () => {
   it('does not allow minInvestmentAmount to be greater than or equal to maxInvestmentAmount unless maxInvestmentAmount is 0', async () => {
     {
       const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-        minInvestmentAmount: utils.parseEther('1'),
         maxInvestmentAmount: utils.parseEther('1'),
+        minInvestmentAmount: utils.parseEther('1'),
       });
 
       await expect(
@@ -205,8 +209,8 @@ describe('updateFundSettings', () => {
       ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
     }
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount: utils.parseEther('2'),
       maxInvestmentAmount: utils.parseEther('1'),
+      minInvestmentAmount: utils.parseEther('2'),
     });
 
     await expect(
@@ -219,22 +223,22 @@ describe('updateFundSettings', () => {
     const maxInvestmentAmount = utils.parseEther('4');
 
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
 
     const receipt = await minMaxInvestmentPolicy.updateFundSettings(comptrollerProxy, minMaxInvestmentPolicyConfig);
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
 
     const fundSettings = await minMaxInvestmentPolicy.getFundSettings(comptrollerProxy);
     expect(fundSettings).toMatchFunctionOutput(minMaxInvestmentPolicy.getFundSettings, {
-      minInvestmentAmount,
       maxInvestmentAmount,
+      minInvestmentAmount,
     });
   });
 });
@@ -249,8 +253,8 @@ describe('validateRule', () => {
     comptrollerProxy = randomAddress();
     minMaxInvestmentPolicy = await deployAndConfigureStandaloneMinMaxInvestmentPolicy(fork, {
       comptrollerProxy,
-      minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('2'),
+      minInvestmentAmount: utils.parseEther('1'),
     });
   });
 
@@ -289,9 +293,9 @@ describe('validateRule', () => {
   it('returns false if both the minInvestmentAmount and maxInvestmentAmount equal to 0 (can be used to temporarily close the fund) unless investmentAmount is 0', async () => {
     await updateFundSettings({
       comptrollerProxy,
-      minMaxInvestmentPolicy,
-      minInvestmentAmount: utils.parseEther('0'),
       maxInvestmentAmount: utils.parseEther('0'),
+      minInvestmentAmount: utils.parseEther('0'),
+      minMaxInvestmentPolicy,
     });
 
     // Only the investmentAmount arg matters for this policy
@@ -312,9 +316,9 @@ describe('validateRule', () => {
   it('correctly handles when minInvestmentAmount equals to 0', async () => {
     await updateFundSettings({
       comptrollerProxy,
-      minMaxInvestmentPolicy,
-      minInvestmentAmount: utils.parseEther('0'),
       maxInvestmentAmount: utils.parseEther('1'),
+      minInvestmentAmount: utils.parseEther('0'),
+      minMaxInvestmentPolicy,
     });
 
     {
@@ -351,9 +355,9 @@ describe('validateRule', () => {
   it('correctly handles when maxInvestmentAmount equals to 0', async () => {
     await addFundSettings({
       comptrollerProxy,
-      minMaxInvestmentPolicy,
-      minInvestmentAmount: utils.parseEther('1'),
       maxInvestmentAmount: utils.parseEther('0'),
+      minInvestmentAmount: utils.parseEther('1'),
+      minMaxInvestmentPolicy,
     });
 
     {

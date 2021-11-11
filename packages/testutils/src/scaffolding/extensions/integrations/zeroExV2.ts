@@ -1,16 +1,18 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   IntegrationManager,
-  ZeroExV2Adapter,
-  VaultLib,
   SignedZeroExV2Order,
+  VaultLib,
+  ZeroExV2Adapter,
+} from '@enzymefinance/protocol';
+import {
   callOnIntegrationArgs,
+  IntegrationManagerActionId,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
-  IntegrationManagerActionId,
 } from '@enzymefinance/protocol';
-import { BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
 
 export async function zeroExV2TakeOrder({
   comptrollerProxy,
@@ -35,8 +37,8 @@ export async function zeroExV2TakeOrder({
 
   const callArgs = callOnIntegrationArgs({
     adapter: zeroExV2Adapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy

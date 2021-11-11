@@ -1,5 +1,7 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, StandardToken, UniswapV3LiquidityPositionLib, VaultLib } from '@enzymefinance/protocol';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
+import { StandardToken, UniswapV3LiquidityPositionLib } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createNewFund,
@@ -7,7 +9,6 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   IUniswapV3NonFungibleTokenManager,
-  ProtocolDeployment,
   UniswapV3FeeAmount,
   uniswapV3LiquidityPositionAddLiquidity,
   uniswapV3LiquidityPositionCollect,
@@ -29,10 +30,10 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
-    signer: fundOwner,
-    fundOwner,
-    fundDeployer: fork.deployment.fundDeployer,
     denominationAsset: new StandardToken(fork.config.primitives.usdc, hre.ethers.provider),
+    fundDeployer: fork.deployment.fundDeployer,
+    fundOwner,
+    signer: fundOwner,
   });
 
   comptrollerProxy = newFundRes.comptrollerProxy;
@@ -89,15 +90,15 @@ describe('receiveCallFromVault', () => {
       const preVaultToken1Balance = await token1.balanceOf(vaultProxy);
 
       const { nftId, receipt } = await uniswapV3LiquidityPositionMint({
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
-        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
-        fee,
-        tickLower,
-        tickUpper,
         amount0Desired,
         amount1Desired,
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
+        fee,
+        signer: fundOwner,
+        tickLower,
+        tickUpper,
       });
 
       const postVaultToken0Balance = await token0.balanceOf(vaultProxy);
@@ -106,16 +107,16 @@ describe('receiveCallFromVault', () => {
       // Assert the NFT position was created correctly in Uniswap
       const positions = await nftManager.positions(nftId);
       expect(positions).toMatchFunctionOutput(nftManager.positions, {
-        nonce: expect.anything(),
-        operator: constants.AddressZero,
-        token0,
-        token1,
         fee,
-        tickLower,
-        tickUpper,
-        liquidity: expect.anything(),
         feeGrowthInside0LastX128: 0,
         feeGrowthInside1LastX128: 0,
+        liquidity: expect.anything(),
+        nonce: expect.anything(),
+        operator: constants.AddressZero,
+        tickLower,
+        tickUpper,
+        token0,
+        token1,
         tokensOwed0: 0,
         tokensOwed1: 0,
       });
@@ -167,15 +168,15 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const addLiquidityAmount0Desired = mintAmount0Desired;
@@ -191,13 +192,13 @@ describe('receiveCallFromVault', () => {
       const preVaultToken1Balance = await token1.balanceOf(vaultProxy);
 
       await uniswapV3LiquidityPositionAddLiquidity({
-        comptrollerProxy: comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
-        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
-        nftId,
         amount0Desired: addLiquidityAmount0Desired,
         amount1Desired: addLiquidityAmount1Desired,
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
+        nftId,
+        signer: fundOwner,
       });
 
       const postVaultToken0Balance = await token0.balanceOf(vaultProxy);
@@ -244,15 +245,15 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       // Remove half of liquidity
@@ -263,12 +264,12 @@ describe('receiveCallFromVault', () => {
       const preVaultToken1Balance = await token1.balanceOf(vaultProxy);
 
       await uniswapV3LiquidityPositionRemoveLiquidity({
-        comptrollerProxy: comptrollerProxy,
+        comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
-        nftId,
         liquidity: liquidityRemoved,
+        nftId,
+        signer: fundOwner,
       });
 
       // Assert desired liquidity was removed
@@ -297,28 +298,28 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       // Execute an order to collect fees
       await uniswapV3TakeOrder({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner,
-        uniswapV3Adapter: fork.deployment.uniswapV3Adapter,
+        integrationManager: fork.deployment.integrationManager,
+        minIncomingAssetAmount: 1,
+        outgoingAssetAmount: utils.parseEther('10000'),
         pathAddresses: [token0, token1],
         pathFees: [BigNumber.from(UniswapV3FeeAmount.LOW)],
-        outgoingAssetAmount: utils.parseEther('10000'),
-        minIncomingAssetAmount: 1,
         seedFund: true,
+        uniswapV3Adapter: fork.deployment.uniswapV3Adapter,
       });
 
       // Add again liquidity to restore the state of tokens owed to the latest state
@@ -331,13 +332,13 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, addLiquidityAmount1Desired);
 
       await uniswapV3LiquidityPositionAddLiquidity({
-        comptrollerProxy: comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
-        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
-        nftId,
         amount0Desired: addLiquidityAmount0Desired,
         amount1Desired: addLiquidityAmount1Desired,
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
+        nftId,
+        signer: fundOwner,
       });
 
       const positionsBefore = await nftManager.positions(nftId);
@@ -346,11 +347,11 @@ describe('receiveCallFromVault', () => {
       const preCollectVaultToken1Balance = await token1.balanceOf(vaultProxy);
 
       await uniswapV3LiquidityPositionCollect({
-        comptrollerProxy: comptrollerProxy,
+        comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
         nftId,
+        signer: fundOwner,
       });
 
       const postCollectVaultToken0Balance = await token0.balanceOf(vaultProxy);
@@ -384,15 +385,15 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionDaiUsdc,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPositionDaiUsdc.getManagedAssets.call();
@@ -432,15 +433,15 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionAddress,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -480,15 +481,15 @@ describe('receiveCallFromVault', () => {
       await token1.transfer(vaultProxy, mintAmount1Desired);
 
       await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPositionAddress,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -527,15 +528,15 @@ describe('receiveCallFromVault', () => {
       const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
 
       await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPosition,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -574,15 +575,15 @@ describe('receiveCallFromVault', () => {
       const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
 
       await uniswapV3LiquidityPositionMint({
-        signer: fundOwner,
+        amount0Desired: mintAmount0Desired,
+        amount1Desired: mintAmount1Desired,
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: uniswapV3LiquidityPosition,
         fee: UniswapV3FeeAmount.LOW,
+        signer: fundOwner,
         tickLower,
         tickUpper,
-        amount0Desired: mintAmount0Desired,
-        amount1Desired: mintAmount1Desired,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();

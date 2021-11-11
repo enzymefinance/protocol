@@ -1,5 +1,6 @@
-import { DepositWrapperArgs, FundDeployer } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { DepositWrapperArgs } from '@enzymefinance/protocol';
+import { FundDeployer } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 

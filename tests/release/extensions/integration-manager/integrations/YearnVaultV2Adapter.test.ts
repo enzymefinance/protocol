@@ -8,12 +8,12 @@ import {
   yearnVaultV2LendArgs,
   yearnVaultV2RedeemArgs,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  ProtocolDeployment,
   yearnVaultV2Lend,
   yearnVaultV2Redeem,
 } from '@enzymefinance/testutils';
@@ -53,9 +53,9 @@ describe('parseAssetsForAction', () => {
           randomAddress(),
           lendSelector,
           yearnVaultV2LendArgs({
-            yVault: randomAddress(),
-            outgoingUnderlyingAmount: BigNumber.from(1),
             minIncomingYVaultSharesAmount: BigNumber.from(1),
+            outgoingUnderlyingAmount: BigNumber.from(1),
+            yVault: randomAddress(),
           }),
         ),
       ).rejects.toBeReverted();
@@ -72,18 +72,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         yearnVaultV2LendArgs({
-          yVault,
-          outgoingUnderlyingAmount,
           minIncomingYVaultSharesAmount,
+          outgoingUnderlyingAmount,
+          yVault,
         }),
       );
 
       expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [await yVault.token()],
-        spendAssetAmounts_: [outgoingUnderlyingAmount],
         incomingAssets_: [yVault],
         minIncomingAssetAmounts_: [minIncomingYVaultSharesAmount],
+        spendAssetAmounts_: [outgoingUnderlyingAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [await yVault.token()],
       });
     });
   });
@@ -95,10 +95,10 @@ describe('parseAssetsForAction', () => {
           randomAddress(),
           redeemSelector,
           yearnVaultV2RedeemArgs({
-            yVault: randomAddress(),
             maxOutgoingYVaultSharesAmount: BigNumber.from(1),
             minIncomingUnderlyingAmount: BigNumber.from(1),
             slippageToleranceBps: 1,
+            yVault: randomAddress(),
           }),
         ),
       ).rejects.toBeReverted();
@@ -115,19 +115,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         yearnVaultV2RedeemArgs({
-          yVault,
           maxOutgoingYVaultSharesAmount,
           minIncomingUnderlyingAmount,
           slippageToleranceBps: 2,
+          yVault,
         }),
       );
 
       expect(result).toMatchFunctionOutput(yearnVaultV2Adapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [yVault],
-        spendAssetAmounts_: [maxOutgoingYVaultSharesAmount],
         incomingAssets_: [await yVault.token()],
         minIncomingAssetAmounts_: [minIncomingUnderlyingAmount],
+        spendAssetAmounts_: [maxOutgoingYVaultSharesAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [yVault],
       });
     });
   });
@@ -143,10 +143,10 @@ describe('lend', () => {
     const assetUnit = await getAssetUnit(yVault);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed the fund with more than the necessary amount of outgoing asset
@@ -166,12 +166,12 @@ describe('lend', () => {
     expect(preTxYVaultBalance).toEqBigNumber(0);
 
     const lendReceipt = await yearnVaultV2Lend({
-      signer: fundOwner,
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      yearnVaultV2Adapter,
-      yVault,
       outgoingUnderlyingAmount,
+      signer: fundOwner,
+      yVault,
+      yearnVaultV2Adapter,
     });
 
     const [postTxYVaultBalance, postTxUnderlyingBalance] = await getAssetBalances({
@@ -202,22 +202,22 @@ describe('redeem', () => {
     const assetUnit = await getAssetUnit(token);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed the fund and acquire yVault shares while leaving some underlying in the vault
     const seedUnderlyingAmount = assetUnit.mul(4);
     await token.transfer(vaultProxy, seedUnderlyingAmount);
     await yearnVaultV2Lend({
-      signer: fundOwner,
       comptrollerProxy,
       integrationManager,
-      yearnVaultV2Adapter,
-      yVault,
       outgoingUnderlyingAmount: seedUnderlyingAmount.div(2),
+      signer: fundOwner,
+      yVault,
+      yearnVaultV2Adapter,
     });
 
     // Since we can't easily test that unused shares are returned to the vaultProxy,
@@ -239,13 +239,13 @@ describe('redeem', () => {
     const slippageToleranceBps = 5;
 
     const redeemReceipt = await yearnVaultV2Redeem({
-      signer: fundOwner,
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      yearnVaultV2Adapter: fork.deployment.yearnVaultV2Adapter,
-      yVault,
       maxOutgoingYVaultSharesAmount,
+      signer: fundOwner,
       slippageToleranceBps,
+      yVault,
+      yearnVaultV2Adapter: fork.deployment.yearnVaultV2Adapter,
     });
 
     const [postTxUnderlyingBalance, postTxYVaultBalance] = await getAssetBalances({

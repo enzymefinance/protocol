@@ -1,15 +1,14 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
-  encodeArgs,
-  ExternalPositionManager,
-  VaultLib,
-  compoundExternalPositionActionArgs,
   CompoundDebtPositionActionId,
+  compoundExternalPositionActionArgs,
+  encodeArgs,
   ExternalPositionType,
 } from '@enzymefinance/protocol';
-import { BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+
 import { callOnExternalPosition, createExternalPosition } from './actions';
 
 export async function compoundDebtPositionAddCollateral({
@@ -30,18 +29,18 @@ export async function compoundDebtPositionAddCollateral({
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
   return callOnExternalPosition({
-    signer: fundOwner,
+    actionArgs,
+    actionId: CompoundDebtPositionActionId.AddCollateralAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.AddCollateralAssets,
-    actionArgs,
+    signer: fundOwner,
   });
 }
 
@@ -64,18 +63,18 @@ export async function compoundDebtPositionBorrow({
   cTokens: AddressLike[];
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
   return callOnExternalPosition({
-    signer: fundOwner,
+    actionArgs,
+    actionId: CompoundDebtPositionActionId.BorrowAsset,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.BorrowAsset,
-    actionArgs,
+    signer: fundOwner,
   });
 }
 
@@ -92,18 +91,18 @@ export async function compoundDebtPositionClaimComp({
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
-    assets: [],
     amounts: [],
+    assets: [],
     data: '0x',
   });
 
   return callOnExternalPosition({
-    signer: fundOwner,
+    actionArgs,
+    actionId: CompoundDebtPositionActionId.ClaimComp,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.ClaimComp,
-    actionArgs,
+    signer: fundOwner,
   });
 }
 
@@ -125,18 +124,18 @@ export async function compoundDebtPositionRemoveCollateral({
   cTokens: AddressLike[];
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
   return callOnExternalPosition({
-    signer: fundOwner,
+    actionArgs,
+    actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.RemoveCollateralAssets,
-    actionArgs,
+    signer: fundOwner,
   });
 }
 
@@ -158,18 +157,18 @@ export async function compoundDebtPositionRepayBorrow({
   cTokens: AddressLike[];
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
-    assets,
     amounts,
+    assets,
     data: encodeArgs(['address[]'], [cTokens]),
   });
 
   return callOnExternalPosition({
-    signer: fundOwner,
+    actionArgs,
+    actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
-    actionId: CompoundDebtPositionActionId.RepayBorrowedAssets,
-    actionArgs,
+    signer: fundOwner,
   });
 }
 
@@ -183,9 +182,9 @@ export async function createCompoundDebtPosition({
   externalPositionManager: ExternalPositionManager;
 }) {
   return createExternalPosition({
-    signer,
     comptrollerProxy,
     externalPositionManager,
     externalPositionTypeId: ExternalPositionType.CompoundDebtPosition,
+    signer,
   });
 }

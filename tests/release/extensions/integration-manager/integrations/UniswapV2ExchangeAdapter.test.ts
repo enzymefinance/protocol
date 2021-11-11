@@ -4,16 +4,11 @@ import {
   StandardToken,
   takeOrderSelector,
   uniswapV2LendArgs,
-  uniswapV2TakeOrderArgs,
   UniswapV2Router,
+  uniswapV2TakeOrderArgs,
 } from '@enzymefinance/protocol';
-import {
-  ProtocolDeployment,
-  createNewFund,
-  deployProtocolFixture,
-  getAssetBalances,
-  uniswapV2TakeOrder,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV2TakeOrder } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -44,13 +39,13 @@ describe('parseAssetsForAction', () => {
     const minPoolTokenAmount = utils.parseEther('1');
 
     const args = uniswapV2LendArgs({
-      tokenA: fork.config.primitives.mln,
-      tokenB: fork.config.weth,
       amountADesired,
-      amountBDesired,
       amountAMin,
+      amountBDesired,
       amountBMin,
       minPoolTokenAmount,
+      tokenA: fork.config.primitives.mln,
+      tokenB: fork.config.weth,
     });
 
     await expect(
@@ -65,24 +60,24 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const incomingAsset = new StandardToken(fork.config.weth, provider);
 
     const takeOrderArgs = uniswapV2TakeOrderArgs({
-      path: [outgoingAsset, incomingAsset],
-      outgoingAssetAmount: utils.parseEther('1'),
       minIncomingAssetAmount: utils.parseEther('1'),
+      outgoingAssetAmount: utils.parseEther('1'),
+      path: [outgoingAsset, incomingAsset],
     });
     const transferArgs = await assetTransferArgs({
       adapter: uniswapV2ExchangeAdapter,
-      selector: takeOrderSelector,
       encodedCallArgs: takeOrderArgs,
+      selector: takeOrderSelector,
     });
 
     await expect(
@@ -94,10 +89,10 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
@@ -105,13 +100,13 @@ describe('takeOrder', () => {
     await expect(
       uniswapV2TakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner,
-        uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
-        path: [outgoingAsset],
-        outgoingAssetAmount: utils.parseEther('1'),
+        integrationManager: fork.deployment.integrationManager,
         minIncomingAssetAmount: utils.parseEther('1'),
+        outgoingAssetAmount: utils.parseEther('1'),
+        path: [outgoingAsset],
+        uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('_path must be >= 2');
   });
@@ -126,10 +121,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const path = [outgoingAsset, incomingAsset];
@@ -145,13 +140,13 @@ describe('takeOrder', () => {
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter,
-      path,
-      outgoingAssetAmount,
+      integrationManager,
       minIncomingAssetAmount: amountsOut[1],
+      outgoingAssetAmount,
+      path,
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -174,10 +169,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const path = [outgoingAsset, weth, incomingAsset];
@@ -193,13 +188,13 @@ describe('takeOrder', () => {
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter,
-      path,
-      outgoingAssetAmount,
+      integrationManager,
       minIncomingAssetAmount: amountsOut[1],
+      outgoingAssetAmount,
+      path,
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

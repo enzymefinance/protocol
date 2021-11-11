@@ -2,9 +2,9 @@ import { randomAddress } from '@enzymefinance/ethers';
 import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, StandardToken } from '@enzymefinance/protocol';
 import {
   createNewFund,
+  deployProtocolFixture,
   generateFeeManagerConfigWithMockFees,
   generatePolicyManagerConfigWithMockPolicies,
-  deployProtocolFixture,
 } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
@@ -29,12 +29,12 @@ async function snapshot() {
 
   // Create initial fund on prevFundDeployer
   const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner,
-    fundDeployer,
-    fundOwner,
     denominationAsset,
     feeManagerConfig,
+    fundDeployer,
+    fundOwner,
     policyManagerConfig,
+    signer: fundOwner,
   });
 
   // Mock a nextFundDeployer contract and nextVaultLib
@@ -46,11 +46,11 @@ async function snapshot() {
   await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
   return {
-    deployer,
     arbitraryUser,
-    fundOwner,
+    deployer,
     dispatcher,
     fundDeployer,
+    fundOwner,
     mockNextFundDeployer,
     mockNextVaultLib,
     prevComptrollerProxy,

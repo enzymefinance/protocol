@@ -13,8 +13,10 @@ import {
   SHARES_UNIT,
   StandardToken,
 } from '@enzymefinance/protocol';
-import { ProtocolDeployment, deployProtocolFixture, createNewFund } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { BigNumber } from 'ethers';
+import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -65,8 +67,6 @@ describe('calcs', () => {
 
     // Create a fund with a management fee and seeded with an initial investment, which mints shares supply and also starts the protocol fee
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
       feeManagerConfig: feeManagerConfigArgs({
         fees: [fork.deployment.managementFee],
@@ -74,10 +74,12 @@ describe('calcs', () => {
           managementFeeConfigArgs({ scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')) }),
         ], // 1% ManagementFee
       }),
+      fundDeployer: fork.deployment.fundDeployer,
       investment: {
         buyer: sharesHolder,
         seedBuyer: true,
       },
+      signer,
     });
 
     // Warp a year in the future to easily predict accrued management fee and protocol fee
@@ -207,5 +209,6 @@ describe('calcs', () => {
 
 function convertEthToUsd({ ethAmount, usdPerEthRate }: { ethAmount: BigNumber; usdPerEthRate: BigNumber }) {
   const ethUsdAggregatorPrecisionUnit = utils.parseUnits('1', 8);
+
   return ethAmount.mul(usdPerEthRate).div(ethUsdAggregatorPrecisionUnit);
 }

@@ -3,23 +3,21 @@
  * the ExitRateFeeBase tests, i.e., the use of settlement type
  */
 
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ExitRateDirectFee, VaultLib } from '@enzymefinance/protocol';
 import {
-  ExitRateDirectFee,
-  FeeHook,
-  FeeSettlementType,
   exitRateDirectFeeConfigArgs,
   exitRateFeeSharesDue,
-  StandardToken,
+  FeeHook,
   feeManagerConfigArgs,
-  ComptrollerLib,
-  VaultLib,
+  FeeSettlementType,
+  StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
 } from '@enzymefinance/testutils';
@@ -74,24 +72,24 @@ describe('settle', () => {
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
-      fundOwner,
       feeManagerConfig: feeManagerConfigArgs({
         fees: [exitRateDirectFee],
         settings: [
           exitRateDirectFeeConfigArgs({
             inKindRate,
-            specificAssetsRate,
             recipient: feeRecipient,
+            specificAssetsRate,
           }),
         ],
       }),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       investment: {
         buyer: investor,
         seedBuyer: true,
       },
+      signer: fundOwner,
     });
 
     comptrollerProxy = newFundRes.comptrollerProxy;
@@ -105,10 +103,10 @@ describe('settle', () => {
 
     const receipt = await redeemSharesForSpecificAssets({
       comptrollerProxy,
-      signer: investor,
-      quantity: sharesToRedeem,
-      payoutAssets: [denominationAsset],
       payoutAssetPercentages: [10000],
+      payoutAssets: [denominationAsset],
+      quantity: sharesToRedeem,
+      signer: investor,
     });
 
     // Calc the expected exit fee charged
@@ -125,9 +123,9 @@ describe('settle', () => {
     // Assert the event was emitted
     assertEvent(receipt, exitRateDirectFee.abi.getEvent('Settled'), {
       comptrollerProxy,
+      forSpecificAssets: true,
       payer: investor,
       sharesQuantity: expectedFeeSharesDue,
-      forSpecificAssets: true,
     });
   });
 
@@ -136,8 +134,8 @@ describe('settle', () => {
 
     const receipt = await redeemSharesInKind({
       comptrollerProxy,
-      signer: investor,
       quantity: constants.MaxUint256,
+      signer: investor,
     });
 
     // Calc the expected exit fee charged
@@ -154,9 +152,9 @@ describe('settle', () => {
     // Assert the event was emitted
     assertEvent(receipt, exitRateDirectFee.abi.getEvent('Settled'), {
       comptrollerProxy,
+      forSpecificAssets: false,
       payer: investor,
       sharesQuantity: expectedFeeSharesDue,
-      forSpecificAssets: false,
     });
   });
 });

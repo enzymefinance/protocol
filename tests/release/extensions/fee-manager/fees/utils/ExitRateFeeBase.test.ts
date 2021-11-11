@@ -10,7 +10,8 @@ import {
   FeeHook,
   settlePreRedeemSharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const FIVE_PERCENT = BigNumber.from(500);
@@ -82,9 +83,9 @@ describe('settle', () => {
     const [randomUser] = fork.accounts;
 
     const settlementData = settlePreRedeemSharesArgs({
+      forSpecifiedAssets: true,
       redeemer: randomAddress(),
       sharesToRedeem: utils.parseEther('1'),
-      forSpecifiedAssets: true,
     });
 
     await expect(

@@ -1,5 +1,5 @@
-import { UniswapV2LiquidityAdapterArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { UniswapV2LiquidityAdapterArgs } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 
@@ -17,8 +17,8 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, config.uniswap.router, config.uniswap.factory] as UniswapV2LiquidityAdapterArgs,
     from: deployer.address,
     linkedData: {
-      type: 'ADAPTER',
       nonSlippageAdapter: true,
+      type: 'ADAPTER',
     },
     log: true,
     skipIfAlreadyDeployed: true,

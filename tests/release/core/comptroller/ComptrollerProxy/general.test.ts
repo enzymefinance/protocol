@@ -1,6 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { encodeArgs, sighash, StandardToken } from '@enzymefinance/protocol';
-import { callOnExtension, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { callOnExtension, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -14,18 +15,18 @@ describe('callOnExtension', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     await expect(
       callOnExtension({
-        signer: fundOwner,
+        actionId: 0,
         comptrollerProxy,
         extension: randomAddress(),
-        actionId: 0,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('_extension invalid');
   });
@@ -45,10 +46,10 @@ describe('vaultCallOnContract', () => {
     const [fundOwner, randomUser] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Use the first allowed vault call
@@ -66,10 +67,10 @@ describe('vaultCallOnContract', () => {
     const asset = weth;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset: weth,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Register a call for a token approval to a specific address

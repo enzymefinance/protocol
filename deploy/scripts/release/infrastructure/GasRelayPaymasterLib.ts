@@ -1,5 +1,6 @@
-import { GasRelayPaymasterLibArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { GasRelayPaymasterLibArgs } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {

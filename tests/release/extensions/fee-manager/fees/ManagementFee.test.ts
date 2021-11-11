@@ -1,4 +1,5 @@
-import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike, MockContract } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
   convertRateToScaledPerSecondRate,
@@ -10,8 +11,10 @@ import {
   managementFeeSharesDue,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment, transactionTimestamp } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 async function createMocksForManagementConfig(fork: ProtocolDeployment) {
   // Mock a VaultProxy
@@ -94,7 +97,7 @@ describe('addFundSettings', () => {
 
   it('sets initial config values for fund and fires events', async () => {
     const feeRecipient = randomAddress();
-    const managementFeeConfig = managementFeeConfigArgs({ scaledPerSecondRate, recipient: feeRecipient });
+    const managementFeeConfig = managementFeeConfigArgs({ recipient: feeRecipient, scaledPerSecondRate });
 
     const receipt = await managementFee.addFundSettings(mockComptrollerProxy, managementFeeConfig);
 
@@ -108,8 +111,8 @@ describe('addFundSettings', () => {
     expect(await managementFee.getFeeInfoForFund(mockComptrollerProxy)).toMatchFunctionOutput(
       managementFee.getFeeInfoForFund,
       {
-        scaledPerSecondRate,
         lastSettled: BigNumber.from(0),
+        scaledPerSecondRate,
       },
     );
 
@@ -252,15 +255,15 @@ describe('settle', () => {
     // Settled event emitted
     assertEvent(receipt, 'Settled', {
       comptrollerProxy: mockComptrollerProxy,
-      sharesQuantity: BigNumber.from(0),
       secondsSinceSettlement: BigNumber.from(settlementTimestamp),
+      sharesQuantity: BigNumber.from(0),
     });
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
-      scaledPerSecondRate,
       lastSettled: BigNumber.from(settlementTimestamp),
+      scaledPerSecondRate,
     });
   });
 
@@ -303,22 +306,22 @@ describe('settle', () => {
     // Get the expected shares due for the actual settlement
     const expectedSharesDueForTx = managementFeeSharesDue({
       scaledPerSecondRate,
-      sharesSupply,
       secondsSinceLastSettled: BigNumber.from(settlementTimestampTwo).sub(settlementTimestampOne),
+      sharesSupply,
     });
 
     // Settled event emitted with correct settlement values
     assertEvent(receiptTwo, 'Settled', {
       comptrollerProxy: mockComptrollerProxy,
-      sharesQuantity: expectedSharesDueForTx,
       secondsSinceSettlement: BigNumber.from(settlementTimestampTwo).sub(settlementTimestampOne),
+      sharesQuantity: expectedSharesDueForTx,
     });
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
-      scaledPerSecondRate,
       lastSettled: BigNumber.from(settlementTimestampTwo),
+      scaledPerSecondRate,
     });
   });
 
@@ -344,8 +347,8 @@ describe('settle', () => {
     // The call() adds 1 second to the last block timestamp
     const expectedFeeShares = managementFeeSharesDue({
       scaledPerSecondRate,
-      sharesSupply: netSharesSupply,
       secondsSinceLastSettled: BigNumber.from(timestampPostWarp).sub(settlementTimestampOne),
+      sharesSupply: netSharesSupply,
     });
 
     // Check the return values via a call() to settle()
@@ -365,22 +368,22 @@ describe('settle', () => {
     // Get the expected shares due for the actual settlement
     const expectedSharesDueForTx = managementFeeSharesDue({
       scaledPerSecondRate,
-      sharesSupply: netSharesSupply,
       secondsSinceLastSettled: BigNumber.from(settlementTimestampTwo).sub(settlementTimestampOne),
+      sharesSupply: netSharesSupply,
     });
 
     // Settled event emitted with correct settlement values
     assertEvent(receiptTwo, 'Settled', {
       comptrollerProxy: mockComptrollerProxy,
-      sharesQuantity: expectedSharesDueForTx,
       secondsSinceSettlement: BigNumber.from(settlementTimestampTwo).sub(settlementTimestampOne),
+      sharesQuantity: expectedSharesDueForTx,
     });
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
-      scaledPerSecondRate,
       lastSettled: BigNumber.from(settlementTimestampTwo),
+      scaledPerSecondRate,
     });
   });
 });

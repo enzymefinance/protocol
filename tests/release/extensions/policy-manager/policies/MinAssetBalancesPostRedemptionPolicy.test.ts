@@ -1,19 +1,19 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { MinAssetBalancesPostRedemptionPolicy } from '@enzymefinance/protocol';
 import {
-  MinAssetBalancesPostRedemptionPolicy,
   minAssetBalancesPostRedemptionPolicyArgs,
+  ONE_HUNDRED_PERCENT_IN_BPS,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
-  ONE_HUNDRED_PERCENT_IN_BPS,
   SHARES_UNIT,
+  StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
   redeemSharesForSpecificAssets,
 } from '@enzymefinance/testutils';
 
@@ -55,9 +55,8 @@ describe('addFundSettings', () => {
     const minBalances = [123, 456];
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [minAssetBalancesPostRedemptionPolicy],
@@ -68,6 +67,7 @@ describe('addFundSettings', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert state and events
@@ -81,8 +81,8 @@ describe('addFundSettings', () => {
         await minAssetBalancesPostRedemptionPolicy.getMinAssetBalanceForFund(comptrollerProxy, assets[i]),
       ).toEqBigNumber(minBalances[i]);
       expect(events[i]).toMatchEventArgs({
-        comptrollerProxy,
         asset: assets[i],
+        comptrollerProxy,
         minBalance: minBalances[i],
       });
     }
@@ -122,10 +122,14 @@ describe('validateRule', () => {
     const minDenominationAssetBalance = denominationAssetUnit.mul(2);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
+      investment: {
+        buyer: fundOwner,
+        investmentAmount: minDenominationAssetBalance.mul(4),
+        seedBuyer: true,
+      },
       policyManagerConfig: policyManagerConfigArgs({
         policies: [minAssetBalancesPostRedemptionPolicy],
         settings: [
@@ -135,21 +139,17 @@ describe('validateRule', () => {
           }),
         ],
       }),
-      investment: {
-        buyer: fundOwner,
-        investmentAmount: minDenominationAssetBalance.mul(4),
-        seedBuyer: true,
-      },
+      signer: fundOwner,
     });
 
     // Attempting to redeem all shares should fail
     await expect(
       redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: fundOwner,
-        quantity: await vaultProxy.balanceOf(fundOwner),
-        payoutAssets: [denominationAsset],
         payoutAssetPercentages: [ONE_HUNDRED_PERCENT_IN_BPS],
+        payoutAssets: [denominationAsset],
+        quantity: await vaultProxy.balanceOf(fundOwner),
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: MIN_ASSET_BALANCES_POST_REDEMPTION');
 
@@ -164,20 +164,20 @@ describe('validateRule', () => {
     await expect(
       redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: fundOwner,
-        quantity: approxMaxRedeemableShares.mul(101).div(100),
-        payoutAssets: [denominationAsset],
         payoutAssetPercentages: [ONE_HUNDRED_PERCENT_IN_BPS],
+        payoutAssets: [denominationAsset],
+        quantity: approxMaxRedeemableShares.mul(101).div(100),
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: MIN_ASSET_BALANCES_POST_REDEMPTION');
 
     // Attempting to redeem slightly below the approx allowed shares should succeed
     await redeemSharesForSpecificAssets({
       comptrollerProxy,
-      signer: fundOwner,
-      quantity: approxMaxRedeemableShares.mul(99).div(100),
-      payoutAssets: [denominationAsset],
       payoutAssetPercentages: [ONE_HUNDRED_PERCENT_IN_BPS],
+      payoutAssets: [denominationAsset],
+      quantity: approxMaxRedeemableShares.mul(99).div(100),
+      signer: fundOwner,
     });
   });
 });

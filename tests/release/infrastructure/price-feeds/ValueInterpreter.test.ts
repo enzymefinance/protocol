@@ -1,5 +1,7 @@
-import { StandardToken, ValueInterpreter } from '@enzymefinance/protocol';
-import { deployProtocolFixture, getAssetUnit, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ValueInterpreter } from '@enzymefinance/protocol';
+import { StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 let valueInterpreter: ValueInterpreter;

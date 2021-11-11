@@ -1,16 +1,14 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
-  feeManagerConfigArgs,
   IntegrationManager,
-  performanceFeeConfigArgs,
   RevertingPriceFeed,
-  StandardToken,
   UniswapV2ExchangeAdapter,
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
+import { feeManagerConfigArgs, performanceFeeConfigArgs, StandardToken } from '@enzymefinance/protocol';
 import { buyShares, createNewFund, redeemSharesInKind, uniswapV2TakeOrder } from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
 
@@ -38,25 +36,29 @@ beforeAll(async () => {
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
-    signer: fundOwner,
-    fundOwner,
     denominationAsset,
-    fundDeployer: fork.deployment.fundDeployer,
     // Include PerformanceFee to test reverting behavior when GAV calc fails
     feeManagerConfig: feeManagerConfigArgs({
       fees: [fork.deployment.performanceFee],
       settings: [
         performanceFeeConfigArgs({
-          rate: FIVE_PERCENT,
           period: 1,
+          rate: FIVE_PERCENT,
         }),
       ],
     }),
+
+    fundDeployer: fork.deployment.fundDeployer,
+
+    fundOwner,
+
     // Invest to seed fund with denomination asset balance
     investment: {
       buyer: fundOwner,
       seedBuyer: true,
     },
+
+    signer: fundOwner,
   });
   comptrollerProxy = newFundRes.comptrollerProxy;
   vaultProxy = newFundRes.vaultProxy;
@@ -74,8 +76,8 @@ describe('unsupported denomination asset', () => {
   it('does NOT allow buying shares', async () => {
     await expect(
       buyShares({
-        comptrollerProxy,
         buyer: fundOwner,
+        comptrollerProxy,
         denominationAsset,
       }),
     ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
@@ -84,13 +86,13 @@ describe('unsupported denomination asset', () => {
   it('allows trading away the denomination asset', async () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter,
-      path: [denominationAsset, tradingAsset],
-      outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
+      integrationManager,
       minIncomingAssetAmount: 1,
+      outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
+      path: [denominationAsset, tradingAsset],
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
   });
 
@@ -98,13 +100,13 @@ describe('unsupported denomination asset', () => {
     await expect(
       uniswapV2TakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager,
         fundOwner,
-        uniswapV2ExchangeAdapter,
-        path: [tradingAsset, denominationAsset],
-        outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
+        integrationManager,
         minIncomingAssetAmount: 1,
+        outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
+        path: [tradingAsset, denominationAsset],
+        uniswapV2ExchangeAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Non-receivable incoming asset');
   });
@@ -112,8 +114,8 @@ describe('unsupported denomination asset', () => {
   it('allows redeeming shares, with an emitted PreRedeemShares hook failure event', async () => {
     const redeemSharesTx = await redeemSharesInKind({
       comptrollerProxy,
-      signer: fundOwner,
       quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
+      signer: fundOwner,
     });
 
     const failureEvents = extractEvent(redeemSharesTx as any, 'PreRedeemSharesHookFailed');
@@ -129,8 +131,8 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
   it('does NOT allow buy shares', async () => {
     await expect(
       buyShares({
-        comptrollerProxy,
         buyer: fundOwner,
+        comptrollerProxy,
         denominationAsset,
       }),
     ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
@@ -139,34 +141,34 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
   it('allows trading away the denomination asset', async () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter,
-      path: [denominationAsset, tradingAsset],
-      outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
+      integrationManager,
       minIncomingAssetAmount: 1,
+      outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
+      path: [denominationAsset, tradingAsset],
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
   });
 
   it('allows trading into the denomination asset', async () => {
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter,
-      path: [tradingAsset, denominationAsset],
-      outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
+      integrationManager,
       minIncomingAssetAmount: 1,
+      outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
+      path: [tradingAsset, denominationAsset],
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
   });
 
   it('allows redeeming shares, with an emitted PreRedeemShares hook failure event', async () => {
     const redeemSharesTx = await redeemSharesInKind({
       comptrollerProxy,
-      signer: fundOwner,
       quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
+      signer: fundOwner,
     });
 
     const failureEvents = extractEvent(redeemSharesTx as any, 'PreRedeemSharesHookFailed');

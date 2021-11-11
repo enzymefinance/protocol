@@ -1,25 +1,27 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  addressListRegistryPolicyArgs,
-  AddressListUpdateType,
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   AllowedAssetsForRedemptionPolicy,
   ComptrollerLib,
   IntegrationManager,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
   PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
   redeemSharesForSpecificAssets,
 } from '@enzymefinance/testutils';
-import { BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -84,10 +86,14 @@ describe('validateRule', () => {
     notAllowedAsset = new StandardToken(fork.config.primitives.usdt, whales.usdt);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
+      investment: {
+        buyer: investor,
+        investmentAmount: await getAssetUnit(denominationAsset), // Just to be explicit
+        seedBuyer: true,
+      },
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedAssetsForRedemptionPolicy],
         settings: [
@@ -95,18 +101,14 @@ describe('validateRule', () => {
             existingListIds: [0], // Include empty list to test inclusion in 1 list only
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [allowedAsset1, allowedAsset2],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
-      investment: {
-        buyer: investor,
-        investmentAmount: await getAssetUnit(denominationAsset), // Just to be explicit
-        seedBuyer: true,
-      },
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -116,15 +118,15 @@ describe('validateRule', () => {
 
     // Add 1 unit (1 USD) of all assets to the fund
     await addNewAssetsToFund({
-      signer: fundOwner,
-      comptrollerProxy,
-      integrationManager,
-      assets: [allowedAsset1, allowedAsset2, notAllowedAsset],
       amounts: [
         await getAssetUnit(allowedAsset1),
         await getAssetUnit(allowedAsset2),
         await getAssetUnit(notAllowedAsset),
       ],
+      assets: [allowedAsset1, allowedAsset2, notAllowedAsset],
+      comptrollerProxy,
+      integrationManager,
+      signer: fundOwner,
     });
   });
 
@@ -132,11 +134,11 @@ describe('validateRule', () => {
     await expect(
       redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: investor,
-        recipient: investor,
-        quantity: sharesToRedeem,
-        payoutAssets: [allowedAsset1, notAllowedAsset],
         payoutAssetPercentages: [5000, 5000],
+        payoutAssets: [allowedAsset1, notAllowedAsset],
+        quantity: sharesToRedeem,
+        recipient: investor,
+        signer: investor,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_ASSETS_FOR_REDEMPTION');
   });
@@ -144,11 +146,11 @@ describe('validateRule', () => {
   it('allows listed assets', async () => {
     await redeemSharesForSpecificAssets({
       comptrollerProxy,
-      signer: investor,
-      recipient: investor,
-      quantity: sharesToRedeem,
-      payoutAssets: [allowedAsset1, allowedAsset2],
       payoutAssetPercentages: [5000, 5000],
+      payoutAssets: [allowedAsset1, allowedAsset2],
+      quantity: sharesToRedeem,
+      recipient: investor,
+      signer: investor,
     });
   });
 });

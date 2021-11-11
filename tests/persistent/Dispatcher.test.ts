@@ -1,5 +1,7 @@
-import { AddressLike, MockContract, randomAddress, sameAddress } from '@enzymefinance/ethers';
-import { Dispatcher, IMigrationHookHandler, MigrationOutHook, MockVaultLib } from '@enzymefinance/protocol';
+import type { AddressLike, MockContract } from '@enzymefinance/ethers';
+import { randomAddress, sameAddress } from '@enzymefinance/ethers';
+import type { Dispatcher } from '@enzymefinance/protocol';
+import { IMigrationHookHandler, MigrationOutHook, MockVaultLib } from '@enzymefinance/protocol';
 import { assertEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
@@ -43,8 +45,8 @@ async function ensureFundDeployer({ dispatcher, fundDeployer }: { dispatcher: Di
   if (!sameAddress(currentDeployer, fundDeployer)) {
     const receipt = await dispatcher.setCurrentFundDeployer(fundDeployer);
     assertEvent(receipt, 'CurrentFundDeployerSet', {
-      prevFundDeployer: currentDeployer,
       nextFundDeployer: fundDeployer,
+      prevFundDeployer: currentDeployer,
     });
   }
 }
@@ -70,11 +72,11 @@ async function deployVault({
   const receipt = await mockFundDeployer.forward(dispatcher.deployVaultProxy, vaultLib, owner, vaultAccessor, fundName);
 
   const args = assertEvent(receipt, event, {
+    fundDeployer: mockFundDeployer,
     fundName,
     owner,
     vaultAccessor,
     vaultLib,
-    fundDeployer: mockFundDeployer,
     vaultProxy: expect.anything(),
   });
 
@@ -260,8 +262,8 @@ describe('claimOwnership', () => {
 
     // OwnershipTransferred event properly emitted
     assertEvent(receipt, 'OwnershipTransferred', {
-      prevOwner: deployer,
       nextOwner: nominatedOwner,
+      prevOwner: deployer,
     });
 
     // Owner should now be the nominatedOwner
@@ -334,11 +336,11 @@ describe('deployVaultProxy', () => {
 
     const event = dispatcher.abi.getEvent('VaultProxyDeployed');
     const args = assertEvent(receipt, event, {
+      fundDeployer: mockFundDeployer,
       fundName,
       owner,
       vaultAccessor,
       vaultLib,
-      fundDeployer: mockFundDeployer,
       vaultProxy: expect.anything(),
     });
 
@@ -374,13 +376,13 @@ describe('deployVaultProxy', () => {
 
     // Assert vaultProxy events
     const accessorSetEvent = vaultProxy.abi.getEvent('AccessorSet');
-    assertEvent(receipt, accessorSetEvent, { prevAccessor: constants.AddressZero, nextAccessor: vaultAccessor });
+    assertEvent(receipt, accessorSetEvent, { nextAccessor: vaultAccessor, prevAccessor: constants.AddressZero });
 
     const ownerSetEvent = vaultProxy.abi.getEvent('OwnerSet');
-    assertEvent(receipt, ownerSetEvent, { prevOwner: constants.AddressZero, nextOwner: owner });
+    assertEvent(receipt, ownerSetEvent, { nextOwner: owner, prevOwner: constants.AddressZero });
 
     const vaultLibSetEvent = vaultProxy.abi.getEvent('VaultLibSet');
-    assertEvent(receipt, vaultLibSetEvent, { prevVaultLib: constants.AddressZero, nextVaultLib: vaultLib });
+    assertEvent(receipt, vaultLibSetEvent, { nextVaultLib: vaultLib, prevVaultLib: constants.AddressZero });
   });
 });
 
@@ -525,30 +527,30 @@ describe('signalMigration', () => {
       signalMigration({
         dispatcher,
         mockNextFundDeployer,
+        nextVaultAccessor,
         nextVaultLib,
         vaultProxy,
-        nextVaultAccessor,
       }),
     ).rejects.toBeRevertedWith(revertReason);
 
     // Bypassing the failure should allow the tx to succeed and fire the failure event
     const receipt = await signalMigration({
+      bypassFailure: true,
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
-      bypassFailure: true,
     });
 
     assertEvent(receipt, 'MigrationOutHookFailed', {
       failureReturnData: expect.anything(),
       hook: MigrationOutHook.PreSignal,
-      vaultProxy: vaultProxy,
-      prevFundDeployer: mockPrevFundDeployer,
       nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib,
+      nextVaultLib,
+      prevFundDeployer: mockPrevFundDeployer,
+      vaultProxy,
     });
   });
 
@@ -582,30 +584,30 @@ describe('signalMigration', () => {
       signalMigration({
         dispatcher,
         mockNextFundDeployer,
+        nextVaultAccessor,
         nextVaultLib,
         vaultProxy,
-        nextVaultAccessor,
       }),
     ).rejects.toBeRevertedWith(revertReason);
 
     // Bypassing the failure should allow the tx to succeed and fire the failure event
     const receipt = await signalMigration({
+      bypassFailure: true,
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
-      bypassFailure: true,
     });
 
     assertEvent(receipt, 'MigrationOutHookFailed', {
       failureReturnData: expect.anything(),
       hook: MigrationOutHook.PostSignal,
-      vaultProxy: vaultProxy,
-      prevFundDeployer: mockPrevFundDeployer,
       nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
-      nextVaultLib: nextVaultLib,
+      nextVaultLib,
+      prevFundDeployer: mockPrevFundDeployer,
+      vaultProxy,
     });
   });
 
@@ -632,9 +634,9 @@ describe('signalMigration', () => {
     const receipt = await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Calculate the timestamp at which the request will be executable
@@ -642,21 +644,21 @@ describe('signalMigration', () => {
     const executableTimestamp = migrationTimelock.add(await transactionTimestamp(receipt));
 
     assertEvent(receipt, 'MigrationSignaled', {
-      vaultProxy,
-      prevFundDeployer: mockPrevFundDeployer,
+      executableTimestamp,
       nextFundDeployer: mockNextFundDeployer,
       nextVaultAccessor,
       nextVaultLib,
-      executableTimestamp,
+      prevFundDeployer: mockPrevFundDeployer,
+      vaultProxy,
     });
 
     const detailsCall = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
 
     expect(detailsCall).toMatchFunctionOutput(dispatcher.getMigrationRequestDetailsForVaultProxy, {
+      executableTimestamp_: executableTimestamp,
       nextFundDeployer_: mockNextFundDeployer,
       nextVaultAccessor_: nextVaultAccessor,
       nextVaultLib_: nextVaultLib,
-      executableTimestamp_: executableTimestamp,
     });
 
     expect(mockPrevFundDeployer.invokeMigrationOutHook).toHaveBeenCalledOnContractWith(
@@ -691,9 +693,9 @@ describe('cancelMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib,
-      owner: deployer,
     });
 
     // Attempt to cancel non-existent migration request
@@ -718,18 +720,18 @@ describe('cancelMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Attempt to cancel migration as random account
@@ -757,18 +759,18 @@ describe('cancelMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     const migrationRequestDetails = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
@@ -776,21 +778,21 @@ describe('cancelMigration', () => {
     // Cancel migration (as owner / deployer)
     const cancelReceipt = await dispatcher.cancelMigration(vaultProxy, false);
     assertEvent(cancelReceipt, 'MigrationCancelled', {
-      vaultProxy,
-      prevFundDeployer: mockPrevFundDeployer,
+      executableTimestamp: migrationRequestDetails.executableTimestamp_,
       nextFundDeployer: migrationRequestDetails.nextFundDeployer_,
       nextVaultAccessor: migrationRequestDetails.nextVaultAccessor_,
       nextVaultLib: migrationRequestDetails.nextVaultLib_,
-      executableTimestamp: migrationRequestDetails.executableTimestamp_,
+      prevFundDeployer: mockPrevFundDeployer,
+      vaultProxy,
     });
 
     expect(await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy)).toMatchFunctionOutput(
       dispatcher.getMigrationRequestDetailsForVaultProxy,
       {
+        executableTimestamp_: BigNumber.from(0),
         nextFundDeployer_: constants.AddressZero,
         nextVaultAccessor_: constants.AddressZero,
         nextVaultLib_: constants.AddressZero,
-        executableTimestamp_: BigNumber.from(0),
       },
     );
 
@@ -827,9 +829,9 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Set a bad next vault lib
@@ -839,9 +841,9 @@ describe('executeMigration', () => {
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp to exactly the timelock expiry
@@ -867,9 +869,9 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Attempt to execute migration for vaultProxy without signaled migration
@@ -893,18 +895,18 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp to exactly the timelock expiry
@@ -932,18 +934,18 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp to exactly the timelock expiry
@@ -976,18 +978,18 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Try to migrate immediately, which should fail
@@ -1025,18 +1027,18 @@ describe('executeMigration', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Change current FundDeployer to mockNextFundDeployer and signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     const migrationRequestDetails = await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy);
@@ -1049,12 +1051,12 @@ describe('executeMigration', () => {
     const executeReceipt = await mockNextFundDeployer.forward(dispatcher.executeMigration, vaultProxy, false);
 
     assertEvent(executeReceipt, 'MigrationExecuted', {
-      vaultProxy,
-      prevFundDeployer: mockPrevFundDeployer,
+      executableTimestamp: migrationRequestDetails.executableTimestamp_,
       nextFundDeployer: migrationRequestDetails.nextFundDeployer_,
       nextVaultAccessor: migrationRequestDetails.nextVaultAccessor_,
       nextVaultLib: migrationRequestDetails.nextVaultLib_,
-      executableTimestamp: migrationRequestDetails.executableTimestamp_,
+      prevFundDeployer: mockPrevFundDeployer,
+      vaultProxy,
     });
 
     // Assert VaultProxy changes
@@ -1068,10 +1070,10 @@ describe('executeMigration', () => {
     expect(await dispatcher.getMigrationRequestDetailsForVaultProxy(vaultProxy)).toMatchFunctionOutput(
       dispatcher.getMigrationRequestDetailsForVaultProxy,
       {
+        executableTimestamp_: BigNumber.from(0),
         nextFundDeployer_: constants.AddressZero,
         nextVaultAccessor_: constants.AddressZero,
         nextVaultLib_: constants.AddressZero,
-        executableTimestamp_: BigNumber.from(0),
       },
     );
 
@@ -1125,8 +1127,8 @@ describe('setMigrationTimelock', () => {
 
     // MigrationTimelockSet event properly emitted
     assertEvent(receipt, 'MigrationTimelockSet', {
-      prevTimelock,
       nextTimelock,
+      prevTimelock,
     });
 
     // migrationTimelock should have updated to the new value
@@ -1157,9 +1159,9 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      owner: deployer,
       vaultAccessor,
       vaultLib,
-      owner: deployer,
     });
 
     // Call getTimelockRemainingForMigrationRequest for a vaultProxy without migration request
@@ -1183,18 +1185,18 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp past the timelock expiry
@@ -1224,18 +1226,18 @@ describe('getTimelockRemainingForMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Get timestamp of migration call
@@ -1279,9 +1281,9 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      owner: deployer,
       vaultAccessor,
       vaultLib,
-      owner: deployer,
     });
 
     // Call hasExecutableMigrationRequest for a vaultProxy without migration request
@@ -1305,18 +1307,18 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp 5 seconds before the migrationTimelock expiry
@@ -1346,18 +1348,18 @@ describe('hasExecutableMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Warp past the migrationTimelock expiry
@@ -1394,9 +1396,9 @@ describe('hasMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer,
+      owner: deployer,
       vaultAccessor,
       vaultLib,
-      owner: deployer,
     });
 
     // Call hasExecutableMigrationRequest for a vaultProxy without migration request
@@ -1420,18 +1422,18 @@ describe('hasMigrationRequest', () => {
     const vaultProxy = await deployVault({
       dispatcher,
       mockFundDeployer: mockPrevFundDeployer,
+      owner: deployer,
       vaultAccessor: prevVaultAccessor,
       vaultLib: prevVaultLib,
-      owner: deployer,
     });
 
     // Signal migration
     await signalMigration({
       dispatcher,
       mockNextFundDeployer,
+      nextVaultAccessor,
       nextVaultLib,
       vaultProxy,
-      nextVaultAccessor,
     });
 
     // Call hasMigrationRequest
@@ -1509,8 +1511,8 @@ describe('setCurrentFundDeployer', () => {
     // Checking that the proper event has been emitted
     const currentFundDeployerSetEvent = dispatcher.abi.getEvent('CurrentFundDeployerSet');
     assertEvent(receipt, currentFundDeployerSetEvent, {
-      prevFundDeployer: mockPrevFundDeployer,
       nextFundDeployer: mockNextFundDeployer,
+      prevFundDeployer: mockPrevFundDeployer,
     });
   });
 });

@@ -1,12 +1,11 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
   guaranteedRedemptionPolicyArgs,
   ISynthetixAddressResolver,
   ISynthetixExchanger,
   policyManagerConfigArgs,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
 import {
   buyShares,
@@ -75,11 +74,11 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     });
 
     const createFundRes = await createNewFund({
-      signer: manager,
+      denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner: manager,
-      denominationAsset,
       policyManagerConfig,
+      signer: manager,
     });
 
     comptrollerProxy = createFundRes.comptrollerProxy;
@@ -88,8 +87,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
   it('buys shares of a fund', async () => {
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: (await getAssetUnit(denominationAsset)).mul(100),
     });
@@ -99,14 +98,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await expect(
       synthetixTakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.synthetixAdapter,
+        incomingAsset: sbtc,
+        integrationManager: fork.deployment.integrationManager,
+        minIncomingAssetAmount: '1',
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
-        incomingAsset: sbtc,
-        minIncomingAssetAmount: '1',
+        synthetixAdapter: fork.deployment.synthetixAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Not approved to act on behalf');
   });
@@ -115,8 +114,8 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await synthetixAssignExchangeDelegate({
       addressResolver: new ISynthetixAddressResolver(fork.config.synthetix.addressResolver, provider),
       comptrollerProxy,
-      fundOwner: manager,
       delegate: fork.deployment.synthetixAdapter,
+      fundOwner: manager,
     });
   });
 
@@ -124,14 +123,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await expect(
       synthetixTakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.synthetixAdapter,
+        incomingAsset: sbtc,
+        integrationManager: fork.deployment.integrationManager,
+        minIncomingAssetAmount: '1',
         outgoingAsset: susd,
         outgoingAssetAmount: utils.parseEther('10'),
-        incomingAsset: sbtc,
-        minIncomingAssetAmount: '1',
+        synthetixAdapter: fork.deployment.synthetixAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: GUARANTEED_REDEMPTION');
   });
@@ -160,14 +159,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     await synthetixTakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.synthetixAdapter,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: expectedIncomingAssetAmount,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -196,14 +195,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     await synthetixTakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.synthetixAdapter,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: expectedIncomingAssetAmount,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -229,14 +228,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
     await expect(
       synthetixTakeOrder({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner: manager,
-        synthetixAdapter: fork.deployment.synthetixAdapter,
+        incomingAsset,
+        integrationManager: fork.deployment.integrationManager,
+        minIncomingAssetAmount: expectedIncomingAssetAmount,
         outgoingAsset,
         outgoingAssetAmount,
-        incomingAsset,
-        minIncomingAssetAmount: expectedIncomingAssetAmount,
+        synthetixAdapter: fork.deployment.synthetixAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Cannot settle during waiting period');
   });
@@ -261,14 +260,14 @@ describe("Walkthrough a synth-based fund's lifecycle", () => {
 
     await synthetixTakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner: manager,
-      synthetixAdapter: fork.deployment.synthetixAdapter,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: expectedIncomingAssetAmount,
+      synthetixAdapter: fork.deployment.synthetixAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

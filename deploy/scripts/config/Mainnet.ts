@@ -1,8 +1,9 @@
 import { ChainlinkRateAsset, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
 import { utils } from 'ethers';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
-import { DeploymentConfig, saveConfig } from '../../utils/config';
+import type { DeploymentConfig } from '../../utils/config';
+import { saveConfig } from '../../utils/config';
 
 // Note that some addresses in this file are checksummed and others are not. This shouldn't be an issue.
 
@@ -230,11 +231,6 @@ const synthetixDelegateApprovals = '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f';
 
 // prettier-ignore
 const mainnetConfig: DeploymentConfig = {
-  gsn: {
-    relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
-    relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',
-    trustedForwarder: '0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA',
-  },
   aave: {
     atokens,
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
@@ -246,8 +242,8 @@ const mainnetConfig: DeploymentConfig = {
   },
   compound: {
     ceth: '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
-    ctokens,
-    comptroller: compoundComptroller
+    comptroller: compoundComptroller,
+    ctokens
   },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
@@ -279,12 +275,17 @@ const mainnetConfig: DeploymentConfig = {
       },
     },
   },
+  gsn: {
+    relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
+    relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',
+    trustedForwarder: '0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA',
+  },
   idle: {
     bestYieldIdleDai: '0x3fE7940616e5Bc47b0775a0dccf6237893353bB4',
-    bestYieldIdleUsdc: '0x5274891bEC421B39D23760c04A6755eCB444797C',
-    bestYieldIdleUsdt: '0xF34842d05A1c888Ca02769A633DF37177415C2f8',
     bestYieldIdleSusd: '0xf52cdcd458bf455aed77751743180ec4a595fd3f',
     bestYieldIdleTusd: '0xc278041fDD8249FE4c1Aad1193876857EEa3D68c',
+    bestYieldIdleUsdc: '0x5274891bEC421B39D23760c04A6755eCB444797C',
+    bestYieldIdleUsdt: '0xF34842d05A1c888Ca02769A633DF37177415C2f8',
     bestYieldIdleWbtc: '0x8C81121B15197fA0eEaEE1DC75533419DcfD3151',
     riskAdjustedIdleDai: '0xa14eA0E11121e6E951E87c66AFe460A00BCD6A16',
     riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
@@ -330,10 +331,20 @@ const mainnetConfig: DeploymentConfig = {
     router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
   },
   uniswapV3: {
-    router: '0xE592427A0AEce92De3Edee1F18E0157C05861564',
-    nonFungiblePositionManager: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+    nonFungiblePositionManager: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+    router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
   },
   unsupportedAssets,
+  vaultCalls: [
+    [
+      synthetixDelegateApprovals,
+      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)')),
+      vaultCallAnyDataHash
+    ],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
+    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')), vaultCallAnyDataHash],
+  ],
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   yearn: {
     vaultV2: {
@@ -348,16 +359,6 @@ const mainnetConfig: DeploymentConfig = {
     ],
     exchange: '0x080bf510fcbf18b91105470639e9561022937712',
   },
-  vaultCalls: [
-    [
-      synthetixDelegateApprovals,
-      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)')),
-      vaultCallAnyDataHash
-    ],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')), vaultCallAnyDataHash],
-  ],
 }
 
 const fn: DeployFunction = async (hre) => {
@@ -368,6 +369,7 @@ fn.tags = ['Config'];
 fn.skip = async (hre) => {
   // Run this only for mainnet & mainnet forks.
   const chain = parseInt(await hre.getChainId());
+
   return chain !== 31337 && chain !== 1;
 };
 

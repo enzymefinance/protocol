@@ -1,12 +1,7 @@
-import { CompoundPriceFeed, ICERC20, StandardToken } from '@enzymefinance/protocol';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import {
-  ProtocolDeployment,
-  buyShares,
-  compoundLend,
-  createNewFund,
-  deployProtocolFixture,
-} from '@enzymefinance/testutils';
+import { CompoundPriceFeed, ICERC20, StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, compoundLend, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -23,18 +18,18 @@ describe('derivative gas costs', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { vaultProxy, comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -46,13 +41,13 @@ describe('derivative gas costs', () => {
     // Use max of the dai balance to get cDai
     await dai.transfer(vaultProxy, initialTokenAmount);
     await compoundLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      compoundAdapter: fork.deployment.compoundAdapter,
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
-      tokenAmount: initialTokenAmount,
       cTokenAmount: BigNumber.from('1'),
+      compoundAdapter: fork.deployment.compoundAdapter,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager,
+      tokenAmount: initialTokenAmount,
     });
 
     // Get the calcGav() cost including the pool token

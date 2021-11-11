@@ -1,10 +1,10 @@
-import { AddressLike, Call, Contract, contract, extractEvent } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike, Call, Contract } from '@enzymefinance/ethers';
+import { contract, extractEvent } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
   callOnExternalPositionArgs,
-  ComptrollerLib,
   encodeArgs,
-  ExternalPositionManager,
   ExternalPositionManagerActionId,
   ExternalPositionType,
   UniswapV3LiquidityPositionActionId,
@@ -17,7 +17,7 @@ import {
   uniswapV3LiquidityPositionRemoveLiquidityArgs,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumber, BigNumberish } from 'ethers';
 
 export enum UniswapV3FeeAmount {
   LOW = 500,
@@ -84,7 +84,7 @@ export async function createUniswapV3LiquidityPosition({
   const externalPositions = await vaultProxy.getActiveExternalPositions.call();
   const externalPositionProxyAddress = externalPositions[externalPositions.length - 1];
 
-  return { receipt, externalPositionProxyAddress };
+  return { externalPositionProxyAddress, receipt };
 }
 
 export async function uniswapV3LiquidityPositionAddLiquidity({
@@ -109,17 +109,17 @@ export async function uniswapV3LiquidityPositionAddLiquidity({
   amount1Min?: BigNumberish;
 }) {
   const actionArgs = uniswapV3LiquidityPositionAddLiquidityArgs({
-    nftId,
     amount0Desired,
-    amount1Desired,
     amount0Min,
+    amount1Desired,
     amount1Min,
+    nftId,
   });
 
   const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: UniswapV3LiquidityPositionActionId.AddLiquidity,
     actionArgs,
+    actionId: UniswapV3LiquidityPositionActionId.AddLiquidity,
+    externalPositionProxy,
   });
 
   return comptrollerProxy
@@ -145,9 +145,9 @@ export async function uniswapV3LiquidityPositionCollect({
   });
 
   const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: UniswapV3LiquidityPositionActionId.Collect,
     actionArgs,
+    actionId: UniswapV3LiquidityPositionActionId.Collect,
+    externalPositionProxy,
   });
 
   return comptrollerProxy
@@ -181,19 +181,19 @@ export async function uniswapV3LiquidityPositionMint({
   amount1Min?: BigNumberish;
 }) {
   const actionArgs = uniswapV3LiquidityPositionMintArgs({
+    amount0Desired,
+    amount0Min,
+    amount1Desired,
+    amount1Min,
     fee,
     tickLower,
     tickUpper,
-    amount0Desired,
-    amount1Desired,
-    amount0Min,
-    amount1Min,
   });
 
   const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: UniswapV3LiquidityPositionActionId.Mint,
     actionArgs,
+    actionId: UniswapV3LiquidityPositionActionId.Mint,
+    externalPositionProxy,
   });
 
   const receipt = await comptrollerProxy
@@ -226,16 +226,16 @@ export async function uniswapV3LiquidityPositionPurge({
   amount1Min?: BigNumberish;
 }) {
   const actionArgs = uniswapV3LiquidityPositionPurgeArgs({
-    nftId,
-    liquidity,
     amount0Min,
     amount1Min,
+    liquidity,
+    nftId,
   });
 
   const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: UniswapV3LiquidityPositionActionId.Purge,
     actionArgs,
+    actionId: UniswapV3LiquidityPositionActionId.Purge,
+    externalPositionProxy,
   });
 
   return comptrollerProxy
@@ -263,16 +263,16 @@ export async function uniswapV3LiquidityPositionRemoveLiquidity({
   amount1Min?: BigNumberish;
 }) {
   const actionArgs = uniswapV3LiquidityPositionRemoveLiquidityArgs({
-    nftId,
-    liquidity,
     amount0Min,
     amount1Min,
+    liquidity,
+    nftId,
   });
 
   const callArgs = callOnExternalPositionArgs({
-    externalPositionProxy,
-    actionId: UniswapV3LiquidityPositionActionId.RemoveLiquidity,
     actionArgs,
+    actionId: UniswapV3LiquidityPositionActionId.RemoveLiquidity,
+    externalPositionProxy,
   });
 
   return comptrollerProxy

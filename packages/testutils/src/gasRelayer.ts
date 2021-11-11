@@ -1,11 +1,9 @@
-import { BigNumber, BigNumberish, utils } from 'ethers';
-import { ContractReceipt } from '@enzymefinance/ethers';
-import {
-  isTypedDataSigner,
-  IGsnRelayHub,
-  createSignedRelayRequest,
-  CreateSignedRelayRequestOptions,
-} from '@enzymefinance/protocol';
+import type { ContractReceipt } from '@enzymefinance/ethers';
+import type { CreateSignedRelayRequestOptions } from '@enzymefinance/protocol';
+import { createSignedRelayRequest, IGsnRelayHub, isTypedDataSigner } from '@enzymefinance/protocol';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
 import { assertEvent } from './assertions';
 
 export interface RelayTransactionOptions extends CreateSignedRelayRequestOptions {
@@ -26,11 +24,12 @@ export async function relayTransaction(options: RelayTransactionOptions) {
 
   // NOTE: There is an inconsistency between how the typed data object shape and the relayCall argument.
   const mergedRelayRequest = {
-    request: relayRequest,
     relayData,
+    request: relayRequest,
   };
 
   const relayHub = new IGsnRelayHub(options.relayHub, provider.getSigner(options.relayWorker));
+
   return relayHub.relayCall
     .args(defaultMaxAcceptance, mergedRelayRequest, signedRelayRequest, '0x', defaultGasLimit)
     .gas(defaultGasLimit, relayData.gasPrice)
@@ -47,14 +46,14 @@ const rejected = utils.EventFragment.fromString(
 
 export function assertDidRelay(receipt: ContractReceipt<any>) {
   return assertEvent(receipt, relayed, {
+    charge: expect.anything(),
+    from: expect.any(String),
+    paymaster: expect.any(String),
     relayManager: expect.any(String),
     relayWorker: expect.any(String),
-    from: expect.any(String),
-    to: expect.any(String),
-    paymaster: expect.any(String),
     selector: expect.any(String),
     status: expect.anything(),
-    charge: expect.anything(),
+    to: expect.any(String),
   });
 }
 
@@ -79,14 +78,14 @@ export function assertDidRelayWithCharge(
 
 export function assertPaymasterDidReject(receipt: ContractReceipt<any>) {
   return assertEvent(receipt, rejected, {
-    relayManager: expect.any(String),
-    paymaster: expect.any(String),
     from: expect.any(String),
-    to: expect.any(String),
+    innerGasUsed: expect.anything(),
+    paymaster: expect.any(String),
+    reason: expect.any(String),
+    relayManager: expect.any(String),
     relayWorker: expect.any(String),
     selector: expect.any(String),
-    innerGasUsed: expect.anything(),
-    reason: expect.any(String),
+    to: expect.any(String),
   });
 }
 

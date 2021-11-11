@@ -1,5 +1,6 @@
-import { CompoundPriceFeed, CompoundPriceFeedArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { CompoundPriceFeedArgs } from '@enzymefinance/protocol';
+import { CompoundPriceFeed } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 

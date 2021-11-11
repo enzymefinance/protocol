@@ -1,8 +1,15 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
+  CumulativeSlippageTolerancePolicy,
   IntegrationManager,
+  ValueInterpreter,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  cumulativeSlippageTolerancePolicyArgs,
+  FIVE_PERCENT_IN_WEI,
   MockGenericAdapter,
   MockGenericIntegratee,
   ONE_DAY_IN_SECONDS,
@@ -10,14 +17,10 @@ import {
   ONE_ONE_HUNDREDTH_PERCENT_IN_WEI,
   PolicyHook,
   policyManagerConfigArgs,
-  CumulativeSlippageTolerancePolicy,
-  cumulativeSlippageTolerancePolicyArgs,
   StandardToken,
   TEN_PERCENT_IN_WEI,
-  VaultLib,
-  ValueInterpreter,
-  FIVE_PERCENT_IN_WEI,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   assertEvent,
@@ -26,7 +29,6 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockGenericSwap,
-  ProtocolDeployment,
   transactionTimestamp,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
@@ -83,9 +85,8 @@ describe('addFundSettings', () => {
   it('does not allow a tolerance >= max value', async () => {
     await expect(
       createNewFund({
-        signer: fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
           policies: [cumulativeSlippageTolerancePolicy],
@@ -95,6 +96,7 @@ describe('addFundSettings', () => {
             }),
           ],
         }),
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Max tolerance exceeded');
   });
@@ -102,9 +104,8 @@ describe('addFundSettings', () => {
   it('happy path', async () => {
     const tolerance = 9999;
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [cumulativeSlippageTolerancePolicy],
@@ -114,15 +115,16 @@ describe('addFundSettings', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert state
     expect(await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy)).toMatchFunctionOutput(
       cumulativeSlippageTolerancePolicy.getPolicyInfoForFund,
       {
-        tolerance,
         cumulativeSlippage: BigNumber.from(0),
         lastSlippageTimestamp: BigNumber.from(0),
+        tolerance,
       },
     );
 
@@ -180,9 +182,8 @@ describe('validateRule', () => {
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [cumulativeSlippageTolerancePolicy],
@@ -192,6 +193,7 @@ describe('validateRule', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -221,9 +223,9 @@ describe('validateRule', () => {
 
     // Buy shares to seed fund with denomination asset
     await buyShares({
+      buyer: fundOwner,
       comptrollerProxy,
       denominationAsset,
-      buyer: fundOwner,
       investmentAmount: outgoingAssetAmount.mul(10),
       seedBuyer: true,
     });
@@ -236,15 +238,15 @@ describe('validateRule', () => {
     // FIRST SWAP - Exact tolerance limit
     const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10).add(2); // exactly 10% slippage, after rounding up
     const firstSwapReceipt = await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      incomingAssets: [incomingAsset],
       actualIncomingAssetAmounts: [firstSwapIncomingAssetAmount],
-      spendAssets: [outgoingAsset],
       actualSpendAssetAmounts: [outgoingAssetAmount],
+      comptrollerProxy,
+      fundOwner,
+      incomingAssets: [incomingAsset],
+      integrationManager,
+      mockGenericAdapter,
+      spendAssets: [outgoingAsset],
+      vaultProxy,
     });
 
     // Assert state
@@ -264,15 +266,15 @@ describe('validateRule', () => {
     // Executing immediately should fail
     await expect(
       mockGenericSwap({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager,
-        fundOwner,
-        mockGenericAdapter,
-        incomingAssets: [incomingAsset],
         actualIncomingAssetAmounts: [secondSwapIncomingAssetAmount],
-        spendAssets: [outgoingAsset],
         actualSpendAssetAmounts: [outgoingAssetAmount],
+        comptrollerProxy,
+        fundOwner,
+        incomingAssets: [incomingAsset],
+        integrationManager,
+        mockGenericAdapter,
+        spendAssets: [outgoingAsset],
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: CUMULATIVE_SLIPPAGE_TOLERANCE');
 
@@ -284,15 +286,15 @@ describe('validateRule', () => {
     ]);
 
     const secondSwapReceipt = await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      incomingAssets: [incomingAsset],
       actualIncomingAssetAmounts: [secondSwapIncomingAssetAmount],
-      spendAssets: [outgoingAsset],
       actualSpendAssetAmounts: [outgoingAssetAmount],
+      comptrollerProxy,
+      fundOwner,
+      incomingAssets: [incomingAsset],
+      integrationManager,
+      mockGenericAdapter,
+      spendAssets: [outgoingAsset],
+      vaultProxy,
     });
 
     // The cumulative loss should be roughly 50% of the original loss (i.e., 5%) plus roughly the new loss (i.e., 0.01%)
@@ -325,11 +327,11 @@ describe('validateRule', () => {
 
     // Add outgoing assets to fund
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: outgoingAssetAmounts.map((amount) => amount.mul(10)),
+      assets: outgoingAssets,
       comptrollerProxy,
       integrationManager,
-      assets: outgoingAssets,
-      amounts: outgoingAssetAmounts.map((amount) => amount.mul(10)),
+      signer: fundOwner,
     });
 
     // Rounds amounts up, so should be slightly greater or equal to the outgoingAssetAmount
@@ -358,15 +360,15 @@ describe('validateRule', () => {
       amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_WEI).add(2),
     );
     const firstSwapReceipt = await mockGenericSwap({
+      actualIncomingAssetAmounts: firstSwapIncomingAssetAmounts,
+      actualSpendAssetAmounts: outgoingAssetAmounts,
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
+      incomingAssets,
+      integrationManager,
       mockGenericAdapter,
       spendAssets: outgoingAssets,
-      actualSpendAssetAmounts: outgoingAssetAmounts,
-      incomingAssets,
-      actualIncomingAssetAmounts: firstSwapIncomingAssetAmounts,
+      vaultProxy,
     });
     const firstSwapTimestamp = await transactionTimestamp(firstSwapReceipt);
 
@@ -393,15 +395,15 @@ describe('validateRule', () => {
       amount.mul(insignificantPrecision.sub(2)).div(insignificantPrecision),
     );
     await mockGenericSwap({
+      actualIncomingAssetAmounts: secondSwapIncomingAssetAmounts,
+      actualSpendAssetAmounts: outgoingAssetAmounts,
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
+      incomingAssets,
+      integrationManager,
       mockGenericAdapter,
       spendAssets: outgoingAssets,
-      actualSpendAssetAmounts: outgoingAssetAmounts,
-      incomingAssets,
-      actualIncomingAssetAmounts: secondSwapIncomingAssetAmounts,
+      vaultProxy,
     });
 
     // State vars should not be updated
@@ -419,15 +421,15 @@ describe('validateRule', () => {
     // Swap should fail as tolerance is exceeded
     await expect(
       mockGenericSwap({
+        actualIncomingAssetAmounts: thirdSwapIncomingAssetAmounts,
+        actualSpendAssetAmounts: outgoingAssetAmounts,
         comptrollerProxy,
-        vaultProxy,
-        integrationManager,
         fundOwner,
+        incomingAssets,
+        integrationManager,
         mockGenericAdapter,
         spendAssets: outgoingAssets,
-        actualSpendAssetAmounts: outgoingAssetAmounts,
-        incomingAssets,
-        actualIncomingAssetAmounts: thirdSwapIncomingAssetAmounts,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: CUMULATIVE_SLIPPAGE_TOLERANCE');
   });
@@ -438,22 +440,22 @@ describe('validateRule', () => {
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [outgoingAssetAmount],
+      assets: [outgoingAsset],
       comptrollerProxy,
       integrationManager,
-      assets: [outgoingAsset],
-      amounts: [outgoingAssetAmount],
+      signer: fundOwner,
     });
 
     await expect(
       mockGenericSwap({
+        actualSpendAssetAmounts: [outgoingAssetAmount],
         comptrollerProxy,
-        vaultProxy,
-        integrationManager,
         fundOwner,
+        integrationManager,
         mockGenericAdapter,
         spendAssets: [outgoingAsset],
-        actualSpendAssetAmounts: [outgoingAssetAmount],
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: CUMULATIVE_SLIPPAGE_TOLERANCE');
 
@@ -463,13 +465,13 @@ describe('validateRule', () => {
 
     // Same swap should now work
     await mockGenericSwap({
+      actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
+      integrationManager,
       mockGenericAdapter,
       spendAssets: [outgoingAsset],
-      actualSpendAssetAmounts: [outgoingAssetAmount],
+      vaultProxy,
     });
 
     // State should not be updated
@@ -482,31 +484,31 @@ describe('validateRule', () => {
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [outgoingAssetAmount],
+      assets: [outgoingAsset],
       comptrollerProxy,
       integrationManager,
-      assets: [outgoingAsset],
-      amounts: [outgoingAssetAmount],
+      signer: fundOwner,
     });
 
     await fork.deployment.valueInterpreter.removePrimitives([outgoingAsset]);
 
     await expect(
       mockGenericSwap({
+        actualSpendAssetAmounts: [outgoingAssetAmount],
         comptrollerProxy,
-        vaultProxy,
-        integrationManager,
         fundOwner,
+        integrationManager,
         mockGenericAdapter,
         spendAssets: [outgoingAsset],
-        actualSpendAssetAmounts: [outgoingAssetAmount],
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Invalid asset not bypassable');
 
     await vaultCallStartAssetBypassTimelock({
+      asset: outgoingAsset,
       comptrollerProxy,
       contract: cumulativeSlippageTolerancePolicy,
-      asset: outgoingAsset,
     });
 
     // Same swap should work within the allowed asset bypass window
@@ -515,13 +517,13 @@ describe('validateRule', () => {
     ]);
 
     await mockGenericSwap({
+      actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
+      integrationManager,
       mockGenericAdapter,
       spendAssets: [outgoingAsset],
-      actualSpendAssetAmounts: [outgoingAssetAmount],
+      vaultProxy,
     });
 
     // State should not be updated

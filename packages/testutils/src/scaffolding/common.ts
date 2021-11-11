@@ -1,4 +1,4 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 import { utils } from 'ethers';
 

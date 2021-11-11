@@ -1,9 +1,6 @@
-import {
-  encodeFunctionData,
-  ProtocolFeeReserveLib as ProtocolFeeReserveLibContract,
-  ProtocolFeeReserveProxyArgs,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { ProtocolFeeReserveProxyArgs } from '@enzymefinance/protocol';
+import { encodeFunctionData, ProtocolFeeReserveLib as ProtocolFeeReserveLibContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {

@@ -1,9 +1,11 @@
-import { AddressLike, ContractReceipt } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, utils } from 'ethers';
-import { ValueInterpreter } from '@enzymefinance/protocol';
+import type { AddressLike, ContractReceipt } from '@enzymefinance/ethers';
+import type { ValueInterpreter } from '@enzymefinance/protocol';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 export async function transactionTimestamp(receipt: ContractReceipt<any>) {
   const block = await provider.getBlock(receipt.blockNumber);
+
   return block.timestamp;
 }
 
@@ -33,5 +35,5 @@ export async function calcMlnValueAndBurnAmountForSharesBuyback({
   // 50% discount
   const mlnAmountToBurn = mlnValueOfBuyback.div(2);
 
-  return { mlnValue: mlnValueOfBuyback, mlnAmountToBurn };
+  return { mlnAmountToBurn, mlnValue: mlnValueOfBuyback };
 }

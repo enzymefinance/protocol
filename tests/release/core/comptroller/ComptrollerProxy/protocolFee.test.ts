@@ -1,13 +1,14 @@
 import { extractEvent } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   ProtocolFeeReserveLib,
   ProtocolFeeTracker,
-  StandardToken,
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
+import { StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   assertEvent,
@@ -17,11 +18,11 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 // Use a half year for fees just to not use exactly 1 year
 const halfYearInSeconds = (60 * 60 * 24 * 365.25) / 2;
@@ -47,16 +48,17 @@ describe('buyBackProtocolFeeShares', () => {
     mln = new StandardToken(fork.config.primitives.mln, whales.mln);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
+      denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
-      denominationAsset,
       // Invest the 1st time to give a positive supply of shares and allow accruing protocol fee
       investment: {
         buyer: fundOwner,
         investmentAmount: await getAssetUnit(denominationAsset),
         seedBuyer: true,
       },
+
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -67,8 +69,8 @@ describe('buyBackProtocolFeeShares', () => {
     // Redeem some shares to pay out the protocol fee
     await redeemSharesInKind({
       comptrollerProxy,
-      signer: fundOwner,
       quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
+      signer: fundOwner,
     });
 
     feeSharesCollected = await vaultProxy.balanceOf(protocolFeeReserveProxy);
@@ -77,11 +79,11 @@ describe('buyBackProtocolFeeShares', () => {
     // Seed the fund with more MLN than needed to buyback the target shares
     // 1 MLN : 1 USDC is more than enough
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [await getAssetUnit(mln)],
+      assets: [mln],
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      assets: [mln],
-      amounts: [await getAssetUnit(mln)],
+      signer: fundOwner,
     });
 
     preTxGav = await comptrollerProxy.calcGav.args(true).call();
@@ -106,12 +108,12 @@ describe('buyBackProtocolFeeShares', () => {
     await comptrollerProxy.connect(fundOwner).buyBackProtocolFeeShares(sharesToBuyBack);
 
     const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-      valueInterpreter,
-      mln,
-      denominationAsset,
-      sharesSupply: preTxSharesSupply,
-      gav: preTxGav,
       buybackSharesAmount: sharesToBuyBack,
+      denominationAsset,
+      gav: preTxGav,
+      mln,
+      sharesSupply: preTxSharesSupply,
+      valueInterpreter,
     });
     expect(mlnValue).toBeGtBigNumber(0);
 
@@ -136,12 +138,12 @@ describe('buyBackProtocolFeeShares', () => {
     await comptrollerProxy.connect(fundOwner).buyBackProtocolFeeShares(sharesToBuyBack);
 
     const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-      valueInterpreter,
-      mln,
-      denominationAsset,
-      sharesSupply: preTxSharesSupply,
-      gav: preTxGav,
       buybackSharesAmount: sharesToBuyBack,
+      denominationAsset,
+      gav: preTxGav,
+      mln,
+      sharesSupply: preTxSharesSupply,
+      valueInterpreter,
     });
     expect(mlnValue).toBeGtBigNumber(0);
 
@@ -175,16 +177,17 @@ describe('auto-buybacks', () => {
     mln = new StandardToken(fork.config.primitives.mln, whales.mln);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
+      denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
-      denominationAsset,
       // Invest the 1st time to give a positive supply of shares and allow accruing protocol fee
       investment: {
         buyer: fundOwner,
         investmentAmount: await getAssetUnit(denominationAsset),
         seedBuyer: true,
       },
+
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -208,11 +211,11 @@ describe('auto-buybacks', () => {
     beforeEach(async () => {
       // Seed the fund with a very small amount of MLN, not enough to buyback the target shares
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [10],
+        assets: [mln],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [mln],
-        amounts: [10],
+        signer: fundOwner,
       });
 
       gav = await comptrollerProxy.calcGav.args(true).call();
@@ -220,9 +223,9 @@ describe('auto-buybacks', () => {
 
     it('happy path: buyShares()', async () => {
       const receipt = await buyShares({
+        buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
-        buyer: fundOwner,
         seedBuyer: true,
       });
 
@@ -234,21 +237,21 @@ describe('auto-buybacks', () => {
       const totalProtocolFeeSharesCollected = await vaultProxy.balanceOf(protocolFeeReserveProxy);
 
       const { mlnValue } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
+        buybackSharesAmount: totalProtocolFeeSharesCollected,
         denominationAsset,
         gav,
+        mln,
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
-        buybackSharesAmount: totalProtocolFeeSharesCollected,
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.anything(),
-        sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
+        failureReturnData: expect.anything(),
         gav,
+        sharesAmount: totalProtocolFeeSharesCollected,
       });
 
       // Assert the shares buyback event was not fired
@@ -269,21 +272,21 @@ describe('auto-buybacks', () => {
       const totalProtocolFeeSharesCollected = await vaultProxy.balanceOf(protocolFeeReserveProxy);
 
       const { mlnValue } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
+        buybackSharesAmount: totalProtocolFeeSharesCollected,
         denominationAsset,
         gav,
+        mln,
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
-        buybackSharesAmount: totalProtocolFeeSharesCollected,
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.anything(),
-        sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
+        failureReturnData: expect.anything(),
         gav,
+        sharesAmount: totalProtocolFeeSharesCollected,
       });
 
       // Assert the shares buyback event was not fired
@@ -293,10 +296,10 @@ describe('auto-buybacks', () => {
     it('happy path: redeemSharesForSpecifiedAssets() - redeem partial', async () => {
       const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: fundOwner,
-        quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
-        payoutAssets: [denominationAsset],
         payoutAssetPercentages: [10000],
+        payoutAssets: [denominationAsset],
+        quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
+        signer: fundOwner,
       });
 
       // Parse newly-collected protocol fee shares from event
@@ -307,21 +310,21 @@ describe('auto-buybacks', () => {
       const totalProtocolFeeSharesCollected = await vaultProxy.balanceOf(protocolFeeReserveProxy);
 
       const { mlnValue } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
+        buybackSharesAmount: totalProtocolFeeSharesCollected,
         denominationAsset,
         gav,
+        mln,
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
-        buybackSharesAmount: totalProtocolFeeSharesCollected,
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
       assertEvent(receipt, 'BuyBackMaxProtocolFeeSharesFailed', {
-        failureReturnData: expect.anything(),
-        sharesAmount: totalProtocolFeeSharesCollected,
         buybackValueInMln: mlnValue,
+        failureReturnData: expect.anything(),
         gav,
+        sharesAmount: totalProtocolFeeSharesCollected,
       });
 
       // Assert the shares buyback event was not fired
@@ -336,11 +339,11 @@ describe('auto-buybacks', () => {
       // Seed the fund with more MLN than needed to buyback the target shares
       // 1 MLN : 1 USDC is more than enough
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [await getAssetUnit(mln)],
+        assets: [mln],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [mln],
-        amounts: [await getAssetUnit(mln)],
+        signer: fundOwner,
       });
 
       preTxGav = await comptrollerProxy.calcGav.args(true).call();
@@ -348,9 +351,9 @@ describe('auto-buybacks', () => {
 
     it('happy path: buyShares()', async () => {
       const receipt = await buyShares({
+        buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
-        buyer: fundOwner,
         seedBuyer: true,
       });
 
@@ -367,12 +370,12 @@ describe('auto-buybacks', () => {
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
-        denominationAsset,
-        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
-        gav: preTxGav,
         buybackSharesAmount: sharesBoughtBackArgs.sharesAmount,
+        denominationAsset,
+        gav: preTxGav,
+        mln,
+        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
@@ -400,12 +403,12 @@ describe('auto-buybacks', () => {
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
-        denominationAsset,
-        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
-        gav: preTxGav,
         buybackSharesAmount: sharesBoughtBackArgs.sharesAmount,
+        denominationAsset,
+        gav: preTxGav,
+        mln,
+        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
@@ -418,10 +421,10 @@ describe('auto-buybacks', () => {
       // Use a very small shares amount since fund has been inflated with a lot of MLN
       const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: fundOwner,
-        quantity: (await vaultProxy.balanceOf(fundOwner)).div(10000),
-        payoutAssets: [denominationAsset],
         payoutAssetPercentages: [10000],
+        payoutAssets: [denominationAsset],
+        quantity: (await vaultProxy.balanceOf(fundOwner)).div(10000),
+        signer: fundOwner,
       });
 
       // Assert via event that protocol fee shares were bought back
@@ -437,12 +440,12 @@ describe('auto-buybacks', () => {
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
-        denominationAsset,
-        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
-        gav: preTxGav,
         buybackSharesAmount: sharesBoughtBackArgs.sharesAmount,
+        denominationAsset,
+        gav: preTxGav,
+        mln,
+        sharesSupply: feeSharesCollected.add(preTxSharesSupply),
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 

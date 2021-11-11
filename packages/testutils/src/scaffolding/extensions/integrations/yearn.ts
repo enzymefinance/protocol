@@ -1,17 +1,15 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IntegrationManager, StandardToken, YearnVaultV2Adapter } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
-  ComptrollerLib,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
   redeemSelector,
-  StandardToken,
-  YearnVaultV2Adapter,
   yearnVaultV2LendArgs,
   yearnVaultV2RedeemArgs,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 export async function yearnVaultV2Lend({
   signer,
@@ -32,12 +30,12 @@ export async function yearnVaultV2Lend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: yearnVaultV2Adapter,
-    selector: lendSelector,
     encodedCallArgs: yearnVaultV2LendArgs({
-      yVault,
-      outgoingUnderlyingAmount,
       minIncomingYVaultSharesAmount,
+      outgoingUnderlyingAmount,
+      yVault,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -66,13 +64,13 @@ export async function yearnVaultV2Redeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: yearnVaultV2Adapter,
-    selector: redeemSelector,
     encodedCallArgs: yearnVaultV2RedeemArgs({
-      yVault,
       maxOutgoingYVaultSharesAmount,
       minIncomingUnderlyingAmount,
       slippageToleranceBps,
+      yVault,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy

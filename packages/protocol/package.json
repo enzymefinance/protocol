@@ -35,7 +35,7 @@
   ],
   "dependencies": {
     "@babel/runtime": "^7.15.4",
-    "@enzymefinance/ethers": "^1.0.9",
+    "@enzymefinance/ethers": "^1.0.10",
     "decimal.js": "^10.3.1",
     "ethers": "^5.5.1"
   }

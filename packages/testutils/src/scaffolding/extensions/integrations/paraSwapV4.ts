@@ -1,25 +1,30 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  callOnIntegrationArgs,
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   IntegrationManager,
-  IntegrationManagerActionId,
   ParaSwapV4Adapter,
   ParaSwapV4Path,
-  paraSwapV4TakeOrderArgs,
   StandardToken,
+} from '@enzymefinance/protocol';
+import {
+  callOnIntegrationArgs,
+  IntegrationManagerActionId,
+  paraSwapV4TakeOrderArgs,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
-import { BigNumberish, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { utils } from 'ethers';
 
 // ParaSwapV4Path
 export function paraSwapV4GenerateDummyPaths({ toTokens }: { toTokens: AddressLike[] }) {
   return toTokens.map((toToken) => {
     return {
+      // Not supported in our protocol
+      routes: [],
+
       to: toToken,
-      totalNetworkFee: 0, // Not supported in our protocol
-      routes: [], // Can ignore this param in the dummy
+      totalNetworkFee: 0, // Can ignore this param in the dummy
     };
   });
 }
@@ -46,8 +51,8 @@ export async function paraSwapV4TakeOrder({
   paths: ParaSwapV4Path[];
 }) {
   const takeOrderArgs = paraSwapV4TakeOrderArgs({
-    minIncomingAssetAmount,
     expectedIncomingAssetAmount,
+    minIncomingAssetAmount,
     outgoingAsset,
     outgoingAssetAmount,
     paths,
@@ -55,8 +60,8 @@ export async function paraSwapV4TakeOrder({
 
   const callArgs = callOnIntegrationArgs({
     adapter: paraSwapV4Adapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy

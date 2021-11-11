@@ -1,18 +1,18 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
+  IUniswapV2Pair,
   lendSelector,
+  min,
   redeemSelector,
   SpendAssetsHandleType,
   StandardToken,
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
-  min,
-  IUniswapV2Pair,
   UniswapV2Router,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ProtocolDeployment,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -52,13 +52,13 @@ describe('parseAssetsForAction', () => {
     const minPoolTokenAmount = utils.parseEther('1');
 
     const args = uniswapV2LendArgs({
-      tokenA: fork.config.primitives.mln,
-      tokenB: fork.config.weth,
       amountADesired,
-      amountBDesired,
       amountAMin,
+      amountBDesired,
       amountBMin,
       minPoolTokenAmount,
+      tokenA: fork.config.primitives.mln,
+      tokenB: fork.config.weth,
     });
 
     await expect(
@@ -78,13 +78,13 @@ describe('parseAssetsForAction', () => {
     const minPoolTokenAmount = utils.parseEther('1');
 
     const lendArgs = uniswapV2LendArgs({
-      tokenA,
-      tokenB,
       amountADesired,
-      amountBDesired,
       amountAMin,
+      amountBDesired,
       amountBMin,
       minPoolTokenAmount,
+      tokenA,
+      tokenB,
     });
 
     const selector = lendSelector;
@@ -92,10 +92,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(uniswapV2LiquidityAdapter.parseAssetsForAction, {
       incomingAssets_: [poolToken],
-      spendAssets_: [tokenA, tokenB],
-      spendAssetAmounts_: [amountADesired, amountBDesired],
       minIncomingAssetAmounts_: [minPoolTokenAmount],
+      spendAssetAmounts_: [amountADesired, amountBDesired],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [tokenA, tokenB],
     });
   });
 
@@ -109,11 +109,11 @@ describe('parseAssetsForAction', () => {
     const amountBMin = utils.parseEther('1');
 
     const redeemArgs = uniswapV2RedeemArgs({
+      amountAMin,
+      amountBMin,
       poolTokenAmount,
       tokenA,
       tokenB,
-      amountAMin,
-      amountBMin,
     });
 
     const selector = redeemSelector;
@@ -121,10 +121,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(uniswapV2LiquidityAdapter.parseAssetsForAction, {
       incomingAssets_: [tokenA, tokenB],
-      spendAssets_: [poolToken],
-      spendAssetAmounts_: [poolTokenAmount],
       minIncomingAssetAmounts_: [amountAMin, amountBMin],
+      spendAssetAmounts_: [poolTokenAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [poolToken],
     });
   });
 });
@@ -137,26 +137,26 @@ describe('lend', () => {
     const tokenB = fork.config.weth;
 
     const { vaultProxy } = await createNewFund({
-      signer: fork.deployer,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fork.deployer),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fork.deployer,
     });
 
     const lendArgs = uniswapV2LendArgs({
-      tokenA,
-      tokenB,
       amountADesired: utils.parseEther('1'),
-      amountBDesired: utils.parseEther('1'),
       amountAMin: utils.parseEther('1'),
+      amountBDesired: utils.parseEther('1'),
       amountBMin: utils.parseEther('1'),
       minPoolTokenAmount: utils.parseEther('1'),
+      tokenA,
+      tokenB,
     });
 
     const transferArgs = await assetTransferArgs({
       adapter: uniswapV2LiquidityAdapter,
-      selector: lendSelector,
       encodedCallArgs: lendArgs,
+      selector: lendSelector,
     });
 
     await expect(uniswapV2LiquidityAdapter.lend(vaultProxy, lendArgs, transferArgs)).rejects.toBeRevertedWith(
@@ -176,10 +176,10 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Define lend tx values
@@ -208,18 +208,18 @@ describe('lend', () => {
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
     await uniswapV2Lend({
+      amountADesired,
+      amountAMin,
+      amountBDesired,
+      amountBMin,
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2LiquidityAdapter,
+      integrationManager,
+      minPoolTokenAmount,
       tokenA,
       tokenB,
-      amountADesired,
-      amountBDesired,
-      amountAMin,
-      amountBMin,
-      minPoolTokenAmount,
+      uniswapV2LiquidityAdapter,
+      vaultProxy,
     });
 
     // Get pre-tx balances of all tokens
@@ -241,24 +241,24 @@ describe('redeem', () => {
     const uniswapV2LiquidityAdapter = fork.deployment.uniswapV2LiquidityAdapter;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const redeemArgs = uniswapV2RedeemArgs({
+      amountAMin: utils.parseEther('1'),
+      amountBMin: utils.parseEther('1'),
       poolTokenAmount: utils.parseEther('0.5'),
       tokenA: fork.config.primitives.mln,
       tokenB: fork.config.weth,
-      amountAMin: utils.parseEther('1'),
-      amountBMin: utils.parseEther('1'),
     });
 
     const transferArgs = await assetTransferArgs({
       adapter: uniswapV2LiquidityAdapter,
-      selector: redeemSelector,
       encodedCallArgs: redeemArgs,
+      selector: redeemSelector,
     });
 
     await expect(uniswapV2LiquidityAdapter.redeem(vaultProxy, redeemArgs, transferArgs)).rejects.toBeRevertedWith(
@@ -276,10 +276,10 @@ describe('redeem', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund and lend arbitrary amounts of tokens for an arbitrary amount of pool tokens
@@ -288,18 +288,18 @@ describe('redeem', () => {
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
     await uniswapV2Lend({
+      amountADesired,
+      amountAMin: BigNumber.from(1),
+      amountBDesired,
+      amountBMin: BigNumber.from(1),
       comptrollerProxy,
-      vaultProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2LiquidityAdapter,
+      integrationManager,
+      minPoolTokenAmount: BigNumber.from(1),
       tokenA,
       tokenB,
-      amountADesired,
-      amountBDesired,
-      amountAMin: BigNumber.from(1),
-      amountBMin: BigNumber.from(1),
-      minPoolTokenAmount: BigNumber.from(1),
+      uniswapV2LiquidityAdapter,
+      vaultProxy,
     });
 
     // Get pre-redeem balances of all tokens
@@ -322,15 +322,15 @@ describe('redeem', () => {
     const expectedTokenBAmount = redeemPoolTokenAmount.mul(poolTokenBBalance).div(poolTokensSupply);
 
     await uniswapV2Redeem({
+      amountAMin: BigNumber.from(1),
+      amountBMin: BigNumber.from(1),
       comptrollerProxy,
-      integrationManager,
       fundOwner,
-      uniswapV2LiquidityAdapter,
+      integrationManager,
       poolTokenAmount: redeemPoolTokenAmount,
       tokenA,
       tokenB,
-      amountAMin: BigNumber.from(1),
-      amountBMin: BigNumber.from(1),
+      uniswapV2LiquidityAdapter,
     });
 
     // Get post-redeem balances of all tokens

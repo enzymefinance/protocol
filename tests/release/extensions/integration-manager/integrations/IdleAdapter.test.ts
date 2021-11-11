@@ -10,6 +10,7 @@ import {
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   deployProtocolFixture,
@@ -17,7 +18,6 @@ import {
   idleClaimRewards,
   idleLend,
   idleRedeem,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -50,10 +50,10 @@ describe('parseAssetsForAction', () => {
 
       // Create fund to have a valid vaultProxy
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(
@@ -76,19 +76,19 @@ describe('parseAssetsForAction', () => {
 
       // Create fund and acquire idleTokens
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
       const outgoingUnderlyingAmount = utils.parseUnits('1', await underlying.decimals());
       await underlying.transfer(vaultProxy, outgoingUnderlyingAmount);
       await idleLend({
         comptrollerProxy,
-        integrationManager: fork.deployment.integrationManager,
         fundOwner,
         idleAdapter,
         idleToken,
+        integrationManager: fork.deployment.integrationManager,
         outgoingUnderlyingAmount,
       });
 
@@ -99,11 +99,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [idleToken],
-        spendAssetAmounts_: [await idleToken.balanceOf(vaultProxy)],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
+        spendAssetAmounts_: [await idleToken.balanceOf(vaultProxy)],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [idleToken],
       });
     });
   });
@@ -116,8 +116,8 @@ describe('parseAssetsForAction', () => {
           lendSelector,
           idleLendArgs({
             idleToken: randomAddress(),
-            outgoingUnderlyingAmount: BigNumber.from(1),
             minIncomingIdleTokenAmount: BigNumber.from(1),
+            outgoingUnderlyingAmount: BigNumber.from(1),
           }),
         ),
       ).rejects.toBeReverted();
@@ -135,17 +135,17 @@ describe('parseAssetsForAction', () => {
         lendSelector,
         idleLendArgs({
           idleToken,
-          outgoingUnderlyingAmount,
           minIncomingIdleTokenAmount,
+          outgoingUnderlyingAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [await idleToken.token()],
-        spendAssetAmounts_: [outgoingUnderlyingAmount],
         incomingAssets_: [idleToken],
         minIncomingAssetAmounts_: [minIncomingIdleTokenAmount],
+        spendAssetAmounts_: [outgoingUnderlyingAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [await idleToken.token()],
       });
     });
   });
@@ -158,8 +158,8 @@ describe('parseAssetsForAction', () => {
           redeemSelector,
           idleRedeemArgs({
             idleToken: randomAddress(),
-            outgoingIdleTokenAmount: BigNumber.from(1),
             minIncomingUnderlyingAmount: BigNumber.from(1),
+            outgoingIdleTokenAmount: BigNumber.from(1),
           }),
         ),
       ).rejects.toBeReverted();
@@ -177,17 +177,17 @@ describe('parseAssetsForAction', () => {
         redeemSelector,
         idleRedeemArgs({
           idleToken,
-          outgoingIdleTokenAmount,
           minIncomingUnderlyingAmount,
+          outgoingIdleTokenAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(idleAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [idleToken],
-        spendAssetAmounts_: [outgoingIdleTokenAmount],
         incomingAssets_: [await idleToken.token()],
         minIncomingAssetAmounts_: [minIncomingUnderlyingAmount],
+        spendAssetAmounts_: [outgoingIdleTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [idleToken],
       });
     });
   });
@@ -203,10 +203,10 @@ describe('claimRewards', () => {
     const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed the fund with idleTokens to start accruing rewards
@@ -215,12 +215,12 @@ describe('claimRewards', () => {
 
     await idleLend({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
       idleAdapter,
       idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
+      integrationManager,
       minIncomingIdleTokenAmount: BigNumber.from(1),
+      outgoingUnderlyingAmount,
     });
 
     // Warp ahead in time to accrue rewards
@@ -235,10 +235,10 @@ describe('claimRewards', () => {
 
     await idleClaimRewards({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
       idleAdapter,
       idleToken: idleTokenERC20,
+      integrationManager,
     });
 
     const [postTxVaultIdleTokenBalance] = await getAssetBalances({
@@ -274,10 +274,10 @@ describe('lend', () => {
     const outgoingToken = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed the fund with more than the necessary amount of outgoing asset
@@ -293,10 +293,10 @@ describe('lend', () => {
 
     const lendReceipt = await idleLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       idleAdapter: fork.deployment.idleAdapter,
       idleToken,
+      integrationManager: fork.deployment.integrationManager,
       outgoingUnderlyingAmount,
     });
 
@@ -322,10 +322,10 @@ describe('redeem', () => {
     const token = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed the fund with more than the necessary amount of outgoing asset
@@ -334,12 +334,12 @@ describe('redeem', () => {
 
     await idleLend({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
       idleAdapter,
       idleToken: idleTokenERC20,
-      outgoingUnderlyingAmount,
+      integrationManager,
       minIncomingIdleTokenAmount: BigNumber.from(1),
+      outgoingUnderlyingAmount,
     });
 
     const vaultIdleTokenBalance = await idleTokenERC20.balanceOf(vaultProxy);
@@ -356,10 +356,10 @@ describe('redeem', () => {
 
     const redeemReceipt = await idleRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       idleAdapter: fork.deployment.idleAdapter,
       idleToken: idleTokenERC20,
+      integrationManager: fork.deployment.integrationManager,
       outgoingIdleTokenAmount: vaultIdleTokenBalance,
     });
 
@@ -401,10 +401,10 @@ describe('rewards behavior', () => {
     const outgoingToken = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Lend for idleToken
@@ -412,10 +412,10 @@ describe('rewards behavior', () => {
     await outgoingToken.transfer(vaultProxy, lendAmount);
     await idleLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       idleAdapter,
       idleToken: idleTokenERC20,
+      integrationManager: fork.deployment.integrationManager,
       outgoingUnderlyingAmount: lendAmount,
     });
 
@@ -450,10 +450,10 @@ describe('rewards behavior', () => {
     // Redeem partial idle tokens
     await idleRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       idleAdapter,
       idleToken: idleTokenERC20,
+      integrationManager: fork.deployment.integrationManager,
       outgoingIdleTokenAmount: redeemAmount,
     });
 

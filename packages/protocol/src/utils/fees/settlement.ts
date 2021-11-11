@@ -1,5 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';
 

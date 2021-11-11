@@ -1,6 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
-import { buyShares, createNewFund, ProtocolDeployment, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { aaveLend } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
 import { utils } from 'ethers';
 
@@ -18,18 +19,18 @@ describe('derivative gas costs', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -41,12 +42,12 @@ describe('derivative gas costs', () => {
     // Seed fund and use max of the dai balance to get adai
     await dai.transfer(vaultProxy, initialTokenAmount);
     await aaveLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      aaveAdapter: fork.deployment.aaveAdapter,
       aToken: new StandardToken(fork.config.aave.atokens.adai[0], provider),
+      aaveAdapter: fork.deployment.aaveAdapter,
       amount: initialTokenAmount,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager,
     });
 
     // Get the calcGav() cost including adai

@@ -1,5 +1,7 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { BigNumberish, BytesLike } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export enum ExternalPositionManagerActionId {

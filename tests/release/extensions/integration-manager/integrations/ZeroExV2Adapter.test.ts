@@ -3,17 +3,12 @@ import {
   createUnsignedZeroExV2Order,
   signZeroExV2Order,
   SpendAssetsHandleType,
+  StandardToken,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
-import {
-  ProtocolDeployment,
-  createNewFund,
-  deployProtocolFixture,
-  getAssetBalances,
-  zeroExV2TakeOrder,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, getAssetBalances, zeroExV2TakeOrder } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
@@ -54,14 +49,14 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker: fork.deployer,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress,
+      maker: fork.deployer,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, fork.deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -94,14 +89,14 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker: deployer,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress,
+      maker: deployer,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
 
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
@@ -114,10 +109,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [takerAssetFillAmount],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetAmounts_: [takerAssetFillAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset],
     });
   });
 
@@ -145,14 +140,14 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker: deployer,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress,
+      maker: deployer,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -164,10 +159,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [takerAssetFillAmount],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetAmounts_: [takerAssetFillAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset],
     });
   });
 
@@ -192,14 +187,14 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker: deployer,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress,
+      maker: deployer,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
     const takeOrderArgs = zeroExV2TakeOrderArgs({
@@ -211,10 +206,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset],
     });
   });
 
@@ -240,14 +235,14 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker: deployer,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress,
+      maker: deployer,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
     });
 
     const signedOrder = await signZeroExV2Order(unsignedOrder, deployer);
@@ -260,10 +255,10 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV2Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset, takerFeeAsset],
-      spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],
       minIncomingAssetAmounts_: [expectedMinIncomingAssetAmount],
+      spendAssetAmounts_: [takerAssetFillAmount, expectedTakerFee],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset, takerFeeAsset],
     });
   });
 });
@@ -278,10 +273,10 @@ describe('allowed makers', () => {
       const adapter = fork.deployment.zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
       await createNewFund({
-        signer: deployer,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.synthetix.susd, deployer),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: deployer,
       });
 
       await expect(adapter.connect(fundOwner).addAllowedMakers([makerAddress])).rejects.toBeRevertedWith(
@@ -324,10 +319,10 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Add the maker to the allowed list of maker addresses
@@ -343,14 +338,14 @@ describe('takeOrder', () => {
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: constants.AddressZero,
+      maker,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee: BigNumber.from(0),
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
@@ -365,12 +360,12 @@ describe('takeOrder', () => {
     // Take the 0x order
     await zeroExV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      zeroExV2Adapter: fork.deployment.zeroExV2Adapter,
+      integrationManager: fork.deployment.integrationManager,
       signedOrder,
       takerAssetFillAmount,
+      vaultProxy,
+      zeroExV2Adapter: fork.deployment.zeroExV2Adapter,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -392,10 +387,10 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Add the maker to the allowed list of maker addresses
@@ -412,14 +407,14 @@ describe('takeOrder', () => {
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: randomAddress(),
+      maker,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee,
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
@@ -434,12 +429,12 @@ describe('takeOrder', () => {
     // Take the 0x order
     await zeroExV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      zeroExV2Adapter,
+      integrationManager: fork.deployment.integrationManager,
       signedOrder,
       takerAssetFillAmount,
+      vaultProxy,
+      zeroExV2Adapter,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -460,10 +455,10 @@ describe('takeOrder', () => {
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Add the maker to the allowed list of maker addresses
@@ -480,14 +475,14 @@ describe('takeOrder', () => {
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      maker,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
       feeRecipientAddress: constants.AddressZero,
+      maker,
+      makerAsset: incomingAsset,
       makerAssetAmount,
+      takerAsset: outgoingAsset,
       takerAssetAmount,
       takerFee: BigNumber.from(0),
-      makerAsset: incomingAsset,
-      takerAsset: outgoingAsset,
     });
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
@@ -501,12 +496,12 @@ describe('takeOrder', () => {
     // Take the 0x order
     await zeroExV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      zeroExV2Adapter,
+      integrationManager: fork.deployment.integrationManager,
       signedOrder,
       takerAssetFillAmount,
+      vaultProxy,
+      zeroExV2Adapter,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

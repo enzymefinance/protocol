@@ -1,21 +1,22 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   claimRewardsSelector,
-  curveAaveLendArgs,
   curveAaveLendAndStakeArgs,
+  curveAaveLendArgs,
   curveAaveRedeemArgs,
   curveAaveStakeArgs,
-  curveAaveUnstakeArgs,
   curveAaveUnstakeAndRedeemArgs,
+  curveAaveUnstakeArgs,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   stakeSelector,
   StandardToken,
-  unstakeSelector,
   unstakeAndRedeemSelector,
+  unstakeSelector,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   aaveLend,
   createNewFund,
@@ -28,7 +29,6 @@ import {
   curveAaveUnstakeAndRedeem,
   deployProtocolFixture,
   getAssetBalances,
-  ProtocolDeployment,
   vaultCallCurveMinterToggleApproveMint,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -107,11 +107,11 @@ xdescribe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.None,
-        spendAssets_: [],
-        spendAssetAmounts_: [],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
+        spendAssetAmounts_: [],
+        spendAssetsHandleType_: SpendAssetsHandleType.None,
+        spendAssets_: [],
       });
     });
   });
@@ -126,20 +126,22 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveAaveLendArgs({
+          minIncomingLPTokenAmount,
           outgoingAaveDaiAmount,
           outgoingAaveUsdcAmount: BigNumber.from(0),
           outgoingAaveUsdtAmount: BigNumber.from(0),
-          minIncomingLPTokenAmount,
           useUnderlyings: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.aave.atokens.adai[0]], // aToken
-        spendAssetAmounts_: [outgoingAaveDaiAmount],
         incomingAssets_: [fork.config.curve.pools.aave.lpToken],
+
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        // aToken
+        spendAssetAmounts_: [outgoingAaveDaiAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.aave.atokens.adai[0]],
       });
     });
 
@@ -153,20 +155,22 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveAaveLendArgs({
+          minIncomingLPTokenAmount,
           outgoingAaveDaiAmount,
           outgoingAaveUsdcAmount: BigNumber.from(0),
           outgoingAaveUsdtAmount,
-          minIncomingLPTokenAmount,
           useUnderlyings: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt], // aToken underlyings
-        spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
         incomingAssets_: [fork.config.curve.pools.aave.lpToken],
+
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        // aToken underlyings
+        spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt],
       });
     });
   });
@@ -181,20 +185,22 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveAaveLendAndStakeArgs({
+          minIncomingLiquidityGaugeTokenAmount,
           outgoingAaveDaiAmount,
           outgoingAaveUsdcAmount: BigNumber.from(0),
           outgoingAaveUsdtAmount: BigNumber.from(0),
-          minIncomingLiquidityGaugeTokenAmount,
           useUnderlyings: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.aave.atokens.adai[0]], // aToken
-        spendAssetAmounts_: [outgoingAaveDaiAmount],
         incomingAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
+
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        // aToken
+        spendAssetAmounts_: [outgoingAaveDaiAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.aave.atokens.adai[0]],
       });
     });
 
@@ -208,20 +214,22 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveAaveLendAndStakeArgs({
+          minIncomingLiquidityGaugeTokenAmount,
           outgoingAaveDaiAmount,
           outgoingAaveUsdcAmount: BigNumber.from(0),
           outgoingAaveUsdtAmount,
-          minIncomingLiquidityGaugeTokenAmount,
           useUnderlyings: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt], // aToken underlyings
-        spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
         incomingAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
+
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        // aToken underlyings
+        spendAssetAmounts_: [outgoingAaveDaiAmount, outgoingAaveUsdtAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.primitives.dai, fork.config.primitives.usdt],
       });
     });
   });
@@ -233,10 +241,10 @@ xdescribe('parseAssetsForAction', () => {
           randomAddress(),
           redeemSelector,
           curveAaveRedeemArgs({
-            outgoingLPTokenAmount: BigNumber.from(1),
             minIncomingAaveDaiAmount: BigNumber.from(1),
             minIncomingAaveUsdcAmount: BigNumber.from(1),
             minIncomingAaveUsdtAmount: BigNumber.from(0),
+            outgoingLPTokenAmount: BigNumber.from(1),
             receiveSingleAsset: true,
             useUnderlyings: false,
           }),
@@ -250,10 +258,10 @@ xdescribe('parseAssetsForAction', () => {
           randomAddress(),
           redeemSelector,
           curveAaveRedeemArgs({
-            outgoingLPTokenAmount: BigNumber.from(1),
             minIncomingAaveDaiAmount: BigNumber.from(0),
             minIncomingAaveUsdcAmount: BigNumber.from(0),
             minIncomingAaveUsdtAmount: BigNumber.from(0),
+            outgoingLPTokenAmount: BigNumber.from(1),
             receiveSingleAsset: true,
             useUnderlyings: false,
           }),
@@ -272,25 +280,25 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveAaveRedeemArgs({
-          outgoingLPTokenAmount,
           minIncomingAaveDaiAmount,
           minIncomingAaveUsdcAmount,
           minIncomingAaveUsdtAmount,
+          outgoingLPTokenAmount,
           receiveSingleAsset: false,
           useUnderlyings: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [
           fork.config.aave.atokens.adai[0],
           fork.config.aave.atokens.ausdc[0],
           fork.config.aave.atokens.ausdt[0],
         ],
         minIncomingAssetAmounts_: [minIncomingAaveDaiAmount, minIncomingAaveUsdcAmount, minIncomingAaveUsdtAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.lpToken],
       });
     });
 
@@ -303,21 +311,21 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveAaveRedeemArgs({
-          outgoingLPTokenAmount,
           minIncomingAaveDaiAmount: BigNumber.from(0),
           minIncomingAaveUsdcAmount,
           minIncomingAaveUsdtAmount: BigNumber.from(0),
+          outgoingLPTokenAmount,
           receiveSingleAsset: true,
           useUnderlyings: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.primitives.usdc],
         minIncomingAssetAmounts_: [minIncomingAaveUsdcAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.lpToken],
       });
     });
   });
@@ -336,11 +344,11 @@ xdescribe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
         minIncomingAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.lpToken],
       });
     });
   });
@@ -359,11 +367,11 @@ xdescribe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.curve.pools.aave.lpToken],
         minIncomingAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
       });
     });
   });
@@ -375,10 +383,10 @@ xdescribe('parseAssetsForAction', () => {
           randomAddress(),
           unstakeAndRedeemSelector,
           curveAaveUnstakeAndRedeemArgs({
-            outgoingLiquidityGaugeTokenAmount: BigNumber.from(1),
             minIncomingAaveDaiAmount: BigNumber.from(1),
             minIncomingAaveUsdcAmount: BigNumber.from(1),
             minIncomingAaveUsdtAmount: BigNumber.from(0),
+            outgoingLiquidityGaugeTokenAmount: BigNumber.from(1),
             receiveSingleAsset: true,
             useUnderlyings: false,
           }),
@@ -392,10 +400,10 @@ xdescribe('parseAssetsForAction', () => {
           randomAddress(),
           unstakeAndRedeemSelector,
           curveAaveUnstakeAndRedeemArgs({
-            outgoingLiquidityGaugeTokenAmount: BigNumber.from(1),
             minIncomingAaveDaiAmount: BigNumber.from(0),
             minIncomingAaveUsdcAmount: BigNumber.from(0),
             minIncomingAaveUsdtAmount: BigNumber.from(0),
+            outgoingLiquidityGaugeTokenAmount: BigNumber.from(1),
             receiveSingleAsset: true,
             useUnderlyings: false,
           }),
@@ -414,25 +422,25 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveAaveUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
           minIncomingAaveDaiAmount,
           minIncomingAaveUsdcAmount,
           minIncomingAaveUsdtAmount,
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: false,
           useUnderlyings: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [
           fork.config.aave.atokens.adai[0],
           fork.config.aave.atokens.ausdc[0],
           fork.config.aave.atokens.ausdt[0],
         ],
         minIncomingAssetAmounts_: [minIncomingAaveDaiAmount, minIncomingAaveUsdcAmount, minIncomingAaveUsdtAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
       });
     });
 
@@ -445,21 +453,21 @@ xdescribe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveAaveUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
           minIncomingAaveDaiAmount: BigNumber.from(0),
           minIncomingAaveUsdcAmount,
           minIncomingAaveUsdtAmount: BigNumber.from(0),
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: true,
           useUnderlyings: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityAaveAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.primitives.usdc],
         minIncomingAssetAmounts_: [minIncomingAaveUsdcAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.aave.liquidityGaugeToken],
       });
     });
   });
@@ -473,10 +481,10 @@ xdescribe('claimRewards', () => {
     const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Lend and stake to start accruing rewards
@@ -484,9 +492,9 @@ xdescribe('claimRewards', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -501,17 +509,17 @@ xdescribe('claimRewards', () => {
 
     // Approve the adapter to claim $CRV rewards on behalf of the vault
     await vaultCallCurveMinterToggleApproveMint({
+      account: curveLiquidityAaveAdapter,
       comptrollerProxy,
       minter: fork.config.curve.minter,
-      account: curveLiquidityAaveAdapter,
     });
 
     // Claim all earned rewards
     await curveAaveClaimRewards({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
     });
 
     const [postClaimRewardsCrvBalance] = await getAssetBalances({
@@ -534,10 +542,10 @@ xdescribe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with surplus of outgoing assets
@@ -555,9 +563,9 @@ xdescribe('lend', () => {
 
     await curveAaveLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount,
       outgoingAaveUsdcAmount,
       outgoingAaveUsdtAmount,
@@ -587,22 +595,22 @@ xdescribe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with surplus of outgoing asset
     const seedUsdcAmount = utils.parseUnits('3', await usdc.decimals());
     await usdc.transfer(vaultProxy, seedUsdcAmount);
     await aaveLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      aaveAdapter: fork.deployment.aaveAdapter,
       aToken: ausdc,
+      aaveAdapter: fork.deployment.aaveAdapter,
       amount: seedUsdcAmount,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager,
     });
 
     const [preTxAaveUsdcBalance] = await getAssetBalances({
@@ -614,9 +622,9 @@ xdescribe('lend', () => {
 
     await curveAaveLend({
       comptrollerProxy,
-      integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager,
       outgoingAaveUsdcAmount,
       useUnderlyings: false, // Unnecessary, but explicit for test
     });
@@ -644,10 +652,10 @@ xdescribe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with surplus of outgoing assets
@@ -665,9 +673,9 @@ xdescribe('lendAndStake', () => {
 
     await curveAaveLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount,
       outgoingAaveUsdcAmount,
       outgoingAaveUsdtAmount,
@@ -698,22 +706,22 @@ xdescribe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with surplus of outgoing asset
     const seedUsdcAmount = utils.parseUnits('3', await usdc.decimals());
     await usdc.transfer(vaultProxy, seedUsdcAmount);
     await aaveLend({
-      comptrollerProxy,
-      integrationManager,
-      fundOwner,
-      aaveAdapter: fork.deployment.aaveAdapter,
       aToken: ausdc,
+      aaveAdapter: fork.deployment.aaveAdapter,
       amount: seedUsdcAmount,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager,
     });
 
     const [preTxAaveUsdcBalance] = await getAssetBalances({
@@ -725,9 +733,9 @@ xdescribe('lendAndStake', () => {
 
     await curveAaveLendAndStake({
       comptrollerProxy,
-      integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager,
       outgoingAaveUsdcAmount,
       useUnderlyings: false, // Unnecessary, but explicit for test
     });
@@ -756,10 +764,10 @@ xdescribe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with lp tokens
@@ -767,9 +775,9 @@ xdescribe('redeem', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -783,9 +791,9 @@ xdescribe('redeem', () => {
 
     await curveAaveRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLPTokenAmount,
       receiveSingleAsset: false, // Unnecessary, but explicit for test
       useUnderlyings: false, // Unnecessary, but explicit for test
@@ -814,10 +822,10 @@ xdescribe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with lp tokens
@@ -825,9 +833,9 @@ xdescribe('redeem', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -841,12 +849,12 @@ xdescribe('redeem', () => {
 
     await curveAaveRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
-      outgoingLPTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingAaveDaiAmount: BigNumber.from(0),
       minIncomingAaveUsdtAmount: BigNumber.from(0),
+      outgoingLPTokenAmount,
       receiveSingleAsset: true,
       useUnderlyings: true,
     });
@@ -877,10 +885,10 @@ xdescribe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with liquidity gauge tokens
@@ -888,9 +896,9 @@ xdescribe('unstakeAndRedeem', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -904,9 +912,9 @@ xdescribe('unstakeAndRedeem', () => {
 
     await curveAaveUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: false, // Unnecessary, but explicit for test
       useUnderlyings: false, // Unnecessary, but explicit for test
@@ -937,10 +945,10 @@ xdescribe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.aave.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with liquidity gauge tokens
@@ -948,9 +956,9 @@ xdescribe('unstakeAndRedeem', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -964,12 +972,12 @@ xdescribe('unstakeAndRedeem', () => {
 
     await curveAaveUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
-      outgoingLiquidityGaugeTokenAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingAaveDaiAmount: BigNumber.from(0),
       minIncomingAaveUsdtAmount: BigNumber.from(0),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: true,
       useUnderlyings: true,
     });
@@ -1001,10 +1009,10 @@ xdescribe('stake and unstake', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with lp tokens
@@ -1012,9 +1020,9 @@ xdescribe('stake and unstake', () => {
     await dai.transfer(vaultProxy, seedDaiAmount);
     await curveAaveLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingAaveDaiAmount: seedDaiAmount,
       useUnderlyings: true,
     });
@@ -1025,9 +1033,9 @@ xdescribe('stake and unstake', () => {
 
     await curveAaveStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLPTokenAmount: stakeLPTokenAmount,
     });
 
@@ -1044,9 +1052,9 @@ xdescribe('stake and unstake', () => {
     const unstakeLiquidityGaugeTokenAmount = stakeLPTokenAmount.div(2);
     await curveAaveUnstake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityAaveAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLiquidityGaugeTokenAmount: unstakeLiquidityGaugeTokenAmount,
     });
 

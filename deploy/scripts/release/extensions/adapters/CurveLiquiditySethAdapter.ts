@@ -1,5 +1,5 @@
-import { CurveLiquiditySethAdapterArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { CurveLiquiditySethAdapterArgs } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 
@@ -26,8 +26,8 @@ const fn: DeployFunction = async function (hre) {
     ] as CurveLiquiditySethAdapterArgs,
     from: deployer.address,
     linkedData: {
-      type: 'ADAPTER',
       nonSlippageAdapter: true,
+      type: 'ADAPTER',
     },
     log: true,
     skipIfAlreadyDeployed: true,

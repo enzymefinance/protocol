@@ -1,12 +1,9 @@
-import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  IChainlinkAggregator,
-  ValueInterpreter,
-  ChainlinkRateAsset,
-  MockToken,
-  StandardToken,
-} from '@enzymefinance/protocol';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ValueInterpreter } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset, IChainlinkAggregator, MockToken, StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   assertEvent,
@@ -14,9 +11,9 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
-import { constants, Signer, utils } from 'ethers';
+import type { Signer } from 'ethers';
+import { constants, utils } from 'ethers';
 
 // Unused chf/usd aggregator
 const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
@@ -70,18 +67,18 @@ describe('primitives gas costs', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Seed investor and buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -92,11 +89,11 @@ describe('primitives gas costs', () => {
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [await getAssetUnit(dai)],
+      assets: [dai],
       comptrollerProxy,
       integrationManager,
-      assets: [dai],
-      amounts: [await getAssetUnit(dai)],
+      signer: fundOwner,
     });
 
     // Get the calcGav() cost including dai
@@ -115,24 +112,24 @@ describe('primitives gas costs', () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
 
     await swapDaiAggregatorForUsd({
+      dai,
       signer: fork.deployer,
       valueInterpreter,
-      dai,
     });
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -143,11 +140,11 @@ describe('primitives gas costs', () => {
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [await getAssetUnit(dai)],
+      assets: [dai],
       comptrollerProxy,
       integrationManager,
-      assets: [dai],
-      amounts: [await getAssetUnit(dai)],
+      signer: fundOwner,
     });
 
     // Get the calcGav() cost including dai
@@ -251,9 +248,9 @@ describe('addPrimitives', () => {
     const primitiveUnit = utils.parseUnits('1', await unregisteredMockToken.decimals());
 
     expect(events[0]).toMatchEventArgs({
-      primitive: unregisteredMockToken,
       aggregator: unusedAggregator,
-      rateAsset: rateAsset,
+      primitive: unregisteredMockToken,
+      rateAsset,
       unit: primitiveUnit,
     });
 
@@ -269,8 +266,8 @@ describe('addPrimitives', () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
     const renAggregator = await loadPrimitiveAggregator({
-      valueInterpreter,
       primitive: fork.config.primitives.ren,
+      valueInterpreter,
     });
 
     // Adds a primitive with an invalid rate asset
@@ -323,8 +320,8 @@ describe('updatePrimitives', () => {
     for (const i in primitivesToUpdate) {
       const assetUnit = await getAssetUnit(primitivesToUpdate[i]);
       expect(addedEvents[i]).toMatchEventArgs({
-        primitive: primitivesToUpdate[i],
         aggregator: aggregatorsToUpdate[i],
+        primitive: primitivesToUpdate[i],
         rateAsset: rateAssetsToUpdate[i],
         unit: assetUnit,
       });
@@ -397,8 +394,8 @@ describe('setEthUsdAggregator', () => {
 
     // Event should inlude the old and new ETH USD aggregators
     assertEvent(setEthUsdAggregatorReceipt, 'EthUsdAggregatorSet', {
-      prevEthUsdAggregator: storedEthUsdAggregator,
       nextEthUsdAggregator: updatedEthUsdAggregator,
+      prevEthUsdAggregator: storedEthUsdAggregator,
     });
   });
 
@@ -454,8 +451,8 @@ describe('getCanonicalRate', () => {
     const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
     const weth = new StandardToken(fork.config.weth, fork.deployer);
     const usdcAggregator = await loadPrimitiveAggregator({
-      valueInterpreter,
       primitive: usdc,
+      valueInterpreter,
     });
 
     // Get asset units
@@ -478,14 +475,14 @@ describe('getCanonicalRate', () => {
     const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
     const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
     const daiAggregator = await swapDaiAggregatorForUsd({
+      dai,
       signer: fork.deployer,
       valueInterpreter,
-      dai,
     });
     const ethUSDAggregator = new IChainlinkAggregator(await valueInterpreter.getEthUsdAggregator(), provider);
     const usdcAggregator = await loadPrimitiveAggregator({
-      valueInterpreter,
       primitive: usdc,
+      valueInterpreter,
     });
 
     // Get asset units
@@ -593,9 +590,9 @@ describe('expected values', () => {
       const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
 
       await swapDaiAggregatorForUsd({
+        dai,
         signer: fork.deployer,
         valueInterpreter,
-        dai,
       });
 
       const baseDecimals = await susd.decimals();
@@ -617,9 +614,9 @@ describe('expected values', () => {
       const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
 
       await swapDaiAggregatorForUsd({
+        dai,
         signer: fork.deployer,
         valueInterpreter,
-        dai,
       });
 
       const baseDecimals = await usdc.decimals();
@@ -643,9 +640,9 @@ describe('expected values', () => {
       const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
 
       await swapDaiAggregatorForUsd({
+        dai,
         signer: fork.deployer,
         valueInterpreter,
-        dai,
       });
 
       const baseDecimals = await dai.decimals();
@@ -667,9 +664,9 @@ describe('expected values', () => {
       const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
 
       await swapDaiAggregatorForUsd({
+        dai,
         signer: fork.deployer,
         valueInterpreter,
-        dai,
       });
 
       const baseDecimals = await dai.decimals();

@@ -1,19 +1,22 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import {
-  callOnIntegrationArgs,
+import type { AddressLike } from '@enzymefinance/ethers';
+import type {
   ComptrollerLib,
-  encodeArgs,
   IntegrationManager,
-  IntegrationManagerActionId,
   ISynthetixAddressResolver,
   StandardToken,
   SynthetixAdapter,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  callOnIntegrationArgs,
+  encodeArgs,
+  IntegrationManagerActionId,
   synthetixAssignExchangeDelegateSelector,
   synthetixTakeOrderArgs,
   takeOrderSelector,
-  VaultLib,
 } from '@enzymefinance/protocol';
-import { BigNumberish, Signer, utils } from 'ethers';
+import type { BigNumberish, Signer } from 'ethers';
+import { utils } from 'ethers';
 
 export async function synthetixAssignExchangeDelegate({
   comptrollerProxy,
@@ -79,16 +82,16 @@ export async function synthetixTakeOrder({
   }
 
   const takeOrderArgs = synthetixTakeOrderArgs({
-    incomingAsset: incomingAsset,
-    minIncomingAssetAmount: minIncomingAssetAmount,
-    outgoingAsset: outgoingAsset,
-    outgoingAssetAmount: outgoingAssetAmount,
+    incomingAsset,
+    minIncomingAssetAmount,
+    outgoingAsset,
+    outgoingAssetAmount,
   });
 
   const callArgs = await callOnIntegrationArgs({
     adapter: synthetixAdapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy

@@ -3,16 +3,16 @@
  */
 
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressListRegistry, AllowedDepositRecipientsPolicy } from '@enzymefinance/protocol';
 import {
   addressListRegistryPolicyArgs,
-  AllowedDepositRecipientsPolicy,
-  StandardToken,
-  policyManagerConfigArgs,
-  AddressListRegistry,
   AddressListUpdateType,
+  policyManagerConfigArgs,
+  StandardToken,
 } from '@enzymefinance/protocol';
-import { assertEvent, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -49,9 +49,8 @@ describe('addFundSettings', () => {
     const list2Id = list1Id.add(1);
 
     const { comptrollerProxy, receipt, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedDepositRecipientsPolicy],
@@ -59,17 +58,18 @@ describe('addFundSettings', () => {
           addressListRegistryPolicyArgs({
             newListsArgs: [
               {
-                updateType: list1UpdateType,
                 initialItems: [list1Item],
+                updateType: list1UpdateType,
               },
               {
-                updateType: list2UpdateType,
                 initialItems: [list2Item],
+                updateType: list2UpdateType,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert local state
@@ -99,9 +99,8 @@ describe('addFundSettings', () => {
     const existingListIds = [0, 1, 2];
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedDepositRecipientsPolicy],
@@ -111,6 +110,7 @@ describe('addFundSettings', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert local state
@@ -131,9 +131,8 @@ describe('addFundSettings', () => {
     const existingListId = constants.MaxUint256; // Use max uint as arbitrary list id
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedDepositRecipientsPolicy],
@@ -142,13 +141,14 @@ describe('addFundSettings', () => {
             existingListIds: [existingListId],
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert local state

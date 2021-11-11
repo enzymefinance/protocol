@@ -1,5 +1,8 @@
-import { SendFunction, Contract, Call, AddressLike, contract, resolveArguments } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, BytesLike, providers, utils } from 'ethers';
+import type { AddressLike, Call, Contract, SendFunction } from '@enzymefinance/ethers';
+import { contract, resolveArguments } from '@enzymefinance/ethers';
+import type { BigNumberish, BytesLike, providers } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
 import { GasRelayPaymasterLib } from '../../contracts';
 import { isTypedDataSigner } from '../signer';
 
@@ -87,31 +90,31 @@ export async function createSignedRelayRequest({
   }
 
   const relayRequest: RelayRequest = {
-    from,
-    to,
-    value,
-    nonce,
     data,
+    from,
     gas,
-    validUntil: BigNumber.from(0), // TODO: Expose this as configuration?
+    nonce,
+    to,
+    validUntil: BigNumber.from(0),
+    value, // TODO: Expose this as configuration?
   };
 
   const relayData: RelayData = {
-    pctRelayFee: BigNumber.from(pctRelayFee),
     baseRelayFee: BigNumber.from(baseRelayFee),
-    relayWorker,
-    paymasterData,
     clientId: BigNumber.from(clientId),
-    paymaster: vaultPaymaster,
     forwarder,
     gasPrice: BigNumber.from(sendFunction.options.price ?? 1),
+    paymaster: vaultPaymaster,
+    paymasterData,
+    pctRelayFee: BigNumber.from(pctRelayFee),
+    relayWorker,
   };
 
   const domain = {
-    name: 'GSN Relayed Transaction',
-    version: '2',
     chainId: (await provider.getNetwork()).chainId,
+    name: 'GSN Relayed Transaction',
     verifyingContract: forwarder,
+    version: '2',
   };
 
   const types = {

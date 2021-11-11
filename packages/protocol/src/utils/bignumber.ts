@@ -1,4 +1,5 @@
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 export function max(first: BigNumberish, ...values: BigNumberish[]) {
   return (values ?? []).reduce((carry: BigNumber, current) => {

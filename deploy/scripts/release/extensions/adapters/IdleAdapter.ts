@@ -1,5 +1,5 @@
-import { IdleAdapterArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { IdleAdapterArgs } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -15,8 +15,8 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, idlePriceFeed.address] as IdleAdapterArgs,
     from: deployer.address,
     linkedData: {
-      type: 'ADAPTER',
       nonSlippageAdapter: true,
+      type: 'ADAPTER',
     },
     log: true,
     skipIfAlreadyDeployed: true,

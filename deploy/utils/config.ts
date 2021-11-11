@@ -1,7 +1,7 @@
-import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import { constants } from 'ethers';
-import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { HardhatRuntimeEnvironment } from 'hardhat/types';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 export async function saveConfig(hre: HardhatRuntimeEnvironment, data: DeploymentConfig) {
   await hre.deployments.save('Config', {
@@ -13,6 +13,7 @@ export async function saveConfig(hre: HardhatRuntimeEnvironment, data: Deploymen
 
 export async function loadConfig(hre: HardhatRuntimeEnvironment) {
   const deployment = await hre.deployments.get('Config');
+
   return deployment.linkedData as DeploymentConfig;
 }
 

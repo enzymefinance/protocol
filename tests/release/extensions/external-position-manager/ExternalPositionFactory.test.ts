@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   ComptrollerLib,
   encodeArgs,
@@ -8,7 +8,8 @@ import {
   StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -35,10 +36,10 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner as SignerWithAddress,
     });
 
     // TODO: Refactor to use generic external position mock contracts
@@ -67,10 +68,10 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner as SignerWithAddress,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner as SignerWithAddress,
     });
 
     // TODO: Refactor to use generic external position mock contracts

@@ -3,11 +3,11 @@ import {
   assetTransferArgs,
   paraSwapV4TakeOrderArgs,
   SpendAssetsHandleType,
-  takeOrderSelector,
   StandardToken,
+  takeOrderSelector,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ProtocolDeployment,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -46,10 +46,10 @@ describe('parseAssetsForAction', () => {
     const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
     const args = paraSwapV4TakeOrderArgs({
+      expectedIncomingAssetAmount: 1,
       minIncomingAssetAmount: 1,
       outgoingAsset: randomAddress(),
       outgoingAssetAmount: 1,
-      expectedIncomingAssetAmount: 1,
       paths: paraSwapV4GenerateDummyPaths({ toTokens: [randomAddress()] }),
     });
 
@@ -71,21 +71,21 @@ describe('parseAssetsForAction', () => {
     const outgoingAssetAmount = utils.parseEther('1');
 
     const takeOrderArgs = paraSwapV4TakeOrderArgs({
+      expectedIncomingAssetAmount: 1,
       minIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      expectedIncomingAssetAmount: 1,
       paths: paraSwapV4GenerateDummyPaths({ toTokens: [incomingAsset] }),
     });
 
     const result = await paraSwapV4Adapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(paraSwapV4Adapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [outgoingAssetAmount],
       minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      spendAssetAmounts_: [outgoingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset],
     });
   });
 });
@@ -96,24 +96,24 @@ describe('takeOrder', () => {
     const paraSwapV4Adapter = fork.deployment.paraSwapV4Adapter;
 
     const { vaultProxy } = await createNewFund({
-      signer: fork.deployer,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fork.deployer,
     });
 
     const takeOrderArgs = paraSwapV4TakeOrderArgs({
+      expectedIncomingAssetAmount: 1,
       minIncomingAssetAmount: 1,
       outgoingAsset: randomAddress(),
       outgoingAssetAmount: 1,
-      expectedIncomingAssetAmount: 1,
       paths: paraSwapV4GenerateDummyPaths({ toTokens: [randomAddress()] }),
     });
 
     const transferArgs = await assetTransferArgs({
       adapter: paraSwapV4Adapter,
-      selector: takeOrderSelector,
       encodedCallArgs: takeOrderArgs,
+      selector: takeOrderSelector,
     });
 
     await expect(paraSwapV4Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
@@ -129,10 +129,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -143,24 +143,31 @@ describe('takeOrder', () => {
     // `payload` is hardcoded from the API call
     const paths = [
       {
-        to: incomingAsset.address, // dest token or intermediary (i.e., dai)
-        totalNetworkFee: 0,
         routes: [
           {
-            exchange: '0x695725627E04898Ef4a126Ae71FC30aA935c5fb6', // ParaSwap's UniswapV2 adapter
-            targetExchange: '0x86d3579b043585A97532514016dCF0C2d6C4b6a1', // Uniswap Router2
-            percent: 5000, // Out of 10000
-            payload,
+            // ParaSwap's UniswapV2 adapter
+            exchange: '0x695725627E04898Ef4a126Ae71FC30aA935c5fb6',
             networkFee: 0,
+            payload,
+            // Out of 10000
+            percent: 5000,
+            // Uniswap Router2
+            targetExchange: '0x86d3579b043585A97532514016dCF0C2d6C4b6a1',
           },
           {
-            exchange: '0x77Bc1A1ba4E9A6DF5BDB21f2bBC07B9854E8D1a8', // ParaSwap's Sushiswap adapter
-            targetExchange: '0xBc1315CD2671BC498fDAb42aE1214068003DC51e', // Sushiswap contract
-            percent: 5000, // Out of 10000
-            payload,
+            // ParaSwap's Sushiswap adapter
+            exchange: '0x77Bc1A1ba4E9A6DF5BDB21f2bBC07B9854E8D1a8',
             networkFee: 0,
+            payload,
+            // Out of 10000
+            percent: 5000,
+            // Sushiswap contract
+            targetExchange: '0xBc1315CD2671BC498fDAb42aE1214068003DC51e',
           },
         ],
+        to: incomingAsset.address,
+        // dest token or intermediary (i.e., dai)
+        totalNetworkFee: 0,
       },
     ];
 
@@ -173,12 +180,12 @@ describe('takeOrder', () => {
     // Trade on ParaSwap
     await paraSwapV4TakeOrder({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
-      paraSwapV4Adapter,
+      integrationManager,
+      minIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      minIncomingAssetAmount,
+      paraSwapV4Adapter,
       paths,
     });
 

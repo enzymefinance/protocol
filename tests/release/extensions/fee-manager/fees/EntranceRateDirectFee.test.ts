@@ -6,14 +6,15 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   EntranceRateDirectFee,
-  FeeHook,
-  FeeSettlementType,
   entranceRateDirectFeeConfigArgs,
   entranceRateFeeSharesDue,
+  FeeHook,
+  FeeSettlementType,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, utils } from 'ethers';
 
 const TEN_PERCENT = BigNumber.from(1000);
@@ -104,8 +105,8 @@ describe('settle', () => {
     const investmentAmount = utils.parseEther('2');
     const settlementData = settlePostBuySharesArgs({
       buyer,
-      sharesBought,
       investmentAmount,
+      sharesBought,
     });
 
     // Get the expected shares due for the settlement
@@ -121,8 +122,8 @@ describe('settle', () => {
       .call();
 
     expect(settleCall).toMatchFunctionOutput(standaloneEntranceRateFee.settle, {
-      settlementType_: FeeSettlementType.Direct,
       payer_: buyer,
+      settlementType_: FeeSettlementType.Direct,
       sharesDue_: expectedSharesDueForCall,
     });
 

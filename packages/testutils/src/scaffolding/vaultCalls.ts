@@ -1,6 +1,6 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { ComptrollerLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
   curveMinterMintManySelector,
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,

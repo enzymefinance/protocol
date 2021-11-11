@@ -1,38 +1,35 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AllowedDepositRecipientsPolicy, FundDeployer, PolicyManager, VaultLib } from '@enzymefinance/protocol';
 import {
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
   addTrackedAssetsToVaultArgs,
   ComptrollerLib,
   encodeArgs,
-  FundDeployer,
   GasRelayPaymasterLib,
   IGsnRelayHub,
   IntegrationManagerActionId,
-  AllowedDepositRecipientsPolicy,
-  addressListRegistryPolicyArgs,
-  PolicyManager,
   sighash,
   StandardToken,
-  VaultLib,
-  AddressListUpdateType,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
+  addNewAssetsToFund,
+  assertDidRelay,
+  assertDidRelaySuccessfully,
+  assertPaymasterDidRejectForReason,
+  buySharesFunction,
+  calcMlnValueAndBurnAmountForSharesBuyback,
+  createFundDeployer,
+  createMigrationRequest,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
-  ProtocolDeployment,
-  relayTransaction,
-  addNewAssetsToFund,
   getAssetUnit,
-  setupGasRelayerPaymaster,
-  assertPaymasterDidRejectForReason,
-  buySharesFunction,
   redeemSharesInKind,
-  calcMlnValueAndBurnAmountForSharesBuyback,
-  assertDidRelay,
-  createFundDeployer,
-  createMigrationRequest,
-  assertDidRelaySuccessfully,
+  relayTransaction,
+  setupGasRelayerPaymaster,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -46,19 +43,19 @@ describe('gas relayer', () => {
     const [fundOwner] = fork.accounts;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
     const startingBalance = utils.parseUnits('10', 18);
     const deposit = utils.parseUnits('0.2', 18);
     await setupGasRelayerPaymaster({
-      signer: fundOwner,
-      vaultProxy,
       fundAccessor: comptrollerProxy,
-      weth,
+      signer: fundOwner,
       startingBalance,
+      vaultProxy,
+      weth,
     });
     const [postDeploymentWethBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -71,10 +68,10 @@ describe('gas relayer', () => {
     const [fundOwner] = fork.accounts;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
     const startingBalance = utils.parseUnits('0.09', 18);
     await weth.transfer(vaultProxy, startingBalance);
@@ -85,19 +82,19 @@ describe('gas relayer', () => {
     const [fundOwner] = fork.accounts;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const startingBalance = utils.parseUnits('10', 18);
     const vaultPaymaster = await setupGasRelayerPaymaster({
-      signer: fundOwner,
-      vaultProxy,
       fundAccessor: comptrollerProxy,
-      weth,
+      signer: fundOwner,
       startingBalance,
+      vaultProxy,
+      weth,
     });
 
     await vaultPaymaster.withdrawBalance();
@@ -113,19 +110,19 @@ describe('gas relayer', () => {
     const [fundOwner] = fork.accounts;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     expect(await vaultProxy.isTrackedAsset(fork.config.primitives.usdt)).toBe(false);
 
     /// set-up paymaster
     const vaultPaymaster = await setupGasRelayerPaymaster({
+      fundAccessor: comptrollerProxy,
       signer: fundOwner,
       vaultProxy,
-      fundAccessor: comptrollerProxy,
       weth,
     });
 
@@ -133,10 +130,10 @@ describe('gas relayer', () => {
     const first = comptrollerProxy.setAutoProtocolFeeSharesBuyback.args(true);
     assertDidRelaySuccessfully(
       await relayTransaction({
-        sendFunction: first,
-        vaultPaymaster: vaultPaymaster.address,
         relayHub: fork.config.gsn.relayHub,
         relayWorker: fork.config.gsn.relayWorker,
+        sendFunction: first,
+        vaultPaymaster: vaultPaymaster.address,
       }),
     );
 
@@ -148,11 +145,11 @@ describe('gas relayer', () => {
     );
     assertDidRelaySuccessfully(
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: vaultPaymaster.address,
+        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
         relayHub: fork.config.gsn.relayHub,
         relayWorker: fork.config.gsn.relayWorker,
-        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
+        sendFunction,
+        vaultPaymaster: vaultPaymaster.address,
       }),
     );
 
@@ -171,20 +168,20 @@ describe('gas relayer', () => {
     const [fundOwner] = fork.accounts;
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // set-up paymaster
     const startingBalance = utils.parseUnits('1', 18);
     const vaultPaymaster = await setupGasRelayerPaymaster({
-      signer: fundOwner,
-      vaultProxy,
       fundAccessor: comptrollerProxy,
-      weth,
+      signer: fundOwner,
       startingBalance,
+      vaultProxy,
+      weth,
     });
 
     // tx to relay
@@ -207,20 +204,20 @@ describe('gas relayer', () => {
 
     const relayed = assertDidRelay(
       await relayTransaction({
-        sendFunction: firstSendFunction,
-        vaultPaymaster: vaultPaymaster.address,
+        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
         relayHub: fork.config.gsn.relayHub,
         relayWorker: fork.config.gsn.relayWorker,
-        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
+        sendFunction: firstSendFunction,
+        vaultPaymaster: vaultPaymaster.address,
       }),
     );
 
     const receipt = await relayTransaction({
-      sendFunction,
-      vaultPaymaster: vaultPaymaster.address,
+      paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
       relayHub: fork.config.gsn.relayHub,
       relayWorker: fork.config.gsn.relayWorker,
-      paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+      sendFunction,
+      vaultPaymaster: vaultPaymaster.address,
     });
 
     assertDidRelaySuccessfully(receipt);
@@ -252,10 +249,10 @@ describe('expected relayable txs', () => {
     relayWorker = fork.config.gsn.relayWorker;
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -263,11 +260,11 @@ describe('expected relayable txs', () => {
     // Seed the fund with some WETH
     const wethUnit = await getAssetUnit(weth);
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: [wethUnit],
+      assets: [weth],
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      assets: [weth],
-      amounts: [wethUnit],
+      signer: fundOwner,
     });
 
     /// set-up paymaster
@@ -278,17 +275,17 @@ describe('expected relayable txs', () => {
   describe('ComptrollerLib', () => {
     it('does not allow an unauthorized function', async () => {
       const sendFunction = await buySharesFunction({
-        comptrollerProxy,
         buyer: fundOwner,
+        comptrollerProxy,
         denominationAsset,
         seedBuyer: true,
       });
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       assertPaymasterDidRejectForReason(receipt, 'preRelayedCall: Function call not permitted');
@@ -301,26 +298,27 @@ describe('expected relayable txs', () => {
       const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
 
       const newFundRes = await createNewFund({
-        signer: fundOwner,
+        denominationAsset,
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
-        denominationAsset,
         // Invest the 1st time to give a positive supply of shares and allow accruing protocol fee
         investment: {
           buyer: fundOwner,
           investmentAmount: await getAssetUnit(denominationAsset),
           seedBuyer: true,
         },
+
+        signer: fundOwner,
       });
       comptrollerProxy = newFundRes.comptrollerProxy;
       vaultProxy = newFundRes.vaultProxy; // Seed the fund with some WETH
       const wethUnit = await getAssetUnit(weth);
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [wethUnit],
+        assets: [weth],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [weth],
-        amounts: [wethUnit],
+        signer: fundOwner,
       });
 
       /// set-up paymaster
@@ -335,8 +333,8 @@ describe('expected relayable txs', () => {
       // Redeem some shares to pay out the protocol fee
       await redeemSharesInKind({
         comptrollerProxy,
-        signer: fundOwner,
         quantity: (await vaultProxy.balanceOf(fundOwner)).div(2),
+        signer: fundOwner,
       });
 
       const feeSharesCollected = await vaultProxy.balanceOf(protocolFeeReserveProxy);
@@ -345,11 +343,11 @@ describe('expected relayable txs', () => {
       // Seed the fund with more MLN than needed to buyback the target shares
       // 1 MLN : 1 USDC is more than enough
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [await getAssetUnit(mln)],
+        assets: [mln],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [mln],
-        amounts: [await getAssetUnit(mln)],
+        signer: fundOwner,
       });
 
       const preTxGav = await comptrollerProxy.calcGav.args(true).call();
@@ -364,20 +362,20 @@ describe('expected relayable txs', () => {
       const sendFunction = comptrollerProxy.buyBackProtocolFeeShares.args(sharesToBuyBack);
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(receipt);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
-        valueInterpreter,
-        mln,
-        denominationAsset,
-        sharesSupply: preTxSharesSupply,
-        gav: preTxGav,
         buybackSharesAmount: sharesToBuyBack,
+        denominationAsset,
+        gav: preTxGav,
+        mln,
+        sharesSupply: preTxSharesSupply,
+        valueInterpreter,
       });
       expect(mlnValue).toBeGtBigNumber(0);
 
@@ -401,10 +399,10 @@ describe('expected relayable txs', () => {
       );
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // Asset should now be tracked
@@ -415,10 +413,10 @@ describe('expected relayable txs', () => {
       const sendFunction = comptrollerProxy.depositToGasRelayPaymaster.args();
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       assertDidRelaySuccessfully(receipt);
@@ -431,10 +429,10 @@ describe('expected relayable txs', () => {
       const sendFunction = comptrollerProxy.setAutoProtocolFeeSharesBuyback.args(true);
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // autoProtocolFeeSharesBuyback should be on
@@ -460,10 +458,10 @@ describe('expected relayable txs', () => {
       );
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(receipt);
       expect(await asset.allowance(vaultProxy, spender)).toEqBigNumber(constants.MaxUint256);
@@ -479,18 +477,18 @@ describe('expected relayable txs', () => {
 
     it('does not allow payment of calls to unauthorized vaults', async () => {
       const newFund = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset,
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
       const wethUnit = await getAssetUnit(weth);
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [wethUnit],
+        assets: [weth],
         comptrollerProxy: newFund.comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [weth],
-        amounts: [wethUnit],
+        signer: fundOwner,
       });
       await newFund.comptrollerProxy.deployGasRelayPaymaster();
 
@@ -500,10 +498,10 @@ describe('expected relayable txs', () => {
 
       // note vaultPaymaster here is the paymaster on "old" fund
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       assertPaymasterDidRejectForReason(receipt, 'preRelayedCall: Function call not permitted');
@@ -518,10 +516,10 @@ describe('expected relayable txs', () => {
         .createReconfigurationRequest.args(vaultProxy, denominationAsset, 0, '0x', '0x');
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // There should now be a pending reconfiguration request for the VaultProxy
@@ -536,10 +534,10 @@ describe('expected relayable txs', () => {
       const sendFunction = fundDeployer.connect(fundOwner).executeReconfiguration.args(vaultProxy);
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       assertDidRelaySuccessfully(receipt);
@@ -552,10 +550,10 @@ describe('expected relayable txs', () => {
       const sendFunction = fundDeployer.connect(fundOwner).cancelReconfiguration.args(vaultProxy);
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // There should now be a pending reconfiguration request for the VaultProxy
@@ -573,34 +571,34 @@ describe('expected relayable txs', () => {
 
     it('does not allow an unauthorized function', async () => {
       const newFund = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset,
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
       const wethUnit = await getAssetUnit(weth);
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [wethUnit],
+        assets: [weth],
         comptrollerProxy: newFund.comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [weth],
-        amounts: [wethUnit],
+        signer: fundOwner,
       });
       await newFund.comptrollerProxy.deployGasRelayPaymaster();
       const sendFunction = policyManager.connect(fundOwner).enablePolicyForFund.args(
         newFund.comptrollerProxy,
         allowedDepositRecipientsPolicy,
         addressListRegistryPolicyArgs({
-          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+          newListsArgs: [{ initialItems: [randomAddress()], updateType: AddressListUpdateType.None }],
         }),
       );
 
       // Note this is the paymaster of the "old" fund
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertPaymasterDidRejectForReason(receipt, 'preRelayedCall: Function call not permitted');
       // Policy should be added
@@ -615,15 +613,15 @@ describe('expected relayable txs', () => {
         comptrollerProxy,
         allowedDepositRecipientsPolicy,
         addressListRegistryPolicyArgs({
-          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+          newListsArgs: [{ initialItems: [randomAddress()], updateType: AddressListUpdateType.None }],
         }),
       );
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(receipt);
       // Policy should be added
@@ -639,7 +637,7 @@ describe('expected relayable txs', () => {
         comptrollerProxy,
         allowedDepositRecipientsPolicy,
         addressListRegistryPolicyArgs({
-          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+          newListsArgs: [{ initialItems: [randomAddress()], updateType: AddressListUpdateType.None }],
         }),
       );
       expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toMatchFunctionOutput(
@@ -656,15 +654,15 @@ describe('expected relayable txs', () => {
         comptrollerProxy,
         allowedDepositRecipientsPolicy,
         addressListRegistryPolicyArgs({
-          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [newInvestor] }],
+          newListsArgs: [{ initialItems: [newInvestor], updateType: AddressListUpdateType.None }],
         }),
       );
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // Investor should now be added to list
@@ -676,7 +674,7 @@ describe('expected relayable txs', () => {
         comptrollerProxy,
         allowedDepositRecipientsPolicy,
         addressListRegistryPolicyArgs({
-          newListsArgs: [{ updateType: AddressListUpdateType.None, initialItems: [randomAddress()] }],
+          newListsArgs: [{ initialItems: [randomAddress()], updateType: AddressListUpdateType.None }],
         }),
       );
       const sendFunction = policyManager
@@ -684,10 +682,10 @@ describe('expected relayable txs', () => {
         .disablePolicyForFund.args(comptrollerProxy, allowedDepositRecipientsPolicy);
 
       const receipt = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(receipt);
       expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toMatchFunctionOutput(
@@ -709,10 +707,10 @@ describe('expected relayable txs', () => {
       const sendFunction = vaultProxy.addAssetManagers.args([assetManagerToAdd]).from(fundOwner);
 
       await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
 
       // Account should now be an asset manager
@@ -729,18 +727,18 @@ describe('expected relayable txs', () => {
 
     it('happy path: should withdraw gas relay deposit on migration', async () => {
       const nextFundDeployer = await createFundDeployer({
-        deployer: fundOwner,
         assetFinalityResolver: fork.deployment.assetFinalityResolver,
-        externalPositionManager: fork.deployment.externalPositionManager,
+        deployer: fundOwner,
         dispatcher: fork.deployment.dispatcher,
+        externalPositionManager: fork.deployment.externalPositionManager,
         feeManager: fork.deployment.feeManager,
         gasRelayPaymasterFactory: fork.deployment.gasRelayPaymasterFactory,
         integrationManager: fork.deployment.integrationManager,
         policyManager: fork.deployment.policyManager,
+        setOnDispatcher: true,
+        setReleaseLive: true,
         valueInterpreter: fork.deployment.valueInterpreter,
         vaultLib: fork.deployment.vaultLib,
-        setReleaseLive: true,
-        setOnDispatcher: true,
       });
 
       const [preMigrationWethBalance] = await getAssetBalances({
@@ -749,10 +747,10 @@ describe('expected relayable txs', () => {
       });
 
       await createMigrationRequest({
-        signer: fundOwner,
-        fundDeployer: nextFundDeployer,
-        vaultProxy,
         denominationAsset: weth,
+        fundDeployer: nextFundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Warp to migration executable time
@@ -778,10 +776,10 @@ describe('expected relayable txs', () => {
       const reconfig = fundDeployer.connect(fundOwner).executeReconfiguration.args(vaultProxy);
 
       const receipt = await relayTransaction({
-        sendFunction: reconfig,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction: reconfig,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(receipt);
 
@@ -800,10 +798,10 @@ describe('expected relayable txs', () => {
       );
 
       const result = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(result);
 
@@ -814,10 +812,10 @@ describe('expected relayable txs', () => {
     it('should be able to shutdown gas relayer', async () => {
       let sendFunction = comptrollerProxy.setAutoProtocolFeeSharesBuyback.args(true);
       const result = await relayTransaction({
-        sendFunction,
-        vaultPaymaster: gasRelayPaymaster.address,
         relayHub,
         relayWorker,
+        sendFunction,
+        vaultPaymaster: gasRelayPaymaster.address,
       });
       assertDidRelaySuccessfully(result);
 
@@ -827,10 +825,10 @@ describe('expected relayable txs', () => {
       sendFunction = comptrollerProxy.setAutoProtocolFeeSharesBuyback.args(false);
       await expect(
         relayTransaction({
-          sendFunction,
-          vaultPaymaster: gasRelayPaymaster.address,
           relayHub,
           relayWorker,
+          sendFunction,
+          vaultPaymaster: gasRelayPaymaster.address,
         }),
       ).rejects.toBeRevertedWith('Paymaster balance too low');
       const rHContract = new IGsnRelayHub(relayHub, fundOwner);

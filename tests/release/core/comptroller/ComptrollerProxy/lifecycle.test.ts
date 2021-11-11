@@ -54,10 +54,10 @@ async function snapshot() {
   const feeManagerConfigData = utils.hexlify(utils.randomBytes(4));
   const policyManagerConfigData = utils.hexlify(utils.randomBytes(8));
   const { comptrollerProxy } = await createComptrollerProxy({
-    signer: deployer,
     comptrollerLib,
     denominationAsset,
     sharesActionTimelock,
+    signer: deployer,
   });
 
   // Deploy Mock VaultProxy
@@ -70,9 +70,9 @@ async function snapshot() {
 
   return {
     accounts: remainingAccounts,
-    deployer,
     comptrollerLib,
     comptrollerProxy: comptrollerProxy.connect(mockVaultProxyOwner),
+    deployer,
     feeManagerConfigData,
     mockFeeManager,
     mockFundDeployer,
@@ -92,9 +92,9 @@ describe('init', () => {
 
     await expect(
       createComptrollerProxy({
-        signer,
         comptrollerLib,
         denominationAsset: randomAddress(),
+        signer,
       }),
     ).rejects.toBeRevertedWith('Bad denomination asset');
   });

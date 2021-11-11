@@ -10,7 +10,8 @@ import {
   FeeHook,
   settlePostBuySharesArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const TEN_PERCENT = BigNumber.from(1000);

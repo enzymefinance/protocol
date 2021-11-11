@@ -1,26 +1,28 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   CompoundAdapter,
-  compoundArgs,
   CompoundPriceFeed,
   ComptrollerLib,
-  ICERC20,
   IntegrationManager,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  compoundArgs,
+  ICERC20,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ICompoundComptroller,
-  ProtocolDeployment,
   compoundLend,
   compoundRedeem,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  ICompoundComptroller,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -62,13 +64,13 @@ async function assertCompoundLend({
   });
 
   const lendReceipt = await compoundLend({
-    comptrollerProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
     cToken,
-    tokenAmount: tokenAmount,
     cTokenAmount: minIncomingCTokenAmount,
+    compoundAdapter,
+    comptrollerProxy,
+    fundOwner,
+    integrationManager,
+    tokenAmount,
   });
 
   // Get exchange rate after tx (the rate is updated right after)
@@ -115,14 +117,14 @@ async function assertCompoundRedeem({
   const minIncomingTokenAmount = cTokenAmount.mul(rateBefore).div(utils.parseEther('1'));
 
   const redeemReceipt = await compoundRedeem({
-    comptrollerProxy,
-    vaultProxy,
-    integrationManager,
-    fundOwner,
-    compoundAdapter,
     cToken,
-    tokenAmount: minIncomingTokenAmount,
     cTokenAmount,
+    compoundAdapter,
+    comptrollerProxy,
+    fundOwner,
+    integrationManager,
+    tokenAmount: minIncomingTokenAmount,
+    vaultProxy,
   });
 
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -211,19 +213,19 @@ describe('parseAssetsForAction', () => {
 
     const args = compoundArgs({
       cToken,
-      outgoingAssetAmount: tokenAmount,
       minIncomingAssetAmount: minIncomingCTokenAmount,
+      outgoingAssetAmount: tokenAmount,
     });
     const selector = lendSelector;
 
     const result = await compoundAdapter.parseAssetsForAction(randomAddress(), selector, args);
 
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [cToken],
-      spendAssets_: [token],
-      spendAssetAmounts_: [tokenAmount],
       minIncomingAssetAmounts_: [minIncomingCTokenAmount],
+      spendAssetAmounts_: [tokenAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [token],
     });
   });
 
@@ -237,19 +239,19 @@ describe('parseAssetsForAction', () => {
 
     const args = compoundArgs({
       cToken,
-      outgoingAssetAmount: cTokenAmount,
       minIncomingAssetAmount: minIncomingTokenAmount,
+      outgoingAssetAmount: cTokenAmount,
     });
     const selector = redeemSelector;
 
     const result = await compoundAdapter.parseAssetsForAction(randomAddress(), selector, args);
 
     expect(result).toMatchFunctionOutput(compoundAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [token],
-      spendAssets_: [cToken],
-      spendAssetAmounts_: [cTokenAmount],
       minIncomingAssetAmounts_: [minIncomingTokenAmount],
+      spendAssetAmounts_: [cTokenAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [cToken],
     });
   });
 });
@@ -259,10 +261,10 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const lendReceipt = await assertCompoundLend({
@@ -311,20 +313,20 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      compoundAdapter: fork.deployment.compoundAdapter,
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, whales.cdai),
+      compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      vaultProxy,
     });
 
     expect(redeemReceipt).toCostAround('414990');
@@ -334,20 +336,20 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
-      compoundAdapter: fork.deployment.compoundAdapter,
       cToken: new ICERC20(fork.config.compound.ceth, whales.ceth),
+      compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      vaultProxy,
     });
 
     expect(redeemReceipt).toCostAround('341323');
@@ -362,22 +364,22 @@ describe('claimComp', () => {
     const comp = new StandardToken(fork.config.primitives.comp, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     await assertCompoundLend({
-      tokenWhale: whales.dai,
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       compoundAdapter,
-      tokenAmount: utils.parseEther('1'),
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      tokenAmount: utils.parseEther('1'),
+      tokenWhale: whales.dai,
+      vaultProxy,
     });
 
     const secondsToWarp = 100000000;

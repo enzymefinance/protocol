@@ -1,20 +1,18 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IntegrationManager, PoolTogetherV4Adapter, StandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   claimRewardsSelector,
-  ComptrollerLib,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
-  PoolTogetherV4Adapter,
   poolTogetherV4ClaimRewardsArgs,
   poolTogetherV4LendArgs,
   poolTogetherV4RedeemArgs,
   redeemSelector,
-  StandardToken,
 } from '@enzymefinance/protocol';
-import { BigNumberish, utils, BytesLike } from 'ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
+import { utils } from 'ethers';
 
 export async function poolTogetherV4Lend({
   comptrollerProxy,
@@ -32,14 +30,14 @@ export async function poolTogetherV4Lend({
   amount?: BigNumberish;
 }) {
   const lendArgs = poolTogetherV4LendArgs({
-    ptToken,
     amount,
+    ptToken,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: poolTogetherV4Adapter,
-    selector: lendSelector,
     encodedCallArgs: lendArgs,
+    selector: lendSelector,
   });
 
   const lendTx = comptrollerProxy
@@ -65,14 +63,14 @@ export async function poolTogetherV4Redeem({
   amount?: BigNumberish;
 }) {
   const redeemArgs = poolTogetherV4RedeemArgs({
-    ptToken,
     amount,
+    ptToken,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: poolTogetherV4Adapter,
-    selector: redeemSelector,
     encodedCallArgs: redeemArgs,
+    selector: redeemSelector,
   });
 
   const redeemTx = comptrollerProxy
@@ -100,15 +98,15 @@ export async function poolTogetherV4ClaimRewards({
   winningPicks: BytesLike;
 }) {
   const claimRewardsArgs = poolTogetherV4ClaimRewardsArgs({
-    prizeDistributor,
     drawIds,
+    prizeDistributor,
     winningPicks,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: poolTogetherV4Adapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: claimRewardsArgs,
+    selector: claimRewardsSelector,
   });
 
   const claimTx = comptrollerProxy

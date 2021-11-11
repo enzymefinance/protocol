@@ -1,5 +1,6 @@
-import { FundDeployer as FundDeployerContract, VaultLibArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { VaultLibArgs } from '@enzymefinance/protocol';
+import { FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 

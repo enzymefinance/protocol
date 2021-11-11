@@ -1,16 +1,15 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AllowedDepositRecipientsPolicy, ComptrollerLib, PolicyManager } from '@enzymefinance/protocol';
 import {
   addressListRegistryPolicyArgs,
-  AllowedDepositRecipientsPolicy,
-  PolicyHook,
-  ComptrollerLib,
-  StandardToken,
-  policyManagerConfigArgs,
-  PolicyManager,
   AddressListUpdateType,
+  PolicyHook,
+  policyManagerConfigArgs,
+  StandardToken,
 } from '@enzymefinance/protocol';
-import { buyShares, createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -59,9 +58,8 @@ describe('updateFundSettings', () => {
     policyManager = fork.deployment.policyManager;
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedDepositRecipientsPolicy],
@@ -69,13 +67,14 @@ describe('updateFundSettings', () => {
           addressListRegistryPolicyArgs({
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
@@ -87,8 +86,8 @@ describe('updateFundSettings', () => {
         addressListRegistryPolicyArgs({
           newListsArgs: [
             {
-              updateType: AddressListUpdateType.None,
               initialItems: [newListAddress],
+              updateType: AddressListUpdateType.None,
             },
           ],
         }),
@@ -105,8 +104,8 @@ describe('updateFundSettings', () => {
       addressListRegistryPolicyArgs({
         newListsArgs: [
           {
-            updateType: AddressListUpdateType.None,
             initialItems: [newListAddress],
+            updateType: AddressListUpdateType.None,
           },
         ],
       }),
@@ -132,9 +131,8 @@ describe('validateRule', () => {
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedDepositRecipientsPolicy],
@@ -143,13 +141,14 @@ describe('validateRule', () => {
             existingListIds: [0], // Include empty list to test inclusion in 1 list only
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [allowedDepositRecipient],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
@@ -157,9 +156,9 @@ describe('validateRule', () => {
   it('does not allow an unlisted recipient', async () => {
     await expect(
       buyShares({
+        buyer: nonAllowedDepositRecipient,
         comptrollerProxy,
         denominationAsset,
-        buyer: nonAllowedDepositRecipient,
         seedBuyer: true,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_DEPOSIT_RECIPIENTS');
@@ -167,9 +166,9 @@ describe('validateRule', () => {
 
   it('allows a listed recipient', async () => {
     await buyShares({
+      buyer: allowedDepositRecipient,
       comptrollerProxy,
       denominationAsset,
-      buyer: allowedDepositRecipient,
       seedBuyer: true,
     });
   });

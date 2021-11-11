@@ -1,12 +1,8 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
 import { IIdleTokenV4, StandardToken } from '@enzymefinance/protocol';
-import {
-  buyShares,
-  createNewFund,
-  deployProtocolFixture,
-  idleLend,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture, idleLend } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 const idleTokenUnit = utils.parseEther('1');
@@ -135,16 +131,16 @@ describe('derivative gas costs', () => {
     const [fundOwner, investor] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       seedBuyer: true,
     });
@@ -157,10 +153,10 @@ describe('derivative gas costs', () => {
     await dai.transfer(vaultProxy, daiAmount);
     await idleLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
       idleAdapter: fork.deployment.idleAdapter,
       idleToken,
+      integrationManager: fork.deployment.integrationManager,
       outgoingUnderlyingAmount: daiAmount,
     });
 

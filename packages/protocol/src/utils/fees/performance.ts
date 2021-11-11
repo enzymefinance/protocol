@@ -1,5 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
+
 import { max } from '../bignumber';
 import { encodeArgs } from '../encoding';
 import { FeeHook } from './types';
@@ -89,6 +91,7 @@ export function performanceFeeSharesDue({
     let nextGav = BigNumber.from(0);
 
     if (feeHook == FeeHook.PreBuyShares) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const gavIncrease = settlementInfo!.buySharesInvestmentAmount!;
       nextGav = BigNumber.from(gav).add(gavIncrease);
 
@@ -100,6 +103,7 @@ export function performanceFeeSharesDue({
 
       nextNetSharesSupply = netSharesSupply.add(sharesIncrease);
     } else if (feeHook == FeeHook.PreRedeemShares) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const sharesDecrease = settlementInfo!.redeemSharesSharesAmount!;
       nextNetSharesSupply = netSharesSupply.sub(sharesDecrease);
 
@@ -114,8 +118,8 @@ export function performanceFeeSharesDue({
   }
 
   return {
-    sharesDue,
     nextAggregateValueDue,
     nextSharePrice,
+    sharesDue,
   };
 }

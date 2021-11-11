@@ -1,5 +1,6 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumberish } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export enum UniswapV3LiquidityPositionActionId {

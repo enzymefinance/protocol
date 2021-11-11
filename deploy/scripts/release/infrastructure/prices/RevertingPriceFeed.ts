@@ -1,4 +1,4 @@
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {

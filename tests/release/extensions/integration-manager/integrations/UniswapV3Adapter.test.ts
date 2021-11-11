@@ -1,14 +1,12 @@
+import { assetTransferArgs, StandardToken, takeOrderSelector, uniswapV3TakeOrderArgs } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ProtocolDeployment,
-  deployProtocolFixture,
   createNewFund,
-  uniswapV3TakeOrder,
+  deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
+  uniswapV3TakeOrder,
 } from '@enzymefinance/testutils';
-
-import { uniswapV3TakeOrderArgs, assetTransferArgs, StandardToken, takeOrderSelector } from '@enzymefinance/protocol';
-
 import { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -32,26 +30,26 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const incomingAsset = new StandardToken(fork.config.weth, provider);
 
     const takeOrderArgs = uniswapV3TakeOrderArgs({
+      minIncomingAssetAmount: await getAssetUnit(incomingAsset),
+      outgoingAssetAmount: await getAssetUnit(outgoingAsset),
       pathAddresses: [outgoingAsset, incomingAsset],
       pathFees: [BigNumber.from('3000')],
-      outgoingAssetAmount: await getAssetUnit(outgoingAsset),
-      minIncomingAssetAmount: await getAssetUnit(incomingAsset),
     });
 
     const transferArgs = await assetTransferArgs({
       adapter: uniswapV3Adapter,
-      selector: takeOrderSelector,
       encodedCallArgs: takeOrderArgs,
+      selector: takeOrderSelector,
     });
 
     await expect(uniswapV3Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
@@ -68,10 +66,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const pathAddresses = [outgoingAsset];
@@ -84,13 +82,13 @@ describe('takeOrder', () => {
     await expect(
       uniswapV3TakeOrder({
         comptrollerProxy,
-        integrationManager,
         fundOwner,
-        uniswapV3Adapter: uniswapV3Adapter.address,
+        integrationManager,
+        minIncomingAssetAmount: 1,
+        outgoingAssetAmount,
         pathAddresses,
         pathFees,
-        outgoingAssetAmount,
-        minIncomingAssetAmount: 1,
+        uniswapV3Adapter: uniswapV3Adapter.address,
       }),
     ).rejects.toBeRevertedWith('pathAddresses must be >= 2');
   });
@@ -106,10 +104,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const pathAddresses = [outgoingAsset, incomingAsset];
@@ -122,13 +120,13 @@ describe('takeOrder', () => {
     await expect(
       uniswapV3TakeOrder({
         comptrollerProxy,
-        integrationManager,
         fundOwner,
-        uniswapV3Adapter: uniswapV3Adapter.address,
+        integrationManager,
+        minIncomingAssetAmount: 1,
+        outgoingAssetAmount,
         pathAddresses,
         pathFees,
-        outgoingAssetAmount,
-        minIncomingAssetAmount: 1,
+        uniswapV3Adapter: uniswapV3Adapter.address,
       }),
     ).rejects.toBeRevertedWith('incorrect pathAddresses or pathFees length');
   });
@@ -143,10 +141,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const pathAddresses = [outgoingAsset, incomingAsset];
@@ -163,13 +161,13 @@ describe('takeOrder', () => {
 
     await uniswapV3TakeOrder({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
-      uniswapV3Adapter: uniswapV3Adapter.address,
+      integrationManager,
+      minIncomingAssetAmount: 1,
+      outgoingAssetAmount,
       pathAddresses,
       pathFees,
-      outgoingAssetAmount,
-      minIncomingAssetAmount: 1,
+      uniswapV3Adapter: uniswapV3Adapter.address,
     });
 
     const [postTxOutgoingAssetBalance, postTxIncomingAssetBalance] = await getAssetBalances({
@@ -196,10 +194,10 @@ describe('takeOrder', () => {
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: usdc,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const pathFees = [BigNumber.from('3000'), BigNumber.from('500')];
@@ -217,13 +215,13 @@ describe('takeOrder', () => {
 
     await uniswapV3TakeOrder({
       comptrollerProxy,
-      integrationManager,
       fundOwner,
-      uniswapV3Adapter: uniswapV3Adapter.address,
+      integrationManager,
+      minIncomingAssetAmount: 1,
+      outgoingAssetAmount,
       pathAddresses,
       pathFees,
-      outgoingAssetAmount,
-      minIncomingAssetAmount: 1,
+      uniswapV3Adapter: uniswapV3Adapter.address,
     });
 
     const [postTxOutgoingAssetBalance, postTxIncomingAssetBalance] = await getAssetBalances({

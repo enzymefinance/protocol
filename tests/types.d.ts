@@ -1,5 +1,6 @@
 import '@enzymefinance/hardhat/types';
-import { ProtocolDeployment, WhaleSigners } from '@enzymefinance/testutils';
+
+import type { ProtocolDeployment, WhaleSigners } from '@enzymefinance/testutils';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

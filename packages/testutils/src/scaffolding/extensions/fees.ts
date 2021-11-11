@@ -1,4 +1,4 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { FeeHook, feeManagerConfigArgs, FeeSettlementType, IFee } from '@enzymefinance/protocol';
 import { constants, utils } from 'ethers';
 

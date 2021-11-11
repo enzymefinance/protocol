@@ -1,19 +1,22 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  addressListRegistryPolicyArgs,
-  AddressListUpdateType,
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   AllowedAdapterIncomingAssetsPolicy,
   ComptrollerLib,
   IntegrationManager,
+  VaultLib,
+} from '@enzymefinance/protocol';
+import {
+  addressListRegistryPolicyArgs,
+  AddressListUpdateType,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
-import { createNewFund, deployProtocolFixture, mockGenericSwap, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -80,9 +83,8 @@ describe('validateRule', () => {
     notAllowedAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedAdapterIncomingAssetsPolicy],
@@ -91,13 +93,14 @@ describe('validateRule', () => {
             existingListIds: [0], // Include empty list to test inclusion in 1 list only
             newListsArgs: [
               {
-                updateType: AddressListUpdateType.None,
                 initialItems: [allowedAsset1, allowedAsset2],
+                updateType: AddressListUpdateType.None,
               },
             ],
           }),
         ],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -111,13 +114,13 @@ describe('validateRule', () => {
 
     await expect(
       mockGenericSwap({
-        comptrollerProxy,
-        vaultProxy,
-        integrationManager,
-        fundOwner,
-        mockGenericAdapter,
-        incomingAssets: [allowedAsset1, allowedAsset2, notAllowedAsset],
         actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount, incomingAssetAmount],
+        comptrollerProxy,
+        fundOwner,
+        incomingAssets: [allowedAsset1, allowedAsset2, notAllowedAsset],
+        integrationManager,
+        mockGenericAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_ADAPTER_INCOMING_ASSETS');
   });
@@ -128,13 +131,13 @@ describe('validateRule', () => {
     await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
 
     await mockGenericSwap({
-      comptrollerProxy,
-      vaultProxy,
-      integrationManager,
-      fundOwner,
-      mockGenericAdapter,
-      incomingAssets: [allowedAsset1, allowedAsset2],
       actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount],
+      comptrollerProxy,
+      fundOwner,
+      incomingAssets: [allowedAsset1, allowedAsset2],
+      integrationManager,
+      mockGenericAdapter,
+      vaultProxy,
     });
   });
 });

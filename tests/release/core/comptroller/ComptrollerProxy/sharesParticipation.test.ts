@@ -1,16 +1,14 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, FundDeployer, PolicyManager, VaultLib } from '@enzymefinance/protocol';
 import {
   calcProtocolFeeSharesDue,
-  ComptrollerLib,
   encodeArgs,
   FeeHook,
   feeManagerConfigArgs,
-  FundDeployer,
   MockReentrancyToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
   PolicyHook,
-  PolicyManager,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
   settlePreRedeemSharesArgs,
@@ -18,7 +16,6 @@ import {
   StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
-  VaultLib,
   WETH,
 } from '@enzymefinance/protocol';
 import {
@@ -36,7 +33,8 @@ import {
   redeemSharesInKind,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 async function snapshot() {
   const {
@@ -52,10 +50,10 @@ async function snapshot() {
   });
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: fundOwner,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
     denominationAsset: weth,
+    fundDeployer: deployment.fundDeployer,
+    fundOwner,
+    signer: fundOwner,
   });
 
   const reentrancyToken = await MockReentrancyToken.deploy(deployer);
@@ -71,19 +69,19 @@ async function snapshot() {
   await Promise.all(seedAccounts.map((account) => weth.transfer(account.address, seedAmount)));
 
   return {
-    weth,
-    fees,
-    deployer,
     accounts: remainingAccounts,
     config,
+    deployer,
     deployment,
-    reentrancyToken,
+    fees,
     fund: {
-      denominationAsset: weth,
       comptrollerProxy,
+      denominationAsset: weth,
       fundOwner,
       vaultProxy,
     },
+    reentrancyToken,
+    weth,
   };
 }
 
@@ -96,9 +94,9 @@ describe('buyShares', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      signer: fundOwner,
     });
 
     const investmentAmount = 1;
@@ -106,8 +104,8 @@ describe('buyShares', () => {
     await denominationAsset.makeItReentracyToken(comptrollerProxy);
     await expect(
       buyShares({
-        comptrollerProxy,
         buyer,
+        comptrollerProxy,
         denominationAsset,
         investmentAmount,
       }),
@@ -122,8 +120,8 @@ describe('buyShares', () => {
 
     await expect(
       buyShares({
-        comptrollerProxy,
         buyer,
+        comptrollerProxy,
         denominationAsset,
         minSharesQuantity: 0,
       }),
@@ -140,22 +138,22 @@ describe('buyShares', () => {
 
     // Create a new fund with a sharesActionTimelock value
     const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: deployment.fundDeployer,
+      fundOwner,
       sharesActionTimelock: 1000,
+      signer: fundOwner,
     });
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      deployer,
       assetFinalityResolver: deployment.assetFinalityResolver,
+      deployer,
       dispatcher: deployment.dispatcher,
+      externalPositionManager: deployment.externalPositionManager,
       feeManager: deployment.feeManager,
       gasRelayPaymasterFactory: deployment.gasRelayPaymasterFactory,
       integrationManager: deployment.integrationManager,
-      externalPositionManager: deployment.externalPositionManager,
       policyManager: deployment.policyManager,
       valueInterpreter: deployment.valueInterpreter,
       vaultLib: deployment.vaultLib,
@@ -163,17 +161,17 @@ describe('buyShares', () => {
 
     // Create fund config on the new FundDeployer to migrate to
     await createMigrationRequest({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      vaultProxy,
       denominationAsset,
+      fundDeployer: nextFundDeployer,
+      signer: fundOwner,
+      vaultProxy,
     });
 
     // buyShares() should fail while migration is pending
     await expect(
       buyShares({
-        comptrollerProxy: prevComptrollerProxy,
         buyer,
+        comptrollerProxy: prevComptrollerProxy,
         denominationAsset,
       }),
     ).rejects.toBeRevertedWith('Pending migration');
@@ -182,8 +180,8 @@ describe('buyShares', () => {
     await nextFundDeployer.connect(fundOwner).cancelMigration(vaultProxy, false);
     await expect(
       buyShares({
-        comptrollerProxy: prevComptrollerProxy,
         buyer,
+        comptrollerProxy: prevComptrollerProxy,
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
@@ -201,9 +199,9 @@ describe('buyShares', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      signer: fundOwner,
     });
 
     // Define the investment and expected shares amounts.
@@ -214,8 +212,8 @@ describe('buyShares', () => {
     const expectedGav = investmentAmount;
 
     const receipt = await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount,
     });
@@ -258,9 +256,9 @@ describe('buyShares', () => {
       PolicyHook.PostBuyShares,
       validateRulePostBuySharesArgs({
         buyer,
+        fundGav: expectedGav,
         investmentAmount,
         sharesIssued: expectedSharesAmount,
-        fundGav: expectedGav,
       }),
     );
   });
@@ -275,14 +273,15 @@ describe('buyShares', () => {
     const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
       // Invest the 1st time to give a positive supply of shares
       investment: {
         buyer: fundOwner,
         investmentAmount,
       },
+
+      signer: fundOwner,
     });
 
     // Warp time so that a protocol fee will be due
@@ -292,8 +291,8 @@ describe('buyShares', () => {
     const preTxSharesSupply = await vaultProxy.totalSupply();
 
     const receipt = await buyShares({
-      comptrollerProxy,
       buyer,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount,
     });
@@ -301,9 +300,9 @@ describe('buyShares', () => {
     // Expected values
     const expectedProtocolFee = await calcProtocolFeeSharesDue({
       protocolFeeTracker,
-      vaultProxyAddress: vaultProxy,
-      sharesSupply: preTxSharesSupply,
       secondsSinceLastPaid: BigNumber.from(await transactionTimestamp(receipt)).sub(preTxLastPaidTimestamp),
+      sharesSupply: preTxSharesSupply,
+      vaultProxyAddress: vaultProxy,
     });
     expect(expectedProtocolFee).toBeGtBigNumber(0);
     // Share price after the tx is the same as the share price during the time of shares issuance,
@@ -331,37 +330,37 @@ describe('buyShares', () => {
 
     // Create a new fund without a sharesActionTimelock value
     const { comptrollerProxy: prevComptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: deployment.fundDeployer,
       denominationAsset,
-      sharesActionTimelock: 0, // Not necessary, but explicit
+      fundDeployer: deployment.fundDeployer,
+      fundOwner,
+      sharesActionTimelock: 0,
+      signer: fundOwner, // Not necessary, but explicit
     });
 
     const nextFundDeployer = await createFundDeployer({
-      deployer,
       assetFinalityResolver: deployment.assetFinalityResolver,
+      deployer,
       dispatcher: deployment.dispatcher,
+      externalPositionManager: deployment.externalPositionManager,
       feeManager: deployment.feeManager,
       gasRelayPaymasterFactory: deployment.gasRelayPaymasterFactory,
       integrationManager: deployment.integrationManager,
-      externalPositionManager: deployment.externalPositionManager,
       policyManager: deployment.policyManager,
       valueInterpreter: deployment.valueInterpreter,
       vaultLib: deployment.vaultLib,
     });
 
     await createMigrationRequest({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      vaultProxy,
       denominationAsset,
+      fundDeployer: nextFundDeployer,
+      signer: fundOwner,
+      vaultProxy,
     });
 
     // Buying shares should still work during a pending migration
     await buyShares({
-      comptrollerProxy: prevComptrollerProxy,
       buyer,
+      comptrollerProxy: prevComptrollerProxy,
       denominationAsset,
     });
   });
@@ -397,10 +396,10 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        signer: fundOwner,
-        fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+        fundDeployer,
         sharesActionTimelock: 1,
+        signer: fundOwner,
       });
 
       comptrollerProxy = newFundRes.comptrollerProxy;
@@ -439,9 +438,9 @@ describe('buySharesOnBehalf', () => {
         PolicyHook.PostBuyShares,
         validateRulePostBuySharesArgs({
           buyer,
+          fundGav: expectedGav,
           investmentAmount,
           sharesIssued: expectedSharesIssued,
-          fundGav: expectedGav,
         }),
       );
 
@@ -459,10 +458,10 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        signer: fundOwner,
-        fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
-        sharesActionTimelock: 0, // Not necessary, but explicit
+        fundDeployer,
+        sharesActionTimelock: 0,
+        signer: fundOwner, // Not necessary, but explicit
       });
 
       comptrollerProxy = newFundRes.comptrollerProxy;
@@ -485,7 +484,7 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        redeemSharesInKind({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
+        redeemSharesInKind({ comptrollerProxy, quantity: utils.parseEther('0'), signer: investor }),
       ).rejects.toBeRevertedWith('No shares to redeem');
     });
 
@@ -499,18 +498,18 @@ describe('redeem', () => {
       // Create a new fund, and invested in equally by the fund manager and an investor
       const investmentAmount = await getAssetUnit(denominationAsset);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundManager,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
         investment: {
           buyer: fundManager,
           investmentAmount,
         },
+        signer: fundManager,
       });
 
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
         investmentAmount,
       });
@@ -520,8 +519,8 @@ describe('redeem', () => {
       await expect(
         redeemSharesInKind({
           comptrollerProxy,
-          signer: investor,
           quantity: redeemQuantity,
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('burn amount exceeds balance');
     });
@@ -538,18 +537,18 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       const { comptrollerProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(
         redeemSharesForSpecificAssets({
           comptrollerProxy,
-          signer: investor,
-          payoutAssets: [],
           payoutAssetPercentages: [1],
+          payoutAssets: [],
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Unequal arrays');
     });
@@ -562,18 +561,18 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       const { comptrollerProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(
         redeemSharesForSpecificAssets({
           comptrollerProxy,
-          signer: investor,
-          payoutAssets: [constants.AddressZero, constants.AddressZero],
           payoutAssetPercentages: [50, 50],
+          payoutAssets: [constants.AddressZero, constants.AddressZero],
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Duplicate payout asset');
     });
@@ -593,13 +592,13 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         investment: {
           buyer: investor,
         },
+        signer: fundOwner,
       });
 
       // Send second asset to the fund
@@ -610,18 +609,18 @@ describe('redeem', () => {
       await expect(
         redeemSharesForSpecificAssets({
           comptrollerProxy,
-          signer: investor,
-          payoutAssets: [denominationAsset, secondAsset],
           payoutAssetPercentages: [10000, 1],
+          payoutAssets: [denominationAsset, secondAsset],
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Percents must total 100%');
 
       await expect(
         redeemSharesForSpecificAssets({
           comptrollerProxy,
-          signer: investor,
-          payoutAssets: [denominationAsset],
           payoutAssetPercentages: [9999],
+          payoutAssets: [denominationAsset],
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Percents must total 100%');
     });
@@ -638,21 +637,22 @@ describe('redeem', () => {
 
       const investorInvestmentAmount = await getAssetUnit(denominationAsset);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         // Buy shares with fundOwner to inflate share pool and decrease investor owed gav
         investment: {
           buyer: fundOwner,
           investmentAmount: investorInvestmentAmount.mul(10),
         },
+
+        signer: fundOwner,
       });
 
       // Buy a relatively small amount of shares for the investor to guarantee they can redeem one wei of shares with no owed value
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
         investmentAmount: investorInvestmentAmount,
       });
@@ -663,10 +663,10 @@ describe('redeem', () => {
       await expect(
         redeemSharesForSpecificAssets({
           comptrollerProxy,
-          signer: investor,
-          quantity: 1,
-          payoutAssets: [zeroBalanceAsset],
           payoutAssetPercentages: [10000],
+          payoutAssets: [zeroBalanceAsset],
+          quantity: 1,
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Zero amount for asset');
     });
@@ -693,20 +693,20 @@ describe('redeem', () => {
 
       // Create a new fund, invested in by the fund manager and an investor
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         investment: {
           buyer: fundOwner,
         },
+        signer: fundOwner,
       });
 
       // Buy a relatively small amount of shares for the investor to guarantee they can redeem the specified asset balances
       const investorInvestmentAmount = (await getAssetUnit(denominationAsset)).div(10);
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
         investmentAmount: investorInvestmentAmount,
       });
@@ -720,10 +720,6 @@ describe('redeem', () => {
       // Send and track the redemption assets with the equivalent values as the denomination asset balance
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
       await addNewAssetsToFund({
-        comptrollerProxy,
-        signer: fundOwner,
-        integrationManager,
-        assets: payoutAssets,
         amounts: await Promise.all(
           payoutAssets.map(
             async (asset) =>
@@ -732,6 +728,10 @@ describe('redeem', () => {
                 .call(),
           ),
         ),
+        assets: payoutAssets,
+        comptrollerProxy,
+        integrationManager,
+        signer: fundOwner,
       });
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
@@ -742,11 +742,14 @@ describe('redeem', () => {
       // Redeem all of the investor's shares
       const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: investor,
-        recipient,
-        quantity: constants.MaxUint256, // unnecessary, but explicit
-        payoutAssets,
+
         payoutAssetPercentages,
+
+        // unnecessary, but explicit
+        payoutAssets,
+        quantity: constants.MaxUint256,
+        recipient,
+        signer: investor,
       });
 
       // Calculate the expected payout amounts
@@ -772,11 +775,11 @@ describe('redeem', () => {
 
       // Assert the correct event was emitted
       assertEvent(receipt, 'SharesRedeemed', {
-        redeemer: investor,
-        recipient,
-        sharesAmount: expectedSharesRedeemed,
-        receivedAssets: payoutAssets,
         receivedAssetAmounts: expectedPayoutAmounts,
+        receivedAssets: payoutAssets,
+        recipient,
+        redeemer: investor,
+        sharesAmount: expectedSharesRedeemed,
       });
 
       // Assert the Policy Manager was called correctly
@@ -784,12 +787,12 @@ describe('redeem', () => {
         comptrollerProxy,
         PolicyHook.RedeemSharesForSpecificAssets,
         validateRuleRedeemSharesForSpecificAssetsArgs({
-          redeemer: investor,
-          recipient,
-          sharesToRedeemPostFees: expectedSharesRedeemed,
-          assets: payoutAssets,
           assetAmounts: expectedPayoutAmounts,
+          assets: payoutAssets,
           gavPreRedeem: preTxGav,
+          recipient,
+          redeemer: investor,
+          sharesToRedeemPostFees: expectedSharesRedeemed,
         }),
       );
 
@@ -797,9 +800,9 @@ describe('redeem', () => {
       expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
         FeeHook.PreRedeemShares,
         settlePreRedeemSharesArgs({
+          forSpecifiedAssets: true,
           redeemer: investor,
           sharesToRedeem: expectedSharesRedeemed,
-          forSpecifiedAssets: true,
         }),
         preTxGav,
       );
@@ -823,19 +826,19 @@ describe('redeem', () => {
       // Create a new fund, invested in by the fund manager and an investor
       const denominationAsset = new StandardToken(usdc, whales.usdc);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         investment: {
           buyer: fundOwner,
           seedBuyer: true,
         },
+        signer: fundOwner,
       });
 
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
         seedBuyer: true,
       });
@@ -849,15 +852,15 @@ describe('redeem', () => {
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
 
       await addNewAssetsToFund({
-        comptrollerProxy,
-        signer: fundOwner,
-        integrationManager,
-        assets: [payoutAsset],
         amounts: [
           await valueInterpreter.calcCanonicalAssetValue
             .args(denominationAsset, preTxVaultDenominationAssetBalance, payoutAsset)
             .call(),
         ],
+        assets: [payoutAsset],
+        comptrollerProxy,
+        integrationManager,
+        signer: fundOwner,
       });
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
@@ -868,11 +871,11 @@ describe('redeem', () => {
       // Redeem all of the investor's shares
       await redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: investor,
-        recipient,
-        quantity: expectedSharesRedeemed,
-        payoutAssets: [payoutAsset],
         payoutAssetPercentages: [ONE_HUNDRED_PERCENT_IN_BPS],
+        payoutAssets: [payoutAsset],
+        quantity: expectedSharesRedeemed,
+        recipient,
+        signer: investor,
       });
 
       // Calculate the expected payout amounts
@@ -898,13 +901,13 @@ describe('redeem', () => {
 
       // Create a new fund, invested in by the fund manager
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         investment: {
           buyer: investor,
         },
+        signer: fundOwner,
       });
 
       // Define the redemption parameters
@@ -920,10 +923,10 @@ describe('redeem', () => {
       // Redeem part of the investor's shares
       const receipt = await redeemSharesForSpecificAssets({
         comptrollerProxy,
-        signer: investor,
-        quantity: expectedSharesRedeemed,
-        payoutAssets,
         payoutAssetPercentages,
+        payoutAssets,
+        quantity: expectedSharesRedeemed,
+        signer: investor,
       });
 
       // Calculate gav that should have been paid out to the redeemer. This needs to be done after
@@ -944,11 +947,11 @@ describe('redeem', () => {
 
       // Assert the correct event was emitted
       assertEvent(receipt, 'SharesRedeemed', {
-        redeemer: investor,
-        recipient: investor,
-        sharesAmount: expectedSharesRedeemed,
-        receivedAssets: payoutAssets,
         receivedAssetAmounts: expectedPayoutAmounts,
+        receivedAssets: payoutAssets,
+        recipient: investor,
+        redeemer: investor,
+        sharesAmount: expectedSharesRedeemed,
       });
 
       // Other assertions are the same as the main happy path test
@@ -969,19 +972,19 @@ describe('redeem', () => {
 
       // Create a new fund, and invested in equally by the fund manager and an investor
       const { comptrollerProxy } = await createNewFund({
-        signer: fundManager,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
         investment: {
           buyer: fundManager,
           investmentAmount,
         },
+        signer: fundManager,
       });
 
       await buyShares({
+        buyer: investor,
         comptrollerProxy,
         denominationAsset,
-        buyer: investor,
         investmentAmount,
       });
 
@@ -992,8 +995,8 @@ describe('redeem', () => {
       await expect(
         redeemSharesInKind({
           comptrollerProxy,
-          signer: investor,
           quantity: redeemQuantity,
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('Re-entrance');
     });
@@ -1005,7 +1008,7 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       await expect(
-        redeemSharesInKind({ comptrollerProxy, signer: investor, quantity: utils.parseEther('0') }),
+        redeemSharesInKind({ comptrollerProxy, quantity: utils.parseEther('0'), signer: investor }),
       ).rejects.toBeRevertedWith('No shares to redeem');
     });
 
@@ -1018,10 +1021,10 @@ describe('redeem', () => {
 
       await expect(
         redeemSharesInKind({
-          comptrollerProxy,
-          signer: investor,
-          quantity: utils.parseEther('1'),
           additionalAssets: [weth, weth],
+          comptrollerProxy,
+          quantity: utils.parseEther('1'),
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('_additionalAssets contains duplicates');
     });
@@ -1035,10 +1038,10 @@ describe('redeem', () => {
 
       await expect(
         redeemSharesInKind({
-          comptrollerProxy,
-          signer: investor,
-          quantity: utils.parseEther('1'),
           assetsToSkip: [weth, weth],
+          comptrollerProxy,
+          quantity: utils.parseEther('1'),
+          signer: investor,
         }),
       ).rejects.toBeRevertedWith('_assetsToSkip contains duplicates');
     });
@@ -1057,15 +1060,15 @@ describe('redeem', () => {
       await protocolFeeTracker.setFeeBpsDefault(0);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
       });
 
@@ -1075,11 +1078,11 @@ describe('redeem', () => {
       // Send and track a second asset in the vault, but then allow it to be untracked
       const secondAsset = new StandardToken(mln, whales.mln);
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [(await getAssetUnit(secondAsset)).mul(3)],
+        assets: [secondAsset],
         comptrollerProxy,
         integrationManager,
-        assets: [secondAsset],
-        amounts: [(await getAssetUnit(secondAsset)).mul(3)],
+        signer: fundOwner,
       });
 
       // Define the expected payout assets
@@ -1101,16 +1104,16 @@ describe('redeem', () => {
       // Redeem all of investor's shares
       const receipt = await redeemSharesInKind({
         comptrollerProxy,
-        signer: investor,
-        quantity: constants.MaxUint256, // unnecessary, but explicit
+        quantity: constants.MaxUint256,
+        signer: investor, // unnecessary, but explicit
       });
 
       assertEvent(receipt, 'SharesRedeemed', {
-        redeemer: investor,
-        recipient: investor,
-        sharesAmount: expectedSharesRedeemed,
-        receivedAssets: expectedPayoutAssets,
         receivedAssetAmounts: expectedPayoutAmounts,
+        receivedAssets: expectedPayoutAssets,
+        recipient: investor,
+        redeemer: investor,
+        sharesAmount: expectedSharesRedeemed,
       });
 
       // Assert the redeemer has redeemed all shares and received the expected assets and full balances
@@ -1125,9 +1128,9 @@ describe('redeem', () => {
       expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
         FeeHook.PreRedeemShares,
         settlePreRedeemSharesArgs({
+          forSpecifiedAssets: false,
           redeemer: investor,
           sharesToRedeem: expectedSharesRedeemed,
-          forSpecifiedAssets: false,
         }),
         0, // Not calculated
       );
@@ -1146,18 +1149,18 @@ describe('redeem', () => {
       // Create a new fund, and invested in equally by the fund manager and an investor
       const investmentAmount = await getAssetUnit(denominationAsset);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        signer: fundManager,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
         investment: {
           buyer: fundManager,
           investmentAmount,
         },
+        signer: fundManager,
       });
 
       await buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
         investmentAmount,
       });
@@ -1192,12 +1195,12 @@ describe('redeem', () => {
 
       // Redeem half of investor's shares
       const receipt = await redeemSharesInKind({
-        comptrollerProxy,
-        signer: investor,
-        recipient,
-        quantity: redeemQuantity,
         additionalAssets,
         assetsToSkip,
+        comptrollerProxy,
+        quantity: redeemQuantity,
+        recipient,
+        signer: investor,
       });
 
       // Calculate expected payout amount to the redeemer. This needs to be done after
@@ -1212,11 +1215,11 @@ describe('redeem', () => {
 
       // Assert the event
       assertEvent(receipt, 'SharesRedeemed', {
-        redeemer: investor,
-        recipient,
-        sharesAmount: redeemQuantity,
-        receivedAssets: [expectedPayoutAsset],
         receivedAssetAmounts: [expectedPayoutAmount],
+        receivedAssets: [expectedPayoutAsset],
+        recipient,
+        redeemer: investor,
+        sharesAmount: redeemQuantity,
       });
 
       const [postTxRecipientExpectedPayoutAssetBalance, postTxRecipientAssetToSkipBalance] = await getAssetBalances({
@@ -1235,9 +1238,9 @@ describe('redeem', () => {
       expect(feeManager.invokeHook).toHaveBeenCalledOnContractWith(
         FeeHook.PreRedeemShares,
         settlePreRedeemSharesArgs({
+          forSpecifiedAssets: false,
           redeemer: investor,
           sharesToRedeem: redeemQuantity,
-          forSpecifiedAssets: false,
         }),
         0, // Not calculated
       );
@@ -1257,20 +1260,20 @@ describe('redeem', () => {
       const feesSettingsData = [utils.randomBytes(10)];
 
       const feeManagerConfig = feeManagerConfigArgs({
-        fees: fees,
+        fees,
         settings: feesSettingsData,
       });
 
       const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
       const { comptrollerProxy } = await createNewFund({
-        signer: fundManager,
-        fundDeployer,
         denominationAsset,
+        feeManagerConfig,
+        fundDeployer,
         investment: {
           buyer: investor,
           investmentAmount,
         },
-        feeManagerConfig,
+        signer: fundManager,
       });
 
       const invalidFeeSettlementType = 100;
@@ -1309,15 +1312,15 @@ describe('transfer shares', () => {
     // Spin up and invest in a fund to create shares
     sharesActionTimelock = 1000;
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
       fundDeployer: fork.deployment.fundDeployer,
-      sharesActionTimelock,
+      fundOwner,
       investment: {
         buyer: investor,
         seedBuyer: true,
       },
+      sharesActionTimelock,
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -1402,9 +1405,9 @@ describe('sharesActionTimelock', () => {
 
     // Create a new fund, without a timelock
     const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      signer: fundManager,
     });
 
     const getSharesActionTimelockCall = await comptrollerProxy.getSharesActionTimelock();
@@ -1412,8 +1415,8 @@ describe('sharesActionTimelock', () => {
 
     // Buy shares to start the timelock (though the timelock is 0)
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
     });
 
@@ -1439,16 +1442,16 @@ describe('sharesActionTimelock', () => {
     // Create a new fund, with a timelock
     const sharesActionTimelock = 100;
     const { comptrollerProxy } = await createNewFund({
-      signer: fundManager,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
       sharesActionTimelock,
+      signer: fundManager,
     });
 
     // Buy shares to start the timelock
     const receipt = await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
     });
 
@@ -1500,18 +1503,18 @@ describe('sharesActionTimelock', () => {
     // Create a new fund, with a timelock
     const sharesActionTimelock = 100;
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       sharesActionTimelock,
+      signer: fundOwner,
     });
 
     // Buy shares to start the timelock
     await expect(
       buyShares({
-        comptrollerProxy,
         buyer: investor,
+        comptrollerProxy,
         denominationAsset,
       }),
     ).resolves.toBeReceipt();
@@ -1526,10 +1529,10 @@ describe('sharesActionTimelock', () => {
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      deployer,
       assetFinalityResolver,
-      externalPositionManager,
+      deployer,
       dispatcher,
+      externalPositionManager,
       feeManager,
       gasRelayPaymasterFactory,
       integrationManager,
@@ -1540,10 +1543,10 @@ describe('sharesActionTimelock', () => {
 
     // Create fund config on the new FundDeployer to migrate to
     await createMigrationRequest({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      vaultProxy,
       denominationAsset,
+      fundDeployer: nextFundDeployer,
+      signer: fundOwner,
+      vaultProxy,
     });
 
     // Redeeming shares should succeed now that the fund has a migration pending

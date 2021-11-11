@@ -1,5 +1,6 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumber, BigNumberish } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export function uniswapV3TakeOrderArgs({

@@ -1,7 +1,9 @@
-import { extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { MockContract } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { Dispatcher, FundDeployer, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -423,8 +425,8 @@ describe('vault call registry', () => {
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({
           contractAddress: contracts[i],
-          selector: selectors[i],
           dataHash: dataHashes[i],
+          selector: selectors[i],
         });
       }
     });
@@ -504,8 +506,8 @@ describe('vault call registry', () => {
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({
           contractAddress: contracts[i],
-          selector: selectors[i],
           dataHash: dataHashes[i],
+          selector: selectors[i],
         });
       }
     });

@@ -1,5 +1,8 @@
-import { AddressLike, resolveAddress } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish, constants, Signer, utils } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { resolveAddress } from '@enzymefinance/ethers';
+import type { BigNumberish, Signer } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
+
 import { encodeArgs, encodeFunctionData } from '../encoding';
 import { isTypedDataSigner } from '../signer';
 
@@ -28,6 +31,7 @@ export interface SignedZeroExV2Order extends UnsignedZeroExV2Order {
 export function generatePseudoRandomZeroExV2Salt() {
   const hex = utils.hexlify(utils.randomBytes(32));
   const number = BigNumber.from(hex);
+
   return BigNumber.from(`${number}`.slice(0, 10));
 }
 
@@ -35,6 +39,7 @@ export const zeroExV2AssetFragment = utils.FunctionFragment.fromString('ERC20Tok
 
 export function encodeZeroExV2AssetData(token: AddressLike) {
   const lowerCaseAddress = resolveAddress(token).toLowerCase();
+
   return encodeFunctionData(zeroExV2AssetFragment, [lowerCaseAddress]);
 }
 
@@ -71,20 +76,20 @@ export function createUnsignedZeroExV2Order({
 
   return {
     exchangeAddress,
-    makerAddress,
-    takerAddress: constants.AddressZero,
-    feeRecipientAddress: feeRecipientAddress.toString(),
-    senderAddress: constants.AddressZero,
-    makerAssetAmount: makerAssetAmount.toString(),
-    takerAssetAmount: takerAssetAmount.toString(),
-    makerFee: constants.Zero.toString(),
-    takerFee: takerFee.toString(),
     expirationTimeSeconds: expirationTimeSeconds.toString(),
-    salt: salt.toString(),
-    makerAssetData,
-    takerAssetData,
+    feeRecipientAddress: feeRecipientAddress.toString(),
+    makerAddress,
     makerAsset: makerAssetAddress,
+    makerAssetAmount: makerAssetAmount.toString(),
+    makerAssetData,
+    makerFee: constants.Zero.toString(),
+    salt: salt.toString(),
+    senderAddress: constants.AddressZero,
+    takerAddress: constants.AddressZero,
     takerAsset: takerAssetAddress,
+    takerAssetAmount: takerAssetAmount.toString(),
+    takerAssetData,
+    takerFee: takerFee.toString(),
   };
 }
 
@@ -95,8 +100,8 @@ export async function signZeroExV2Order(order: UnsignedZeroExV2Order, signer: Si
 
   const domain = {
     name: '0x Protocol',
-    version: '2',
     verifyingContract: order.exchangeAddress,
+    version: '2',
   };
 
   const types = {

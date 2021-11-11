@@ -1,10 +1,8 @@
-import {
-  ONE_DAY_IN_SECONDS,
-  OnlyRemoveDustExternalPositionPolicy,
-  OnlyRemoveDustExternalPositionPolicyArgs,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { OnlyRemoveDustExternalPositionPolicyArgs } from '@enzymefinance/protocol';
+import { ONE_DAY_IN_SECONDS, OnlyRemoveDustExternalPositionPolicy } from '@enzymefinance/protocol';
 import { utils } from 'ethers';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {

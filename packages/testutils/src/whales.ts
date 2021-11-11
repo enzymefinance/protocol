@@ -1,6 +1,7 @@
 import { resolveAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 
+/* eslint-disable sort-keys-fix/sort-keys-fix */
 const whales = {
   // primitives
   bat: '0x12274c71304bc0e6b38a56b94d2949b118feb838',
@@ -40,6 +41,7 @@ const whales = {
   ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
   eurs: '0x98ed26de6451db36246672df78ae7c50f2c76f6d',
 } as const;
+/* eslint-enable sort-keys-fix/sort-keys-fix */
 
 export type Whale = keyof typeof whales;
 export type WhaleSigners<T extends Partial<Whale> = Whale> = Record<T, SignerWithAddress>;
@@ -47,12 +49,14 @@ export type WhaleSigners<T extends Partial<Whale> = Whale> = Record<T, SignerWit
 export async function unlockWhale(token: Whale) {
   const address = resolveAddress(whales[token]);
   await provider.send('hardhat_impersonateAccount', [address]);
+
   return provider.getSignerWithAddress(address);
 }
 
 export async function unlockAllWhales() {
   const keys = Object.keys(whales) as Whale[];
   const signers = await Promise.all(keys.map(async (token) => unlockWhale(token)));
+
   return keys.reduce((carry, key, index) => {
     return { ...carry, [key]: signers[index] };
   }, {} as WhaleSigners);
@@ -60,6 +64,7 @@ export async function unlockAllWhales() {
 
 export async function unlockWhales<T extends Whale>(...tokens: T[]) {
   const signers = await Promise.all(tokens.map(async (token) => unlockWhale(token)));
+
   return tokens.reduce((carry, key, index) => {
     return { ...carry, [key]: signers[index] };
   }, {} as WhaleSigners<T>);

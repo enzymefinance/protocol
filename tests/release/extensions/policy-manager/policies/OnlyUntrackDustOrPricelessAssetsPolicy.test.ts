@@ -1,25 +1,22 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
-  OnlyUntrackDustOrPricelessAssetsPolicy,
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   ComptrollerLib,
   IntegrationManager,
-  PolicyHook,
-  policyManagerConfigArgs,
-  StandardToken,
-  VaultLib,
+  OnlyUntrackDustOrPricelessAssetsPolicy,
   ValueInterpreter,
-  ONE_DAY_IN_SECONDS,
+  VaultLib,
 } from '@enzymefinance/protocol';
+import { ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
   removeTrackedAssetsFromVault,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
-import { BigNumber } from 'ethers';
+import type { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -100,14 +97,14 @@ describe('validateRule', () => {
     ];
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [onlyUntrackDustOrPricelessAssetsPolicy],
         settings: ['0x'],
       }),
+      signer: fundOwner,
     });
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
@@ -122,11 +119,11 @@ describe('validateRule', () => {
 
     // Add just under the allowed dust threshold of each asset to the fund
     await addNewAssetsToFund({
-      signer: fundOwner,
+      amounts: dustToleranceInAssetsToRemove.map((dust) => dust.mul(99).div(100)),
+      assets: assetsToUntrack,
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
-      assets: assetsToUntrack,
-      amounts: dustToleranceInAssetsToRemove.map((dust) => dust.mul(99).div(100)),
+      signer: fundOwner,
     });
   });
 
@@ -143,20 +140,20 @@ describe('validateRule', () => {
 
     await expect(
       removeTrackedAssetsFromVault({
-        signer: fundOwner,
+        assets: assetsToUntrack,
         comptrollerProxy,
         integrationManager,
-        assets: assetsToUntrack,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ONLY_UNTRACK_DUST_OR_PRICELESS_ASSETS');
   });
 
   it('happy path: no assets over the dust threshold', async () => {
     await removeTrackedAssetsFromVault({
-      signer: fundOwner,
+      assets: assetsToUntrack,
       comptrollerProxy,
       integrationManager,
-      assets: assetsToUntrack,
+      signer: fundOwner,
     });
   });
 
@@ -166,17 +163,17 @@ describe('validateRule', () => {
 
     await expect(
       removeTrackedAssetsFromVault({
-        signer: fundOwner,
+        assets: assetsToUntrack,
         comptrollerProxy,
         integrationManager,
-        assets: assetsToUntrack,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Invalid asset not bypassable');
 
     await vaultCallStartAssetBypassTimelock({
+      asset: pricelessAsset,
       comptrollerProxy,
       contract: onlyUntrackDustOrPricelessAssetsPolicy,
-      asset: pricelessAsset,
     });
 
     // Same untracking tx should work within the allowed asset bypass window
@@ -185,10 +182,10 @@ describe('validateRule', () => {
     ]);
 
     await removeTrackedAssetsFromVault({
-      signer: fundOwner,
+      assets: assetsToUntrack,
       comptrollerProxy,
       integrationManager,
-      assets: assetsToUntrack,
+      signer: fundOwner,
     });
   });
 });

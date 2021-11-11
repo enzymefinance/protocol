@@ -8,8 +8,8 @@ import {
   synthetixTakeOrderArgs,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ProtocolDeployment,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -83,11 +83,11 @@ describe('parseAssetsForAction', () => {
     const result = await synthetixAdapter.parseAssetsForAction(randomAddress(), takeOrderSelector, takeOrderArgs);
 
     expect(result).toMatchFunctionOutput(synthetixAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.None,
       incomingAssets_: [incomingAsset],
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [outgoingAssetAmount],
       minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      spendAssetAmounts_: [outgoingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.None,
+      spendAssets_: [outgoingAsset],
     });
   });
 });
@@ -102,10 +102,10 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = utils.parseEther('1');
 
     const { vaultProxy } = await createNewFund({
-      signer: fork.deployer,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fork.deployer,
     });
 
     const takeOrderArgs = synthetixTakeOrderArgs({
@@ -117,8 +117,8 @@ describe('takeOrder', () => {
 
     const transferArgs = await assetTransferArgs({
       adapter: synthetixAdapter,
-      selector: takeOrderSelector,
       encodedCallArgs: takeOrderArgs,
+      selector: takeOrderSelector,
     });
 
     await expect(synthetixAdapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
@@ -134,10 +134,10 @@ describe('takeOrder', () => {
     const incomingAsset = new StandardToken(fork.config.synthetix.synths.sbtc, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Load the SynthetixExchange contract
@@ -149,10 +149,10 @@ describe('takeOrder', () => {
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
-      comptrollerProxy,
       addressResolver: synthetixAddressResolver,
-      fundOwner,
+      comptrollerProxy,
       delegate: synthetixAdapter,
+      fundOwner,
     });
 
     // Define order params
@@ -173,14 +173,14 @@ describe('takeOrder', () => {
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
     await synthetixTakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      synthetixAdapter,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: expectedIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: expectedIncomingAssetAmount,
+      synthetixAdapter,
+      vaultProxy,
     });
 
     // Get incoming and outgoing asset balances after the tx

@@ -2,6 +2,7 @@ import { StandardToken } from '@enzymefinance/protocol';
 import { getAssetUnit } from '@enzymefinance/testutils';
 
 it('whales have adequate balances', async () => {
+  /* eslint-disable sort-keys-fix/sort-keys-fix */
   const whaleTokenAddresses = {
     // primitives
     bat: fork.config.primitives.bat,
@@ -40,6 +41,7 @@ it('whales have adequate balances', async () => {
     // ldo: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
     // eurs: fork.config.unsupportedAssets.eurs,
   };
+  /* eslint-enable sort-keys-fix/sort-keys-fix */
 
   const usdc = new StandardToken(fork.config.primitives.usdc, provider);
   const whaleValueTarget = (await getAssetUnit(usdc)).mul(10000);

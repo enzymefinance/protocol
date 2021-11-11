@@ -1,5 +1,6 @@
 import { IPolicy, PolicyHook, policyManagerConfigArgs } from '@enzymefinance/protocol';
-import { constants, Signer, utils } from 'ethers';
+import type { Signer } from 'ethers';
+import { constants, utils } from 'ethers';
 
 // Policy Manager
 

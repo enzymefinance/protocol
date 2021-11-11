@@ -1,5 +1,8 @@
-import { AddressLike, Call, randomAddress } from '@enzymefinance/ethers';
-import { BytesLike, utils } from 'ethers';
+import type { AddressLike, Call } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { BytesLike } from 'ethers';
+import { utils } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 import { sighash } from '../sighash';
 

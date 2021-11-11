@@ -1,18 +1,21 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { FundDeployer, StandardToken } from '@enzymefinance/protocol';
 import {
   ComptrollerLib,
   ComptrollerProxy,
   encodeFunctionData,
-  FundDeployer,
   GasRelayPaymasterLib,
-  StandardToken,
   VaultLib,
   VaultProxy,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish, BytesLike, utils } from 'ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
 import { assertEvent } from '../assertions';
-import { buyShares, BuySharesParams } from './shares';
+import type { BuySharesParams } from './shares';
+import { buyShares } from './shares';
 
 export type InitialInvestmentParams = Omit<BuySharesParams, 'comptrollerProxy' | 'denominationAsset'>;
 
@@ -66,6 +69,7 @@ export async function createComptrollerProxy({
 
   return {
     comptrollerProxy: new ComptrollerLib(comptrollerProxyContract, signer),
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     receipt: comptrollerProxyContract.deployment!,
   };
 }
@@ -92,15 +96,15 @@ export async function createMigrationRequest({
     );
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
-    creator: signer,
     comptrollerProxy: expect.any(String) as string,
+    creator: signer,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
   });
 
   return {
-    receipt,
     comptrollerProxy: new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer),
+    receipt,
   };
 }
 
@@ -121,8 +125,8 @@ export async function createNewFund({
     .createNewFund(fundOwner, fundName, denominationAsset, sharesActionTimelock, feeManagerConfig, policyManagerConfig);
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
-    creator: signer,
     comptrollerProxy: expect.any(String) as string,
+    creator: signer,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
   });
@@ -130,9 +134,9 @@ export async function createNewFund({
   const comptrollerProxy = new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer);
 
   const newFundDeployedArgs = assertEvent(receipt, 'NewFundCreated', {
+    comptrollerProxy,
     creator: signer,
     vaultProxy: expect.any(String) as string,
-    comptrollerProxy,
   });
 
   const vaultProxy = new VaultLib(newFundDeployedArgs.vaultProxy, signer);
@@ -172,15 +176,15 @@ export async function createReconfigurationRequest({
     );
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
-    creator: signer,
     comptrollerProxy: expect.any(String) as string,
+    creator: signer,
     denominationAsset,
     sharesActionTimelock: BigNumber.from(sharesActionTimelock),
   });
 
   return {
-    receipt,
     comptrollerProxy: new ComptrollerLib(comptrollerDeployedArgs.comptrollerProxy, signer),
+    receipt,
   };
 }
 

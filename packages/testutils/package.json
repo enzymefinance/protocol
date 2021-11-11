@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.15.4",
-    "@enzymefinance/ethers": "^1.0.9",
-    "@enzymefinance/hardhat": "^1.0.10",
+    "@enzymefinance/ethers": "^1.0.10",
+    "@enzymefinance/hardhat": "^1.0.11",
     "@enzymefinance/protocol": "^4.0.0-next.2",
     "ethers": "^5.5.1"
   }

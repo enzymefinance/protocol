@@ -1,16 +1,15 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
   convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   FeeManagerActionId,
   feeManagerConfigArgs,
-  FundDeployer,
   managementFeeConfigArgs,
   performanceFeeConfigArgs,
   StandardToken,
-  VaultLib,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   assertNoEvent,
@@ -19,7 +18,6 @@ import {
   createReconfigurationRequest,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -27,13 +25,13 @@ const FIVE_PERCENT = BigNumber.from(500);
 const TEN_PERCENT = BigNumber.from(1000);
 
 const expectedGasCosts = {
-  'signal reconfiguration': {
-    usdc: 563945,
-    weth: 561687,
-  },
   'execute reconfiguration': {
     usdc: 396589,
     weth: 364170,
+  },
+  'signal reconfiguration': {
+    usdc: 563945,
+    weth: 561687,
   },
 } as const;
 
@@ -66,8 +64,8 @@ describe.each([['weth' as const], ['usdc' as const]])(
         scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')),
       });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        rate: TEN_PERCENT,
         period: 365 * 24 * 60 * 60,
+        rate: TEN_PERCENT,
       });
       const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
 
@@ -78,15 +76,15 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       // Buy shares in the fund for the fund owner
       const createFundTx = await createNewFund({
-        signer: fundOwner,
-        fundDeployer,
-        fundOwner: fundOwner,
         denominationAsset,
         feeManagerConfig,
+        fundDeployer,
+        fundOwner,
         investment: {
           buyer: investor,
           seedBuyer: true,
         },
+        signer: fundOwner,
       });
 
       comptrollerProxy = createFundTx.comptrollerProxy;
@@ -97,29 +95,29 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const mlnUnit = await getAssetUnit(mln);
 
       await addNewAssetsToFund({
-        signer: fundOwner,
+        amounts: [mlnUnit],
+        assets: [mln],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
-        assets: [mln],
-        amounts: [mlnUnit],
+        signer: fundOwner,
       });
       await provider.send('evm_increaseTime', [60 * 60 * 24 * 30]);
 
       // Settle fees
       await callOnExtension({
+        actionId: FeeManagerActionId.InvokeContinuousHook,
         comptrollerProxy,
         extension: fork.deployment.feeManager,
-        actionId: FeeManagerActionId.InvokeContinuousHook,
       });
     });
 
     it('signals a reconfiguration with the same setup', async () => {
       const { receipt } = await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset,
         feeManagerConfigData: feeManagerConfig,
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       expect(receipt).toCostAround(expectedGasCosts['signal reconfiguration'][denominationAssetId]);

@@ -1,19 +1,17 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IdleAdapter, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   claimRewardsSelector,
-  ComptrollerLib,
-  IdleAdapter,
   idleClaimRewardsArgs,
   idleLendArgs,
   idleRedeemArgs,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
   redeemSelector,
-  StandardToken,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 export async function idleClaimRewards({
   comptrollerProxy,
@@ -30,10 +28,10 @@ export async function idleClaimRewards({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: idleAdapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: idleClaimRewardsArgs({
       idleToken,
     }),
+    selector: claimRewardsSelector,
   });
 
   return comptrollerProxy
@@ -60,12 +58,12 @@ export async function idleLend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: idleAdapter,
-    selector: lendSelector,
     encodedCallArgs: idleLendArgs({
       idleToken,
-      outgoingUnderlyingAmount,
       minIncomingIdleTokenAmount,
+      outgoingUnderlyingAmount,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -92,12 +90,12 @@ export async function idleRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: idleAdapter,
-    selector: redeemSelector,
     encodedCallArgs: idleRedeemArgs({
       idleToken,
-      outgoingIdleTokenAmount,
       minIncomingUnderlyingAmount,
+      outgoingIdleTokenAmount,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy

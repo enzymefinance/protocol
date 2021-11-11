@@ -1,8 +1,6 @@
-import {
-  AssetFinalityResolver as AssetFinalityResolverContract,
-  AssetFinalityResolverArgs,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { AssetFinalityResolverArgs } from '@enzymefinance/protocol';
+import { AssetFinalityResolver as AssetFinalityResolverContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 

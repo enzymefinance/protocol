@@ -1,6 +1,8 @@
-import { ContractReceipt } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, FundDeployer, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import type { ContractReceipt } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
+import { StandardToken } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createFundDeployer,
@@ -9,7 +11,6 @@ import {
   createReconfigurationRequest,
   createVaultProxy,
   deployProtocolFixture,
-  ProtocolDeployment,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
@@ -62,10 +63,10 @@ describe('createReconfigurationRequest', () => {
       fundDeployer = fork.deployment.fundDeployer;
 
       const newFundRes = await createNewFund({
-        signer: fundOwner,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        signer: fundOwner,
       });
 
       vaultProxy = newFundRes.vaultProxy;
@@ -77,10 +78,10 @@ describe('createReconfigurationRequest', () => {
     it('cannot be called by a random user', async () => {
       await expect(
         createReconfigurationRequest({
-          signer: randomUser,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: randomUser,
+          vaultProxy,
         }),
       ).rejects.toBeRevertedWith('Only a permissioned migrator can call this function');
     });
@@ -88,37 +89,37 @@ describe('createReconfigurationRequest', () => {
     it('does not allow a VaultProxy that is not on the same release as the FundDeployer', async () => {
       // Create a VaultProxy that is not attached to a release
       const fakeVaultProxy = await createVaultProxy({
+        fundAccessor: randomUser,
+        fundOwner,
         signer: fundOwner,
         vaultLib: fork.deployment.vaultLib,
-        fundOwner,
-        fundAccessor: randomUser,
       });
 
       await expect(
         createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy: fakeVaultProxy,
           denominationAsset,
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy: fakeVaultProxy,
         }),
       ).rejects.toBeRevertedWith('VaultProxy not on this release');
     });
 
     it('does not allow a VaultProxy that has a pending reconfiguration request', async () => {
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset,
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Creating a second reconfiguration request for the vaultProxy should fail
       await expect(
         createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset,
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         }),
       ).rejects.toBeRevertedWith('VaultProxy has a pending reconfiguration request');
     });
@@ -133,20 +134,20 @@ describe('createReconfigurationRequest', () => {
       const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
+        denominationAsset,
         fundDeployer,
         fundOwner,
-        denominationAsset,
+        signer: fundOwner,
       });
 
       // Set the migrator
       await vaultProxy.setMigrator(migrator);
 
       await createReconfigurationRequest({
-        signer: migrator,
-        fundDeployer,
-        vaultProxy,
         denominationAsset,
+        fundDeployer,
+        signer: migrator,
+        vaultProxy,
       });
     });
 
@@ -166,10 +167,10 @@ describe('createReconfigurationRequest', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          signer: fundOwner,
+          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          signer: fundOwner,
         });
 
         vaultProxy = newFundRes.vaultProxy;
@@ -179,11 +180,11 @@ describe('createReconfigurationRequest', () => {
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
         const reconfiguredFundRes = await createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset,
+          fundDeployer,
           sharesActionTimelock,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         nextComptrollerProxy = reconfiguredFundRes.comptrollerProxy;
@@ -200,8 +201,8 @@ describe('createReconfigurationRequest', () => {
         expect(reconfigurationRequestDetailsRes).toMatchFunctionOutput(
           fundDeployer.getReconfigurationRequestForVaultProxy,
           {
-            nextComptrollerProxy,
             executableTimestamp: expectedExecutableTimestamp,
+            nextComptrollerProxy,
           },
         );
       });
@@ -222,10 +223,10 @@ describe('createReconfigurationRequest', () => {
 
       it('correctly emits the ReconfigurationRequestCreated event', async () => {
         assertEvent(createReconfigurationRequestReceipt, 'ReconfigurationRequestCreated', {
-          creator: fundOwner,
-          vaultProxy,
           comptrollerProxy: nextComptrollerProxy,
+          creator: fundOwner,
           executableTimestamp: expectedExecutableTimestamp,
+          vaultProxy,
         });
       });
     });
@@ -246,10 +247,10 @@ describe('executeReconfiguration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFund({
-        signer: fundOwner,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        signer: fundOwner,
       });
 
       vaultProxy = newFundRes.vaultProxy;
@@ -257,10 +258,10 @@ describe('executeReconfiguration', () => {
 
     it('cannot be called by a random user', async () => {
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       await expect(fundDeployer.connect(randomUser).executeReconfiguration(vaultProxy)).rejects.toBeRevertedWith(
@@ -276,10 +277,10 @@ describe('executeReconfiguration', () => {
 
     it('cannot be called before the timelock expires', async () => {
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       await expect(fundDeployer.connect(fundOwner).executeReconfiguration(vaultProxy)).rejects.toBeRevertedWith(
@@ -290,33 +291,33 @@ describe('executeReconfiguration', () => {
     it('does not allow a VaultProxy that is not on the same release as the FundDeployer', async () => {
       // Create the reconfigured ComptrollerProxy prior to migrating to a new release
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Migrate the vaultProxy to a new release
       const nextFundDeployer = await createFundDeployer({
-        deployer: fork.deployer,
         assetFinalityResolver: fork.deployment.assetFinalityResolver,
-        externalPositionManager: fork.deployment.externalPositionManager,
+        deployer: fork.deployer,
         dispatcher: fork.deployment.dispatcher,
+        externalPositionManager: fork.deployment.externalPositionManager,
         feeManager: fork.deployment.feeManager,
         gasRelayPaymasterFactory: fork.deployment.gasRelayPaymasterFactory,
         integrationManager: fork.deployment.integrationManager,
         policyManager: fork.deployment.policyManager,
+        setOnDispatcher: true,
+        setReleaseLive: true,
         valueInterpreter: fork.deployment.valueInterpreter,
         vaultLib: fork.deployment.vaultLib,
-        setReleaseLive: true,
-        setOnDispatcher: true,
       });
 
       await createMigrationRequest({
-        signer: fundOwner,
-        fundDeployer: nextFundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: nextFundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Warp to migration executable time
@@ -345,17 +346,17 @@ describe('executeReconfiguration', () => {
       const fundDeployer = fork.deployment.fundDeployer;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        signer: fundOwner,
       });
 
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Warp to executable time
@@ -381,20 +382,20 @@ describe('executeReconfiguration', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          signer: fundOwner,
+          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          signer: fundOwner,
         });
 
         prevComptrollerProxy = newFundRes.comptrollerProxy;
         vaultProxy = newFundRes.vaultProxy;
 
         const reconfiguredFundRes = await createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         nextComptrollerProxy = reconfiguredFundRes.comptrollerProxy;
@@ -414,8 +415,8 @@ describe('executeReconfiguration', () => {
         expect(await fundDeployer.getReconfigurationRequestForVaultProxy(vaultProxy)).toMatchFunctionOutput(
           fundDeployer.getReconfigurationRequestForVaultProxy,
           {
-            nextComptrollerProxy: constants.AddressZero,
             executableTimestamp: 0,
+            nextComptrollerProxy: constants.AddressZero,
           },
         );
       });
@@ -436,9 +437,9 @@ describe('executeReconfiguration', () => {
 
       it('correctly emits the ReconfigurationRequestExecuted event', async () => {
         assertEvent(executeReconfigurationReceipt, 'ReconfigurationRequestExecuted', {
-          vaultProxy,
-          prevComptrollerProxy,
           nextComptrollerProxy,
+          prevComptrollerProxy,
+          vaultProxy,
         });
       });
     });
@@ -459,10 +460,10 @@ describe('cancelReconfiguration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFund({
-        signer: fundOwner,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        signer: fundOwner,
       });
 
       vaultProxy = newFundRes.vaultProxy;
@@ -470,10 +471,10 @@ describe('cancelReconfiguration', () => {
 
     it('cannot be called by a random user', async () => {
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       await expect(fundDeployer.connect(randomUser).cancelReconfiguration(vaultProxy)).rejects.toBeRevertedWith(
@@ -496,17 +497,17 @@ describe('cancelReconfiguration', () => {
       const fundDeployer = fork.deployment.fundDeployer;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        signer: fundOwner,
       });
 
       await createReconfigurationRequest({
-        signer: fundOwner,
-        fundDeployer,
-        vaultProxy,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer,
+        signer: fundOwner,
+        vaultProxy,
       });
 
       // Set the migrator
@@ -528,19 +529,19 @@ describe('cancelReconfiguration', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          signer: fundOwner,
+          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          signer: fundOwner,
         });
 
         vaultProxy = newFundRes.vaultProxy;
 
         const reconfiguredFundRes = await createReconfigurationRequest({
-          signer: fundOwner,
-          fundDeployer,
-          vaultProxy,
           denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          fundDeployer,
+          signer: fundOwner,
+          vaultProxy,
         });
 
         nextComptrollerProxy = reconfiguredFundRes.comptrollerProxy;
@@ -552,8 +553,8 @@ describe('cancelReconfiguration', () => {
         expect(await fundDeployer.getReconfigurationRequestForVaultProxy(vaultProxy)).toMatchFunctionOutput(
           fundDeployer.getReconfigurationRequestForVaultProxy,
           {
-            nextComptrollerProxy: constants.AddressZero,
             executableTimestamp: 0,
+            nextComptrollerProxy: constants.AddressZero,
           },
         );
       });
@@ -564,8 +565,8 @@ describe('cancelReconfiguration', () => {
 
       it('correctly emits the ReconfigurationRequestCancelled event', async () => {
         assertEvent(cancelReconfigurationReceipt, 'ReconfigurationRequestCancelled', {
-          vaultProxy,
           nextComptrollerProxy,
+          vaultProxy,
         });
       });
     });

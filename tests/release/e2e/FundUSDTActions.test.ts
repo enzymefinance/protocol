@@ -1,11 +1,6 @@
 import { StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
-import {
-  createNewFund,
-  ProtocolDeployment,
-  getAssetBalances,
-  deployProtocolFixture,
-  uniswapV2TakeOrder,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV2TakeOrder } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -23,10 +18,10 @@ describe('adapters', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const path = [outgoingAsset, incomingAsset];
@@ -42,13 +37,13 @@ describe('adapters', () => {
     await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
     await uniswapV2TakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
-      path,
-      outgoingAssetAmount,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingAssetAmount: amountsOut[1],
+      outgoingAssetAmount,
+      path,
+      uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
+      vaultProxy,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

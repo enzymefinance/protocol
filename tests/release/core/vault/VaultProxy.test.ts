@@ -1,14 +1,16 @@
-import { AddressLike, extractEvent, MockContract, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike, MockContract } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ProtocolFeeReserveLib } from '@enzymefinance/protocol';
 import {
+  calcProtocolFeeSharesDue,
   ComptrollerLib,
   FundDeployer,
-  calcProtocolFeeSharesDue,
+  ProtocolFeeTracker,
   StandardToken,
   VaultLib,
-  ProtocolFeeTracker,
-  ProtocolFeeReserveLib,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   assertNoEvent,
@@ -16,7 +18,6 @@ import {
   createVaultProxy,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -32,10 +33,10 @@ describe('receive', () => {
     const weth = new StandardToken(fork.config.weth, provider);
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Send ETH to the VaultProxy
@@ -56,11 +57,11 @@ describe('init', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundName: 'My Fund',
+      fundOwner,
+      signer: fundOwner,
     });
 
     const accessorValue = await vaultProxy.getAccessor();
@@ -99,10 +100,10 @@ describe('setFreelyTransferableShares', () => {
     [fundOwner, fundAccessor] = fork.accounts;
 
     vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib: fork.deployment.vaultLib,
-      fundOwner,
-      fundAccessor,
     });
   });
 
@@ -186,8 +187,8 @@ describe('setAccessorForFundReconfiguration', () => {
     expect(await vaultProxy.getAccessor()).toMatchAddress(nextAccessor);
 
     assertEvent(receipt, vaultProxy.abi.getEvent('AccessorSet'), {
-      prevAccessor,
       nextAccessor,
+      prevAccessor,
     });
   });
 });
@@ -214,10 +215,10 @@ describe('buyBackProtocolFeeShares', () => {
     );
 
     vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Mint shares to the ProtocolFeeRecipient to buy back
@@ -285,9 +286,9 @@ describe('buyBackProtocolFeeShares', () => {
     expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
 
     assertEvent(receipt, 'ProtocolFeeSharesBoughtBack', {
-      sharesAmount: sharesToBuyBack,
-      mlnValue: buybackMlnValue,
       mlnBurned: expectedMlnBurned,
+      mlnValue: buybackMlnValue,
+      sharesAmount: sharesToBuyBack,
     });
   });
 });
@@ -318,10 +319,10 @@ describe('payProtocolFee', () => {
     );
 
     vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     // Initialize protocol fee tracking for the vault
@@ -360,9 +361,9 @@ describe('payProtocolFee', () => {
     const secondsSinceLastPaid = BigNumber.from(await transactionTimestamp(receipt)).sub(preTxLastPaidTimestamp);
     const expectedProtocolFee = await calcProtocolFeeSharesDue({
       protocolFeeTracker,
-      vaultProxyAddress: vaultProxy,
-      sharesSupply: preTxSharesSupply,
       secondsSinceLastPaid,
+      sharesSupply: preTxSharesSupply,
+      vaultProxyAddress: vaultProxy,
     });
     expect(expectedProtocolFee).toBeGtBigNumber(0);
 
@@ -384,10 +385,10 @@ describe('ownership', () => {
       const [fundOwner, randomUser] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(vaultProxy.connect(randomUser).setNominatedOwner(randomAddress())).rejects.toBeRevertedWith(
@@ -399,10 +400,10 @@ describe('ownership', () => {
       const [fundOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(vaultProxy.setNominatedOwner(constants.AddressZero)).rejects.toBeRevertedWith(
@@ -414,10 +415,10 @@ describe('ownership', () => {
       const [fundOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       await expect(vaultProxy.setNominatedOwner(fundOwner)).rejects.toBeRevertedWith(
@@ -429,10 +430,10 @@ describe('ownership', () => {
       const [fundOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Nominate the nextOwner a first time
@@ -449,10 +450,10 @@ describe('ownership', () => {
       const [fundOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Nominate the nextOwner a first time
@@ -479,10 +480,10 @@ describe('ownership', () => {
       const [fundOwner, randomUser] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Set nominated owner
@@ -498,10 +499,10 @@ describe('ownership', () => {
       const [fundOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Set nominated owner
@@ -531,10 +532,10 @@ describe('ownership', () => {
       const [fundOwner, randomUser] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Set nominated owner
@@ -550,10 +551,10 @@ describe('ownership', () => {
       const [fundOwner, nominatedOwner] = fork.accounts;
 
       const { vaultProxy } = await createNewFund({
-        signer: fundOwner,
-        fundOwner,
         denominationAsset: new StandardToken(fork.config.weth, provider),
         fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
       });
 
       // Set nominated owner
@@ -564,8 +565,8 @@ describe('ownership', () => {
 
       // OwnershipTransferred event properly emitted
       assertEvent(receipt, 'OwnershipTransferred', {
-        prevOwner: fundOwner,
         nextOwner: nominatedOwner,
+        prevOwner: fundOwner,
       });
 
       // Owner should now be the nominatedOwner
@@ -597,10 +598,10 @@ describe('asset managers', () => {
     );
 
     vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
   });
 
@@ -704,10 +705,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(vaultProxy.connect(fundOwner).addTrackedAsset(randomAddress())).rejects.toBeRevertedWith(
@@ -728,10 +729,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(vaultProxy.connect(fundOwner).burnShares(randomAddress(), 1)).rejects.toBeRevertedWith(
@@ -752,10 +753,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(vaultProxy.connect(fundOwner).mintShares(randomAddress(), 1)).rejects.toBeRevertedWith(
@@ -776,10 +777,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(
@@ -800,10 +801,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(
@@ -824,10 +825,10 @@ describe('Comptroller calls to vault actions', () => {
     );
 
     const vaultProxy = await createVaultProxy({
+      fundAccessor,
+      fundOwner,
       signer: fork.deployer,
       vaultLib,
-      fundOwner,
-      fundAccessor,
     });
 
     await expect(

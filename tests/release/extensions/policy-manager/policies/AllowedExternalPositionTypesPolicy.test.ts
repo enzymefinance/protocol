@@ -1,22 +1,24 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import {
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
   AllowedExternalPositionTypesPolicy,
-  allowedExternalPositionTypesPolicyArgs,
   ComptrollerLib,
   ExternalPositionManager,
-  ExternalPositionType,
   IExternalPositionProxy,
-  PolicyHook,
   PolicyManager,
+} from '@enzymefinance/protocol';
+import {
+  allowedExternalPositionTypesPolicyArgs,
+  ExternalPositionType,
+  PolicyHook,
   policyManagerConfigArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createCompoundDebtPosition,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
   reactivateExternalPosition,
   removeExternalPosition,
 } from '@enzymefinance/testutils';
@@ -62,9 +64,8 @@ describe('addFundSettings', () => {
     const externalPositionTypeIds = [0, 2, 5];
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedExternalPositionTypesPolicy],
@@ -74,6 +75,7 @@ describe('addFundSettings', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
 
     // Assert state and events
@@ -99,9 +101,8 @@ describe('addFundSettings', () => {
   it('happy path: no external position types', async () => {
     // Just confirm that the policy can be added without any config
     await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
         policies: [allowedExternalPositionTypesPolicy],
@@ -111,6 +112,7 @@ describe('addFundSettings', () => {
           }),
         ],
       }),
+      signer: fundOwner,
     });
   });
 });
@@ -155,9 +157,8 @@ describe('validateRule', () => {
     it('does not allow creating an external position of unallowed type', async () => {
       // Add policy without any allowed external position types
       const { comptrollerProxy } = await createNewFund({
-        signer: fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
           policies: [allowedExternalPositionTypesPolicy],
@@ -167,22 +168,22 @@ describe('validateRule', () => {
             }),
           ],
         }),
+        signer: fundOwner,
       });
 
       await expect(
         createCompoundDebtPosition({
-          signer: fundOwner,
           comptrollerProxy,
           externalPositionManager,
+          signer: fundOwner,
         }),
       ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_EXTERNAL_POSITION_TYPES');
     });
 
     it('allows creating an external position of an allowed type', async () => {
       const { comptrollerProxy } = await createNewFund({
-        signer: fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
           policies: [allowedExternalPositionTypesPolicy],
@@ -192,12 +193,13 @@ describe('validateRule', () => {
             }),
           ],
         }),
+        signer: fundOwner,
       });
 
       await createCompoundDebtPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
+        signer: fundOwner,
       });
     });
   });
@@ -211,25 +213,25 @@ describe('validateRule', () => {
       policyManager = fork.deployment.policyManager;
 
       const newFundRes = await createNewFund({
-        signer: fundOwner,
-        fundDeployer: fork.deployment.fundDeployer,
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
+        signer: fundOwner,
       });
       comptrollerProxy = newFundRes.comptrollerProxy;
 
       const createCompoundDebtPositionRes = await createCompoundDebtPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
+        signer: fundOwner,
       });
       externalPositionProxy = createCompoundDebtPositionRes.externalPositionProxy;
 
       await removeExternalPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
         externalPositionProxy,
+        signer: fundOwner,
       });
     });
 
@@ -245,10 +247,10 @@ describe('validateRule', () => {
 
       await expect(
         reactivateExternalPosition({
-          signer: fundOwner,
           comptrollerProxy,
           externalPositionManager,
           externalPositionProxy,
+          signer: fundOwner,
         }),
       ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_EXTERNAL_POSITION_TYPES');
     });
@@ -265,10 +267,10 @@ describe('validateRule', () => {
         );
 
       await reactivateExternalPosition({
-        signer: fundOwner,
         comptrollerProxy,
         externalPositionManager,
         externalPositionProxy,
+        signer: fundOwner,
       });
     });
   });

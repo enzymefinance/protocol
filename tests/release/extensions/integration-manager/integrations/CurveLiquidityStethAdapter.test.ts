@@ -1,21 +1,22 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   claimRewardsSelector,
-  curveStethLendArgs,
   curveStethLendAndStakeArgs,
+  curveStethLendArgs,
   curveStethRedeemArgs,
   curveStethStakeArgs,
-  curveStethUnstakeArgs,
   curveStethUnstakeAndRedeemArgs,
+  curveStethUnstakeArgs,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   stakeSelector,
   StandardToken,
-  unstakeSelector,
   unstakeAndRedeemSelector,
+  unstakeSelector,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   CurveLiquidityGaugeV2,
@@ -29,7 +30,6 @@ import {
   curveStethUnstakeAndRedeem,
   deployProtocolFixture,
   getAssetBalances,
-  ProtocolDeployment,
   vaultCallCurveMinterMint,
   vaultCallCurveMinterMintMany,
   vaultCallCurveMinterToggleApproveMint,
@@ -93,11 +93,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.None,
-        spendAssets_: [],
-        spendAssetAmounts_: [],
         incomingAssets_: [],
         minIncomingAssetAmounts_: [],
+        spendAssetAmounts_: [],
+        spendAssetsHandleType_: SpendAssetsHandleType.None,
+        spendAssets_: [],
       });
     });
   });
@@ -112,18 +112,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveStethLendArgs({
-          outgoingWethAmount,
-          outgoingStethAmount: BigNumber.from(0),
           minIncomingLPTokenAmount,
+          outgoingStethAmount: BigNumber.from(0),
+          outgoingWethAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth],
-        spendAssetAmounts_: [outgoingWethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingWethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.weth],
       });
     });
 
@@ -136,18 +136,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveStethLendArgs({
-          outgoingWethAmount: BigNumber.from(0),
-          outgoingStethAmount,
           minIncomingLPTokenAmount,
+          outgoingStethAmount,
+          outgoingWethAmount: BigNumber.from(0),
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.lido.steth],
-        spendAssetAmounts_: [outgoingStethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingStethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.lido.steth],
       });
     });
 
@@ -161,18 +161,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendSelector,
         curveStethLendArgs({
-          outgoingWethAmount,
-          outgoingStethAmount,
           minIncomingLPTokenAmount,
+          outgoingStethAmount,
+          outgoingWethAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth, fork.config.lido.steth],
-        spendAssetAmounts_: [outgoingWethAmount, outgoingStethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.lpToken],
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
+        spendAssetAmounts_: [outgoingWethAmount, outgoingStethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.weth, fork.config.lido.steth],
       });
     });
   });
@@ -187,18 +187,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
-          outgoingWethAmount,
-          outgoingStethAmount: BigNumber.from(0),
           minIncomingLiquidityGaugeTokenAmount,
+          outgoingStethAmount: BigNumber.from(0),
+          outgoingWethAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth],
-        spendAssetAmounts_: [outgoingWethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingWethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.weth],
       });
     });
 
@@ -211,18 +211,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
-          outgoingWethAmount: BigNumber.from(0),
-          outgoingStethAmount,
           minIncomingLiquidityGaugeTokenAmount,
+          outgoingStethAmount,
+          outgoingWethAmount: BigNumber.from(0),
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.lido.steth],
-        spendAssetAmounts_: [outgoingStethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingStethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.lido.steth],
       });
     });
 
@@ -236,18 +236,18 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         lendAndStakeSelector,
         curveStethLendAndStakeArgs({
-          outgoingWethAmount,
-          outgoingStethAmount,
           minIncomingLiquidityGaugeTokenAmount,
+          outgoingStethAmount,
+          outgoingWethAmount,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth, fork.config.lido.steth],
-        spendAssetAmounts_: [outgoingWethAmount, outgoingStethAmount],
         incomingAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingWethAmount, outgoingStethAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.weth, fork.config.lido.steth],
       });
     });
   });
@@ -263,19 +263,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
-          outgoingLPTokenAmount,
-          minIncomingWethAmount,
           minIncomingStethAmount,
+          minIncomingWethAmount,
+          outgoingLPTokenAmount,
           receiveSingleAsset: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.weth, fork.config.lido.steth],
         minIncomingAssetAmounts_: [minIncomingWethAmount, minIncomingStethAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.lpToken],
       });
     });
 
@@ -288,19 +288,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
-          outgoingLPTokenAmount,
-          minIncomingWethAmount,
           minIncomingStethAmount: BigNumber.from(0),
+          minIncomingWethAmount,
+          outgoingLPTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.weth],
         minIncomingAssetAmounts_: [minIncomingWethAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.lpToken],
       });
     });
 
@@ -313,19 +313,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         redeemSelector,
         curveStethRedeemArgs({
-          outgoingLPTokenAmount,
-          minIncomingWethAmount: BigNumber.from(0),
           minIncomingStethAmount,
+          minIncomingWethAmount: BigNumber.from(0),
+          outgoingLPTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.lido.steth],
         minIncomingAssetAmounts_: [minIncomingStethAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.lpToken],
       });
     });
   });
@@ -344,11 +344,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.lpToken],
-        spendAssetAmounts_: [outgoingLPTokenAmount],
         incomingAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
         minIncomingAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetAmounts_: [outgoingLPTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.lpToken],
       });
     });
   });
@@ -367,11 +367,11 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.curve.pools.steth.lpToken],
         minIncomingAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
       });
     });
   });
@@ -387,19 +387,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
-          minIncomingWethAmount,
           minIncomingStethAmount,
+          minIncomingWethAmount,
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: false,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.weth, fork.config.lido.steth],
         minIncomingAssetAmounts_: [minIncomingWethAmount, minIncomingStethAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
       });
     });
 
@@ -412,19 +412,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
-          minIncomingWethAmount,
           minIncomingStethAmount: BigNumber.from(0),
+          minIncomingWethAmount,
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.weth],
         minIncomingAssetAmounts_: [minIncomingWethAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
       });
     });
 
@@ -437,19 +437,19 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         unstakeAndRedeemSelector,
         curveStethUnstakeAndRedeemArgs({
-          outgoingLiquidityGaugeTokenAmount,
-          minIncomingWethAmount: BigNumber.from(0),
           minIncomingStethAmount,
+          minIncomingWethAmount: BigNumber.from(0),
+          outgoingLiquidityGaugeTokenAmount,
           receiveSingleAsset: true,
         }),
       );
 
       expect(result).toMatchFunctionOutput(curveLiquidityStethAdapter.parseAssetsForAction, {
-        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
-        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         incomingAssets_: [fork.config.lido.steth],
         minIncomingAssetAmounts_: [minIncomingStethAmount],
+        spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
+        spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+        spendAssets_: [fork.config.curve.pools.steth.liquidityGaugeToken],
       });
     });
   });
@@ -463,10 +463,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth
@@ -477,12 +477,12 @@ describe('lend', () => {
 
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [postTxWethBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -503,10 +503,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingStethAmount = utils.parseEther('2');
@@ -520,12 +520,12 @@ describe('lend', () => {
 
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount: BigNumber.from(0),
-      outgoingStethAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount,
+      outgoingWethAmount: BigNumber.from(0),
     });
 
     const [postTxStethBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -547,10 +547,10 @@ describe('lend', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingWethAmount = utils.parseEther('0.5');
@@ -567,12 +567,12 @@ describe('lend', () => {
 
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount,
+      outgoingWethAmount,
     });
 
     const [postTxWethBalance, postTxStethBalance, postTxLpTokenBalance] = await getAssetBalances({
@@ -596,10 +596,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth
@@ -610,12 +610,12 @@ describe('lendAndStake', () => {
 
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [postTxWethBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -636,10 +636,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of steth
@@ -654,12 +654,12 @@ describe('lendAndStake', () => {
 
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount: BigNumber.from(0),
-      outgoingStethAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount,
+      outgoingWethAmount: BigNumber.from(0),
     });
 
     const [postTxStethBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -681,10 +681,10 @@ describe('lendAndStake', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and steth
@@ -702,12 +702,12 @@ describe('lendAndStake', () => {
 
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount,
+      outgoingWethAmount,
     });
 
     const [postTxWethBalance, postTxStethBalance, postTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -732,10 +732,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend for lpTokens
@@ -743,12 +743,12 @@ describe('redeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxStethBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -760,12 +760,12 @@ describe('redeem', () => {
 
     await curveStethRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLPTokenAmount,
-      minIncomingWethAmount: BigNumber.from(1),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(1),
+      minIncomingWethAmount: BigNumber.from(1),
+      outgoingLPTokenAmount,
       receiveSingleAsset: false,
     });
 
@@ -789,10 +789,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend for lpTokens
@@ -800,12 +800,12 @@ describe('redeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -817,12 +817,12 @@ describe('redeem', () => {
 
     await curveStethRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLPTokenAmount,
-      minIncomingWethAmount: BigNumber.from(1),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(0),
+      minIncomingWethAmount: BigNumber.from(1),
+      outgoingLPTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -847,10 +847,10 @@ describe('redeem', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend for lpTokens
@@ -858,12 +858,12 @@ describe('redeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxStethBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -875,12 +875,12 @@ describe('redeem', () => {
 
     await curveStethRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLPTokenAmount,
-      minIncomingWethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(1),
+      minIncomingWethAmount: BigNumber.from(0),
+      outgoingLPTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -907,10 +907,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend and stake for liquidity gauge tokens
@@ -918,12 +918,12 @@ describe('unstakeAndRedeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxStethBalance, preTxLiquidityGaugeTokenBalance] = await getAssetBalances({
@@ -935,12 +935,12 @@ describe('unstakeAndRedeem', () => {
 
     await curveStethUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLiquidityGaugeTokenAmount,
-      minIncomingWethAmount: BigNumber.from(1),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(1),
+      minIncomingWethAmount: BigNumber.from(1),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: false,
     });
 
@@ -966,10 +966,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend for lpTokens
@@ -977,12 +977,12 @@ describe('unstakeAndRedeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -994,12 +994,12 @@ describe('unstakeAndRedeem', () => {
 
     await curveStethUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLiquidityGaugeTokenAmount,
-      minIncomingWethAmount: BigNumber.from(1),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(0),
+      minIncomingWethAmount: BigNumber.from(1),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -1024,10 +1024,10 @@ describe('unstakeAndRedeem', () => {
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Seed fund with a surplus of weth and lend for lpTokens
@@ -1035,12 +1035,12 @@ describe('unstakeAndRedeem', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     const [preTxWethBalance, preTxStethBalance, preTxLpTokenBalance] = await getAssetBalances({
@@ -1052,12 +1052,12 @@ describe('unstakeAndRedeem', () => {
 
     await curveStethUnstakeAndRedeem({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingLiquidityGaugeTokenAmount,
-      minIncomingWethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingStethAmount: BigNumber.from(1),
+      minIncomingWethAmount: BigNumber.from(0),
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset: true,
     });
 
@@ -1084,10 +1084,10 @@ describe('stake and unstake', () => {
     const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // First, acquire some lpTokens by lending on Curve
@@ -1096,12 +1096,12 @@ describe('stake and unstake', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount.mul(2));
     await curveStethLend({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLPTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     // Stake the LP tokens
@@ -1110,9 +1110,9 @@ describe('stake and unstake', () => {
 
     await curveStethStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLPTokenAmount: stakeLPTokenAmount,
     });
 
@@ -1129,9 +1129,9 @@ describe('stake and unstake', () => {
     const unstakeLiquidityGaugeTokenAmount = stakeLPTokenAmount.div(2);
     await curveStethUnstake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       outgoingLiquidityGaugeTokenAmount: unstakeLiquidityGaugeTokenAmount,
     });
 
@@ -1156,10 +1156,10 @@ describe('claimRewards', () => {
     const weth = new StandardToken(fork.config.weth, whales.weth);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Lend and stake to start accruing rewards
@@ -1167,12 +1167,12 @@ describe('claimRewards', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount);
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     // TODO: check if call fails if no rewards available
@@ -1187,17 +1187,17 @@ describe('claimRewards', () => {
 
     // Approve the adapter to claim $CRV rewards on behalf of the vault
     await vaultCallCurveMinterToggleApproveMint({
+      account: curveLiquidityStethAdapter,
       comptrollerProxy,
       minter: fork.config.curve.minter,
-      account: curveLiquidityStethAdapter,
     });
 
     // Claim all earned rewards
     await curveStethClaimRewards({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
     });
 
     const [postClaimRewardsCrvBalance, postClaimRewardsLdoBalance] = await getAssetBalances({
@@ -1221,10 +1221,10 @@ describe('claim rewards (manually)', () => {
     const minter = new CurveMinter(fork.config.curve.minter, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Lend and stake to start accruing rewards
@@ -1232,12 +1232,12 @@ describe('claim rewards (manually)', () => {
     await weth.transfer(vaultProxy, outgoingWethAmount);
     await curveStethLendAndStake({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveLiquidityStethAdapter,
-      outgoingWethAmount,
-      outgoingStethAmount: BigNumber.from(0),
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       minIncomingLiquidityGaugeTokenAmount: BigNumber.from(1),
+      outgoingStethAmount: BigNumber.from(0),
+      outgoingWethAmount,
     });
 
     // Warp ahead in time to accrue rewards
@@ -1246,8 +1246,8 @@ describe('claim rewards (manually)', () => {
     // Claim accrued CRV from the Minter directly via mint() and assert CRV balance increase
     await vaultCallCurveMinterMint({
       comptrollerProxy,
-      minter,
       gauge,
+      minter,
     });
     const postMintTxCrvBalance = await crv.balanceOf(vaultProxy);
     expect(postMintTxCrvBalance).toBeGtBigNumber(0);
@@ -1258,17 +1258,17 @@ describe('claim rewards (manually)', () => {
     // Claim accrued CRV from the Minter directly via mint_many()
     await vaultCallCurveMinterMintMany({
       comptrollerProxy,
-      minter,
       gauges: [gauge],
+      minter,
     });
     const postMintManyTxCrvBalance = await crv.balanceOf(vaultProxy);
     expect(postMintManyTxCrvBalance).toBeGtBigNumber(postMintTxCrvBalance);
 
     // Claim accrued CRV from the Minter by a third party via mint_for()
     await vaultCallCurveMinterToggleApproveMint({
+      account: approvedMintForCaller,
       comptrollerProxy,
       minter,
-      account: approvedMintForCaller,
     });
 
     await minter.connect(approvedMintForCaller).mint_for(gauge, vaultProxy);

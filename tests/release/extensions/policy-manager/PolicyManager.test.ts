@@ -8,14 +8,14 @@ import {
   WETH,
 } from '@enzymefinance/protocol';
 import {
-  createNewFund,
-  generateMockPolicies,
-  mockGenericSwap,
+  addTrackedAssetsToVault,
   assertEvent,
   createFundDeployer,
   createMigrationRequest,
+  createNewFund,
   deployProtocolFixture,
-  addTrackedAssetsToVault,
+  generateMockPolicies,
+  mockGenericSwap,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -48,18 +48,18 @@ async function snapshot() {
   const denominationAsset = new WETH(config.weth, whales.weth);
 
   return {
-    deployer,
     accounts: remainingAccounts,
     config,
+    denominationAsset,
+    deployer,
     deployment,
-    policies,
+    fundOwner,
+    mockGenericAdapter,
+    mockGenericIntegratee,
     orderedPolicies,
+    policies,
     policiesSettingsData,
     policyManagerConfig,
-    denominationAsset,
-    fundOwner,
-    mockGenericIntegratee,
-    mockGenericAdapter,
   };
 }
 
@@ -100,19 +100,19 @@ describe('activateForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
-      deployer,
       assetFinalityResolver,
-      externalPositionManager,
+      deployer,
       dispatcher,
+      externalPositionManager,
       feeManager,
       gasRelayPaymasterFactory,
       integrationManager,
@@ -122,11 +122,11 @@ describe('activateForFund', () => {
     });
 
     await createMigrationRequest({
-      signer: fundOwner,
-      fundDeployer: nextFundDeployer,
-      vaultProxy,
       denominationAsset,
+      fundDeployer: nextFundDeployer,
       policyManagerConfigData: policyManagerConfig,
+      signer: fundOwner,
+      vaultProxy,
     });
 
     const signedNextFundDeployer = nextFundDeployer.connect(fundOwner);
@@ -158,11 +158,11 @@ describe('disablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Disable the policy
@@ -188,11 +188,11 @@ describe('disablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Attempting to disable a policy that cannot be disabled should fail
@@ -224,8 +224,8 @@ describe('disablePolicyForFund', () => {
     for (const i in implementedHooks) {
       expect(policyDisabledEvents[0]).toMatchEventArgs({
         comptrollerProxy,
-        policy: mockPostBuySharesPolicy,
         hook: implementedHooks[i],
+        policy: mockPostBuySharesPolicy,
       });
     }
   });
@@ -243,10 +243,10 @@ describe('enablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Add the policy with addFundSettings
@@ -267,10 +267,10 @@ describe('enablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const revertReason = '_policy restricts actions of current investors';
@@ -299,11 +299,11 @@ describe('enablePolicyForFund', () => {
 
     // Create fund and enable mockPostBuySharesPolicy
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Attempt to enable an already enabled policy
@@ -324,10 +324,10 @@ describe('enablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Assert that the policy disabled on the fund
@@ -375,10 +375,10 @@ describe('enablePolicyForFund', () => {
 
     // Create fund without policy config
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Add the policy with addFundSettings
@@ -431,11 +431,11 @@ describe('setConfigForFund', () => {
 
     await expect(
       createNewFund({
-        signer: fundOwner,
-        fundOwner,
-        fundDeployer,
         denominationAsset,
+        fundDeployer,
+        fundOwner,
         policyManagerConfig,
+        signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('policies and settingsData array lengths unequal');
   });
@@ -451,11 +451,11 @@ describe('setConfigForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, receipt, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Assert state for fund
@@ -507,11 +507,11 @@ describe('setConfigForFund', () => {
     const policyManagerConfig = policyManagerConfigArgs({ policies, settings: policiesSettings });
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Check that the policy has been added
@@ -542,11 +542,11 @@ describe('updatePolicySettingsForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Update the mockPostBuySharesPolicy with new setting with non-fundOwner account
@@ -567,11 +567,11 @@ describe('updatePolicySettingsForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     const policySettings = utils.randomBytes(10);
@@ -605,25 +605,25 @@ describe('validatePolicies', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     const assetsToAdd = [dai, mln];
 
     await addTrackedAssetsToVault({
-      signer: fundOwner,
+      assets: assetsToAdd,
       comptrollerProxy,
       integrationManager,
-      assets: assetsToAdd,
+      signer: fundOwner,
     });
 
     const ruleArgs = validateRuleAddTrackedAssetsArgs({
-      caller: fundOwner,
       assets: assetsToAdd,
+      caller: fundOwner,
     });
     expect(mockAddTrackedAssetsPolicy.validateRule).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
@@ -647,11 +647,11 @@ describe('validatePolicies', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset,
+      fundDeployer,
+      fundOwner,
       policyManagerConfig,
+      signer: fundOwner,
     });
 
     // Set policy to return validateRule as false
@@ -660,10 +660,10 @@ describe('validatePolicies', () => {
     await expect(
       mockGenericSwap({
         comptrollerProxy,
-        vaultProxy,
-        integrationManager,
         fundOwner,
+        integrationManager,
         mockGenericAdapter,
+        vaultProxy,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false');
   });

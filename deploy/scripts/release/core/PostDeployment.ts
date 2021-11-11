@@ -3,7 +3,7 @@ import {
   pricelessAssetBypassStartAssetBypassTimelockSelector,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 

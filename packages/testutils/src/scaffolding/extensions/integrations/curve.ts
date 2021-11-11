@@ -1,9 +1,19 @@
-import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
+import { contract } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type {
+  ComptrollerLib,
+  CurveExchangeAdapter,
+  CurveLiquidityAaveAdapter,
+  CurveLiquidityEursAdapter,
+  CurveLiquiditySethAdapter,
+  CurveLiquidityStethAdapter,
+  IntegrationManager,
+  StandardToken,
+} from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   claimRewardsSelector,
-  ComptrollerLib,
   curveAaveLendAndStakeArgs,
   curveAaveLendArgs,
   curveAaveRedeemArgs,
@@ -16,11 +26,6 @@ import {
   curveEursStakeArgs,
   curveEursUnstakeAndRedeemArgs,
   curveEursUnstakeArgs,
-  CurveExchangeAdapter,
-  CurveLiquidityAaveAdapter,
-  CurveLiquidityEursAdapter,
-  CurveLiquiditySethAdapter,
-  CurveLiquidityStethAdapter,
   curveSethLendAndStakeArgs,
   curveSethLendArgs,
   curveSethRedeemArgs,
@@ -34,18 +39,17 @@ import {
   curveStethUnstakeAndRedeemArgs,
   curveStethUnstakeArgs,
   curveTakeOrderArgs,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   stakeSelector,
-  StandardToken,
   takeOrderSelector,
   unstakeAndRedeemSelector,
   unstakeSelector,
 } from '@enzymefinance/protocol';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
   claim_rewards: Send<(_addr: AddressLike) => void>;
@@ -98,17 +102,17 @@ export async function curveTakeOrder({
   minIncomingAssetAmount?: BigNumberish;
 }) {
   const takeOrderArgs = curveTakeOrderArgs({
+    incomingAsset,
+    minIncomingAssetAmount,
+    outgoingAsset,
+    outgoingAssetAmount,
     pool,
-    outgoingAsset: outgoingAsset,
-    outgoingAssetAmount: outgoingAssetAmount,
-    incomingAsset: incomingAsset,
-    minIncomingAssetAmount: minIncomingAssetAmount,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: curveExchangeAdapter,
-    selector: takeOrderSelector,
     encodedCallArgs: takeOrderArgs,
+    selector: takeOrderSelector,
   });
 
   return comptrollerProxy
@@ -131,8 +135,8 @@ export function curveAaveClaimRewards({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: constants.HashZero,
+    selector: claimRewardsSelector,
   });
 
   return comptrollerProxy
@@ -163,14 +167,14 @@ export function curveAaveLend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: lendSelector,
     encodedCallArgs: curveAaveLendArgs({
+      minIncomingLPTokenAmount,
       outgoingAaveDaiAmount,
       outgoingAaveUsdcAmount,
       outgoingAaveUsdtAmount,
-      minIncomingLPTokenAmount,
       useUnderlyings,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -201,14 +205,14 @@ export function curveAaveLendAndStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: lendAndStakeSelector,
     encodedCallArgs: curveAaveLendAndStakeArgs({
+      minIncomingLiquidityGaugeTokenAmount,
       outgoingAaveDaiAmount,
       outgoingAaveUsdcAmount,
       outgoingAaveUsdtAmount,
-      minIncomingLiquidityGaugeTokenAmount,
       useUnderlyings,
     }),
+    selector: lendAndStakeSelector,
   });
 
   return comptrollerProxy
@@ -241,15 +245,15 @@ export function curveAaveRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: redeemSelector,
     encodedCallArgs: curveAaveRedeemArgs({
-      outgoingLPTokenAmount,
       minIncomingAaveDaiAmount,
       minIncomingAaveUsdcAmount,
       minIncomingAaveUsdtAmount,
+      outgoingLPTokenAmount,
       receiveSingleAsset,
       useUnderlyings,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy
@@ -272,10 +276,10 @@ export function curveAaveStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: stakeSelector,
     encodedCallArgs: curveAaveStakeArgs({
       outgoingLPTokenAmount,
     }),
+    selector: stakeSelector,
   });
 
   return comptrollerProxy
@@ -308,15 +312,15 @@ export function curveAaveUnstakeAndRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: unstakeAndRedeemSelector,
     encodedCallArgs: curveAaveUnstakeAndRedeemArgs({
-      outgoingLiquidityGaugeTokenAmount,
       minIncomingAaveDaiAmount,
       minIncomingAaveUsdcAmount,
       minIncomingAaveUsdtAmount,
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset,
       useUnderlyings,
     }),
+    selector: unstakeAndRedeemSelector,
   });
 
   return comptrollerProxy
@@ -339,10 +343,10 @@ export function curveAaveUnstake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAaveAdapter,
-    selector: unstakeSelector,
     encodedCallArgs: curveAaveUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
+    selector: unstakeSelector,
   });
 
   return comptrollerProxy
@@ -365,8 +369,8 @@ export function curveEursClaimRewards({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: constants.HashZero,
+    selector: claimRewardsSelector,
   });
 
   return comptrollerProxy
@@ -393,12 +397,12 @@ export function curveEursLend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: lendSelector,
     encodedCallArgs: curveEursLendArgs({
+      minIncomingLPTokenAmount,
       outgoingEursAmount,
       outgoingSeurAmount,
-      minIncomingLPTokenAmount,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -425,12 +429,12 @@ export function curveEursLendAndStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: lendAndStakeSelector,
     encodedCallArgs: curveEursLendAndStakeArgs({
+      minIncomingLiquidityGaugeTokenAmount,
       outgoingEursAmount,
       outgoingSeurAmount,
-      minIncomingLiquidityGaugeTokenAmount,
     }),
+    selector: lendAndStakeSelector,
   });
 
   return comptrollerProxy
@@ -459,13 +463,13 @@ export function curveEursRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: redeemSelector,
     encodedCallArgs: curveEursRedeemArgs({
-      outgoingLPTokenAmount,
       minIncomingEursAmount,
       minIncomingSeurAmount,
+      outgoingLPTokenAmount,
       receiveSingleAsset,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy
@@ -488,10 +492,10 @@ export function curveEursStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: stakeSelector,
     encodedCallArgs: curveEursStakeArgs({
       outgoingLPTokenAmount,
     }),
+    selector: stakeSelector,
   });
 
   return comptrollerProxy
@@ -520,13 +524,13 @@ export function curveEursUnstakeAndRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: unstakeAndRedeemSelector,
     encodedCallArgs: curveEursUnstakeAndRedeemArgs({
-      outgoingLiquidityGaugeTokenAmount,
       minIncomingEursAmount,
       minIncomingSeurAmount,
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset,
     }),
+    selector: unstakeAndRedeemSelector,
   });
 
   return comptrollerProxy
@@ -549,10 +553,10 @@ export function curveEursUnstake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityEursAdapter,
-    selector: unstakeSelector,
     encodedCallArgs: curveEursUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
+    selector: unstakeSelector,
   });
 
   return comptrollerProxy
@@ -575,8 +579,8 @@ export function curveSethClaimRewards({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: constants.HashZero,
+    selector: claimRewardsSelector,
   });
 
   return comptrollerProxy
@@ -603,12 +607,12 @@ export function curveSethLend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: lendSelector,
     encodedCallArgs: curveSethLendArgs({
-      outgoingWethAmount,
-      outgoingSethAmount,
       minIncomingLPTokenAmount,
+      outgoingSethAmount,
+      outgoingWethAmount,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -635,12 +639,12 @@ export function curveSethLendAndStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: lendAndStakeSelector,
     encodedCallArgs: curveSethLendAndStakeArgs({
-      outgoingWethAmount,
-      outgoingSethAmount,
       minIncomingLiquidityGaugeTokenAmount,
+      outgoingSethAmount,
+      outgoingWethAmount,
     }),
+    selector: lendAndStakeSelector,
   });
 
   return comptrollerProxy
@@ -669,13 +673,13 @@ export function curveSethRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: redeemSelector,
     encodedCallArgs: curveSethRedeemArgs({
-      outgoingLPTokenAmount,
-      minIncomingWethAmount,
       minIncomingSethAmount,
+      minIncomingWethAmount,
+      outgoingLPTokenAmount,
       receiveSingleAsset,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy
@@ -698,10 +702,10 @@ export function curveSethStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: stakeSelector,
     encodedCallArgs: curveSethStakeArgs({
       outgoingLPTokenAmount,
     }),
+    selector: stakeSelector,
   });
 
   return comptrollerProxy
@@ -730,13 +734,13 @@ export function curveSethUnstakeAndRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: unstakeAndRedeemSelector,
     encodedCallArgs: curveSethUnstakeAndRedeemArgs({
-      outgoingLiquidityGaugeTokenAmount,
-      minIncomingWethAmount,
       minIncomingSethAmount,
+      minIncomingWethAmount,
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset,
     }),
+    selector: unstakeAndRedeemSelector,
   });
 
   return comptrollerProxy
@@ -759,10 +763,10 @@ export function curveSethUnstake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquiditySethAdapter,
-    selector: unstakeSelector,
     encodedCallArgs: curveSethUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
+    selector: unstakeSelector,
   });
 
   return comptrollerProxy
@@ -785,8 +789,8 @@ export function curveStethClaimRewards({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: claimRewardsSelector,
     encodedCallArgs: constants.HashZero,
+    selector: claimRewardsSelector,
   });
 
   return comptrollerProxy
@@ -813,12 +817,12 @@ export function curveStethLend({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: lendSelector,
     encodedCallArgs: curveStethLendArgs({
-      outgoingWethAmount,
-      outgoingStethAmount,
       minIncomingLPTokenAmount,
+      outgoingStethAmount,
+      outgoingWethAmount,
     }),
+    selector: lendSelector,
   });
 
   return comptrollerProxy
@@ -845,12 +849,12 @@ export function curveStethLendAndStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: lendAndStakeSelector,
     encodedCallArgs: curveStethLendAndStakeArgs({
-      outgoingWethAmount,
-      outgoingStethAmount,
       minIncomingLiquidityGaugeTokenAmount,
+      outgoingStethAmount,
+      outgoingWethAmount,
     }),
+    selector: lendAndStakeSelector,
   });
 
   return comptrollerProxy
@@ -879,13 +883,13 @@ export function curveStethRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: redeemSelector,
     encodedCallArgs: curveStethRedeemArgs({
-      outgoingLPTokenAmount,
-      minIncomingWethAmount,
       minIncomingStethAmount,
+      minIncomingWethAmount,
+      outgoingLPTokenAmount,
       receiveSingleAsset,
     }),
+    selector: redeemSelector,
   });
 
   return comptrollerProxy
@@ -908,10 +912,10 @@ export function curveStethStake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: stakeSelector,
     encodedCallArgs: curveStethStakeArgs({
       outgoingLPTokenAmount,
     }),
+    selector: stakeSelector,
   });
 
   return comptrollerProxy
@@ -940,13 +944,13 @@ export function curveStethUnstakeAndRedeem({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: unstakeAndRedeemSelector,
     encodedCallArgs: curveStethUnstakeAndRedeemArgs({
-      outgoingLiquidityGaugeTokenAmount,
-      minIncomingWethAmount,
       minIncomingStethAmount,
+      minIncomingWethAmount,
+      outgoingLiquidityGaugeTokenAmount,
       receiveSingleAsset,
     }),
+    selector: unstakeAndRedeemSelector,
   });
 
   return comptrollerProxy
@@ -969,10 +973,10 @@ export function curveStethUnstake({
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityStethAdapter,
-    selector: unstakeSelector,
     encodedCallArgs: curveStethUnstakeArgs({
       outgoingLiquidityGaugeTokenAmount,
     }),
+    selector: unstakeSelector,
   });
 
   return comptrollerProxy

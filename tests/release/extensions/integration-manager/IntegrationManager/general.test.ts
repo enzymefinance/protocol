@@ -26,10 +26,10 @@ async function snapshot() {
 
   const denominationAsset = new WETH(config.weth, whales.weth);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    signer: deployer,
-    fundOwner,
-    fundDeployer: deployment.fundDeployer,
     denominationAsset,
+    fundDeployer: deployment.fundDeployer,
+    fundOwner,
+    signer: deployer,
   });
 
   // Deploy connected mocks for ComptrollerProxy and VaultProxy
@@ -40,8 +40,8 @@ async function snapshot() {
 
   return {
     accounts: remainingAccounts,
-    deployment,
     config,
+    deployment,
     fund: {
       comptrollerProxy,
       denominationAsset,
@@ -87,10 +87,10 @@ describe('setConfigForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer,
       denominationAsset: new StandardToken(usdc, provider),
+      fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Assert state
@@ -113,20 +113,20 @@ describe('callOnExtension actions', () => {
       // Call should be allowed by the fund owner
       await expect(
         addTrackedAssetsToVault({
-          signer: fundOwner,
+          assets: [assetToAdd1],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToAdd1],
+          signer: fundOwner,
         }),
       ).resolves.toBeReceipt();
 
       // Call not allowed by the yet-to-be added asset manager
       await expect(
         addTrackedAssetsToVault({
-          signer: newAssetManager,
+          assets: [assetToAdd2],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToAdd2],
+          signer: newAssetManager,
         }),
       ).rejects.toBeRevertedWith('Unauthorized');
 
@@ -136,10 +136,10 @@ describe('callOnExtension actions', () => {
       // Call should be allowed for the asset manager
       await expect(
         addTrackedAssetsToVault({
-          signer: newAssetManager,
+          assets: [assetToAdd2],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToAdd2],
+          signer: newAssetManager,
         }),
       ).resolves.toBeReceipt();
     });
@@ -152,10 +152,10 @@ describe('callOnExtension actions', () => {
 
       await expect(
         addTrackedAssetsToVault({
-          signer: fundOwner,
+          assets: [randomAddress()],
           comptrollerProxy,
           integrationManager,
-          assets: [randomAddress()],
+          signer: fundOwner,
         }),
       ).rejects.toBeRevertedWith('Unsupported asset');
     });
@@ -178,10 +178,10 @@ describe('callOnExtension actions', () => {
 
       // Add the assets
       await addTrackedAssetsToVault({
-        signer: fundOwner,
+        assets,
         comptrollerProxy,
         integrationManager,
-        assets,
+        signer: fundOwner,
       });
 
       // Both assets should now be tracked
@@ -194,8 +194,8 @@ describe('callOnExtension actions', () => {
         comptrollerProxy,
         PolicyHook.AddTrackedAssets,
         validateRuleAddTrackedAssetsArgs({
-          caller: fundOwner,
           assets,
+          caller: fundOwner,
         }),
       );
     });
@@ -214,29 +214,29 @@ describe('callOnExtension actions', () => {
 
       // Add assets to the fund with no balances
       await addTrackedAssetsToVault({
-        signer: fundOwner,
+        assets: [assetToRemove1, assetToRemove2],
         comptrollerProxy,
         integrationManager,
-        assets: [assetToRemove1, assetToRemove2],
+        signer: fundOwner,
       });
 
       // Call to remove an asset should be allowed by the fund owner
       await expect(
         removeTrackedAssetsFromVault({
-          signer: fundOwner,
+          assets: [assetToRemove1],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToRemove1],
+          signer: fundOwner,
         }),
       ).resolves.toBeReceipt();
 
       // Call to remove an asset should not be allowed by the yet-to-be-added asset manager
       await expect(
         removeTrackedAssetsFromVault({
-          signer: newAssetManager,
+          assets: [assetToRemove2],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToRemove2],
+          signer: newAssetManager,
         }),
       ).rejects.toBeRevertedWith('Unauthorized');
 
@@ -246,10 +246,10 @@ describe('callOnExtension actions', () => {
       // Call to remove an asset should now be allowed for the added asset manager
       await expect(
         removeTrackedAssetsFromVault({
-          signer: newAssetManager,
+          assets: [assetToRemove2],
           comptrollerProxy,
           integrationManager,
-          assets: [assetToRemove2],
+          signer: newAssetManager,
         }),
       ).resolves.toBeReceipt();
     });
@@ -267,18 +267,18 @@ describe('callOnExtension actions', () => {
 
       // Add assets to the fund with no balances
       await addTrackedAssetsToVault({
-        signer: fundOwner,
+        assets: assetsToRemove,
         comptrollerProxy,
         integrationManager,
-        assets: assetsToRemove,
+        signer: fundOwner,
       });
 
       // Remove the assets
       await removeTrackedAssetsFromVault({
-        signer: fundOwner,
+        assets: assetsToRemove,
         comptrollerProxy,
         integrationManager,
-        assets: assetsToRemove,
+        signer: fundOwner,
       });
 
       // Both assets should no longer be tracked
@@ -291,8 +291,8 @@ describe('callOnExtension actions', () => {
         comptrollerProxy,
         PolicyHook.RemoveTrackedAssets,
         validateRuleRemoveTrackedAssetsArgs({
-          caller: fundOwner,
           assets: assetsToRemove,
+          caller: fundOwner,
         }),
       );
     });

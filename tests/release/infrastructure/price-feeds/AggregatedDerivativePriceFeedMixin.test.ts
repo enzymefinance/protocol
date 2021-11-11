@@ -1,4 +1,5 @@
-import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { IDerivativePriceFeed, MockToken } from '@enzymefinance/protocol';
 import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
@@ -25,15 +26,15 @@ async function snapshot() {
 
   return {
     accounts,
-    fundDeployer,
-    compoundTokens,
-    uniswapV2PoolTokens,
     compoundPriceFeed,
-    uniswapV2PoolPriceFeed,
+    compoundTokens,
+    fundDeployer,
     mockDerivative1,
     mockDerivative2,
     mockDerivativePriceFeed1,
     mockDerivativePriceFeed2,
+    uniswapV2PoolPriceFeed,
+    uniswapV2PoolTokens,
     valueInterpreter,
   };
 }

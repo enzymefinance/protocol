@@ -1,5 +1,6 @@
-import { AddressLike, Call, Contract, contract, Send } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
+import { contract } from '@enzymefinance/ethers';
+import type { BigNumber, BigNumberish } from 'ethers';
 
 // Persistent core
 export * from './codegen/Dispatcher';

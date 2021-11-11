@@ -1,8 +1,11 @@
-import { AddressLike, MockContract, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike, MockContract } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { calcProtocolFeeSharesDue, FundDeployer, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
-import { assertEvent, ProtocolDeployment, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, utils } from 'ethers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -99,9 +102,9 @@ describe('payFee', () => {
       expect(await protocolFeeTracker.getLastPaidForVault(mockVaultProxy)).toEqBigNumber(txTimestamp);
 
       assertEvent(receipt, 'FeePaidForVault', {
-        vaultProxy: mockVaultProxy,
-        sharesAmount: 0,
         secondsPaid: BigNumber.from(txTimestamp).sub(preTxLastPaidTimestamp),
+        sharesAmount: 0,
+        vaultProxy: mockVaultProxy,
       });
     });
 
@@ -126,9 +129,9 @@ describe('payFee', () => {
       const secondsSinceLastPaid = BigNumber.from(txTimestamp).sub(preTxLastPaidTimestamp);
       const expectedProtocolFee = await calcProtocolFeeSharesDue({
         protocolFeeTracker,
-        vaultProxyAddress: mockVaultProxy,
-        sharesSupply,
         secondsSinceLastPaid,
+        sharesSupply,
+        vaultProxyAddress: mockVaultProxy,
       });
       expect(expectedProtocolFee).toBeGtBigNumber(0);
 
@@ -140,9 +143,9 @@ describe('payFee', () => {
       expect(sharesDueReturnValue).toBeAroundBigNumber(expectedProtocolFee, tolerance);
 
       assertEvent(receipt, 'FeePaidForVault', {
-        vaultProxy: mockVaultProxy,
-        sharesAmount: expectedProtocolFee,
         secondsPaid: BigNumber.from(txTimestamp).sub(preTxLastPaidTimestamp),
+        sharesAmount: expectedProtocolFee,
+        vaultProxy: mockVaultProxy,
       });
     });
 
@@ -172,9 +175,9 @@ describe('payFee', () => {
       const secondsSinceLastPaid = BigNumber.from(txTimestamp).sub(preTxLastPaidTimestamp);
       const expectedProtocolFee = await calcProtocolFeeSharesDue({
         protocolFeeTracker,
-        vaultProxyAddress: mockVaultProxy,
-        sharesSupply,
         secondsSinceLastPaid,
+        sharesSupply,
+        vaultProxyAddress: mockVaultProxy,
       });
       expect(expectedProtocolFee).toBeGtBigNumber(0);
 
@@ -186,9 +189,9 @@ describe('payFee', () => {
       expect(sharesDueReturnValue).toBeAroundBigNumber(expectedProtocolFee, tolerance);
 
       assertEvent(receipt, 'FeePaidForVault', {
-        vaultProxy: mockVaultProxy,
-        sharesAmount: expectedProtocolFee,
         secondsPaid: BigNumber.from(txTimestamp).sub(preTxLastPaidTimestamp),
+        sharesAmount: expectedProtocolFee,
+        vaultProxy: mockVaultProxy,
       });
     });
   });
@@ -271,8 +274,8 @@ describe('admin functions', () => {
       expect(await protocolFeeTracker.getFeeBpsForVault(vaultProxyAddress)).toEqBigNumber(nextFeeBpsOverride);
 
       assertEvent(receipt, 'FeeBpsOverrideSetForVault', {
-        vaultProxy: vaultProxyAddress,
         nextFeeBpsOverride,
+        vaultProxy: vaultProxyAddress,
       });
     });
   });
@@ -334,9 +337,9 @@ describe('admin functions', () => {
       expect(await protocolFeeTracker.getLastPaidForVault(vaultProxyAddress)).toEqBigNumber(nextTimestamp);
 
       assertEvent(receipt, 'LastPaidSetForVault', {
-        vaultProxy: vaultProxyAddress,
-        prevTimestamp,
         nextTimestamp,
+        prevTimestamp,
+        vaultProxy: vaultProxyAddress,
       });
     });
   });

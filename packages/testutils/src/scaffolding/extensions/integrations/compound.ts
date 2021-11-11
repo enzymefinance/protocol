@@ -1,17 +1,18 @@
-import { AddressLike, Contract, contract, resolveAddress, Send } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike, Contract, Send } from '@enzymefinance/ethers';
+import { contract, resolveAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { CompoundAdapter, IntegrationManager, VaultLib } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
-  CompoundAdapter,
   compoundArgs,
-  IntegrationManager,
   IntegrationManagerActionId,
   lendSelector,
   redeemSelector,
-  VaultLib,
 } from '@enzymefinance/protocol';
-import { BigNumberish, utils } from 'ethers';
-import { ComptrollerLib } from '../../../../../protocol/src/codegen/ComptrollerLib';
+import type { BigNumberish } from 'ethers';
+import { utils } from 'ethers';
+
+import type { ComptrollerLib } from '../../../../../protocol/src/codegen/ComptrollerLib';
 
 export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
   claimComp: Send<(_account: AddressLike) => void>;
@@ -40,14 +41,14 @@ export async function compoundLend({
 }) {
   const lendArgs = compoundArgs({
     cToken,
-    outgoingAssetAmount: tokenAmount,
     minIncomingAssetAmount: cTokenAmount,
+    outgoingAssetAmount: tokenAmount,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: compoundAdapter,
-    selector: lendSelector,
     encodedCallArgs: lendArgs,
+    selector: lendSelector,
   });
 
   const lendTx = comptrollerProxy
@@ -77,14 +78,14 @@ export async function compoundRedeem({
 }) {
   const redeemArgs = compoundArgs({
     cToken: resolveAddress(cToken),
-    outgoingAssetAmount: cTokenAmount,
     minIncomingAssetAmount: tokenAmount,
+    outgoingAssetAmount: cTokenAmount,
   });
 
   const callArgs = callOnIntegrationArgs({
     adapter: compoundAdapter,
-    selector: redeemSelector,
     encodedCallArgs: redeemArgs,
+    selector: redeemSelector,
   });
 
   const redeemTx = comptrollerProxy

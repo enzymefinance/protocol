@@ -3,25 +3,22 @@
  * the ExitRateFeeBase tests, i.e., the use of settlement type
  */
 
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ExitRateBurnFee, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
 import {
-  ExitRateBurnFee,
-  FeeHook,
-  FeeSettlementType,
+  calcProtocolFeeSharesDue,
   exitRateBurnFeeConfigArgs,
   exitRateFeeSharesDue,
-  StandardToken,
+  FeeHook,
   feeManagerConfigArgs,
-  ComptrollerLib,
-  VaultLib,
-  calcProtocolFeeSharesDue,
-  ProtocolFeeTracker,
+  FeeSettlementType,
+  StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   createNewFund,
   deployProtocolFixture,
-  ProtocolDeployment,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
   transactionTimestamp,
@@ -77,10 +74,7 @@ describe('settle', () => {
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
 
     const newFundRes = await createNewFund({
-      signer: fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
-      fundOwner,
       feeManagerConfig: feeManagerConfigArgs({
         fees: [exitRateBurnFee],
         settings: [
@@ -90,10 +84,13 @@ describe('settle', () => {
           }),
         ],
       }),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       investment: {
         buyer: investor,
         seedBuyer: true,
       },
+      signer: fundOwner,
     });
 
     comptrollerProxy = newFundRes.comptrollerProxy;
@@ -109,10 +106,10 @@ describe('settle', () => {
 
     const receipt = await redeemSharesForSpecificAssets({
       comptrollerProxy,
-      signer: investor,
-      quantity: sharesToRedeem,
-      payoutAssets: [denominationAsset],
       payoutAssetPercentages: [10000],
+      payoutAssets: [denominationAsset],
+      quantity: sharesToRedeem,
+      signer: investor,
     });
 
     // Calc the expected exit fee charged
@@ -125,9 +122,9 @@ describe('settle', () => {
     // Calc the expected protocol fee charged
     const expectedProtocolFee = await calcProtocolFeeSharesDue({
       protocolFeeTracker,
-      vaultProxyAddress: vaultProxy,
-      sharesSupply: preTxSharesSupply.sub(expectedFeeSharesDue),
       secondsSinceLastPaid: BigNumber.from(await transactionTimestamp(receipt)).sub(preTxProtocolFeeLastPaidTimestamp),
+      sharesSupply: preTxSharesSupply.sub(expectedFeeSharesDue),
+      vaultProxyAddress: vaultProxy,
     });
 
     // Assert the fees were correctly charged and burned
@@ -139,9 +136,9 @@ describe('settle', () => {
     // Assert the event was emitted
     assertEvent(receipt, exitRateBurnFee.abi.getEvent('Settled'), {
       comptrollerProxy,
+      forSpecificAssets: true,
       payer: investor,
       sharesQuantity: expectedFeeSharesDue,
-      forSpecificAssets: true,
     });
   });
 
@@ -150,8 +147,8 @@ describe('settle', () => {
 
     const receipt = await redeemSharesInKind({
       comptrollerProxy,
-      signer: investor,
       quantity: constants.MaxUint256,
+      signer: investor,
     });
 
     // Calc the expected exit fee charged
@@ -164,9 +161,9 @@ describe('settle', () => {
     // Calc the expected protocol fee charged
     const expectedProtocolFee = await calcProtocolFeeSharesDue({
       protocolFeeTracker,
-      vaultProxyAddress: vaultProxy,
-      sharesSupply: preTxSharesSupply.sub(expectedFeeSharesDue),
       secondsSinceLastPaid: BigNumber.from(await transactionTimestamp(receipt)).sub(preTxProtocolFeeLastPaidTimestamp),
+      sharesSupply: preTxSharesSupply.sub(expectedFeeSharesDue),
+      vaultProxyAddress: vaultProxy,
     });
 
     // Assert the fees were correctly charged and burned
@@ -178,9 +175,9 @@ describe('settle', () => {
     // Assert the event was emitted
     assertEvent(receipt, exitRateBurnFee.abi.getEvent('Settled'), {
       comptrollerProxy,
+      forSpecificAssets: false,
       payer: investor,
       sharesQuantity: expectedFeeSharesDue,
-      forSpecificAssets: false,
     });
   });
 });

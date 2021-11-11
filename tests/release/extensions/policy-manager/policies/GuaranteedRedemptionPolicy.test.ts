@@ -1,5 +1,6 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   GuaranteedRedemptionPolicy,
   guaranteedRedemptionPolicyArgs,
@@ -7,8 +8,10 @@ import {
   PolicyHook,
   validateRulePostCoIArgs,
 } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 async function addFundSettings({
   comptrollerProxy,
@@ -22,8 +25,8 @@ async function addFundSettings({
   duration: BigNumberish;
 }) {
   const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-    startTimestamp,
     duration,
+    startTimestamp,
   });
 
   await guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig);
@@ -39,6 +42,7 @@ async function deployStandaloneGuaranteedRedemptionPolicy(fork: ProtocolDeployme
     fork.config.policies.guaranteedRedemption.redemptionWindowBuffer,
     [],
   );
+
   return guaranteedRedemptionPolicy.connect(signer ? signer : EOAPolicyManager);
 }
 
@@ -81,8 +85,8 @@ describe('addFundSettings', () => {
     const [randomUser] = fork.accounts;
 
     const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-      startTimestamp: constants.Zero,
       duration: constants.Zero,
+      startTimestamp: constants.Zero,
     });
 
     await expect(
@@ -94,8 +98,8 @@ describe('addFundSettings', () => {
 
   it('does not allow startTimestamp to be 0 if duration is not 0', async () => {
     const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-      startTimestamp: constants.Zero,
       duration: constants.One,
+      startTimestamp: constants.Zero,
     });
     await expect(
       guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
@@ -104,8 +108,8 @@ describe('addFundSettings', () => {
 
   it('does not allow duration to be 0 if startTimestamp is not 0', async () => {
     const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-      startTimestamp: constants.One,
       duration: constants.Zero,
+      startTimestamp: constants.One,
     });
     await expect(
       guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
@@ -117,8 +121,8 @@ describe('addFundSettings', () => {
     const futureTimestamp = BigNumber.from(latestBlock.timestamp).add(100);
 
     const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-      startTimestamp: futureTimestamp,
       duration: constants.Zero,
+      startTimestamp: futureTimestamp,
     });
     await expect(
       guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
@@ -127,8 +131,8 @@ describe('addFundSettings', () => {
 
   it('does not allow duration to be >23 hours', async () => {
     const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({
-      startTimestamp: constants.One,
-      duration: 23 * 60 * 60 + 1, // 23 hours and 1 second
+      duration: 23 * 60 * 60 + 1,
+      startTimestamp: constants.One, // 23 hours and 1 second
     });
     await expect(
       guaranteedRedemptionPolicy.addFundSettings(comptrollerProxy, guaranteedRedemptionPolicyConfig),
@@ -139,7 +143,7 @@ describe('addFundSettings', () => {
     const startTimestamp = BigNumber.from(1000);
     const duration = BigNumber.from(2000);
 
-    const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({ startTimestamp, duration });
+    const guaranteedRedemptionPolicyConfig = guaranteedRedemptionPolicyArgs({ duration, startTimestamp });
     const receipt = await guaranteedRedemptionPolicy.addFundSettings(
       comptrollerProxy,
       guaranteedRedemptionPolicyConfig,
@@ -147,14 +151,14 @@ describe('addFundSettings', () => {
 
     assertEvent(receipt, 'FundSettingsSet', {
       comptrollerProxy,
-      startTimestamp,
       duration,
+      startTimestamp,
     });
 
     const redemptionWindow = await guaranteedRedemptionPolicy.getRedemptionWindowForFund(comptrollerProxy);
     expect(redemptionWindow).toMatchFunctionOutput(guaranteedRedemptionPolicy.getRedemptionWindowForFund, {
-      startTimestamp,
       duration,
+      startTimestamp,
     });
   });
 });
@@ -291,7 +295,7 @@ describe('setRedemptionWindowBuffer', () => {
     const nextBuffer = BigNumber.from(100);
 
     const receipt = await guaranteedRedemptionPolicy.setRedemptionWindowBuffer(nextBuffer);
-    assertEvent(receipt, 'RedemptionWindowBufferSet', { prevBuffer, nextBuffer });
+    assertEvent(receipt, 'RedemptionWindowBufferSet', { nextBuffer, prevBuffer });
 
     const redemptionWindowBufferResult = await guaranteedRedemptionPolicy.getRedemptionWindowBuffer();
     expect(redemptionWindowBufferResult).toEqBigNumber(nextBuffer);
@@ -312,13 +316,13 @@ describe('validateRule', () => {
   it('returns true if there is no adapter in the policy', async () => {
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
       adapter: randomAddress(),
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
+      caller: randomAddress(),
       incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
+      incomingAssets: [randomAddress()],
+      selector: utils.randomBytes(4),
       spendAssetAmounts: [1],
+      spendAssets: [randomAddress()],
     });
 
     const validateRuleResult = await guaranteedRedemptionPolicy.validateRule
@@ -335,9 +339,9 @@ describe('validateRule', () => {
 
     await addFundSettings({
       comptrollerProxy,
+      duration,
       guaranteedRedemptionPolicy,
       startTimestamp: now.sub(duration),
-      duration,
     });
 
     const adapter = randomAddress();
@@ -346,13 +350,13 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
       adapter,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
+      caller: randomAddress(),
       incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
+      incomingAssets: [randomAddress()],
+      selector: utils.randomBytes(4),
       spendAssetAmounts: [1],
+      spendAssets: [randomAddress()],
     });
 
     const validateRuleResult = await guaranteedRedemptionPolicy.validateRule
@@ -379,13 +383,13 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
       adapter,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
+      caller: randomAddress(),
       incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
+      incomingAssets: [randomAddress()],
+      selector: utils.randomBytes(4),
       spendAssetAmounts: [1],
+      spendAssets: [randomAddress()],
     });
 
     const validateRuleResult = await guaranteedRedemptionPolicy.validateRule
@@ -402,9 +406,9 @@ describe('validateRule', () => {
 
     await addFundSettings({
       comptrollerProxy,
+      duration,
       guaranteedRedemptionPolicy,
       startTimestamp: now,
-      duration,
     });
 
     const adapter = randomAddress();
@@ -413,13 +417,13 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
       adapter,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
+      caller: randomAddress(),
       incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
+      incomingAssets: [randomAddress()],
+      selector: utils.randomBytes(4),
       spendAssetAmounts: [1],
+      spendAssets: [randomAddress()],
     });
 
     const validateRuleResult = await guaranteedRedemptionPolicy.validateRule
@@ -446,9 +450,9 @@ describe('validateRule', () => {
 
     await addFundSettings({
       comptrollerProxy,
+      duration,
       guaranteedRedemptionPolicy,
       startTimestamp: now,
-      duration,
     });
 
     // Confirm the buffer is greater than the time to warp prior to the window
@@ -465,13 +469,13 @@ describe('validateRule', () => {
 
     // Only the adapter arg matters for this policy
     const postCoIArgs = validateRulePostCoIArgs({
-      caller: randomAddress(),
       adapter,
-      selector: utils.randomBytes(4),
-      incomingAssets: [randomAddress()],
+      caller: randomAddress(),
       incomingAssetAmounts: [1],
-      spendAssets: [randomAddress()],
+      incomingAssets: [randomAddress()],
+      selector: utils.randomBytes(4),
       spendAssetAmounts: [1],
+      spendAssets: [randomAddress()],
     });
 
     const validateRuleResult = await guaranteedRedemptionPolicy.validateRule

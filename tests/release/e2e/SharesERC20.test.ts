@@ -1,5 +1,6 @@
 import { StandardToken } from '@enzymefinance/protocol';
-import { createNewFund, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -13,14 +14,14 @@ describe('transfer', () => {
 
     // Spin up and invest in a fund to create shares
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       investment: {
         buyer: investor,
         seedBuyer: true,
       },
+      signer: fundOwner,
     });
 
     const preTxInvestorBalance = await vaultProxy.balanceOf(investor);
@@ -51,14 +52,14 @@ describe('transferFrom', () => {
 
     // Spin up and invest in a fund to create shares
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
       investment: {
         buyer: investor,
         seedBuyer: true,
       },
+      signer: fundOwner,
     });
 
     const preTxInvestorBalance = await vaultProxy.balanceOf(investor);

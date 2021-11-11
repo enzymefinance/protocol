@@ -1,4 +1,5 @@
-import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   ISynthetixAddressResolver,
   ISynthetixExchangeRates,
@@ -7,8 +8,8 @@ import {
   StandardToken,
   SynthetixPriceFeed,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  ProtocolDeployment,
   buyShares,
   createNewFund,
   deployProtocolFixture,
@@ -26,6 +27,7 @@ async function warpBeyondWaitingPeriod() {
 
 async function getCurrencyKey(synthProxy: AddressLike) {
   const synth = await new ISynthetixProxyERC20(synthProxy, provider).target();
+
   return await new ISynthetixSynth(synth, provider).currencyKey();
 }
 
@@ -44,26 +46,26 @@ describe('derivative gas costs', () => {
     const denominationAsset = weth;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
-      comptrollerProxy,
       addressResolver: synthetixAddressResolver,
-      fundOwner,
+      comptrollerProxy,
       delegate: fork.deployment.synthetixAdapter,
+      fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -76,14 +78,14 @@ describe('derivative gas costs', () => {
     await susd.transfer(vaultProxy, initialTokenAmount);
     await synthetixTakeOrder({
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      synthetixAdapter: fork.deployment.synthetixAdapter,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: BigNumber.from(1),
       outgoingAsset: susd,
       outgoingAssetAmount: initialTokenAmount,
-      incomingAsset,
-      minIncomingAssetAmount: BigNumber.from(1),
+      synthetixAdapter: fork.deployment.synthetixAdapter,
+      vaultProxy,
     });
 
     await warpBeyondWaitingPeriod();
@@ -224,12 +226,12 @@ describe('synths registry', () => {
       const events = extractEvent(addSynthsTx, 'SynthAdded');
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
-        synth: newSynth1,
         currencyKey: newSynth1CurrencyKey,
+        synth: newSynth1,
       });
       expect(events[1]).toMatchEventArgs({
-        synth: newSynth2,
         currencyKey: newSynth2CurrencyKey,
+        synth: newSynth2,
       });
     });
   });
@@ -263,8 +265,8 @@ describe('synths registry', () => {
       expect(events.length).toBe(synthsToRemove.length);
       for (const i in synthsToRemove) {
         expect(events[i]).toMatchEventArgs({
-          synth: synthsToRemove[i],
           currencyKey: synthsToRemoveCurrenyKeys[i],
+          synth: synthsToRemove[i],
         });
       }
     });

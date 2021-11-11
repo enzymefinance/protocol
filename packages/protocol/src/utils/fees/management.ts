@@ -1,6 +1,8 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import { Decimal } from 'decimal.js';
-import { BigNumber, BigNumberish, constants, utils } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
+
 import { encodeArgs } from '../encoding';
 
 export const managementFeeDigits = 27;

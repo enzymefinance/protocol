@@ -1,11 +1,6 @@
 import { IExternalPositionProxy, StandardToken } from '@enzymefinance/protocol';
-
-import {
-  createNewFund,
-  createMockExternalPosition,
-  deployProtocolFixture,
-  ProtocolDeployment,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createMockExternalPosition, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 
@@ -21,22 +16,22 @@ describe('constructor', () => {
     const externalPositionFactory = fork.deployment.externalPositionFactory;
 
     const { vaultProxy, comptrollerProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundName: 'My Fund',
+      fundOwner,
+      signer: fundOwner,
     });
 
     const { externalPositionProxy, typeId } = await createMockExternalPosition({
       comptrollerProxy,
-      externalPositionManager,
-      externalPositionFactory,
-      fundOwner,
-      defaultActionAssetsToTransfer: [],
       defaultActionAmountsToTransfer: [],
       defaultActionAssetsToReceive: [],
+      defaultActionAssetsToTransfer: [],
       deployer: fork.deployer,
+      externalPositionFactory,
+      externalPositionManager,
+      fundOwner,
     });
 
     const externalPositionProxyInstance = new IExternalPositionProxy(externalPositionProxy, provider);

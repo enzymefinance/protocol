@@ -10,7 +10,7 @@
 !.gitignore
 !.gitattributes
 !.prettierignore
-!.prettierrc
+!.prettierrc.js
 !.eslintignore
 !.solhint.json
 !.chainId

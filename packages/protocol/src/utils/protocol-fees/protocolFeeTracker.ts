@@ -1,6 +1,8 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { BigNumber, BigNumberish } from 'ethers';
-import { ProtocolFeeTracker } from '../../codegen/ProtocolFeeTracker';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
+
+import type { ProtocolFeeTracker } from '../../codegen/ProtocolFeeTracker';
 
 export async function calcProtocolFeeSharesDue({
   protocolFeeTracker,

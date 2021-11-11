@@ -1,11 +1,12 @@
+import type { ValueInterpreterArgs } from '@enzymefinance/protocol';
 import {
-  ValueInterpreterArgs,
-  ValueInterpreter,
-  ONE_YEAR_IN_SECONDS,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
+  ONE_YEAR_IN_SECONDS,
+  ValueInterpreter,
 } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
@@ -43,6 +44,7 @@ const fn: DeployFunction = async function (hre) {
 
       const aggregator = config.chainlink.aggregators[key];
       const primitive = config.primitives[key];
+
       return [primitive, ...aggregator] as const;
     });
 

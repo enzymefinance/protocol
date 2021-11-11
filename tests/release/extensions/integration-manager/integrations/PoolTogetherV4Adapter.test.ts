@@ -10,13 +10,13 @@ import {
   SpendAssetsHandleType,
   StandardToken,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
   poolTogetherV4Lend,
   poolTogetherV4Redeem,
-  ProtocolDeployment,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -45,8 +45,8 @@ describe('parseAssetsForAction', () => {
     const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
     const args = poolTogetherV4LendArgs({
-      ptToken,
       amount,
+      ptToken,
     });
 
     await expect(
@@ -63,18 +63,18 @@ describe('parseAssetsForAction', () => {
     const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
     const args = poolTogetherV4LendArgs({
-      ptToken,
       amount,
+      ptToken,
     });
 
     const result = await poolTogetherV4Adapter.parseAssetsForAction(randomAddress(), lendSelector, args);
 
     expect(result).toMatchFunctionOutput(poolTogetherV4Adapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       incomingAssets_: [ptToken],
-      spendAssets_: [outgoingToken],
-      spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount],
+      spendAssetAmounts_: [amount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingToken],
     });
   });
 
@@ -85,18 +85,18 @@ describe('parseAssetsForAction', () => {
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     const args = poolTogetherV4RedeemArgs({
-      ptToken,
       amount,
+      ptToken,
     });
 
     const result = await poolTogetherV4Adapter.parseAssetsForAction(randomAddress(), redeemSelector, args);
 
     expect(result).toMatchFunctionOutput(poolTogetherV4Adapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Approve,
       incomingAssets_: [token],
-      spendAssets_: [ptToken],
-      spendAssetAmounts_: [amount],
       minIncomingAssetAmounts_: [amount],
+      spendAssetAmounts_: [amount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Approve,
+      spendAssets_: [ptToken],
     });
   });
 
@@ -107,19 +107,19 @@ describe('parseAssetsForAction', () => {
     const winningPicks = '0x';
 
     const args = poolTogetherV4ClaimRewardsArgs({
-      prizeDistributor,
       drawIds,
+      prizeDistributor,
       winningPicks,
     });
 
     const result = await poolTogetherV4Adapter.parseAssetsForAction(randomAddress(), claimRewardsSelector, args);
 
     expect(result).toMatchFunctionOutput(poolTogetherV4Adapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.None,
       incomingAssets_: [],
-      spendAssets_: [],
-      spendAssetAmounts_: [],
       minIncomingAssetAmounts_: [],
+      spendAssetAmounts_: [],
+      spendAssetsHandleType_: SpendAssetsHandleType.None,
+      spendAssets_: [],
     });
   });
 });
@@ -129,10 +129,10 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -147,12 +147,12 @@ describe('lend', () => {
     });
 
     const lendReceipt = await poolTogetherV4Lend({
+      amount,
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       poolTogetherV4Adapter: fork.deployment.poolTogetherV4Adapter,
       ptToken,
-      amount,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
@@ -172,10 +172,10 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: new StandardToken(fork.config.primitives.usdc, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], whales.ptUsdc);
@@ -190,12 +190,12 @@ describe('redeem', () => {
     });
 
     const redeemReceipt = await poolTogetherV4Redeem({
+      amount,
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
+      integrationManager: fork.deployment.integrationManager,
       poolTogetherV4Adapter: fork.deployment.poolTogetherV4Adapter,
       ptToken,
-      amount,
     });
 
     const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({

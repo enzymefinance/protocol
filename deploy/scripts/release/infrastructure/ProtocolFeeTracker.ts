@@ -1,5 +1,6 @@
-import { FundDeployer as FundDeployerContract, ProtocolFeeTrackerArgs } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { ProtocolFeeTrackerArgs } from '@enzymefinance/protocol';
+import { FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {

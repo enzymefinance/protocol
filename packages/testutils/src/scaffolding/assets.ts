@@ -1,6 +1,7 @@
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
-import { BigNumberish } from 'ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
+import type { BigNumberish } from 'ethers';
+
 import { addTrackedAssetsToVault } from './extensions/integrations/trackedAssets';
 
 export async function addNewAssetsToFund({
@@ -18,10 +19,10 @@ export async function addNewAssetsToFund({
 }) {
   // First, add tracked assets while their balances are 0
   const receipt = addTrackedAssetsToVault({
-    signer,
+    assets,
     comptrollerProxy,
     integrationManager,
-    assets,
+    signer,
   });
 
   // Then seed the vault with balances as necessary

@@ -1,8 +1,12 @@
-import { AddressLike, extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { AddressListRegistry, AddressListUpdateType } from '@enzymefinance/protocol';
-import { assertEvent, deployProtocolFixture, ProtocolDeployment } from '@enzymefinance/testutils';
-import { BigNumber, constants } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressListRegistry } from '@enzymefinance/protocol';
+import { AddressListUpdateType } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -125,8 +129,8 @@ describe('createList', () => {
     // Assert event
     assertEvent(receipt, 'ListCreated', {
       creator,
-      owner,
       id: expectedListId,
+      owner,
       updateType,
     });
   });
@@ -293,8 +297,8 @@ describe('setListUpdateType', () => {
     // Assert event
     assertEvent(receipt, 'ListUpdateTypeSet', {
       id: listId,
-      prevUpdateType,
       nextUpdateType,
+      prevUpdateType,
     });
   });
 

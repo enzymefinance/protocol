@@ -60,8 +60,8 @@ describe('calcUnderlyingValues', () => {
     expect(
       await testPeggedDerivativesPriceFeed.calcUnderlyingValues.args(mockDerivative, derivativeAmount).call(),
     ).toMatchFunctionOutput(testPeggedDerivativesPriceFeed.calcUnderlyingValues, {
-      underlyings_: [mockUnderlying],
       underlyingAmounts_: [derivativeAmount],
+      underlyings_: [mockUnderlying],
     });
   });
 });

@@ -1,26 +1,26 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, ValueInterpreter } from '@enzymefinance/protocol';
 import {
-  ComptrollerLib,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
   StandardToken,
   TestPricelessAssetBypassMixin,
-  ValueInterpreter,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
   assertNoEvent,
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  ProtocolDeployment,
   transactionTimestamp,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
-import { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 
 const timelockDuration = ONE_DAY_IN_SECONDS * 7;
 const timeLimitDuration = ONE_DAY_IN_SECONDS * 2;
@@ -53,10 +53,10 @@ beforeEach(async () => {
   assetToBypass = new StandardToken(fork.config.primitives.dai, provider);
 
   const newFundRes = await createNewFund({
-    signer: fundOwner,
-    fundDeployer: fork.deployment.fundDeployer,
     denominationAsset,
+    fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
+    signer: fundOwner,
   });
   comptrollerProxy = newFundRes.comptrollerProxy;
 });
@@ -78,9 +78,9 @@ describe('startAssetBypassTimelock', () => {
   it('does not allow an asset that has a valid price', async () => {
     await expect(
       vaultCallStartAssetBypassTimelock({
+        asset: assetToBypass,
         comptrollerProxy,
         contract: testPricelessAssetBypassMixin,
-        asset: assetToBypass,
       }),
     ).rejects.toBeRevertedWith('Asset has a price');
   });
@@ -89,9 +89,9 @@ describe('startAssetBypassTimelock', () => {
     await fork.deployment.valueInterpreter.removePrimitives([assetToBypass]);
 
     const receipt = await vaultCallStartAssetBypassTimelock({
+      asset: assetToBypass,
       comptrollerProxy,
       contract: testPricelessAssetBypassMixin,
-      asset: assetToBypass,
     });
 
     // Assert state
@@ -101,8 +101,8 @@ describe('startAssetBypassTimelock', () => {
 
     // Assert event
     assertEvent(receipt, testPricelessAssetBypassMixin.abi.getEvent('PricelessAssetTimelockStarted'), {
-      comptrollerProxy,
       asset: assetToBypass,
+      comptrollerProxy,
     });
   });
 });
@@ -114,9 +114,9 @@ describe('assetIsBypassableForFund', () => {
     await fork.deployment.valueInterpreter.removePrimitives([assetToBypass]);
 
     await vaultCallStartAssetBypassTimelock({
+      asset: assetToBypass,
       comptrollerProxy,
       contract: testPricelessAssetBypassMixin,
-      asset: assetToBypass,
     });
 
     // Asset should not immediately be bypassable
@@ -195,9 +195,9 @@ describe('__calcTotalValueExlcudingBypassablePricelessAssets', () => {
     await fork.deployment.valueInterpreter.removePrimitives([assetToBypass]);
 
     await vaultCallStartAssetBypassTimelock({
+      asset: assetToBypass,
       comptrollerProxy,
       contract: testPricelessAssetBypassMixin,
-      asset: assetToBypass,
     });
 
     await provider.send('evm_increaseTime', [timelockDuration]);
@@ -218,8 +218,8 @@ describe('__calcTotalValueExlcudingBypassablePricelessAssets', () => {
     );
 
     assertEvent(receipt, testPricelessAssetBypassMixin.abi.getEvent('PricelessAssetBypassed'), {
-      comptrollerProxy,
       asset: assetToBypass,
+      comptrollerProxy,
     });
   });
 });
@@ -271,9 +271,9 @@ describe('__calcValueExcludingBypassablePricelessAsset', () => {
     await fork.deployment.valueInterpreter.removePrimitives([assetToBypass]);
 
     await vaultCallStartAssetBypassTimelock({
+      asset: assetToBypass,
       comptrollerProxy,
       contract: testPricelessAssetBypassMixin,
-      asset: assetToBypass,
     });
 
     await provider.send('evm_increaseTime', [timelockDuration]);
@@ -293,8 +293,8 @@ describe('__calcValueExcludingBypassablePricelessAsset', () => {
     );
 
     assertEvent(receipt, testPricelessAssetBypassMixin.abi.getEvent('PricelessAssetBypassed'), {
-      comptrollerProxy,
       asset: assetToBypass,
+      comptrollerProxy,
     });
   });
 });

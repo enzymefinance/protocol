@@ -1,7 +1,8 @@
-import { AddressLike } from '@enzymefinance/ethers';
-import { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ComptrollerLib, StandardToken } from '@enzymefinance/protocol';
-import { BigNumberish, constants, utils } from 'ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { ComptrollerLib, StandardToken } from '@enzymefinance/protocol';
+import type { BigNumberish } from 'ethers';
+import { constants, utils } from 'ethers';
 
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;

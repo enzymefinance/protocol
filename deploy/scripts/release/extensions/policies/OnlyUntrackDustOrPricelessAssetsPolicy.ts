@@ -1,10 +1,8 @@
-import {
-  ONE_DAY_IN_SECONDS,
-  OnlyUntrackDustOrPricelessAssetsPolicy,
-  OnlyUntrackDustOrPricelessAssetsPolicyArgs,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { OnlyUntrackDustOrPricelessAssetsPolicyArgs } from '@enzymefinance/protocol';
+import { ONE_DAY_IN_SECONDS, OnlyUntrackDustOrPricelessAssetsPolicy } from '@enzymefinance/protocol';
 import { utils } from 'ethers';
+import type { DeployFunction } from 'hardhat-deploy/types';
+
 import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {

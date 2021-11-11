@@ -1,4 +1,5 @@
-import { AddressLike, randomAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { randomAddress } from '@enzymefinance/ethers';
 import {
   curveTakeOrderArgs,
   ICurveAddressProvider,
@@ -6,13 +7,8 @@ import {
   StandardToken,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
-import {
-  createNewFund,
-  CurveSwaps,
-  curveTakeOrder,
-  ProtocolDeployment,
-  deployProtocolFixture,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { createNewFund, CurveSwaps, curveTakeOrder, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
@@ -28,6 +24,7 @@ beforeEach(async () => {
 async function getCurveSwapsContract(addressProvider: AddressLike) {
   const curveAddressProvider = new ICurveAddressProvider(addressProvider, provider);
   const addr = await curveAddressProvider.get_address(2);
+
   return new CurveSwaps(addr, provider);
 }
 
@@ -68,11 +65,11 @@ describe('parseAssetsForAction', () => {
         randomAddress(),
         takeOrderSelector,
         curveTakeOrderArgs({
-          pool,
-          outgoingAsset,
-          outgoingAssetAmount,
           incomingAsset,
           minIncomingAssetAmount,
+          outgoingAsset,
+          outgoingAssetAmount,
+          pool,
         }),
       ),
     ).rejects.toBeRevertedWith('No pool address provided');
@@ -90,20 +87,20 @@ describe('parseAssetsForAction', () => {
       randomAddress(),
       takeOrderSelector,
       curveTakeOrderArgs({
-        pool,
-        outgoingAsset,
-        outgoingAssetAmount,
         incomingAsset,
         minIncomingAssetAmount,
+        outgoingAsset,
+        outgoingAssetAmount,
+        pool,
       }),
     );
 
     expect(result).toMatchFunctionOutput(curveExchangeAdapter.parseAssetsForAction, {
-      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-      spendAssets_: [outgoingAsset],
-      spendAssetAmounts_: [outgoingAssetAmount],
       incomingAssets_: [incomingAsset],
       minIncomingAssetAmounts_: [minIncomingAssetAmount],
+      spendAssetAmounts_: [outgoingAssetAmount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset],
     });
   });
 });
@@ -116,10 +113,10 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -136,14 +133,14 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
-      pool: bestPool,
+      fundOwner,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: BigNumber.from(1),
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: BigNumber.from(1),
+      pool: bestPool,
     });
 
     const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
@@ -159,10 +156,10 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -179,14 +176,14 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
-      pool: bestPool,
+      fundOwner,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: BigNumber.from(1),
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: BigNumber.from(1),
+      pool: bestPool,
     });
 
     const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
@@ -202,10 +199,10 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const outgoingAssetAmount = utils.parseEther('1');
@@ -222,14 +219,14 @@ describe('takeOrder', () => {
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
-      integrationManager: fork.deployment.integrationManager,
-      fundOwner,
       curveExchangeAdapter: fork.deployment.curveExchangeAdapter,
-      pool: bestPool,
+      fundOwner,
+      incomingAsset,
+      integrationManager: fork.deployment.integrationManager,
+      minIncomingAssetAmount: BigNumber.from(1),
       outgoingAsset,
       outgoingAssetAmount,
-      incomingAsset,
-      minIncomingAssetAmount: BigNumber.from(1),
+      pool: bestPool,
     });
 
     const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);

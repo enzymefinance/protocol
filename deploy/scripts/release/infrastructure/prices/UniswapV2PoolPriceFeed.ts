@@ -1,5 +1,6 @@
-import { UniswapV2PoolPriceFeed, UniswapV2PoolPriceFeedArgs, ValueInterpreter } from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import type { UniswapV2PoolPriceFeedArgs } from '@enzymefinance/protocol';
+import { UniswapV2PoolPriceFeed, ValueInterpreter } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
 

@@ -1,12 +1,7 @@
-import { AddressLike } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
-import {
-  ProtocolDeployment,
-  buyShares,
-  createNewFund,
-  deployProtocolFixture,
-  uniswapV2Lend,
-} from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture, uniswapV2Lend } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -22,18 +17,18 @@ describe('derivative gas costs', () => {
     const [fundOwner, investor] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      signer: fundOwner,
-      fundOwner,
-      fundDeployer: fork.deployment.fundDeployer,
       denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
     });
 
     const initialTokenAmount = utils.parseEther('1');
 
     // Buy shares to add denomination asset
     await buyShares({
-      comptrollerProxy,
       buyer: investor,
+      comptrollerProxy,
       denominationAsset,
       investmentAmount: initialTokenAmount,
       seedBuyer: true,
@@ -45,18 +40,18 @@ describe('derivative gas costs', () => {
     // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
     await mln.transfer(vaultProxy, initialTokenAmount);
     await uniswapV2Lend({
+      amountADesired: initialTokenAmount.div(2),
+      amountAMin: 1,
+      amountBDesired: initialTokenAmount.div(2),
+      amountBMin: 1,
       comptrollerProxy,
-      vaultProxy,
-      integrationManager: fork.deployment.integrationManager,
       fundOwner,
-      uniswapV2LiquidityAdapter: fork.deployment.uniswapV2LiquidityAdapter,
+      integrationManager: fork.deployment.integrationManager,
+      minPoolTokenAmount: 1,
       tokenA: weth,
       tokenB: mln,
-      amountADesired: initialTokenAmount.div(2),
-      amountBDesired: initialTokenAmount.div(2),
-      amountAMin: 1,
-      amountBMin: 1,
-      minPoolTokenAmount: 1,
+      uniswapV2LiquidityAdapter: fork.deployment.uniswapV2LiquidityAdapter,
+      vaultProxy,
     });
 
     // Get the calcGav() cost including the pool token
@@ -82,8 +77,8 @@ describe('constructor', () => {
         uniswapV2PoolPriceFeed.getPoolTokenInfo,
         {
           token0,
-          token1,
           token0Decimals: await new StandardToken(token0, provider).decimals(),
+          token1,
           token1Decimals: await new StandardToken(token1, provider).decimals(),
         },
       );
