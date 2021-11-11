@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.3
+
+### Patch Changes
+
+- 90955319: Publishing new adapters
+
 ## 4.0.0-next.2
 
 ### Patch Changes

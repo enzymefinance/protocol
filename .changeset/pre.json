@@ -5,5 +5,5 @@
     "@enzymefinance/protocol": "3.0.0",
     "@enzymefinance/testutils": "3.0.0"
   },
-  "changesets": ["cold-dryers-hunt", "gold-brooms-hope", "thirty-experts-study"]
+  "changesets": ["cold-dryers-hunt", "gold-brooms-hope", "hip-pans-raise", "thirty-experts-study"]
 }

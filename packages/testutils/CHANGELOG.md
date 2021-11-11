@@ -1,5 +1,13 @@
 # @enzymefinance/testutils
 
+## 4.0.0-next.3
+
+### Patch Changes
+
+- 90955319: Publishing new adapters
+- Updated dependencies [90955319]
+  - @enzymefinance/protocol@4.0.0-next.3
+
 ## 4.0.0-next.2
 
 ### Patch Changes
