@@ -106,7 +106,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1071594513314087964');
+    expect(canonicalAssetValue).toEqBigNumber('1082124440389265991');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
@@ -123,7 +123,7 @@ describe('expected values', () => {
       .call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toEqBigNumber('1080381');
+    expect(canonicalAssetValue).toEqBigNumber('1085628');
   });
 });
 

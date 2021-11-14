@@ -35,7 +35,7 @@ const whales = {
   ptUsdc: '0xd18236cd213f39d078177b6f6908f0e44e88e4aa',
   // synths
   seth: '0xc34a7c65aa08cb36744bda8eeec7b8e9891e147c',
-  seur: '0xe896e539e557bc751860a7763c8dd589af1698ce',
+  seur: '0xc3f2f91723b16b95bef0619b2504c049075d5b0b',
   // misc
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
   ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
