@@ -533,7 +533,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('999655');
+      expect(canonicalAssetValue).toEqBigNumber('999577');
     });
 
     // SUSD/ETH and USDC/ETH
@@ -551,7 +551,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1002813');
+      expect(canonicalAssetValue).toEqBigNumber('1003468');
     });
   });
 
@@ -578,7 +578,7 @@ describe('expected values', () => {
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('709615521620229426790');
+      expect(canonicalAssetValue).toEqBigNumber('682404689264137364209');
     });
   });
 
@@ -604,7 +604,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('995238770718244964');
+      expect(canonicalAssetValue).toEqBigNumber('1002837604857159793');
     });
 
     // USDC/ETH and DAI/USD
@@ -628,7 +628,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('992446825148322993');
+      expect(canonicalAssetValue).toEqBigNumber('999371191579215650');
     });
   });
 
@@ -654,7 +654,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('1004784007036139625');
+      expect(canonicalAssetValue).toEqBigNumber('997170424360418783');
     });
 
     // DAI/USD and USDC/ETH
@@ -678,7 +678,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1007610');
+      expect(canonicalAssetValue).toEqBigNumber('1000629');
     });
   });
 });

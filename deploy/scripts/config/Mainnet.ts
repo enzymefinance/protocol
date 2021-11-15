@@ -278,7 +278,7 @@ const mainnetConfig: DeploymentConfig = {
   gsn: {
     relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
     relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',
-    trustedForwarder: '0xAa3E82b4c4093b4bA13Cb5714382C99ADBf750cA',
+    trustedForwarder: '0xca57e5d6218aeb093d76372b51ba355cfb3c6cd0',
   },
   idle: {
     bestYieldIdleDai: '0x3fE7940616e5Bc47b0775a0dccf6237893353bB4',
