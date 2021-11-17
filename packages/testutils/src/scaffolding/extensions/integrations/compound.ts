@@ -1,7 +1,7 @@
 import type { AddressLike, Contract, Send } from '@enzymefinance/ethers';
 import { contract, resolveAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { CompoundAdapter, IntegrationManager, VaultLib } from '@enzymefinance/protocol';
+import type { CompoundAdapter, ComptrollerLib, IntegrationManager, VaultLib } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   compoundArgs,
@@ -11,8 +11,6 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { utils } from 'ethers';
-
-import type { ComptrollerLib } from '../../../../../protocol/src/codegen/ComptrollerLib';
 
 export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
   claimComp: Send<(_account: AddressLike) => void>;

@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, ExternalPositionFactory, ExternalPositionManager } from '@enzymefinance/protocol/src';
+import type { ComptrollerLib, ExternalPositionFactory, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
   encodeArgs,
   ExternalPositionManagerActionId,
@@ -9,7 +9,7 @@ import {
   MockGenericExternalPositionLib,
   MockGenericExternalPositionParser,
   VaultLib,
-} from '@enzymefinance/protocol/src';
+} from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
 import { callOnExternalPosition } from './actions';
