@@ -17,6 +17,8 @@ const fn: DeployFunction = async function (hre) {
     log: true,
     skipIfAlreadyDeployed: true,
   });
+
+  // CompoundDebtPositionLib.init() is currently empty. Call .init() if that changes.
 };
 
 fn.tags = ['Release', 'CompoundDebtPositionLib'];

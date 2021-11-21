@@ -1,5 +1,10 @@
 import type { ProtocolFeeReserveProxyArgs } from '@enzymefinance/protocol';
-import { encodeFunctionData, ProtocolFeeReserveLib as ProtocolFeeReserveLibContract } from '@enzymefinance/protocol';
+import {
+  encodeFunctionData,
+  LIB_INIT_GENERIC_DUMMY_ADDRESS,
+  ProtocolFeeReserveLib,
+  ProtocolFeeReserveLib as ProtocolFeeReserveLibContract,
+} from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -16,6 +21,12 @@ const fn: DeployFunction = async function (hre) {
     log: true,
     skipIfAlreadyDeployed: true,
   });
+
+  if (protocolFeeReserveLib.newlyDeployed) {
+    const protocolFeeReserveLibInstance = new ProtocolFeeReserveLib(protocolFeeReserveLib, deployer);
+    // Initialize the lib with dummy data to prevent another init() call
+    await protocolFeeReserveLibInstance.init(LIB_INIT_GENERIC_DUMMY_ADDRESS);
+  }
 
   const constructData = encodeFunctionData(ProtocolFeeReserveLibContract.abi.getFunction('init'), [dispatcher.address]);
   const protocolFeeReserveProxy = await deploy('ProtocolFeeReserveProxy', {

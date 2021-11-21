@@ -1,5 +1,9 @@
 import type { VaultLibArgs } from '@enzymefinance/protocol';
-import { FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
+import {
+  FundDeployer as FundDeployerContract,
+  LIB_INIT_GENERIC_DUMMY_ADDRESS,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
@@ -33,6 +37,10 @@ const fn: DeployFunction = async function (hre) {
   });
 
   if (vaultLib.newlyDeployed) {
+    const vaultLibInstance = new VaultLib(vaultLib, deployer);
+    // Initialize the lib with dummy data to prevent another init() call
+    await vaultLibInstance.init(LIB_INIT_GENERIC_DUMMY_ADDRESS, LIB_INIT_GENERIC_DUMMY_ADDRESS, '');
+
     const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
     log('Updating VaultLib on FundDeployer');
     await fundDeployerInstance.setVaultLib(vaultLib.address);
