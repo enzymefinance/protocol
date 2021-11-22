@@ -1,5 +1,4 @@
-import { ChainlinkRateAsset, sighash, vaultCallAnyDataHash } from '@enzymefinance/protocol';
-import { utils } from 'ethers';
+import { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import type { DeploymentConfig } from '../../utils/config';
@@ -226,9 +225,6 @@ const unsupportedAssets = {
 
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 
-const curveMinter = '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0';
-const synthetixDelegateApprovals = '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f';
-
 // prettier-ignore
 const mainnetConfig: DeploymentConfig = {
   aave: {
@@ -247,7 +243,7 @@ const mainnetConfig: DeploymentConfig = {
   },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
-    minter: curveMinter,
+    minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',
     pools: {
       aave: {
         invariantProxyAsset: primitives.usdc,
@@ -318,7 +314,7 @@ const mainnetConfig: DeploymentConfig = {
   },
   synthetix: {
     addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2',
-    delegateApprovals: synthetixDelegateApprovals,
+    delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     snx: primitives.snx,
     susd: primitives.susd,
@@ -335,16 +331,6 @@ const mainnetConfig: DeploymentConfig = {
     router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
   },
   unsupportedAssets,
-  vaultCalls: [
-    [
-      synthetixDelegateApprovals,
-      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address delegate)')),
-      vaultCallAnyDataHash
-    ],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
-    [curveMinter, sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')), vaultCallAnyDataHash],
-  ],
   weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   yearn: {
     vaultV2: {

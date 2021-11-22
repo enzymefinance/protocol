@@ -33,9 +33,7 @@ describe('constructor', () => {
       },
     );
 
-    for (const [contract, selector, dataHash] of fork.config.vaultCalls) {
-      expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
-    }
+    // TODO: assert vault calls have been registered
 
     // GasRelayRecipientMixin
     expect(await fundDeployer.getGasRelayPaymasterFactory()).toMatchAddress(fork.deployment.gasRelayPaymasterFactory);
@@ -468,7 +466,11 @@ describe('vault call registry', () => {
 
     it('does not allow an already registered vaultCall', async () => {
       const { fundDeployer } = fork.deployment;
-      const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0] as any;
+
+      // TODO: do this dynamically if we add vault calls to config
+      const contract = fork.config.curve.minter;
+      const selector = sighash(utils.FunctionFragment.fromString('mint(address)'));
+      const dataHash = vaultCallAnyDataHash;
 
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, dataHash)).toBe(true);
 

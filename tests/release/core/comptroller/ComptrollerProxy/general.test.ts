@@ -52,11 +52,8 @@ describe('vaultCallOnContract', () => {
       signer: fundOwner,
     });
 
-    // Use the first allowed vault call
-    const [contract, selector, dataHash] = Object.values(fork.config.vaultCalls)[0] as any;
-
     await expect(
-      comptrollerProxy.connect(randomUser).vaultCallOnContract(contract, selector, dataHash),
+      comptrollerProxy.connect(randomUser).vaultCallOnContract(constants.AddressZero, utils.randomBytes(4), '0x'),
     ).rejects.toBeRevertedWith('Only fund owner callable');
   });
 

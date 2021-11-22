@@ -1,8 +1,10 @@
 import {
   FundDeployer as FundDeployerContract,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
+  sighash,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
+import { utils } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
@@ -24,7 +26,15 @@ const fn: DeployFunction = async function (hre) {
 
   // Register vault calls
   const vaultCalls = [
-    ...config.vaultCalls,
+    // Calls to allow claiming rewards from Curve's Minter
+    [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
+    [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
+    [
+      config.curve.minter,
+      sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')),
+      vaultCallAnyDataHash,
+    ],
+    // Calls to trigger the PricelessAssetBypassMixin's timelock
     [
       onlyRemoveDustExternalPositionPolicy.address,
       pricelessAssetBypassStartAssetBypassTimelockSelector,
@@ -38,6 +48,12 @@ const fn: DeployFunction = async function (hre) {
     [
       cumulativeSlippageTolerancePolicy.address,
       pricelessAssetBypassStartAssetBypassTimelockSelector,
+      vaultCallAnyDataHash,
+    ],
+    // Allows delegating trading on Synthetix to the SynthetixAdapter only
+    [
+      config.synthetix.delegateApprovals,
+      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)')),
       vaultCallAnyDataHash,
     ],
   ];
