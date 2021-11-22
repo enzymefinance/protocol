@@ -44,6 +44,7 @@ export interface SignedRelayRequest {
 export interface CreateSignedRelayRequestOptions {
   sendFunction: SendFunction<any, any>;
   vaultPaymaster: string;
+  validUntil?: BigNumberish;
   relayWorker: string;
   customProvider?: providers.Provider;
   pctRelayFee?: BigNumberish;
@@ -57,6 +58,7 @@ export async function createSignedRelayRequest({
   vaultPaymaster,
   relayWorker,
   customProvider,
+  validUntil,
   pctRelayFee = BigNumber.from(0),
   baseRelayFee = BigNumber.from(0),
   clientId = BigNumber.from(1),
@@ -89,14 +91,16 @@ export async function createSignedRelayRequest({
     throw new Error(`Failed to estimate relayed transaction: ${e}`);
   }
 
+  const currentBlock = await provider.getBlockNumber();
+
   const relayRequest: RelayRequest = {
     data,
     from,
     gas,
     nonce,
     to,
-    validUntil: BigNumber.from(0),
-    value, // TODO: Expose this as configuration?
+    validUntil: BigNumber.from(validUntil ?? currentBlock + 7200),
+    value,
   };
 
   const relayData: RelayData = {
