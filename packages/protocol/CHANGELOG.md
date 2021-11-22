@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.4
+
+### Patch Changes
+
+- 3d8a980b: Expose validUntil option in createSignedRelayRequest util
+
 ## 4.0.0-next.3
 
 ### Patch Changes
