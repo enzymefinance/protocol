@@ -1,8 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
-import { aaveLend } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
+import { aaveLend, buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;

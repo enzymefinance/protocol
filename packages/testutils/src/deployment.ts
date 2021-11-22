@@ -1,5 +1,3 @@
-import type { Contract } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   AaveAdapter,
   AavePriceFeed,
@@ -70,8 +68,6 @@ import {
   YearnVaultV2PriceFeed,
   ZeroExV2Adapter,
 } from '@enzymefinance/protocol';
-
-import type { DeploymentConfig } from '../../../deploy/utils/config';
 
 export async function getNamedSigner(name: string) {
   const accounts = await hre.getNamedAccounts();
@@ -176,22 +172,100 @@ export async function deployProtocolFixture() {
 }
 
 type Resolve<T extends () => any> = ReturnType<T> extends Promise<infer U> ? U : ReturnType<T>;
-type ContractMap = Record<string, Contract>;
-
-export interface DeploymentFixtureWithoutConfig<T extends ContractMap> {
-  deployer: SignerWithAddress;
-  deployment: T;
-  accounts: SignerWithAddress[];
-}
-
-export interface DeploymentFixtureWithConfig<T extends ContractMap> extends DeploymentFixtureWithoutConfig<T> {
-  config: DeploymentConfig;
-}
 
 export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
 
-// TODO: Remove this.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function defaultTestDeployment(_: any): Promise<any> {
-  throw new Error('Removed');
+import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
+
+export interface DeploymentConfig {
+  feeToken: string;
+  weth: string;
+  wrappedNativeAsset: string;
+  primitives: Record<string, string>;
+  gsn: {
+    relayHub: string;
+    relayWorker: string;
+    trustedForwarder: string;
+  };
+  chainlink: {
+    ethusd: string;
+    aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
+  };
+  synthetix: {
+    snx: string;
+    susd: string;
+    synths: Record<string, string>;
+    addressResolver: string;
+    delegateApprovals: string;
+    originator: string;
+    trackingCode: string;
+  };
+  curve: {
+    addressProvider: string;
+    minter: string;
+    pools: Record<string, { pool: string; lpToken: string; liquidityGaugeToken: string; invariantProxyAsset: string }>;
+  };
+  aave: {
+    lendingPoolAddressProvider: string;
+    protocolDataProvider: string;
+    atokens: Record<string, [string, string]>;
+  };
+  compound: {
+    ceth: string;
+    comptroller: string;
+    ctokens: Record<string, string>;
+  };
+  idle: {
+    bestYieldIdleDai: string;
+    bestYieldIdleUsdc: string;
+    bestYieldIdleUsdt: string;
+    bestYieldIdleSusd: string;
+    bestYieldIdleTusd: string;
+    bestYieldIdleWbtc: string;
+    riskAdjustedIdleDai: string;
+    riskAdjustedIdleUsdc: string;
+    riskAdjustedIdleUsdt: string;
+  };
+  lido: {
+    steth: string;
+  };
+  paraSwapV4: {
+    augustusSwapper: string;
+    tokenTransferProxy: string;
+  };
+  paraSwapV5: {
+    augustusSwapper: string;
+    tokenTransferProxy: string;
+  };
+  poolTogetherV4: {
+    ptTokens: Record<string, [string, string]>;
+  };
+  stakehound: {
+    steth: string;
+  };
+  unsupportedAssets: Record<string, string>;
+  uniswap: {
+    factory: string;
+    router: string;
+    pools: Record<string, string>;
+  };
+  uniswapV3: {
+    router: string;
+    nonFungiblePositionManager: string;
+  };
+  yearn: {
+    vaultV2: {
+      registry: string;
+      yVaults: Record<string, string>;
+    };
+  };
+  zeroex: {
+    exchange: string;
+    allowedMakers: string[];
+  };
+  policies: {
+    guaranteedRedemption: {
+      redemptionWindowBuffer: number;
+    };
+  };
 }

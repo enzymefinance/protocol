@@ -26,7 +26,6 @@
     "lint:prettier": "prettier --list-different \"{*,**/*}.{sol,json,md,yml}\"",
     "lint:eslint": "eslint \"{*,**/*}.{js,jsx,ts,tsx}\"",
     "lint:solhint": "solhint --max-warnings 0 \"contracts/{*,**/*}.sol\"",
-    "pretest": "yarn build",
     "test": "jest",
     "deploy:kovan": "hardhat deploy --network kovan",
     "export:kovan": "hardhat export --network kovan --export deployments/kovan.json",

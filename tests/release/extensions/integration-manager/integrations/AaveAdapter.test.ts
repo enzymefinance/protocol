@@ -9,8 +9,7 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, getAssetBalances } from '@enzymefinance/testutils';
-import { aaveLend, aaveRedeem } from '@enzymefinance/testutils/src/scaffolding/extensions/integrations/aave';
+import { aaveLend, aaveRedeem, createNewFund, deployProtocolFixture, getAssetBalances } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const roundingBuffer = BigNumber.from(2);

@@ -1,7 +1,7 @@
 import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import type { DeploymentConfig } from '@enzymefinance/testutils';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
-import type { DeploymentConfig } from '../../utils/config';
 import { saveConfig } from '../../utils/config';
 import { isHomestead } from '../../utils/helpers';
 
