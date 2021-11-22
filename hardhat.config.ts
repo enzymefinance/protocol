@@ -149,15 +149,6 @@ const config: HardhatUserConfig = {
         version: '0.6.12',
       },
     ],
-    settings: {
-      optimizer: {
-        details: {
-          yul: false,
-        },
-        enabled: true,
-        runs: 200,
-      },
-    },
   },
 };
 

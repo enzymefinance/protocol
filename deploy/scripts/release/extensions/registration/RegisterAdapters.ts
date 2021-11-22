@@ -11,7 +11,7 @@ const fn: DeployFunction = async function (hre) {
   // Register synthetix as a redemption blocking adapter.
   const synthetixAdapter = await getOrNull('SynthetixAdapter');
   const guaranteedRedemption = await getOrNull('GuaranteedRedemptionPolicy');
-  if (synthetixAdapter !== null && guaranteedRedemption !== null) {
+  if (synthetixAdapter && guaranteedRedemption) {
     const guaranteedRedemptionInstance = new GuaranteedRedemptionPolicy(guaranteedRedemption.address, deployer);
     log('Registering redemption blocking adapters');
     await guaranteedRedemptionInstance.addRedemptionBlockingAdapters([synthetixAdapter.address]);

@@ -3,15 +3,15 @@ import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, log },
+    deployments: { deploy, get, getOrNull, log },
     ethers: { getSigners },
   } = hre;
 
-  const compoundDebtPositionLib = await get('CompoundDebtPositionLib');
-  const compoundDebtPositionParser = await get('CompoundDebtPositionParser');
+  const compoundDebtPositionLib = await getOrNull('CompoundDebtPositionLib');
+  const compoundDebtPositionParser = await getOrNull('CompoundDebtPositionParser');
 
-  const uniswapV3ExternalPositionLib = await get('UniswapV3LiquidityPositionLib');
-  const uniswapV3ExternalPositionParser = await get('UniswapV3LiquidityPositionParser');
+  const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
+  const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
 
   const deployer = (await getSigners())[0];
   const fundDeployer = await get('FundDeployer');
@@ -28,22 +28,33 @@ const fn: DeployFunction = async function (hre) {
   if (externalPositionManager.newlyDeployed) {
     log('Updating ExternalPositionManager on ExternalPositionFactory');
     const externalPositionFactoryInstance = new ExternalPositionFactory(externalPositionFactory.address, deployer);
-
     await externalPositionFactoryInstance.addPositionDeployers([externalPositionManager]);
-    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY']);
+
+    const positionTypes = [
+      ...(compoundDebtPositionLib && compoundDebtPositionParser ? ['COMPOUND_DEBT'] : []),
+      ...(uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser ? ['UNISWAP_V3_LIQUIDITY'] : []),
+    ];
+
+    if (positionTypes.length) {
+      await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY']);
+    }
 
     const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
-    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [0],
-      [compoundDebtPositionLib],
-      [compoundDebtPositionParser],
-    );
+    if (compoundDebtPositionLib && compoundDebtPositionParser) {
+      await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+        [0],
+        [compoundDebtPositionLib],
+        [compoundDebtPositionParser],
+      );
+    }
 
-    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [1],
-      [uniswapV3ExternalPositionLib],
-      [uniswapV3ExternalPositionParser],
-    );
+    if (uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser) {
+      await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+        [1],
+        [uniswapV3ExternalPositionLib],
+        [uniswapV3ExternalPositionParser],
+      );
+    }
   }
 };
 fn.tags = ['Release', 'ExternalPositionManager'];

@@ -4,13 +4,14 @@ import {
   LIB_INIT_GENERIC_DUMMY_ADDRESS,
   VaultLib,
 } from '@enzymefinance/protocol';
+import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, log },
+    deployments: { deploy, get, getOrNull, log },
     ethers: { getSigners },
   } = hre;
 
@@ -18,18 +19,18 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const externalPositionManager = await get('ExternalPositionManager');
   const fundDeployer = await get('FundDeployer');
-  const gasRelayPaymasterFactory = await get('GasRelayPaymasterFactory');
+  const gasRelayPaymasterFactory = await getOrNull('GasRelayPaymasterFactory');
   const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
   const protocolFeeTracker = await get('ProtocolFeeTracker');
 
   const vaultLib = await deploy('VaultLib', {
     args: [
       externalPositionManager.address,
-      gasRelayPaymasterFactory.address,
+      gasRelayPaymasterFactory?.address ?? constants.AddressZero,
       protocolFeeReserveProxy.address,
       protocolFeeTracker.address,
-      config.primitives.mln,
-      config.weth,
+      config.feeToken,
+      config.wrappedNativeAsset,
     ] as VaultLibArgs,
     from: deployer.address,
     log: true,

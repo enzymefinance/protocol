@@ -22,7 +22,9 @@ export async function hasConfig(hre: HardhatRuntimeEnvironment): Promise<boolean
 }
 
 export interface DeploymentConfig {
+  feeToken: string;
   weth: string;
+  wrappedNativeAsset: string;
   primitives: Record<string, string>;
   gsn: {
     relayHub: string;

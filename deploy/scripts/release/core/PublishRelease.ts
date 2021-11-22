@@ -27,7 +27,7 @@ fn.tags = ['Release'];
 fn.dependencies = ['Dispatcher', 'FundDeployer', 'PostDeployment', 'ProtocolFeeTracker'];
 fn.runAtTheEnd = true;
 
-// NOTE: On mainnet, this is part of the hand over / release routine.
+// NOTE: On live networks, this is part of the hand over / release routine.
 fn.skip = async (hre) => hre.network.live;
 
 export default fn;

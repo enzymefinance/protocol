@@ -3,8 +3,15 @@ import type { DeployFunction } from 'hardhat-deploy/types';
 
 import type { DeploymentConfig } from '../../utils/config';
 import { saveConfig } from '../../utils/config';
+import { isHomestead } from '../../utils/helpers';
 
 // Note that some addresses in this file are checksummed and others are not. This shouldn't be an issue.
+
+// Special assets
+const mln = '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892';
+const feeToken = mln;
+const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+const wrappedNativeAsset = weth;
 
 // WETH is not included as it is auto-included in the chainlink price feed
 const primitives = {
@@ -28,7 +35,7 @@ const primitives = {
   lrc: '0xbbbbca6a901c926f240b89eacb641d8aec7aeafd',
   mana: '0x0f5d2fb29fb7d3cfee444a200298f468908cc942',
   mkr: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2',
-  mln: '0xec67005c4E498Ec7f55E092bd1d35cbC47C91892',
+  mln,
   nmr: '0x1776e1f26f98b1a5df9cd347953a26dd3cb46671',
   oxt: '0x4575f41308ec1483f3d399aa9a2826d74da13deb',
   ren: '0x408e41876cccdc0f92210600ef50372656052a38',
@@ -46,8 +53,6 @@ const primitives = {
   yfi: '0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e',
   zrx: '0xE41d2489571d322189246DaFA5ebDe1F4699F498',
 } as const;
-
-const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
 const aggregators = {
   aave: ['0x6Df09E975c830ECae5bd4eD9d90f3A95a4f88012', ChainlinkRateAsset.ETH],
@@ -271,6 +276,7 @@ const mainnetConfig: DeploymentConfig = {
       },
     },
   },
+  feeToken,
   gsn: {
     relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
     relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',
@@ -331,7 +337,8 @@ const mainnetConfig: DeploymentConfig = {
     router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
   },
   unsupportedAssets,
-  weth: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  weth,
+  wrappedNativeAsset,
   yearn: {
     vaultV2: {
       registry: '0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804',
@@ -354,9 +361,9 @@ const fn: DeployFunction = async (hre) => {
 fn.tags = ['Config'];
 fn.skip = async (hre) => {
   // Run this only for mainnet & mainnet forks.
-  const chain = parseInt(await hre.getChainId());
+  const chain = await hre.getChainId();
 
-  return chain !== 31337 && chain !== 1;
+  return !isHomestead(chain);
 };
 
 export default fn;

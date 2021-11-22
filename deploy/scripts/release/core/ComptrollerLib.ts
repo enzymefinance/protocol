@@ -1,12 +1,13 @@
 import type { ComptrollerLibArgs } from '@enzymefinance/protocol';
 import { ComptrollerLib, FundDeployer as FundDeployerContract } from '@enzymefinance/protocol';
+import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, log },
+    deployments: { deploy, get, getOrNull, log },
     ethers: { getSigners },
   } = hre;
 
@@ -18,7 +19,7 @@ const fn: DeployFunction = async function (hre) {
   const externalPositionManager = await get('ExternalPositionManager');
   const feeManager = await get('FeeManager');
   const fundDeployer = await get('FundDeployer');
-  const gasRelayPaymasterFactory = await get('GasRelayPaymasterFactory');
+  const gasRelayPaymasterFactory = await getOrNull('GasRelayPaymasterFactory');
   const integrationManager = await get('IntegrationManager');
   const policyManager = await get('PolicyManager');
   const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
@@ -35,9 +36,9 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       policyManager.address,
       assetFinalityResolver.address,
-      gasRelayPaymasterFactory.address,
-      config.primitives.mln,
-      config.weth,
+      gasRelayPaymasterFactory?.address ?? constants.AddressZero,
+      config.feeToken,
+      config.wrappedNativeAsset,
     ] as ComptrollerLibArgs,
     from: deployer.address,
     log: true,

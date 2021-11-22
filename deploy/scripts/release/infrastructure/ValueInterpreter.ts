@@ -11,7 +11,7 @@ import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get },
+    deployments: { deploy, get, getOrNull },
     ethers: { getSigners },
   } = hre;
 
@@ -56,42 +56,61 @@ const fn: DeployFunction = async function (hre) {
 
     // Add AggregatedDerivativePriceFeedMixin config
 
-    const aavePriceFeed = await get('AavePriceFeed');
-    const curvePriceFeed = await get('CurvePriceFeed');
-    const compoundPriceFeed = await get('CompoundPriceFeed');
-    const idlePriceFeed = await get('IdlePriceFeed');
-    const lidoStethPriceFeed = await get('LidoStethPriceFeed');
-    const poolTogetherV4PriceFeed = await get('PoolTogetherV4PriceFeed');
-    const stakehoundEthPriceFeed = await get('StakehoundEthPriceFeed');
-    const synthetixPriceFeed = await get('SynthetixPriceFeed');
-    const yearnVaultV2PriceFeed = await get('YearnVaultV2PriceFeed');
+    const aavePriceFeed = await getOrNull('AavePriceFeed');
+    const curvePriceFeed = await getOrNull('CurvePriceFeed');
+    const compoundPriceFeed = await getOrNull('CompoundPriceFeed');
+    const idlePriceFeed = await getOrNull('IdlePriceFeed');
+    const lidoStethPriceFeed = await getOrNull('LidoStethPriceFeed');
+    const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
+    const stakehoundEthPriceFeed = await getOrNull('StakehoundEthPriceFeed');
+    const synthetixPriceFeed = await getOrNull('SynthetixPriceFeed');
+    const yearnVaultV2PriceFeed = await getOrNull('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
-      [config.compound.ceth, compoundPriceFeed.address],
-      [config.lido.steth, lidoStethPriceFeed.address],
-      [config.stakehound.steth, stakehoundEthPriceFeed.address],
-      ...Object.values(config.aave.atokens).map(([atoken]) => [atoken, aavePriceFeed.address] as [string, string]),
-      ...Object.values(config.compound.ctokens).map(
-        (ctoken) => [ctoken, compoundPriceFeed.address] as [string, string],
-      ),
-      ...Object.values(config.curve.pools).map((pool) => [pool.lpToken, curvePriceFeed.address] as [string, string]),
-      ...Object.values(config.curve.pools).map(
-        (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
-      ),
-      ...Object.values(config.idle).map((idleToken) => [idleToken, idlePriceFeed.address] as [string, string]),
-      ...Object.values(config.poolTogetherV4.ptTokens).map(
-        ([ptToken]) => [ptToken, poolTogetherV4PriceFeed.address] as [string, string],
-      ),
-      ...Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string]),
-      ...Object.values(config.yearn.vaultV2.yVaults).map(
-        (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
-      ),
+      ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
+      ...(lidoStethPriceFeed ? [[config.lido.steth, lidoStethPriceFeed.address] as [string, string]] : []),
+      ...(stakehoundEthPriceFeed
+        ? [[config.stakehound.steth, stakehoundEthPriceFeed.address] as [string, string]]
+        : []),
+      ...(aavePriceFeed
+        ? Object.values(config.aave.atokens).map(([atoken]) => [atoken, aavePriceFeed.address] as [string, string])
+        : []),
+      ...(compoundPriceFeed
+        ? Object.values(config.compound.ctokens).map(
+            (ctoken) => [ctoken, compoundPriceFeed.address] as [string, string],
+          )
+        : []),
+      ...(curvePriceFeed
+        ? Object.values(config.curve.pools).map((pool) => [pool.lpToken, curvePriceFeed.address] as [string, string])
+        : []),
+      ...(curvePriceFeed
+        ? Object.values(config.curve.pools).map(
+            (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
+          )
+        : []),
+      ...(idlePriceFeed
+        ? Object.values(config.idle).map((idleToken) => [idleToken, idlePriceFeed.address] as [string, string])
+        : []),
+      ...(poolTogetherV4PriceFeed
+        ? Object.values(config.poolTogetherV4.ptTokens).map(
+            ([ptToken]) => [ptToken, poolTogetherV4PriceFeed.address] as [string, string],
+          )
+        : []),
+      ...(synthetixPriceFeed
+        ? Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string])
+        : []),
+      ...(yearnVaultV2PriceFeed
+        ? Object.values(config.yearn.vaultV2.yVaults).map(
+            (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
+          )
+        : []),
     ];
 
     const derivatives = derivativePairs.map(([derivative]) => derivative);
     const derivativeFeeds = derivativePairs.map(([, feed]) => feed);
-
-    await valueInterpreterInstance.addDerivatives(derivatives, derivativeFeeds);
+    if (derivatives.length && derivativeFeeds.length) {
+      await valueInterpreterInstance.addDerivatives(derivatives, derivativeFeeds);
+    }
   }
 };
 
