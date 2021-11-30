@@ -1,5 +1,5 @@
 import type { AddressLike, Call, Contract } from '@enzymefinance/ethers';
-import { contract, extractEvent } from '@enzymefinance/ethers';
+import { contract, extractEvent, resolveAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
@@ -278,4 +278,13 @@ export async function uniswapV3LiquidityPositionRemoveLiquidity({
   return comptrollerProxy
     .connect(signer)
     .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+}
+
+export function uniswapV3OrderTokenPair({ tokenA, tokenB }: { tokenA: AddressLike; tokenB: AddressLike }) {
+  const tokenAAddress = resolveAddress(tokenA);
+  const tokenBAddress = resolveAddress(tokenB);
+
+  return tokenAAddress < tokenBAddress
+    ? { token0: tokenAAddress, token1: tokenBAddress }
+    : { token0: tokenBAddress, token1: tokenAAddress };
 }

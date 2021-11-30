@@ -52,6 +52,10 @@ contract UniswapV3LiquidityPositionLib is
         token0 = token0Val;
         token1 = token1Val;
 
+        // Approve the NFT manager once for the max of each token
+        ERC20(token0Val).safeApprove(getNonFungibleTokenManager(), type(uint256).max);
+        ERC20(token1Val).safeApprove(getNonFungibleTokenManager(), type(uint256).max);
+
         emit Initialized(token0Val, token1Val);
     }
 
@@ -127,7 +131,7 @@ contract UniswapV3LiquidityPositionLib is
                     liquidity: liquidity,
                     amount0Min: amount0Min,
                     amount1Min: amount1Min,
-                    deadline: block.timestamp + 1
+                    deadline: block.timestamp
                 })
             );
         } else if (
@@ -172,22 +176,6 @@ contract UniswapV3LiquidityPositionLib is
         }
     }
 
-    /// @dev Helper to approve a target account with the max amount of an asset.
-    /// Copied from AssetHelpers.sol
-    function __approveAssetMaxAsNeeded(
-        address _asset,
-        address _target,
-        uint256 _neededAmount
-    ) internal {
-        uint256 allowance = ERC20(_asset).allowance(address(this), _target);
-        if (allowance < _neededAmount) {
-            if (allowance > 0) {
-                ERC20(_asset).safeApprove(_target, 0);
-            }
-            ERC20(_asset).safeApprove(_target, type(uint256).max);
-        }
-    }
-
     /// @dev Collects all uncollected amounts from the nft position and sends it to the vaultProxy
     function __collect(uint256 _nftId) private {
         INonfungiblePositionManager(getNonFungibleTokenManager()).collect(
@@ -219,24 +207,10 @@ contract UniswapV3LiquidityPositionLib is
 
     /// @dev Mints a new uniswap position, receiving an nft as a receipt
     function __mint(INonfungiblePositionManager.MintParams memory _params) private {
-        __approveAssetMaxAsNeeded(
-            _params.token0,
-            getNonFungibleTokenManager(),
-            _params.amount0Desired
-        );
-        __approveAssetMaxAsNeeded(
-            _params.token1,
-            getNonFungibleTokenManager(),
-            _params.amount1Desired
-        );
-
         (uint256 tokenId, , uint256 amount0, uint256 amount1) = INonfungiblePositionManager(
             getNonFungibleTokenManager()
         )
             .mint(_params);
-
-        token0 = _params.token0;
-        token1 = _params.token1;
 
         nftIds.push(tokenId);
 

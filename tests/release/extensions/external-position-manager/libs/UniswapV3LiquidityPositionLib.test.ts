@@ -1,3 +1,4 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import { StandardToken, UniswapV3LiquidityPositionLib } from '@enzymefinance/protocol';
@@ -16,6 +17,7 @@ import {
   uniswapV3LiquidityPositionGetMinTick,
   uniswapV3LiquidityPositionMint,
   uniswapV3LiquidityPositionRemoveLiquidity,
+  uniswapV3OrderTokenPair,
   uniswapV3TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -41,7 +43,82 @@ beforeEach(async () => {
 });
 
 describe('init', () => {
-  it.todo('write tests');
+  it('does not allow an incorrect token order', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: fork.config.primitives.usdc,
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0: token1,
+        token1: token0,
+      }),
+    ).rejects.toBeRevertedWith('Incorrect token order');
+  });
+
+  it('does not allow an asset outside of the asset universe', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: randomAddress(),
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0,
+        token1,
+      }),
+    ).rejects.toBeRevertedWith('Unsupported pair');
+  });
+
+  it('does not allow two derivative assets', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.compound.ctokens.cdai,
+      tokenB: fork.config.compound.ctokens.cusdc,
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0,
+        token1,
+      }),
+    ).rejects.toBeRevertedWith('Unsupported pair');
+  });
+
+  it('happy path', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: fork.config.primitives.usdc,
+    });
+
+    const { externalPositionProxyAddress, receipt } = await createUniswapV3LiquidityPosition({
+      comptrollerProxy,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      signer: fundOwner,
+      token0,
+      token1,
+    });
+    const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(externalPositionProxyAddress, provider);
+
+    // Assert state
+    expect(await uniswapV3LiquidityPosition.getToken0()).toMatchAddress(token0);
+    expect(await uniswapV3LiquidityPosition.getToken1()).toMatchAddress(token1);
+
+    // Assert event
+    assertEvent(receipt, uniswapV3LiquidityPosition.abi.getEvent('Initialized'), {
+      token0,
+      token1,
+    });
+  });
 });
 
 describe('receiveCallFromVault', () => {
@@ -369,7 +446,7 @@ describe('receiveCallFromVault', () => {
   });
 
   describe('getManagedAssets', () => {
-    fit('works as expected (wide range, different price)', async () => {
+    it('works as expected (wide range, different price)', async () => {
       const [fundOwner] = fork.accounts;
       const token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
       const token1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);

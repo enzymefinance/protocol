@@ -123,6 +123,10 @@ contract UniswapV3LiquidityPositionParser is
     {
         (address token0, address token1) = __decodeInitArgs(_initializationData);
 
+        // Could also accept any order of tokenA and tokenB and re-order dynamically,
+        // but better for front ends to get used to the correct ordering for later inputs
+        require(token0 < token1, "parseInitArgs: Incorrect token order");
+
         require(__poolIsSupportable(token0, token1), "parseInitArgs: Unsupported pair");
         // We do not validate whether an external position for the fund already exists for the pair,
         // but callers should be aware that one instance can be used for multiple nft positions
