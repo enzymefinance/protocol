@@ -40,6 +40,8 @@ it('whales have adequate balances', async () => {
     // Not supported assets, so no price lookups
     // ldo: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
     // eurs: fork.config.unsupportedAssets.eurs,
+    // sxag: fork.config.synthetix.synths.sxag - 0x6a22e5e94388464181578aa7a6b869e00fe27846
+    // sxau: fork.config.synthetix.synths.sxau - 0x261efcdd24cea98652b9700800a13dfbca4103ff
   };
   /* eslint-enable sort-keys-fix/sort-keys-fix */
 

@@ -11,7 +11,9 @@ import {
   callOnIntegrationArgs,
   encodeArgs,
   IntegrationManagerActionId,
+  redeemSelector,
   synthetixAssignExchangeDelegateSelector,
+  synthetixRedeemArgs,
   synthetixTakeOrderArgs,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
@@ -51,6 +53,34 @@ export async function synthetixResolveAddress({
   name: string;
 }) {
   return addressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
+}
+
+export async function synthetixRedeem({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  synthetixAdapter,
+  synths,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: Signer;
+  synthetixAdapter: SynthetixAdapter;
+  synths: AddressLike[];
+}) {
+  const redeemArgs = synthetixRedeemArgs({
+    synths,
+  });
+
+  const callArgs = callOnIntegrationArgs({
+    adapter: synthetixAdapter,
+    encodedCallArgs: redeemArgs,
+    selector: redeemSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 
 export async function synthetixTakeOrder({

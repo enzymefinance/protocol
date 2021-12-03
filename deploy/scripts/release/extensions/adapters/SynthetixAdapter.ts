@@ -18,9 +18,11 @@ const fn: DeployFunction = async function (hre) {
   await deploy('SynthetixAdapter', {
     args: [
       integrationManager.address,
-      synthetixPriceFeed.address,
       config.synthetix.originator,
+      synthetixPriceFeed.address,
+      config.synthetix.redeemer,
       config.synthetix.snx,
+      config.synthetix.susd,
       config.synthetix.trackingCode,
     ] as SynthetixAdapterArgs,
     from: deployer.address,

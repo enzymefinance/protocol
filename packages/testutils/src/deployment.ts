@@ -198,6 +198,7 @@ export interface DeploymentConfig {
     addressResolver: string;
     delegateApprovals: string;
     originator: string;
+    redeemer: string;
     trackingCode: string;
   };
   curve: {

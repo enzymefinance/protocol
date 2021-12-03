@@ -322,6 +322,7 @@ const mainnetConfig: DeploymentConfig = {
     addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2',
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
+    redeemer: '0xe533139Af961c9747356D947838c98451015e234',
     snx: primitives.snx,
     susd: primitives.susd,
     synths,

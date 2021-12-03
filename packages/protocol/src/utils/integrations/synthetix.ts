@@ -9,6 +9,10 @@ export const synthetixAssignExchangeDelegateSelector = sighash(
   utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)'),
 );
 
+export function synthetixRedeemArgs({ synths }: { synths: AddressLike[] }) {
+  return encodeArgs(['address[]'], [synths]);
+}
+
 export function synthetixTakeOrderArgs({
   incomingAsset,
   minIncomingAssetAmount,

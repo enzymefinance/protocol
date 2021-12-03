@@ -13,6 +13,7 @@ pragma solidity 0.6.12;
 
 import "../../../../../infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
 import "../../../../../interfaces/ISynthetix.sol";
+import "../../../../../interfaces/ISynthetixRedeemer.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title SynthetixActionsMixin Contract
@@ -21,17 +22,20 @@ import "../../../../../utils/AssetHelpers.sol";
 abstract contract SynthetixActionsMixin is AssetHelpers {
     address private immutable SYNTHETIX;
     address private immutable SYNTHETIX_ORIGINATOR;
+    address private immutable SYNTHETIX_REDEEMER;
     address private immutable SYNTHETIX_PRICE_FEED;
     bytes32 private immutable SYNTHETIX_TRACKING_CODE;
 
     constructor(
-        address _priceFeed,
         address _originator,
+        address _priceFeed,
+        address _redeemer,
         address _synthetix,
         bytes32 _trackingCode
     ) public {
-        SYNTHETIX_PRICE_FEED = _priceFeed;
         SYNTHETIX_ORIGINATOR = _originator;
+        SYNTHETIX_PRICE_FEED = _priceFeed;
+        SYNTHETIX_REDEEMER = _redeemer;
         SYNTHETIX = _synthetix;
         SYNTHETIX_TRACKING_CODE = _trackingCode;
     }
@@ -60,6 +64,11 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
         );
     }
 
+    /// @dev Helper to execute redeem
+    function __synthetixRedeem(address[] memory _synths) internal {
+        ISynthetixRedeemer(SYNTHETIX_REDEEMER).redeemAll(_synths);
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -80,6 +89,12 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
     /// @return synthetixPriceFeed_ The `SYNTHETIX_PRICE_FEED` variable value
     function getSynthetixPriceFeed() public view returns (address synthetixPriceFeed_) {
         return SYNTHETIX_PRICE_FEED;
+    }
+
+    /// @notice Gets the `SYNTHETIX_REDEEMER` variable
+    /// @return synthetixRedeemer_ The `SYNTHETIX_REDEEMER` variable value
+    function getSynthetixRedeemer() public view returns (address synthetixRedeemer_) {
+        return SYNTHETIX_REDEEMER;
     }
 
     /// @notice Gets the `SYNTHETIX_TRACKING_CODE` variable
