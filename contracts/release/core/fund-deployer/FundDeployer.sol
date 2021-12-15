@@ -347,7 +347,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Creates a new fund
     /// @param _fundOwner The address of the owner for the fund
-    /// @param _fundName The name of the fund
+    /// @param _fundName The name of the fund's shares token
+    /// @param _fundSymbol The symbol of the fund's shares token
     /// @param _denominationAsset The contract address of the denomination asset for the fund
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
@@ -357,6 +358,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     function createNewFund(
         address _fundOwner,
         string calldata _fundName,
+        string calldata _fundSymbol,
         address _denominationAsset,
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
@@ -371,12 +373,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _sharesActionTimelock
         );
 
-        vaultProxy_ = IDispatcher(getDispatcher()).deployVaultProxy(
-            getVaultLib(),
-            _fundOwner,
-            comptrollerProxy_,
-            _fundName
-        );
+        vaultProxy_ = __deployVaultProxy(_fundOwner, comptrollerProxy_, _fundName, _fundSymbol);
 
         IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
         comptrollerContract.setVaultProxy(vaultProxy_);
@@ -513,6 +510,27 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         );
 
         return comptrollerProxy_;
+    }
+
+    /// @dev Helper to deploy a new VaultProxy instance during fund creation.
+    /// Avoids stack-too-deep error.
+    function __deployVaultProxy(
+        address _fundOwner,
+        address _comptrollerProxy,
+        string calldata _fundName,
+        string calldata _fundSymbol
+    ) private returns (address vaultProxy_) {
+        vaultProxy_ = IDispatcher(getDispatcher()).deployVaultProxy(
+            getVaultLib(),
+            _fundOwner,
+            _comptrollerProxy,
+            _fundName
+        );
+        if (bytes(_fundSymbol).length != 0) {
+            IVault(vaultProxy_).setSymbol(_fundSymbol);
+        }
+
+        return vaultProxy_;
     }
 
     ///////////////////////////////////////////////

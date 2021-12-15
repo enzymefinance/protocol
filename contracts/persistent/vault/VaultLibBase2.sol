@@ -32,6 +32,8 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
 
     event FreelyTransferableSharesSet();
 
+    event NameSet(string name);
+
     event NominatedOwnerRemoved(address indexed nominatedOwner);
 
     event NominatedOwnerSet(address indexed nominatedOwner);
@@ -41,6 +43,8 @@ abstract contract VaultLibBase2 is VaultLibBase1 {
     event ProtocolFeeSharesBoughtBack(uint256 sharesAmount, uint256 mlnValue, uint256 mlnBurned);
 
     event OwnershipTransferred(address indexed prevOwner, address indexed nextOwner);
+
+    event SymbolSet(string symbol);
 
     // In order to make transferability guarantees to liquidity pools and other smart contracts
     // that hold/treat shares as generic ERC20 tokens, a permanent guarantee on transferability

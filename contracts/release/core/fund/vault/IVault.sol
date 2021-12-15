@@ -71,6 +71,8 @@ interface IVault is IMigratableVault, IFreelyTransferableSharesVault, IExternalP
 
     function setAccessorForFundReconfiguration(address) external;
 
+    function setSymbol(string calldata) external;
+
     function transferShares(
         address,
         address,

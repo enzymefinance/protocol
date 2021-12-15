@@ -56,6 +56,7 @@ describe('init', () => {
   it('correctly sets initial proxy values', async () => {
     const [fundOwner] = fork.accounts;
 
+    // Do not use a fund symbol in order to test the default value
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
@@ -127,6 +128,69 @@ describe('setFreelyTransferableShares', () => {
     expect(await vaultProxy.sharesAreFreelyTransferable()).toBe(true);
 
     assertEvent(receipt, vaultProxy.abi.getEvent('FreelyTransferableSharesSet'));
+  });
+});
+
+describe('setName', () => {
+  const nextName = 'New Name';
+  let vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
+
+  beforeEach(async () => {
+    [fundOwner, randomUser] = fork.accounts;
+
+    const newFundRes = await createNewFund({
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundName: 'Old Name',
+      fundOwner,
+      signer: fundOwner,
+    });
+    vaultProxy = newFundRes.vaultProxy;
+  });
+
+  it('cannot be called by a random user', async () => {
+    await expect(vaultProxy.connect(randomUser).setName(nextName)).rejects.toBeRevertedWith(
+      'Only the owner can call this function',
+    );
+  });
+
+  it('happy path', async () => {
+    const receipt = await vaultProxy.setName(nextName);
+
+    expect(await vaultProxy.name()).toBe(nextName);
+
+    assertEvent(receipt, 'NameSet', { name: nextName });
+  });
+});
+
+describe('setSymbol', () => {
+  const nextSymbol = 'NEW';
+  let vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
+
+  beforeEach(async () => {
+    [fundOwner, randomUser] = fork.accounts;
+
+    const newFundRes = await createNewFund({
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
+    });
+    vaultProxy = newFundRes.vaultProxy;
+  });
+
+  it('cannot be called by a random user', async () => {
+    await expect(vaultProxy.connect(randomUser).setSymbol(nextSymbol)).rejects.toBeRevertedWith('Unauthorized');
+  });
+
+  it('happy path', async () => {
+    const receipt = await vaultProxy.setSymbol(nextSymbol);
+
+    expect(await vaultProxy.symbol()).toBe(nextSymbol);
+
+    assertEvent(receipt, 'SymbolSet', { symbol: nextSymbol });
   });
 });
 

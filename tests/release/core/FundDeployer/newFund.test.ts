@@ -49,6 +49,7 @@ describe('unhappy paths', () => {
       nonLiveFundDeployer.createNewFund(
         randomAddress(),
         '',
+        '',
         fork.config.weth,
         0,
         constants.HashZero,
@@ -62,7 +63,11 @@ describe('happy paths', () => {
   describe('No extension config', () => {
     let fundDeployer: FundDeployer, protocolFeeTracker: ProtocolFeeTracker;
     let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-    let fundName: string, fundOwner: AddressLike, denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
+    let fundName: string,
+      fundSymbol: string,
+      fundOwner: AddressLike,
+      denominationAsset: StandardToken,
+      sharesActionTimelock: BigNumber;
 
     beforeAll(async () => {
       fork = await deployProtocolFixture();
@@ -73,6 +78,7 @@ describe('happy paths', () => {
 
       fundOwner = randomAddress();
       fundName = 'My Fund';
+      fundSymbol = 'ABC';
       denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
       sharesActionTimelock = BigNumber.from(123);
 
@@ -82,6 +88,7 @@ describe('happy paths', () => {
         fundDeployer,
         fundName,
         fundOwner,
+        fundSymbol,
         sharesActionTimelock,
         signer,
       });
@@ -112,6 +119,7 @@ describe('happy paths', () => {
       expect(await vaultProxy.getAccessor()).toMatchAddress(comptrollerProxy);
       expect(await vaultProxy.getOwner()).toMatchAddress(fundOwner);
       expect(await vaultProxy.name()).toEqual(fundName);
+      expect(await vaultProxy.symbol()).toEqual(fundSymbol);
     });
   });
 });

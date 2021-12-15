@@ -121,6 +121,31 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         emit FreelyTransferableSharesSet();
     }
 
+    /// @notice Sets the shares name
+    /// @param _nextName The next name value
+    /// @dev Owners should consider the implications of changing an ERC20 name post-deployment,
+    /// e.g., some apps/dapps may cache token names for display purposes, so changing the name
+    /// in contract state may not be reflected in third party applications as desired.
+    function setName(string calldata _nextName) external onlyOwner {
+        sharesName = _nextName;
+
+        emit NameSet(_nextName);
+    }
+
+    /// @notice Sets the shares token symbol
+    /// @param _nextSymbol The next symbol value
+    /// @dev Owners should consider the implications of changing an ERC20 symbol post-deployment,
+    /// e.g., some apps/dapps may cache token symbols for display purposes, so changing the symbol
+    /// in contract state may not be reflected in third party applications as desired.
+    /// Only callable by the FundDeployer during vault creation or by the vault owner.
+    function setSymbol(string calldata _nextSymbol) external override {
+        require(__msgSender() == owner || msg.sender == getFundDeployer(), "Unauthorized");
+
+        sharesSymbol = _nextSymbol;
+
+        emit SymbolSet(_nextSymbol);
+    }
+
     ////////////////////////
     // PERMISSIONED ROLES //
     ////////////////////////
@@ -571,9 +596,14 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the `symbol` value of the shares token
     /// @return symbol_ The `symbol` value
-    /// @dev Defers the shares symbol value to the Dispatcher contract
+    /// @dev Defers the shares symbol value to the Dispatcher contract if not set locally
     function symbol() public view override returns (string memory symbol_) {
-        return IDispatcher(creator).getSharesTokenSymbol();
+        symbol_ = sharesSymbol;
+        if (bytes(symbol_).length == 0) {
+            symbol_ = IDispatcher(creator).getSharesTokenSymbol();
+        }
+
+        return symbol_;
     }
 
     /// @dev Standard implementation of ERC20's transfer().

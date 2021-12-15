@@ -37,6 +37,7 @@ export interface CreateNewFundParams {
   sharesActionTimelock?: BigNumberish;
   fundOwner?: AddressLike;
   fundName?: string;
+  fundSymbol?: string;
   feeManagerConfig?: BytesLike;
   policyManagerConfig?: BytesLike;
   investment?: InitialInvestmentParams;
@@ -116,13 +117,22 @@ export async function createNewFund({
   sharesActionTimelock = 0,
   fundOwner = randomAddress(),
   fundName = 'My Fund',
+  fundSymbol = '',
   feeManagerConfig = '0x',
   policyManagerConfig = '0x',
   investment,
 }: CreateNewFundParams) {
   const receipt = await fundDeployer
     .connect(signer)
-    .createNewFund(fundOwner, fundName, denominationAsset, sharesActionTimelock, feeManagerConfig, policyManagerConfig);
+    .createNewFund(
+      fundOwner,
+      fundName,
+      fundSymbol,
+      denominationAsset,
+      sharesActionTimelock,
+      feeManagerConfig,
+      policyManagerConfig,
+    );
 
   const comptrollerDeployedArgs = assertEvent(receipt, 'ComptrollerProxyDeployed', {
     comptrollerProxy: expect.any(String) as string,
