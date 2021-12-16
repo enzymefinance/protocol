@@ -63,6 +63,6 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
   },
   "files": ["hardhat.config.ts", "jest.config.ts", "jest.setup.ts"],
-  "include": ["deploy", "tests", "tests/types.d.ts"],
+  "include": ["deploy", "tasks", "tests", "tests/types.d.ts"],
   "exclude": ["node_modules"]
 }

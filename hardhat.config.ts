@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import '@enzymefinance/hardhat/plugin';
+import '@nomiclabs/hardhat-etherscan';
+import './tasks/verify';
 
 import { utils } from 'ethers';
 import type { HardhatUserConfig } from 'hardhat/types';
@@ -90,6 +92,9 @@ const config: HardhatUserConfig = {
   },
   contractSizer: {
     disambiguatePaths: false,
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   namedAccounts: {
     deployer: 0,
