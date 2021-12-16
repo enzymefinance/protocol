@@ -443,7 +443,7 @@ describe('expected relayable txs', () => {
       // Register a call for a token approval to a specific address
       const contract = weth;
       const asset = weth;
-      const functionSighash = sighash(utils.FunctionFragment.fromString('approve(address,uint)'));
+      const functionSighash = sighash(utils.FunctionFragment.fromString('approve(address,uint256)'));
       const spender = randomAddress();
       const validEncodedArgs = encodeArgs(['address', 'uint'], [spender, constants.MaxUint256]);
 

@@ -1,13 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { BigNumberish } from 'ethers';
-import { utils } from 'ethers';
 
 import { encodeArgs } from '../encoding';
-import { sighash } from '../sighash';
-
-export const synthetixAssignExchangeDelegateSelector = sighash(
-  utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)'),
-);
 
 export function synthetixRedeemArgs({ synths }: { synths: AddressLike[] }) {
   return encodeArgs(['address[]'], [synths]);

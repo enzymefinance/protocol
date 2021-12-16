@@ -1,17 +1,8 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { BigNumberish } from 'ethers';
-import { utils } from 'ethers';
 
 import { encodeArgs } from '../encoding';
-import { sighash } from '../sighash';
 
-export const curveMinterMintSelector = sighash(utils.FunctionFragment.fromString('mint(address)'));
-
-export const curveMinterMintManySelector = sighash(utils.FunctionFragment.fromString('mint_many(address[8])'));
-
-export const curveMinterToggleApproveMintSelector = sighash(
-  utils.FunctionFragment.fromString('toggle_approve_mint(address)'),
-);
 // exchanges
 
 export function curveTakeOrderArgs({

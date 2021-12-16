@@ -1,6 +1,8 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import type { ComptrollerLib } from '@enzymefinance/protocol';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { AddressListRegistry, AddressListUpdateType, ComptrollerLib } from '@enzymefinance/protocol';
 import {
+  addressListRegistryCreateListSelector,
   curveMinterMintManySelector,
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
@@ -8,6 +10,34 @@ import {
   sighash,
 } from '@enzymefinance/protocol';
 import { constants, utils } from 'ethers';
+
+export async function vaultCallCreateNewList({
+  addressListRegistry,
+  comptrollerProxy,
+  items,
+  owner,
+  signer,
+  updateType,
+}: {
+  addressListRegistry: AddressListRegistry;
+  comptrollerProxy: ComptrollerLib;
+  items: AddressLike[];
+  owner: AddressLike;
+  signer: SignerWithAddress;
+  updateType: AddressListUpdateType;
+}) {
+  await comptrollerProxy
+    .connect(signer)
+    .vaultCallOnContract(
+      addressListRegistry.address,
+      addressListRegistryCreateListSelector,
+      encodeArgs(['address', 'uint8', 'address[]'], [owner, updateType, items]),
+    );
+
+  const listCount = await addressListRegistry.getListCount();
+
+  return listCount.sub(1);
+}
 
 export function vaultCallCurveMinterMint({
   comptrollerProxy,

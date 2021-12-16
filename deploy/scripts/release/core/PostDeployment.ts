@@ -1,10 +1,18 @@
 import {
+  addressListRegistryAddToListSelector,
+  addressListRegistryAttestListsSelector,
+  addressListRegistryCreateListSelector,
+  addressListRegistryRemoveFromListSelector,
+  addressListRegistrySetListOwnerSelector,
+  addressListRegistrySetListUpdateTypeSelector,
+  curveMinterMintManySelector,
+  curveMinterMintSelector,
+  curveMinterToggleApproveMintSelector,
   FundDeployer as FundDeployerContract,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
-  sighash,
+  synthetixAssignExchangeDelegateSelector,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
-import { utils } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
@@ -18,6 +26,7 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
   const fundDeployer = await get('FundDeployer');
+  const addressListRegistry = await get('AddressListRegistry');
   const onlyRemoveDustExternalPositionPolicy = await get('OnlyRemoveDustExternalPositionPolicy');
   const onlyUntrackDustOrPricelessAssetsPolicy = await get('OnlyUntrackDustOrPricelessAssetsPolicy');
   const cumulativeSlippageTolerancePolicy = await get('CumulativeSlippageTolerancePolicy');
@@ -42,18 +51,20 @@ const fn: DeployFunction = async function (hre) {
       pricelessAssetBypassStartAssetBypassTimelockSelector,
       vaultCallAnyDataHash,
     ],
+    [addressListRegistry.address, addressListRegistryAddToListSelector, vaultCallAnyDataHash],
+    [addressListRegistry.address, addressListRegistryAttestListsSelector, vaultCallAnyDataHash],
+    [addressListRegistry.address, addressListRegistryCreateListSelector, vaultCallAnyDataHash],
+    [addressListRegistry.address, addressListRegistryRemoveFromListSelector, vaultCallAnyDataHash],
+    [addressListRegistry.address, addressListRegistrySetListOwnerSelector, vaultCallAnyDataHash],
+    [addressListRegistry.address, addressListRegistrySetListUpdateTypeSelector, vaultCallAnyDataHash],
   ];
 
   // Calls to allow claiming rewards from Curve's Minter
   if (config.curve) {
     vaultCalls.push(
-      [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
-      [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
-      [
-        config.curve.minter,
-        sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')),
-        vaultCallAnyDataHash,
-      ],
+      [config.curve.minter, curveMinterMintSelector, vaultCallAnyDataHash],
+      [config.curve.minter, curveMinterMintManySelector, vaultCallAnyDataHash],
+      [config.curve.minter, curveMinterToggleApproveMintSelector, vaultCallAnyDataHash],
     );
   }
 
@@ -61,7 +72,7 @@ const fn: DeployFunction = async function (hre) {
   if (config.synthetix) {
     vaultCalls.push([
       config.synthetix.delegateApprovals,
-      sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)')),
+      synthetixAssignExchangeDelegateSelector,
       vaultCallAnyDataHash,
     ]);
   }
@@ -78,6 +89,7 @@ const fn: DeployFunction = async function (hre) {
 fn.tags = ['Release'];
 fn.dependencies = [
   'FundDeployer',
+  'AddressListRegistry',
   'CumulativeSlippageTolerancePolicy',
   'OnlyRemoveDustExternalPositionPolicy',
   'OnlyUntrackDustOrPricelessAssetsPolicy',
