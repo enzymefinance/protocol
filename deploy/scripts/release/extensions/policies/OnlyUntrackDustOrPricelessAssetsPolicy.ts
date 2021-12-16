@@ -34,11 +34,13 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  const onlyUntrackDustOrPricelessAssetsPolicyContract = new OnlyUntrackDustOrPricelessAssetsPolicy(
-    onlyUntrackDustOrPricelessAssetsPolicy.address,
-    deployer,
-  );
-  await onlyUntrackDustOrPricelessAssetsPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
+  if (onlyUntrackDustOrPricelessAssetsPolicy.newlyDeployed) {
+    const onlyUntrackDustOrPricelessAssetsPolicyContract = new OnlyUntrackDustOrPricelessAssetsPolicy(
+      onlyUntrackDustOrPricelessAssetsPolicy.address,
+      deployer,
+    );
+    await onlyUntrackDustOrPricelessAssetsPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
+  }
 };
 
 fn.tags = ['Release', 'Policies', 'OnlyUntrackDustOrPricelessAssetsPolicy'];

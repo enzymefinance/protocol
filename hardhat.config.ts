@@ -123,6 +123,10 @@ const config: HardhatUserConfig = {
       accounts: accounts('mainnet'),
       url: node('mainnet'),
     },
+    matic: {
+      accounts: accounts('matic'),
+      url: node('matic'),
+    },
   },
   paths: {
     deploy: 'deploy/scripts',

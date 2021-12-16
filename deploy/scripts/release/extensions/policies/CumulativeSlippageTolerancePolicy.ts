@@ -6,47 +6,49 @@ import { loadConfig } from '../../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, all },
+    deployments: { deploy, get, getOrNull, all },
     ethers: { getSigners },
   } = hre;
 
-  const config = await loadConfig(hre);
-  const deployer = (await getSigners())[0];
-  const dispatcher = await get('Dispatcher');
-  const policyManager = await get('PolicyManager');
-  const valueInterpreter = await get('ValueInterpreter');
+  if (!(await getOrNull('CumulativeSlippageTolerancePolicy'))) {
+    const config = await loadConfig(hre);
+    const deployer = (await getSigners())[0];
+    const dispatcher = await get('Dispatcher');
+    const policyManager = await get('PolicyManager');
+    const valueInterpreter = await get('ValueInterpreter');
 
-  const nonSlippageAdapters = Object.values(await all())
-    .filter((item) => item.linkedData?.type === 'ADAPTER' && item.linkedData?.nonSlippageAdapter)
-    .map((item) => item.address.toLowerCase());
+    const nonSlippageAdapters = Object.values(await all())
+      .filter((item) => item.linkedData?.type === 'ADAPTER' && item.linkedData?.nonSlippageAdapter)
+      .map((item) => item.address.toLowerCase());
 
-  const addressListRegistry = await get('AddressListRegistry');
-  const addressListRegistryContract = new AddressListRegistry(addressListRegistry.address, deployer);
-  const nonSlippageAdaptersListId = await addressListRegistryContract.getListCount();
-  await addressListRegistryContract.createList(
-    dispatcher.address,
-    AddressListUpdateType.AddAndRemove,
-    nonSlippageAdapters,
-  );
+    const addressListRegistry = await get('AddressListRegistry');
+    const addressListRegistryContract = new AddressListRegistry(addressListRegistry.address, deployer);
+    const nonSlippageAdaptersListId = await addressListRegistryContract.getListCount();
+    await addressListRegistryContract.createList(
+      dispatcher.address,
+      AddressListUpdateType.AddAndRemove,
+      nonSlippageAdapters,
+    );
 
-  await deploy('CumulativeSlippageTolerancePolicy', {
-    args: [
-      policyManager.address,
-      addressListRegistry.address,
-      valueInterpreter.address,
-      config.weth,
-      nonSlippageAdaptersListId,
-      ONE_DAY_IN_SECONDS * 7, // tolerance period duration
-      ONE_DAY_IN_SECONDS * 7, // priceless asset bypass timelock
-      ONE_DAY_IN_SECONDS * 2, // priceless asset bypass time limit
-    ] as CumulativeSlippageTolerancePolicyArgs,
-    from: deployer.address,
-    linkedData: {
-      type: 'POLICY',
-    },
-    log: true,
-    skipIfAlreadyDeployed: true,
-  });
+    await deploy('CumulativeSlippageTolerancePolicy', {
+      args: [
+        policyManager.address,
+        addressListRegistry.address,
+        valueInterpreter.address,
+        config.weth,
+        nonSlippageAdaptersListId,
+        ONE_DAY_IN_SECONDS * 7, // tolerance period duration
+        ONE_DAY_IN_SECONDS * 7, // priceless asset bypass timelock
+        ONE_DAY_IN_SECONDS * 2, // priceless asset bypass time limit
+      ] as CumulativeSlippageTolerancePolicyArgs,
+      from: deployer.address,
+      linkedData: {
+        type: 'POLICY',
+      },
+      log: true,
+      skipIfAlreadyDeployed: true,
+    });
+  }
 };
 
 fn.tags = ['Release', 'Policies', 'CumulativeSlippageTolerancePolicy'];

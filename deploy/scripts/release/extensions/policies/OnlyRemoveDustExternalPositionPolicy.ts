@@ -34,11 +34,13 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  const onlyRemoveDustExternalPositionPolicyContract = new OnlyRemoveDustExternalPositionPolicy(
-    onlyRemoveDustExternalPositionPolicy.address,
-    deployer,
-  );
-  await onlyRemoveDustExternalPositionPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
+  if (onlyRemoveDustExternalPositionPolicy.newlyDeployed) {
+    const onlyRemoveDustExternalPositionPolicyContract = new OnlyRemoveDustExternalPositionPolicy(
+      onlyRemoveDustExternalPositionPolicy.address,
+      deployer,
+    );
+    await onlyRemoveDustExternalPositionPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
+  }
 };
 
 fn.tags = ['Release', 'Policies', 'OnlyRemoveDustExternalPositionPolicy'];

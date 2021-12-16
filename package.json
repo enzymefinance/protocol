@@ -33,6 +33,9 @@
     "deploy:mainnet": "hardhat deploy --network mainnet",
     "export:mainnet": "hardhat export --network mainnet --export deployments/mainnet.json",
     "verify:mainnet": "hardhat etherscan-verify --network mainnet",
+    "deploy:matic": "hardhat deploy --network matic",
+    "export:matic": "hardhat export --network matic --export deployments/matic.json",
+    "verify:matic": "hardhat etherscan-verify --network matic",
     "prepare": "husky install"
   },
   "dependencies": {

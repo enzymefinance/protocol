@@ -17,6 +17,8 @@ export enum Network {
   'KOVAN' = 'kovan',
   'RINKEBY' = 'rinkeby',
   'ROPSTEN' = 'ropsten',
+  'MATIC' = 'matic',
+  'MATICMUM' = 'maticmum',
 }
 
 export function isHomestead(id: number | string) {
@@ -33,6 +35,14 @@ export function isRopsten(id: number | string) {
 
 export function isRinkeby(id: number | string) {
   return isNetwork(id, Network.RINKEBY);
+}
+
+export function isMatic(id: number | string) {
+  return isNetwork(id, Network.MATIC);
+}
+
+export function isMaticMumbai(id: number | string) {
+  return isNetwork(id, Network.MATICMUM);
 }
 
 export function isOneOfNetworks(id: number | string, networks: Network[]) {

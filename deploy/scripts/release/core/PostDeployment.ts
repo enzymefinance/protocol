@@ -26,14 +26,6 @@ const fn: DeployFunction = async function (hre) {
 
   // Register vault calls
   const vaultCalls = [
-    // Calls to allow claiming rewards from Curve's Minter
-    [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
-    [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
-    [
-      config.curve.minter,
-      sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')),
-      vaultCallAnyDataHash,
-    ],
     // Calls to trigger the PricelessAssetBypassMixin's timelock
     [
       onlyRemoveDustExternalPositionPolicy.address,
@@ -50,19 +42,36 @@ const fn: DeployFunction = async function (hre) {
       pricelessAssetBypassStartAssetBypassTimelockSelector,
       vaultCallAnyDataHash,
     ],
-    // Allows delegating trading on Synthetix to the SynthetixAdapter only
-    [
+  ];
+
+  // Calls to allow claiming rewards from Curve's Minter
+  if (config.curve) {
+    vaultCalls.push(
+      [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint(address)')), vaultCallAnyDataHash],
+      [config.curve.minter, sighash(utils.FunctionFragment.fromString('mint_many(address[8])')), vaultCallAnyDataHash],
+      [
+        config.curve.minter,
+        sighash(utils.FunctionFragment.fromString('toggle_approve_mint(address)')),
+        vaultCallAnyDataHash,
+      ],
+    );
+  }
+
+  // Allows delegating trading on Synthetix to the SynthetixAdapter only
+  if (config.synthetix) {
+    vaultCalls.push([
       config.synthetix.delegateApprovals,
       sighash(utils.FunctionFragment.fromString('approveExchangeOnBehalf(address)')),
       vaultCallAnyDataHash,
-    ],
-  ];
-  const vaultCallValues = Object.values(vaultCalls);
+    ]);
+  }
 
+  const vaultCallValues = Object.values(vaultCalls);
   const vaultCallContracts = vaultCallValues.map(([contract]) => contract);
   const vaultCallFunctionSigs = vaultCallValues.map(([, functionSig]) => functionSig);
   const vaultCallDataHashes = vaultCallValues.map(([, , dataHash]) => dataHash);
   log('Registering vault calls');
+
   await fundDeployerInstance.registerVaultCalls(vaultCallContracts, vaultCallFunctionSigs, vaultCallDataHashes);
 };
 

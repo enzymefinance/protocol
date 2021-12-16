@@ -3,22 +3,20 @@ import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { deploy, get, getOrNull },
+    deployments: { deploy, get },
     ethers: { getSigners },
   } = hre;
 
   const deployer = (await getSigners())[0];
   const dispatcher = await get('Dispatcher');
-  const gasRelayPaymasterLib = await getOrNull('GasRelayPaymasterLib');
+  const gasRelayPaymasterLib = await get('GasRelayPaymasterLib');
 
-  if (gasRelayPaymasterLib) {
-    await deploy('GasRelayPaymasterFactory', {
-      args: [dispatcher.address, gasRelayPaymasterLib.address] as GasRelayPaymasterFactoryArgs,
-      from: deployer.address,
-      log: true,
-      skipIfAlreadyDeployed: true,
-    });
-  }
+  await deploy('GasRelayPaymasterFactory', {
+    args: [dispatcher.address, gasRelayPaymasterLib.address] as GasRelayPaymasterFactoryArgs,
+    from: deployer.address,
+    log: true,
+    skipIfAlreadyDeployed: true,
+  });
 };
 
 fn.tags = ['Release', 'GasRelayPaymasterFactory'];
