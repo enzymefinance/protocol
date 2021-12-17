@@ -44,6 +44,7 @@ import {
   ManagementFee,
   MinAssetBalancesPostRedemptionPolicy,
   MinMaxInvestmentPolicy,
+  OlympusV2Adapter,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
   ParaSwapV4Adapter,
@@ -138,6 +139,7 @@ export async function deployProtocolFixture() {
     managementFee: new ManagementFee(fixture['ManagementFee'].address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture['MinAssetBalancesPostRedemptionPolicy'].address, deployer),
     minMaxInvestmentPolicy: new MinMaxInvestmentPolicy(fixture['MinMaxInvestmentPolicy'].address, deployer),
+    olympusV2Adapter: new OlympusV2Adapter(fixture['OlympusV2Adapter'].address, deployer),
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture['OnlyRemoveDustExternalPositionPolicy'].address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
     paraSwapV4Adapter: new ParaSwapV4Adapter(fixture['ParaSwapV4Adapter'].address, deployer),
@@ -231,6 +233,9 @@ export interface DeploymentConfig {
   };
   lido: {
     steth: string;
+  };
+  olympusV2: {
+    stakingContract: string;
   };
   paraSwapV4: {
     augustusSwapper: string;

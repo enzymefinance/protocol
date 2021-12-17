@@ -61,6 +61,7 @@ export * from './codegen/CurveLiquidityEursAdapter';
 export * from './codegen/CurveLiquiditySethAdapter';
 export * from './codegen/CurveLiquidityStethAdapter';
 export * from './codegen/IdleAdapter';
+export * from './codegen/OlympusV2Adapter';
 export * from './codegen/ParaSwapV4Adapter';
 export * from './codegen/ParaSwapV5Adapter';
 export * from './codegen/PoolTogetherV4Adapter';

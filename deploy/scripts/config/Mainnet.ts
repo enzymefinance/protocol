@@ -38,11 +38,13 @@ const primitives = {
   mkr: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2',
   mln,
   nmr: '0x1776e1f26f98b1a5df9cd347953a26dd3cb46671',
+  ohm: '0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5',
   oxt: '0x4575f41308ec1483f3d399aa9a2826d74da13deb',
   ren: '0x408e41876cccdc0f92210600ef50372656052a38',
   rep: '0x221657776846890989a759ba2973e427dff5c9bb',
   rlc: '0x607f4c5bb672230e8672085532f7e901544a7375',
   snx: '0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f',
+  sohm: '0x04906695D6D12CF5459975d7C3C03356E4Ccd460',
   susd: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
   sxp: '0x8ce9137d39326ad0cd6491fb5cc0cba0e089b6a9',
   tusd: '0x0000000000085d4780B73119b644AE5ecd22b376',
@@ -79,11 +81,13 @@ const aggregators = {
   mkr: ['0x24551a8fb2a7211a25a17b1481f043a8a8adc7f2', ChainlinkRateAsset.ETH],
   mln: ['0xdaea8386611a157b08829ed4997a8a62b557014c', ChainlinkRateAsset.ETH],
   nmr: ['0x9cb2a01a7e64992d32a34db7ceea4c919c391f6a', ChainlinkRateAsset.ETH],
+  ohm: ['0x90c2098473852e2f07678fe1b6d595b1bd9b16ed', ChainlinkRateAsset.ETH],
   oxt: ['0xd75AAaE4AF0c398ca13e2667Be57AF2ccA8B5de6', ChainlinkRateAsset.USD],
   ren: ['0x3147d7203354dc06d9fd350c7a2437bca92387a4', ChainlinkRateAsset.ETH],
   rep: ['0xd4ce430c3b67b3e2f7026d86e7128588629e2455', ChainlinkRateAsset.ETH],
   rlc: ['0x4cba1e1fdc738d0fe8db3ee07728e2bc4da676c6', ChainlinkRateAsset.ETH],
   snx: ['0x79291a9d692df95334b1a0b3b4ae6bc606782f8c', ChainlinkRateAsset.ETH],
+  sohm: ['0x90c2098473852e2f07678fe1b6d595b1bd9b16ed', ChainlinkRateAsset.ETH],
   susd: ['0x8e0b7e6062272B5eF4524250bFFF8e5Bd3497757', ChainlinkRateAsset.ETH],
   sxp: ['0xFb0CfD6c19e25DB4a08D8a204a387cEa48Cc138f', ChainlinkRateAsset.USD],
   tusd: ['0x3886BA987236181D98F2401c507Fb8BeA7871dF2', ChainlinkRateAsset.ETH],
@@ -297,6 +301,9 @@ const mainnetConfig: DeploymentConfig = {
   },
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
+  },
+  olympusV2: {
+    stakingContract: '0xB63cac384247597756545b500253ff8E607a8020'
   },
   paraSwapV4: {
     augustusSwapper: '0x1bD435F3C054b6e901B7b108a0ab7617C808677b',
