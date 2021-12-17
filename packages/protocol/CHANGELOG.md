@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.5
+
+### Patch Changes
+
+- 8b844ad4: Publish with call signatures.
+
 ## 4.0.0-next.4
 
 ### Patch Changes
