@@ -8,11 +8,13 @@ import {
   curveMinterMintManySelector,
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
+  encodeArgs,
   FundDeployer as FundDeployerContract,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
   synthetixAssignExchangeDelegateSelector,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
+import { utils } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
@@ -30,6 +32,7 @@ const fn: DeployFunction = async function (hre) {
   const onlyRemoveDustExternalPositionPolicy = await get('OnlyRemoveDustExternalPositionPolicy');
   const onlyUntrackDustOrPricelessAssetsPolicy = await get('OnlyUntrackDustOrPricelessAssetsPolicy');
   const cumulativeSlippageTolerancePolicy = await get('CumulativeSlippageTolerancePolicy');
+  const synthetixAdapter = await get('SynthetixAdapter');
 
   const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
 
@@ -73,7 +76,7 @@ const fn: DeployFunction = async function (hre) {
     vaultCalls.push([
       config.synthetix.delegateApprovals,
       synthetixAssignExchangeDelegateSelector,
-      vaultCallAnyDataHash,
+      utils.keccak256(encodeArgs(['address'], [synthetixAdapter.address])),
     ]);
   }
 
@@ -93,6 +96,7 @@ fn.dependencies = [
   'CumulativeSlippageTolerancePolicy',
   'OnlyRemoveDustExternalPositionPolicy',
   'OnlyUntrackDustOrPricelessAssetsPolicy',
+  'SynthetixAdapter',
 ];
 fn.runAtTheEnd = true;
 
