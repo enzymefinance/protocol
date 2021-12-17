@@ -102,7 +102,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['123135921057565', '26048800968438717699629'],
+      underlyingAmounts_: ['112827537111558', '29484552363560411525430'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -171,9 +171,9 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on Nov 14, 2021 was worth about $240M
+      // usdc/weth on Dec 17, 2021 was worth about $225M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toEqBigNumber('246166861905460');
+      expect(canonicalAssetValue).toEqBigNumber('225590617934947');
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -191,9 +191,9 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on Nov 14, 2021 was worth about $260
+      // knc/weth on Dec 17, 2021 was worth about $200
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toEqBigNumber('267975118037292620811');
+      expect(canonicalAssetValue).toEqBigNumber('198885677585140184405');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

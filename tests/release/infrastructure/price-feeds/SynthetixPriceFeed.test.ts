@@ -94,7 +94,7 @@ describe('derivative gas costs', () => {
     const calcGavWithToken = await comptrollerProxy.calcGav(true);
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(224058));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(203908));
   });
 });
 
@@ -144,7 +144,7 @@ describe('calcUnderlyingValues', () => {
 
     // Assert gas
     const calcUnderlyingValuesTx = await synthetixPriceFeed.calcUnderlyingValues(sbtc, synthUnit);
-    expect(calcUnderlyingValuesTx).toCostAround(97000);
+    expect(calcUnderlyingValuesTx).toCostAround(88035);
   });
 });
 
@@ -285,14 +285,14 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // sbtc/usd price at Nov 14, 2021 had a price of ca. $64400
-    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-11-14&end_date=2021-11-14#panel>
+    // sbtc/usd price at Dec 17, 2021 had a price of ca. $47200
+    // Source: <https://www.coingecko.com/en/coins/sbtc/historical_data/usd?start_date=2021-12-17&end_date=2021-12-17#panel>
 
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(sbtc, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('66100941373898460584613');
+    expect(canonicalAssetValue).toEqBigNumber('47288877287432129612784');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals quote)', async () => {
@@ -312,6 +312,6 @@ describe('expected values', () => {
       .args(sbtc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('66237532652');
+    expect(canonicalAssetValue).toEqBigNumber('47150659247');
   });
 });

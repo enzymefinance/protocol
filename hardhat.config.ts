@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
       blockGasLimit: gas,
       chainId: 1,
       forking: {
-        blockNumber: 13619920, // Nov 15, 2021
+        blockNumber: 13822800, // Dec 17, 2021
         url: node('mainnet'),
       },
       gasPrice: 0, // TODO: Consider removing this again.

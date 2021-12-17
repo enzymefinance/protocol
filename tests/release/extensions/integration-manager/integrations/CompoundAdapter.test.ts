@@ -279,7 +279,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostAround('447029');
+    expect(lendReceipt).toCostAround('450026');
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -329,7 +329,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toCostAround('414990');
+    expect(redeemReceipt).toCostAround('417987');
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {

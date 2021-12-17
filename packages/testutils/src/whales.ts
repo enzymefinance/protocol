@@ -32,7 +32,7 @@ const whales = {
   cdai: '0xab4ce310054a11328685ece1043211b68ba5d082',
   ceth: '0x8aceab8167c80cb8b3de7fa6228b889bb1130ee8',
   cuni: '0x39d8014b4f40d2cbc441137011d32023f4f1fd87',
-  cusdc: '0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be',
+  cusdc: '0xe1ed4da4284924ddaf69983b4d813fb1be58c380',
   // ptTokens
   ptUsdc: '0xd18236cd213f39d078177b6f6908f0e44e88e4aa',
   // synths
