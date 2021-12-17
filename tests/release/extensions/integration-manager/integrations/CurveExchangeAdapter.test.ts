@@ -2,6 +2,7 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   curveTakeOrderArgs,
+  ETH_ADDRESS,
   ICurveAddressProvider,
   SpendAssetsHandleType,
   StandardToken,
@@ -11,7 +12,6 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, CurveSwaps, curveTakeOrder, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
-const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 // There is variable small discrepancy between get_best_rate().maxAmountReceived and the actual amount received,
 // likely due to rounding somewhere
 const curveRoundingBuffer = 5;

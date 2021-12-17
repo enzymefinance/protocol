@@ -12,6 +12,7 @@ const whales = {
   crv: '0x4ce799e6eD8D64536b67dD428565d52A531B3640',
   dai: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503',
   knc: '0x09d51654bd9efbfcb56da3491989cc1444095fff',
+  ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
   link: '0xbe6977e08d4479c0a6777539ae0e8fa27be4e9d6',
   mana: '0xefb94ac00f1cee8a89d5c3f49faa799da6f03024',
   mln: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
@@ -25,6 +26,7 @@ const whales = {
   zrx: '0x206376e8940e42538781cd94ef024df3c1e0fd43',
   // aTokens
   ausdc: '0x3DdfA8eC3052539b6C9549F12cEA2C295cfF5296',
+  ausdt: '0x7d6149ad9a573a6e2ca6ebf7d4897c1b766841b4',
   // cTokens
   ccomp: '0xd74f186194ab9219fafac5c2fe4b3270169666db',
   cdai: '0xab4ce310054a11328685ece1043211b68ba5d082',
@@ -40,8 +42,8 @@ const whales = {
   sxau: '0x92eb453b7b5b8d41edb44e2c8b8b53eb70a482c7',
   // misc
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
-  ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
   eurs: '0x98ed26de6451db36246672df78ae7c50f2c76f6d',
+  ust: '0xf584f8728b874a6a5c7a8d4d387c9aae9172d621',
 } as const;
 /* eslint-enable sort-keys-fix/sort-keys-fix */
 

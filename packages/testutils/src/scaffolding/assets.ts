@@ -17,7 +17,7 @@ export async function addNewAssetsToFund({
   assets: StandardToken[];
   amounts?: BigNumberish[];
 }) {
-  // First, add tracked assets while their balances are 0
+  // First, add tracked assets
   const receipt = addTrackedAssetsToVault({
     assets,
     comptrollerProxy,

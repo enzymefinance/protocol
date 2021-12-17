@@ -14,9 +14,13 @@ pragma solidity 0.6.12;
 /// @title ICurveRegistry interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ICurveRegistry {
+    function get_coins(address) external view returns (address[8] memory);
+
     function get_gauges(address) external view returns (address[10] memory, int128[10] memory);
 
     function get_lp_token(address) external view returns (address);
 
     function get_pool_from_lp_token(address) external view returns (address);
+
+    function get_underlying_coins(address) external view returns (address[8] memory);
 }

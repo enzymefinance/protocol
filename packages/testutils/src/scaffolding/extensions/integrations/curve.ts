@@ -5,9 +5,11 @@ import type {
   ComptrollerLib,
   CurveExchangeAdapter,
   CurveLiquidityAaveAdapter,
+  CurveLiquidityAdapter,
   CurveLiquidityEursAdapter,
   CurveLiquiditySethAdapter,
   CurveLiquidityStethAdapter,
+  CurveRedeemType,
   IntegrationManager,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -20,18 +22,23 @@ import {
   curveAaveStakeArgs,
   curveAaveUnstakeAndRedeemArgs,
   curveAaveUnstakeArgs,
+  curveClaimRewardsArgs,
   curveEursLendAndStakeArgs,
   curveEursLendArgs,
   curveEursRedeemArgs,
   curveEursStakeArgs,
   curveEursUnstakeAndRedeemArgs,
   curveEursUnstakeArgs,
+  curveLendAndStakeArgs,
+  curveLendArgs,
+  curveRedeemArgs,
   curveSethLendAndStakeArgs,
   curveSethLendArgs,
   curveSethRedeemArgs,
   curveSethStakeArgs,
   curveSethUnstakeAndRedeemArgs,
   curveSethUnstakeArgs,
+  curveStakeArgs,
   curveStethLendAndStakeArgs,
   curveStethLendArgs,
   curveStethRedeemArgs,
@@ -39,6 +46,8 @@ import {
   curveStethUnstakeAndRedeemArgs,
   curveStethUnstakeArgs,
   curveTakeOrderArgs,
+  curveUnstakeAndRedeemArgs,
+  curveUnstakeArgs,
   IntegrationManagerActionId,
   lendAndStakeSelector,
   lendSelector,
@@ -48,7 +57,7 @@ import {
   unstakeAndRedeemSelector,
   unstakeSelector,
 } from '@enzymefinance/protocol';
-import type { BigNumberish } from 'ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, constants, utils } from 'ethers';
 
 export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
@@ -59,6 +68,16 @@ export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
 export const CurveLiquidityGaugeV2 = contract<CurveLiquidityGaugeV2>()`
   function claim_rewards(address)
   function integrate_fraction(address) view returns (uint256)
+`;
+
+export interface CurveRegistry extends Contract<CurveRegistry> {
+  get_coins: Call<(_pool: AddressLike) => AddressLike[], Contract<any>>;
+  get_lp_token: Call<(_pool: AddressLike) => AddressLike, Contract<any>>;
+}
+
+export const CurveRegistry = contract<CurveRegistry>()`
+  function get_coins(address) view returns (address[8])
+  function get_lp_token(address) view returns (address)
 `;
 
 // prettier-ignore
@@ -117,6 +136,248 @@ export async function curveTakeOrder({
 
   return comptrollerProxy
     .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+// combined liquidity
+
+export function curveClaimRewards({
+  comptrollerProxy,
+  integrationManager,
+  fundOwner,
+  curveLiquidityAdapter,
+  gaugeToken,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  fundOwner: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  gaugeToken: AddressLike;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveClaimRewardsArgs({ gaugeToken }),
+    selector: claimRewardsSelector,
+  });
+
+  return comptrollerProxy
+    .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveLend({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  orderedOutgoingAssetAmounts,
+  minIncomingLpTokenAmount = BigNumber.from(1),
+  useUnderlyings,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  orderedOutgoingAssetAmounts: BigNumberish[];
+  minIncomingLpTokenAmount?: BigNumberish;
+  useUnderlyings: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveLendArgs({
+      minIncomingLpTokenAmount,
+      orderedOutgoingAssetAmounts,
+      pool,
+      useUnderlyings,
+    }),
+    selector: lendSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveLendAndStake({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  orderedOutgoingAssetAmounts,
+  incomingGaugeToken,
+  minIncomingGaugeTokenAmount = BigNumber.from(1),
+  useUnderlyings,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  orderedOutgoingAssetAmounts: BigNumberish[];
+  incomingGaugeToken: AddressLike;
+  minIncomingGaugeTokenAmount?: BigNumberish;
+  useUnderlyings: boolean;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveLendAndStakeArgs({
+      incomingGaugeToken,
+      minIncomingGaugeTokenAmount,
+      orderedOutgoingAssetAmounts,
+      pool,
+      useUnderlyings,
+    }),
+    selector: lendAndStakeSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveRedeem({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  outgoingLpTokenAmount,
+  useUnderlyings,
+  redeemType,
+  incomingAssetData,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  outgoingLpTokenAmount: BigNumberish;
+  useUnderlyings: boolean;
+  redeemType: CurveRedeemType;
+  incomingAssetData: BytesLike;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveRedeemArgs({
+      incomingAssetData,
+      outgoingLpTokenAmount,
+      pool,
+      redeemType,
+      useUnderlyings,
+    }),
+    selector: redeemSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveStake({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  incomingGaugeToken,
+  amount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  incomingGaugeToken: AddressLike;
+  amount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveStakeArgs({
+      amount,
+      incomingGaugeToken,
+      pool,
+    }),
+    selector: stakeSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveUnstake({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  outgoingGaugeToken,
+  amount,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  outgoingGaugeToken: AddressLike;
+  amount: BigNumberish;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveUnstakeArgs({
+      amount,
+      outgoingGaugeToken,
+      pool,
+    }),
+    selector: unstakeSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function curveUnstakeAndRedeem({
+  comptrollerProxy,
+  integrationManager,
+  signer,
+  curveLiquidityAdapter,
+  pool,
+  outgoingGaugeToken,
+  outgoingGaugeTokenAmount,
+  useUnderlyings,
+  redeemType,
+  incomingAssetData,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  signer: SignerWithAddress;
+  curveLiquidityAdapter: CurveLiquidityAdapter;
+  pool: AddressLike;
+  outgoingGaugeToken: StandardToken;
+  outgoingGaugeTokenAmount: BigNumberish;
+  useUnderlyings: boolean;
+  redeemType: CurveRedeemType;
+  incomingAssetData: BytesLike;
+}) {
+  const callArgs = callOnIntegrationArgs({
+    adapter: curveLiquidityAdapter,
+    encodedCallArgs: curveUnstakeAndRedeemArgs({
+      incomingAssetData,
+      outgoingGaugeToken,
+      outgoingGaugeTokenAmount,
+      pool,
+      redeemType,
+      useUnderlyings,
+    }),
+    selector: unstakeAndRedeemSelector,
+  });
+
+  return comptrollerProxy
+    .connect(signer)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 
