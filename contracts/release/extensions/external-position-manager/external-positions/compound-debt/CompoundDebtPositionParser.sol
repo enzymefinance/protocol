@@ -35,13 +35,14 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
+    /// @param _externalPosition The _externalPosition to be called
     /// @param _actionId The _actionId for the callOnExternalPosition
     /// @param _encodedActionArgs The encoded parameters for the callOnExternalPosition
     /// @return assetsToTransfer_ The assets to be transfered from the Vault
     /// @return amountsToTransfer_ The amounts to be transfered from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
     function parseAssetsForAction(
-        address,
+        address _externalPosition,
         uint256 _actionId,
         bytes memory _encodedActionArgs
     )
@@ -61,10 +62,26 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
 
         __validateActionData(_actionId, assets, data);
 
-        if (
-            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.AddCollateral) ||
+        if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.AddCollateral)) {
+            assetsToTransfer_ = assets;
+            amountsToTransfer_ = amounts;
+        } else if (
             _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RepayBorrow)
         ) {
+            address[] memory cTokens = abi.decode(data, (address[]));
+
+            for (uint256 i; i < assets.length; i++) {
+                // Format max repay amount
+                if (amounts[i] == type(uint256).max) {
+                    require(
+                        ICERC20(cTokens[i]).accrueInterest() == 0,
+                        "parseAssetsForAction: Error while calling accrueInterest"
+                    );
+
+                    amounts[i] = ICERC20(cTokens[i]).borrowBalanceStored(_externalPosition);
+                }
+            }
+
             assetsToTransfer_ = assets;
             amountsToTransfer_ = amounts;
         } else if (

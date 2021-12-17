@@ -583,7 +583,7 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toCostAround('311583');
+      expect(repayBorrowReceipt).toCostAround('308887');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -648,13 +648,13 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toCostAround('304414');
+      expect(repayBorrowReceipt).toCostAround('290718');
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
     });
 
-    it('removes asset from borrowedAssets when the full borrowedAmount is repaid', async () => {
+    it('works as expected (full amount repaid)', async () => {
       const [fundOwner] = fork.accounts;
       // addCollateral
       const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
@@ -688,7 +688,7 @@ describe('receiveCallFromVault', () => {
       await weth.transfer(vaultProxyUsed, lentAmount);
 
       const borrowedAssetsStoredBefore = await compoundDebtPosition.getDebtAssets.call();
-      const repayAmounts = [borrowedAmounts[0].mul(BigNumber.from('2'))];
+      const repayAmounts = [constants.MaxUint256];
 
       expect(borrowedAssetsStoredBefore.assets_.length).toStrictEqual(1);
 

@@ -167,36 +167,21 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
                 "__repayBorrowedAssets: Asset has not been borrowed"
             );
 
-            require(
-                ERC20(_assets[i]).balanceOf(address(this)) >= _amounts[i],
-                "__repayBorrowedAssets: Insufficient balance"
-            );
+            // Format max repay amount
+            if (_amounts[i] == type(uint256).max) {
+                _amounts[i] = ICERC20(cTokens[i]).borrowBalanceStored(address(this));
+            }
 
-            // Accrue interest to get the current borrow balance
-            // NOTE: Used instead of borrow-balance-current: https://compound.finance/docs/ctokens#borrow-balance
-            require(
-                ICERC20(cTokens[i]).accrueInterest() == 0,
-                "__repayBorrowedAssets: Error while calling accrueInterest"
-            );
+            __repayBorrowedAsset(cTokens[i], _assets[i], _amounts[i]);
 
-            uint256 borrowBalance = ICERC20(cTokens[i]).borrowBalanceStored(address(this));
-
-            if (_amounts[i] < borrowBalance) {
-                // Repaid amount doesn't cover the full balance
-                __repayBorrowedAsset(cTokens[i], _assets[i], _amounts[i]);
-            } else {
-                // Amount covers the full borrow balance, so it can be removed from borrowed balances
-                __repayBorrowedAsset(cTokens[i], _assets[i], borrowBalance);
-
-                // Reset borrowed asset cToken and remove it from the list of borrowed assets
+            // Remove borrowed asset state from storage, if there is no remaining borrowed balance,
+            if (ICERC20(cTokens[i]).borrowBalanceStored(address(this)) == 0) {
                 delete borrowedAssetToCToken[_assets[i]];
                 borrowedAssets.removeStorageItem(_assets[i]);
-
-                // Send back the remaining token amount after paying the loan
-                if (_amounts[i] > borrowBalance) {
-                    ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i].sub(borrowBalance));
-                }
             }
+
+            // There will only be a remaining ERC20 balance if there was a prior ERC20 balance,
+            // which should not be the case
 
             emit BorrowedAssetRepaid(_assets[i], _amounts[i]);
         }
