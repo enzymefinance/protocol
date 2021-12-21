@@ -85,7 +85,7 @@ const aggregators = {
   farm: ['0xDFb138ba3A6CCe675A6F5961323Be31eE42E40ff', ChainlinkRateAsset.USD],
   frax: ['0x00DBeB1e45485d53DF7C2F0dF1Aa0b6Dc30311d3', ChainlinkRateAsset.USD],
   fxs: ['0x6C0fe985D3cAcbCdE428b84fc9431792694d0f51', ChainlinkRateAsset.USD],
-  ghst: ['0x3FabBfb300B1e2D7c9B84512fe9D30aeDF24C410', ChainlinkRateAsset.USD],
+  ghst: ['0xe638249AF9642CdA55A92245525268482eE4C67b', ChainlinkRateAsset.ETH],
   knc: ['0x10e5f3DFc81B3e5Ef4e648C4454D04e79E1E41E2', ChainlinkRateAsset.USD],
   link: ['0xd9FFdb71EbE7496cC440152d43986Aae0AB76665', ChainlinkRateAsset.USD],
   lpt: ['0xBAaF11CeDA1d1Ca9Cf01748F8196653c9656a400', ChainlinkRateAsset.USD],
