@@ -57,6 +57,10 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
     ) external onlyIntegrationManager {
         uint256 amount = __decodeCallArgs(_actionData);
 
+        if (amount == type(uint256).max) {
+            amount = ERC20(getSohmToken()).balanceOf(address(this));
+        }
+
         __olympusV2Unstake(_vaultProxy, amount);
     }
 
@@ -65,6 +69,7 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
     /////////////////////////////
 
     /// @notice Parses the expected assets in a particular action
+    /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _selector The function selector for the callOnIntegration
     /// @param _actionData Data specific to this action
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
@@ -74,7 +79,7 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForAction(
-        address,
+        address _vaultProxy,
         bytes4 _selector,
         bytes calldata _actionData
     )
@@ -92,7 +97,7 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
         if (_selector == STAKE_SELECTOR) {
             return __parseAssetsForStake(_actionData);
         } else if (_selector == UNSTAKE_SELECTOR) {
-            return __parseAssetsForUnstake(_actionData);
+            return __parseAssetsForUnstake(_vaultProxy, _actionData);
         }
 
         revert("parseAssetsForAction: _selector invalid");
@@ -134,7 +139,7 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
     /// during unstake() calls
-    function __parseAssetsForUnstake(bytes calldata _actionData)
+    function __parseAssetsForUnstake(address _vaultProxy, bytes calldata _actionData)
         private
         view
         returns (
@@ -150,12 +155,17 @@ contract OlympusV2Adapter is AdapterBase, OlympusV2ActionMixin {
         spendAssets_ = new address[](1);
         spendAssets_[0] = getSohmToken();
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = amount;
+
+        if (amount == type(uint256).max) {
+            spendAssetAmounts_[0] = ERC20(getSohmToken()).balanceOf(_vaultProxy);
+        } else {
+            spendAssetAmounts_[0] = amount;
+        }
 
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = getOhmToken();
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = amount;
+        minIncomingAssetAmounts_[0] = spendAssetAmounts_[0];
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,

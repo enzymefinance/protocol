@@ -18,7 +18,7 @@ import {
   olympusV2Stake,
   olympusV2Unstake,
 } from '@enzymefinance/testutils';
-import { utils } from 'ethers';
+import { constants, utils } from 'ethers';
 
 let olympusV2Adapter: OlympusV2Adapter;
 let ohm: AddressLike;
@@ -141,7 +141,7 @@ describe('stake', () => {
 });
 
 describe('unstake', () => {
-  it('works as expected when called for unstake by a fund', async () => {
+  it('works as expected (partial amount)', async () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -179,5 +179,45 @@ describe('unstake', () => {
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
     expect(unstakeReceipt).toCostAround('235900');
+  });
+
+  it('works as expected (max amount)', async () => {
+    const [fundOwner] = fork.accounts;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
+    });
+
+    const token = new StandardToken(fork.config.primitives.ohm, provider);
+    const stakedToken = new StandardToken(fork.config.primitives.sohm, whales.sohm);
+    const amount = await getAssetUnit(token);
+
+    await stakedToken.transfer(vaultProxy, amount);
+
+    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [token, stakedToken],
+    });
+
+    const unstakeReceipt = await olympusV2Unstake({
+      amount: constants.MaxUint256,
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      olympusV2Adapter: fork.deployment.olympusV2Adapter,
+      signer: fundOwner,
+    });
+
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [token, stakedToken],
+    });
+
+    expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
+
+    expect(unstakeReceipt).toCostAround('239194');
   });
 });
