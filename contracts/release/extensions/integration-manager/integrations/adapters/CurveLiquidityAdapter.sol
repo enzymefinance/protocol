@@ -687,14 +687,16 @@ contract CurveLiquidityAdapter is
         spendAssets_ = new address[](spendAssetsCount);
         spendAssetAmounts_ = new uint256[](spendAssetsCount);
         uint256 spendAssetsIndex;
-        while (spendAssetsIndex < spendAssetsCount) {
-            for (uint256 i; i < _orderedOutgoingAssetAmounts.length; i++) {
-                if (_orderedOutgoingAssetAmounts[i] > 0) {
-                    spendAssets_[spendAssetsIndex] = __castWrappedIfNativeAsset(
-                        canonicalPoolAssets[i]
-                    );
-                    spendAssetAmounts_[spendAssetsIndex] = _orderedOutgoingAssetAmounts[i];
-                    spendAssetsIndex++;
+        for (uint256 i; i < _orderedOutgoingAssetAmounts.length; i++) {
+            if (_orderedOutgoingAssetAmounts[i] > 0) {
+                spendAssets_[spendAssetsIndex] = __castWrappedIfNativeAsset(
+                    canonicalPoolAssets[i]
+                );
+                spendAssetAmounts_[spendAssetsIndex] = _orderedOutgoingAssetAmounts[i];
+                spendAssetsIndex++;
+
+                if (spendAssetsIndex == spendAssetsCount) {
+                    break;
                 }
             }
         }
