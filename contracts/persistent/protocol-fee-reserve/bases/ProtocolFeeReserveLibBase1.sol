@@ -20,6 +20,8 @@ import "./ProtocolFeeReserveLibBaseCore.sol";
 /// e.g., `ProtocolFeeReserveLibBase2 is ProtocolFeeReserveLibBase1`
 /// DO NOT EDIT CONTRACT.
 abstract contract ProtocolFeeReserveLibBase1 is ProtocolFeeReserveLibBaseCore {
+    event MlnTokenBalanceWithdrawn(address indexed to, uint256 amount);
+
     event SharesBoughtBack(
         address indexed vaultProxy,
         uint256 sharesAmount,

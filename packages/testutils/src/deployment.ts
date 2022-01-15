@@ -183,6 +183,11 @@ import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
 
 export interface DeploymentConfig {
   feeToken: string;
+  feeTokenBurn: {
+    burnFromVault: boolean;
+    sendToProtocolFeeReserve: boolean;
+    externalBurnerAddress: string;
+  };
   weth: string;
   wrappedNativeAsset: string;
   primitives: Record<string, string>;

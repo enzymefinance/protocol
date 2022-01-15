@@ -94,6 +94,7 @@ export async function createFundDeployer({
     await vaultLib.getProtocolFeeReserve(),
     nextProtocolFeeTracker,
     await vaultLib.getMlnToken(),
+    await vaultLib.getMlnBurner(),
     await vaultLib.getWethToken(),
   );
   await nextFundDeployer.setVaultLib(nextVaultLib);

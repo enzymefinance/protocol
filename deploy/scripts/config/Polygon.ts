@@ -137,6 +137,11 @@ const mainnetConfig: DeploymentConfig = {
     ethusd: ethUsdAggregator,
   },
   feeToken,
+  feeTokenBurn: {
+    burnFromVault: false,
+    externalBurnerAddress: constants.AddressZero,
+    sendToProtocolFeeReserve: true,
+  },
   gsn: {
     relayHub: '0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d',
     relayWorker: constants.AddressZero,

@@ -220,7 +220,8 @@ describe('setAccessorForFundReconfiguration', () => {
         fork.deployment.gasRelayPaymasterFactory,
         fork.deployment.protocolFeeReserveProxy,
         fork.deployment.protocolFeeTracker,
-        fork.config.primitives.mln,
+        fork.config.feeToken,
+        await fork.deployment.vaultLib.getMlnBurner(),
         fork.config.weth,
       ),
       fundOwner,
@@ -258,101 +259,153 @@ describe('setAccessorForFundReconfiguration', () => {
 });
 
 describe('buyBackProtocolFeeShares', () => {
-  let protocolFeeReserveProxy: ProtocolFeeReserveLib;
-  let vaultProxy: VaultLib;
-  let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
-  let mln: StandardToken;
+  describe('burn MLN from Vault', () => {
+    let protocolFeeReserveProxy: ProtocolFeeReserveLib;
+    let vaultProxy: VaultLib;
+    let fundOwner: SignerWithAddress, fundAccessor: SignerWithAddress;
+    let mln: StandardToken;
 
-  beforeEach(async () => {
-    protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
-    [fundOwner, fundAccessor] = fork.accounts;
-    mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+    beforeEach(async () => {
+      protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
+      [fundOwner, fundAccessor] = fork.accounts;
+      mln = new StandardToken(fork.config.primitives.mln, whales.mln);
 
-    const vaultLib = await VaultLib.deploy(
-      fork.deployer,
-      fork.deployment.externalPositionManager,
-      fork.deployment.gasRelayPaymasterFactory,
-      fork.deployment.protocolFeeReserveProxy,
-      fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
-      fork.config.weth,
-    );
+      const vaultLib = await VaultLib.deploy(
+        fork.deployer,
+        fork.deployment.externalPositionManager,
+        fork.deployment.gasRelayPaymasterFactory,
+        fork.deployment.protocolFeeReserveProxy,
+        fork.deployment.protocolFeeTracker,
+        fork.config.feeToken,
+        constants.AddressZero,
+        fork.config.weth,
+      );
 
-    vaultProxy = await createVaultProxy({
-      fundAccessor,
-      fundOwner,
-      signer: fork.deployer,
-      vaultLib,
+      vaultProxy = await createVaultProxy({
+        fundAccessor,
+        fundOwner,
+        signer: fork.deployer,
+        vaultLib,
+      });
+
+      // Mint shares to the ProtocolFeeRecipient to buy back
+      await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
+
+      // Seed the fund with MLN so it can buy back shares
+      const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
+      await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
     });
 
-    // Mint shares to the ProtocolFeeRecipient to buy back
-    await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
+    it('cannot be called by the fundOwner', async () => {
+      await expect(vaultProxy.connect(fundOwner).buyBackProtocolFeeShares(1, 1, 1)).rejects.toBeRevertedWith(
+        'Only the designated accessor can make this call',
+      );
+    });
 
-    // Seed the fund with MLN so it can buy back shares
-    const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
-    await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
+    it('does not attempt to burn shares or MLN if mlnAmountToBurn is 0', async () => {
+      const preTxSharesSupply = await vaultProxy.totalSupply();
+      const preTxMlnSupply = await mln.totalSupply();
+
+      // _mlnValue will round down to 0
+      const receipt = await vaultProxy.connect(fundAccessor).buyBackProtocolFeeShares(1, 1, 1);
+
+      expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply);
+      expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply);
+
+      assertNoEvent(receipt, 'ProtocolFeeSharesBoughtBack');
+    });
+
+    it('happy path', async () => {
+      const preTxMlnSupply = await mln.totalSupply();
+      const preTxSharesSupply = await vaultProxy.totalSupply();
+      const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
+      const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);
+
+      const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
+      const buybackMlnValue = preTxVaultMlnBalance.div(4);
+      const gav = 123;
+      expect(sharesToBuyBack).toBeGtBigNumber(0);
+      expect(buybackMlnValue).toBeGtBigNumber(0);
+
+      const receipt = await vaultProxy
+        .connect(fundAccessor)
+        .buyBackProtocolFeeShares(sharesToBuyBack, buybackMlnValue, gav);
+
+      // Assert ProtocolFeeRecipient was called correctly
+      expect(protocolFeeReserveProxy.buyBackSharesViaTrustedVaultProxy).toHaveBeenCalledOnContractWith(
+        sharesToBuyBack,
+        buybackMlnValue,
+        gav,
+      );
+
+      // TODO: move to exported constant?
+      const expectedMlnBurned = buybackMlnValue.div(2);
+      expect(expectedMlnBurned).toBeGtBigNumber(0);
+
+      // Assert shares were correctly burned
+      expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply.sub(sharesToBuyBack));
+      expect(await vaultProxy.balanceOf(protocolFeeReserveProxy)).toEqBigNumber(
+        preTxProtocolFeeRecipientSharesBalance.sub(sharesToBuyBack),
+      );
+
+      // Assert mln was correctly burned
+      expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply.sub(expectedMlnBurned));
+      expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
+
+      assertEvent(receipt, 'ProtocolFeeSharesBoughtBack', {
+        mlnBurned: expectedMlnBurned,
+        mlnValue: buybackMlnValue,
+        sharesAmount: sharesToBuyBack,
+      });
+    });
   });
 
-  it('cannot be called by the fundOwner', async () => {
-    await expect(vaultProxy.connect(fundOwner).buyBackProtocolFeeShares(1, 1, 1)).rejects.toBeRevertedWith(
-      'Only the designated accessor can make this call',
-    );
-  });
+  describe('transfer MLN to burner', () => {
+    it('happy path', async () => {
+      const protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
+      const [fundOwner, fundAccessor] = fork.accounts;
+      const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+      const mlnBurner = randomAddress();
 
-  it('does not attempt to burn shares or MLN if mlnAmountToBurn is 0', async () => {
-    const preTxSharesSupply = await vaultProxy.totalSupply();
-    const preTxMlnSupply = await mln.totalSupply();
+      const vaultLib = await VaultLib.deploy(
+        fork.deployer,
+        fork.deployment.externalPositionManager,
+        fork.deployment.gasRelayPaymasterFactory,
+        fork.deployment.protocolFeeReserveProxy,
+        fork.deployment.protocolFeeTracker,
+        fork.config.feeToken,
+        mlnBurner,
+        fork.config.weth,
+      );
 
-    // _mlnValue will round down to 0
-    const receipt = await vaultProxy.connect(fundAccessor).buyBackProtocolFeeShares(1, 1, 1);
+      const vaultProxy = await createVaultProxy({
+        fundAccessor,
+        fundOwner,
+        signer: fork.deployer,
+        vaultLib,
+      });
 
-    expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply);
-    expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply);
+      // Mint shares to the ProtocolFeeRecipient to buy back
+      await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
 
-    assertNoEvent(receipt, 'ProtocolFeeSharesBoughtBack');
-  });
+      // Seed the fund with MLN so it can buy back shares
+      const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
+      await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
 
-  it('happy path', async () => {
-    const preTxMlnSupply = await mln.totalSupply();
-    const preTxSharesSupply = await vaultProxy.totalSupply();
-    const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
-    const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);
+      const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
+      const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);
 
-    const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
-    const buybackMlnValue = preTxVaultMlnBalance.div(4);
-    const gav = 123;
-    expect(sharesToBuyBack).toBeGtBigNumber(0);
-    expect(buybackMlnValue).toBeGtBigNumber(0);
+      const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
+      const buybackMlnValue = preTxVaultMlnBalance.div(4);
+      expect(sharesToBuyBack).toBeGtBigNumber(0);
+      expect(buybackMlnValue).toBeGtBigNumber(0);
 
-    const receipt = await vaultProxy
-      .connect(fundAccessor)
-      .buyBackProtocolFeeShares(sharesToBuyBack, buybackMlnValue, gav);
+      await vaultProxy.connect(fundAccessor).buyBackProtocolFeeShares(sharesToBuyBack, buybackMlnValue, 123);
 
-    // Assert ProtocolFeeRecipient was called correctly
-    expect(protocolFeeReserveProxy.buyBackSharesViaTrustedVaultProxy).toHaveBeenCalledOnContractWith(
-      sharesToBuyBack,
-      buybackMlnValue,
-      gav,
-    );
-
-    // TODO: move to exported constant?
-    const expectedMlnBurned = buybackMlnValue.div(2);
-    expect(expectedMlnBurned).toBeGtBigNumber(0);
-
-    // Assert shares were correctly burned
-    expect(await vaultProxy.totalSupply()).toEqBigNumber(preTxSharesSupply.sub(sharesToBuyBack));
-    expect(await vaultProxy.balanceOf(protocolFeeReserveProxy)).toEqBigNumber(
-      preTxProtocolFeeRecipientSharesBalance.sub(sharesToBuyBack),
-    );
-
-    // Assert mln was correctly burned
-    expect(await mln.totalSupply()).toEqBigNumber(preTxMlnSupply.sub(expectedMlnBurned));
-    expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
-
-    assertEvent(receipt, 'ProtocolFeeSharesBoughtBack', {
-      mlnBurned: expectedMlnBurned,
-      mlnValue: buybackMlnValue,
-      sharesAmount: sharesToBuyBack,
+      // Assert that mln was transferred to the intended burner
+      const expectedMlnBurned = buybackMlnValue.div(2);
+      expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
+      expect(await mln.balanceOf(mlnBurner)).toEqBigNumber(expectedMlnBurned);
     });
   });
 });
@@ -378,7 +431,8 @@ describe('payProtocolFee', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -657,7 +711,8 @@ describe('asset managers', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -764,7 +819,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -788,7 +844,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -812,7 +869,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -836,7 +894,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -860,7 +919,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -884,7 +944,8 @@ describe('Comptroller calls to vault actions', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 

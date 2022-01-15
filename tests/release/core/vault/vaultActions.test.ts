@@ -32,7 +32,8 @@ describe('AddExternalPosition', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -78,7 +79,8 @@ describe('AddExternalPosition', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
     const externalPosition = randomAddress();
@@ -117,7 +119,8 @@ describe('AddTrackedAsset', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -141,7 +144,8 @@ describe('AddTrackedAsset', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -177,7 +181,8 @@ describe('AddTrackedAsset', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
     const asset = randomAddress();
@@ -214,7 +219,8 @@ describe('ApproveAssetSpender', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -242,7 +248,8 @@ describe('ApproveAssetSpender', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -291,7 +298,8 @@ describe('BurnShares', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -391,7 +399,8 @@ describe('MintShares', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -434,7 +443,8 @@ describe('RemoveExternalPosition', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -489,7 +499,8 @@ describe('RemoveTrackedAsset', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -539,7 +550,8 @@ describe('TransferShares', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -584,7 +596,8 @@ describe('WithdrawAssetTo', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
 
@@ -611,7 +624,8 @@ describe('WithdrawAssetTo', () => {
       fork.deployment.gasRelayPaymasterFactory,
       fork.deployment.protocolFeeReserveProxy,
       fork.deployment.protocolFeeTracker,
-      fork.config.primitives.mln,
+      fork.config.feeToken,
+      await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
     );
     const asset = new StandardToken(fork.config.weth, whales.weth);

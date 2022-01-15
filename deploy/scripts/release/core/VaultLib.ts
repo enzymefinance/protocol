@@ -23,6 +23,12 @@ const fn: DeployFunction = async function (hre) {
   const protocolFeeReserveProxy = await get('ProtocolFeeReserveProxy');
   const protocolFeeTracker = await get('ProtocolFeeTracker');
 
+  const feeTokenBurner = config.feeTokenBurn.burnFromVault
+    ? constants.AddressZero
+    : config.feeTokenBurn.sendToProtocolFeeReserve
+    ? protocolFeeReserveProxy
+    : config.feeTokenBurn.externalBurnerAddress;
+
   const vaultLib = await deploy('VaultLib', {
     args: [
       externalPositionManager.address,
@@ -30,6 +36,7 @@ const fn: DeployFunction = async function (hre) {
       protocolFeeReserveProxy.address,
       protocolFeeTracker.address,
       config.feeToken,
+      feeTokenBurner,
       config.wrappedNativeAsset,
     ] as VaultLibArgs,
     from: deployer.address,

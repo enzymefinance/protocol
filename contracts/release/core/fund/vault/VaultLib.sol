@@ -45,6 +45,9 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     uint256 private constant POSITIONS_LIMIT = 20;
 
     address private immutable EXTERNAL_POSITION_MANAGER;
+    // The account to which to send $MLN earmarked for burn.
+    // A value of `address(0)` signifies burning from the current contract.
+    address private immutable MLN_BURNER;
     address private immutable MLN_TOKEN;
     address private immutable PROTOCOL_FEE_RESERVE;
     address private immutable PROTOCOL_FEE_TRACKER;
@@ -71,10 +74,12 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         address _protocolFeeReserve,
         address _protocolFeeTracker,
         address _mlnToken,
+        address _mlnBurner,
         address _wethToken
     ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         MLN_TOKEN = _mlnToken;
+        MLN_BURNER = _mlnBurner;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         PROTOCOL_FEE_TRACKER = _protocolFeeTracker;
         WETH_TOKEN = _wethToken;
@@ -288,7 +293,12 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         // Burn shares and MLN amounts
         // If shares or MLN balance is insufficient, will revert
         __burn(getProtocolFeeReserve(), _sharesAmount);
-        ERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
+
+        if (getMlnBurner() == address(0)) {
+            ERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
+        } else {
+            ERC20(getMlnToken()).safeTransfer(getMlnBurner(), mlnAmountToBurn);
+        }
 
         emit ProtocolFeeSharesBoughtBack(_sharesAmount, _mlnValue, mlnAmountToBurn);
     }
@@ -714,6 +724,12 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @return fundDeployer_ The fund deployer contract associated with this vault
     function getFundDeployer() public view returns (address fundDeployer_) {
         return IDispatcher(creator).getFundDeployerForVaultProxy(address(this));
+    }
+
+    /// @notice Gets the `MLN_BURNER` variable
+    /// @return mlnBurner_ The `MLN_BURNER` variable value
+    function getMlnBurner() public view returns (address mlnBurner_) {
+        return MLN_BURNER;
     }
 
     /// @notice Gets the `MLN_TOKEN` variable
