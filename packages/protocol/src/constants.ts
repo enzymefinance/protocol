@@ -1,4 +1,4 @@
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 
 // Time
 export const ONE_HOUR_IN_SECONDS = 60 * 60;
@@ -25,3 +25,5 @@ export const LIB_INIT_GENERIC_DUMMY_ADDRESS = '0x0000000000000000000000000000000
 export const SHARES_UNIT = utils.parseEther('1');
 
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+export const MAX_UINT128 = BigNumber.from(2).pow(128).sub(1);
