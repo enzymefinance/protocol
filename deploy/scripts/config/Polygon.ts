@@ -151,6 +151,7 @@ const mainnetConfig: DeploymentConfig = {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     tokenTransferProxy: '0x216B4B4Ba9F3e719726886d34a177484278Bfcae',
   },
+  positionsLimit: 20,
   primitives,
   weth,
   wrappedNativeAsset

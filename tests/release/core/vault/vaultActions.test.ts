@@ -35,6 +35,7 @@ describe('AddExternalPosition', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -82,6 +83,7 @@ describe('AddExternalPosition', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
     const externalPosition = randomAddress();
 
@@ -122,6 +124,7 @@ describe('AddTrackedAsset', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -147,6 +150,7 @@ describe('AddTrackedAsset', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -184,6 +188,7 @@ describe('AddTrackedAsset', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
     const asset = randomAddress();
 
@@ -222,6 +227,7 @@ describe('ApproveAssetSpender', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -251,6 +257,7 @@ describe('ApproveAssetSpender', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -301,6 +308,7 @@ describe('BurnShares', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -402,6 +410,7 @@ describe('MintShares', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -446,6 +455,7 @@ describe('RemoveExternalPosition', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -502,6 +512,7 @@ describe('RemoveTrackedAsset', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -553,6 +564,7 @@ describe('TransferShares', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -599,6 +611,7 @@ describe('WithdrawAssetTo', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -627,6 +640,7 @@ describe('WithdrawAssetTo', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
     const asset = new StandardToken(fork.config.weth, whales.weth);
 

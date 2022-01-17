@@ -38,17 +38,16 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
-    // "Positions" are "tracked assets" + active "external positions"
-    // Before updating POSITIONS_LIMIT in the future, it is important to consider:
-    // 1. The highest positions limit ever allowed in the protocol
-    // 2. That the next value will need to be respected by all future releases
-    uint256 private constant POSITIONS_LIMIT = 20;
-
     address private immutable EXTERNAL_POSITION_MANAGER;
     // The account to which to send $MLN earmarked for burn.
     // A value of `address(0)` signifies burning from the current contract.
     address private immutable MLN_BURNER;
     address private immutable MLN_TOKEN;
+    // "Positions" are "tracked assets" + active "external positions"
+    // Before updating POSITIONS_LIMIT in the future, it is important to consider:
+    // 1. The highest positions limit ever allowed in the protocol
+    // 2. That the next value will need to be respected by all future releases
+    uint256 private immutable POSITIONS_LIMIT;
     address private immutable PROTOCOL_FEE_RESERVE;
     address private immutable PROTOCOL_FEE_TRACKER;
     address private immutable WETH_TOKEN;
@@ -75,11 +74,13 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         address _protocolFeeTracker,
         address _mlnToken,
         address _mlnBurner,
-        address _wethToken
+        address _wethToken,
+        uint256 _positionsLimit
     ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
-        MLN_TOKEN = _mlnToken;
         MLN_BURNER = _mlnBurner;
+        MLN_TOKEN = _mlnToken;
+        POSITIONS_LIMIT = _positionsLimit;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         PROTOCOL_FEE_TRACKER = _protocolFeeTracker;
         WETH_TOKEN = _wethToken;
@@ -584,7 +585,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @dev Helper to validate that the positions limit has not been reached
     function __validatePositionsLimit() private view {
         require(
-            trackedAssets.length + activeExternalPositions.length < POSITIONS_LIMIT,
+            trackedAssets.length + activeExternalPositions.length < getPositionsLimit(),
             "__validatePositionsLimit: Limit exceeded"
         );
     }
@@ -742,6 +743,12 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @return owner_ The `owner` variable value
     function getOwner() public view override returns (address owner_) {
         return owner;
+    }
+
+    /// @notice Gets the `POSITIONS_LIMIT` variable
+    /// @return positionsLimit_ The `POSITIONS_LIMIT` variable value
+    function getPositionsLimit() public view returns (uint256 positionsLimit_) {
+        return POSITIONS_LIMIT;
     }
 
     /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable

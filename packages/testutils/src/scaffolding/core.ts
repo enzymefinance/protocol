@@ -96,6 +96,7 @@ export async function createFundDeployer({
     await vaultLib.getMlnToken(),
     await vaultLib.getMlnBurner(),
     await vaultLib.getWethToken(),
+    await vaultLib.getPositionsLimit(),
   );
   await nextFundDeployer.setVaultLib(nextVaultLib);
 

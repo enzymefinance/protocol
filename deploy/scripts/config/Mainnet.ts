@@ -329,6 +329,7 @@ const mainnetConfig: DeploymentConfig = {
       ptUsdc: ["0xdd4d117723C257CEe402285D3aCF218E9A8236E1", primitives.usdc] as [string, string]
     }
   },
+  positionsLimit: 20,
   primitives,
   stakehound: {
     steth: '0xdfe66b14d37c77f4e9b180ceb433d1b164f0281d'

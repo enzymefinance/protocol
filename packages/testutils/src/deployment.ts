@@ -253,6 +253,7 @@ export interface DeploymentConfig {
   poolTogetherV4: {
     ptTokens: Record<string, [string, string]>;
   };
+  positionsLimit: number;
   stakehound: {
     steth: string;
   };

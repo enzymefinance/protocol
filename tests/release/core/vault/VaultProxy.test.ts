@@ -223,6 +223,7 @@ describe('setAccessorForFundReconfiguration', () => {
         fork.config.feeToken,
         await fork.deployment.vaultLib.getMlnBurner(),
         fork.config.weth,
+        fork.config.positionsLimit,
       ),
       fundOwner,
       mockAccessor,
@@ -279,6 +280,7 @@ describe('buyBackProtocolFeeShares', () => {
         fork.config.feeToken,
         constants.AddressZero,
         fork.config.weth,
+        fork.config.positionsLimit,
       );
 
       vaultProxy = await createVaultProxy({
@@ -376,6 +378,7 @@ describe('buyBackProtocolFeeShares', () => {
         fork.config.feeToken,
         mlnBurner,
         fork.config.weth,
+        fork.config.positionsLimit,
       );
 
       const vaultProxy = await createVaultProxy({
@@ -434,6 +437,7 @@ describe('payProtocolFee', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     vaultProxy = await createVaultProxy({
@@ -714,6 +718,7 @@ describe('asset managers', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     vaultProxy = await createVaultProxy({
@@ -822,6 +827,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -847,6 +853,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -872,6 +879,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -897,6 +905,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -922,6 +931,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({
@@ -947,6 +957,7 @@ describe('Comptroller calls to vault actions', () => {
       fork.config.feeToken,
       await fork.deployment.vaultLib.getMlnBurner(),
       fork.config.weth,
+      fork.config.positionsLimit,
     );
 
     const vaultProxy = await createVaultProxy({

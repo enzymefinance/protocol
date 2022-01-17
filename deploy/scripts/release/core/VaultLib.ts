@@ -38,6 +38,7 @@ const fn: DeployFunction = async function (hre) {
       config.feeToken,
       feeTokenBurner,
       config.wrappedNativeAsset,
+      config.positionsLimit,
     ] as VaultLibArgs,
     from: deployer.address,
     log: true,

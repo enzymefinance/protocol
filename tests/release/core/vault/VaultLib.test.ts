@@ -12,6 +12,7 @@ describe('constructor', () => {
     const vaultLib = fork.deployment.vaultLib;
 
     expect(await vaultLib.getMlnToken()).toMatchAddress(fork.config.feeToken);
+    expect(await vaultLib.getPositionsLimit()).toEqBigNumber(fork.config.positionsLimit);
     expect(await vaultLib.getProtocolFeeReserve()).toMatchAddress(fork.deployment.protocolFeeReserveProxy);
     expect(await vaultLib.getProtocolFeeTracker()).toMatchAddress(fork.deployment.protocolFeeTracker);
     expect(await vaultLib.getWethToken()).toMatchAddress(fork.config.weth);
