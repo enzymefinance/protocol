@@ -1,5 +1,13 @@
 # @enzymefinance/testutils
 
+## 4.0.0-next.6
+
+### Patch Changes
+
+- 10b83667: Upgrade deps and publish new version
+- Updated dependencies [10b83667]
+  - @enzymefinance/protocol@4.0.0-next.6
+
 ## 4.0.0-next.5
 
 ### Patch Changes

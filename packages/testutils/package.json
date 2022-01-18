@@ -1,6 +1,6 @@
 {
   "name": "@enzymefinance/testutils",
-  "version": "4.0.0-next.5",
+  "version": "4.0.0-next.6",
   "main": "dist/enzymefinance-testutils.cjs.js",
   "module": "dist/enzymefinance-testutils.esm.js",
   "browser": {
@@ -11,7 +11,7 @@
     "@babel/runtime": "^7.15.4",
     "@enzymefinance/ethers": "^1.0.11",
     "@enzymefinance/hardhat": "^1.0.12",
-    "@enzymefinance/protocol": "^4.0.0-next.5",
+    "@enzymefinance/protocol": "^4.0.0-next.6",
     "ethers": "^5.5.3"
   }
 }
