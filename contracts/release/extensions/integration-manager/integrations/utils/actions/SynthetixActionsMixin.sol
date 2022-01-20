@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../infrastructure/price-feeds/derivatives/feeds/SynthetixPriceFeed.sol";
 import "../../../../../interfaces/ISynthetix.sol";
+import "../../../../../interfaces/ISynthetixProxyERC20.sol";
 import "../../../../../interfaces/ISynthetixRedeemer.sol";
+import "../../../../../interfaces/ISynthetixSynth.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title SynthetixActionsMixin Contract
@@ -23,21 +24,27 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
     address private immutable SYNTHETIX;
     address private immutable SYNTHETIX_ORIGINATOR;
     address private immutable SYNTHETIX_REDEEMER;
-    address private immutable SYNTHETIX_PRICE_FEED;
     bytes32 private immutable SYNTHETIX_TRACKING_CODE;
 
     constructor(
         address _originator,
-        address _priceFeed,
         address _redeemer,
         address _synthetix,
         bytes32 _trackingCode
     ) public {
         SYNTHETIX_ORIGINATOR = _originator;
-        SYNTHETIX_PRICE_FEED = _priceFeed;
         SYNTHETIX_REDEEMER = _redeemer;
         SYNTHETIX = _synthetix;
         SYNTHETIX_TRACKING_CODE = _trackingCode;
+    }
+
+    /// @dev Helper to get the currency key for a Synthetix synth
+    function __synthetixGetCurrencyKey(address _synth)
+        internal
+        view
+        returns (bytes32 currencyKey_)
+    {
+        return ISynthetixSynth(ISynthetixProxyERC20(_synth).target()).currencyKey();
     }
 
     /// @dev Helper to execute takeOrder
@@ -47,18 +54,11 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
         uint256 _outgoingAssetAmount,
         address _incomingAsset
     ) internal {
-        address[] memory synths = new address[](2);
-        synths[0] = _outgoingAsset;
-        synths[1] = _incomingAsset;
-
-        bytes32[] memory currencyKeys = SynthetixPriceFeed(SYNTHETIX_PRICE_FEED)
-            .getCurrencyKeysForSynths(synths);
-
         ISynthetix(SYNTHETIX).exchangeOnBehalfWithTracking(
             _recipient,
-            currencyKeys[0],
+            __synthetixGetCurrencyKey(_outgoingAsset),
             _outgoingAssetAmount,
-            currencyKeys[1],
+            __synthetixGetCurrencyKey(_incomingAsset),
             SYNTHETIX_ORIGINATOR,
             SYNTHETIX_TRACKING_CODE
         );
@@ -83,12 +83,6 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
     /// @return synthetixOriginator_ The `SYNTHETIX_ORIGINATOR` variable value
     function getSynthetixOriginator() public view returns (address synthetixOriginator_) {
         return SYNTHETIX_ORIGINATOR;
-    }
-
-    /// @notice Gets the `SYNTHETIX_PRICE_FEED` variable
-    /// @return synthetixPriceFeed_ The `SYNTHETIX_PRICE_FEED` variable value
-    function getSynthetixPriceFeed() public view returns (address synthetixPriceFeed_) {
-        return SYNTHETIX_PRICE_FEED;
     }
 
     /// @notice Gets the `SYNTHETIX_REDEEMER` variable

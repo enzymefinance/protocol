@@ -82,7 +82,6 @@ describe('activateForFund', () => {
     const {
       deployer,
       deployment: {
-        assetFinalityResolver,
         fundDeployer,
         externalPositionManager,
         dispatcher,
@@ -109,7 +108,6 @@ describe('activateForFund', () => {
 
     // migrate fund
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
       deployer,
       dispatcher,
       externalPositionManager,

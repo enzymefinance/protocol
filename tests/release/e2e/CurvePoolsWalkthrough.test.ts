@@ -61,12 +61,6 @@ beforeAll(async () => {
       gaugeTokenAddress: fork.config.curve.pools.aave.liquidityGaugeToken,
       poolAddress: fork.config.curve.pools.aave.pool,
     },
-    eurs: {
-      assetToLendAddress: fork.config.synthetix.synths.seur,
-      assetToLendWhale: whales.seur,
-      gaugeTokenAddress: fork.config.curve.pools.eurs.liquidityGaugeToken,
-      poolAddress: fork.config.curve.pools.eurs.pool,
-    },
     seth: {
       assetToLendAddress: fork.config.weth,
       assetToLendWhale: whales.weth,
@@ -91,7 +85,7 @@ beforeAll(async () => {
   };
 });
 
-const poolKeys = ['aave', 'eurs', 'seth', 'steth', 'ust'];
+const poolKeys = ['3pool', 'aave', 'seth', 'steth', 'ust'];
 
 describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   let integrationManager: IntegrationManager;

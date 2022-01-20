@@ -35,7 +35,7 @@ describe('derivative gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund and use max of half of the weth balance to get the LP token
     await curveStethLend({
@@ -49,10 +49,10 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the LP token
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(94484));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(91813));
   });
 });
 

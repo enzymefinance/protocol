@@ -86,7 +86,7 @@ describe('buyBackProtocolFeeShares', () => {
       signer: fundOwner,
     });
 
-    preTxGav = await comptrollerProxy.calcGav.args(true).call();
+    preTxGav = await comptrollerProxy.calcGav.call();
     preTxSharesSupply = await vaultProxy.totalSupply();
   });
 
@@ -218,7 +218,7 @@ describe('auto-buybacks', () => {
         signer: fundOwner,
       });
 
-      gav = await comptrollerProxy.calcGav.args(true).call();
+      gav = await comptrollerProxy.calcGav.call();
     });
 
     it('happy path: buyShares()', async () => {
@@ -346,7 +346,7 @@ describe('auto-buybacks', () => {
         signer: fundOwner,
       });
 
-      preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      preTxGav = await comptrollerProxy.calcGav.call();
     });
 
     it('happy path: buyShares()', async () => {

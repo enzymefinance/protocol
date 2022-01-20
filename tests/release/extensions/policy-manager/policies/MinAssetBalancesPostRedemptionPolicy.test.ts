@@ -154,7 +154,7 @@ describe('validateRule', () => {
     ).rejects.toBeRevertedWith('Rule evaluated to false: MIN_ASSET_BALANCES_POST_REDEMPTION');
 
     // Calc the approx amount of shares that is the limit to redeem based on the min denomination asset balance
-    const grossShareValue = await comptrollerProxy.calcGrossShareValue.args(false).call();
+    const grossShareValue = await comptrollerProxy.calcGrossShareValue.call();
     const redeemableDenominationAssetBalance = (await denominationAsset.balanceOf(vaultProxy)).sub(
       minDenominationAssetBalance,
     );

@@ -37,16 +37,6 @@ export function cumulativeSlippageTolerancePolicyArgs({ tolerance }: { tolerance
   return encodeArgs(['uint256'], [tolerance]);
 }
 
-export function guaranteedRedemptionPolicyArgs({
-  startTimestamp,
-  duration,
-}: {
-  startTimestamp: BigNumberish;
-  duration: BigNumberish;
-}) {
-  return encodeArgs(['uint256', 'uint256'], [startTimestamp, duration]);
-}
-
 export function minAssetBalancesPostRedemptionPolicyArgs({
   assets,
   minBalances,

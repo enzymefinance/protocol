@@ -163,8 +163,7 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         returns (uint256 gav_)
     {
         if (_gavOrZero == 0) {
-            // Do not finalize synths, as this can lead to lost fees when redeeming shares
-            return IComptroller(_comptrollerProxy).calcGav(false);
+            return IComptroller(_comptrollerProxy).calcGav();
         } else {
             return _gavOrZero;
         }

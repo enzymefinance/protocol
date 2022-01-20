@@ -18,7 +18,6 @@ describe('unhappy paths', () => {
 
   it('does not allow ownership handoff to not be incomplete', async () => {
     const {
-      assetFinalityResolver,
       externalPositionManager,
       dispatcher,
       feeManager,
@@ -29,7 +28,6 @@ describe('unhappy paths', () => {
       vaultLib,
     } = fork.deployment;
     const nonLiveFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
       deployer: fork.deployer,
       dispatcher,
       externalPositionManager,

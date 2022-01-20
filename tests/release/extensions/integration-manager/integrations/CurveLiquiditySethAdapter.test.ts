@@ -1,5 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
+  ChainlinkRateAsset,
   claimRewardsSelector,
   curveSethLendAndStakeArgs,
   curveSethLendArgs,
@@ -33,8 +34,17 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+let seth: StandardToken;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+
+  // Add seth to the asset universe for testing purposes
+  seth = new StandardToken(fork.config.unsupportedAssets.seth, whales.seth);
+  await fork.deployment.valueInterpreter.addPrimitives(
+    [seth],
+    [fork.config.chainlink.ethusd],
+    [ChainlinkRateAsset.USD],
+  );
 });
 
 describe('constructor', () => {
@@ -45,7 +55,7 @@ describe('constructor', () => {
     expect(await curveLiquiditySethAdapter.getLiquidityGaugeToken()).toMatchAddress(
       fork.config.curve.pools.seth.liquidityGaugeToken,
     );
-    expect(await curveLiquiditySethAdapter.getSethToken()).toMatchAddress(fork.config.synthetix.synths.seth);
+    expect(await curveLiquiditySethAdapter.getSethToken()).toMatchAddress(seth);
 
     // AdapterBase
     expect(await curveLiquiditySethAdapter.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
@@ -140,7 +150,7 @@ describe('parseAssetsForAction', () => {
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
         spendAssetAmounts_: [outgoingSethAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.synthetix.synths.seth],
+        spendAssets_: [seth],
       });
     });
 
@@ -165,7 +175,7 @@ describe('parseAssetsForAction', () => {
         minIncomingAssetAmounts_: [minIncomingLPTokenAmount],
         spendAssetAmounts_: [outgoingWethAmount, outgoingSethAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
+        spendAssets_: [fork.config.weth, seth],
       });
     });
   });
@@ -215,7 +225,7 @@ describe('parseAssetsForAction', () => {
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
         spendAssetAmounts_: [outgoingSethAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.synthetix.synths.seth],
+        spendAssets_: [seth],
       });
     });
 
@@ -240,7 +250,7 @@ describe('parseAssetsForAction', () => {
         minIncomingAssetAmounts_: [minIncomingLiquidityGaugeTokenAmount],
         spendAssetAmounts_: [outgoingWethAmount, outgoingSethAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
-        spendAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
+        spendAssets_: [fork.config.weth, seth],
       });
     });
   });
@@ -264,7 +274,7 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
-        incomingAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
+        incomingAssets_: [fork.config.weth, seth],
         minIncomingAssetAmounts_: [minIncomingWethAmount, minIncomingSethAmount],
         spendAssetAmounts_: [outgoingLPTokenAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -314,7 +324,7 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
-        incomingAssets_: [fork.config.synthetix.synths.seth],
+        incomingAssets_: [seth],
         minIncomingAssetAmounts_: [minIncomingSethAmount],
         spendAssetAmounts_: [outgoingLPTokenAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -388,7 +398,7 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
-        incomingAssets_: [fork.config.weth, fork.config.synthetix.synths.seth],
+        incomingAssets_: [fork.config.weth, seth],
         minIncomingAssetAmounts_: [minIncomingWethAmount, minIncomingSethAmount],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -438,7 +448,7 @@ describe('parseAssetsForAction', () => {
       );
 
       expect(result).toMatchFunctionOutput(curveLiquiditySethAdapter.parseAssetsForAction, {
-        incomingAssets_: [fork.config.synthetix.synths.seth],
+        incomingAssets_: [seth],
         minIncomingAssetAmounts_: [minIncomingSethAmount],
         spendAssetAmounts_: [outgoingLiquidityGaugeTokenAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
@@ -492,7 +502,6 @@ describe('lend', () => {
   it('works as expected (with only seth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, whales.seth);
     const lpToken = new StandardToken(fork.config.curve.pools.seth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -534,7 +543,6 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
     const weth = new StandardToken(fork.config.weth, whales.weth);
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, whales.seth);
     const lpToken = new StandardToken(fork.config.curve.pools.seth.lpToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -623,7 +631,6 @@ describe('lendAndStake', () => {
   it('works as expected (with only seth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, whales.seth);
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.seth.liquidityGaugeToken, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -667,7 +674,6 @@ describe('lendAndStake', () => {
   it('works as expected (with an imbalance of weth and seth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, whales.seth);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.seth.liquidityGaugeToken, provider);
 
@@ -718,7 +724,6 @@ describe('redeem', () => {
   it('works as expected (standard)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const lpToken = new StandardToken(fork.config.curve.pools.seth.lpToken, provider);
 
@@ -775,7 +780,6 @@ describe('redeem', () => {
   it('works as expected (single-asset: weth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const lpToken = new StandardToken(fork.config.curve.pools.seth.lpToken, provider);
 
@@ -833,7 +837,6 @@ describe('redeem', () => {
   it('works as expected (single-asset: seth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const lpToken = new StandardToken(fork.config.curve.pools.seth.lpToken, provider);
 
@@ -893,7 +896,6 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (standard)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.seth.liquidityGaugeToken, provider);
 
@@ -952,7 +954,6 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (single-asset: weth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.seth.liquidityGaugeToken, provider);
 
@@ -1010,7 +1011,6 @@ describe('unstakeAndRedeem', () => {
   it('works as expected (single-asset: seth)', async () => {
     const [fundOwner] = fork.accounts;
     const curveLiquiditySethAdapter = fork.deployment.curveLiquiditySethAdapter;
-    const seth = new StandardToken(fork.config.synthetix.synths.seth, provider);
     const weth = new StandardToken(fork.config.weth, whales.weth);
     const liquidityGaugeToken = new StandardToken(fork.config.curve.pools.seth.liquidityGaugeToken, provider);
 

@@ -26,12 +26,4 @@ interface ISynthetixExchanger {
             uint256,
             uint256
         );
-
-    function settle(address, bytes32)
-        external
-        returns (
-            uint256,
-            uint256,
-            uint256
-        );
 }

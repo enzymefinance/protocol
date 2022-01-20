@@ -36,7 +36,7 @@ describe('derivative gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Use max of the dai balance to get cDai
     await dai.transfer(vaultProxy, initialTokenAmount);
@@ -51,10 +51,10 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the pool token
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(80000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(77121));
   });
 });
 

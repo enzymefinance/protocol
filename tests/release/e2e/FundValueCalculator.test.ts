@@ -89,7 +89,7 @@ describe('calcs', () => {
     // GROSS VALUE
 
     // calcGav
-    const actualGav = await comptrollerProxy.calcGav.args(false).call();
+    const actualGav = await comptrollerProxy.calcGav.args().call();
     expect(await fundValueCalculatorRouter.calcGav.args(vaultProxy).call()).toMatchFunctionOutput(
       fundValueCalculatorRouter.calcGav,
       {
@@ -105,7 +105,7 @@ describe('calcs', () => {
     expect(await fundValueCalculatorRouter.calcGavInAsset.args(vaultProxy, weth).call()).toEqBigNumber(actualGavInEth);
 
     // calcGrossShareValue
-    const actualGrossShareValue = await comptrollerProxy.calcGrossShareValue.args(false).call();
+    const actualGrossShareValue = await comptrollerProxy.calcGrossShareValue.call();
     expect(await fundValueCalculatorRouter.calcGrossShareValue.args(vaultProxy).call()).toMatchFunctionOutput(
       fundValueCalculatorRouter.calcGrossShareValue,
       {

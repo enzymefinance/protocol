@@ -11,19 +11,22 @@
 
 pragma solidity 0.6.12;
 
+import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
 import "../utils/actions/SynthetixActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with Synthetix
+/// @dev This adapter currently only provides mechanisms for exiting an already-held synth position into sUSD
 contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     address private immutable SUSD_TOKEN;
+    ValueInterpreter private immutable VALUE_INTERPRETER_CONTRACT;
 
     constructor(
         address _integrationManager,
+        address _valueInterpreter,
         address _originator,
-        address _synthetixPriceFeed,
         address _synthetixRedeemer,
         address _synthetix,
         address _susd,
@@ -31,15 +34,10 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     )
         public
         AdapterBase(_integrationManager)
-        SynthetixActionsMixin(
-            _originator,
-            _synthetixPriceFeed,
-            _synthetixRedeemer,
-            _synthetix,
-            _trackingCode
-        )
+        SynthetixActionsMixin(_originator, _synthetixRedeemer, _synthetix, _trackingCode)
     {
         SUSD_TOKEN = _susd;
+        VALUE_INTERPRETER_CONTRACT = ValueInterpreter(_valueInterpreter);
     }
 
     /// @notice Redeems an array of deprecated synths for their last underlying sUSD values
@@ -69,14 +67,11 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
         bytes calldata _actionData,
         bytes calldata
     ) external onlyIntegrationManager {
-        (
-            address incomingAsset,
-            ,
-            address outgoingAsset,
-            uint256 outgoingAssetAmount
-        ) = __decodeTakeOrderArgs(_actionData);
+        (, address outgoingAsset, uint256 outgoingAssetAmount) = __decodeTakeOrderArgs(
+            _actionData
+        );
 
-        __synthetixTakeOrder(_vaultProxy, outgoingAsset, outgoingAssetAmount, incomingAsset);
+        __synthetixTakeOrder(_vaultProxy, outgoingAsset, outgoingAssetAmount, SUSD_TOKEN);
     }
 
     /////////////////////////////
@@ -111,11 +106,17 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
             (
-                address incomingAsset,
-                uint256 minIncomingAssetAmount,
+                uint256 minIncomingSusdAmount,
                 address outgoingAsset,
                 uint256 outgoingAssetAmount
             ) = __decodeTakeOrderArgs(_actionData);
+
+            // If synths are added back to the asset universe, they should not be traded via Synthetix,
+            // since there are no longer synth settlement considerations
+            require(
+                !VALUE_INTERPRETER_CONTRACT.isSupportedAsset(outgoingAsset),
+                "parseAssetsForAction: Unallowed synth"
+            );
 
             spendAssets_ = new address[](1);
             spendAssets_[0] = outgoingAsset;
@@ -123,9 +124,9 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
             spendAssetAmounts_[0] = outgoingAssetAmount;
 
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = incomingAsset;
+            incomingAssets_[0] = SUSD_TOKEN;
             minIncomingAssetAmounts_ = new uint256[](1);
-            minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
+            minIncomingAssetAmounts_[0] = minIncomingSusdAmount;
 
             return (
                 IIntegrationManager.SpendAssetsHandleType.None,
@@ -175,22 +176,11 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
         private
         pure
         returns (
-            address incomingAsset_,
-            uint256 minIncomingAssetAmount_,
+            uint256 minIncomingSusdAmount_,
             address outgoingAsset_,
             uint256 outgoingAssetAmount_
         )
     {
-        return abi.decode(_actionData, (address, uint256, address, uint256));
-    }
-
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
-
-    /// @notice Gets the `SUSD_TOKEN` variable
-    /// @return susdToken_ The `SUSD_TOKEN` variable value
-    function getSusdToken() external view returns (address susdToken_) {
-        return SUSD_TOKEN;
+        return abi.decode(_actionData, (uint256, address, uint256));
     }
 }

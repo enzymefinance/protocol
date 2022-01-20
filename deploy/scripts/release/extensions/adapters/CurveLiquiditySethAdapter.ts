@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
       config.curve.minter,
       config.curve.pools.seth.pool,
       config.primitives.crv,
-      config.synthetix.synths.seth,
+      config.unsupportedAssets.seth,
       config.weth,
     ] as CurveLiquiditySethAdapterArgs,
     from: deployer.address,

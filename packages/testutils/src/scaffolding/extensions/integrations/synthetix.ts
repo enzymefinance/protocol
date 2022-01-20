@@ -2,7 +2,6 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import type {
   ComptrollerLib,
   IntegrationManager,
-  ISynthetixAddressResolver,
   StandardToken,
   SynthetixAdapter,
   VaultLib,
@@ -22,37 +21,22 @@ import { utils } from 'ethers';
 
 export async function synthetixAssignExchangeDelegate({
   comptrollerProxy,
-  addressResolver,
+  synthetixDelegateApprovals,
   fundOwner,
   delegate,
 }: {
   comptrollerProxy: ComptrollerLib;
-  addressResolver: ISynthetixAddressResolver;
+  synthetixDelegateApprovals: AddressLike;
   fundOwner: Signer;
   delegate: AddressLike;
 }) {
-  const delegateApprovals = await synthetixResolveAddress({
-    addressResolver,
-    name: 'DelegateApprovals',
-  });
-
   await comptrollerProxy
     .connect(fundOwner)
     .vaultCallOnContract(
-      delegateApprovals,
+      synthetixDelegateApprovals,
       synthetixAssignExchangeDelegateSelector,
       encodeArgs(['address'], [delegate]),
     );
-}
-
-export async function synthetixResolveAddress({
-  addressResolver,
-  name,
-}: {
-  addressResolver: ISynthetixAddressResolver;
-  name: string;
-}) {
-  return addressResolver.requireAndGetAddress(utils.formatBytes32String(name), `Missing ${name}`);
 }
 
 export async function synthetixRedeem({
@@ -91,8 +75,7 @@ export async function synthetixTakeOrder({
   synthetixAdapter,
   outgoingAsset,
   outgoingAssetAmount = utils.parseEther('1'),
-  incomingAsset,
-  minIncomingAssetAmount = utils.parseEther('1'),
+  minIncomingSusdAmount = utils.parseEther('1'),
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -102,8 +85,7 @@ export async function synthetixTakeOrder({
   synthetixAdapter: SynthetixAdapter;
   outgoingAsset: StandardToken;
   outgoingAssetAmount?: BigNumberish;
-  incomingAsset: StandardToken;
-  minIncomingAssetAmount?: BigNumberish;
+  minIncomingSusdAmount?: BigNumberish;
   seedFund?: boolean;
 }) {
   if (seedFund) {
@@ -112,8 +94,7 @@ export async function synthetixTakeOrder({
   }
 
   const takeOrderArgs = synthetixTakeOrderArgs({
-    incomingAsset,
-    minIncomingAssetAmount,
+    minIncomingSusdAmount,
     outgoingAsset,
     outgoingAssetAmount,
   });

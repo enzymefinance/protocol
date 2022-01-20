@@ -350,7 +350,7 @@ describe('expected relayable txs', () => {
         signer: fundOwner,
       });
 
-      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const preTxGav = await comptrollerProxy.calcGav.call();
       const preTxSharesSupply = await vaultProxy.totalSupply();
 
       const valueInterpreter = fork.deployment.valueInterpreter;
@@ -727,7 +727,6 @@ describe('expected relayable txs', () => {
 
     it('happy path: should withdraw gas relay deposit on migration', async () => {
       const nextFundDeployer = await createFundDeployer({
-        assetFinalityResolver: fork.deployment.assetFinalityResolver,
         deployer: fundOwner,
         dispatcher: fork.deployment.dispatcher,
         externalPositionManager: fork.deployment.externalPositionManager,

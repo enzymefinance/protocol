@@ -35,7 +35,7 @@ describe('derivative gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
     await mln.transfer(vaultProxy, initialTokenAmount);
@@ -55,10 +55,10 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the pool token
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(91229));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(87895));
   });
 });
 

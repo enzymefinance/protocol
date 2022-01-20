@@ -12,7 +12,6 @@ describe('constructor', () => {
   it('sets initial state for library', async () => {
     const comptrollerLib = fork.deployment.comptrollerLib;
 
-    expect(await comptrollerLib.getAssetFinalityResolver()).toMatchAddress(fork.deployment.assetFinalityResolver);
     expect(await comptrollerLib.getDispatcher()).toMatchAddress(fork.deployment.dispatcher);
     expect(await comptrollerLib.getExternalPositionManager()).toMatchAddress(fork.deployment.externalPositionManager);
     expect(await comptrollerLib.getFeeManager()).toMatchAddress(fork.deployment.feeManager);
@@ -38,7 +37,6 @@ describe('destruct calls', () => {
       randomAddress(),
       randomAddress(),
       mockFundDeployer,
-      randomAddress(),
       randomAddress(),
       randomAddress(),
       randomAddress(),

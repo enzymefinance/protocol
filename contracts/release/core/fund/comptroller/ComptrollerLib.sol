@@ -19,7 +19,6 @@ import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../extensions/IExtension.sol";
 import "../../../extensions/fee-manager/IFeeManager.sol";
 import "../../../extensions/policy-manager/IPolicyManager.sol";
-import "../../../infrastructure/asset-finality/IAssetFinalityResolver.sol";
 import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../../infrastructure/gas-relayer/IGasRelayPaymaster.sol";
 import "../../../infrastructure/gas-relayer/IGasRelayPaymasterDepositor.sol";
@@ -84,7 +83,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     uint256 private constant SHARES_UNIT = 10**18;
     address
         private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS = 0x000000000000000000000000000000000000aaaa;
-    address private immutable ASSET_FINALITY_RESOLVER;
     address private immutable DISPATCHER;
     address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable FUND_DEPLOYER;
@@ -203,12 +201,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         address _feeManager,
         address _integrationManager,
         address _policyManager,
-        address _assetFinalityResolver,
         address _gasRelayPaymasterFactory,
         address _mlnToken,
         address _wethToken
     ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
-        ASSET_FINALITY_RESOLVER = _assetFinalityResolver;
         DISPATCHER = _dispatcher;
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
@@ -298,7 +294,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             "buyBackProtocolFeeShares: Unauthorized"
         );
 
-        uint256 gav = calcGav(true);
+        uint256 gav = calcGav();
 
         IVault(vaultProxyCopy).buyBackProtocolFeeShares(
             _sharesAmount,
@@ -536,9 +532,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     ////////////////
 
     /// @notice Calculates the gross asset value (GAV) of the fund
-    /// @param _finalizeAssets True if all assets must have exact final balances settled
     /// @return gav_ The fund GAV
-    function calcGav(bool _finalizeAssets) public override returns (uint256 gav_) {
+    function calcGav() public override returns (uint256 gav_) {
         address vaultProxyAddress = getVaultProxy();
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
         address[] memory externalPositions = IVault(vaultProxyAddress)
@@ -546,15 +541,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         if (assets.length == 0 && externalPositions.length == 0) {
             return 0;
-        }
-
-        // It is not necessary to finalize assets in external positions, as synths will have
-        // already been settled prior to transferring to the external position contract
-        if (_finalizeAssets) {
-            IAssetFinalityResolver(getAssetFinalityResolver()).finalizeAssets(
-                vaultProxyAddress,
-                assets
-            );
         }
 
         uint256[] memory balances = new uint256[](assets.length);
@@ -580,15 +566,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     }
 
     /// @notice Calculates the gross value of 1 unit of shares in the fund's denomination asset
-    /// @param _requireFinality True if all assets must have exact final balances settled
     /// @return grossShareValue_ The amount of the denomination asset per share
     /// @dev Does not account for any fees outstanding.
-    function calcGrossShareValue(bool _requireFinality)
-        external
-        override
-        returns (uint256 grossShareValue_)
-    {
-        uint256 gav = calcGav(_requireFinality);
+    function calcGrossShareValue() external override returns (uint256 grossShareValue_) {
+        uint256 gav = calcGav();
 
         grossShareValue_ = __calcGrossShareValue(
             gav,
@@ -721,7 +702,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             "__buyShares: Pending migration or reconfiguration"
         );
 
-        uint256 gav = calcGav(true);
+        uint256 gav = calcGav();
 
         // Gives Extensions a chance to run logic prior to the minting of bought shares.
         // Fees implementing this hook should be aware that
@@ -856,7 +837,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             "redeemSharesForSpecificAssets: Duplicate payout asset"
         );
 
-        uint256 gav = calcGav(true);
+        uint256 gav = calcGav();
 
         IVault vaultProxyContract = IVault(getVaultProxy());
         (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
@@ -946,20 +927,13 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             _assetsToSkip
         );
 
-        // Resolve finality of all assets as needed.
-        // Run this prior to calculating GAV.
-        IAssetFinalityResolver(getAssetFinalityResolver()).finalizeAssets(
-            vaultProxy,
-            payoutAssets_
-        );
-
         // If protocol fee shares will be auto-bought back, attempt to calculate GAV to pass into fees,
         // as we will require GAV later during the buyback.
         uint256 gavOrZero;
         if (doesAutoProtocolFeeSharesBuyback()) {
             // Since GAV calculation can fail with a revering price or a no-longer-supported asset,
             // we must try/catch GAV calculation to ensure that in-kind redemption can still succeed
-            try this.calcGav(false) returns (uint256 gav) {
+            try this.calcGav() returns (uint256 gav) {
                 gavOrZero = gav;
             } catch {
                 emit RedeemSharesInKindCalcGavFailed();
@@ -1276,12 +1250,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     ///////////////////
 
     // LIB IMMUTABLES
-
-    /// @notice Gets the `ASSET_FINALITY_RESOLVER` variable
-    /// @return assetFinalityResolver_ The `ASSET_FINALITY_RESOLVER` variable value
-    function getAssetFinalityResolver() public view returns (address assetFinalityResolver_) {
-        return ASSET_FINALITY_RESOLVER;
-    }
 
     /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value

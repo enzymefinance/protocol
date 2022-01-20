@@ -1,9 +1,4 @@
-import type {
-  AssetFinalityResolver,
-  Dispatcher,
-  GasRelayPaymasterFactory,
-  ValueInterpreter,
-} from '@enzymefinance/protocol';
+import type { Dispatcher, GasRelayPaymasterFactory, ValueInterpreter } from '@enzymefinance/protocol';
 import {
   ComptrollerLib,
   ExternalPositionManager,
@@ -20,7 +15,6 @@ import type { Signer } from 'ethers';
 // unless overrides are passed-in
 export async function createFundDeployer({
   deployer,
-  assetFinalityResolver,
   externalPositionManager,
   dispatcher,
   gasRelayPaymasterFactory,
@@ -30,7 +24,6 @@ export async function createFundDeployer({
   setReleaseLive = true,
 }: {
   deployer: Signer;
-  assetFinalityResolver: AssetFinalityResolver;
   externalPositionManager: ExternalPositionManager;
   dispatcher: Dispatcher;
   feeManager: FeeManager;
@@ -76,7 +69,6 @@ export async function createFundDeployer({
     nextFeeManager,
     nextIntegrationManager,
     nextPolicyManager,
-    assetFinalityResolver,
     gasRelayPaymasterFactory,
     mlnToken,
     wethToken,

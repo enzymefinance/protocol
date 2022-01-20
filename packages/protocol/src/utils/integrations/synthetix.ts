@@ -8,18 +8,13 @@ export function synthetixRedeemArgs({ synths }: { synths: AddressLike[] }) {
 }
 
 export function synthetixTakeOrderArgs({
-  incomingAsset,
-  minIncomingAssetAmount,
+  minIncomingSusdAmount,
   outgoingAsset,
   outgoingAssetAmount,
 }: {
-  incomingAsset: AddressLike;
-  minIncomingAssetAmount: BigNumberish;
+  minIncomingSusdAmount: BigNumberish;
   outgoingAsset: AddressLike;
   outgoingAssetAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'uint256', 'address', 'uint256'],
-    [incomingAsset, minIncomingAssetAmount, outgoingAsset, outgoingAssetAmount],
-  );
+  return encodeArgs(['uint256', 'address', 'uint256'], [minIncomingSusdAmount, outgoingAsset, outgoingAssetAmount]);
 }

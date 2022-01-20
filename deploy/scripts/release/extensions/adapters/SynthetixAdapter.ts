@@ -13,13 +13,13 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
   const integrationManager = await get('IntegrationManager');
-  const synthetixPriceFeed = await get('SynthetixPriceFeed');
+  const valueInterpreter = await get('ValueInterpreter');
 
   await deploy('SynthetixAdapter', {
     args: [
       integrationManager.address,
+      valueInterpreter.address,
       config.synthetix.originator,
-      synthetixPriceFeed.address,
       config.synthetix.redeemer,
       config.synthetix.snx,
       config.synthetix.susd,
@@ -36,7 +36,7 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'Adapters', 'SynthetixAdapter'];
-fn.dependencies = ['Config', 'IntegrationManager', 'SynthetixPriceFeed'];
+fn.dependencies = ['Config', 'IntegrationManager', 'ValueInterpreter'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

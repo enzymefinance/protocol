@@ -24,7 +24,6 @@ async function createNewFundOnPrevRelease({
 }) {
   // Create old release, set as live and current fund deployer
   const prevFundDeployer = await createFundDeployer({
-    assetFinalityResolver: fork.deployment.assetFinalityResolver,
     deployer: fork.deployer,
     dispatcher: fork.deployment.dispatcher,
     externalPositionManager: fork.deployment.externalPositionManager,
@@ -81,7 +80,6 @@ describe('createMigrationRequest', () => {
 
     it('does not allow ownership handoff to not be incomplete', async () => {
       const {
-        assetFinalityResolver,
         externalPositionManager,
         dispatcher,
         feeManager,
@@ -92,7 +90,6 @@ describe('createMigrationRequest', () => {
         gasRelayPaymasterFactory,
       } = fork.deployment;
       const nonLiveFundDeployer = await createFundDeployer({
-        assetFinalityResolver,
         deployer: fork.deployer,
         dispatcher,
         externalPositionManager,

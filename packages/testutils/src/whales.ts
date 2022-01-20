@@ -37,14 +37,12 @@ const whales = {
   cusdc: '0xe1ed4da4284924ddaf69983b4d813fb1be58c380',
   // ptTokens
   ptUsdc: '0xd18236cd213f39d078177b6f6908f0e44e88e4aa',
-  // synths
+  // synths (unsupported)
   seth: '0xc34a7c65aa08cb36744bda8eeec7b8e9891e147c',
-  seur: '0xc3f2f91723b16b95bef0619b2504c049075d5b0b',
   sxag: '0x40d68c490bf7262ec40048099aec23535f734be2',
   sxau: '0x92eb453b7b5b8d41edb44e2c8b8b53eb70a482c7',
   // misc
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
-  eurs: '0x98ed26de6451db36246672df78ae7c50f2c76f6d',
   ust: '0xf584f8728b874a6a5c7a8d4d387c9aae9172d621',
 } as const;
 /* eslint-enable sort-keys-fix/sort-keys-fix */

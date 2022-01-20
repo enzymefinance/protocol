@@ -85,7 +85,7 @@ describe('primitives gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
@@ -97,10 +97,10 @@ describe('primitives gas costs', () => {
     });
 
     // Get the calcGav() cost including dai
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(38000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(35285));
   });
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
@@ -136,7 +136,7 @@ describe('primitives gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
@@ -148,10 +148,10 @@ describe('primitives gas costs', () => {
     });
 
     // Get the calcGav() cost including dai
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(60000));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(57244));
   });
 });
 

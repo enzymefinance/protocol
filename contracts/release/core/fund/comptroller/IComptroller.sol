@@ -18,9 +18,9 @@ import "../vault/IVault.sol";
 interface IComptroller {
     function activate(bool) external;
 
-    function calcGav(bool) external returns (uint256);
+    function calcGav() external returns (uint256);
 
-    function calcGrossShareValue(bool) external returns (uint256);
+    function calcGrossShareValue() external returns (uint256);
 
     function callOnExtension(
         address,

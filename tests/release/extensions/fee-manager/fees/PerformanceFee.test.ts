@@ -681,7 +681,7 @@ describe('settle', () => {
     const settlementData = constants.HashZero;
 
     // settle.call() to assert return values and get the sharesOutstanding
-    const gav = await mockComptrollerProxy.calcGav.args(true).call();
+    const gav = await mockComptrollerProxy.calcGav.call();
     const settleCall = await performanceFee.settle
       .args(mockComptrollerProxy, mockVaultProxy, feeHook, settlementData, gav)
       .from(mockFeeManager)
@@ -893,7 +893,7 @@ describe('integration', () => {
     expect(failureEvents2.length).toBe(0);
 
     // Performance fee state should have updated correctly
-    const gavPostRedeem2 = await comptrollerProxy.calcGav.args(true).call();
+    const gavPostRedeem2 = await comptrollerProxy.calcGav.call();
     const sharesSupplyNetSharesOutstanding = (await vaultProxy.totalSupply()).sub(
       await vaultProxy.balanceOf(vaultProxy),
     );

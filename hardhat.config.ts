@@ -69,8 +69,6 @@ const config: HardhatUserConfig = {
       'ICERC20',
       'ICEther',
       'ISynthetix',
-      'ISynthetixAddressResolver',
-      'ISynthetixExchangeRates',
       'ISynthetixExchanger',
       'ISynthetixProxyERC20',
       'ISynthetixSynth',

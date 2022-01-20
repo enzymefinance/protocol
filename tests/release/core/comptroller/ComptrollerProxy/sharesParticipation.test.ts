@@ -147,7 +147,6 @@ describe('buyShares', () => {
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver: deployment.assetFinalityResolver,
       deployer,
       dispatcher: deployment.dispatcher,
       externalPositionManager: deployment.externalPositionManager,
@@ -188,8 +187,6 @@ describe('buyShares', () => {
   });
 
   it.todo('does not allow a fund (with a shares action timelock) that is pending a reconfiguration');
-
-  it.todo('does not allow an asset that fails to reach settlement finality (e.g., an unsettleable Synth)');
 
   it('happy path: no fund-level fees, first investment (i.e., no protocol fee)', async () => {
     const {
@@ -232,7 +229,7 @@ describe('buyShares', () => {
     expect(await vaultProxy.totalSupply()).toEqBigNumber(sharesBuyerBalance);
 
     // Assert correct GAV and gross share value calcs
-    expect(await comptrollerProxy.calcGav.args(true).call()).toEqBigNumber(expectedGav);
+    expect(await comptrollerProxy.calcGav.call()).toEqBigNumber(expectedGav);
     expect(await comptrollerProxy.calcGrossShareValue.call()).toEqBigNumber(utils.parseEther('1'));
 
     // Assert the protocol fee payment was attempted
@@ -307,7 +304,7 @@ describe('buyShares', () => {
     expect(expectedProtocolFee).toBeGtBigNumber(0);
     // Share price after the tx is the same as the share price during the time of shares issuance,
     // since protocol fee has already been collected at that time.
-    const sharePrice = await comptrollerProxy.calcGrossShareValue.args(true).call();
+    const sharePrice = await comptrollerProxy.calcGrossShareValue.call();
     const expectedSharesReceived = investmentAmount.mul(utils.parseEther('1')).div(sharePrice);
 
     // Assert shares were minted correctly.
@@ -338,7 +335,6 @@ describe('buyShares', () => {
     });
 
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver: deployment.assetFinalityResolver,
       deployer,
       dispatcher: deployment.dispatcher,
       externalPositionManager: deployment.externalPositionManager,
@@ -736,7 +732,7 @@ describe('redeem', () => {
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
-      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const preTxGav = await comptrollerProxy.calcGav.call();
       const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
 
       // Redeem all of the investor's shares
@@ -763,7 +759,7 @@ describe('redeem', () => {
       );
 
       // Assert that the new GAV is roughly the old gav minus gav owed
-      expect(await comptrollerProxy.calcGav.args(true).call()).toBeAroundBigNumber(preTxGav.sub(gavOwed));
+      expect(await comptrollerProxy.calcGav.call()).toBeAroundBigNumber(preTxGav.sub(gavOwed));
 
       // Assert the redeemer has redeemed all shares
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
@@ -865,7 +861,7 @@ describe('redeem', () => {
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(2);
-      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const preTxGav = await comptrollerProxy.calcGav.call();
       const gavOwed = preTxGav.mul(expectedSharesRedeemed).div(await vaultProxy.totalSupply());
 
       // Redeem all of the investor's shares
@@ -886,7 +882,7 @@ describe('redeem', () => {
 
       // Assert that the new GAV is roughly the old gav minus gav owed
       // The actual GAV will be slightly lower than the expected GAV, due to rounding during the primitive-to-derivative price conversion
-      expect(await comptrollerProxy.calcGav.args(true).call()).toBeAroundBigNumber(preTxGav.sub(gavOwed), 100);
+      expect(await comptrollerProxy.calcGav.call()).toBeAroundBigNumber(preTxGav.sub(gavOwed), 100);
 
       // Assert the recipient has received the expected assets and balances
       expect(await payoutAsset.balanceOf(recipient)).toEqBigNumber(expectedPayoutAmount);
@@ -917,7 +913,7 @@ describe('redeem', () => {
 
       // Calculate the expected shares redeemed and gav owed prior to redemption
       const expectedSharesRedeemed = (await vaultProxy.balanceOf(investor)).div(4);
-      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const preTxGav = await comptrollerProxy.calcGav.call();
       const preTxSharesSupply = await vaultProxy.totalSupply();
 
       // Redeem part of the investor's shares
@@ -1098,7 +1094,7 @@ describe('redeem', () => {
         assets: expectedPayoutAssets,
       });
 
-      const preTxGav = await comptrollerProxy.calcGav.args(true).call();
+      const preTxGav = await comptrollerProxy.calcGav.call();
       expect(preTxGav).toBeGtBigNumber(0);
 
       // Redeem all of investor's shares
@@ -1483,7 +1479,6 @@ describe('sharesActionTimelock', () => {
     const {
       deployer,
       deployment: {
-        assetFinalityResolver,
         externalPositionManager,
         dispatcher,
         feeManager,
@@ -1529,7 +1524,6 @@ describe('sharesActionTimelock', () => {
 
     // Create a new FundDeployer to migrate to
     const nextFundDeployer = await createFundDeployer({
-      assetFinalityResolver,
       deployer,
       dispatcher,
       externalPositionManager,

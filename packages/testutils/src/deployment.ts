@@ -8,7 +8,6 @@ import {
   AllowedDepositRecipientsPolicy,
   AllowedExternalPositionTypesPolicy,
   AllowedSharesTransferRecipientsPolicy,
-  AssetFinalityResolver,
   CompoundAdapter,
   CompoundDebtPositionLib,
   CompoundDebtPositionParser,
@@ -18,7 +17,6 @@ import {
   CurveExchangeAdapter,
   CurveLiquidityAaveAdapter,
   CurveLiquidityAdapter,
-  CurveLiquidityEursAdapter,
   CurveLiquiditySethAdapter,
   CurveLiquidityStethAdapter,
   CurvePriceFeed,
@@ -36,7 +34,6 @@ import {
   FundValueCalculatorRouter,
   FundValueCalculatorUsdWrapper,
   GasRelayPaymasterFactory,
-  GuaranteedRedemptionPolicy,
   IdleAdapter,
   IdlePriceFeed,
   IntegrationManager,
@@ -58,7 +55,6 @@ import {
   RevertingPriceFeed,
   StakehoundEthPriceFeed,
   SynthetixAdapter,
-  SynthetixPriceFeed,
   UniswapV2ExchangeAdapter,
   UniswapV2LiquidityAdapter,
   UniswapV2PoolPriceFeed,
@@ -103,7 +99,6 @@ export async function deployProtocolFixture() {
     allowedDepositRecipientsPolicy: new AllowedDepositRecipientsPolicy(fixture['AllowedDepositRecipientsPolicy'].address, deployer),
     allowedExternalPositionTypesPolicy: new AllowedExternalPositionTypesPolicy(fixture['AllowedExternalPositionTypesPolicy'].address, deployer),
     allowedSharesTransferRecipientsPolicy: new AllowedSharesTransferRecipientsPolicy(fixture['AllowedSharesTransferRecipientsPolicy'].address, deployer),
-    assetFinalityResolver: new AssetFinalityResolver(fixture['AssetFinalityResolver'].address, deployer),
     compoundAdapter: new CompoundAdapter(fixture['CompoundAdapter'].address, deployer),
     compoundDebtPositionLib: new CompoundDebtPositionLib(fixture['CompoundDebtPositionLib'].address, deployer),
     compoundDebtPositionParser: new CompoundDebtPositionParser(fixture['CompoundDebtPositionParser'].address, deployer),
@@ -113,7 +108,6 @@ export async function deployProtocolFixture() {
     curveExchangeAdapter: new CurveExchangeAdapter(fixture['CurveExchangeAdapter'].address, deployer),
     curveLiquidityAaveAdapter: new CurveLiquidityAaveAdapter(fixture['CurveLiquidityAaveAdapter'].address, deployer),
     curveLiquidityAdapter: new CurveLiquidityAdapter(fixture['CurveLiquidityAdapter'].address, deployer),
-    curveLiquidityEursAdapter: new CurveLiquidityEursAdapter(fixture['CurveLiquidityEursAdapter'].address, deployer),
     curveLiquiditySethAdapter: new CurveLiquiditySethAdapter(fixture['CurveLiquiditySethAdapter'].address, deployer),
     curveLiquidityStethAdapter: new CurveLiquidityStethAdapter(fixture['CurveLiquidityStethAdapter'].address, deployer),
     curvePriceFeed: new CurvePriceFeed(fixture['CurvePriceFeed'].address, deployer),
@@ -131,7 +125,6 @@ export async function deployProtocolFixture() {
     fundValueCalculatorRouter: new FundValueCalculatorRouter(fixture['FundValueCalculatorRouter'].address, deployer),
     fundValueCalculatorUsdWrapper: new FundValueCalculatorUsdWrapper(fixture['FundValueCalculatorUsdWrapper'].address, deployer),
     gasRelayPaymasterFactory: new GasRelayPaymasterFactory(fixture['GasRelayPaymasterFactory'].address, deployer),
-    guaranteedRedemptionPolicy: new GuaranteedRedemptionPolicy(fixture['GuaranteedRedemptionPolicy'].address, deployer),
     idleAdapter: new IdleAdapter(fixture['IdleAdapter'].address, deployer),
     idlePriceFeed: new IdlePriceFeed(fixture['IdlePriceFeed'].address, deployer),
     integrationManager: new IntegrationManager(fixture['IntegrationManager'].address, deployer),
@@ -154,7 +147,6 @@ export async function deployProtocolFixture() {
     revertingPriceFeed: new RevertingPriceFeed(fixture['RevertingPriceFeed'].address, deployer),
     stakehoundEthPriceFeed: new StakehoundEthPriceFeed(fixture['StakehoundEthPriceFeed'].address, deployer),
     synthetixAdapter: new SynthetixAdapter(fixture['SynthetixAdapter'].address, deployer),
-    synthetixPriceFeed: new SynthetixPriceFeed(fixture['SynthetixPriceFeed'].address, deployer),
     uniswapV2ExchangeAdapter: new UniswapV2ExchangeAdapter(fixture['UniswapV2ExchangeAdapter'].address, deployer),
     uniswapV2LiquidityAdapter: new UniswapV2LiquidityAdapter(fixture['UniswapV2LiquidityAdapter'].address, deployer),
     uniswapV2PoolPriceFeed: new UniswapV2PoolPriceFeed(fixture['UniswapV2PoolPriceFeed'].address, deployer),
@@ -203,8 +195,6 @@ export interface DeploymentConfig {
   synthetix: {
     snx: string;
     susd: string;
-    synths: Record<string, string>;
-    addressResolver: string;
     delegateApprovals: string;
     originator: string;
     redeemer: string;
@@ -276,10 +266,5 @@ export interface DeploymentConfig {
   zeroex: {
     exchange: string;
     allowedMakers: string[];
-  };
-  policies: {
-    guaranteedRedemption: {
-      redemptionWindowBuffer: number;
-    };
   };
 }

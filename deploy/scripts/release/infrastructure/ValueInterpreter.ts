@@ -63,7 +63,6 @@ const fn: DeployFunction = async function (hre) {
     const lidoStethPriceFeed = await getOrNull('LidoStethPriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
     const stakehoundEthPriceFeed = await getOrNull('StakehoundEthPriceFeed');
-    const synthetixPriceFeed = await getOrNull('SynthetixPriceFeed');
     const yearnVaultV2PriceFeed = await getOrNull('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
@@ -95,9 +94,6 @@ const fn: DeployFunction = async function (hre) {
         ? Object.values(config.poolTogetherV4.ptTokens).map(
             ([ptToken]) => [ptToken, poolTogetherV4PriceFeed.address] as [string, string],
           )
-        : []),
-      ...(synthetixPriceFeed
-        ? Object.values(config.synthetix.synths).map((synth) => [synth, synthetixPriceFeed.address] as [string, string])
         : []),
       ...(yearnVaultV2PriceFeed
         ? Object.values(config.yearn.vaultV2.yVaults).map(

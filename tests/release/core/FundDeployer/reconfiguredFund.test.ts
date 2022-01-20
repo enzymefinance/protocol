@@ -299,7 +299,6 @@ describe('executeReconfiguration', () => {
 
       // Migrate the vaultProxy to a new release
       const nextFundDeployer = await createFundDeployer({
-        assetFinalityResolver: fork.deployment.assetFinalityResolver,
         deployer: fork.deployer,
         dispatcher: fork.deployment.dispatcher,
         externalPositionManager: fork.deployment.externalPositionManager,

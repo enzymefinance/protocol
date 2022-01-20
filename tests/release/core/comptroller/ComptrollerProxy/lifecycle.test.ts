@@ -43,7 +43,6 @@ async function snapshot() {
     mockFeeManager,
     mockIntegrationManager,
     mockPolicyManager,
-    randomAddress(), // AssetFinalityResolver
     deployment.gasRelayPaymasterFactory, // GasRelayPaymasterFactory
     config.primitives.mln,
     config.weth,

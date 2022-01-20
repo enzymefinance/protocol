@@ -146,7 +146,7 @@ describe('derivative gas costs', () => {
     });
 
     // Calc base cost of calcGav with already tracked assets
-    const calcGavBaseGas = (await comptrollerProxy.calcGav(true)).gasUsed;
+    const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed the fund with dai and use to receive an idleToken balance
     const daiAmount = utils.parseEther('1');
@@ -161,9 +161,9 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the idleToken
-    const calcGavWithToken = await comptrollerProxy.calcGav(true);
+    const calcGavWithToken = await comptrollerProxy.calcGav();
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(149918));
+    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(147109));
   });
 });

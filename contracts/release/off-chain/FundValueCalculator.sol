@@ -24,7 +24,6 @@ import "../infrastructure/value-interpreter/ValueInterpreter.sol";
 /// @notice A peripheral contract for serving fund value calculation requests from the FundValueCalculatorRouter
 /// @dev These are convenience functions intended for off-chain consumption,
 /// some of which involve potentially expensive state transitions.
-/// Does not take into account asset finality (e.g., Synths).
 contract FundValueCalculator is IFundValueCalculator {
     using SafeMath for uint256;
 
@@ -171,7 +170,7 @@ contract FundValueCalculator is IFundValueCalculator {
 
         return (
             comptrollerProxyContract.getDenominationAsset(),
-            comptrollerProxyContract.calcGav(false)
+            comptrollerProxyContract.calcGav()
         );
     }
 
@@ -188,7 +187,7 @@ contract FundValueCalculator is IFundValueCalculator {
 
         return (
             comptrollerProxyContract.getDenominationAsset(),
-            comptrollerProxyContract.calcGrossShareValue(false)
+            comptrollerProxyContract.calcGrossShareValue()
         );
     }
 
@@ -234,7 +233,7 @@ contract FundValueCalculator is IFundValueCalculator {
         denominationAsset_ = comptrollerProxyContract.getDenominationAsset();
         netShareValue_ = __calcShareValue(
             denominationAsset_,
-            comptrollerProxyContract.calcGav(false),
+            comptrollerProxyContract.calcGav(),
             ERC20(_vaultProxy).totalSupply().add(protocolFeeSharesDue)
         );
 

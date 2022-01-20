@@ -14,7 +14,6 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
 
-  const assetFinalityResolver = await get('AssetFinalityResolver');
   const dispatcher = await get('Dispatcher');
   const externalPositionManager = await get('ExternalPositionManager');
   const feeManager = await get('FeeManager');
@@ -35,7 +34,6 @@ const fn: DeployFunction = async function (hre) {
       feeManager.address,
       integrationManager.address,
       policyManager.address,
-      assetFinalityResolver.address,
       gasRelayPaymasterFactory?.address ?? constants.AddressZero,
       config.feeToken,
       config.wrappedNativeAsset,
@@ -58,7 +56,6 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'ComptrollerLib'];
 fn.dependencies = [
-  'AssetFinalityResolver',
   'Config',
   'Dispatcher',
   'ExternalPositionManager',

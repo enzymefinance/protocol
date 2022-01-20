@@ -101,51 +101,6 @@ const aggregators = {
   zrx: ['0x2da4983a622a8498bb1a21fae9d8f6c664939962', ChainlinkRateAsset.ETH],
 } as const;
 
-const synths = {
-  iada: '0x8a8079c7149b8a1611e5c5d978dca3be16545f83',
-  ibnb: '0xafd870f32ce54efdbf677466b612bf8ad164454b',
-  ibtc: '0xd6014ea05bde904448b743833ddf07c3c7837481',
-  icex: '0x336213e1ddfc69f4701fc3f86f4ef4a160c1159d',
-  idash: '0xcb98f42221b2c251a4e74a1609722ee09f0cc08e',
-  idefi: '0x14d10003807ac60d07bb0ba82caeac8d2087c157',
-  ieos: '0xf4eebdd0704021ef2a6bbe993fdf93030cd784b4',
-  ietc: '0xd50c1746d835d2770dda3703b69187bffeb14126',
-  ieth: '0xa9859874e1743a32409f75bb11549892138bba1e',
-  ilink: '0x2d7ac061fc3db53c39fe1607fb8cec1b2c162b01',
-  iltc: '0x79da1431150c9b82d2e5dfc1c68b33216846851e',
-  ioil: '0xa5a5df41883cdc00c4ccc6e8097130535399d9a3',
-  itrx: '0xc5807183a9661a533cb08cbc297594a0b864dc12',
-  ixmr: '0x4adf728e2df4945082cdd6053869f51278fae196',
-  ixrp: '0x27269b3e45a4d3e79a3d6bfee0c8fb13d0d711a6',
-  ixtz: '0x8deef89058090ac5655a99eeb451a4f9183d1678',
-  sada: '0xe36e2d3c7c34281fa3bc737950a68571736880a1',
-  saud: '0xF48e200EAF9906362BB1442fca31e0835773b8B4',
-  sbch: '0x36a2422a863d5b950882190ff5433e513413343a',
-  sbnb: '0x617aeCB6137B5108D1E7D4918e3725C8cEbdB848',
-  sbtc: '0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6',
-  scex: '0xeabacd844a196d7faf3ce596edebf9900341b420',
-  schf: '0x0f83287ff768d1c1e17a42f44d644d7f22e8ee1d',
-  sdash: '0xfe33ae95a9f0da8a845af33516edc240dcd711d6',
-  sdefi: '0xe1afe1fd76fd88f78cbf599ea1846231b8ba3b6b',
-  seos: '0x88c8cf3a212c0369698d13fe98fcb76620389841',
-  setc: '0x22602469d704bffb0936c7a7cfcd18f7aa269375',
-  seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb',
-  seur: '0xd71ecff9342a5ced620049e616c5035f1db98620',
-  sftse: '0x23348160d7f5aca21195df2b70f28fce2b0be9fc',
-  sgbp: '0x97fe22e7341a0cd8db6f6c021a24dc8f4dad855f',
-  sjpy: '0xf6b1c627e95bfc3c1b4c9b825a032ff0fbf3e07d',
-  slink: '0xbbc455cb4f1b9e4bfc4b73970d360c8f032efee6',
-  sltc: '0xc14103c2141e842e228fbac594579e798616ce7a',
-  snikkei: '0x757de3ac6b830a931ef178c6634c5c551773155c',
-  soil: '0x6d16cf3ec5f763d4d99cb0b0b110eefd93b11b56',
-  strx: '0xf2e08356588ec5cd9e437552da87c0076b4970b0',
-  sxag: '0x6a22e5e94388464181578aa7a6b869e00fe27846',
-  sxau: '0x261efcdd24cea98652b9700800a13dfbca4103ff',
-  sxmr: '0x5299d6f7472dcc137d7f3c4bcfbbb514babf341a',
-  sxrp: '0xa2b0fde6d710e201d0d608e924a484d1a5fed57c',
-  sxtz: '0x2e59005c5c0f0a4d77cca82653d48b46322ee5cd',
-} as const;
-
 const ctokens = {
   cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
   ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
@@ -232,7 +187,7 @@ const yVaultsV2 = {
 };
 
 const unsupportedAssets = {
-  eurs: '0xdb25f211ab05b1c97d595516f45794528a807ad8',
+  seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb',
 };
 
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
@@ -262,12 +217,6 @@ const mainnetConfig: DeploymentConfig = {
         liquidityGaugeToken: '0xd662908ADA2Ea1916B3318327A97eB18aD588b5d',
         lpToken: '0xFd2a8fA60Abd58Efe3EeE34dd494cD491dC14900',
         pool: '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE'
-      },
-      eurs: {
-        invariantProxyAsset: synths.seur,
-        liquidityGaugeToken: '0x90Bb609649E0451E5aD952683D64BD2d1f245840',
-        lpToken: '0x194eBd173F6cDacE046C53eACcE9B953F28411d1',
-        pool: '0x0Ce6a5fF5217e38315f87032CF90686C96627CAA'
       },
       seth: {
         invariantProxyAsset: weth,
@@ -319,11 +268,6 @@ const mainnetConfig: DeploymentConfig = {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     tokenTransferProxy: '0x216B4B4Ba9F3e719726886d34a177484278Bfcae',
   },
-  policies: {
-    guaranteedRedemption: {
-      redemptionWindowBuffer: 300,
-    },
-  },
   poolTogetherV4: {
     ptTokens: {
       ptUsdc: ["0xdd4d117723C257CEe402285D3aCF218E9A8236E1", primitives.usdc] as [string, string]
@@ -335,13 +279,11 @@ const mainnetConfig: DeploymentConfig = {
     steth: '0xdfe66b14d37c77f4e9b180ceb433d1b164f0281d'
   },
   synthetix: {
-    addressResolver: '0x4E3b31eB0E5CB73641EE1E65E7dCEFe520bA3ef2',
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',
     redeemer: '0xe533139Af961c9747356D947838c98451015e234',
     snx: primitives.snx,
     susd: primitives.susd,
-    synths,
     trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
   },
   uniswap: {

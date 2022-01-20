@@ -30,36 +30,36 @@ const tempTolerance = 10000;
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 358258,
-    weth: 334870,
+    usdc: 345570,
+    weth: 322182,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 374446,
-    weth: 357777,
+    usdc: 361861,
+    weth: 345182,
   },
   'buy shares: max assets': {
-    usdc: 1350862,
-    weth: 1251757,
+    usdc: 1235426,
+    weth: 1136341,
   },
   'calc gav: 20 assets': {
-    usdc: 1044712,
-    weth: 958634,
+    usdc: 929199,
+    weth: 843121,
   },
   'calc gav: denomination asset only': {
-    usdc: 79832,
-    weth: 70297,
+    usdc: 66825,
+    weth: 57286,
   },
   'create fund': {
     usdc: 898369,
     weth: 887852,
   },
   'redeem all shares: max assets': {
-    usdc: 1985478,
-    weth: 1912745,
+    usdc: 1892922,
+    weth: 1820234,
   },
   'redeem partial shares: max assets': {
-    usdc: 2474210,
-    weth: 2379076,
+    usdc: 2381778,
+    weth: 2286634,
   },
   'trade on Uniswap: max assets': {
     usdc: 255482,
@@ -188,7 +188,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it('calculates the GAV of the fund with only the denomination asset', async () => {
-      const calcGavTx = await comptrollerProxy.calcGav(true);
+      const calcGavTx = await comptrollerProxy.calcGav();
 
       expect(calcGavTx).toCostAround(expectedGasCosts['calc gav: denomination asset only'][denominationAssetId]);
     });
@@ -261,7 +261,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     it('calculates the GAV of the fund with 20 assets', async () => {
       expect((await vaultProxy.getTrackedAssets()).length).toBe(20);
 
-      const calcGavTx = await comptrollerProxy.calcGav(true);
+      const calcGavTx = await comptrollerProxy.calcGav();
 
       expect(calcGavTx).toCostAround(expectedGasCosts['calc gav: 20 assets'][denominationAssetId]);
     });
@@ -282,7 +282,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it("sends an asset amount to the fund's vault", async () => {
-      const gavBefore = await comptrollerProxy.calcGav.args(true).call();
+      const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
       const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
@@ -290,7 +290,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await dai.transfer(vaultProxy, amount);
 
-      const gavAfter = await comptrollerProxy.calcGav.args(true).call();
+      const gavAfter = await comptrollerProxy.calcGav.args().call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
       expect(gavAfter).toBeGtBigNumber(gavBefore);
@@ -319,7 +319,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it("sends an asset amount to the fund's vault again", async () => {
-      const gavBefore = await comptrollerProxy.calcGav.args(true).call();
+      const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
       const zrx = new StandardToken(fork.config.primitives.zrx, whales.zrx);
@@ -327,7 +327,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       await zrx.transfer(vaultProxy, amount);
 
-      const gavAfter = await comptrollerProxy.calcGav.args(true).call();
+      const gavAfter = await comptrollerProxy.calcGav.args().call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
       expect(gavAfter).toBeGtBigNumber(gavBefore);
