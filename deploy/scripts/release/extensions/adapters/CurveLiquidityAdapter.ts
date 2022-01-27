@@ -17,9 +17,9 @@ const fn: DeployFunction = async function (hre) {
     args: [
       integrationManager.address,
       config.curve.addressProvider,
+      config.wrappedNativeAsset,
       config.curve.minter,
       config.primitives.crv,
-      config.wrappedNativeAsset,
     ] as CurveLiquidityAdapterArgs,
     from: deployer.address,
     linkedData: {

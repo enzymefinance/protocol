@@ -1,5 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, CurveLiquidityAdapter, IntegrationManager, VaultLib } from '@enzymefinance/protocol';
 import {
   claimRewardsSelector,
@@ -37,7 +38,6 @@ import {
   getAssetUnit,
   vaultCallCurveMinterToggleApproveMint,
 } from '@enzymefinance/testutils';
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BigNumber } from 'ethers';
 import { constants, utils } from 'ethers';
 
@@ -55,7 +55,7 @@ describe('constructor', () => {
     // AdapterBase
     expect(await curveLiquidityAdapter.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
 
-    // CurveGaugeV2RewardsHandlerBase
+    // CurveGaugeV2RewardsHandlerMixin
     expect(await curveLiquidityAdapter.getCurveGaugeV2RewardsHandlerCrvToken()).toMatchAddress(
       fork.config.primitives.crv,
     );
@@ -151,14 +151,14 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const aDaiAmount = 123;
       const aUsdtAmount = 456;
-      const minIncomingGaugeTokenAmount = 789;
+      const minIncomingStakingTokenAmount = 789;
 
       const result = await curveLiquidityAdapter.parseAssetsForAction(
         randomAddress(),
         lendAndStakeSelector,
         curveLendAndStakeArgs({
-          incomingGaugeToken: gaugeToken,
-          minIncomingGaugeTokenAmount,
+          incomingStakingToken: gaugeToken,
+          minIncomingStakingTokenAmount,
           orderedOutgoingAssetAmounts: [aDaiAmount, 0, aUsdtAmount],
           pool,
           useUnderlyings: false,
@@ -167,7 +167,7 @@ describe('parseAssetsForAction', () => {
 
       expect(result).toMatchFunctionOutput(curveLiquidityAdapter.parseAssetsForAction, {
         incomingAssets_: [gaugeToken],
-        minIncomingAssetAmounts_: [minIncomingGaugeTokenAmount],
+        minIncomingAssetAmounts_: [minIncomingStakingTokenAmount],
         spendAssetAmounts_: [aDaiAmount, aUsdtAmount],
         spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
         spendAssets_: [aDai, aUsdt],
@@ -305,7 +305,7 @@ describe('parseAssetsForAction', () => {
         stakeSelector,
         curveStakeArgs({
           amount,
-          incomingGaugeToken: gaugeToken,
+          incomingStakingToken: gaugeToken,
           pool,
         }),
       );
@@ -331,7 +331,7 @@ describe('parseAssetsForAction', () => {
         unstakeSelector,
         curveUnstakeArgs({
           amount,
-          outgoingGaugeToken: gaugeToken,
+          outgoingStakingToken: gaugeToken,
           pool,
         }),
       );
@@ -351,7 +351,7 @@ describe('parseAssetsForAction', () => {
 
     describe('RedeemType.Standard', () => {
       it('no underlyings: generates expected output', async () => {
-        const outgoingGaugeTokenAmount = 789;
+        const outgoingStakingTokenAmount = 789;
         const orderedMinIncomingAssetAmounts = [123, 0, 234];
 
         const result = await curveLiquidityAdapter.parseAssetsForAction(
@@ -361,8 +361,8 @@ describe('parseAssetsForAction', () => {
             incomingAssetData: curveIncomingAssetsDataRedeemStandardArgs({
               orderedMinIncomingAssetAmounts,
             }),
-            outgoingGaugeToken: gaugeToken,
-            outgoingGaugeTokenAmount,
+            outgoingStakingToken: gaugeToken,
+            outgoingStakingTokenAmount,
             pool,
             redeemType: CurveRedeemType.Standard,
             useUnderlyings: false,
@@ -372,14 +372,14 @@ describe('parseAssetsForAction', () => {
         expect(result).toMatchFunctionOutput(curveLiquidityAdapter.parseAssetsForAction, {
           incomingAssets_: orderedPoolAssets,
           minIncomingAssetAmounts_: orderedMinIncomingAssetAmounts,
-          spendAssetAmounts_: [outgoingGaugeTokenAmount],
+          spendAssetAmounts_: [outgoingStakingTokenAmount],
           spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
           spendAssets_: [gaugeToken],
         });
       });
 
       it('underlyings: generates expected output', async () => {
-        const outgoingGaugeTokenAmount = 789;
+        const outgoingStakingTokenAmount = 789;
         const orderedMinIncomingAssetAmounts = [123, 0, 234];
 
         const result = await curveLiquidityAdapter.parseAssetsForAction(
@@ -389,8 +389,8 @@ describe('parseAssetsForAction', () => {
             incomingAssetData: curveIncomingAssetsDataRedeemStandardArgs({
               orderedMinIncomingAssetAmounts,
             }),
-            outgoingGaugeToken: gaugeToken,
-            outgoingGaugeTokenAmount,
+            outgoingStakingToken: gaugeToken,
+            outgoingStakingTokenAmount,
             pool,
             redeemType: CurveRedeemType.Standard,
             useUnderlyings: true,
@@ -400,7 +400,7 @@ describe('parseAssetsForAction', () => {
         expect(result).toMatchFunctionOutput(curveLiquidityAdapter.parseAssetsForAction, {
           incomingAssets_: orderedPoolUnderlyings,
           minIncomingAssetAmounts_: orderedMinIncomingAssetAmounts,
-          spendAssetAmounts_: [outgoingGaugeTokenAmount],
+          spendAssetAmounts_: [outgoingStakingTokenAmount],
           spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
           spendAssets_: [gaugeToken],
         });
@@ -409,7 +409,7 @@ describe('parseAssetsForAction', () => {
 
     describe('RedeemType.OneCoin', () => {
       it('no underlyings: generates expected output', async () => {
-        const outgoingGaugeTokenAmount = 789;
+        const outgoingStakingTokenAmount = 789;
         const minIncomingAssetAmount = 123;
 
         const result = await curveLiquidityAdapter.parseAssetsForAction(
@@ -420,8 +420,8 @@ describe('parseAssetsForAction', () => {
               incomingAssetPoolIndex: 1, // aUSDC
               minIncomingAssetAmount,
             }),
-            outgoingGaugeToken: gaugeToken,
-            outgoingGaugeTokenAmount,
+            outgoingStakingToken: gaugeToken,
+            outgoingStakingTokenAmount,
             pool,
             redeemType: CurveRedeemType.OneCoin,
             useUnderlyings: false,
@@ -431,14 +431,14 @@ describe('parseAssetsForAction', () => {
         expect(result).toMatchFunctionOutput(curveLiquidityAdapter.parseAssetsForAction, {
           incomingAssets_: [aUsdc],
           minIncomingAssetAmounts_: [minIncomingAssetAmount],
-          spendAssetAmounts_: [outgoingGaugeTokenAmount],
+          spendAssetAmounts_: [outgoingStakingTokenAmount],
           spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
           spendAssets_: [gaugeToken],
         });
       });
 
       it('underlyings: generates expected output', async () => {
-        const outgoingGaugeTokenAmount = 789;
+        const outgoingStakingTokenAmount = 789;
         const minIncomingAssetAmount = 123;
 
         const result = await curveLiquidityAdapter.parseAssetsForAction(
@@ -449,8 +449,8 @@ describe('parseAssetsForAction', () => {
               incomingAssetPoolIndex: 1, // aUSDC
               minIncomingAssetAmount,
             }),
-            outgoingGaugeToken: gaugeToken,
-            outgoingGaugeTokenAmount,
+            outgoingStakingToken: gaugeToken,
+            outgoingStakingTokenAmount,
             pool,
             redeemType: CurveRedeemType.OneCoin,
             useUnderlyings: true,
@@ -460,7 +460,7 @@ describe('parseAssetsForAction', () => {
         expect(result).toMatchFunctionOutput(curveLiquidityAdapter.parseAssetsForAction, {
           incomingAssets_: [usdc],
           minIncomingAssetAmounts_: [minIncomingAssetAmount],
-          spendAssetAmounts_: [outgoingGaugeTokenAmount],
+          spendAssetAmounts_: [outgoingStakingTokenAmount],
           spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
           spendAssets_: [gaugeToken],
         });
@@ -510,7 +510,7 @@ describe('actions', () => {
       await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeToken,
+        incomingStakingToken: gaugeToken,
         integrationManager,
         orderedOutgoingAssetAmounts: [wethLendAmount, 0],
         pool,
@@ -538,8 +538,8 @@ describe('actions', () => {
         comptrollerProxy,
         curveLiquidityAdapter,
         fundOwner,
-        gaugeToken,
         integrationManager,
+        stakingToken: gaugeToken,
       });
 
       // Assert vault balances of reward tokens have increased
@@ -686,7 +686,7 @@ describe('actions', () => {
       await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeToken,
+        incomingStakingToken: gaugeToken,
         integrationManager,
         orderedOutgoingAssetAmounts: [wethAmount, stethAmount],
         pool,
@@ -1039,7 +1039,7 @@ describe('actions', () => {
         amount: preStakeLpTokenBalance,
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeToken,
+        incomingStakingToken: gaugeToken,
         integrationManager,
         pool,
         signer: fundOwner,
@@ -1074,7 +1074,7 @@ describe('actions', () => {
       await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeToken,
+        incomingStakingToken: gaugeToken,
         integrationManager,
         orderedOutgoingAssetAmounts: [wethSeedAmount, stethSeedAmount],
         pool,
@@ -1090,7 +1090,7 @@ describe('actions', () => {
         comptrollerProxy,
         curveLiquidityAdapter,
         integrationManager,
-        outgoingGaugeToken: gaugeToken,
+        outgoingStakingToken: gaugeToken,
         pool,
         signer: fundOwner,
       });
@@ -1124,7 +1124,7 @@ describe('actions', () => {
       await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeToken,
+        incomingStakingToken: gaugeToken,
         integrationManager,
         orderedOutgoingAssetAmounts: [wethSeedAmount, 0],
         pool,
@@ -1136,7 +1136,7 @@ describe('actions', () => {
         account: vaultProxy,
         assets: [gaugeToken, weth, steth],
       });
-      const outgoingGaugeTokenAmount = preTxGaugeTokenBalance.div(4);
+      const outgoingStakingTokenAmount = preTxGaugeTokenBalance.div(4);
 
       await curveUnstakeAndRedeem({
         comptrollerProxy,
@@ -1145,8 +1145,8 @@ describe('actions', () => {
           orderedMinIncomingAssetAmounts: [0, 0],
         }),
         integrationManager,
-        outgoingGaugeToken: gaugeToken,
-        outgoingGaugeTokenAmount,
+        outgoingStakingToken: gaugeToken,
+        outgoingStakingTokenAmount,
         pool,
         redeemType: CurveRedeemType.Standard,
         signer: fundOwner,
@@ -1158,7 +1158,7 @@ describe('actions', () => {
         assets: [gaugeToken, weth, steth],
       });
 
-      expect(postTxGaugeTokenBalance).toEqBigNumber(preTxGaugeTokenBalance.sub(outgoingGaugeTokenAmount));
+      expect(postTxGaugeTokenBalance).toEqBigNumber(preTxGaugeTokenBalance.sub(outgoingStakingTokenAmount));
 
       // All of the incoming asset balances should have increased
       expect(postTxWethBalance).toBeGtBigNumber(preTxWethBalance);

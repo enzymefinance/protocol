@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../utils/actions/CurveGaugeV2RewardsHandlerBase.sol";
+import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
 import "../utils/actions/CurveStethLiquidityActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 
@@ -15,7 +15,7 @@ import "../utils/AdapterBase.sol";
 /// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 contract CurveLiquidityStethAdapter is
     AdapterBase,
-    CurveGaugeV2RewardsHandlerBase,
+    CurveGaugeV2RewardsHandlerMixin,
     CurveStethLiquidityActionsMixin
 {
     address private immutable LIQUIDITY_GAUGE_TOKEN;
@@ -34,7 +34,7 @@ contract CurveLiquidityStethAdapter is
     )
         public
         AdapterBase(_integrationManager)
-        CurveGaugeV2RewardsHandlerBase(_minter, _crvToken)
+        CurveGaugeV2RewardsHandlerMixin(_minter, _crvToken)
         CurveStethLiquidityActionsMixin(_pool, _stethToken, _wethToken)
     {
         LIQUIDITY_GAUGE_TOKEN = _liquidityGaugeToken;

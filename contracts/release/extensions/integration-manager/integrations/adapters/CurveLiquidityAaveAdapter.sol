@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 import "../utils/actions/CurveAaveLiquidityActionsMixin.sol";
-import "../utils/actions/CurveGaugeV2RewardsHandlerBase.sol";
+import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
 import "../utils/AdapterBase.sol";
 
 /// @title CurveLiquidityAaveAdapter Contract
@@ -15,7 +15,7 @@ import "../utils/AdapterBase.sol";
 /// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 contract CurveLiquidityAaveAdapter is
     AdapterBase,
-    CurveGaugeV2RewardsHandlerBase,
+    CurveGaugeV2RewardsHandlerMixin,
     CurveAaveLiquidityActionsMixin
 {
     address private immutable AAVE_DAI_TOKEN;
@@ -42,7 +42,7 @@ contract CurveLiquidityAaveAdapter is
         public
         AdapterBase(_integrationManager)
         CurveAaveLiquidityActionsMixin(_pool, _aaveTokens, _underlyingTokens)
-        CurveGaugeV2RewardsHandlerBase(_minter, _crvToken)
+        CurveGaugeV2RewardsHandlerMixin(_minter, _crvToken)
     {
         AAVE_DAI_TOKEN = _aaveTokens[0];
         AAVE_USDC_TOKEN = _aaveTokens[1];

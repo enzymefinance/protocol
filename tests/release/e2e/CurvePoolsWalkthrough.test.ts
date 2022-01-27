@@ -242,7 +242,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         amount: stakeAmount,
         comptrollerProxy,
         curveLiquidityAdapter,
-        incomingGaugeToken: gaugeTokenAddress,
+        incomingStakingToken: gaugeTokenAddress,
         integrationManager,
         pool: poolInfo[poolKey].poolAddress,
         signer: fundOwner,
@@ -263,7 +263,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         comptrollerProxy,
         curveLiquidityAdapter,
         integrationManager,
-        outgoingGaugeToken: gaugeTokenAddress,
+        outgoingStakingToken: gaugeTokenAddress,
         pool: poolInfo[poolKey].poolAddress,
         signer: fundOwner,
       });
@@ -284,8 +284,8 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         comptrollerProxy,
         curveLiquidityAdapter,
         fundOwner,
-        gaugeToken: gaugeTokenAddress,
         integrationManager,
+        stakingToken: gaugeTokenAddress,
       });
     }
   });

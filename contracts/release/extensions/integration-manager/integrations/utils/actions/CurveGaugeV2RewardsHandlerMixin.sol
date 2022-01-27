@@ -15,11 +15,11 @@ import "../../../../../interfaces/ICurveMinter.sol";
 import "../../../../../utils/AddressArrayLib.sol";
 import "./CurveGaugeV2ActionsMixin.sol";
 
-/// @title CurveGaugeV2RewardsHandlerBase Contract
+/// @title CurveGaugeV2RewardsHandlerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Base contract for handling claiming and reinvesting rewards for a Curve pool
+/// @notice Mixin contract for handling claiming and reinvesting rewards for a Curve pool
 /// that uses the LiquidityGaugeV2 contract
-abstract contract CurveGaugeV2RewardsHandlerBase is CurveGaugeV2ActionsMixin {
+abstract contract CurveGaugeV2RewardsHandlerMixin is CurveGaugeV2ActionsMixin {
     using AddressArrayLib for address[];
 
     address private immutable CURVE_GAUGE_V2_REWARDS_HANDLER_CRV_TOKEN;

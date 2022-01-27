@@ -31,8 +31,8 @@ export enum CurveRedeemType {
   OneCoin = '1',
 }
 
-export function curveClaimRewardsArgs({ gaugeToken }: { gaugeToken: AddressLike }) {
-  return encodeArgs(['address'], [gaugeToken]);
+export function curveClaimRewardsArgs({ stakingToken }: { stakingToken: AddressLike }) {
+  return encodeArgs(['address'], [stakingToken]);
 }
 
 export function curveIncomingAssetsDataRedeemOneCoinArgs({
@@ -56,19 +56,19 @@ export function curveIncomingAssetsDataRedeemStandardArgs({
 export function curveLendAndStakeArgs({
   pool,
   orderedOutgoingAssetAmounts,
-  incomingGaugeToken,
-  minIncomingGaugeTokenAmount,
+  incomingStakingToken,
+  minIncomingStakingTokenAmount,
   useUnderlyings,
 }: {
   pool: AddressLike;
   orderedOutgoingAssetAmounts: BigNumberish[];
-  incomingGaugeToken: AddressLike;
-  minIncomingGaugeTokenAmount: BigNumberish;
+  incomingStakingToken: AddressLike;
+  minIncomingStakingTokenAmount: BigNumberish;
   useUnderlyings: boolean;
 }) {
   return encodeArgs(
     ['address', 'uint256[]', 'address', 'uint256', 'bool'],
-    [pool, orderedOutgoingAssetAmounts, incomingGaugeToken, minIncomingGaugeTokenAmount, useUnderlyings],
+    [pool, orderedOutgoingAssetAmounts, incomingStakingToken, minIncomingStakingTokenAmount, useUnderlyings],
   );
 }
 
@@ -110,47 +110,47 @@ export function curveRedeemArgs({
 
 export function curveStakeArgs({
   pool,
-  incomingGaugeToken,
+  incomingStakingToken,
   amount,
 }: {
   pool: AddressLike;
-  incomingGaugeToken: AddressLike;
+  incomingStakingToken: AddressLike;
   amount: BigNumberish;
 }) {
-  return encodeArgs(['address', 'address', 'uint256'], [pool, incomingGaugeToken, amount]);
+  return encodeArgs(['address', 'address', 'uint256'], [pool, incomingStakingToken, amount]);
 }
 
 export function curveUnstakeAndRedeemArgs({
   pool,
-  outgoingGaugeToken,
-  outgoingGaugeTokenAmount,
+  outgoingStakingToken,
+  outgoingStakingTokenAmount,
   useUnderlyings,
   redeemType,
   incomingAssetData,
 }: {
   pool: AddressLike;
-  outgoingGaugeToken: AddressLike;
-  outgoingGaugeTokenAmount: BigNumberish;
+  outgoingStakingToken: AddressLike;
+  outgoingStakingTokenAmount: BigNumberish;
   useUnderlyings: boolean;
   redeemType: CurveRedeemType;
   incomingAssetData: BytesLike;
 }) {
   return encodeArgs(
     ['address', 'address', 'uint256', 'bool', 'uint8', 'bytes'],
-    [pool, outgoingGaugeToken, outgoingGaugeTokenAmount, useUnderlyings, redeemType, incomingAssetData],
+    [pool, outgoingStakingToken, outgoingStakingTokenAmount, useUnderlyings, redeemType, incomingAssetData],
   );
 }
 
 export function curveUnstakeArgs({
   pool,
-  outgoingGaugeToken,
+  outgoingStakingToken,
   amount,
 }: {
   pool: AddressLike;
-  outgoingGaugeToken: AddressLike;
+  outgoingStakingToken: AddressLike;
   amount: BigNumberish;
 }) {
-  return encodeArgs(['address', 'address', 'uint256'], [pool, outgoingGaugeToken, amount]);
+  return encodeArgs(['address', 'address', 'uint256'], [pool, outgoingStakingToken, amount]);
 }
 
 // aave pool

@@ -139,17 +139,17 @@ export function curveClaimRewards({
   integrationManager,
   fundOwner,
   curveLiquidityAdapter,
-  gaugeToken,
+  stakingToken,
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   curveLiquidityAdapter: CurveLiquidityAdapter;
-  gaugeToken: AddressLike;
+  stakingToken: AddressLike;
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAdapter,
-    encodedCallArgs: curveClaimRewardsArgs({ gaugeToken }),
+    encodedCallArgs: curveClaimRewardsArgs({ stakingToken }),
     selector: claimRewardsSelector,
   });
 
@@ -200,8 +200,8 @@ export async function curveLendAndStake({
   curveLiquidityAdapter,
   pool,
   orderedOutgoingAssetAmounts,
-  incomingGaugeToken,
-  minIncomingGaugeTokenAmount = BigNumber.from(1),
+  incomingStakingToken,
+  minIncomingStakingTokenAmount = BigNumber.from(1),
   useUnderlyings,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -210,15 +210,15 @@ export async function curveLendAndStake({
   curveLiquidityAdapter: CurveLiquidityAdapter;
   pool: AddressLike;
   orderedOutgoingAssetAmounts: BigNumberish[];
-  incomingGaugeToken: AddressLike;
-  minIncomingGaugeTokenAmount?: BigNumberish;
+  incomingStakingToken: AddressLike;
+  minIncomingStakingTokenAmount?: BigNumberish;
   useUnderlyings: boolean;
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAdapter,
     encodedCallArgs: curveLendAndStakeArgs({
-      incomingGaugeToken,
-      minIncomingGaugeTokenAmount,
+      incomingStakingToken,
+      minIncomingStakingTokenAmount,
       orderedOutgoingAssetAmounts,
       pool,
       useUnderlyings,
@@ -275,7 +275,7 @@ export async function curveStake({
   signer,
   curveLiquidityAdapter,
   pool,
-  incomingGaugeToken,
+  incomingStakingToken,
   amount,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -283,14 +283,14 @@ export async function curveStake({
   signer: SignerWithAddress;
   curveLiquidityAdapter: CurveLiquidityAdapter;
   pool: AddressLike;
-  incomingGaugeToken: AddressLike;
+  incomingStakingToken: AddressLike;
   amount: BigNumberish;
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAdapter,
     encodedCallArgs: curveStakeArgs({
       amount,
-      incomingGaugeToken,
+      incomingStakingToken,
       pool,
     }),
     selector: stakeSelector,
@@ -307,7 +307,7 @@ export async function curveUnstake({
   signer,
   curveLiquidityAdapter,
   pool,
-  outgoingGaugeToken,
+  outgoingStakingToken,
   amount,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -315,14 +315,14 @@ export async function curveUnstake({
   signer: SignerWithAddress;
   curveLiquidityAdapter: CurveLiquidityAdapter;
   pool: AddressLike;
-  outgoingGaugeToken: AddressLike;
+  outgoingStakingToken: AddressLike;
   amount: BigNumberish;
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: curveLiquidityAdapter,
     encodedCallArgs: curveUnstakeArgs({
       amount,
-      outgoingGaugeToken,
+      outgoingStakingToken,
       pool,
     }),
     selector: unstakeSelector,
@@ -339,8 +339,8 @@ export async function curveUnstakeAndRedeem({
   signer,
   curveLiquidityAdapter,
   pool,
-  outgoingGaugeToken,
-  outgoingGaugeTokenAmount,
+  outgoingStakingToken,
+  outgoingStakingTokenAmount,
   useUnderlyings,
   redeemType,
   incomingAssetData,
@@ -350,8 +350,8 @@ export async function curveUnstakeAndRedeem({
   signer: SignerWithAddress;
   curveLiquidityAdapter: CurveLiquidityAdapter;
   pool: AddressLike;
-  outgoingGaugeToken: StandardToken;
-  outgoingGaugeTokenAmount: BigNumberish;
+  outgoingStakingToken: StandardToken;
+  outgoingStakingTokenAmount: BigNumberish;
   useUnderlyings: boolean;
   redeemType: CurveRedeemType;
   incomingAssetData: BytesLike;
@@ -360,8 +360,8 @@ export async function curveUnstakeAndRedeem({
     adapter: curveLiquidityAdapter,
     encodedCallArgs: curveUnstakeAndRedeemArgs({
       incomingAssetData,
-      outgoingGaugeToken,
-      outgoingGaugeTokenAmount,
+      outgoingStakingToken,
+      outgoingStakingTokenAmount,
       pool,
       redeemType,
       useUnderlyings,
