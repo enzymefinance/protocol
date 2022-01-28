@@ -2,8 +2,6 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExternalPositionFactory, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
-  encodeArgs,
-  ExternalPositionManagerActionId,
   mockGenericExternalPositionActionArgs,
   MockGenericExternalPositionActionId,
   MockGenericExternalPositionLib,
@@ -12,7 +10,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
-import { callOnExternalPosition } from './actions';
+import { callOnExternalPosition, createExternalPosition } from './actions';
 
 export async function createMockExternalPosition({
   comptrollerProxy,
@@ -54,13 +52,12 @@ export async function createMockExternalPosition({
     [mockExternalPositionParser],
   );
 
-  const receipt = await comptrollerProxy
-    .connect(fundOwner)
-    .callOnExtension(
-      externalPositionManager,
-      ExternalPositionManagerActionId.CreateExternalPosition,
-      encodeArgs(['uint256', 'bytes'], [typeId, '0x']),
-    );
+  const receipt = await createExternalPosition({
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionTypeId: typeId,
+    signer: fundOwner,
+  });
 
   const externalPositionProxy = (await vaultProxy.getActiveExternalPositions())[0];
 

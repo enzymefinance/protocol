@@ -4,7 +4,6 @@ import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
   callOnExternalPositionArgs,
-  encodeArgs,
   ExternalPositionManagerActionId,
   ExternalPositionType,
   UniswapV3LiquidityPositionActionId,
@@ -14,9 +13,10 @@ import {
   uniswapV3LiquidityPositionMintArgs,
   uniswapV3LiquidityPositionPurgeArgs,
   uniswapV3LiquidityPositionRemoveLiquidityArgs,
-  VaultLib,
 } from '@enzymefinance/protocol';
-import type { BigNumber, BigNumberish } from 'ethers';
+import type { BigNumber, BigNumberish, BytesLike } from 'ethers';
+
+import { createExternalPosition } from './actions';
 
 export enum UniswapV3FeeAmount {
   LOW = 500,
@@ -57,24 +57,22 @@ export async function createUniswapV3LiquidityPosition({
   signer,
   comptrollerProxy,
   externalPositionManager,
+  callOnExternalPositionData = '0x',
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
+  callOnExternalPositionData?: BytesLike;
 }) {
-  const receipt = await comptrollerProxy
-    .connect(signer)
-    .callOnExtension(
-      externalPositionManager,
-      ExternalPositionManagerActionId.CreateExternalPosition,
-      encodeArgs(['uint256', 'bytes'], [ExternalPositionType.UniswapV3LiquidityPosition, '0x']),
-    );
+  const { externalPositionProxy: externalPositionProxyContract, receipt } = await createExternalPosition({
+    callOnExternalPositionData,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionTypeId: ExternalPositionType.UniswapV3LiquidityPosition,
+    signer,
+  });
 
-  const vaultProxy = new VaultLib(await comptrollerProxy.getVaultProxy(), signer);
-  const externalPositions = await vaultProxy.getActiveExternalPositions.call();
-  const externalPositionProxyAddress = externalPositions[externalPositions.length - 1];
-
-  return { externalPositionProxyAddress, receipt };
+  return { externalPositionProxyAddress: externalPositionProxyContract.address, receipt };
 }
 
 export async function uniswapV3LiquidityPositionAddLiquidity({

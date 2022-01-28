@@ -44,19 +44,24 @@ export async function createExternalPosition({
   externalPositionManager,
   externalPositionTypeId,
   initializationData = '0x',
+  callOnExternalPositionData = '0x',
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   externalPositionTypeId: BigNumberish;
   initializationData?: BytesLike;
+  callOnExternalPositionData?: BytesLike;
 }) {
   const receipt = await comptrollerProxy
     .connect(signer)
     .callOnExtension(
       externalPositionManager,
       ExternalPositionManagerActionId.CreateExternalPosition,
-      encodeArgs(['uint256', 'bytes'], [externalPositionTypeId, initializationData]),
+      encodeArgs(
+        ['uint256', 'bytes', 'bytes'],
+        [externalPositionTypeId, initializationData, callOnExternalPositionData],
+      ),
     );
 
   const event = extractEvent(receipt, externalPositionManager.abi.getEvent('ExternalPositionDeployedForFund'));

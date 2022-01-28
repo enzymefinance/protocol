@@ -1,7 +1,14 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
-import { MAX_UINT128, StandardToken, UniswapV3LiquidityPositionLib } from '@enzymefinance/protocol';
+import {
+  callOnExternalPositionArgs,
+  MAX_UINT128,
+  StandardToken,
+  UniswapV3LiquidityPositionActionId,
+  UniswapV3LiquidityPositionLib,
+  uniswapV3LiquidityPositionMintArgs,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -52,6 +59,78 @@ describe('init', () => {
     });
 
     expect(receipt).toCostAround(477927);
+  });
+
+  it('can create and Mint in same tx', async () => {
+    const nftManager = new IUniswapV3NonFungibleTokenManager(
+      fork.config.uniswapV3.nonFungiblePositionManager,
+      provider,
+    );
+    const token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const token1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const fee = UniswapV3FeeAmount.LOW;
+    const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
+    const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
+    const amount0Desired = await getAssetUnit(token0);
+    const amount1Desired = await getAssetUnit(token1);
+
+    // Seed fund with tokens
+    await token0.transfer(vaultProxy, amount0Desired);
+    await token1.transfer(vaultProxy, amount1Desired);
+
+    // Define Mint action calldata
+    const actionArgs = uniswapV3LiquidityPositionMintArgs({
+      amount0Desired,
+      amount0Min: 1,
+      amount1Desired,
+      amount1Min: 1,
+      fee,
+      tickLower,
+      tickUpper,
+      token0,
+      token1,
+    });
+
+    // Uses externalPositionProxy = AddressZero since this value is ignored
+    const callOnExternalPositionData = callOnExternalPositionArgs({
+      actionArgs,
+      actionId: UniswapV3LiquidityPositionActionId.Mint,
+      externalPositionProxy: constants.AddressZero,
+    });
+
+    // Create external position with bundled first action
+    const uniswapV3LiquidityPositionAddress = (
+      await createUniswapV3LiquidityPosition({
+        callOnExternalPositionData,
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+      })
+    ).externalPositionProxyAddress;
+    const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
+
+    // NFT should have been created
+    const nftIds = await uniswapV3LiquidityPosition.getNftIds();
+    expect(nftIds.length).toBe(1);
+    const nftId = nftIds[0];
+
+    // Assert the NFT position was created correctly in Uniswap
+    const positions = await nftManager.positions(nftId);
+    expect(positions).toMatchFunctionOutput(nftManager.positions, {
+      fee,
+      feeGrowthInside0LastX128: 0,
+      feeGrowthInside1LastX128: 0,
+      liquidity: expect.anything(),
+      nonce: expect.anything(),
+      operator: constants.AddressZero,
+      tickLower,
+      tickUpper,
+      token0,
+      token1,
+      tokensOwed0: 0,
+      tokensOwed1: 0,
+    });
+    expect(positions.liquidity).toBeGtBigNumber(0);
   });
 });
 

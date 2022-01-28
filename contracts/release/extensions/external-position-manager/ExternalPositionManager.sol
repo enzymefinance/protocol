@@ -108,7 +108,18 @@ contract ExternalPositionManager is
         if (_actionId == uint256(ExternalPositionManagerActions.CreateExternalPosition)) {
             __createExternalPosition(_caller, comptrollerProxy, vaultProxy, _callArgs);
         } else if (_actionId == uint256(ExternalPositionManagerActions.CallOnExternalPosition)) {
-            __executeCallOnExternalPosition(_caller, comptrollerProxy, _callArgs);
+            (
+                address externalPosition,
+                uint256 actionId,
+                bytes memory actionArgs
+            ) = __decodeCallOnExternalPositionCallArgs(_callArgs);
+            __executeCallOnExternalPosition(
+                _caller,
+                comptrollerProxy,
+                externalPosition,
+                actionId,
+                actionArgs
+            );
         } else if (_actionId == uint256(ExternalPositionManagerActions.RemoveExternalPosition)) {
             __executeRemoveExternalPosition(_caller, comptrollerProxy, _callArgs);
         } else if (
@@ -129,10 +140,11 @@ contract ExternalPositionManager is
         address _vaultProxy,
         bytes memory _callArgs
     ) private {
-        (uint256 typeId, bytes memory initializationData) = abi.decode(
-            _callArgs,
-            (uint256, bytes)
-        );
+        (
+            uint256 typeId,
+            bytes memory initializationData,
+            bytes memory callOnExternalPositionCallArgs
+        ) = abi.decode(_callArgs, (uint256, bytes, bytes));
 
         address parser = getExternalPositionParserForType(typeId);
         require(parser != address(0), "__createExternalPosition: Invalid typeId");
@@ -170,21 +182,46 @@ contract ExternalPositionManager is
         );
 
         __addExternalPosition(_comptrollerProxy, externalPosition);
+
+        // Execute a first action on the external position
+        if (callOnExternalPositionCallArgs.length != 0) {
+            // Ignores user-input externalPosition value
+            (, uint256 actionId, bytes memory actionArgs) = __decodeCallOnExternalPositionCallArgs(
+                callOnExternalPositionCallArgs
+            );
+            __executeCallOnExternalPosition(
+                _caller,
+                _comptrollerProxy,
+                externalPosition,
+                actionId,
+                actionArgs
+            );
+        }
+    }
+
+    /// @dev Helper to decode callOnExternalPosition args
+    function __decodeCallOnExternalPositionCallArgs(bytes memory _callArgs)
+        private
+        pure
+        returns (
+            address externalPosition_,
+            uint256 actionId_,
+            bytes memory actionArgs_
+        )
+    {
+        return abi.decode(_callArgs, (address, uint256, bytes));
     }
 
     /// @dev Performs an action on a specific external position
     function __executeCallOnExternalPosition(
         address _caller,
         address _comptrollerProxy,
-        bytes memory _callArgs
+        address _externalPosition,
+        uint256 _actionId,
+        bytes memory _actionArgs
     ) private {
-        (address payable externalPosition, uint256 actionId, bytes memory actionArgs) = abi.decode(
-            _callArgs,
-            (address, uint256, bytes)
-        );
-
         address parser = getExternalPositionParserForType(
-            IExternalPositionProxy(externalPosition).getExternalPositionType()
+            IExternalPositionProxy(_externalPosition).getExternalPositionType()
         );
 
         (
@@ -192,17 +229,17 @@ contract ExternalPositionManager is
             uint256[] memory amountsToTransfer,
             address[] memory assetsToReceive
         ) = IExternalPositionParser(parser).parseAssetsForAction(
-            externalPosition,
-            actionId,
-            actionArgs
+            _externalPosition,
+            _actionId,
+            _actionArgs
         );
 
-        bytes memory encodedActionData = abi.encode(actionId, actionArgs);
+        bytes memory encodedActionData = abi.encode(_actionId, _actionArgs);
 
         __callOnExternalPosition(
             _comptrollerProxy,
             abi.encode(
-                externalPosition,
+                _externalPosition,
                 encodedActionData,
                 assetsToTransfer,
                 amountsToTransfer,
@@ -215,7 +252,7 @@ contract ExternalPositionManager is
             IPolicyManager.PolicyHook.PostCallOnExternalPosition,
             abi.encode(
                 _caller,
-                externalPosition,
+                _externalPosition,
                 assetsToTransfer,
                 amountsToTransfer,
                 assetsToReceive,
@@ -226,9 +263,9 @@ contract ExternalPositionManager is
         emit CallOnExternalPositionExecutedForFund(
             _caller,
             _comptrollerProxy,
-            externalPosition,
-            actionId,
-            actionArgs,
+            _externalPosition,
+            _actionId,
+            _actionArgs,
             assetsToTransfer,
             amountsToTransfer,
             assetsToReceive
