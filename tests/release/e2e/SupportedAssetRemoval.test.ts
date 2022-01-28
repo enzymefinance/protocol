@@ -42,7 +42,6 @@ beforeAll(async () => {
       fees: [fork.deployment.performanceFee],
       settings: [
         performanceFeeConfigArgs({
-          period: 1,
           rate: FIVE_PERCENT,
         }),
       ],

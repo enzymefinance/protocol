@@ -26,12 +26,12 @@ const TEN_PERCENT = BigNumber.from(1000);
 
 const expectedGasCosts = {
   'execute reconfiguration': {
-    usdc: 396589,
-    weth: 364170,
+    usdc: 352203,
+    weth: 319784,
   },
   'signal reconfiguration': {
-    usdc: 563945,
-    weth: 561687,
+    usdc: 556834,
+    weth: 554576,
   },
 } as const;
 
@@ -64,7 +64,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
         scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')),
       });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        period: 365 * 24 * 60 * 60,
         rate: TEN_PERCENT,
       });
       const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
@@ -123,17 +122,12 @@ describe.each([['weth' as const], ['usdc' as const]])(
       expect(receipt).toCostAround(expectedGasCosts['signal reconfiguration'][denominationAssetId]);
     });
 
+    // TODO: there are currently no fees that use "shares outstanding," otherwise we should test they are paid out
     it('warp beyond reconfiguration timelock and execute the reconfiguration', async () => {
-      // Assert that there are still shares outstanding to be paid out
-      expect(await vaultProxy.balanceOf(vaultProxy)).toBeGtBigNumber(0);
-
       const reconfigurationTimelock = await fundDeployer.getReconfigurationTimelock();
       await provider.send('evm_increaseTime', [reconfigurationTimelock.toNumber()]);
 
       const receipt = await fundDeployer.connect(fundOwner).executeReconfiguration(vaultProxy);
-
-      // Assert that all shares outstanding were paid out
-      expect(await vaultProxy.balanceOf(vaultProxy)).toEqBigNumber(0);
 
       // Assert that DeactivateFeeManagerFailed did not fire
       assertNoEvent(receipt, comptrollerProxy.abi.getEvent('DeactivateFeeManagerFailed'));

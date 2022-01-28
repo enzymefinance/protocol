@@ -55,7 +55,6 @@ describe('Walkthrough a fund migration', () => {
 
     const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
     const performanceFeeSettings = performanceFeeConfigArgs({
-      period: 365 * 24 * 60 * 60,
       rate: TEN_PERCENT,
     });
     const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });

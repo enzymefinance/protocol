@@ -30,16 +30,16 @@ const tempTolerance = 10000;
 
 const expectedGasCosts = {
   'buy shares: denomination asset only: first investment': {
-    usdc: 345570,
-    weth: 322182,
+    usdc: 332009,
+    weth: 309341,
   },
   'buy shares: denomination asset only: second investment': {
-    usdc: 361861,
-    weth: 345182,
+    usdc: 368765,
+    weth: 347136,
   },
   'buy shares: max assets': {
-    usdc: 1235426,
-    weth: 1136341,
+    usdc: 1214327,
+    weth: 1116159,
   },
   'calc gav: 20 assets': {
     usdc: 929199,
@@ -50,16 +50,16 @@ const expectedGasCosts = {
     weth: 57286,
   },
   'create fund': {
-    usdc: 898369,
-    weth: 887852,
+    usdc: 871281,
+    weth: 860764,
   },
   'redeem all shares: max assets': {
-    usdc: 1892922,
-    weth: 1820234,
+    usdc: 1864894,
+    weth: 1770470,
   },
   'redeem partial shares: max assets': {
-    usdc: 2381778,
-    weth: 2286634,
+    usdc: 2310783,
+    weth: 2216266,
   },
   'trade on Uniswap: max assets': {
     usdc: 255482,
@@ -104,7 +104,6 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const scaledPerSecondRate = convertRateToScaledPerSecondRate(utils.parseEther('0.01')); // 1%
       const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
       const performanceFeeSettings = performanceFeeConfigArgs({
-        period: 365 * 24 * 60 * 60,
         rate: TEN_PERCENT,
       });
       const entranceRateBurnFeeSettings = entranceRateBurnFeeConfigArgs({ rate: FIVE_PERCENT });
