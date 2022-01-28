@@ -34,11 +34,9 @@ export function uniswapV3LiquidityPositionCollectArgs({ nftId }: { nftId: BigNum
   return encodeArgs(['uint256'], [nftId]);
 }
 
-export function uniswapV3LiquidityPositionInitArgs({ token0, token1 }: { token0: AddressLike; token1: AddressLike }) {
-  return encodeArgs(['address', 'address'], [token0, token1]);
-}
-
 export function uniswapV3LiquidityPositionMintArgs({
+  token0,
+  token1,
   fee,
   tickLower,
   tickUpper,
@@ -47,6 +45,8 @@ export function uniswapV3LiquidityPositionMintArgs({
   amount0Min,
   amount1Min,
 }: {
+  token0: AddressLike;
+  token1: AddressLike;
   fee: BigNumberish;
   tickLower: BigNumberish;
   tickUpper: BigNumberish;
@@ -56,8 +56,8 @@ export function uniswapV3LiquidityPositionMintArgs({
   amount1Min: BigNumberish;
 }) {
   return encodeArgs(
-    ['uint24', 'int24', 'int24', 'uint256', 'uint256', 'uint256', 'uint256'],
-    [fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min],
+    ['address', 'address', 'uint24', 'int24', 'int24', 'uint256', 'uint256', 'uint256', 'uint256'],
+    [token0, token1, fee, tickLower, tickUpper, amount0Desired, amount1Desired, amount0Min, amount1Min],
   );
 }
 

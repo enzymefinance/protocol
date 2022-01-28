@@ -10,7 +10,6 @@ import {
   UniswapV3LiquidityPositionActionId,
   uniswapV3LiquidityPositionAddLiquidityArgs,
   uniswapV3LiquidityPositionCollectArgs,
-  uniswapV3LiquidityPositionInitArgs,
   UniswapV3LiquidityPositionLib,
   uniswapV3LiquidityPositionMintArgs,
   uniswapV3LiquidityPositionPurgeArgs,
@@ -58,26 +57,17 @@ export async function createUniswapV3LiquidityPosition({
   signer,
   comptrollerProxy,
   externalPositionManager,
-  token0,
-  token1,
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
-  token0: AddressLike;
-  token1: AddressLike;
 }) {
-  const initArgs = uniswapV3LiquidityPositionInitArgs({
-    token0,
-    token1,
-  });
-
   const receipt = await comptrollerProxy
     .connect(signer)
     .callOnExtension(
       externalPositionManager,
       ExternalPositionManagerActionId.CreateExternalPosition,
-      encodeArgs(['uint256', 'bytes'], [ExternalPositionType.UniswapV3LiquidityPosition, initArgs]),
+      encodeArgs(['uint256', 'bytes'], [ExternalPositionType.UniswapV3LiquidityPosition, '0x']),
     );
 
   const vaultProxy = new VaultLib(await comptrollerProxy.getVaultProxy(), signer);
@@ -160,6 +150,8 @@ export async function uniswapV3LiquidityPositionMint({
   comptrollerProxy,
   externalPositionManager,
   externalPositionProxy,
+  token0,
+  token1,
   fee,
   tickLower,
   tickUpper,
@@ -172,6 +164,8 @@ export async function uniswapV3LiquidityPositionMint({
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   externalPositionProxy: AddressLike;
+  token0: AddressLike;
+  token1: AddressLike;
   fee: BigNumberish;
   tickLower: BigNumberish;
   tickUpper: BigNumberish;
@@ -188,6 +182,8 @@ export async function uniswapV3LiquidityPositionMint({
     fee,
     tickLower,
     tickUpper,
+    token0,
+    token1,
   });
 
   const callArgs = callOnExternalPositionArgs({

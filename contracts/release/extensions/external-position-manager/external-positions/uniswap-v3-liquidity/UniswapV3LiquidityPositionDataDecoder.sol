@@ -37,20 +37,13 @@ abstract contract UniswapV3LiquidityPositionDataDecoder {
         return abi.decode(_actionArgs, (uint256));
     }
 
-    /// @dev Helper to decode args used during init()
-    function __decodeInitArgs(bytes memory _initArgs)
-        internal
-        pure
-        returns (address token0_, address token1_)
-    {
-        return abi.decode(_initArgs, (address, address));
-    }
-
     /// @dev Helper to decode args used during the Mint action
     function __decodeMintActionArgs(bytes memory _actionArgs)
         internal
         pure
         returns (
+            address token0_,
+            address token1_,
             uint24 fee_,
             int24 tickLower_,
             int24 tickUpper_,
@@ -60,7 +53,11 @@ abstract contract UniswapV3LiquidityPositionDataDecoder {
             uint256 amount1Min_
         )
     {
-        return abi.decode(_actionArgs, (uint24, int24, int24, uint256, uint256, uint256, uint256));
+        return
+            abi.decode(
+                _actionArgs,
+                (address, address, uint24, int24, int24, uint256, uint256, uint256, uint256)
+            );
     }
 
     /// @dev Helper to decode args used during the Purge action

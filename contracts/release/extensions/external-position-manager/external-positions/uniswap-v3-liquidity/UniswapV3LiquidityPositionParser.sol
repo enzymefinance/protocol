@@ -57,18 +57,27 @@ contract UniswapV3LiquidityPositionParser is
             _actionId ==
             uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Mint)
         ) {
-            (, , , uint256 amount0Desired, uint256 amount1Desired, , ) = __decodeMintActionArgs(
-                _encodedActionArgs
-            );
+            (
+                address token0,
+                address token1,
+                ,
+                ,
+                ,
+                uint256 amount0Desired,
+                uint256 amount1Desired,
+                ,
+
+            ) = __decodeMintActionArgs(_encodedActionArgs);
+
+            require(__poolIsSupportable(token0, token1), "parseInitArgs: Unsupported pair");
+            // We do not validate whether an external position for the fund already exists,
+            // but callers should be aware that one instance can be used for multiple nft positions
 
             assetsToTransfer_ = new address[](2);
+            assetsToTransfer_[0] = token0;
+            assetsToTransfer_[1] = token1;
+
             amountsToTransfer_ = new uint256[](2);
-
-            (assetsToTransfer_[0], assetsToTransfer_[1]) = IUniswapV3LiquidityPosition(
-                _externalPosition
-            )
-                .getPair();
-
             amountsToTransfer_[0] = amount0Desired;
             amountsToTransfer_[1] = amount1Desired;
         } else if (
@@ -96,44 +105,29 @@ contract UniswapV3LiquidityPositionParser is
             (assetsToTransfer_[0], assetsToTransfer_[1]) = IUniswapV3LiquidityPosition(
                 _externalPosition
             )
-                .getPair();
+                .getPairForNft(nftId);
 
             amountsToTransfer_[0] = amount0Desired;
             amountsToTransfer_[1] = amount1Desired;
         } else {
             // RemoveLiquidity, Purge, or Collect
+
+            // First arg of each is nftId
+            uint256 nftId = abi.decode(_encodedActionArgs, (uint256));
+
             assetsToReceive_ = new address[](2);
             (assetsToReceive_[0], assetsToReceive_[1]) = IUniswapV3LiquidityPosition(
                 _externalPosition
             )
-                .getPair();
+                .getPairForNft(nftId);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
     }
 
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
-    /// @param _initializationData The initialization data of the external position
-    /// @return initArgs_ Parsed and encoded args for ExternalPositionProxy.init()
-    function parseInitArgs(address, bytes memory _initializationData)
-        external
-        view
-        override
-        returns (bytes memory initArgs_)
-    {
-        (address token0, address token1) = __decodeInitArgs(_initializationData);
-
-        // Could also accept any order of tokenA and tokenB and re-order dynamically,
-        // but better for front ends to get used to the correct ordering for later inputs
-        require(token0 < token1, "parseInitArgs: Incorrect token order");
-
-        require(__poolIsSupportable(token0, token1), "parseInitArgs: Unsupported pair");
-        // We do not validate whether an external position for the fund already exists for the pair,
-        // but callers should be aware that one instance can be used for multiple nft positions
-        // within the same pair
-
-        return _initializationData;
-    }
+    /// @dev Empty for this external position type
+    function parseInitArgs(address, bytes memory) external view override returns (bytes memory) {}
 
     // PRIVATE FUNCTIONS
 
