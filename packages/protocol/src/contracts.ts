@@ -42,6 +42,7 @@ export * from './codegen/PolicyManager';
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
 export * from './codegen/CompoundPriceFeed';
+export * from './codegen/ConvexCurveLpStakingWrapperPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/IdlePriceFeed';
 export * from './codegen/LidoStethPriceFeed';
@@ -54,6 +55,7 @@ export * from './codegen/YearnVaultV2PriceFeed';
 // Integration adapters
 export * from './codegen/AaveAdapter';
 export * from './codegen/CompoundAdapter';
+export * from './codegen/ConvexCurveLpStakingAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAaveAdapter';
 export * from './codegen/CurveLiquidityAdapter';
