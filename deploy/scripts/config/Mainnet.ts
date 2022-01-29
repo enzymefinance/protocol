@@ -208,6 +208,11 @@ const mainnetConfig: DeploymentConfig = {
     comptroller: compoundComptroller,
     ctokens
   },
+  convex: {
+    booster: '0xF403C135812408BFbE8713b5A23a04b3D48AAE31',
+    crvToken: primitives.crv,
+    cvxToken: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B'
+  },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',

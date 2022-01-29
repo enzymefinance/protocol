@@ -21,6 +21,8 @@ export * from './codegen/ComptrollerProxy';
 export * from './codegen/VaultLib';
 
 // Infrastructure
+export * from './codegen/ConvexCurveLpStakingWrapperFactory';
+export * from './codegen/ConvexCurveLpStakingWrapperLib';
 export * from './codegen/ProtocolFeeReserveLib';
 export * from './codegen/ProtocolFeeReserveProxy';
 export * from './codegen/ProtocolFeeTracker';
@@ -130,6 +132,7 @@ export * from './codegen/GasRelayPaymasterLib';
 export * from './codegen/ICERC20';
 export * from './codegen/ICEther';
 export * from './codegen/IChainlinkAggregator';
+export * from './codegen/IConvexBooster';
 export * from './codegen/ICurveAddressProvider';
 export * from './codegen/ICurveLiquidityGaugeV2';
 export * from './codegen/ICurveLiquidityPool';

@@ -44,6 +44,8 @@ const whales = {
   // misc
   lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
   ust: '0xf584f8728b874a6a5c7a8d4d387c9aae9172d621',
+  // Curve steth pool related
+  stecrv: '0x56c915758ad3f76fd287fff7563ee313142fb663',
 } as const;
 /* eslint-enable sort-keys-fix/sort-keys-fix */
 

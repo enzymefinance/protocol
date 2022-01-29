@@ -13,6 +13,7 @@ import {
   CompoundDebtPositionParser,
   CompoundPriceFeed,
   ComptrollerLib,
+  ConvexCurveLpStakingWrapperFactory,
   CumulativeSlippageTolerancePolicy,
   CurveExchangeAdapter,
   CurveLiquidityAaveAdapter,
@@ -104,6 +105,7 @@ export async function deployProtocolFixture() {
     compoundDebtPositionParser: new CompoundDebtPositionParser(fixture['CompoundDebtPositionParser'].address, deployer),
     compoundPriceFeed: new CompoundPriceFeed(fixture['CompoundPriceFeed'].address, deployer),
     comptrollerLib: new ComptrollerLib(fixture['ComptrollerLib'].address, deployer),
+    convexCurveLpStakingWrapperFactory: new ConvexCurveLpStakingWrapperFactory(fixture['ConvexCurveLpStakingWrapperFactory'].address, deployer),
     cumulativeSlippageTolerancePolicy: new CumulativeSlippageTolerancePolicy(fixture['CumulativeSlippageTolerancePolicy'].address, deployer),
     curveExchangeAdapter: new CurveExchangeAdapter(fixture['CurveExchangeAdapter'].address, deployer),
     curveLiquidityAaveAdapter: new CurveLiquidityAaveAdapter(fixture['CurveLiquidityAaveAdapter'].address, deployer),
@@ -199,6 +201,11 @@ export interface DeploymentConfig {
     originator: string;
     redeemer: string;
     trackingCode: string;
+  };
+  convex: {
+    booster: string;
+    crvToken: string;
+    cvxToken: string;
   };
   curve: {
     addressProvider: string;

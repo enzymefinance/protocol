@@ -58,6 +58,7 @@ const config: HardhatUserConfig = {
       'IPrimitivePriceFeed',
 
       // TODO: Re-evaluate whether we should include these at all.
+      'IConvexBooster',
       'IMigrationHookHandler',
       'IMigratableVault',
       'IAlphaHomoraV1Bank',

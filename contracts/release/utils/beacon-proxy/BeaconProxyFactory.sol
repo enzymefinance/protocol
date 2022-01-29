@@ -11,7 +11,6 @@
 
 pragma solidity 0.6.12;
 
-import "../FundDeployerOwnerMixin.sol";
 import "./BeaconProxy.sol";
 import "./IBeaconProxyFactory.sol";
 
@@ -32,7 +31,7 @@ abstract contract BeaconProxyFactory is IBeaconProxyFactory {
     /// @notice Deploys a new proxy instance
     /// @param _constructData The constructor data with which to call `init()` on the deployed proxy
     /// @return proxy_ The proxy address
-    function deployProxy(bytes memory _constructData) external override returns (address proxy_) {
+    function deployProxy(bytes memory _constructData) public override returns (address proxy_) {
         proxy_ = address(new BeaconProxy(_constructData, address(this)));
 
         emit ProxyDeployed(msg.sender, proxy_, _constructData);
@@ -62,7 +61,7 @@ abstract contract BeaconProxyFactory is IBeaconProxyFactory {
     }
 
     /// @dev Helper to set the next canonical lib
-    function __setCanonicalLib(address _nextCanonicalLib) private {
+    function __setCanonicalLib(address _nextCanonicalLib) internal {
         canonicalLib = _nextCanonicalLib;
 
         emit CanonicalLibSet(_nextCanonicalLib);
