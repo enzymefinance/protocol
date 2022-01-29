@@ -1,12 +1,4 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type {
-  CompoundAdapter,
-  CompoundPriceFeed,
-  ComptrollerLib,
-  IntegrationManager,
-  VaultLib,
-} from '@enzymefinance/protocol';
 import {
   compoundArgs,
   ICERC20,
@@ -17,130 +9,14 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  compoundLend,
-  compoundRedeem,
+  assertCompoundLend,
+  assertCompoundRedeem,
+  compoundClaim,
   createNewFund,
   deployProtocolFixture,
-  getAssetBalances,
   ICompoundComptroller,
 } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
-
-async function assertCompoundLend({
-  tokenWhale,
-  comptrollerProxy,
-  vaultProxy,
-  integrationManager,
-  fundOwner,
-  compoundAdapter,
-  tokenAmount = utils.parseEther('1'),
-  cToken,
-  compoundPriceFeed,
-}: {
-  tokenWhale: SignerWithAddress;
-  comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  compoundAdapter: CompoundAdapter;
-  tokenAmount?: BigNumber;
-  cToken: ICERC20;
-  compoundPriceFeed: CompoundPriceFeed;
-}) {
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), tokenWhale);
-  await token.connect(tokenWhale).transfer(vaultProxy, tokenAmount);
-  const rateBefore = await cToken.exchangeRateStored.call();
-
-  // Exchange rate stored can have a small deviation from exchangeRateStored
-  const minIncomingCTokenAmount = tokenAmount
-    .mul(utils.parseEther('1'))
-    .div(rateBefore)
-    .mul(BigNumber.from('999'))
-    .div(BigNumber.from('1000'));
-
-  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [cToken as any, token],
-  });
-
-  const lendReceipt = await compoundLend({
-    cToken,
-    cTokenAmount: minIncomingCTokenAmount,
-    compoundAdapter,
-    comptrollerProxy,
-    fundOwner,
-    integrationManager,
-    tokenAmount,
-  });
-
-  // Get exchange rate after tx (the rate is updated right after)
-  const rate = await cToken.exchangeRateStored();
-  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [cToken as any, token],
-  });
-
-  const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
-  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedCTokenAmount));
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(tokenAmount));
-
-  return lendReceipt;
-}
-
-async function assertCompoundRedeem({
-  comptrollerProxy,
-  vaultProxy,
-  integrationManager,
-  fundOwner,
-  compoundAdapter,
-  cToken,
-  compoundPriceFeed,
-}: {
-  comptrollerProxy: ComptrollerLib;
-  vaultProxy: VaultLib;
-  integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
-  compoundAdapter: CompoundAdapter;
-  cToken: ICERC20;
-  compoundPriceFeed: CompoundPriceFeed;
-}) {
-  const cTokenAmount = utils.parseUnits('1', await cToken.decimals());
-  await cToken.transfer(vaultProxy, cTokenAmount);
-
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
-  const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [token, cToken as any],
-  });
-
-  const rateBefore = await cToken.exchangeRateStored();
-  const minIncomingTokenAmount = cTokenAmount.mul(rateBefore).div(utils.parseEther('1'));
-
-  const redeemReceipt = await compoundRedeem({
-    cToken,
-    cTokenAmount,
-    compoundAdapter,
-    comptrollerProxy,
-    fundOwner,
-    integrationManager,
-    tokenAmount: minIncomingTokenAmount,
-    vaultProxy,
-  });
-
-  const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-    account: vaultProxy,
-    assets: [token, cToken as any],
-  });
-
-  // Get exchange rate after tx (the rate is updated right after)
-  const rate = await cToken.exchangeRateStored();
-  const expectedTokenAmount = cTokenAmount.mul(rate).div(utils.parseEther('1'));
-
-  expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedTokenAmount));
-  expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(cTokenAmount));
-
-  return redeemReceipt;
-}
+import { utils } from 'ethers';
 
 const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
@@ -388,6 +264,50 @@ describe('claimComp', () => {
 
     await compoundComptroller.claimComp(vaultProxy.address);
     await compoundComptroller.claimComp(compoundAdapter.address);
+
+    const compVaultBalance = await comp.balanceOf(vaultProxy);
+    const compAdapterBalance = await comp.balanceOf(compoundAdapter.address);
+
+    expect(compVaultBalance).toBeGtBigNumber(0);
+    expect(compAdapterBalance).toEqBigNumber(0);
+  });
+
+  it('should accrue COMP on the fund after lending, adapter', async () => {
+    const [fundOwner] = fork.accounts;
+    const compoundAdapter = fork.deployment.compoundAdapter;
+    const comp = new StandardToken(fork.config.primitives.comp, provider);
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      denominationAsset: new StandardToken(fork.config.weth, provider),
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
+    });
+
+    await assertCompoundLend({
+      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      compoundAdapter,
+      compoundPriceFeed: fork.deployment.compoundPriceFeed,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+      tokenAmount: utils.parseEther('1'),
+      tokenWhale: whales.dai,
+      vaultProxy,
+    });
+
+    const secondsToWarp = 100000000;
+    await provider.send('evm_increaseTime', [secondsToWarp]);
+    await provider.send('evm_mine', []);
+
+    await compoundClaim({
+      cTokens: [fork.config.compound.ctokens.cdai],
+      compoundAdapter,
+      compoundComptroller: compoundComptrollerAddress,
+      comptrollerProxy,
+      fundOwner,
+      integrationManager: fork.deployment.integrationManager,
+    });
 
     const compVaultBalance = await comp.balanceOf(vaultProxy);
     const compAdapterBalance = await comp.balanceOf(compoundAdapter.address);

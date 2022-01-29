@@ -13,6 +13,7 @@ pragma solidity 0.6.12;
 
 import "../../../../../interfaces/ICERC20.sol";
 import "../../../../../interfaces/ICEther.sol";
+import "../../../../../interfaces/ICompoundComptroller.sol";
 import "../../../../../interfaces/IWETH.sol";
 import "../../../../../utils/AssetHelpers.sol";
 

@@ -22,6 +22,8 @@ interface ICERC20 is IERC20 {
 
     function borrowBalanceStored(address) external view returns (uint256);
 
+    function comptroller() external view returns (address);
+
     function decimals() external view returns (uint8);
 
     function mint(uint256) external returns (uint256);

@@ -15,3 +15,13 @@ export function compoundArgs({
 }) {
   return encodeArgs(['address', 'uint256', 'uint256'], [cToken, outgoingAssetAmount, minIncomingAssetAmount]);
 }
+
+export function compoundClaimRewardsArgs({
+  cTokens,
+  compoundComptroller,
+}: {
+  cTokens: AddressLike[];
+  compoundComptroller: AddressLike;
+}) {
+  return encodeArgs(['address[]', 'address'], [cTokens, compoundComptroller]);
+}

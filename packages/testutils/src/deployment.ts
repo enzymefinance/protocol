@@ -36,6 +36,8 @@ import {
   FundValueCalculator,
   FundValueCalculatorRouter,
   FundValueCalculatorUsdWrapper,
+  FuseAdapter,
+  FusePriceFeed,
   GasRelayPaymasterFactory,
   IdleAdapter,
   IdlePriceFeed,
@@ -130,6 +132,8 @@ export async function deployProtocolFixture() {
     fundValueCalculator: new FundValueCalculator(fixture['FundValueCalculator'].address, deployer),
     fundValueCalculatorRouter: new FundValueCalculatorRouter(fixture['FundValueCalculatorRouter'].address, deployer),
     fundValueCalculatorUsdWrapper: new FundValueCalculatorUsdWrapper(fixture['FundValueCalculatorUsdWrapper'].address, deployer),
+    fuseAdapter: new FuseAdapter(fixture['FuseAdapter'].address, deployer),
+    fusePriceFeed: new FusePriceFeed(fixture['FusePriceFeed'].address, deployer),
     gasRelayPaymasterFactory: new GasRelayPaymasterFactory(fixture['GasRelayPaymasterFactory'].address, deployer),
     idleAdapter: new IdleAdapter(fixture['IdleAdapter'].address, deployer),
     idlePriceFeed: new IdlePriceFeed(fixture['IdlePriceFeed'].address, deployer),
@@ -225,6 +229,10 @@ export interface DeploymentConfig {
     ceth: string;
     comptroller: string;
     ctokens: Record<string, string>;
+  };
+  fuse: {
+    fetherTokens: Record<string, string>;
+    ftokens: Record<string, string>;
   };
   idle: {
     bestYieldIdleDai: string;
