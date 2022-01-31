@@ -141,7 +141,7 @@ describe('lend', () => {
 });
 
 describe('redeem', () => {
-  xit('works as expected when called for redeem by a fund', async () => {
+  it('works as expected when called for redeem by a fund', async () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
