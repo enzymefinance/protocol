@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.0-next.7
+
+### Patch Changes
+
+- 837da449: Upgrade dependencies and publish new version
+
 ## 4.0.0-next.6
 
 ### Patch Changes

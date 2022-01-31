@@ -1,5 +1,13 @@
 # @enzymefinance/testutils
 
+## 4.0.0-next.7
+
+### Patch Changes
+
+- 837da449: Upgrade dependencies and publish new version
+- Updated dependencies [837da449]
+  - @enzymefinance/protocol@4.0.0-next.7
+
 ## 4.0.0-next.6
 
 ### Patch Changes

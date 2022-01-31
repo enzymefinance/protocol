@@ -6,6 +6,7 @@
     "@enzymefinance/testutils": "3.0.0"
   },
   "changesets": [
+    "big-pears-play",
     "cold-dryers-hunt",
     "curvy-grapes-hammer",
     "gold-brooms-hope",
