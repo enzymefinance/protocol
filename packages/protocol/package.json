@@ -34,9 +34,9 @@
     "Solidity"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.15.4",
-    "@enzymefinance/ethers": "^1.0.11",
+    "@babel/runtime": "^7.16.7",
+    "@enzymefinance/ethers": "^1.0.16",
     "decimal.js": "^10.3.1",
-    "ethers": "^5.5.3"
+    "ethers": "^5.5.4"
   }
 }

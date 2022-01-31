@@ -10,4 +10,9 @@ declare global {
     // eslint-disable-next-line no-var
     var fork: ProtocolDeployment;
   }
+
+  // NOTE: Needed due to incorrect/intrusive typings in hardhat.
+  namespace Mocha {
+    type MochaOptions = any;
+  }
 }
