@@ -17,6 +17,7 @@ const fn: DeployFunction = async function (hre) {
     args: [integrationManager.address, poolTogetherV4PriceFeed.address] as PoolTogetherV4AdapterArgs,
     from: deployer.address,
     linkedData: {
+      nonSlippageAdapter: true,
       type: 'ADAPTER',
     },
     log: true,

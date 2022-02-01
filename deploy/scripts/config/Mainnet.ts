@@ -247,6 +247,7 @@ const mainnetConfig: DeploymentConfig = {
       },
     },
   },
+  feeBps: 50,
   feeToken,
   feeTokenBurn: {
     burnFromVault: true,

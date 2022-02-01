@@ -38,7 +38,7 @@ it('whales have adequate balances', async () => {
     fdai7: fork.config.fuse.ftokens.fdai7,
     feth7: fork.config.fuse.fetherTokens.feth7,
     fdai8: fork.config.fuse.ftokens.fdai8,
-    ftribe8: fork.config.fuse.ftokens.ftribe8,
+    // ftribe8: fork.config.fuse.ftokens.ftribe8, // No price feed yet for TRIBE
     // ptTokens
     ptUsdc: fork.config.poolTogetherV4.ptTokens.ptUsdc[0],
     // synths

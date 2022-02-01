@@ -1,16 +1,19 @@
 import {
+  AddressListRegistry,
   addressListRegistryAddToListSelector,
   addressListRegistryAttestListsSelector,
   addressListRegistryCreateListSelector,
   addressListRegistryRemoveFromListSelector,
   addressListRegistrySetListOwnerSelector,
   addressListRegistrySetListUpdateTypeSelector,
+  AddressListUpdateType,
   curveMinterMintManySelector,
   curveMinterMintSelector,
   curveMinterToggleApproveMintSelector,
   encodeArgs,
   FundDeployer as FundDeployerContract,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
+  ProtocolFeeTracker,
   synthetixAssignExchangeDelegateSelector,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
@@ -21,17 +24,20 @@ import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { get, log },
+    deployments: { all, get, log },
     ethers: { getSigners },
   } = hre;
 
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
-  const fundDeployer = await get('FundDeployer');
+
   const addressListRegistry = await get('AddressListRegistry');
+  const cumulativeSlippageTolerancePolicy = await get('CumulativeSlippageTolerancePolicy');
+  const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
   const onlyRemoveDustExternalPositionPolicy = await get('OnlyRemoveDustExternalPositionPolicy');
   const onlyUntrackDustOrPricelessAssetsPolicy = await get('OnlyUntrackDustOrPricelessAssetsPolicy');
-  const cumulativeSlippageTolerancePolicy = await get('CumulativeSlippageTolerancePolicy');
+  const protocolFeeTracker = await get('ProtocolFeeTracker');
   const synthetixAdapter = await get('SynthetixAdapter');
 
   const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
@@ -54,6 +60,7 @@ const fn: DeployFunction = async function (hre) {
       pricelessAssetBypassStartAssetBypassTimelockSelector,
       vaultCallAnyDataHash,
     ],
+    // All AddressListRegistry actions
     [addressListRegistry.address, addressListRegistryAddToListSelector, vaultCallAnyDataHash],
     [addressListRegistry.address, addressListRegistryAttestListsSelector, vaultCallAnyDataHash],
     [addressListRegistry.address, addressListRegistryCreateListSelector, vaultCallAnyDataHash],
@@ -87,15 +94,42 @@ const fn: DeployFunction = async function (hre) {
   log('Registering vault calls');
 
   await fundDeployerInstance.registerVaultCalls(vaultCallContracts, vaultCallFunctionSigs, vaultCallDataHashes);
+
+  // Create lists of all official adapters, policies, and fees
+  const addressListRegistryContract = new AddressListRegistry(addressListRegistry.address, deployer);
+
+  const adapters = Object.values(await all())
+    .filter((item) => item.linkedData?.type === 'ADAPTER')
+    .map((item) => item.address.toLowerCase());
+  await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, adapters);
+
+  const fees = Object.values(await all())
+    .filter((item) => item.linkedData?.type === 'FEE')
+    .map((item) => item.address.toLowerCase());
+  await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, fees);
+
+  const policies = Object.values(await all())
+    .filter((item) => item.linkedData?.type === 'POLICY')
+    .map((item) => item.address.toLowerCase());
+  await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, policies);
+
+  // Set the protocol fee
+  const protocolFeeTrackerInstance = new ProtocolFeeTracker(protocolFeeTracker.address, deployer);
+  await protocolFeeTrackerInstance.setFeeBpsDefault(config.feeBps);
 };
 
 fn.tags = ['Release'];
 fn.dependencies = [
-  'FundDeployer',
+  'Adapters',
   'AddressListRegistry',
   'CumulativeSlippageTolerancePolicy',
+  'Dispatcher',
+  'Fees',
+  'FundDeployer',
   'OnlyRemoveDustExternalPositionPolicy',
   'OnlyUntrackDustOrPricelessAssetsPolicy',
+  'Policies',
+  'ProtocolFeeTracker',
   'SynthetixAdapter',
 ];
 fn.runAtTheEnd = true;

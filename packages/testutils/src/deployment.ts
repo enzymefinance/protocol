@@ -184,6 +184,7 @@ export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
 import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
 
 export interface DeploymentConfig {
+  feeBps: number;
   feeToken: string;
   feeTokenBurn: {
     burnFromVault: boolean;

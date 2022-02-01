@@ -136,6 +136,7 @@ const mainnetConfig: DeploymentConfig = {
     aggregators,
     ethusd: ethUsdAggregator,
   },
+  feeBps: 50,
   feeToken,
   feeTokenBurn: {
     burnFromVault: false,

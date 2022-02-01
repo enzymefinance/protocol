@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
   // CompoundDebtPositionLib.init() is currently empty. Call .init() if that changes.
 };
 
-fn.tags = ['Release', 'CompoundDebtPositionLib'];
+fn.tags = ['Release', 'ExternalPositions', 'CompoundDebtPositionLib'];
 fn.dependencies = ['Config'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
