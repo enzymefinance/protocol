@@ -280,10 +280,6 @@ const mainnetConfig: DeploymentConfig = {
   olympusV2: {
     stakingContract: '0xB63cac384247597756545b500253ff8E607a8020'
   },
-  paraSwapV4: {
-    augustusSwapper: '0x1bD435F3C054b6e901B7b108a0ab7617C808677b',
-    tokenTransferProxy: '0xb70Bc06D2c9Bf03b3373799606dc7d39346c06B3',
-  },
   paraSwapV5: {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     tokenTransferProxy: '0x216B4B4Ba9F3e719726886d34a177484278Bfcae',

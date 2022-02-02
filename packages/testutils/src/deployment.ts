@@ -49,7 +49,6 @@ import {
   OlympusV2Adapter,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
-  ParaSwapV4Adapter,
   ParaSwapV5Adapter,
   PerformanceFee,
   PolicyManager,
@@ -145,7 +144,6 @@ export async function deployProtocolFixture() {
     olympusV2Adapter: new OlympusV2Adapter(fixture['OlympusV2Adapter'].address, deployer),
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture['OnlyRemoveDustExternalPositionPolicy'].address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture['OnlyUntrackDustOrPricelessAssetsPolicy'].address, deployer),
-    paraSwapV4Adapter: new ParaSwapV4Adapter(fixture['ParaSwapV4Adapter'].address, deployer),
     paraSwapV5Adapter: new ParaSwapV5Adapter(fixture['ParaSwapV5Adapter'].address, deployer),
     performanceFee: new PerformanceFee(fixture['PerformanceFee'].address, deployer),
     policyManager: new PolicyManager(fixture['PolicyManager'].address, deployer),
@@ -251,10 +249,6 @@ export interface DeploymentConfig {
   };
   olympusV2: {
     stakingContract: string;
-  };
-  paraSwapV4: {
-    augustusSwapper: string;
-    tokenTransferProxy: string;
   };
   paraSwapV5: {
     augustusSwapper: string;
