@@ -49,7 +49,6 @@ export * from './codegen/IdlePriceFeed';
 export * from './codegen/LidoStethPriceFeed';
 export * from './codegen/PoolTogetherV4PriceFeed';
 export * from './codegen/RevertingPriceFeed';
-export * from './codegen/StakehoundEthPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';
 export * from './codegen/YearnVaultV2PriceFeed';
 

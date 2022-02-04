@@ -291,9 +291,6 @@ const mainnetConfig: DeploymentConfig = {
   },
   positionsLimit: 20,
   primitives,
-  stakehound: {
-    steth: '0xdfe66b14d37c77f4e9b180ceb433d1b164f0281d'
-  },
   synthetix: {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',

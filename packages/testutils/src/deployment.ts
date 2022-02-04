@@ -57,7 +57,6 @@ import {
   ProtocolFeeReserveLib,
   ProtocolFeeTracker,
   RevertingPriceFeed,
-  StakehoundEthPriceFeed,
   SynthetixAdapter,
   UniswapV2ExchangeAdapter,
   UniswapV2LiquidityAdapter,
@@ -153,7 +152,6 @@ export async function deployProtocolFixture() {
     protocolFeeReserveProxy: new ProtocolFeeReserveLib(fixture['ProtocolFeeReserveProxy'].address, deployer),
     protocolFeeTracker: new ProtocolFeeTracker(fixture['ProtocolFeeTracker'].address, deployer),
     revertingPriceFeed: new RevertingPriceFeed(fixture['RevertingPriceFeed'].address, deployer),
-    stakehoundEthPriceFeed: new StakehoundEthPriceFeed(fixture['StakehoundEthPriceFeed'].address, deployer),
     synthetixAdapter: new SynthetixAdapter(fixture['SynthetixAdapter'].address, deployer),
     uniswapV2ExchangeAdapter: new UniswapV2ExchangeAdapter(fixture['UniswapV2ExchangeAdapter'].address, deployer),
     uniswapV2LiquidityAdapter: new UniswapV2LiquidityAdapter(fixture['UniswapV2LiquidityAdapter'].address, deployer),
@@ -258,9 +256,6 @@ export interface DeploymentConfig {
     ptTokens: Record<string, [string, string]>;
   };
   positionsLimit: number;
-  stakehound: {
-    steth: string;
-  };
   unsupportedAssets: Record<string, string>;
   uniswap: {
     factory: string;
