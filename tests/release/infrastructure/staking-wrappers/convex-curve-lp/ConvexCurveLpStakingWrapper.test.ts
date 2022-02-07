@@ -151,7 +151,7 @@ describe('actions', () => {
       const preTxWithdrawal1RecipientCurveLpTokenBalance = await curveLpToken.balanceOf(withdrawal1Recipient);
       const preTxWithdrawal1TotalSupply = await wrapper.totalSupply();
 
-      const receipt1 = await wrapper.connect(depositor1).withdrawTo(withdrawal1Recipient, withdrawal1Amount);
+      const receipt1 = await wrapper.connect(depositor1).withdrawTo(withdrawal1Recipient, withdrawal1Amount, false);
 
       expect(await curveLpToken.balanceOf(withdrawal1Recipient)).toEqBigNumber(
         preTxWithdrawal1RecipientCurveLpTokenBalance.add(withdrawal1Amount),
@@ -177,7 +177,7 @@ describe('actions', () => {
       const preTxWithdrawal2RecipientCurveLpTokenBalance = await curveLpToken.balanceOf(withdrawal2Recipient);
       const preTxWithdrawal2TotalSupply = await wrapper.totalSupply();
 
-      const receipt2 = await wrapper.connect(depositor2).withdrawTo(withdrawal2Recipient, withdrawal2Amount);
+      const receipt2 = await wrapper.connect(depositor2).withdrawTo(withdrawal2Recipient, withdrawal2Amount, false);
 
       expect(await curveLpToken.balanceOf(withdrawal2Recipient)).toEqBigNumber(
         preTxWithdrawal2RecipientCurveLpTokenBalance.add(withdrawal2Amount),
@@ -204,7 +204,7 @@ describe('actions', () => {
       // Depositor2 cannot withdraw any of depositor1's tokens
       const withdrawalAmount = 123;
       await expect(
-        wrapper.connect(depositor2).withdrawToOnBehalf(depositor1, depositor2, withdrawalAmount),
+        wrapper.connect(depositor2).withdrawToOnBehalf(depositor1, depositor2, withdrawalAmount, false),
       ).rejects.toBeReverted();
 
       // Give depositor2 an exact allowance for depositor1
@@ -212,7 +212,7 @@ describe('actions', () => {
       await wrapper.connect(depositor1).approve(depositor2, initialAllowance);
 
       // Depositor1 can withdraw the correct amount
-      await wrapper.connect(depositor2).withdrawToOnBehalf(depositor1, depositor2, withdrawalAmount);
+      await wrapper.connect(depositor2).withdrawToOnBehalf(depositor1, depositor2, withdrawalAmount, false);
 
       // Allowance has decreased
       expect(await wrapper.allowance(depositor1, depositor2)).toEqBigNumber(initialAllowance.sub(withdrawalAmount));
@@ -312,8 +312,8 @@ describe('actions', () => {
       await provider.send('evm_mine', []);
 
       // Withdraw all to stop rewards accrual
-      await wrapper.connect(depositor1).withdrawTo(depositor1, depositAmount1);
-      await wrapper.connect(depositor2).withdrawTo(depositor2, depositAmount2);
+      await wrapper.connect(depositor1).withdrawTo(depositor1, depositAmount1, false);
+      await wrapper.connect(depositor2).withdrawTo(depositor2, depositAmount2, false);
       expect(await wrapper.totalSupply()).toEqBigNumber(0);
 
       // TODO: More time passes

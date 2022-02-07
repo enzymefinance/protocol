@@ -111,7 +111,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     ) external onlyIntegrationManager {
         (, address outgoingStakingToken, uint256 amount) = __decodeUnstakeCallArgs(_actionData);
 
-        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, _vaultProxy, amount);
+        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, _vaultProxy, amount, false);
     }
 
     /// @notice Unstakes LP tokens, then redeems them
@@ -140,7 +140,8 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
             outgoingStakingToken,
             _vaultProxy,
             address(this),
-            outgoingStakingTokenAmount
+            outgoingStakingTokenAmount,
+            false
         );
 
         __curveRedeem(

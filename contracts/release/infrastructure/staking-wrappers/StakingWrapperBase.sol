@@ -68,11 +68,10 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     address internal immutable OWNER;
 
     // Paused stops new deposits and checkpoints
-    bool internal paused;
-    address[] internal rewardTokens;
-    mapping(address => TotalHarvestData) internal rewardTokenToTotalHarvestData;
-    mapping(address => mapping(address => UserHarvestData))
-        internal rewardTokenToUserToHarvestData;
+    bool private paused;
+    address[] private rewardTokens;
+    mapping(address => TotalHarvestData) private rewardTokenToTotalHarvestData;
+    mapping(address => mapping(address => UserHarvestData)) private rewardTokenToUserToHarvestData;
 
     modifier onlyOwner() {
         require(msg.sender == OWNER, "Only owner callable");
@@ -163,17 +162,20 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         return __withdraw(msg.sender, msg.sender, _amount, _claimRewards);
     }
 
-    // `withdrawTo` options do not include claiming rewards, as reward claims always go to the holder,
-    // which could be confusing when specifying `_to`
-
-    /// @notice Withdraws staked tokens, returning tokens to a specified account
+    /// @notice Withdraws staked tokens, returning tokens to a specified account,
+    /// and optionally claims rewards to the staked token holder
     /// @param _to The account to receive tokens
     /// @param _amount The amount of tokens to withdraw
-    function withdrawTo(address _to, uint256 _amount) external override {
-        __withdraw(msg.sender, _to, _amount, false);
+    function withdrawTo(
+        address _to,
+        uint256 _amount,
+        bool _claimRewardsToHolder
+    ) external override {
+        __withdraw(msg.sender, _to, _amount, _claimRewardsToHolder);
     }
 
-    /// @notice Withdraws staked tokens on behalf of AccountA, returning tokens to a specified AccountB
+    /// @notice Withdraws staked tokens on behalf of AccountA, returning tokens to a specified AccountB,
+    /// and optionally claims rewards to the staked token holder
     /// @param _onBehalf The account on behalf to withdraw
     /// @param _to The account to receive tokens
     /// @param _amount The amount of tokens to withdraw
@@ -181,12 +183,13 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     function withdrawToOnBehalf(
         address _onBehalf,
         address _to,
-        uint256 _amount
+        uint256 _amount,
+        bool _claimRewardsToHolder
     ) external override {
         // Validate and reduce sender approval
         _approve(_onBehalf, msg.sender, allowance(_onBehalf, msg.sender).sub(_amount));
 
-        __withdraw(_onBehalf, _to, _amount, false);
+        __withdraw(_onBehalf, _to, _amount, _claimRewardsToHolder);
     }
 
     /// @dev Helper to withdraw staked tokens
@@ -436,7 +439,7 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         address _from,
         address _to,
         uint256 _amount
-    ) internal override {
+    ) internal override nonReentrant {
         __checkpoint([_from, _to]);
         super._transfer(_from, _to, _amount);
     }
@@ -444,6 +447,23 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    /// @notice Gets the reward token at a particular index
+    /// @return rewardToken_ The reward token address
+    function getRewardTokenAtIndex(uint256 _index)
+        public
+        view
+        override
+        returns (address rewardToken_)
+    {
+        return rewardTokens[_index];
+    }
+
+    /// @notice Gets the count of reward tokens being harvested
+    /// @return count_ The count
+    function getRewardTokenCount() public view override returns (uint256 count_) {
+        return rewardTokens.length;
+    }
 
     /// @notice Gets all reward tokens being harvested
     /// @return rewardTokens_ The reward tokens

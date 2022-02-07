@@ -39,8 +39,9 @@ abstract contract StakingWrapperActionsMixin is AssetHelpers {
         address _wrapper,
         address _from,
         address _to,
-        uint256 _amount
+        uint256 _amount,
+        bool _claimRewards
     ) internal {
-        IStakingWrapper(_wrapper).withdrawToOnBehalf(_from, _to, _amount);
+        IStakingWrapper(_wrapper).withdrawToOnBehalf(_from, _to, _amount, _claimRewards);
     }
 }

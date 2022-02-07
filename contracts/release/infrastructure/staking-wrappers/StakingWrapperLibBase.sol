@@ -21,8 +21,8 @@ abstract contract StakingWrapperLibBase is StakingWrapperBase {
 
     event TokenSymbolSet(string symbol);
 
-    string internal tokenName;
-    string internal tokenSymbol;
+    string private tokenName;
+    string private tokenSymbol;
 
     /// @dev Helper function to set token name
     function __setTokenName(string memory _name) internal {
