@@ -16,7 +16,7 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
 
   const compoundPriceFeed = await deploy('CompoundPriceFeed', {
-    args: [fundDeployer.address, config.weth] as CompoundPriceFeedArgs,
+    args: [fundDeployer.address, config.weth, config.compound.ceth] as CompoundPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -29,7 +29,6 @@ const fn: DeployFunction = async function (hre) {
       log('Registering Compound cTokens');
       const compoundPriceFeedInstance = new CompoundPriceFeed(compoundPriceFeed.address, deployer);
       await compoundPriceFeedInstance.addCTokens(ctokens);
-      await compoundPriceFeedInstance.addCEtherTokens([config.compound.ceth]);
     }
   }
 };

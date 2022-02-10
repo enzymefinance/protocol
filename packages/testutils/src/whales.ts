@@ -35,11 +35,6 @@ const whales = {
   ceth: '0x8aceab8167c80cb8b3de7fa6228b889bb1130ee8',
   cuni: '0x39d8014b4f40d2cbc441137011d32023f4f1fd87',
   cusdc: '0xe1ed4da4284924ddaf69983b4d813fb1be58c380',
-  // fTokens
-  fdai7: '0x88884e35d7006ae84efef09ee6bc6a43dd8e2bb8',
-  feth7: '0xcd2ba6a4d50745b0b4096186f925115387852c15',
-  fdai8: '0x93f3f612a525a59523e91cc5552f718df9fc0746',
-  ftribe8: '0xdb5ac83c137321da29a59a7592232bc4ed461730',
   // ptTokens
   ptUsdc: '0xd18236cd213f39d078177b6f6908f0e44e88e4aa',
   // synths (unsupported)

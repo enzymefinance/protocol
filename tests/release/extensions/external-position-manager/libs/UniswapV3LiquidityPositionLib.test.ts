@@ -51,14 +51,83 @@ beforeEach(async () => {
 });
 
 describe('init', () => {
+  it('does not allow an incorrect token order', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: fork.config.primitives.usdc,
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0: token1,
+        token1: token0,
+      }),
+    ).rejects.toBeRevertedWith('Incorrect token order');
+  });
+
+  it('does not allow an asset outside of the asset universe', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: randomAddress(),
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0,
+        token1,
+      }),
+    ).rejects.toBeRevertedWith('Unsupported pair');
+  });
+
+  it('does not allow two derivative assets', async () => {
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.compound.ctokens.cdai,
+      tokenB: fork.config.compound.ctokens.cusdc,
+    });
+
+    await expect(
+      createUniswapV3LiquidityPosition({
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        signer: fundOwner,
+        token0,
+        token1,
+      }),
+    ).rejects.toBeRevertedWith('Unsupported pair');
+  });
+
   it('happy path', async () => {
-    const { receipt } = await createUniswapV3LiquidityPosition({
+    const { token0, token1 } = uniswapV3OrderTokenPair({
+      tokenA: fork.config.primitives.dai,
+      tokenB: fork.config.primitives.usdc,
+    });
+
+    const { externalPositionProxyAddress, receipt } = await createUniswapV3LiquidityPosition({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
       signer: fundOwner,
+      token0,
+      token1,
+    });
+    const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(externalPositionProxyAddress, provider);
+
+    // Assert state
+    expect(await uniswapV3LiquidityPosition.getToken0()).toMatchAddress(token0);
+    expect(await uniswapV3LiquidityPosition.getToken1()).toMatchAddress(token1);
+
+    // Assert event
+    assertEvent(receipt, uniswapV3LiquidityPosition.abi.getEvent('Initialized'), {
+      token0,
+      token1,
     });
 
-    expect(receipt).toCostAround(477927);
+    expect(receipt).toCostAround(611264);
   });
 
   it('can create and Mint in same tx', async () => {
@@ -87,8 +156,6 @@ describe('init', () => {
       fee,
       tickLower,
       tickUpper,
-      token0,
-      token1,
     });
 
     // Uses externalPositionProxy = AddressZero since this value is ignored
@@ -105,6 +172,8 @@ describe('init', () => {
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         signer: fundOwner,
+        token0,
+        token1,
       })
     ).externalPositionProxyAddress;
     const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
@@ -149,6 +218,8 @@ describe('receiveCallFromVault', () => {
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         signer: fundOwner,
+        token0,
+        token1,
       })
     ).externalPositionProxyAddress;
     uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
@@ -161,72 +232,6 @@ describe('receiveCallFromVault', () => {
   });
 
   describe('Mint', () => {
-    it('does not allow an asset outside of the asset universe', async () => {
-      const { token0, token1 } = uniswapV3OrderTokenPair({
-        tokenA: fork.config.primitives.dai,
-        tokenB: randomAddress(),
-      });
-
-      await createUniswapV3LiquidityPosition({
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
-      });
-
-      const fee = UniswapV3FeeAmount.LOW;
-      const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
-      const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
-
-      await expect(
-        uniswapV3LiquidityPositionMint({
-          amount0Desired: 1,
-          amount1Desired: 1,
-          comptrollerProxy,
-          externalPositionManager: fork.deployment.externalPositionManager,
-          externalPositionProxy: uniswapV3LiquidityPosition,
-          fee,
-          signer: fundOwner,
-          tickLower,
-          tickUpper,
-          token0,
-          token1,
-        }),
-      ).rejects.toBeRevertedWith('Unsupported pair');
-    });
-
-    it('does not allow two derivative assets', async () => {
-      const { token0, token1 } = uniswapV3OrderTokenPair({
-        tokenA: fork.config.compound.ctokens.cdai,
-        tokenB: fork.config.compound.ctokens.cusdc,
-      });
-
-      await createUniswapV3LiquidityPosition({
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        signer: fundOwner,
-      });
-
-      const fee = UniswapV3FeeAmount.LOW;
-      const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
-      const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
-
-      await expect(
-        uniswapV3LiquidityPositionMint({
-          amount0Desired: 1,
-          amount1Desired: 1,
-          comptrollerProxy,
-          externalPositionManager: fork.deployment.externalPositionManager,
-          externalPositionProxy: uniswapV3LiquidityPosition,
-          fee,
-          signer: fundOwner,
-          tickLower,
-          tickUpper,
-          token0,
-          token1,
-        }),
-      ).rejects.toBeRevertedWith('Unsupported pair');
-    });
-
     it('works as expected (different decimal pair tokens)', async () => {
       const amount0Desired = await getAssetUnit(token0);
       const amount1Desired = await getAssetUnit(token1);
@@ -253,8 +258,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const postVaultToken0Balance = await token0.balanceOf(vaultProxy);
@@ -283,9 +286,6 @@ describe('receiveCallFromVault', () => {
       expect(postTxNftIds.length).toBe(preTxNftsCount + 1);
       expect(postTxNftIds[postTxNftIds.length - 1]).toEqBigNumber(nftId);
 
-      expect(await uniswapV3LiquidityPosition.getToken0ForNft(nftId)).toMatchAddress(token0);
-      expect(await uniswapV3LiquidityPosition.getToken1ForNft(nftId)).toMatchAddress(token1);
-
       assertEvent(receipt, uniswapV3LiquidityPosition.abi.getEvent('NFTPositionAdded'), {
         tokenId: nftId,
       });
@@ -305,12 +305,10 @@ describe('receiveCallFromVault', () => {
 
       // Managed assets should be roughly the amount of assets added
       const managedAssets = await uniswapV3LiquidityPosition.getManagedAssets.call();
-      expect(managedAssets.assets_[0]).toMatchAddress(token0);
-      expect(managedAssets.assets_[1]).toMatchAddress(token1);
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(amount0Desired);
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(amount1Desired);
 
-      expect(receipt).toCostAround(782514);
+      expect(receipt).toCostAround(679395);
     });
   });
 
@@ -337,8 +335,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const addLiquidityAmount0Desired = mintAmount0Desired;
@@ -415,8 +411,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       // Remove half of liquidity
@@ -469,8 +463,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       // Execute an order to collect fees
@@ -556,8 +548,6 @@ describe('receiveCallFromVault', () => {
           signer: fundOwner,
           tickLower,
           tickUpper,
-          token0,
-          token1,
         });
 
         // Purge
@@ -577,14 +567,12 @@ describe('receiveCallFromVault', () => {
 
         // Assert the old nft was removed from the external position
         expect(await uniswapV3LiquidityPosition.getNftIds()).not.toContain(nftId);
-        expect(await uniswapV3LiquidityPosition.getToken0ForNft(nftId)).toMatchAddress(constants.AddressZero);
-        expect(await uniswapV3LiquidityPosition.getToken1ForNft(nftId)).toMatchAddress(constants.AddressZero);
 
         // Vault balances of both tokens should have increased (no need to assert exact amounts, i.e., test that UniV3 works)
         expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
         expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
 
-        expect(receipt).toCostAround(392079);
+        expect(receipt).toCostAround(386720);
       });
 
       it('works as expected (max liquidity specified)', async () => {
@@ -606,8 +594,6 @@ describe('receiveCallFromVault', () => {
           signer: fundOwner,
           tickLower: uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.LOW),
           tickUpper: uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.LOW),
-          token0,
-          token1,
         });
 
         // Purge
@@ -623,98 +609,12 @@ describe('receiveCallFromVault', () => {
         // Assert the old nft was removed from the external position
         expect(await uniswapV3LiquidityPosition.getNftIds()).not.toContain(nftId);
 
-        expect(receipt).toCostAround(396584);
+        expect(receipt).toCostAround(391226);
       });
     });
   });
 
   describe('getManagedAssets', () => {
-    it('works as expected (multiple nfts of same asset pair, and one nft of unique pool)', async () => {
-      const [fundOwner] = fork.accounts;
-      // Use all USD stables
-      const duplicatePairToken0 = new StandardToken(fork.config.primitives.dai, whales.dai);
-      const duplicatePairToken1 = new StandardToken(fork.config.primitives.usdt, whales.usdt);
-      const uniquePairToken0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const uniquePairToken1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-
-      const duplicatePairAmount0Desired = await getAssetUnit(duplicatePairToken0);
-      const duplicatePairAmount1Desired = await getAssetUnit(duplicatePairToken1);
-      const uniquePairAmount0Desired = await getAssetUnit(uniquePairToken0);
-      const uniquePairAmount1Desired = await getAssetUnit(uniquePairToken1);
-
-      const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.MEDIUM);
-      const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.MEDIUM);
-
-      // Seed fund with tokens
-      await duplicatePairToken0.transfer(vaultProxy, duplicatePairAmount0Desired.mul(2));
-      await duplicatePairToken1.transfer(vaultProxy, duplicatePairAmount1Desired.mul(2));
-      await uniquePairToken0.transfer(vaultProxy, uniquePairAmount0Desired);
-      await uniquePairToken1.transfer(vaultProxy, uniquePairAmount1Desired);
-
-      // Duplicate pair #1
-      await uniswapV3LiquidityPositionMint({
-        amount0Desired: duplicatePairAmount0Desired,
-        amount1Desired: duplicatePairAmount1Desired,
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        externalPositionProxy: uniswapV3LiquidityPosition,
-        fee: UniswapV3FeeAmount.LOW,
-        signer: fundOwner,
-        tickLower,
-        tickUpper,
-        token0: duplicatePairToken0,
-        token1: duplicatePairToken1,
-      });
-
-      // Duplicate pair #2
-      await uniswapV3LiquidityPositionMint({
-        amount0Desired: duplicatePairAmount0Desired,
-        amount1Desired: duplicatePairAmount1Desired,
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        externalPositionProxy: uniswapV3LiquidityPosition,
-        fee: UniswapV3FeeAmount.LOW,
-        signer: fundOwner,
-        tickLower,
-        tickUpper,
-        token0: duplicatePairToken0,
-        token1: duplicatePairToken1,
-      });
-
-      // Unique pair
-      await uniswapV3LiquidityPositionMint({
-        amount0Desired: uniquePairAmount0Desired,
-        amount1Desired: uniquePairAmount1Desired,
-        comptrollerProxy,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        externalPositionProxy: uniswapV3LiquidityPosition,
-        fee: UniswapV3FeeAmount.LOW,
-        signer: fundOwner,
-        tickLower,
-        tickUpper,
-        token0: uniquePairToken0,
-        token1: uniquePairToken1,
-      });
-
-      const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
-
-      expect(assets_.length).toBe(4);
-      expect(assets_[0]).toMatchAddress(duplicatePairToken0);
-      expect(assets_[1]).toMatchAddress(duplicatePairToken1);
-      expect(assets_[2]).toMatchAddress(uniquePairToken0);
-      expect(assets_[3]).toMatchAddress(uniquePairToken1);
-
-      // Using stablecoins, all the amounts of managed assets should be roughly the supplied amount
-      expect(amounts_.length).toBe(4);
-      expect(amounts_[0]).toBeAroundBigNumber(duplicatePairAmount0Desired.mul(2));
-      expect(amounts_[1]).toBeAroundBigNumber(duplicatePairAmount1Desired.mul(2));
-      expect(amounts_[2]).toBeAroundBigNumber(uniquePairAmount0Desired);
-      expect(amounts_[3]).toBeAroundBigNumber(uniquePairAmount1Desired);
-
-      // Cost should be roughly 25k gas cheaper than 3x the case of a single nft, due to recycling the duplicate rate
-      expect(await uniswapV3LiquidityPosition.connect(fundOwner).getManagedAssets()).toCostAround(347538);
-    });
-
     it('works as expected (wide range, different price)', async () => {
       const [fundOwner] = fork.accounts;
       const token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
@@ -740,8 +640,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -771,6 +669,8 @@ describe('receiveCallFromVault', () => {
           comptrollerProxy,
           externalPositionManager: fork.deployment.externalPositionManager,
           signer: fundOwner,
+          token0,
+          token1,
         })
       ).externalPositionProxyAddress;
 
@@ -790,8 +690,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -819,6 +717,8 @@ describe('receiveCallFromVault', () => {
           comptrollerProxy,
           externalPositionManager: fork.deployment.externalPositionManager,
           signer: fundOwner,
+          token0,
+          token1,
         })
       ).externalPositionProxyAddress;
 
@@ -838,8 +738,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -870,6 +768,8 @@ describe('receiveCallFromVault', () => {
           comptrollerProxy,
           externalPositionManager: fork.deployment.externalPositionManager,
           signer: fundOwner,
+          token0,
+          token1,
         })
       ).externalPositionProxyAddress;
 
@@ -885,8 +785,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
@@ -917,6 +815,8 @@ describe('receiveCallFromVault', () => {
           comptrollerProxy,
           externalPositionManager: fork.deployment.externalPositionManager,
           signer: fundOwner,
+          token0,
+          token1,
         })
       ).externalPositionProxyAddress;
 
@@ -932,8 +832,6 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
         tickLower,
         tickUpper,
-        token0,
-        token1,
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();

@@ -15,8 +15,6 @@ pragma solidity ^0.6.12;
 interface ICompoundComptroller {
     function claimComp(address) external;
 
-    function claimComp(address, address[] memory) external;
-
     function enterMarkets(address[] calldata) external returns (uint256[] memory);
 
     function exitMarket(address) external returns (uint256);

@@ -26,15 +26,16 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     uint256 private constant CTOKEN_RATE_DIVISOR = 10**18;
 
-    address private immutable WETH_TOKEN;
-
     mapping(address => address) private cTokenToToken;
 
-    constructor(address _fundDeployer, address _weth)
-        public
-        FundDeployerOwnerMixin(_fundDeployer)
-    {
-        WETH_TOKEN = _weth;
+    constructor(
+        address _fundDeployer,
+        address _weth,
+        address _ceth
+    ) public FundDeployerOwnerMixin(_fundDeployer) {
+        // Set cEth
+        cTokenToToken[_ceth] = _weth;
+        emit CTokenAdded(_ceth, _weth);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -71,24 +72,9 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     // CTOKENS REGISTRY //
     //////////////////////
 
-    /// @notice Adds an array of cEtherTokens to the price feed
-    /// @param _cEtherTokens cEthTokens to add
-    function addCEtherTokens(address[] calldata _cEtherTokens) external onlyFundDeployerOwner {
-        for (uint256 i; i < _cEtherTokens.length; i++) {
-            require(
-                cTokenToToken[_cEtherTokens[i]] == address(0),
-                "addCEtherTokens: Value already set"
-            );
-
-            cTokenToToken[_cEtherTokens[i]] = getWethToken();
-
-            emit CTokenAdded(_cEtherTokens[i], getWethToken());
-        }
-    }
-
     /// @notice Adds cTokens to the price feed
     /// @param _cTokens cTokens to add
-    /// @dev Only allows CERC20 tokens.
+    /// @dev Only allows CERC20 tokens. CEther is set in the constructor.
     function addCTokens(address[] calldata _cTokens) external onlyFundDeployerOwner {
         require(_cTokens.length > 0, "addCTokens: Empty _cTokens");
 
@@ -111,11 +97,5 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// @return token_ The underlying token
     function getTokenFromCToken(address _cToken) public view returns (address token_) {
         return cTokenToToken[_cToken];
-    }
-
-    /// @notice Gets the `WETH_TOKEN` variable value
-    /// @return wethToken_ The `WETH_TOKEN` value
-    function getWethToken() public view returns (address wethToken_) {
-        return WETH_TOKEN;
     }
 }
