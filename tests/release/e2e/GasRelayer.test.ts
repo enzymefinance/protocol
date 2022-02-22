@@ -49,7 +49,7 @@ describe('gas relayer', () => {
       signer: fundOwner,
     });
     const startingBalance = utils.parseUnits('10', 18);
-    const deposit = utils.parseUnits('0.2', 18);
+    const deposit = utils.parseUnits('0.5', 18);
     await setupGasRelayerPaymaster({
       fundAccessor: comptrollerProxy,
       signer: fundOwner,
@@ -160,7 +160,7 @@ describe('gas relayer', () => {
       assets: [weth],
     });
     const startingBalance = utils.parseUnits('10', 18);
-    const deposit = utils.parseUnits('0.2', 18);
+    const deposit = utils.parseUnits('0.5', 18);
     expect(postWitdrawWethBalance).toEqBigNumber(startingBalance.sub(deposit));
   });
 

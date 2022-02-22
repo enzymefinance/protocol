@@ -35,7 +35,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
     // Sane defaults, subject to change after gas profiling
     uint256 private constant CALLDATA_SIZE_LIMIT = 10500;
     // Deposit in wei
-    uint256 private constant DEPOSIT = 0.2 ether;
+    uint256 private constant DEPOSIT = 0.5 ether;
     // Sane defaults, subject to change after gas profiling
     uint256 private constant PRE_RELAYED_CALL_GAS_LIMIT = 100000;
     uint256 private constant POST_RELAYED_CALL_GAS_LIMIT = 110000;
