@@ -1,8 +1,8 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, curveStethLend, deployProtocolFixture } from '@enzymefinance/testutils';
-import { BigNumber, constants, utils } from 'ethers';
+import { buyShares, createNewFund, curveLend, deployProtocolFixture } from '@enzymefinance/testutils';
+import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 beforeEach(async () => {
@@ -37,15 +37,15 @@ describe('derivative gas costs', () => {
     // Calc base cost of calcGav with already tracked assets
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
-    // Seed fund and use max of half of the weth balance to get the LP token
-    await curveStethLend({
+    // Use max of half of the weth balance to get the Curve steth LP token
+    await curveLend({
       comptrollerProxy,
-      curveLiquidityStethAdapter: fork.deployment.curveLiquidityStethAdapter,
-      fundOwner,
+      curveLiquidityAdapter: fork.deployment.curveLiquidityAdapter,
       integrationManager,
-      minIncomingLPTokenAmount: BigNumber.from(1),
-      outgoingStethAmount: BigNumber.from(0),
-      outgoingWethAmount: initialTokenAmount.div(2),
+      orderedOutgoingAssetAmounts: [initialTokenAmount.div(2), 0],
+      pool: fork.config.curve.pools.steth.pool,
+      signer: fundOwner,
+      useUnderlyings: false,
     });
 
     // Get the calcGav() cost including the LP token

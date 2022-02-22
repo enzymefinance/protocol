@@ -77,7 +77,6 @@ const config: HardhatUserConfig = {
       'ICurveLiquidityGaugeV2',
       'ICurveLiquidityPool',
       'ICurveRegistry',
-      'ICurveStableSwapSteth',
       'IYearnVaultV2',
       'IGsnRelayHub',
     ],
