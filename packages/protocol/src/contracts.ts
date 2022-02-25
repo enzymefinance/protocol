@@ -26,6 +26,7 @@ export * from './codegen/ConvexCurveLpStakingWrapperLib';
 export * from './codegen/ProtocolFeeReserveLib';
 export * from './codegen/ProtocolFeeReserveProxy';
 export * from './codegen/ProtocolFeeTracker';
+export * from './codegen/UsdEthSimulatedAggregator';
 export * from './codegen/ValueInterpreter';
 
 // Extensions
