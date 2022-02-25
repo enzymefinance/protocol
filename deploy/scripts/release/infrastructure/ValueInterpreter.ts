@@ -59,6 +59,8 @@ const fn: DeployFunction = async function (hre) {
     const aavePriceFeed = await getOrNull('AavePriceFeed');
     const curvePriceFeed = await getOrNull('CurvePriceFeed');
     const compoundPriceFeed = await getOrNull('CompoundPriceFeed');
+    const fusePriceFeed = await getOrNull('FusePriceFeed');
+
     const idlePriceFeed = await getOrNull('IdlePriceFeed');
     const lidoStethPriceFeed = await getOrNull('LidoStethPriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
@@ -66,6 +68,9 @@ const fn: DeployFunction = async function (hre) {
 
     const derivativePairs: [string, string][] = [
       ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
+      ...(fusePriceFeed
+        ? Object.values(config.fuse.fetherTokens).map((fether) => [fether, fusePriceFeed.address] as [string, string])
+        : []),
       ...(lidoStethPriceFeed ? [[config.lido.steth, lidoStethPriceFeed.address] as [string, string]] : []),
       ...(aavePriceFeed
         ? Object.values(config.aave.atokens).map(([atoken]) => [atoken, aavePriceFeed.address] as [string, string])
@@ -82,6 +87,9 @@ const fn: DeployFunction = async function (hre) {
         ? Object.values(config.curve.pools).map(
             (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
           )
+        : []),
+      ...(fusePriceFeed
+        ? Object.values(config.fuse.ftokens).map((ftoken) => [ftoken, fusePriceFeed.address] as [string, string])
         : []),
       ...(idlePriceFeed
         ? Object.values(config.idle).map((idleToken) => [idleToken, idlePriceFeed.address] as [string, string])
@@ -115,6 +123,7 @@ fn.dependencies = [
   'AlphaHomoraV1PriceFeed',
   'CurvePriceFeed',
   'CompoundPriceFeed',
+  'FusePriceFeed',
   'IdlePriceFeed',
   'LidoStethPriceFeed',
   'PoolTogetherV4PriceFeed',

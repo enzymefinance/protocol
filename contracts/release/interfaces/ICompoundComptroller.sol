@@ -7,13 +7,15 @@
     file that was distributed with this source code.
 */
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 /// @title ICompoundComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Minimal interface for interactions with Compound Comptroller
 interface ICompoundComptroller {
     function claimComp(address) external;
+
+    function claimComp(address, address[] memory) external;
 
     function enterMarkets(address[] calldata) external returns (uint256[] memory);
 

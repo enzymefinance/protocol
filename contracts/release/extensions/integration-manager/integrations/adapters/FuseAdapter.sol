@@ -11,20 +11,21 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/ICompoundComptroller.sol";
+import "../../../../interfaces/IFuseComptroller.sol";
+import "../../../../interfaces/IFuseRewardsDistributor.sol";
 import "../utils/bases/CompoundAdapterBase.sol";
 
-/// @title CompoundAdapter Contract
+/// @title FuseAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Adapter for Compound <https://compound.finance/>
-contract CompoundAdapter is CompoundAdapterBase {
+/// @notice Adapter for Fuse <https://app.rari.capital/fuse>
+contract FuseAdapter is CompoundAdapterBase {
     constructor(
         address _integrationManager,
-        address _compoundPriceFeed,
+        address _fusePriceFeed,
         address _wethToken
-    ) public CompoundAdapterBase(_integrationManager, _compoundPriceFeed, _wethToken) {}
+    ) public CompoundAdapterBase(_integrationManager, _fusePriceFeed, _wethToken) {}
 
-    /// @notice Claims rewards from Compound's Comptroller
+    /// @notice Claims rewards from the Fuse rewards distributor
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     function claimRewards(
@@ -32,15 +33,20 @@ contract CompoundAdapter is CompoundAdapterBase {
         bytes calldata _actionData,
         bytes calldata
     ) external override onlyIntegrationManager {
-        (address[] memory cTokens, address compoundComptroller) = __decodeClaimArgs(_actionData);
-        ICompoundComptroller(compoundComptroller).claimComp(_vaultProxy, cTokens);
+        (address[] memory cTokens, address poolComptroller) = __decodeClaimArgs(_actionData);
+        address[] memory rewardsDistributors = IFuseComptroller(poolComptroller)
+            .getRewardsDistributors();
+
+        for (uint256 i; i < rewardsDistributors.length; i++) {
+            IFuseRewardsDistributor(rewardsDistributors[i]).claimRewards(_vaultProxy, cTokens);
+        }
     }
 
     /// @dev Helper to decode callArgs for claimRewards
     function __decodeClaimArgs(bytes memory _actionData)
         private
         pure
-        returns (address[] memory cTokens_, address compoundComptroller_)
+        returns (address[] memory cTokens_, address poolComptroller_)
     {
         return abi.decode(_actionData, (address[], address));
     }

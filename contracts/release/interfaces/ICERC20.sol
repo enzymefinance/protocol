@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title ICERC20 Interface

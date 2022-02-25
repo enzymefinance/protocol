@@ -113,7 +113,7 @@ describe('addCTokens', () => {
 
     const compoundPriceFeed = await CompoundPriceFeed.deploy(
       fork.deployer,
-      fork.deployment.dispatcher,
+      fork.deployment.fundDeployer,
       fork.config.weth,
       fork.config.compound.ceth,
     );

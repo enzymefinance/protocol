@@ -34,6 +34,11 @@ it('whales have adequate balances', async () => {
     ceth: fork.config.compound.ceth,
     cuni: fork.config.compound.ctokens.cuni,
     cusdc: fork.config.compound.ctokens.cusdc,
+    // fTokens
+    fdai7: fork.config.fuse.ftokens.fdai7,
+    feth7: fork.config.fuse.fetherTokens.feth7,
+    fdai8: fork.config.fuse.ftokens.fdai8,
+    ftribe8: fork.config.fuse.ftokens.ftribe8,
     // ptTokens
     ptUsdc: fork.config.poolTogetherV4.ptTokens.ptUsdc[0],
     // synths
