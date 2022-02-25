@@ -1,5 +1,7 @@
 import {
   AaveAdapter,
+  AaveDebtPositionLib,
+  AaveDebtPositionParser,
   AavePriceFeed,
   AddressListRegistry,
   AllowedAdapterIncomingAssetsPolicy,
@@ -90,6 +92,8 @@ export async function deployProtocolFixture() {
   // prettier-ignore
   const deployment = {
     aaveAdapter: new AaveAdapter(fixture['AaveAdapter'].address, deployer),
+    aaveDebtPositionLib: new AaveDebtPositionLib(fixture['AaveDebtPositionLib'].address, deployer),
+    aaveDebtPositionParser: new AaveDebtPositionParser(fixture['AaveDebtPositionParser'].address, deployer),
     aavePriceFeed: new AavePriceFeed(fixture['AavePriceFeed'].address, deployer),
     addressListRegistry: new AddressListRegistry(fixture['AddressListRegistry'].address, deployer),
     allowedAdapterIncomingAssetsPolicy: new AllowedAdapterIncomingAssetsPolicy(fixture['AllowedAdapterIncomingAssetsPolicy'].address, deployer),
@@ -210,6 +214,7 @@ export interface DeploymentConfig {
     pools: Record<string, { pool: string; lpToken: string; liquidityGaugeToken: string; invariantProxyAsset: string }>;
   };
   aave: {
+    incentivesController: string;
     lendingPoolAddressProvider: string;
     protocolDataProvider: string;
     atokens: Record<string, [string, string]>;

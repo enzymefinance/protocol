@@ -17,6 +17,8 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
   const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
   const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
+  const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
+  const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
 
   // AF action: Set the release live, renouncing ownership
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
@@ -30,10 +32,11 @@ const fn: DeployFunction = async function (hre) {
   const positionTypes = [
     ...(compoundDebtPositionLib && compoundDebtPositionParser ? ['COMPOUND_DEBT'] : []),
     ...(uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser ? ['UNISWAP_V3_LIQUIDITY'] : []),
+    ...(aaveDebtPositionLib && aaveDebtPositionParser ? ['AAVE_DEBT'] : []),
   ];
 
   if (positionTypes.length) {
-    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY']);
+    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY', 'AAVE_DEBT']);
   }
 
   // Council action: Add the external position contracts (lib + parser) to the ExternalPositionManager
@@ -57,6 +60,14 @@ const fn: DeployFunction = async function (hre) {
     );
   }
 
+  if (aaveDebtPositionLib && aaveDebtPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [2],
+      [aaveDebtPositionLib],
+      [aaveDebtPositionParser],
+    );
+  }
+
   // Council action: Set the current FundDeployer on the Dispatcher contract, making the release active
   const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
   await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
@@ -69,6 +80,8 @@ const externalPositionContractDependencies = [
   'CompoundDebtPositionParser',
   'UniswapV3LiquidityPositionLib',
   'UniswapV3LiquidityPositionParser',
+  'AaveDebtPositionLib',
+  'AaveDebtPositionParser',
 ];
 
 // Include PostDeployment so the handoff gets run afterwards

@@ -196,8 +196,9 @@ const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 const mainnetConfig: DeploymentConfig = {
   aave: {
     atokens,
+    incentivesController: '0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5',
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
-    protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d',
+    protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
   },
   chainlink: {
     aggregators,
