@@ -19,15 +19,11 @@ pragma solidity 0.7.6;
 /// a numbered UniswapV3LiquidityPositionLibBaseXXX that inherits the previous base.
 /// e.g., `UniswapV3LiquidityPositionLibBase2 is UniswapV3LiquidityPositionLibBase1`
 abstract contract UniswapV3LiquidityPositionLibBase1 {
-    event Initialized(address token0, address token1);
-
     event NFTPositionAdded(uint256 indexed tokenId);
 
     event NFTPositionRemoved(uint256 indexed tokenId);
 
     uint256[] internal nftIds;
-    // token0 and token1 are assigned deterministically by sort order,
-    // so will be the same for all fees
-    address internal token0;
-    address internal token1;
+    mapping(uint256 => address) internal nftIdToToken0;
+    mapping(uint256 => address) internal nftIdToToken1;
 }

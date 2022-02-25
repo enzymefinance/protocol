@@ -16,5 +16,5 @@ pragma solidity 0.7.6;
 interface IUniswapV3LiquidityPosition is IExternalPositionUniswapV3LiquidityPosition {
     enum UniswapV3LiquidityPositionActions {Mint, AddLiquidity, RemoveLiquidity, Collect, Purge}
 
-    function getPair() external view returns (address, address);
+    function getPairForNft(uint256) external view returns (address, address);
 }
