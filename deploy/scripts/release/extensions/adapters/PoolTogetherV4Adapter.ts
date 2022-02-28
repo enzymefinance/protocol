@@ -30,7 +30,7 @@ fn.dependencies = ['IntegrationManager', 'PoolTogetherV4PriceFeed'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 
-  return !isOneOfNetworks(chain, [Network.HOMESTEAD]);
+  return !isOneOfNetworks(chain, [Network.HOMESTEAD, Network.MATIC]);
 };
 
 export default fn;

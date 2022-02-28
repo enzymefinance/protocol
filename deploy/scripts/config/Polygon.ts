@@ -129,6 +129,7 @@ const atokens = {
 const mainnetConfig: DeploymentConfig = {
   aave: {
     atokens,
+    incentivesController: '0x357D51124f59836DeD84c8a1730D72B749d8BC23',
     lendingPoolAddressProvider: '0xd05e3E715d945B59290df0ae8eF85c1BdB684744',
     protocolDataProvider: '0x7551b5D2763519d4e37e8B81929D336De671d46d',
   },
@@ -152,8 +153,17 @@ const mainnetConfig: DeploymentConfig = {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     tokenTransferProxy: '0x216B4B4Ba9F3e719726886d34a177484278Bfcae',
   },
+  poolTogetherV4: {
+    ptTokens: {
+      ptUsdc: ['0x6a304dFdb9f808741244b6bfEe65ca7B3b3A6076', primitives.usdc] as [string, string]
+    }
+  },
   positionsLimit: 20,
   primitives,
+  uniswapV3: {
+    nonFungiblePositionManager: '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+    router: '0xE592427A0AEce92De3Edee1F18E0157C05861564'
+  },
   weth,
   wrappedNativeAsset
 } as any as DeploymentConfig
