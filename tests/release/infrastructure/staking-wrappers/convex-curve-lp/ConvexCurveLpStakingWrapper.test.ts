@@ -48,6 +48,7 @@ describe('init', () => {
     // Get ERC20 token info
     expect(await wrapper.name()).toEqual('Enzyme Staked: Curve.fi ETH/stETH Convex Deposit');
     expect(await wrapper.symbol()).toEqual('stkcvxsteCRV');
+    expect(await wrapper.decimals()).toEqBigNumber(18);
   });
 });
 

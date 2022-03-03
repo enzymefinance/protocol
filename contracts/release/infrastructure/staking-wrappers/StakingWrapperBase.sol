@@ -64,6 +64,7 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         uint256 amount
     );
 
+    uint8 private constant DEFAULT_DECIMALS = 18;
     uint256 private constant INTEGRAL_PRECISION = 1e18;
     address internal immutable OWNER;
 
@@ -433,6 +434,13 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     /////////////////////
     // ERC20 OVERRIDES //
     /////////////////////
+
+    /// @notice Gets the token decimals
+    /// @return decimals_ The token decimals
+    /// @dev Implementing contracts should override to set different decimals
+    function decimals() public view virtual override returns (uint8 decimals_) {
+        return DEFAULT_DECIMALS;
+    }
 
     /// @dev Overrides ERC20._transfer() in order to checkpoint sender and recipient pre-transfer rewards
     function _transfer(
