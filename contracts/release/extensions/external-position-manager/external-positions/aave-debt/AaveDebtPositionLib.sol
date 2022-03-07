@@ -142,8 +142,14 @@ contract AaveDebtPositionLib is
                 "__removeCollateralAssets: Invalid collateral asset"
             );
 
+            uint256 collateralBalance = ERC20(aTokens[i]).balanceOf(address(this));
+
+            if (amounts[i] == type(uint256).max) {
+                amounts[i] = collateralBalance;
+            }
+
             // If the full collateral of an asset is removed, it can be removed from collateral assets
-            if (ERC20(aTokens[i]).balanceOf(address(this)) == amounts[i]) {
+            if (amounts[i] == collateralBalance) {
                 collateralAssets.removeStorageItem(aTokens[i]);
                 emit CollateralAssetRemoved(aTokens[i]);
             }
@@ -253,6 +259,7 @@ contract AaveDebtPositionLib is
     function getDebtTokenForBorrowedAsset(address _borrowedAsset)
         public
         view
+        override
         returns (address debtToken_)
     {
         return borrowedAssetToDebtToken[_borrowedAsset];

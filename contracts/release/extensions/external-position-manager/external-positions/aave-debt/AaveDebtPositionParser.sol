@@ -27,13 +27,14 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
+    /// @param _externalPosition The _externalPosition to be called
     /// @param _actionId The _actionId for the callOnExternalPosition
     /// @param _encodedActionArgs The encoded parameters for the callOnExternalPosition
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
     function parseAssetsForAction(
-        address,
+        address _externalPosition,
         uint256 _actionId,
         bytes memory _encodedActionArgs
     )
@@ -70,6 +71,16 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
             (assetsToTransfer_, amountsToTransfer_) = __decodeRepayBorrowActionArgs(
                 _encodedActionArgs
             );
+
+            for (uint256 i; i < assetsToTransfer_.length; i++) {
+                if (amountsToTransfer_[i] == type(uint256).max) {
+                    // Transfers the full repay amount to the external position, which will still call `repay()` on the lending pool with max uint.
+                    // This is fine, because `repay()` only uses up to the full repay amount.
+                    address debtToken = IAaveDebtPosition(_externalPosition)
+                        .getDebtTokenForBorrowedAsset(assetsToTransfer_[i]);
+                    amountsToTransfer_[i] = ERC20(debtToken).balanceOf(_externalPosition);
+                }
+            }
         }
 
         // No validations or transferred assets passed for Actions.ClaimRewards
