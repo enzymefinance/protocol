@@ -250,7 +250,70 @@ describe('removeCollateralAssets', () => {
 
       expect(borrowedBalancesAfter).toBeAroundBigNumber(borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]));
 
-      expect(repayBorrowReceipt).toCostAround('434367');
+      expect(repayBorrowReceipt).toCostAround('436187');
+    });
+
+    it('works as expected when called to repay borrow by a fund (more than full amount)', async () => {
+      const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+      const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+
+      const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
+      const collateralAssets = [aToken];
+
+      const borrowedAmounts = [collateralAmounts[0].div(10)];
+
+      const seedAmount = (await getAssetUnit(aToken)).mul(100);
+
+      await aToken.transfer(vaultProxyUsed.address, seedAmount);
+      await token.transfer(vaultProxyUsed.address, seedAmount);
+
+      await aaveDebtPositionAddCollateral({
+        aTokens: collateralAssets,
+        amounts: collateralAmounts,
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: aaveDebtPosition,
+        signer: fundOwner,
+      });
+
+      await aaveDebtPositionBorrow({
+        amounts: borrowedAmounts,
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: aaveDebtPosition,
+        signer: fundOwner,
+        tokens: [token],
+      });
+
+      // Warp some time to ensure there is an accruedInterest > 0
+      const secondsToWarp = 100000000;
+      await provider.send('evm_increaseTime', [secondsToWarp]);
+      await provider.send('evm_mine', []);
+
+      const borrowedBalancesBefore = (await aaveDebtPosition.getDebtAssets.call()).amounts_[0];
+
+      const vaultBalanceBefore = await token.balanceOf(vaultProxyUsed);
+
+      const repayBorrowReceipt = await aaveDebtPositionRepayBorrow({
+        amounts: [borrowedBalancesBefore.add(1)],
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: aaveDebtPosition,
+        signer: fundOwner,
+        tokens: [token],
+      });
+
+      const vaultBalanceAfter = await token.balanceOf(vaultProxyUsed);
+
+      expect(vaultBalanceAfter).toEqBigNumber(vaultBalanceBefore.sub(borrowedBalancesBefore));
+
+      const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
+      expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
+        amounts_: [],
+        assets_: [],
+      });
+
+      expect(repayBorrowReceipt).toCostAround('440816');
     });
   });
 

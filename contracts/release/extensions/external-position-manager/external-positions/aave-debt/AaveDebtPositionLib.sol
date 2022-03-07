@@ -186,6 +186,12 @@ contract AaveDebtPositionLib is
                 address(this)
             );
 
+            uint256 remainingBalance = ERC20(tokens[i]).balanceOf(address(this));
+
+            if (remainingBalance > 0) {
+                ERC20(tokens[i]).safeTransfer(msg.sender, remainingBalance);
+            }
+
             // Remove borrowed asset state from storage, if there is no remaining borrowed balance
             if (ERC20(getDebtTokenForBorrowedAsset(tokens[i])).balanceOf(address(this)) == 0) {
                 delete borrowedAssetToDebtToken[tokens[i]];
