@@ -46,8 +46,7 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
         )
     {
         if (_actionId == uint256(IAaveDebtPosition.Actions.AddCollateral)) {
-            // No need to validate aTokens, as `setUserUseReserveAsCollateral()` call to Aave will
-            // fail during accidental inputs, and the worst using a malicious aToken can do is track
+            // No need to validate aTokens, as the worst using a malicious aToken can do is track
             // invalid collateral in the external position
             (assetsToTransfer_, amountsToTransfer_) = __decodeAddCollateralActionArgs(
                 _encodedActionArgs

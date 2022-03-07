@@ -85,7 +85,7 @@ describe('addCollateralAssets', () => {
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(collateralAmounts[0]);
     expect(getManagedAssetsCall.assets_).toEqual(collateralAssets);
 
-    expect(addCollateralReceipt).toCostAround('404592');
+    expect(addCollateralReceipt).toCostAround('386141');
   });
 });
 

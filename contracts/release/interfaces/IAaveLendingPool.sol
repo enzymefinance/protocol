@@ -36,8 +36,6 @@ interface IAaveLendingPool {
         address
     ) external returns (uint256);
 
-    function setUserUseReserveAsCollateral(address, bool) external;
-
     function withdraw(
         address,
         uint256,

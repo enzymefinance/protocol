@@ -12,7 +12,6 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../../persistent/external-positions/aave-debt/AaveDebtPositionLibBase1.sol";
-import "../../../../interfaces/IAaveAToken.sol";
 import "../../../../interfaces/IAaveIncentivesController.sol";
 import "../../../../interfaces/IAaveLendingPool.sol";
 import "../../../../interfaces/IAaveLendingPoolAddressProvider.sol";
@@ -80,18 +79,8 @@ contract AaveDebtPositionLib is
     function __addCollateralAssets(bytes memory actionArgs) private {
         (address[] memory aTokens, ) = __decodeAddCollateralActionArgs(actionArgs);
 
-        address lendingPoolAddress = IAaveLendingPoolAddressProvider(
-            AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        )
-            .getLendingPool();
-
         for (uint256 i; i < aTokens.length; i++) {
             if (!assetIsCollateral(aTokens[i])) {
-                IAaveLendingPool(lendingPoolAddress).setUserUseReserveAsCollateral(
-                    IAaveAToken(aTokens[i]).UNDERLYING_ASSET_ADDRESS(),
-                    true
-                );
-
                 collateralAssets.push(aTokens[i]);
                 emit CollateralAssetAdded(aTokens[i]);
             }
