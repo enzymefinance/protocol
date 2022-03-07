@@ -132,10 +132,10 @@ contract AaveDebtPositionLib is
 
     /// @dev Claims all stkAAVE accrued and send it to the Vault
     function __claimStkAave(bytes memory actionArgs) private {
-        address[] memory aTokens = __decodeClaimStkAaveActionArgs(actionArgs);
+        address[] memory assets = __decodeClaimStkAaveActionArgs(actionArgs);
 
         IAaveIncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(
-            aTokens,
+            assets,
             type(uint256).max,
             msg.sender
         );

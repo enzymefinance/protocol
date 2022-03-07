@@ -78,17 +78,17 @@ export async function aaveDebtPositionClaimStkAave({
   comptrollerProxy,
   externalPositionManager,
   signer,
-  aTokens,
+  assets,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
-  aTokens: AddressLike[];
+  assets: AddressLike[];
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = aaveDebtPositionClaimStkAaveArgs({
-    aTokens,
+    assets,
   });
 
   return callOnExternalPosition({

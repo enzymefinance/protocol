@@ -35,7 +35,7 @@ abstract contract AaveDebtPositionDataDecoder {
     function __decodeClaimStkAaveActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (address[] memory aTokens_)
+        returns (address[] memory assets_)
     {
         return abi.decode(_actionArgs, (address[]));
     }

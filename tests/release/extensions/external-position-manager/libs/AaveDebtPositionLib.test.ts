@@ -284,7 +284,7 @@ describe('removeCollateralAssets', () => {
       const stkAaveBalanceBefore = await rewardToken.balanceOf(vaultProxyUsed);
 
       await aaveDebtPositionClaimStkAave({
-        aTokens: collateralAssets,
+        assets: collateralAssets,
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: aaveDebtPosition,
