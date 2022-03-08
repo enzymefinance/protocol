@@ -47,22 +47,18 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
         )
     {
         if (_actionId == uint256(IAaveDebtPosition.Actions.AddCollateral)) {
-            // No need to validate aTokens, as the worst using a malicious aToken can do is track
-            // invalid collateral in the external position
+            // No need to validate aTokens, as the worst case would be that this function is used
+            // to indirectly add and track a misc supported asset
             (assetsToTransfer_, amountsToTransfer_) = __decodeAddCollateralActionArgs(
                 _encodedActionArgs
             );
+            __validateSupportedAssets(assetsToTransfer_);
         } else if (_actionId == uint256(IAaveDebtPosition.Actions.Borrow)) {
             // No need to validate tokens, as `borrow()` call to Aave will fail for invalid tokens,
             // and even if Aave logic changes to fail silently, the worst case would be that
-            // this function is used to indirectly add and track a misc asset in the vault
+            // this function is used to indirectly add and track a misc supported asset
             (assetsToReceive_, ) = __decodeBorrowActionArgs(_encodedActionArgs);
-            for (uint256 i; i < assetsToReceive_.length; i++) {
-                require(
-                    IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(assetsToReceive_[i]),
-                    "parseAssetsForAction: Unsupported asset"
-                );
-            }
+            __validateSupportedAssets(assetsToReceive_);
         } else if (_actionId == uint256(IAaveDebtPosition.Actions.RemoveCollateral)) {
             // Lib validates that each is a valid collateral asset
             (assetsToReceive_, ) = __decodeRemoveCollateralActionArgs(_encodedActionArgs);
@@ -74,7 +70,8 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
 
             for (uint256 i; i < assetsToTransfer_.length; i++) {
                 if (amountsToTransfer_[i] == type(uint256).max) {
-                    // Transfers the full repay amount to the external position, which will still call `repay()` on the lending pool with max uint.
+                    // Transfers the full repay amount to the external position,
+                    // which will still call `repay()` on the lending pool with max uint.
                     // This is fine, because `repay()` only uses up to the full repay amount.
                     address debtToken = IAaveDebtPosition(_externalPosition)
                         .getDebtTokenForBorrowedAsset(assetsToTransfer_[i]);
@@ -91,4 +88,14 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @dev Empty for this external position type
     function parseInitArgs(address, bytes memory) external override returns (bytes memory) {}
+
+    /// @dev Helper to validate that assets are supported within the protocol
+    function __validateSupportedAssets(address[] memory _assets) private view {
+        for (uint256 i; i < _assets.length; i++) {
+            require(
+                IValueInterpreter(VALUE_INTERPRETER).isSupportedAsset(_assets[i]),
+                "__validateSupportedAssets: Unsupported asset"
+            );
+        }
+    }
 }
