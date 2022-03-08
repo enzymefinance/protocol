@@ -25,7 +25,7 @@ export function aaveDebtPositionBorrowArgs({ tokens, amounts }: { tokens: Addres
   return encodeArgs(['address[]', 'uint256[]'], [tokens, amounts]);
 }
 
-export function aaveDebtPositionClaimStkAaveArgs({ assets }: { assets: AddressLike[] }) {
+export function aaveDebtPositionClaimRewardsArgs({ assets }: { assets: AddressLike[] }) {
   return encodeArgs(['address[]'], [assets]);
 }
 

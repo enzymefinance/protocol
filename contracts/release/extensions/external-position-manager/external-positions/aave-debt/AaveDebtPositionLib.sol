@@ -68,8 +68,8 @@ contract AaveDebtPositionLib is
             __borrowAssets(actionArgs);
         } else if (actionId == uint256(Actions.RepayBorrow)) {
             __repayBorrowedAssets(actionArgs);
-        } else if (actionId == uint256(Actions.ClaimStkAave)) {
-            __claimStkAave(actionArgs);
+        } else if (actionId == uint256(Actions.ClaimRewards)) {
+            __claimRewards(actionArgs);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
@@ -119,9 +119,9 @@ contract AaveDebtPositionLib is
         }
     }
 
-    /// @dev Claims all stkAAVE accrued and send it to the Vault
-    function __claimStkAave(bytes memory actionArgs) private {
-        address[] memory assets = __decodeClaimStkAaveActionArgs(actionArgs);
+    /// @dev Claims all rewards accrued and send it to the Vault
+    function __claimRewards(bytes memory actionArgs) private {
+        address[] memory assets = __decodeClaimRewardsActionArgs(actionArgs);
 
         IAaveIncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(
             assets,

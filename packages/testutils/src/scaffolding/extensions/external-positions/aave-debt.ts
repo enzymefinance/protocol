@@ -5,7 +5,7 @@ import {
   AaveDebtPositionActionId,
   aaveDebtPositionAddCollateralArgs,
   aaveDebtPositionBorrowArgs,
-  aaveDebtPositionClaimStkAaveArgs,
+  aaveDebtPositionClaimRewardsArgs,
   aaveDebtPositionRemoveCollateralArgs,
   aaveDebtPositionRepayBorrowArgs,
   ExternalPositionType,
@@ -74,7 +74,7 @@ export async function aaveDebtPositionBorrow({
   });
 }
 
-export async function aaveDebtPositionClaimStkAave({
+export async function aaveDebtPositionClaimRewards({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -87,7 +87,7 @@ export async function aaveDebtPositionClaimStkAave({
   assets: AddressLike[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionClaimStkAaveArgs({
+  const actionArgs = aaveDebtPositionClaimRewardsArgs({
     assets,
   });
 

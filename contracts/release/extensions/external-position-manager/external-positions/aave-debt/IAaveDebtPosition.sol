@@ -14,7 +14,7 @@ pragma solidity 0.6.12;
 /// @title IAaveDebtPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IAaveDebtPosition is IExternalPosition {
-    enum Actions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow, ClaimStkAave}
+    enum Actions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow, ClaimRewards}
 
     function getDebtTokenForBorrowedAsset(address) external view returns (address);
 }
