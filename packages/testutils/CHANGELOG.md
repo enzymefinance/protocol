@@ -1,5 +1,29 @@
 # @enzymefinance/testutils
 
+## 4.0.0
+
+### Major Changes
+
+- 3a27d558: Entering pre-release phase for Sulu
+
+### Patch Changes
+
+- 837da449: Upgrade dependencies and publish new version
+- a18335ad: Upgrade dependencies and including new policies.
+- 8b844ad4: Publish with call signatures.
+- 90955319: Publishing new adapters
+- a0b65d53: Publishing post-audit packages.
+- 10b83667: Upgrade deps and publish new version
+- Updated dependencies [837da449]
+- Updated dependencies [a18335ad]
+- Updated dependencies [8b844ad4]
+- Updated dependencies [3a27d558]
+- Updated dependencies [90955319]
+- Updated dependencies [3d8a980b]
+- Updated dependencies [a0b65d53]
+- Updated dependencies [10b83667]
+  - @enzymefinance/protocol@4.0.0
+
 ## 4.0.0-next.7
 
 ### Patch Changes

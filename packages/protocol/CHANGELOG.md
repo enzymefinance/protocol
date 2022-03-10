@@ -1,5 +1,21 @@
 # @enzymefinance/protocol
 
+## 4.0.0
+
+### Major Changes
+
+- 3a27d558: Entering pre-release phase for Sulu
+
+### Patch Changes
+
+- 837da449: Upgrade dependencies and publish new version
+- a18335ad: Upgrade dependencies and including new policies.
+- 8b844ad4: Publish with call signatures.
+- 90955319: Publishing new adapters
+- 3d8a980b: Expose validUntil option in createSignedRelayRequest util
+- a0b65d53: Publishing post-audit packages.
+- 10b83667: Upgrade deps and publish new version
+
 ## 4.0.0-next.7
 
 ### Patch Changes
