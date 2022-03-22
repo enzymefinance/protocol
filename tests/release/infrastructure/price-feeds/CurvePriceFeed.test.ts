@@ -136,7 +136,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of WETH (10^18)
-    expect(canonicalAssetValue).toEqBigNumber('1029719199740704998');
+    expect(canonicalAssetValue).toEqBigNumber('1036302310086699090');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
@@ -158,7 +158,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of USDC (10^6)
-    expect(canonicalAssetValue).toEqBigNumber('1019786');
+    expect(canonicalAssetValue).toEqBigNumber('1020540');
   });
 });
 

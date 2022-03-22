@@ -202,7 +202,7 @@ describe('lend', () => {
       amountADesired.mul(poolTokensSupply).div(tokenAReserve),
       amountBDesired.mul(poolTokensSupply).div(tokenBReserve),
     );
-    expect(expectedPoolTokens).toEqBigNumber('75219002935137723');
+    expect(expectedPoolTokens).toEqBigNumber('69762626247001741');
 
     // Seed fund with tokens and lend
     await tokenA.transfer(vaultProxy, amountADesired);

@@ -197,13 +197,13 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // cDai/usd price on Dec 17, 2021 was about 0,02177 USD.
-    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2021-12-17&end_date=2021-12-17>
+    // cDai/usd price on Mar 22, 2022 was about 0.02202 USD.
+    // Source: <https://www.coingecko.com/en/coins/compound-dai/historical_data/usd?start_date=2022-03-22&end_date=2022-03-22>
     // Numbers beyond this date will only be slightly higher.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('21770221575625327');
+    expect(canonicalAssetValue).toEqBigNumber('21918519449394613');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
@@ -216,12 +216,12 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // cUsdc/usd price on Dec 17, 2021 was about 0,0224 USD.
-    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2021-12-17&end_date=2021-12-17>
+    // cUsdc/usd price on Mar 22, 2022 was about 0.02264 USD.
+    // source: https://www.coingecko.com/en/coins/compound-usd-coin/historical_data/usd?start_date=2022-03-22&end_date=2022-03-22>
     // Numbers beyond this date will only be slightly higher.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
-    expect(canonicalAssetValue).toEqBigNumber('22408');
+    expect(canonicalAssetValue).toEqBigNumber('22538');
   });
 });

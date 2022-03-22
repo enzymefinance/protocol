@@ -32,8 +32,8 @@ describe('latestRoundData', () => {
     expect(latestRoundDataRes.answeredInRound_).toEqBigNumber(chainlinkLatestRoundDataRes[4]);
 
     // Rate should be inverse ETH/USD price with the target precision (1/price * 1e18).
-    // On Dec 17, 2021 ETH/USD was $3850.
-    expect(latestRoundDataRes.answer_).toEqBigNumber(261213182862634);
+    // On Mar 22, 2022 ETH/USD was $3000.
+    expect(latestRoundDataRes.answer_).toEqBigNumber(333670916532464);
   });
 });
 
@@ -63,11 +63,11 @@ describe('e2e', () => {
     );
 
     // Assert the expected Curve pool value in terms of USDC
-    // a3CRV was approx $1.08 on Dec 17, 2021
+    // a3CRV was approx $1.09 on Mar 22, 2022
     expect(
       await valueInterpreter.calcCanonicalAssetValue
         .args(curveLpToken, curveLpTokenUnit, fork.config.primitives.usdc)
         .call(),
-    ).toEqBigNumber(1078600);
+    ).toEqBigNumber(1086761);
   });
 });

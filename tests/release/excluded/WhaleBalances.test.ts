@@ -38,13 +38,13 @@ it('whales have adequate balances', async () => {
     fdai7: fork.config.fuse.ftokens.fdai7,
     feth7: fork.config.fuse.fetherTokens.feth7,
     fdai8: fork.config.fuse.ftokens.fdai8,
-    ftribe8: fork.config.fuse.ftokens.ftribe8,
     // ptTokens
     ptUsdc: fork.config.poolTogetherV4.ptTokens.ptUsdc[0],
     // synths
     // misc
     lidoSteth: fork.config.lido.steth,
     // Not supported assets, so no price lookups
+    // ftribe8: fork.config.fuse.ftokens.ftribe8, but underlying not in asset universe in config
     // seth: fork.config.unsupportedAssets.seth
     // sxag: 0x6a22e5e94388464181578aa7a6b869e00fe27846
     // sxau: 0x261efcdd24cea98652b9700800a13dfbca4103ff

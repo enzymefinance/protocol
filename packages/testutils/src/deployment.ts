@@ -237,7 +237,6 @@ export interface DeploymentConfig {
     bestYieldIdleUsdc: string;
     bestYieldIdleUsdt: string;
     bestYieldIdleSusd: string;
-    bestYieldIdleTusd: string;
     bestYieldIdleWbtc: string;
     riskAdjustedIdleDai: string;
     riskAdjustedIdleUsdc: string;

@@ -16,11 +16,11 @@ const whales = {
   link: '0xbe6977e08d4479c0a6777539ae0e8fa27be4e9d6',
   mana: '0xefb94ac00f1cee8a89d5c3f49faa799da6f03024',
   mln: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
-  ohm: '0x71a53aff36a699110d66d6bdfff2320caf8d2d59',
+  ohm: '0x2cfcbd233268c302996c767347eb45bec36fb08d',
   rep: '0xc6a043b07d33b6f30d8cb501026c391cfd25abe1',
   ren: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
   susd: '0xa5f7a39e55d7878bc5bd754ee5d6bd7a7662355b',
-  sohm: '0xf280f037cdbda99727ddf5dfede91e68fa78605c',
+  sohm: '0x3d5c83351c872fdf07da498c84ca3275222f284c',
   uni: '0x47173b170c64d16393a52e6c480b3ad8c302ba1e',
   usdc: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
   usdt: '0x5041ed759dd4afc3a72b8192c143f72f4724081a',
@@ -31,24 +31,24 @@ const whales = {
   ausdt: '0x7d6149ad9a573a6e2ca6ebf7d4897c1b766841b4',
   // cTokens
   ccomp: '0xd74f186194ab9219fafac5c2fe4b3270169666db',
-  cdai: '0xab4ce310054a11328685ece1043211b68ba5d082',
+  cdai: '0x22fa8cc33a42320385cbd3690ed60a021891cb32',
   ceth: '0x8aceab8167c80cb8b3de7fa6228b889bb1130ee8',
   cuni: '0x39d8014b4f40d2cbc441137011d32023f4f1fd87',
-  cusdc: '0xe1ed4da4284924ddaf69983b4d813fb1be58c380',
+  cusdc: '0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be',
   // fTokens
-  fdai7: '0x88884e35d7006ae84efef09ee6bc6a43dd8e2bb8',
-  feth7: '0xcd2ba6a4d50745b0b4096186f925115387852c15',
-  fdai8: '0x93f3f612a525a59523e91cc5552f718df9fc0746',
+  fdai7: '0xa993d62492f41703f6185881eae755b0966ea5b0',
+  feth7: '0x05f284897641661fee9f1c1413a4f599a43a746f',
+  fdai8: '0xd6bf9d9079139dbb3a4fdb84b07efc75ea77838f',
   ftribe8: '0xdb5ac83c137321da29a59a7592232bc4ed461730',
   // ptTokens
-  ptUsdc: '0xd18236cd213f39d078177b6f6908f0e44e88e4aa',
+  ptUsdc: '0x8904ffc6aa039db5941de11309a42372f3f7d2fd',
   // synths (unsupported)
   seth: '0xc34a7c65aa08cb36744bda8eeec7b8e9891e147c',
   sxag: '0x40d68c490bf7262ec40048099aec23535f734be2',
   sxau: '0x92eb453b7b5b8d41edb44e2c8b8b53eb70a482c7',
   // misc
-  lidoSteth: '0x31f644e2dd5d74f5c8d6d9de89dd517474d51800',
-  ust: '0xf584f8728b874a6a5c7a8d4d387c9aae9172d621',
+  lidoSteth: '0x06920c9fc643de77b99cb7670a944ad31eaaa260',
+  ust: '0x738cf6903e6c4e699d1c2dd9ab8b67fcdb3121ea',
   // Curve steth pool related
   stecrv: '0x56c915758ad3f76fd287fff7563ee313142fb663',
 } as const;

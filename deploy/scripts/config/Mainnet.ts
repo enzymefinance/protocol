@@ -24,7 +24,6 @@ const primitives = {
   bnb: '0xB8c77482e45F1F44dE1745F52C74426C631bDD52',
   bnt: '0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c',
   busd: '0x4fabb145d64652a948d72533023f6e7a623c7c53',
-  bzrx: '0x56d811088235f11c8920698a204a5010a788f4b3',
   comp: '0xc00e94Cb662C3520282E6f5717214004A7f26888',
   cro: '0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b',
   crv: '0xd533a949740bb3306d119cc777fa900ba034cd52',
@@ -48,7 +47,6 @@ const primitives = {
   sohm: '0x04906695D6D12CF5459975d7C3C03356E4Ccd460',
   susd: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
   sxp: '0x8ce9137d39326ad0cd6491fb5cc0cba0e089b6a9',
-  tusd: '0x0000000000085d4780B73119b644AE5ecd22b376',
   uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
   usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   usdt: '0xdac17f958d2ee523a2206206994597c13d831ec7',
@@ -67,7 +65,6 @@ const aggregators = {
   bnb: ['0x14e613ac84a31f709eadbdf89c6cc390fdc9540a', ChainlinkRateAsset.USD],
   bnt: ['0xcf61d1841b178fe82c8895fe60c2edda08314416', ChainlinkRateAsset.ETH],
   busd: ['0x614715d2af89e6ec99a233818275142ce88d1cfd', ChainlinkRateAsset.ETH],
-  bzrx: ['0x8f7c7181ed1a2ba41cfc3f5d064ef91b67daef66', ChainlinkRateAsset.ETH],
   comp: ['0x1b39ee86ec5979ba5c322b826b3ecb8c79991699', ChainlinkRateAsset.ETH],
   cro: ['0xcA696a9Eb93b81ADFE6435759A29aB4cf2991A96', ChainlinkRateAsset.ETH],
   crv: ['0x8a12be339b0cd1829b91adc01977caa5e9ac121e', ChainlinkRateAsset.ETH],
@@ -91,7 +88,6 @@ const aggregators = {
   sohm: ['0x90c2098473852e2f07678fe1b6d595b1bd9b16ed', ChainlinkRateAsset.ETH],
   susd: ['0x8e0b7e6062272B5eF4524250bFFF8e5Bd3497757', ChainlinkRateAsset.ETH],
   sxp: ['0xFb0CfD6c19e25DB4a08D8a204a387cEa48Cc138f', ChainlinkRateAsset.USD],
-  tusd: ['0x3886BA987236181D98F2401c507Fb8BeA7871dF2', ChainlinkRateAsset.ETH],
   uni: ['0xd6aa3d25116d8da79ea0246c4826eb951872e02e', ChainlinkRateAsset.ETH],
   usdc: ['0x986b5e1e1755e3c2440e960477f25201b0a8bbd4', ChainlinkRateAsset.ETH],
   usdt: ['0xee9f2375b4bdf6387aa8265dd4fb8f16512a1d46', ChainlinkRateAsset.ETH],
@@ -156,7 +152,6 @@ const pools = {
   bntWeth: '0x3fd4cf9303c4bc9e13772618828712c8eac7dd2f',
   busdUsdc: '0x524847c615639e76fe7d0fe0b16be8c4eac9cf3c',
   busdUsdt: '0xa0abda1f980e03d7eadb78aed8fc1f2dd0fe83dd',
-  bzrxWeth: '0xb9b752f7f4a4680eeb327ffe728f46666763a796',
   compWeth: '0xcffdded873554f362ac02f8fb1f02e5ada10516f',
   croWeth: '0x90704ac59e7e54632b0cc9d22573aecd7eb094ad',
   crvWeth: '0x3da1313ae46132a397d90d95b1424a9a7e3e0fce',
@@ -178,7 +173,6 @@ const pools = {
   snxWeth: '0x43ae24960e5534731fc831386c07755a2dc33d47',
   susdWeth: '0xf80758ab42c3b07da84053fd88804bcb6baa4b5c',
   sxpWeth: '0xac317d14738a454ff20b191ba3504aa97173045b',
-  tusdWeth: '0xb4d0d9df2738abe81b87b66c80851292492d1404',
   uniWeth: '0xd3d2e2692501a5c9ca623199d38826e513033a17',
   usdcUsdt: '0x3041cbd36888becc7bbcbc0045e3b1f144466f5f',
   usdcWeth: '0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc',
@@ -193,7 +187,7 @@ const pools = {
 const yVaultsV2 = {
   yCrvSteth: '0xdCD90C7f6324cfa40d7169ef80b12031770B4325',
   yDai: '0x19D3364A399d251E894aC732651be8B0E4e85001',
-  yUsdc: '0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9',
+  yUsdc: '0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE',
 };
 
 const unsupportedAssets = {
@@ -267,7 +261,6 @@ const mainnetConfig: DeploymentConfig = {
   idle: {
     bestYieldIdleDai: '0x3fE7940616e5Bc47b0775a0dccf6237893353bB4',
     bestYieldIdleSusd: '0xf52cdcd458bf455aed77751743180ec4a595fd3f',
-    bestYieldIdleTusd: '0xc278041fDD8249FE4c1Aad1193876857EEa3D68c',
     bestYieldIdleUsdc: '0x5274891bEC421B39D23760c04A6755eCB444797C',
     bestYieldIdleUsdt: '0xF34842d05A1c888Ca02769A633DF37177415C2f8',
     bestYieldIdleWbtc: '0x8C81121B15197fA0eEaEE1DC75533419DcfD3151',
