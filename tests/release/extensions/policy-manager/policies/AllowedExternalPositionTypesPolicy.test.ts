@@ -25,6 +25,7 @@ import {
 
 let fork: ProtocolDeployment;
 let allowedExternalPositionTypesPolicy: AllowedExternalPositionTypesPolicy;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -50,6 +51,7 @@ describe('activateForFund', () => {
 
 describe('addFundSettings', () => {
   let fundOwner: SignerWithAddress;
+
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
   });
@@ -83,6 +85,7 @@ describe('addFundSettings', () => {
       receipt,
       allowedExternalPositionTypesPolicy.abi.getEvent('AllowedExternalPositionTypeAddedForFund'),
     );
+
     expect(events.length).toBe(externalPositionTypeIds.length);
     for (const i in externalPositionTypeIds) {
       expect(
@@ -218,6 +221,7 @@ describe('validateRule', () => {
         fundOwner,
         signer: fundOwner,
       });
+
       comptrollerProxy = newFundRes.comptrollerProxy;
 
       const createCompoundDebtPositionRes = await createCompoundDebtPosition({
@@ -225,6 +229,7 @@ describe('validateRule', () => {
         externalPositionManager,
         signer: fundOwner,
       });
+
       externalPositionProxy = createCompoundDebtPositionRes.externalPositionProxy;
 
       await removeExternalPosition({
@@ -258,6 +263,7 @@ describe('validateRule', () => {
     it('allows creating an external position of an allowed type', async () => {
       // Add policy that allows the externalPositionProxy
       const externalPositionTypeId = await externalPositionProxy.getExternalPositionType();
+
       await policyManager
         .connect(fundOwner)
         .enablePolicyForFund(

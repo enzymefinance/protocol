@@ -14,6 +14,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -92,6 +93,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
   });

@@ -1,7 +1,5 @@
-/*
- * @file Uses the EntranceRateBurnFee to test the basic functionality of an EntranceRateFeeBase
- * that does not rely on settlement type
- */
+// @file Uses the EntranceRateBurnFee to test the basic functionality of an EntranceRateFeeBase
+// that does not rely on settlement type
 
 import { randomAddress } from '@enzymefinance/ethers';
 import {
@@ -20,6 +18,7 @@ async function deployStandaloneEntranceRateFee(fork: ProtocolDeployment) {
   const [EOAFeeManager] = fork.accounts.slice(-1);
 
   let entranceRateFee = await EntranceRateBurnFee.deploy(fork.deployer, EOAFeeManager);
+
   entranceRateFee = entranceRateFee.connect(EOAFeeManager);
 
   return entranceRateFee;
@@ -58,6 +57,7 @@ describe('addFundSettings', () => {
 
     // Assert state has been set
     const getRateForFundCall = await entranceRateFee.getRateForFund(comptrollerProxyAddress);
+
     expect(getRateForFundCall).toEqBigNumber(rate);
   });
 });

@@ -17,6 +17,7 @@ import { BigNumber, constants, utils } from 'ethers';
 const curveRoundingBuffer = 5;
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -33,12 +34,15 @@ describe('constructor', () => {
     const curveExchangeAdapter = fork.deployment.curveExchangeAdapter;
 
     const getIntegrationManagerCall = await curveExchangeAdapter.getIntegrationManager();
+
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
     const getAddressProvider = await curveExchangeAdapter.getCurveExchangeAddressProvider();
+
     expect(getAddressProvider).toMatchAddress(fork.config.curve.addressProvider);
 
     const getWethTokenCall = await curveExchangeAdapter.getCurveExchangeWethToken();
+
     expect(getWethTokenCall).toMatchAddress(fork.config.weth);
   });
 });

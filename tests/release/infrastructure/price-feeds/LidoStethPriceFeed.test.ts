@@ -2,6 +2,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });

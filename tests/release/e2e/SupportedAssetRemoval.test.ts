@@ -59,6 +59,7 @@ beforeAll(async () => {
 
     signer: fundOwner,
   });
+
   comptrollerProxy = newFundRes.comptrollerProxy;
   vaultProxy = newFundRes.vaultProxy;
 
@@ -118,6 +119,7 @@ describe('unsupported denomination asset', () => {
     });
 
     const failureEvents = extractEvent(redeemSharesTx as any, 'PreRedeemSharesHookFailed');
+
     expect(failureEvents.length).toBe(1);
   });
 });
@@ -171,6 +173,7 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
     });
 
     const failureEvents = extractEvent(redeemSharesTx as any, 'PreRedeemSharesHookFailed');
+
     expect(failureEvents.length).toBe(1);
   });
 });

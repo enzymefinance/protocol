@@ -12,6 +12,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -76,6 +77,7 @@ describe('updateFundSettings', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
 
@@ -150,6 +152,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
 

@@ -95,6 +95,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       // Seed investors with denomination asset
       const denominationAssetSeedAmount = utils.parseUnits('100', await denominationAsset.decimals());
+
       await denominationAsset.transfer(investor, denominationAssetSeedAmount);
       await denominationAsset.transfer(anotherInvestor, denominationAssetSeedAmount);
     });
@@ -222,9 +223,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
       for (const asset of assets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
+
         await asset.transfer(vaultProxy, transferAmount);
 
         const balance = await asset.balanceOf(vaultProxy);
+
         expect(balance).toBeGteBigNumber(transferAmount);
       }
     });
@@ -250,9 +253,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
       for (const asset of compoundAssets) {
         const decimals = await asset.decimals();
         const transferAmount = utils.parseUnits('1', decimals);
+
         await asset.transfer(vaultProxy, transferAmount);
 
         const balance = await asset.balanceOf(vaultProxy);
+
         expect(balance).toBeGteBigNumber(transferAmount);
       }
     });
@@ -307,6 +312,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       });
 
       const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
+
       expect(failureEvents.length).toBe(0);
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(balance.sub(redeemQuantity));
@@ -363,6 +369,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       });
 
       const failureEvents = extractEvent(redeemed, 'PreRedeemSharesHookFailed');
+
       expect(failureEvents.length).toBe(0);
 
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(utils.parseEther('0'));

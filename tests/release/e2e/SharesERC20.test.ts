@@ -3,6 +3,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -27,6 +28,7 @@ describe('transfer', () => {
     const preTxInvestorBalance = await vaultProxy.balanceOf(investor);
 
     const amountToTransfer = preTxInvestorBalance.div(4);
+
     expect(amountToTransfer).toBeGtBigNumber(0);
 
     // Execute the transfer
@@ -65,6 +67,7 @@ describe('transferFrom', () => {
     const preTxInvestorBalance = await vaultProxy.balanceOf(investor);
 
     const amountToTransfer = preTxInvestorBalance.div(4);
+
     expect(amountToTransfer).toBeGtBigNumber(0);
 
     // Transfer should fail prior to granting allowance

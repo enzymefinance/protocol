@@ -30,6 +30,7 @@ async function createProtocolFeeReserveProxy({
 }
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });

@@ -58,6 +58,7 @@ beforeEach(async () => {
     fundOwner,
     signer: fundOwner,
   });
+
   comptrollerProxy = newFundRes.comptrollerProxy;
 });
 
@@ -175,6 +176,7 @@ describe('__calcTotalValueExlcudingBypassablePricelessAssets', () => {
     const expectedValue = await valueInterpreter.calcCanonicalAssetsTotalValue
       .args(assetsToQuery, assetAmountsToQuery, denominationAsset)
       .call();
+
     expect(
       await testPricelessAssetBypassMixin.calcTotalValueExlcudingBypassablePricelessAssets
         .args(comptrollerProxy, assetsToQuery, assetAmountsToQuery, denominationAsset)
@@ -251,6 +253,7 @@ describe('__calcValueExcludingBypassablePricelessAsset', () => {
     const expectedValue = await valueInterpreter.calcCanonicalAssetValue
       .args(assetToBypass, assetToBypassAmount, denominationAsset)
       .call();
+
     expect(
       await testPricelessAssetBypassMixin.calcValueExcludingBypassablePricelessAsset
         .args(comptrollerProxy, assetToBypass, assetToBypassAmount, denominationAsset)

@@ -14,6 +14,7 @@ import { BigNumber, utils } from 'ethers';
 
 const roundingBuffer = BigNumber.from(2);
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -22,9 +23,11 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
     const lendingPoolAddressProvider = await aaveAdapter.getAaveLendingPoolAddressProvider();
+
     expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
 
     const referralCode = await aaveAdapter.getAaveReferralCode();
+
     expect(referralCode).toEqBigNumber(BigNumber.from('158'));
   });
 });

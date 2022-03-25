@@ -10,6 +10,7 @@ import {
 import { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });

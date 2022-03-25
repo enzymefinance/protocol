@@ -9,6 +9,7 @@ import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -85,6 +86,7 @@ describe('addToList', () => {
 
     // Assert events
     const events = extractEvent(receipt, 'ItemAddedToList');
+
     expect(events.length).toBe(itemsToAdd.length);
     for (const i in itemsToAdd) {
       expect(events[i].args).toMatchObject({
@@ -190,6 +192,7 @@ describe('removeFromList', () => {
 
     // Assert events
     const events = extractEvent(receipt, 'ItemRemovedFromList');
+
     expect(events.length).toBe(itemsToRemove.length);
     for (const i in itemsToRemove) {
       expect(events[i].args).toMatchObject({

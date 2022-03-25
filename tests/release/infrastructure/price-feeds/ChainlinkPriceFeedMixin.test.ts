@@ -19,6 +19,7 @@ import { constants, utils } from 'ethers';
 const unusedAggregatorAddress = '0x449d117117838fFA61263B61dA6301AA2a88B13A';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -35,6 +36,7 @@ async function loadPrimitiveAggregator({
 
 async function makeAllRatesStale({ valueInterpreter }: { valueInterpreter: ValueInterpreter }) {
   const staleRateThreshold = await valueInterpreter.getStaleRateThreshold();
+
   await provider.send('evm_increaseTime', [staleRateThreshold.toNumber()]);
   await provider.send('evm_mine', []);
 }
@@ -53,6 +55,7 @@ async function swapDaiAggregatorForUsd({
   // See https://docs.chain.link/docs/using-chainlink-reference-contracts
   await valueInterpreter.removePrimitives([dai]);
   const nextDaiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', provider);
+
   await valueInterpreter.addPrimitives([dai], [nextDaiAggregator], [ChainlinkRateAsset.USD]);
 
   return nextDaiAggregator;
@@ -243,6 +246,7 @@ describe('addPrimitives', () => {
 
     // Extract events
     const events = extractEvent(receipt, 'PrimitiveAdded');
+
     expect(events).toHaveLength(1);
 
     const primitiveUnit = utils.parseUnits('1', await unregisteredMockToken.decimals());
@@ -313,12 +317,15 @@ describe('updatePrimitives', () => {
 
     // Check events and values stored are consistent
     const addedEvents = extractEvent(receipt, 'PrimitiveAdded');
+
     expect(addedEvents).toHaveLength(primitivesToUpdate.length);
     const removedEvents = extractEvent(receipt, 'PrimitiveRemoved');
+
     expect(removedEvents).toHaveLength(primitivesToUpdate.length);
 
     for (const i in primitivesToUpdate) {
       const assetUnit = await getAssetUnit(primitivesToUpdate[i]);
+
       expect(addedEvents[i]).toMatchEventArgs({
         aggregator: aggregatorsToUpdate[i],
         primitive: primitivesToUpdate[i],
@@ -367,6 +374,7 @@ describe('removePrimitives', () => {
 
     // Remove and check consistent values and events
     const events = extractEvent(receipt, 'PrimitiveRemoved');
+
     expect(events).toHaveLength(1);
 
     expect(events[0]).toMatchEventArgs({ primitive: dai });
@@ -390,6 +398,7 @@ describe('setEthUsdAggregator', () => {
     const setEthUsdAggregatorReceipt = await valueInterpreter.setEthUsdAggregator(aggregator);
 
     const updatedEthUsdAggregator = await valueInterpreter.getEthUsdAggregator();
+
     expect(updatedEthUsdAggregator).toMatchAddress(aggregator);
 
     // Event should inlude the old and new ETH USD aggregators
@@ -466,6 +475,7 @@ describe('getCanonicalRate', () => {
     // Base: weth |  Quote: usdc
     const expectedRate = wethUnit.mul(ethRate).div(wethUnit).mul(usdcUnit).div(usdcRate);
     const rate = await valueInterpreter.calcCanonicalAssetValue.args(weth, wethUnit, usdc).call();
+
     expect(rate).toEqBigNumber(expectedRate);
   });
 
@@ -512,6 +522,7 @@ describe('getCanonicalRate', () => {
       .div(usdcUnit)
       .div(daiRate);
     const canonicalRateUsdcDai = await valueInterpreter.calcCanonicalAssetValue.args(usdc, usdcUnit, dai).call();
+
     expect(canonicalRateUsdcDai).toEqBigNumber(expectedRateUsdcDai);
   });
 });
@@ -526,6 +537,7 @@ describe('expected values', () => {
 
       const baseDecimals = await usdc.decimals();
       const quoteDecimals = await usdt.decimals();
+
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -544,6 +556,7 @@ describe('expected values', () => {
 
       const baseDecimals = await susd.decimals();
       const quoteDecimals = await usdc.decimals();
+
       expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -566,6 +579,7 @@ describe('expected values', () => {
 
       const baseDecimals = await bnb.decimals();
       const quoteDecimals = await ren.decimals();
+
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       // Mar 22, 2022
@@ -598,6 +612,7 @@ describe('expected values', () => {
 
       const baseDecimals = await susd.decimals();
       const quoteDecimals = await dai.decimals();
+
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -622,6 +637,7 @@ describe('expected values', () => {
 
       const baseDecimals = await usdc.decimals();
       const quoteDecimals = await dai.decimals();
+
       expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -648,6 +664,7 @@ describe('expected values', () => {
 
       const baseDecimals = await dai.decimals();
       const quoteDecimals = await susd.decimals();
+
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -672,6 +689,7 @@ describe('expected values', () => {
 
       const baseDecimals = await dai.decimals();
       const quoteDecimals = await usdc.decimals();
+
       expect(baseDecimals).not.toEqBigNumber(quoteDecimals);
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue

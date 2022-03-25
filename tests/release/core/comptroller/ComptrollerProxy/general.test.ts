@@ -5,6 +5,7 @@ import { callOnExtension, createNewFund, deployProtocolFixture } from '@enzymefi
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -75,6 +76,7 @@ describe('vaultCallOnContract', () => {
     const functionSighash = sighash(utils.FunctionFragment.fromString('approve(address,uint)'));
     const spender = randomAddress();
     const validEncodedArgs = encodeArgs(['address', 'uint'], [spender, constants.MaxUint256]);
+
     await fundDeployer.registerVaultCalls([asset], [functionSighash], [utils.keccak256(validEncodedArgs)]);
 
     // Attempting to approve a different spender or a different amount should fail

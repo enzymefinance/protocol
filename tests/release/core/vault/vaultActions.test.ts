@@ -19,6 +19,7 @@ import {
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -47,6 +48,7 @@ describe('AddExternalPosition', () => {
 
     // Add 19 tracked assets
     let i = 0;
+
     while (i < 19) {
       await vaultProxy.receiveValidatedVaultAction(
         VaultAction.AddTrackedAsset,
@@ -162,6 +164,7 @@ describe('AddTrackedAsset', () => {
 
     // Add 20 tracked assets
     let i = 0;
+
     while (i < 20) {
       await vaultProxy.receiveValidatedVaultAction(
         VaultAction.AddTrackedAsset,
@@ -288,6 +291,7 @@ describe('ApproveAssetSpender', () => {
 
     // Granting a second approval should succeed and the allowance updated
     const newAmount = amount.add(1);
+
     await vaultProxy.receiveValidatedVaultAction(
       VaultAction.ApproveAssetSpender,
       encodeArgs(['address', 'address', 'uint256'], [asset, spender, newAmount]),
@@ -322,6 +326,7 @@ describe('BurnShares', () => {
 
     // Mint shares to be burned later
     const mintAmount = utils.parseEther('1');
+
     await vaultProxy.connect(fundAccessor).mintShares(target, mintAmount);
 
     // Burn some of the shares
@@ -333,6 +338,7 @@ describe('BurnShares', () => {
 
     // The correct number of shares should have been burned
     const finalSharesBalance = await vaultProxy.balanceOf(target);
+
     expect(finalSharesBalance).toEqBigNumber(mintAmount.sub(burnAmount));
     expect(await vaultProxy.totalSupply()).toEqBigNumber(finalSharesBalance);
 
@@ -431,6 +437,7 @@ describe('MintShares', () => {
 
     // The correct number of shares should have been minted
     const finalSharesBalance = await vaultProxy.balanceOf(target);
+
     expect(finalSharesBalance).toEqBigNumber(amount);
     expect(await vaultProxy.totalSupply()).toEqBigNumber(finalSharesBalance);
 
@@ -529,6 +536,7 @@ describe('RemoveTrackedAsset', () => {
       VaultAction.RemoveTrackedAsset,
       encodeArgs(['address'], [assetToRemove]),
     );
+
     expect(extractEvent(untrackedAssetRemovalReceipt, 'TrackedAssetRemoved').length).toBe(0);
 
     // Add tracked asset to be removed
@@ -576,6 +584,7 @@ describe('TransferShares', () => {
 
     // Mint shares to fromAccount
     const mintAmount = utils.parseEther('2');
+
     await vaultProxy.mintShares(fromAccount, mintAmount);
 
     // Transfer shares to toAccount
@@ -653,6 +662,7 @@ describe('WithdrawAssetTo', () => {
 
     // Seed the vault with the asset
     const amountToTransfer = await getAssetUnit(asset);
+
     await asset.transfer(vaultProxy, amountToTransfer);
     await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [asset]));
 

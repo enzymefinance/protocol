@@ -33,6 +33,7 @@ beforeAll(async () => {
     fundOwner,
     signer: fundOwner,
   });
+
   addressListRegistry = fork.deployment.addressListRegistry;
   comptrollerProxy = newFundRes.comptrollerProxy;
   testAddress = randomAddress();

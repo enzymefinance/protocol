@@ -156,6 +156,7 @@ describe('createMigrationRequest', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
@@ -217,6 +218,7 @@ describe('createMigrationRequest', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         // Set the migrator
@@ -258,6 +260,7 @@ describe('executeMigration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
@@ -286,6 +289,7 @@ describe('executeMigration', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
@@ -299,6 +303,7 @@ describe('executeMigration', () => {
 
         // Warp to migratable time
         const migrationTimelock = await fork.deployment.dispatcher.getMigrationTimelock();
+
         await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
         await fundDeployer.connect(fundOwner).executeMigration(vaultProxy, false);
@@ -331,6 +336,7 @@ describe('executeMigration', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({
@@ -342,6 +348,7 @@ describe('executeMigration', () => {
 
         // Warp to migratable time
         const migrationTimelock = await fork.deployment.dispatcher.getMigrationTimelock();
+
         await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
         // Set the migrator
@@ -370,6 +377,7 @@ describe('cancelMigration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
@@ -398,6 +406,7 @@ describe('cancelMigration', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
@@ -431,6 +440,7 @@ describe('cancelMigration', () => {
         const fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFundOnPrevRelease({ fork, fundOwner });
+
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({

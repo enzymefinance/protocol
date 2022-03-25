@@ -59,6 +59,7 @@ export type WhaleSigners<T extends Partial<Whale> = Whale> = Record<T, SignerWit
 
 export async function unlockWhale(token: Whale) {
   const address = resolveAddress(whales[token]);
+
   await provider.send('hardhat_impersonateAccount', [address]);
 
   return provider.getSignerWithAddress(address);
@@ -67,16 +68,18 @@ export async function unlockWhale(token: Whale) {
 export async function unlockAllWhales() {
   const keys = Object.keys(whales) as Whale[];
   const signers = await Promise.all(keys.map(async (token) => unlockWhale(token)));
+  const initial = {} as WhaleSigners;
 
-  return keys.reduce((carry, key, index) => {
+  return keys.reduce<WhaleSigners>((carry, key, index) => {
     return { ...carry, [key]: signers[index] };
-  }, {} as WhaleSigners);
+  }, initial);
 }
 
 export async function unlockWhales<T extends Whale>(...tokens: T[]) {
   const signers = await Promise.all(tokens.map(async (token) => unlockWhale(token)));
+  const initial = {} as WhaleSigners;
 
-  return tokens.reduce((carry, key, index) => {
+  return tokens.reduce<WhaleSigners<T>>((carry, key, index) => {
     return { ...carry, [key]: signers[index] };
-  }, {} as WhaleSigners<T>);
+  }, initial);
 }

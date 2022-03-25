@@ -20,6 +20,7 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -151,18 +152,21 @@ describe('lend', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = assetUnit;
+
     await outgoingToken.transfer(vaultProxy, outgoingUnderlyingAmount.mul(3));
 
     // Since we can't easily test that an unused underlying amount from a deposit is returned
-    /// to the vaultProxy, we seed the adapter with a small amount of the underlying, which will
-    /// be returned to the vaultProxy upon running lend()
+    // / to the vaultProxy, we seed the adapter with a small amount of the underlying, which will
+    // / be returned to the vaultProxy upon running lend()
     const preTxAdapterUnderlyingBalance = assetUnit;
+
     await outgoingToken.transfer(yearnVaultV2Adapter, preTxAdapterUnderlyingBalance);
 
     const [preTxYVaultBalance, preTxUnderlyingBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [yVault, outgoingToken],
     });
+
     expect(preTxYVaultBalance).toEqBigNumber(0);
 
     const lendReceipt = await yearnVaultV2Lend({
@@ -210,6 +214,7 @@ describe('redeem', () => {
 
     // Seed the fund and acquire yVault shares while leaving some underlying in the vault
     const seedUnderlyingAmount = assetUnit.mul(4);
+
     await token.transfer(vaultProxy, seedUnderlyingAmount);
     await yearnVaultV2Lend({
       comptrollerProxy,
@@ -226,12 +231,14 @@ describe('redeem', () => {
     await token.approve(yVaultContract, constants.MaxUint256);
     await yVaultContract.deposit(assetUnit, yearnVaultV2Adapter);
     const preTxAdapterYVaultBalance = await yVault.balanceOf(yearnVaultV2Adapter);
+
     expect(preTxAdapterYVaultBalance).toBeGtBigNumber(0);
 
     const [preTxUnderlyingBalance, preTxYVaultBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [token, yVault],
     });
+
     expect(preTxYVaultBalance).toBeGtBigNumber(0);
 
     // Define redeem args

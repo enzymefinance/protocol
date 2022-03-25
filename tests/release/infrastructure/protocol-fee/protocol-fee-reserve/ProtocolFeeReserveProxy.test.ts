@@ -3,6 +3,7 @@ import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -26,6 +27,7 @@ describe('buyBackSharesViaTrustedVaultProxy', () => {
       .args(sharesAmount, mlnValue, gav)
       .from(vaultProxySigner) // Not strictly necessary
       .call();
+
     expect(mlnAmountToBurn).toEqBigNumber(expectedMlnAmountToBurn);
 
     const receipt = await protocolFeeReserveProxy

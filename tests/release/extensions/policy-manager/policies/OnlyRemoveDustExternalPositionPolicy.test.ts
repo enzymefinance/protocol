@@ -22,6 +22,7 @@ import {
 import type { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -104,6 +105,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
 
     // Confirm dust tolerance is set
@@ -215,6 +217,7 @@ describe('validateRule', () => {
     const dustThresholdInPricelessAsset = await valueInterpreter.calcCanonicalAssetValue
       .args(weth, dustToleranceInWeth, pricelessAsset)
       .call();
+
     await mockExternalPositionAddManagedAssets({
       amounts: [dustThresholdInPricelessAsset.mul(2)],
       assets: [pricelessAsset],

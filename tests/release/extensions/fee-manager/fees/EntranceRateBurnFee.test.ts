@@ -1,7 +1,5 @@
-/*
- * @file Only tests the EntranceRateBurnFee functionality not covered by
- * the EntranceRateFeeBase tests, i.e., the use of settlement type
- */
+// @file Only tests the EntranceRateBurnFee functionality not covered by
+// the EntranceRateFeeBase tests, i.e., the use of settlement type
 
 import { randomAddress } from '@enzymefinance/ethers';
 import {
@@ -49,6 +47,7 @@ describe('settle', () => {
     const comptrollerProxyAddress = randomAddress();
     const rate = TEN_PERCENT;
     const entranceRateFeeConfig = entranceRateBurnFeeConfigArgs({ rate });
+
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);

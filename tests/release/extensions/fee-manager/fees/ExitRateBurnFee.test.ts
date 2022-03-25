@@ -1,7 +1,5 @@
-/*
- * @file Only tests the ExitRateBurnFee functionality not covered by
- * the ExitRateFeeBase tests, i.e., the use of settlement type
- */
+// @file Only tests the ExitRateBurnFee functionality not covered by
+// the ExitRateFeeBase tests, i.e., the use of settlement type
 
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExitRateBurnFee, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
@@ -66,6 +64,7 @@ describe('settle', () => {
 
   beforeEach(async () => {
     let fundOwner: SignerWithAddress;
+
     [fundOwner, investor] = fork.accounts;
 
     exitRateBurnFee = fork.deployment.exitRateBurnFee;
@@ -117,6 +116,7 @@ describe('settle', () => {
       rate: specificAssetsRate,
       sharesRedeemed: sharesToRedeem,
     });
+
     expect(expectedFeeSharesDue).toBeGtBigNumber(0);
 
     // Calc the expected protocol fee charged
@@ -156,6 +156,7 @@ describe('settle', () => {
       rate: inKindRate,
       sharesRedeemed: sharesToRedeem,
     });
+
     expect(expectedFeeSharesDue).toBeGtBigNumber(0);
 
     // Calc the expected protocol fee charged

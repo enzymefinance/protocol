@@ -4,6 +4,7 @@ import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -32,6 +33,7 @@ describe('exchangeEthAndBuyShares', () => {
     });
 
     const investmentEth = utils.parseEther('2');
+
     await depositWrapper
       .connect(buyer)
       .exchangeEthAndBuyShares.args(
@@ -70,6 +72,7 @@ describe('exchangeEthAndBuyShares', () => {
     // Seed depositWrapper contract with WETH that will not be used in the tx,
     // to test refund
     const unusedWethSeedAmount = utils.parseEther('10');
+
     await weth.transfer(depositWrapper, unusedWethSeedAmount);
 
     const investmentEth = utils.parseEther('2');
@@ -105,6 +108,7 @@ describe('exchangeEthAndBuyShares', () => {
 
     // Execute the exchange and buy shares action with the exact expected investmentAmount
     const preTxBuyerEthBalance = await provider.getBalance(buyer.address);
+
     await depositWrapper
       .connect(buyer)
       .exchangeEthAndBuyShares.args(
@@ -123,6 +127,7 @@ describe('exchangeEthAndBuyShares', () => {
     const expectedSharesReceived = expectedDenominationAssetReceived
       .mul(utils.parseEther('1'))
       .div(denominationAssetUnit);
+
     expect(await vaultProxy.balanceOf(buyer)).toEqBigNumber(expectedSharesReceived);
 
     // The buyer should have received an eth refund

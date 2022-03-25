@@ -1,11 +1,5 @@
 const coverage = JSON.parse(process.env.COVERAGE || 'false');
 const common = {
-  globals: {
-    'ts-jest': {
-      babelConfig: true,
-      diagnostics: false,
-    },
-  },
   preset: '@enzymefinance/hardhat',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   testEnvironmentOptions: {
@@ -33,7 +27,7 @@ const projects = [
   project('utils', ['tests/release/utils']),
   project('e2e', ['tests/release/e2e']),
   project('ci-excluded', ['tests/release/excluded']),
-].filter((project) => !!project);
+];
 
 export default {
   projects,

@@ -23,6 +23,7 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -41,6 +42,7 @@ describe('receive', () => {
 
     // Send ETH to the VaultProxy
     const ethAmount = utils.parseEther('2');
+
     await fundOwner.sendTransaction({
       to: vaultProxy.address,
       value: ethAmount,
@@ -66,29 +68,37 @@ describe('init', () => {
     });
 
     const accessorValue = await vaultProxy.getAccessor();
+
     expect(accessorValue).toMatchAddress(comptrollerProxy);
 
     const creatorValue = await vaultProxy.getCreator();
+
     expect(creatorValue).toMatchAddress(fork.deployment.dispatcher);
 
     const migratorValue = await vaultProxy.getMigrator();
+
     expect(migratorValue).toMatchAddress(constants.AddressZero);
 
     const ownerValue = await vaultProxy.getOwner();
+
     expect(ownerValue).toMatchAddress(fundOwner);
 
     const trackedAssetsValue = await vaultProxy.getTrackedAssets();
+
     expect(trackedAssetsValue).toMatchFunctionOutput(vaultProxy.getTrackedAssets, [fork.config.weth]);
 
     // SharesToken values
 
     const nameValue = await vaultProxy.name();
+
     expect(nameValue).toBe('My Fund');
 
     const symbolValue = await vaultProxy.symbol();
+
     expect(symbolValue).toBe('ENZF');
 
     const decimalsValue = await vaultProxy.decimals();
+
     expect(decimalsValue).toBe(18);
   });
 });
@@ -146,6 +156,7 @@ describe('setName', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     vaultProxy = newFundRes.vaultProxy;
   });
 
@@ -178,6 +189,7 @@ describe('setSymbol', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     vaultProxy = newFundRes.vaultProxy;
   });
 
@@ -207,6 +219,7 @@ describe('setAccessorForFundReconfiguration', () => {
     // so that we can later call `setAccessorForFundReconfiguration()` directly from the mockFundDeployer.
     // mockAccessor can be any contract, necessary because the Dispatcher validates that it is a contract.
     const dispatcher = fork.deployment.dispatcher;
+
     mockFundDeployer = await FundDeployer.mock(fork.deployer);
     mockAccessor = await ComptrollerLib.mock(fork.deployer);
 
@@ -237,6 +250,7 @@ describe('setAccessorForFundReconfiguration', () => {
 
   it('cannot be called by the accessor or fund owner', async () => {
     const revertReason = 'Only the FundDeployer can make this call';
+
     await expect(
       vaultProxy.connect(fundOwner).setAccessorForFundReconfiguration(nextAccessor),
     ).rejects.toBeRevertedWith(revertReason);
@@ -295,6 +309,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // Seed the fund with MLN so it can buy back shares
       const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
+
       await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
     });
 
@@ -326,6 +341,7 @@ describe('buyBackProtocolFeeShares', () => {
       const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
       const buybackMlnValue = preTxVaultMlnBalance.div(4);
       const gav = 123;
+
       expect(sharesToBuyBack).toBeGtBigNumber(0);
       expect(buybackMlnValue).toBeGtBigNumber(0);
 
@@ -342,6 +358,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // TODO: move to exported constant?
       const expectedMlnBurned = buybackMlnValue.div(2);
+
       expect(expectedMlnBurned).toBeGtBigNumber(0);
 
       // Assert shares were correctly burned
@@ -393,6 +410,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // Seed the fund with MLN so it can buy back shares
       const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
+
       await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
 
       const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
@@ -400,6 +418,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       const sharesToBuyBack = preTxProtocolFeeRecipientSharesBalance.div(2);
       const buybackMlnValue = preTxVaultMlnBalance.div(4);
+
       expect(sharesToBuyBack).toBeGtBigNumber(0);
       expect(buybackMlnValue).toBeGtBigNumber(0);
 
@@ -407,6 +426,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // Assert that mln was transferred to the intended burner
       const expectedMlnBurned = buybackMlnValue.div(2);
+
       expect(await mln.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultMlnBalance.sub(expectedMlnBurned));
       expect(await mln.balanceOf(mlnBurner)).toEqBigNumber(expectedMlnBurned);
     });
@@ -420,10 +440,12 @@ describe('payProtocolFee', () => {
 
   beforeEach(async () => {
     let fundDeployerOwner: SignerWithAddress;
+
     [fundOwner, fundAccessor, fundDeployerOwner] = fork.accounts;
 
     // Deploy a new ProtocolFeeTracker with mockFundDeployer to easily initialize the vaultProxy and turn on the fee
     const mockFundDeployer = await FundDeployer.mock(fork.deployer);
+
     await mockFundDeployer.getOwner.returns(fundDeployerOwner);
     protocolFeeTracker = await ProtocolFeeTracker.deploy(fork.deployer, mockFundDeployer);
     await protocolFeeTracker.connect(fundDeployerOwner).setFeeBpsDefault(30);
@@ -469,6 +491,7 @@ describe('payProtocolFee', () => {
   it('correctly calls the ProtocolFeeTracker, mints shares, and emits the correct event', async () => {
     // Mint shares so that a protocol fee will be due
     const initialSharesSupply = utils.parseEther('1');
+
     await vaultProxy.connect(fundAccessor).mintShares(vaultProxy, initialSharesSupply);
 
     // Warp time so that a protocol fee will be due
@@ -487,6 +510,7 @@ describe('payProtocolFee', () => {
       sharesSupply: preTxSharesSupply,
       vaultProxyAddress: vaultProxy,
     });
+
     expect(expectedProtocolFee).toBeGtBigNumber(0);
 
     expect(await vaultProxy.totalSupply()).toEqBigNumber(initialSharesSupply.add(expectedProtocolFee));
@@ -560,6 +584,7 @@ describe('ownership', () => {
 
       // Nominate the nextOwner a first time
       const nextOwner = randomAddress();
+
       await vaultProxy.setNominatedOwner(nextOwner);
 
       // Attempt to nominate the same nextOwner a second time
@@ -589,10 +614,12 @@ describe('ownership', () => {
 
       // New owner should have been nominated
       const getNominatedOwnerCall = await vaultProxy.getNominatedOwner();
+
       expect(getNominatedOwnerCall).toMatchAddress(nextOwnerAddress);
 
       // Ownership should not have changed
       const getOwnerCall = await vaultProxy.getOwner();
+
       expect(getOwnerCall).toMatchAddress(fundOwner);
     });
   });
@@ -629,6 +656,7 @@ describe('ownership', () => {
 
       // Set nominated owner
       const nextOwnerAddress = randomAddress();
+
       await vaultProxy.setNominatedOwner(nextOwnerAddress);
 
       // Attempt by a random user to remove nominated owner should fail
@@ -641,10 +669,12 @@ describe('ownership', () => {
 
       // Nomination should have been removed
       const getNominatedOwnerCall = await vaultProxy.getNominatedOwner();
+
       expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
 
       // Ownership should not have changed
       const getOwnerCall = await vaultProxy.getOwner();
+
       expect(getOwnerCall).toMatchAddress(fundOwner);
     });
   });
@@ -693,10 +723,12 @@ describe('ownership', () => {
 
       // Owner should now be the nominatedOwner
       const getOwnerCall = await vaultProxy.getOwner();
+
       expect(getOwnerCall).toMatchAddress(nominatedOwner);
 
       // nominatedOwner should be empty
       const getNominatedOwnerCall = await vaultProxy.getNominatedOwner();
+
       expect(getNominatedOwnerCall).toMatchAddress(constants.AddressZero);
     });
   });
@@ -760,6 +792,7 @@ describe('asset managers', () => {
       }
 
       const events = extractEvent(receipt, 'AssetManagerAdded');
+
       expect(events.length).toBe(assetManagersToAdd.length);
       for (const i in assetManagersToAdd) {
         expect(events[i].args).toMatchObject({
@@ -804,6 +837,7 @@ describe('asset managers', () => {
       }
 
       const events = extractEvent(receipt, 'AssetManagerRemoved');
+
       expect(events.length).toBe(assetManagersToRemove.length);
       for (const i in assetManagersToRemove) {
         expect(events[i].args).toMatchObject({

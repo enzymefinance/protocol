@@ -5,6 +5,7 @@ import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 let valueInterpreter: ValueInterpreter;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -22,6 +23,7 @@ describe('calcCanonicalAssetValue', () => {
 
     const derivativeUnit = await getAssetUnit(derivative);
     const primitiveUnit = await getAssetUnit(primitive);
+
     expect(derivativeUnit).not.toEqBigNumber(primitiveUnit);
 
     const multiplier = 2;

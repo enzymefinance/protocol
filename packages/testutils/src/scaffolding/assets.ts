@@ -27,6 +27,7 @@ export async function addNewAssetsToFund({
 
   // Then seed the vault with balances as necessary
   const vaultProxy = await comptrollerProxy.getVaultProxy();
+
   for (const i in assets) {
     if (amounts[i] > 0) {
       await assets[i].transfer(vaultProxy, amounts[i]);

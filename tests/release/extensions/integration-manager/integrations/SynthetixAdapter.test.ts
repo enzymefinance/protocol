@@ -31,6 +31,7 @@ const sxagAddress = '0x6a22e5e94388464181578aa7a6b869e00fe27846';
 const sxauAddress = '0x261efcdd24cea98652b9700800a13dfbca4103ff';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -40,15 +41,19 @@ describe('constructor', () => {
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const integrationManagerResult = await synthetixAdapter.getIntegrationManager();
+
     expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
 
     const originatorResult = await synthetixAdapter.getSynthetixOriginator();
+
     expect(originatorResult).toMatchAddress(fork.config.synthetix.originator);
 
     const synthetixResult = await synthetixAdapter.getSynthetix();
+
     expect(synthetixResult).toMatchAddress(fork.config.synthetix.snx);
 
     const trackingCodeResult = await synthetixAdapter.getSynthetixTrackingCode();
+
     expect(trackingCodeResult).toBe(fork.config.synthetix.trackingCode);
   });
 });
@@ -249,6 +254,7 @@ describe('takeOrder', () => {
 
     // Assert the expected final token balances of the VaultProxy
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });

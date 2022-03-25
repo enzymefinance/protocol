@@ -1,6 +1,4 @@
-/*
- * @file Uses the AllowedDepositRecipientsPolicy to test the shared functionality of an AddressListRegistryPolicyBase
- */
+// @file Uses the AllowedDepositRecipientsPolicy to test the shared functionality of an AddressListRegistryPolicyBase
 
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
@@ -16,6 +14,7 @@ import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinanc
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });

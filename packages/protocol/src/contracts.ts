@@ -150,14 +150,14 @@ export * from './codegen/IUniswapV2Router2';
 export * from './codegen/IYearnVaultV2';
 
 export interface StandardToken extends Contract<StandardToken> {
-  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>;
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
-  balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>;
-  decimals: Call<() => BigNumber, Contract<any>>;
-  symbol: Call<() => string, Contract<any>>;
-  totalSupply: Call<() => BigNumber, Contract<any>>;
-  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
-  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
+  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber>;
+  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean>;
+  balanceOf: Call<(account: AddressLike) => BigNumber>;
+  decimals: Call<() => BigNumber>;
+  symbol: Call<() => string>;
+  totalSupply: Call<() => BigNumber>;
+  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean>;
+  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean>;
 }
 
 export const StandardToken = contract<StandardToken>()`
@@ -174,16 +174,16 @@ export const StandardToken = contract<StandardToken>()`
 `;
 
 export interface WETH extends Contract<WETH> {
-  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber, Contract<any>>;
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
-  balanceOf: Call<(account: AddressLike) => BigNumber, Contract<any>>;
-  decimals: Call<() => BigNumber, Contract<any>>;
-  symbol: Call<() => string, Contract<any>>;
-  totalSupply: Call<() => BigNumber, Contract<any>>;
-  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
-  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean, Contract<any>>;
-  deposit: Send<() => void, Contract<any>>;
-  withdraw: Send<(amount: BigNumberish) => void, Contract<any>>;
+  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber>;
+  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean>;
+  balanceOf: Call<(account: AddressLike) => BigNumber>;
+  decimals: Call<() => BigNumber>;
+  symbol: Call<() => string>;
+  totalSupply: Call<() => BigNumber>;
+  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean>;
+  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean>;
+  deposit: Send<() => void>;
+  withdraw: Send<(amount: BigNumberish) => void>;
 }
 
 export const WETH = contract<WETH>()`
@@ -204,8 +204,8 @@ export const WETH = contract<WETH>()`
 `;
 
 export interface UniswapV2Router extends Contract<UniswapV2Router> {
-  getAmountsOut: Call<(amountIn: BigNumberish, path: AddressLike[]) => BigNumber[], Contract<any>>;
-  quote: Call<(amountA: BigNumberish, reserveA: BigNumberish, reserveB: BigNumberish) => BigNumber, Contract<any>>;
+  getAmountsOut: Call<(amountIn: BigNumberish, path: AddressLike[]) => BigNumber[]>;
+  quote: Call<(amountA: BigNumberish, reserveA: BigNumberish, reserveB: BigNumberish) => BigNumber>;
   swapExactTokensForTokens: Send<
     (
       amountIn: BigNumberish,
@@ -213,8 +213,7 @@ export interface UniswapV2Router extends Contract<UniswapV2Router> {
       path: AddressLike[],
       to: AddressLike,
       deadline: BigNumberish,
-    ) => BigNumber[],
-    Contract<any>
+    ) => BigNumber[]
   >;
 }
 

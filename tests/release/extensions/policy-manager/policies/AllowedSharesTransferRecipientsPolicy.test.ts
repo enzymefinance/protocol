@@ -18,6 +18,7 @@ import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/
 import type { BigNumberish } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -84,6 +85,7 @@ describe('updateFundSettings', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
   });
 
@@ -161,6 +163,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     vaultProxy = newFundRes.vaultProxy;
 
     await buyShares({

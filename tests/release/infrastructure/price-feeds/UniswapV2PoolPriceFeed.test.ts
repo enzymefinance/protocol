@@ -5,6 +5,7 @@ import { buyShares, createNewFund, deployProtocolFixture, uniswapV2Lend } from '
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -73,6 +74,7 @@ describe('constructor', () => {
       const pairContract = new IUniswapV2Pair(poolToken, provider);
       const token0 = await pairContract.token0();
       const token1 = await pairContract.token1();
+
       expect(await uniswapV2PoolPriceFeed.getPoolTokenInfo(poolToken)).toMatchFunctionOutput(
         uniswapV2PoolPriceFeed.getPoolTokenInfo,
         {
@@ -121,6 +123,7 @@ describe('calcUnderlyingValues', () => {
     const calcUnderlyingValuesRes = await uniswapV2PoolPriceFeed.calcUnderlyingValues
       .args(uniswapPair, poolTokenUnit)
       .call();
+
     expect(calcUnderlyingValuesRes).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
       underlyingAmounts_: [expect.any(String), expect.any(String)],
       underlyings_: [token0Address, token1Address],

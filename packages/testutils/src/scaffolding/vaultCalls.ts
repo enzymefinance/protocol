@@ -61,6 +61,7 @@ export function vaultCallCurveMinterMintMany({
   gauges: AddressLike[];
 }) {
   const gaugesFormatted = new Array(8).fill(constants.AddressZero);
+
   for (const i in gauges) {
     gaugesFormatted[i] = gauges[i];
   }

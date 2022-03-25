@@ -17,6 +17,7 @@ const TEN_PERCENT = BigNumber.from(1000);
 
 let fork: ProtocolDeployment;
 let performanceFee: PerformanceFee;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   performanceFee = fork.deployment.performanceFee;
@@ -25,11 +26,13 @@ beforeEach(async () => {
 it('has correct config', async () => {
   for (const hook of Object.values(FeeHook)) {
     const settlesOnHook = [FeeHook.Continuous, FeeHook.PreBuyShares, FeeHook.PreRedeemShares].includes(hook);
+
     expect(await performanceFee.settlesOnHook(hook)).toMatchFunctionOutput(performanceFee.settlesOnHook, {
       settles_: settlesOnHook,
       usesGav_: settlesOnHook,
     });
     const updatesOnHook = [FeeHook.Continuous, FeeHook.PostBuyShares, FeeHook.PreRedeemShares].includes(hook);
+
     expect(await performanceFee.updatesOnHook(hook)).toMatchFunctionOutput(performanceFee.updatesOnHook, {
       updates_: updatesOnHook,
       usesGav_: updatesOnHook,
@@ -44,6 +47,7 @@ describe('addFundSettings', () => {
   let denominationAsset: StandardToken;
   let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
   let receipt: any;
+
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -64,6 +68,7 @@ describe('addFundSettings', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     receipt = newFundRes.receipt;
   });
@@ -109,6 +114,7 @@ describe('activateForFund', () => {
   let denominationAsset: StandardToken;
   let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
   let receipt: any;
+
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -129,6 +135,7 @@ describe('activateForFund', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
     receipt = newFundRes.receipt;
@@ -146,6 +153,7 @@ describe('activateForFund', () => {
 
     // Assert state
     const getFeeInfoForFundCall = await performanceFee.getFeeInfoForFund(comptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(performanceFee.getFeeInfoForFund, {
       highWaterMark: expectedHighWaterMark,
       rate,
@@ -167,6 +175,7 @@ describe('settle', () => {
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let denominationAsset: StandardToken;
   let fundOwner: SignerWithAddress, investor: SignerWithAddress, randomUser: SignerWithAddress;
+
   beforeEach(async () => {
     [fundOwner, investor, randomUser] = fork.accounts;
     denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
@@ -187,6 +196,7 @@ describe('settle', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
   });
@@ -201,6 +211,7 @@ describe('settle', () => {
     const denominationAssetUnit = await getAssetUnit(denominationAsset);
 
     const initialInvestmentAmount = denominationAssetUnit.mul(2);
+
     // await denominationAsset.transfer(investor, initialInvestmentAmount);
     await buyShares({
       buyer: investor,
@@ -213,6 +224,7 @@ describe('settle', () => {
     // Buy and redeem a constant amount of shares (no value change, other than slight depreciation due to protocol fee)
     const buyAndRedeemAssetAmount = denominationAssetUnit.mul(5);
     const preBuyAndRedeemInvestorShares = await vaultProxy.balanceOf(investor);
+
     await buyShares({
       buyer: investor,
       comptrollerProxy,
@@ -230,6 +242,7 @@ describe('settle', () => {
 
     // Bump performance by sending denomination asset to the vault
     const gavIncreaseAmount = denominationAssetUnit;
+
     await denominationAsset.transfer(vaultProxy, gavIncreaseAmount);
 
     const preRedeemSharePrice = await comptrollerProxy.calcGrossShareValue.call();
@@ -250,10 +263,12 @@ describe('settle', () => {
     // Raw shares due: 0.1 asset units / 1.5 asset units/share = 0.0666
     // Shares due: 0.0666 raw shares * 2 unit supply / (2 unit supply - 0.0666 raw shares) = 0.06889...
     const feePaidOut = await vaultProxy.balanceOf(feeRecipient);
+
     expect(feePaidOut).toBeAroundBigNumber(utils.parseEther('0.06889'));
     // The correct HWM value should have been set
     // 3 units of GAV / 2.06889 shares = 1.45 asset units/share
     const nextHighWaterMark = (await performanceFee.getFeeInfoForFund(comptrollerProxy)).highWaterMark;
+
     expect(nextHighWaterMark).toBeAroundBigNumber(utils.parseUnits('1.45', await denominationAsset.decimals()));
 
     // Expect the correct events to have been fired

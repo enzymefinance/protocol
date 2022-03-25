@@ -13,6 +13,7 @@ let curveLpToken: StandardToken;
 let factory: ConvexCurveLpStakingWrapperFactory;
 let wrapper: ConvexCurveLpStakingWrapperLib;
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -40,6 +41,7 @@ describe('init', () => {
 
     // Rewards tokens should include crv, cvx, and ldo
     const rewardsTokens = await wrapper.getRewardTokens();
+
     expect(rewardsTokens.length).toBe(3);
     expect(rewardsTokens[0]).toMatchAddress(fork.config.convex.crvToken);
     expect(rewardsTokens[1]).toMatchAddress(fork.config.convex.cvxToken);
@@ -76,6 +78,7 @@ describe('togglePause', () => {
 describe('actions', () => {
   let depositor1: SignerWithAddress, depositor2: SignerWithAddress;
   let lpTokenStartingBalance: BigNumber;
+
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
@@ -112,6 +115,7 @@ describe('actions', () => {
       // Depositor 2 - deposits for third party
       const depositor2Recipient = randomAddress();
       const depositor2Amount = lpTokenStartingBalance.div(2);
+
       expect(depositor2Amount).not.toEqBigNumber(depositor1Amount);
 
       await curveLpToken.connect(depositor2).approve(wrapper, depositor2Amount);
@@ -140,6 +144,7 @@ describe('actions', () => {
     it('withdrawTo: works as expected', async () => {
       // Deposit the same amount from both depositors
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
       await curveLpToken.connect(depositor2).approve(wrapper, depositAmount);
@@ -199,17 +204,20 @@ describe('actions', () => {
 
     it('withdrawOnBehalf: works as expected', async () => {
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
 
       // Depositor2 cannot withdraw any of depositor1's tokens
       const withdrawalAmount = 123;
+
       await expect(
         wrapper.connect(depositor2).withdrawToOnBehalf(depositor1, depositor2, withdrawalAmount, false),
       ).rejects.toBeReverted();
 
       // Give depositor2 an exact allowance for depositor1
       const initialAllowance = depositAmount.div(4);
+
       await wrapper.connect(depositor1).approve(depositor2, initialAllowance);
 
       // Depositor1 can withdraw the correct amount
@@ -224,6 +232,7 @@ describe('actions', () => {
 
       // Deposit
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
 
@@ -233,6 +242,7 @@ describe('actions', () => {
 
       // Get claimRewardsFor return values
       const { rewardTokens_, claimedAmounts_ } = await wrapper.claimRewardsFor.args(depositor1).call();
+
       expect(rewardTokens_).toEqual(await wrapper.getRewardTokens());
 
       // Withdraw partial and claim rewards
@@ -248,6 +258,7 @@ describe('actions', () => {
         const token = new StandardToken(rewardTokens_[i], provider);
         // Depositor should have positive balances that match the estimated return values
         const rewardBalance = await token.balanceOf(depositor1);
+
         expect(rewardBalance).toBeGtBigNumber(0);
         expect(rewardBalance).toBeAroundBigNumber(claimedAmounts_[i]);
 
@@ -269,6 +280,7 @@ describe('actions', () => {
 
       // Deposit
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
 
@@ -278,6 +290,7 @@ describe('actions', () => {
 
       // Get claimRewardsFor return values
       const { rewardTokens_, claimedAmounts_ } = await wrapper.claimRewardsFor.args(depositor1).call();
+
       expect(rewardTokens_).toEqual(await wrapper.getRewardTokens());
 
       // Claim rewards
@@ -287,6 +300,7 @@ describe('actions', () => {
         const token = new StandardToken(rewardTokens_[i], provider);
         // Depositor should have positive balances that match the estimated return values
         const rewardBalance = await token.balanceOf(depositor1);
+
         expect(rewardBalance).toBeGtBigNumber(0);
         expect(rewardBalance).toBeAroundBigNumber(claimedAmounts_[i]);
 
@@ -303,6 +317,7 @@ describe('actions', () => {
       // Deposit different amounts from both depositors
       const depositAmount1 = lpTokenStartingBalance.div(2);
       const depositAmount2 = depositAmount1.div(2);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount1);
       await curveLpToken.connect(depositor2).approve(wrapper, depositAmount2);
       await wrapper.connect(depositor1).deposit(depositAmount1);
@@ -361,6 +376,7 @@ describe('actions', () => {
 describe('ERC20 calls', () => {
   let depositor1: SignerWithAddress, depositor2: SignerWithAddress;
   let lpTokenStartingBalance: BigNumber;
+
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
@@ -372,6 +388,7 @@ describe('ERC20 calls', () => {
     it('happy path: 1 staker, 1 non-staker', async () => {
       // Depositor1 has a balance, randomRecipient does not
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
 
@@ -392,6 +409,7 @@ describe('ERC20 calls', () => {
     it('happy path: 2 stakers', async () => {
       // Depositor1 and randomRecipient have 50/50 balances after a deposit and transfer
       const depositAmount = lpTokenStartingBalance.div(4);
+
       await curveLpToken.connect(depositor1).approve(wrapper, depositAmount);
       await wrapper.connect(depositor1).deposit(depositAmount);
       await wrapper.connect(depositor1).transfer(randomRecipient, depositAmount.div(2));

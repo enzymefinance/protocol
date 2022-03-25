@@ -5,6 +5,7 @@ import { buyShares, createNewFund, curveLend, deployProtocolFixture } from '@enz
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -80,16 +81,19 @@ describe('calcUnderlyingValues', () => {
     const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
     const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
+
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
     const lpTokenUnit = utils.parseUnits('1', await curveLPToken.decimals());
     const expectedRate = lpTokenUnit.mul(await curvePool.get_virtual_price()).div(utils.parseEther('1'));
 
     const calcUnderlyingValuesRes = await curvePriceFeed.calcUnderlyingValues.args(curveLPToken, lpTokenUnit).call();
+
     expect(calcUnderlyingValuesRes.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
+
     expect(calcUnderlyingValuesTx).toCostAround('96789');
   });
 
@@ -102,6 +106,7 @@ describe('calcUnderlyingValues', () => {
 
     // USDC as invariant asset proxy
     const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
 
     await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
@@ -115,10 +120,12 @@ describe('calcUnderlyingValues', () => {
       .div(utils.parseEther('1'));
 
     const calcUnderlyingValuesRes = await curvePriceFeed.calcUnderlyingValues.args(curveLPToken, lpTokenUnit).call();
+
     expect(calcUnderlyingValuesRes.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(calcUnderlyingValuesRes.underlyings_[0]).toMatchAddress(invariantProxyAsset);
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
+
     expect(calcUnderlyingValuesTx).toCostAround('62649');
   });
 });
@@ -128,6 +135,7 @@ describe('expected values', () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
+
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
     // Get value in terms of invariant proxy asset (WETH) for easy comparison
@@ -146,6 +154,7 @@ describe('expected values', () => {
     // Curve pool: 3pool
     const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
     const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
 
     // Add curveLPToken to price feed
@@ -227,6 +236,7 @@ describe('derivatives registry', () => {
 
       // The underlying tokens should be stored for each derivative
       const getDerivativeInfoFragment = curvePriceFeed.getDerivativeInfo.fragment;
+
       expect(await curvePriceFeed.getDerivativeInfo(newDerivatives[0])).toMatchFunctionOutput(
         getDerivativeInfoFragment,
         {
@@ -250,6 +260,7 @@ describe('derivatives registry', () => {
 
       // The correct event should have been emitted for each derivative
       const events = extractEvent(addDerivativesTx, 'DerivativeAdded');
+
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
         derivative: newDerivatives[0],
@@ -304,6 +315,7 @@ describe('derivatives registry', () => {
 
       // The correct event should have been emitted for each derivative
       const events = extractEvent(removeDerivativesTx, 'DerivativeRemoved');
+
       expect(events.length).toBe(2);
       expect(events[0]).toMatchEventArgs({
         derivative: derivativesToRemove[0],

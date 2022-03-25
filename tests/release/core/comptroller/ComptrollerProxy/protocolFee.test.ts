@@ -27,6 +27,7 @@ import { BigNumber } from 'ethers';
 // Use a half year for fees just to not use exactly 1 year
 const halfYearInSeconds = (60 * 60 * 24 * 365.25) / 2;
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -60,6 +61,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
@@ -115,6 +117,7 @@ describe('buyBackProtocolFeeShares', () => {
       sharesSupply: preTxSharesSupply,
       valueInterpreter,
     });
+
     expect(mlnValue).toBeGtBigNumber(0);
 
     // Assert that the correct amount of MLN was burned
@@ -127,6 +130,7 @@ describe('buyBackProtocolFeeShares', () => {
   it('happy path: buyback partial shares collected (called by asset manager)', async () => {
     // Add an asset manager
     const [assetManager] = remainingAccounts;
+
     await vaultProxy.addAssetManagers([assetManager]);
 
     const valueInterpreter = fork.deployment.valueInterpreter;
@@ -145,6 +149,7 @@ describe('buyBackProtocolFeeShares', () => {
       sharesSupply: preTxSharesSupply,
       valueInterpreter,
     });
+
     expect(mlnValue).toBeGtBigNumber(0);
 
     // Assert that the correct amount of MLN was burned
@@ -189,6 +194,7 @@ describe('auto-buybacks', () => {
 
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
@@ -231,6 +237,7 @@ describe('auto-buybacks', () => {
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const newFeeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
 
@@ -244,6 +251,7 @@ describe('auto-buybacks', () => {
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
@@ -266,6 +274,7 @@ describe('auto-buybacks', () => {
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const newFeeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
 
@@ -279,6 +288,7 @@ describe('auto-buybacks', () => {
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
@@ -304,6 +314,7 @@ describe('auto-buybacks', () => {
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const newFeeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
 
@@ -317,6 +328,7 @@ describe('auto-buybacks', () => {
         sharesSupply: newFeeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert the failure event was correctly fired
@@ -359,14 +371,18 @@ describe('auto-buybacks', () => {
 
       // Assert via event that protocol fee shares were bought back
       const sharesBoughtBackEvents = extractEvent(receipt, protocolFeeReserveProxy.abi.getEvent('SharesBoughtBack'));
+
       expect(sharesBoughtBackEvents.length).toBe(1);
       const sharesBoughtBackArgs = sharesBoughtBackEvents[0].args;
+
       expect(sharesBoughtBackArgs.vaultProxy).toMatchAddress(vaultProxy);
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const feeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
+
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
@@ -377,6 +393,7 @@ describe('auto-buybacks', () => {
         sharesSupply: feeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert correct MLN value and burned amounts
@@ -392,14 +409,18 @@ describe('auto-buybacks', () => {
 
       // Assert via event that protocol fee shares were bought back
       const events = extractEvent(receipt, protocolFeeReserveProxy.abi.getEvent('SharesBoughtBack'));
+
       expect(events.length).toBe(1);
       const sharesBoughtBackArgs = events[0].args;
+
       expect(sharesBoughtBackArgs.vaultProxy).toMatchAddress(vaultProxy);
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const feeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
+
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
@@ -410,6 +431,7 @@ describe('auto-buybacks', () => {
         sharesSupply: feeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert correct MLN value and burned amounts
@@ -429,14 +451,18 @@ describe('auto-buybacks', () => {
 
       // Assert via event that protocol fee shares were bought back
       const events = extractEvent(receipt, protocolFeeReserveProxy.abi.getEvent('SharesBoughtBack'));
+
       expect(events.length).toBe(1);
       const sharesBoughtBackArgs = events[0].args;
+
       expect(sharesBoughtBackArgs.vaultProxy).toMatchAddress(vaultProxy);
 
       // Parse newly-collected protocol fee shares from event
       const feePaidForVaultEvents = extractEvent(receipt, protocolFeeTracker.abi.getEvent('FeePaidForVault'));
+
       expect(feePaidForVaultEvents.length).toBe(1);
       const feeSharesCollected = feePaidForVaultEvents[0].args.sharesAmount;
+
       expect(feeSharesCollected).toBeGteBigNumber(0);
 
       const { mlnValue, mlnAmountToBurn } = await calcMlnValueAndBurnAmountForSharesBuyback({
@@ -447,6 +473,7 @@ describe('auto-buybacks', () => {
         sharesSupply: feeSharesCollected.add(preTxSharesSupply),
         valueInterpreter,
       });
+
       expect(mlnValue).toBeGtBigNumber(0);
 
       // Assert correct MLN value and burned amounts

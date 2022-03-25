@@ -71,6 +71,7 @@ describe('happy paths', () => {
       fork = await deployProtocolFixture();
 
       const [signer] = fork.accounts;
+
       fundDeployer = fork.deployment.fundDeployer;
       protocolFeeTracker = fork.deployment.protocolFeeTracker;
 

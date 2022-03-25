@@ -7,6 +7,7 @@ import { constants } from 'ethers';
 
 let factory: ConvexCurveLpStakingWrapperFactory;
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -29,6 +30,7 @@ describe('deploy', () => {
     const receipt = await factory.deploy(pid);
 
     const wrapperAddress = await factory.getWrapperForConvexPool(pid);
+
     expect(wrapperAddress).not.toMatchAddress(constants.AddressZero);
 
     const wrapperContract = new ConvexCurveLpStakingWrapperLib(wrapperAddress, provider);
@@ -53,14 +55,17 @@ describe('pause', () => {
   let wrapperContract: ConvexCurveLpStakingWrapperLib;
   let factoryOwner: SignerWithAddress, randomUser: SignerWithAddress;
   let lpToken: StandardToken;
+
   beforeEach(async () => {
     [randomUser] = fork.accounts;
     factoryOwner = fork.deployer;
 
     const pid = 25; // steth
+
     await factory.deploy(pid);
 
     const wrapperAddress = await factory.getWrapperForConvexPool(pid);
+
     expect(wrapperAddress).not.toMatchAddress(constants.AddressZero);
 
     wrapperContract = new ConvexCurveLpStakingWrapperLib(wrapperAddress, provider);

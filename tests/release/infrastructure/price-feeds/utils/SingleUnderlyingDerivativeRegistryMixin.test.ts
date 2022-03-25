@@ -77,6 +77,7 @@ describe('addDerivatives', () => {
     const { testSingleUnderlyingDerivativeRegistry } = await provider.snapshot(snapshot);
 
     const newDerivative = randomAddress();
+
     await testSingleUnderlyingDerivativeRegistry.addDerivatives([newDerivative], [randomAddress()]);
 
     await expect(
@@ -101,6 +102,7 @@ describe('addDerivatives', () => {
 
     // Assert the correct events were emitted
     const events = extractEvent(receipt, 'DerivativeAdded');
+
     expect(events.length).toBe(2);
     expect(events[0]).toMatchEventArgs({
       derivative: newDerivatives[0],
@@ -168,6 +170,7 @@ describe('removeDerivatives', () => {
 
     // Assert the correct events were emitted
     const events = extractEvent(receipt, 'DerivativeRemoved');
+
     expect(events.length).toBe(2);
     expect(events[0]).toMatchEventArgs({
       derivative: derivativesToRemove[0],

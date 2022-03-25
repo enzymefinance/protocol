@@ -77,6 +77,7 @@ export async function createFundDeployer({
   await nextFundDeployer.setComptrollerLib(nextComptrollerLib);
 
   const nextProtocolFeeTracker = await ProtocolFeeTracker.deploy(deployer, nextFundDeployer);
+
   await nextFundDeployer.setProtocolFeeTracker(nextProtocolFeeTracker);
 
   const nextVaultLib = await VaultLib.deploy(
@@ -90,6 +91,7 @@ export async function createFundDeployer({
     await vaultLib.getWethToken(),
     await vaultLib.getPositionsLimit(),
   );
+
   await nextFundDeployer.setVaultLib(nextVaultLib);
 
   if (setReleaseLive) {

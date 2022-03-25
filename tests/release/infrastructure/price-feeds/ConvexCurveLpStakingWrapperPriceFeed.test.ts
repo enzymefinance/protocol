@@ -44,6 +44,7 @@ describe('isSupportedAsset', () => {
       fork.config.convex.crvToken,
       fork.config.convex.cvxToken,
     );
+
     await invalidWrapper.init(pid);
 
     // The invalid wrapper should have the same lp token as the valid one

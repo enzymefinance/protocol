@@ -54,6 +54,7 @@ it('whales have adequate balances', async () => {
 
   const usdc = new StandardToken(fork.config.primitives.usdc, provider);
   const whaleValueTarget = (await getAssetUnit(usdc)).mul(10000);
+
   for (const [symbol, tokenAddress] of Object.entries(whaleTokenAddresses)) {
     const token = new StandardToken(tokenAddress, provider);
     const whaleAddress = whales[symbol as keyof typeof whales];
@@ -61,7 +62,9 @@ it('whales have adequate balances', async () => {
     const whaleValue = await fork.deployment.valueInterpreter.calcCanonicalAssetValue
       .args(tokenAddress, whaleBalance, usdc)
       .call();
+
     if (whaleValue.lt(whaleValueTarget)) {
+      // eslint-disable-next-line no-console
       console.log('Whale balance low:', symbol);
     }
   }

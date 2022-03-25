@@ -7,7 +7,7 @@
     // "lib": [],                             /* Specify library files to be included in the compilation. */,
     // "allowJs": true,                       /* Allow javascript files to be compiled. */
     // "checkJs": true,                       /* Report errors in .js files. */
-    "jsx": "preserve" /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */,
+    // "jsx": "preserve"                      /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */,
     // "declaration": true,                   /* Generates corresponding '.d.ts' file. */
     // "declarationMap": true,                /* Generates a sourcemap for each corresponding '.d.ts' file. */
     // "sourceMap": true,                     /* Generates corresponding '.map' file. */
@@ -50,7 +50,7 @@
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
     "preserveSymlinks": true /* Do not resolve the real path of symlinks. */,
     // "allowUmdGlobalAccess": true,          /* Allow accessing UMD globals from modules. */
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
 
     /* Source Map Options */
     // "sourceRoot": "",                      /* Specify the location where debugger should locate TypeScript files instead of source locations. */
@@ -61,8 +61,15 @@
     /* Experimental Options */
     // "experimentalDecorators": true,        /* Enables experimental support for ES7 decorators. */
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
+
+    // NOTE: These aliases are required for the IDE to properly link to the source files when navigating imports.
+    "baseUrl": ".",
+    "paths": {
+      "@enzymefinance/testutils": ["packages/testutils/src"],
+      "@enzymefinance/protocol": ["packages/protocol/src"]
+    }
   },
   "files": ["hardhat.config.ts", "jest.config.ts", "jest.setup.ts"],
-  "include": ["deploy", "tasks", "tests", "tests/types.d.ts"],
+  "include": ["deploy", "tasks", "tests"],
   "exclude": ["node_modules"]
 }

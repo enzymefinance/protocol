@@ -54,6 +54,7 @@ export async function assertCompoundLend({
   compoundPriceFeed: CompoundPriceFeed;
 }) {
   const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), tokenWhale);
+
   await token.connect(tokenWhale).transfer(vaultProxy, tokenAmount);
   const rateBefore = await cToken.exchangeRateStored.call();
 
@@ -87,6 +88,7 @@ export async function assertCompoundLend({
   });
 
   const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
+
   expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(expectedCTokenAmount));
   expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(tokenAmount));
 
@@ -111,6 +113,7 @@ export async function assertCompoundRedeem({
   compoundPriceFeed: CompoundPriceFeed;
 }) {
   const cTokenAmount = utils.parseUnits('1', await cToken.decimals());
+
   await cToken.transfer(vaultProxy, cTokenAmount);
 
   const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);

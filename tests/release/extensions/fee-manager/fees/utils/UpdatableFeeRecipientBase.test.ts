@@ -7,6 +7,7 @@ import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinanc
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -26,6 +27,7 @@ describe('setRecipientForFund', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
 
     // util is not a FeeBase so cannot be added to the fund as a real fee

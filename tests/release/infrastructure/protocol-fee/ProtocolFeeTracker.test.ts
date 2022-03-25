@@ -8,6 +8,7 @@ import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -90,6 +91,7 @@ describe('payFee', () => {
     it('0 shares supply', async () => {
       // Call the function without a tx first to assert return value
       const sharesDue = await protocolFeeTracker.payFee.from(mockVaultProxy).call();
+
       expect(sharesDue).toEqBigNumber(0);
 
       const preTxLastPaidTimestamp = await protocolFeeTracker.getLastPaidForVault(mockVaultProxy);
@@ -111,6 +113,7 @@ describe('payFee', () => {
     it('>0 shares supply, default protocol fee', async () => {
       // Give a positive value of shares total supply that makes calcs simple
       const sharesSupply = utils.parseEther('10');
+
       await mockVaultProxy.totalSupply.returns(sharesSupply);
 
       const preTxLastPaidTimestamp = await protocolFeeTracker.getLastPaidForVault(mockVaultProxy);
@@ -133,12 +136,14 @@ describe('payFee', () => {
         sharesSupply,
         vaultProxyAddress: mockVaultProxy,
       });
+
       expect(expectedProtocolFee).toBeGtBigNumber(0);
 
       // Manually assert the fee calculation in both the call return value and the emitted event.
       // Expected shares due for roughly 1 year should be around 10% of its total supply (10 units),
       // i.e., 1 raw unit, or 1.1111... fully inflated
       const tolerance = 1000000000000;
+
       expect(expectedProtocolFee).toBeAroundBigNumber(utils.parseEther('1.111111111111111111'), tolerance);
       expect(sharesDueReturnValue).toBeAroundBigNumber(expectedProtocolFee, tolerance);
 
@@ -152,11 +157,13 @@ describe('payFee', () => {
     it('>0 shares supply, protocol fee override', async () => {
       // Set the protocol fee override to 20% for the VaultProxy
       const feeBpsOverride = 2000;
+
       await protocolFeeTracker.connect(fundDeployerOwner).setFeeBpsOverrideForVault(mockVaultProxy, feeBpsOverride);
       expect(await protocolFeeTracker.getFeeBpsForVault(mockVaultProxy)).toEqBigNumber(feeBpsOverride);
 
       // Give a positive value of shares total supply that makes calcs simple
       const sharesSupply = utils.parseEther('10');
+
       await mockVaultProxy.totalSupply.returns(sharesSupply);
 
       const preTxLastPaidTimestamp = await protocolFeeTracker.getLastPaidForVault(mockVaultProxy);
@@ -179,12 +186,14 @@ describe('payFee', () => {
         sharesSupply,
         vaultProxyAddress: mockVaultProxy,
       });
+
       expect(expectedProtocolFee).toBeGtBigNumber(0);
 
       // Manually assert the fee calculation in both the call return value and the emitted event.
       // Expected shares due for roughly 1 year should be around 20% of its total supply (10 units),
       // i.e., 2 raw units, or 2.5 fully inflated
       const tolerance = 1000000000000;
+
       expect(expectedProtocolFee).toBeAroundBigNumber(utils.parseEther('2.5'), tolerance);
       expect(sharesDueReturnValue).toBeAroundBigNumber(expectedProtocolFee, tolerance);
 

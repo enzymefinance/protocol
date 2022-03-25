@@ -46,6 +46,7 @@ describe('Walkthrough a fund migration', () => {
 
     // Seed investor with denomination asset
     const denominationAssetSeedAmount = utils.parseUnits('100', await denominationAsset.decimals());
+
     await denominationAsset.transfer(investor, denominationAssetSeedAmount);
   });
 
@@ -129,9 +130,11 @@ describe('Walkthrough a fund migration', () => {
     for (const asset of assets) {
       const decimals = await asset.decimals();
       const transferAmount = utils.parseUnits('1', decimals);
+
       await asset.transfer.args(vaultProxy, transferAmount).send();
 
       const balance = await asset.balanceOf(vaultProxy);
+
       expect(balance).toBeGteBigNumber(transferAmount);
     }
 

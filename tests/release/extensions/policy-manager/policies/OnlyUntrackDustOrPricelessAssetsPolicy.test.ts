@@ -19,6 +19,7 @@ import {
 import type { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -106,14 +107,16 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
     const dustToleranceInWeth = await onlyUntrackDustOrPricelessAssetsPolicy.getDustToleranceInWeth();
+
     expect(dustToleranceInWeth).toBeGtBigNumber(0);
     dustToleranceInAssetsToRemove = await Promise.all(
-      assetsToUntrack.map(
-        async (asset) => await valueInterpreter.calcCanonicalAssetValue.args(weth, dustToleranceInWeth, asset).call(),
+      assetsToUntrack.map((asset) =>
+        valueInterpreter.calcCanonicalAssetValue.args(weth, dustToleranceInWeth, asset).call(),
       ),
     );
 
@@ -159,6 +162,7 @@ describe('validateRule', () => {
 
   it('happy path: priceless asset that has been properly queued', async () => {
     const pricelessAsset = assetsToUntrack[0];
+
     await valueInterpreter.removePrimitives([pricelessAsset]);
 
     await expect(

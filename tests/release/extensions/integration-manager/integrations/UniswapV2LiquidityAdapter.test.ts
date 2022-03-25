@@ -22,6 +22,7 @@ import {
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -31,12 +32,15 @@ describe('constructor', () => {
     const uniswapV2LiquidityAdapter = fork.deployment.uniswapV2LiquidityAdapter;
 
     const getRouterCall = await uniswapV2LiquidityAdapter.getUniswapV2Router2();
+
     expect(getRouterCall).toMatchAddress(fork.config.uniswap.router);
 
     const getFactoryCall = await uniswapV2LiquidityAdapter.getFactory();
+
     expect(getFactoryCall).toMatchAddress(fork.config.uniswap.factory);
 
     const getIntegrationManagerCall = await uniswapV2LiquidityAdapter.getIntegrationManager();
+
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
   });
 });
@@ -191,7 +195,7 @@ describe('lend', () => {
     // Calc amountBDesired relative to amountADesired
     const getReservesRes = await uniswapPair.getReserves();
     const [tokenAReserve, tokenBReserve] =
-      (await uniswapPair.token0()) == tokenA.address
+      (await uniswapPair.token0()) === tokenA.address
         ? [getReservesRes[0], getReservesRes[1]]
         : [getReservesRes[1], getReservesRes[0]];
     const amountBDesired = await uniswapRouter.quote(amountADesired, tokenAReserve, tokenBReserve);
@@ -202,6 +206,7 @@ describe('lend', () => {
       amountADesired.mul(poolTokensSupply).div(tokenAReserve),
       amountBDesired.mul(poolTokensSupply).div(tokenBReserve),
     );
+
     expect(expectedPoolTokens).toEqBigNumber('69762626247001741');
 
     // Seed fund with tokens and lend
@@ -285,6 +290,7 @@ describe('redeem', () => {
     // Seed fund and lend arbitrary amounts of tokens for an arbitrary amount of pool tokens
     const amountADesired = utils.parseEther('1');
     const amountBDesired = utils.parseEther('1');
+
     await tokenA.transfer(vaultProxy, amountADesired);
     await tokenB.transfer(vaultProxy, amountBDesired);
     await uniswapV2Lend({
@@ -310,6 +316,7 @@ describe('redeem', () => {
 
     // Define redeem params to redeem 1/2 of pool tokens
     const redeemPoolTokenAmount = preRedeemPoolTokenBalance.div(2);
+
     expect(redeemPoolTokenAmount).not.toEqBigNumber(BigNumber.from(0));
 
     // Calc expected amounts of tokens to receive

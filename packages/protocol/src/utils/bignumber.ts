@@ -2,6 +2,7 @@ import type { BigNumberish } from 'ethers';
 import { BigNumber } from 'ethers';
 
 export function max(first: BigNumberish, ...values: BigNumberish[]) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return (values ?? []).reduce((carry: BigNumber, current) => {
     if (carry.gte(current)) {
       return carry;
@@ -12,6 +13,7 @@ export function max(first: BigNumberish, ...values: BigNumberish[]) {
 }
 
 export function min(first: BigNumberish, ...values: BigNumberish[]) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return (values ?? []).reduce((carry: BigNumber, current) => {
     if (carry.lte(current)) {
       return carry;

@@ -7,6 +7,7 @@ import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -272,6 +273,7 @@ describe('buyShares caller registry', () => {
       }
 
       const events = extractEvent(receipt, 'BuySharesOnBehalfCallerRegistered');
+
       expect(events.length).toBe(buySharesCallersToRegister.length);
       for (const i in buySharesCallersToRegister) {
         expect(events[i].args).toMatchObject({
@@ -314,6 +316,7 @@ describe('buyShares caller registry', () => {
       }
 
       const events = extractEvent(receipt, 'BuySharesOnBehalfCallerDeregistered');
+
       expect(events.length).toBe(buySharesCallersToDeregister.length);
       for (const i in buySharesCallersToDeregister) {
         expect(events[i].args).toMatchObject({
@@ -336,6 +339,7 @@ describe('vault call registry', () => {
 
       // A vault call with a random data hash should not be registered, but should be allowed
       const randomDataHash = utils.keccak256(utils.randomBytes(2));
+
       expect(await fundDeployer.isRegisteredVaultCall(contract, selector, randomDataHash)).toBe(false);
       expect(await fundDeployer.isAllowedVaultCall(contract, selector, randomDataHash)).toBe(true);
     });
@@ -419,6 +423,7 @@ describe('vault call registry', () => {
 
       // Assert the correct events were emitted
       const events = extractEvent(tx, 'VaultCallDeregistered');
+
       expect(events.length).toBe(contracts.length);
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({
@@ -504,6 +509,7 @@ describe('vault call registry', () => {
 
       // Assert the correct events were emitted
       const events = extractEvent(tx, 'VaultCallRegistered');
+
       expect(events.length).toBe(contracts.length);
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({

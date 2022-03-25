@@ -7,6 +7,7 @@ import { utils } from 'ethers';
 
 const idleTokenUnit = utils.parseEther('1');
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -18,6 +19,7 @@ describe('constructor', () => {
     // Assert each derivative is properly registered
     for (const idleTokenAddress of Object.values(fork.config.idle) as AddressLike[]) {
       const idleToken = new IIdleTokenV4(idleTokenAddress, provider);
+
       expect(await idlePriceFeed.isSupportedAsset(idleToken)).toBe(true);
       expect(await idlePriceFeed.getUnderlyingForDerivative(idleToken)).toMatchAddress(await idleToken.token());
     }
@@ -83,11 +85,13 @@ describe('calcUnderlyingValues', () => {
 describe('isSupportedAsset', () => {
   it('returns false for a random asset', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
+
     expect(await idlePriceFeed.isSupportedAsset(randomAddress())).toBe(false);
   });
 
   it('returns true for an idleToken', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
+
     expect(await idlePriceFeed.isSupportedAsset(fork.config.idle.bestYieldIdleDai)).toBe(true);
   });
 });
@@ -150,6 +154,7 @@ describe('derivative gas costs', () => {
 
     // Seed the fund with dai and use to receive an idleToken balance
     const daiAmount = utils.parseEther('1');
+
     await dai.transfer(vaultProxy, daiAmount);
     await idleLend({
       comptrollerProxy,

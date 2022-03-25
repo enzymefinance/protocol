@@ -43,6 +43,7 @@ let poolInfo: Record<
     assetToLendWhale: SignerWithAddress;
   }
 >;
+
 beforeAll(async () => {
   fork = await deployProtocolFixture();
   curveLiquidityAdapter = fork.deployment.curveLiquidityAdapter;
@@ -94,6 +95,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   let nTokens: number, lpToken: StandardToken;
   let assetToLend: StandardToken, assetToLendIndex: number, assetToLendAmount: BigNumber;
   let valueInterpreter: ValueInterpreter;
+
   beforeAll(async () => {
     integrationManager = fork.deployment.integrationManager;
     valueInterpreter = fork.deployment.valueInterpreter;
@@ -103,18 +105,20 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     assetToLend = new StandardToken(poolInfo[poolKey].assetToLendAddress, poolInfo[poolKey].assetToLendWhale);
     assetToLendAmount = await getAssetUnit(assetToLend);
     const poolTokens = await curveRegistry.get_coins(poolInfo[poolKey].poolAddress);
+
     nTokens = 0;
     for (let i = 0; i < poolTokens.length; i++) {
       let asset = poolTokens[i] as string;
-      if (asset == constants.AddressZero) {
+
+      if (asset === constants.AddressZero) {
         break;
       }
 
-      if (asset.toLowerCase() == ETH_ADDRESS.toLowerCase()) {
+      if (asset.toLowerCase() === ETH_ADDRESS.toLowerCase()) {
         asset = fork.config.weth;
       }
 
-      if (asset.toLowerCase() == assetToLend.address.toLowerCase()) {
+      if (asset.toLowerCase() === assetToLend.address.toLowerCase()) {
         assetToLendIndex = i;
       }
       nTokens++;
@@ -122,12 +126,13 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     // Add all pool assets to the asset universe with arbitrary price feeds as-needed
     const primitivesToAdd = [];
+
     for (const tokenAddress of poolTokens) {
-      if (tokenAddress == constants.AddressZero) {
+      if (tokenAddress === constants.AddressZero) {
         break;
       }
 
-      if (tokenAddress != ETH_ADDRESS && !(await valueInterpreter.isSupportedAsset(tokenAddress))) {
+      if (tokenAddress !== ETH_ADDRESS && !(await valueInterpreter.isSupportedAsset(tokenAddress))) {
         primitivesToAdd.push(tokenAddress);
       }
     }
@@ -141,6 +146,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     // Add the lpToken to the asset universe as-needed
     const curvePriceFeed = fork.deployment.curvePriceFeed;
+
     if (!(await valueInterpreter.isSupportedDerivativeAsset(lpToken))) {
       if (!(await curvePriceFeed.isSupportedAsset(lpToken))) {
         await curvePriceFeed.addDerivatives([lpToken], [assetToLend]);
@@ -150,6 +156,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     // Add the gauge token to the asset universe as-needed
     const gaugeTokenAddress = poolInfo[poolKey].gaugeTokenAddress;
+
     if (gaugeTokenAddress && !(await valueInterpreter.isSupportedDerivativeAsset(gaugeTokenAddress))) {
       if (!(await curvePriceFeed.isSupportedAsset(gaugeTokenAddress))) {
         await curvePriceFeed.addDerivatives([gaugeTokenAddress], [assetToLend]);
@@ -165,6 +172,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
@@ -173,6 +181,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
   it('can lend', async () => {
     const orderedOutgoingAssetAmounts = new Array(nTokens).fill(0);
+
     orderedOutgoingAssetAmounts[assetToLendIndex] = assetToLendAmount;
 
     await curveLend({
@@ -189,6 +198,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   it('can redeem (standard)', async () => {
     const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
     const redeemAmount = preTxLpTokenBalance.div(4);
+
     expect(redeemAmount).toBeGtBigNumber(0);
 
     await curveRedeem({
@@ -211,6 +221,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   it('can redeem (one-coin)', async () => {
     const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
     const redeemAmount = preTxLpTokenBalance.div(4);
+
     expect(redeemAmount).toBeGtBigNumber(0);
 
     await curveRedeem({
@@ -233,9 +244,11 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
   it('can stake (if gauge token given)', async () => {
     const gaugeTokenAddress = poolInfo[poolKey].gaugeTokenAddress;
+
     if (gaugeTokenAddress) {
       const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
       const stakeAmount = preTxLpTokenBalance.div(4);
+
       expect(stakeAmount).toBeGtBigNumber(0);
 
       await curveStake({
@@ -254,6 +267,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
   it('can unstake (if gauge token given)', async () => {
     const gaugeTokenAddress = poolInfo[poolKey].gaugeTokenAddress;
+
     if (gaugeTokenAddress) {
       const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
       const unstakeAmount = 123;
@@ -275,6 +289,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   // TODO: for now, just tests that claim function can be called, but could also test expected tokens received
   it('can claim rewards (if gauge token given)', async () => {
     const gaugeTokenAddress = poolInfo[poolKey].gaugeTokenAddress;
+
     if (gaugeTokenAddress) {
       // Warp ahead in time to accrue significant rewards
       await provider.send('evm_increaseTime', [86400]);

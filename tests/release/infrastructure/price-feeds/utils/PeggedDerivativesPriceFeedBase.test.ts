@@ -30,6 +30,7 @@ describe('addDerivatives', () => {
 
     // Should fail with an underlying that does not match the decimals of the derivative
     const mockNon18DecimalsUnderlying = await MockToken.deploy(deployer, 'Mock Underlying 2', 'MOCK_U_2', 8);
+
     await expect(
       testPeggedDerivativesPriceFeed.addDerivatives([mockDerivative], [mockNon18DecimalsUnderlying]),
     ).rejects.toBeRevertedWith('Unequal decimals');
@@ -57,6 +58,7 @@ describe('calcUnderlyingValues', () => {
     await testPeggedDerivativesPriceFeed.addDerivatives([mockDerivative], [mockUnderlying]);
 
     const derivativeAmount = 5;
+
     expect(
       await testPeggedDerivativesPriceFeed.calcUnderlyingValues.args(mockDerivative, derivativeAmount).call(),
     ).toMatchFunctionOutput(testPeggedDerivativesPriceFeed.calcUnderlyingValues, {

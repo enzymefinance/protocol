@@ -125,6 +125,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
     // TODO: there are currently no fees that use "shares outstanding," otherwise we should test they are paid out
     it('warp beyond reconfiguration timelock and execute the reconfiguration', async () => {
       const reconfigurationTimelock = await fundDeployer.getReconfigurationTimelock();
+
       await provider.send('evm_increaseTime', [reconfigurationTimelock.toNumber()]);
 
       const receipt = await fundDeployer.connect(fundOwner).executeReconfiguration(vaultProxy);

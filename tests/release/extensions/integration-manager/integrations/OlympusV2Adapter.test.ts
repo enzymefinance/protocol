@@ -25,6 +25,7 @@ let ohm: AddressLike;
 let sohm: AddressLike;
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 

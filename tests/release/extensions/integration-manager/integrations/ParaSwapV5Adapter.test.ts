@@ -20,6 +20,7 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -30,6 +31,7 @@ describe('constructor', () => {
 
     // AdapterBase
     const integrationManagerResult = await paraSwapV5Adapter.getIntegrationManager();
+
     expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
 
     // ParaSwapV5ActionsMixin
@@ -163,13 +165,13 @@ describe('takeOrder', () => {
 
     // UniV2 payload
     const uniV2Pool = new IUniswapV2Pair(fork.config.uniswap.pools.daiWeth, provider);
-    const uniV2ShiftedDirection = (await uniV2Pool.token0()) == incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
+    const uniV2ShiftedDirection = (await uniV2Pool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
     const uniV2PackedPool = shiftedFee.add(uniV2ShiftedDirection).add(uniV2Pool.address);
     const uniV2Payload = encodeArgs([uniswapV2DataStruct], [{ pools: [uniV2PackedPool], weth: constants.AddressZero }]);
 
     // Sushi payload
     const sushiPool = new IUniswapV2Pair('0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f', provider);
-    const sushiShiftedDirection = (await sushiPool.token0()) == incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
+    const sushiShiftedDirection = (await sushiPool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
     const sushiPackedPool = shiftedFee.add(sushiShiftedDirection).add(sushiPool.address);
     const sushiPayload = encodeArgs([uniswapV2DataStruct], [{ pools: [sushiPackedPool], weth: constants.AddressZero }]);
 
@@ -211,6 +213,7 @@ describe('takeOrder', () => {
 
     // Seed fund with more than what will be spent
     const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
+
     await outgoingAsset.transfer(vaultProxy, initialOutgoingAssetBalance);
 
     // TODO: can call multiSwap() first to get the expected amount

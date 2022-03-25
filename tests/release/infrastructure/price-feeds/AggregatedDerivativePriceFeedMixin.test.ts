@@ -19,9 +19,11 @@ async function snapshot() {
   const mockDerivative2 = await MockToken.deploy(deployer, 'Mock Derivative 2', 'MCKD002', 18);
 
   const mockDerivativePriceFeed1 = await IDerivativePriceFeed.mock(deployer);
+
   await mockDerivativePriceFeed1.isSupportedAsset.returns(false);
 
   const mockDerivativePriceFeed2 = await IDerivativePriceFeed.mock(deployer);
+
   await mockDerivativePriceFeed2.isSupportedAsset.returns(false);
 
   return {
@@ -53,12 +55,14 @@ describe('constructor', () => {
     // Check compound
     for (const cToken of Object.values(compoundTokens) as AddressLike[]) {
       const storedPriceFeed = await valueInterpreter.getPriceFeedForDerivative(cToken);
+
       expect(storedPriceFeed).toMatchAddress(compoundPriceFeed);
     }
 
     // Check uniswapV2
     for (const lpToken of Object.values(uniswapV2PoolTokens) as AddressLike[]) {
       const storedPriceFeed = await valueInterpreter.getPriceFeedForDerivative(lpToken);
+
       expect(storedPriceFeed).toMatchAddress(uniswapV2PoolPriceFeed);
     }
 
@@ -99,6 +103,7 @@ describe('addDerivatives', () => {
 
     // Extract events from tx and check all of them were fired
     const events = extractEvent(addPriceFeedReceipt, 'DerivativeAdded');
+
     expect(events).toHaveLength(2);
     expect(events[0]).toMatchEventArgs({
       derivative: mockDerivative1,
@@ -182,8 +187,10 @@ describe('updateDerivatives', () => {
 
     // Check events were properly emitted
     const addedEvents = extractEvent(updatePriceFeedReceipt, 'DerivativeAdded');
+
     expect(addedEvents).toHaveLength(2);
     const removedEvents = extractEvent(updatePriceFeedReceipt, 'DerivativeRemoved');
+
     expect(removedEvents).toHaveLength(2);
 
     expect(addedEvents[0]).toMatchEventArgs({
@@ -236,6 +243,7 @@ describe('removeDerivatives', () => {
 
     // Check events where properly emitted
     const events = extractEvent(removeDerivativeReceipt, 'DerivativeRemoved');
+
     expect(events).toHaveLength(2);
     expect(events[0]).toMatchEventArgs({
       derivative: mockDerivative1,

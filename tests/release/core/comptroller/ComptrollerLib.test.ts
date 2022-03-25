@@ -4,6 +4,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -30,6 +31,7 @@ describe('constructor', () => {
 describe('destruct calls', () => {
   it('cannot be non-delegatecalled', async () => {
     const mockFundDeployer = await FundDeployer.mock(fork.deployer);
+
     await mockFundDeployer.releaseIsLive.returns(true);
 
     const comptrollerLib = await ComptrollerLib.deploy(

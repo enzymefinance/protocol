@@ -43,6 +43,7 @@ import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 let curveLiquidityAdapter: CurveLiquidityAdapter;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   curveLiquidityAdapter = fork.deployment.curveLiquidityAdapter;
@@ -77,6 +78,7 @@ describe('parseAssetsForAction', () => {
     orderedPoolAssets: AddressLike[],
     orderedPoolUnderlyings: AddressLike[],
     pool: AddressLike;
+
   beforeEach(async () => {
     aDai = fork.config.aave.atokens.adai[0];
     aUsdc = fork.config.aave.atokens.ausdc[0];
@@ -473,6 +475,7 @@ describe('actions', () => {
   let integrationManager: IntegrationManager;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let fundOwner: SignerWithAddress;
+
   beforeEach(async () => {
     integrationManager = fork.deployment.integrationManager;
     [fundOwner] = fork.accounts;
@@ -483,6 +486,7 @@ describe('actions', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
   });
@@ -555,6 +559,7 @@ describe('actions', () => {
     describe('aave pool: 3 assets, underlyings', () => {
       let pool: AddressLike;
       let lpToken: StandardToken;
+
       beforeEach(async () => {
         pool = fork.config.curve.pools.aave.pool;
         lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
@@ -711,6 +716,7 @@ describe('actions', () => {
       let dai: StandardToken, usdc: StandardToken, usdt: StandardToken;
       let aDai: StandardToken, aUsdc: StandardToken, aUsdt: StandardToken;
       let preTxLpTokenBalance: BigNumber, outgoingLpTokenAmount: BigNumber;
+
       beforeEach(async () => {
         pool = fork.config.curve.pools.aave.pool;
         lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
@@ -901,6 +907,7 @@ describe('actions', () => {
         preTxWethBalance: BigNumber,
         preTxStethBalance: BigNumber,
         outgoingLpTokenAmount: BigNumber;
+
       beforeEach(async () => {
         pool = fork.config.curve.pools.steth.pool;
         lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
@@ -1033,6 +1040,7 @@ describe('actions', () => {
       });
 
       const preStakeLpTokenBalance = await lpToken.balanceOf(vaultProxy);
+
       expect(preStakeLpTokenBalance).toBeGtBigNumber(0);
 
       await curveStake({

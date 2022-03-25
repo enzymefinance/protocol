@@ -12,6 +12,7 @@ export interface RelayTransactionOptions extends CreateSignedRelayRequestOptions
 
 export async function relayTransaction(options: RelayTransactionOptions) {
   const signer = options.sendFunction.contract.signer;
+
   if (!(signer && isTypedDataSigner(signer))) {
     throw new Error('Missing or invalid signer');
   }
@@ -59,11 +60,13 @@ export function assertDidRelay(receipt: ContractReceipt<any>) {
 
 export function assertDidRelaySuccessfully(receipt: ContractReceipt<any>) {
   const result = assertDidRelay(receipt);
+
   expect(result.status).toEqBigNumber(0);
 }
 
 export function assertDidRelayWithError(receipt: ContractReceipt<any>) {
   const result = assertDidRelay(receipt);
+
   expect(result.status).toEqBigNumber(1);
 }
 
@@ -73,6 +76,7 @@ export function assertDidRelayWithCharge(
   tolerance?: BigNumberish,
 ) {
   const result = assertDidRelay(receipt);
+
   expect(result.charge).toBeAroundBigNumber(amount, tolerance);
 }
 
@@ -91,5 +95,6 @@ export function assertPaymasterDidReject(receipt: ContractReceipt<any>) {
 
 export function assertPaymasterDidRejectForReason(receipt: ContractReceipt<any>, reason: string) {
   const params = assertPaymasterDidReject(receipt);
-  expect(utils.toUtf8String('0x' + params.reason.substr(138))).toMatch(reason);
+
+  expect(utils.toUtf8String(`0x${params.reason.substr(138)}`)).toMatch(reason);
 }

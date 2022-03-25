@@ -35,6 +35,7 @@ let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let fundOwner: SignerWithAddress;
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   [fundOwner] = fork.accounts;
@@ -111,11 +112,13 @@ describe('init', () => {
 
     // NFT should have been created
     const nftIds = await uniswapV3LiquidityPosition.getNftIds();
+
     expect(nftIds.length).toBe(1);
     const nftId = nftIds[0];
 
     // Assert the NFT position was created correctly in Uniswap
     const positions = await nftManager.positions(nftId);
+
     expect(positions).toMatchFunctionOutput(nftManager.positions, {
       fee,
       feeGrowthInside0LastX128: 0,
@@ -139,6 +142,7 @@ describe('receiveCallFromVault', () => {
 
   let nftManager: IUniswapV3NonFungibleTokenManager;
   let token0: StandardToken, token1: StandardToken;
+
   beforeEach(async () => {
     nftManager = new IUniswapV3NonFungibleTokenManager(fork.config.uniswapV3.nonFungiblePositionManager, provider);
     token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
@@ -151,6 +155,7 @@ describe('receiveCallFromVault', () => {
         signer: fundOwner,
       })
     ).externalPositionProxyAddress;
+
     uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
   });
 
@@ -262,6 +267,7 @@ describe('receiveCallFromVault', () => {
 
       // Assert the NFT position was created correctly in Uniswap
       const positions = await nftManager.positions(nftId);
+
       expect(positions).toMatchFunctionOutput(nftManager.positions, {
         fee,
         feeGrowthInside0LastX128: 0,
@@ -280,6 +286,7 @@ describe('receiveCallFromVault', () => {
 
       // Assert correct local state change and event
       const postTxNftIds = await uniswapV3LiquidityPosition.getNftIds();
+
       expect(postTxNftIds.length).toBe(preTxNftsCount + 1);
       expect(postTxNftIds[postTxNftIds.length - 1]).toEqBigNumber(nftId);
 
@@ -301,10 +308,12 @@ describe('receiveCallFromVault', () => {
         .add(preVaultToken1Balance)
         .sub(postVaultToken0Balance)
         .sub(postVaultToken1Balance);
+
       expect(netTokenBalancesDiff).toBeGtBigNumber(0);
 
       // Managed assets should be roughly the amount of assets added
       const managedAssets = await uniswapV3LiquidityPosition.getManagedAssets.call();
+
       expect(managedAssets.assets_[0]).toMatchAddress(token0);
       expect(managedAssets.assets_[1]).toMatchAddress(token1);
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(amount0Desired);
@@ -368,6 +377,7 @@ describe('receiveCallFromVault', () => {
 
       // Liquidity should have increased
       const positionsAfter = await nftManager.positions(nftId);
+
       expect(positionsAfter.liquidity).toBeGteBigNumber(positionsBefore.liquidity);
 
       // Assert expected token balance changes
@@ -381,6 +391,7 @@ describe('receiveCallFromVault', () => {
         .add(preVaultToken1Balance)
         .sub(postVaultToken0Balance)
         .sub(postVaultToken1Balance);
+
       expect(netTokenBalancesDiff).toBeGtBigNumber(0);
 
       // Managed assets should be roughly 2x the amount of assets added
@@ -437,6 +448,7 @@ describe('receiveCallFromVault', () => {
 
       // Assert desired liquidity was removed
       const positionsAfter = await nftManager.positions(nftId);
+
       expect(positionsAfter.liquidity).toEqBigNumber(positionsBefore.liquidity.sub(liquidityRemoved));
 
       // Vault balances of both tokens should have increased (no need to assert exact amounts, i.e., test that UniV3 works)
@@ -937,6 +949,7 @@ describe('receiveCallFromVault', () => {
       });
 
       const { assets_, amounts_ } = await uniswapV3LiquidityPosition.getManagedAssets.call();
+
       expect(assets_[0]).toEqual(token0.address);
       expect(assets_[1]).toEqual(token1.address);
       expect(amounts_[0]).toBeGteBigNumber(BigNumber.from('0'));

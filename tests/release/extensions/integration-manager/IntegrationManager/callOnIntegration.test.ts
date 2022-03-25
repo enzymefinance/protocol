@@ -233,6 +233,7 @@ describe('callOnIntegration', () => {
     } = await provider.snapshot(snapshot);
 
     const nonReceivableToken = new StandardToken(randomAddress(), provider);
+
     await expect(
       mockGenericSwap({
         actualSpendAssetAmounts: [utils.parseEther('1')],
@@ -266,6 +267,7 @@ describe('callOnIntegration', () => {
     // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
     // by registering the token's approve() function for use in vaultCallOnContract()
     const approveSelector = sighash(spendAsset.approve.fragment);
+
     await fundDeployer.registerVaultCalls(
       [spendAsset],
       [approveSelector],
@@ -387,12 +389,14 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: spendAssets,
     });
+
     expect(spendAssetBalancesCall).toEqual([utils.parseEther('0'), utils.parseEther('0')]);
 
     const incomingAssetBalancesCall = await getAssetBalances({
       account: vaultProxy,
       assets: incomingAssets,
     });
+
     expect(incomingAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
   });
 
@@ -406,6 +410,7 @@ describe('valid calls', () => {
 
     // seed fund with incomingAsset
     const seedFundAmount = utils.parseEther('1');
+
     await knc.transfer(vaultProxy, seedFundAmount);
 
     const spendAssets: [] = [];
@@ -419,6 +424,7 @@ describe('valid calls', () => {
     const expectedIncomingAssetAmount = actualIncomingAssetAmounts[0];
 
     const preTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
+
     expect(preTxGetTrackedAssetsCall).toEqual([denominationAsset.address]);
 
     const swapArgs = { actualIncomingAssetAmounts, incomingAssets, minIncomingAssetAmounts };
@@ -466,8 +472,10 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: incomingAssets,
     });
+
     expect(incomingAssetBalancesCall).toEqual([expectedIncomingAssetAmount.add(seedFundAmount)]);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
+
     expect(postTxGetTrackedAssetsCall).toEqual([
       denominationAsset.address,
       ...incomingAssets.map((token) => token.address),
@@ -489,6 +497,7 @@ describe('valid calls', () => {
     const minIncomingAssetAmounts = [utils.parseEther('1')];
 
     const preTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
+
     expect(preTxGetTrackedAssetsCall).toEqual([denominationAsset.address]);
 
     const swapArgs = { actualIncomingAssetAmounts, incomingAssets, minIncomingAssetAmounts };
@@ -536,8 +545,10 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: incomingAssets,
     });
+
     expect(incomingAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
     const postTxGetTrackedAssetsCall = await vaultProxy.getTrackedAssets();
+
     expect(postTxGetTrackedAssetsCall).toEqual([
       denominationAsset.address,
       ...incomingAssets.map((token) => token.address),
@@ -616,6 +627,7 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: spendAssets,
     });
+
     expect(spendAssetBalancesCall).toEqual(actualIncomingAssetAmounts);
   });
 
@@ -628,6 +640,7 @@ describe('valid calls', () => {
     } = await provider.snapshot(snapshot);
 
     const spendAssetAmountOnAdapter = BigNumber.from(5);
+
     await mln.transfer(mockGenericAdapter, spendAssetAmountOnAdapter);
 
     const spendAssets = [mln];
@@ -684,6 +697,7 @@ describe('valid calls', () => {
       account: vaultProxy,
       assets: spendAssets,
     });
+
     expect(spendAssetBalancesCall).toEqual([spendAssetAmountOnAdapter]);
   });
 

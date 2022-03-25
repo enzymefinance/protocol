@@ -213,6 +213,7 @@ describe('parseAssetsForAction', () => {
     const result = compoundDebtPositionParser.parseAssetsForAction
       .args(externalPositionProxyUsed, CompoundDebtPositionActionId.BorrowAsset, actionArgs)
       .call();
+
     await expect(result).rejects.toBeRevertedWith('Unsupported asset');
   });
 });
@@ -220,6 +221,7 @@ describe('parseAssetsForAction', () => {
 describe('parseInitArgs', () => {
   it('return expected result', async () => {
     const compoundDebtPositionParser = fork.deployment.compoundDebtPositionParser;
+
     expect(await compoundDebtPositionParser.parseInitArgs.args(randomAddress(), '0x00').call()).toEqual('0x');
   });
 });

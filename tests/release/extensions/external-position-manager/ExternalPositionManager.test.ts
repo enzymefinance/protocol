@@ -299,6 +299,7 @@ describe('receiveCallFromComptroller', () => {
       });
 
       const activeExternalPositionsBefore = await vaultProxy.getActiveExternalPositions.call();
+
       expect(activeExternalPositionsBefore.length).toEqual(0);
 
       // Add back the previously removed position
@@ -321,6 +322,7 @@ describe('receiveCallFromComptroller', () => {
       );
 
       const activeExternalPositionsAfter = await vaultProxy.getActiveExternalPositions.call();
+
       expect(activeExternalPositionsAfter[0]).toMatchAddress(externalPositionProxy);
     });
 

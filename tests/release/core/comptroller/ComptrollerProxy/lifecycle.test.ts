@@ -15,6 +15,7 @@ async function snapshot() {
 
   // Deploy a mock FundDeployer
   const mockFundDeployer = await FundDeployer.mock(deployer);
+
   await mockFundDeployer.releaseIsLive.returns(true);
 
   // Deploy mock extensions
@@ -61,6 +62,7 @@ async function snapshot() {
 
   // Deploy Mock VaultProxy
   const mockVaultProxy = await VaultLib.mock(deployer);
+
   await mockVaultProxy.addTrackedAsset.returns(undefined);
   await mockVaultProxy.balanceOf.returns(0);
   await mockVaultProxy.getOwner.returns(mockVaultProxyOwner);
@@ -110,9 +112,11 @@ describe('init', () => {
 
     // Assert state has been set
     const getDenominationAssetCall = await comptrollerProxy.getDenominationAsset();
+
     expect(getDenominationAssetCall).toMatchAddress(denominationAsset);
 
     const getSharesActionTimelockCall = await comptrollerProxy.getSharesActionTimelock();
+
     expect(getSharesActionTimelockCall).toEqBigNumber(sharesActionTimelock);
   });
 
@@ -141,12 +145,14 @@ describe('setVaultProxy', () => {
 
     // Assert events emitted
     const VaultProxySetEvent = comptrollerProxy.abi.getEvent('VaultProxySet');
+
     assertEvent(receipt, VaultProxySetEvent, {
       vaultProxy: mockVaultProxy,
     });
 
     // Assert state has been set
     const vaultProxyResult = await comptrollerProxy.getVaultProxy();
+
     expect(vaultProxyResult).toMatchAddress(mockVaultProxy);
   });
 });
@@ -195,6 +201,7 @@ describe('activate', () => {
 
     // Mock shares due balance to assert burn/mint calls during activation
     const sharesDue = 100;
+
     await mockVaultProxy.balanceOf.given(mockVaultProxy).returns(sharesDue);
 
     // Call activate()
@@ -202,6 +209,7 @@ describe('activate', () => {
 
     // Assert events emitted
     const MigratedSharesDuePaidEvent = comptrollerProxy.abi.getEvent('MigratedSharesDuePaid');
+
     assertEvent(receipt, MigratedSharesDuePaidEvent, {
       sharesDue: BigNumber.from(sharesDue),
     });
@@ -240,6 +248,7 @@ describe('destructActivated', () => {
 
     // Confirm that a state call resolves prior to destruct
     const preGetDenominationAssetCall = await comptrollerProxy.getDenominationAsset();
+
     expect(preGetDenominationAssetCall).toBeTruthy();
 
     // Destruct fund
@@ -266,6 +275,7 @@ describe('destructUnactivated', () => {
 
     // Confirm that a state call resolves prior to destruct
     const preGetDenominationAssetCall = await comptrollerProxy.getDenominationAsset();
+
     expect(preGetDenominationAssetCall).toBeTruthy();
 
     // Destruct fund

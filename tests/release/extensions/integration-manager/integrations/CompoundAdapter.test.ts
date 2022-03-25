@@ -21,6 +21,7 @@ import { utils } from 'ethers';
 const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -30,12 +31,15 @@ describe('constructor', () => {
     const compoundAdapter = fork.deployment.compoundAdapter;
 
     const getCompoundPriceFeedCall = await compoundAdapter.getCompoundPriceFeed();
+
     expect(getCompoundPriceFeedCall).toMatchAddress(fork.deployment.compoundPriceFeed);
 
     const getIntegrationManagerCall = await compoundAdapter.getIntegrationManager();
+
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
     const getWethTokenCall = await compoundAdapter.getCompoundWethToken();
+
     expect(getWethTokenCall).toMatchAddress(fork.config.weth);
   });
 });
@@ -259,6 +263,7 @@ describe('claimComp', () => {
     });
 
     const secondsToWarp = 100000000;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
@@ -297,6 +302,7 @@ describe('claimComp', () => {
     });
 
     const secondsToWarp = 100000000;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 

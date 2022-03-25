@@ -55,6 +55,7 @@ describe('calcUnderlyingValues', () => {
     const { mockDerivative, mockUnderlying, testSinglePeggedDerivativePriceFeed } = await provider.snapshot(snapshot);
 
     const derivativeAmount = 5;
+
     expect(
       await testSinglePeggedDerivativePriceFeed.calcUnderlyingValues.args(mockDerivative, derivativeAmount).call(),
     ).toMatchFunctionOutput(testSinglePeggedDerivativePriceFeed.calcUnderlyingValues, {

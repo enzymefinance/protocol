@@ -57,6 +57,7 @@ async function snapshot() {
   });
 
   const reentrancyToken = await MockReentrancyToken.deploy(deployer);
+
   await deployment.valueInterpreter.addPrimitives(
     [reentrancyToken],
     [config.chainlink.aggregators.dai[0]],
@@ -66,6 +67,7 @@ async function snapshot() {
   // Seed some accounts with some weth.
   const seedAmount = utils.parseEther('100');
   const seedAccounts = [fundOwner, remainingAccounts[0], remainingAccounts[1]];
+
   await Promise.all(seedAccounts.map((account) => weth.transfer(account.address, seedAmount)));
 
   return {
@@ -100,6 +102,7 @@ describe('buyShares', () => {
     });
 
     const investmentAmount = 1;
+
     await denominationAsset.mintFor(buyer, investmentAmount);
     await denominationAsset.makeItReentracyToken(comptrollerProxy);
     await expect(
@@ -225,6 +228,7 @@ describe('buyShares', () => {
 
     // Assert shares were minted correctly
     const sharesBuyerBalance = await vaultProxy.balanceOf(buyer);
+
     expect(sharesBuyerBalance).toEqBigNumber(expectedSharesAmount);
     expect(await vaultProxy.totalSupply()).toEqBigNumber(sharesBuyerBalance);
 
@@ -301,6 +305,7 @@ describe('buyShares', () => {
       sharesSupply: preTxSharesSupply,
       vaultProxyAddress: vaultProxy,
     });
+
     expect(expectedProtocolFee).toBeGtBigNumber(0);
     // Share price after the tx is the same as the share price during the time of shares issuance,
     // since protocol fee has already been collected at that time.
@@ -309,9 +314,11 @@ describe('buyShares', () => {
 
     // Assert shares were minted correctly.
     const sharesBuyerBalance = await vaultProxy.balanceOf(buyer);
+
     expect(sharesBuyerBalance).toEqBigNumber(expectedSharesReceived);
 
     const expectedSharesSupply = preTxSharesSupply.add(sharesBuyerBalance).add(expectedProtocolFee);
+
     expect(await vaultProxy.totalSupply()).toEqBigNumber(expectedSharesSupply);
 
     // Other assertions same as made in previous test
@@ -600,6 +607,7 @@ describe('redeem', () => {
       // Send second asset to the fund
       const secondAsset = new StandardToken(mln, whales.mln);
       const secondAssetTransferAmount = await getAssetUnit(secondAsset);
+
       await secondAsset.transfer(vaultProxy, secondAssetTransferAmount);
 
       await expect(
@@ -654,6 +662,7 @@ describe('redeem', () => {
       });
 
       const zeroBalanceAsset = new StandardToken(mln, whales.mln);
+
       expect(await zeroBalanceAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
 
       await expect(
@@ -700,6 +709,7 @@ describe('redeem', () => {
 
       // Buy a relatively small amount of shares for the investor to guarantee they can redeem the specified asset balances
       const investorInvestmentAmount = (await getAssetUnit(denominationAsset)).div(10);
+
       await buyShares({
         buyer: investor,
         comptrollerProxy,
@@ -715,13 +725,13 @@ describe('redeem', () => {
 
       // Send and track the redemption assets with the equivalent values as the denomination asset balance
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
+
       await addNewAssetsToFund({
         amounts: await Promise.all(
-          payoutAssets.map(
-            async (asset) =>
-              await valueInterpreter.calcCanonicalAssetValue
-                .args(denominationAsset, preTxVaultDenominationAssetBalance, asset)
-                .call(),
+          payoutAssets.map(async (asset) =>
+            valueInterpreter.calcCanonicalAssetValue
+              .args(denominationAsset, preTxVaultDenominationAssetBalance, asset)
+              .call(),
           ),
         ),
         assets: payoutAssets,
@@ -750,11 +760,10 @@ describe('redeem', () => {
 
       // Calculate the expected payout amounts
       const expectedPayoutAmounts = await Promise.all(
-        payoutAssets.map(
-          async (asset, i) =>
-            await valueInterpreter.calcCanonicalAssetValue
-              .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[i]).div(oneHundredPercent), asset)
-              .call(),
+        payoutAssets.map(async (asset, i) =>
+          valueInterpreter.calcCanonicalAssetValue
+            .args(denominationAsset, gavOwed.mul(payoutAssetPercentages[i]).div(oneHundredPercent), asset)
+            .call(),
         ),
       );
 
@@ -878,6 +887,7 @@ describe('redeem', () => {
       const expectedPayoutAmount = await valueInterpreter.calcCanonicalAssetValue
         .args(denominationAsset, gavOwed, payoutAsset)
         .call();
+
       expect(expectedPayoutAmount).toBeGtBigNumber(0);
 
       // Assert that the new GAV is roughly the old gav minus gav owed
@@ -928,6 +938,7 @@ describe('redeem', () => {
       // Calculate gav that should have been paid out to the redeemer. This needs to be done after
       // the redemption has taken place to take into account protocol fees charged
       const sharesSupplyWithProtocolFee = expectedSharesRedeemed.add(await vaultProxy.totalSupply());
+
       // This also confirms that a protocol fee was charged
       expect(sharesSupplyWithProtocolFee).toBeGtBigNumber(preTxSharesSupply);
 
@@ -963,6 +974,7 @@ describe('redeem', () => {
       } = await provider.snapshot(snapshot);
 
       const investmentAmount = (await getAssetUnit(denominationAsset)).mul(2);
+
       await denominationAsset.mintFor(fundManager, investmentAmount);
       await denominationAsset.mintFor(investor, investmentAmount);
 
@@ -1073,6 +1085,7 @@ describe('redeem', () => {
 
       // Send and track a second asset in the vault, but then allow it to be untracked
       const secondAsset = new StandardToken(mln, whales.mln);
+
       await addNewAssetsToFund({
         amounts: [(await getAssetUnit(secondAsset)).mul(3)],
         assets: [secondAsset],
@@ -1085,7 +1098,7 @@ describe('redeem', () => {
       const expectedSharesRedeemed = await vaultProxy.balanceOf(investor);
       const expectedPayoutAssets = [denominationAsset, secondAsset];
       const expectedPayoutAmounts = await Promise.all(
-        expectedPayoutAssets.map(async (asset) => await asset.balanceOf(vaultProxy)),
+        expectedPayoutAssets.map(async (asset) => asset.balanceOf(vaultProxy)),
       );
 
       // Record the investor's pre-redemption balances
@@ -1095,6 +1108,7 @@ describe('redeem', () => {
       });
 
       const preTxGav = await comptrollerProxy.calcGav.call();
+
       expect(preTxGav).toBeGtBigNumber(0);
 
       // Redeem all of investor's shares
@@ -1167,10 +1181,12 @@ describe('redeem', () => {
       // Send untracked asset directly to fund
       const untrackedAsset = new StandardToken(mln, whales.mln);
       const untrackedAssetBalance = utils.parseEther('2');
+
       await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
 
       // Assert the asset is not tracked
       const isTrackedAssetCall = await vaultProxy.isTrackedAsset(untrackedAsset);
+
       expect(isTrackedAssetCall).toBe(false);
 
       // Define the redemption params and the expected payout assets
@@ -1202,6 +1218,7 @@ describe('redeem', () => {
       // Calculate expected payout amount to the redeemer. This needs to be done after
       // the redemption has taken place to take into account protocol fees charged.
       const sharesSupplyWithProtocolFee = redeemQuantity.add(await vaultProxy.totalSupply());
+
       // This also confirms that a protocol fee was charged
       expect(sharesSupplyWithProtocolFee).toBeGtBigNumber(preTxSharesSupply);
 
@@ -1273,6 +1290,7 @@ describe('redeem', () => {
       });
 
       const invalidFeeSettlementType = 100;
+
       await mockContinuousFeeSettleOnly.settle.returns(
         invalidFeeSettlementType,
         constants.AddressZero,
@@ -1318,6 +1336,7 @@ describe('transfer shares', () => {
       sharesActionTimelock,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
@@ -1407,6 +1426,7 @@ describe('sharesActionTimelock', () => {
     });
 
     const getSharesActionTimelockCall = await comptrollerProxy.getSharesActionTimelock();
+
     expect(getSharesActionTimelockCall).toEqBigNumber(0);
 
     // Buy shares to start the timelock (though the timelock is 0)

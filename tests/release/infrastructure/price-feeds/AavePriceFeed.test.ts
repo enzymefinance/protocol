@@ -5,6 +5,7 @@ import { aaveLend, buyShares, createNewFund, deployProtocolFixture } from '@enzy
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -69,6 +70,7 @@ describe('addDerivatives', () => {
     const aavePriceFeed = fork.deployment.aavePriceFeed;
     const derivatives = ['0x101cc05f4A51C0319f570d5E146a8C625198e636']; // aTUSD
     const underlyings = ['0x0000000000085d4780b73119b644ae5ecd22b376']; // TUSD
+
     await aavePriceFeed.addDerivatives(derivatives, underlyings);
   });
 
@@ -76,6 +78,7 @@ describe('addDerivatives', () => {
     const aavePriceFeed = fork.deployment.aavePriceFeed;
     const derivatives = ['0x101cc05f4A51C0319f570d5E146a8C625198e636']; // aTUSD
     const underlyings = [fork.config.primitives.dai];
+
     await expect(aavePriceFeed.addDerivatives(derivatives, underlyings)).rejects.toBeRevertedWith(
       'Invalid aToken or token provided',
     );
@@ -86,6 +89,7 @@ describe('addDerivatives', () => {
     const aavePriceFeed = fork.deployment.aavePriceFeed;
     const derivatives = [randomAddress()];
     const underlyings = [fork.config.aave.atokens.ausdc[0]];
+
     await expect(aavePriceFeed.addDerivatives(derivatives, underlyings)).rejects.toBeReverted();
   });
 });
@@ -123,6 +127,7 @@ describe('expected values', () => {
 
     const baseDecimals = await adai.decimals();
     const quoteDecimals = await dai.decimals();
+
     expect(baseDecimals).toEqBigNumber(18);
     expect(quoteDecimals).toEqBigNumber(18);
 
@@ -130,6 +135,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(adai, utils.parseUnits('1', baseDecimals), dai)
       .call();
+
     expect(canonicalAssetValue).toEqBigNumber(utils.parseUnits('1', quoteDecimals));
   });
 
@@ -148,6 +154,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(ausdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
+
     expect(canonicalAssetValue).toEqBigNumber(utils.parseUnits('1', quoteDecimals));
   });
 });

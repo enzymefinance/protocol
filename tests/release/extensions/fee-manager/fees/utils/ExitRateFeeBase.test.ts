@@ -1,7 +1,5 @@
-/*
- * @file Uses the ExitRateBurnFee to test the basic functionality of an ExitRateFeeBase
- * that does not rely on settlement type
- */
+// @file Uses the ExitRateBurnFee to test the basic functionality of an ExitRateFeeBase
+// that does not rely on settlement type
 
 import { randomAddress } from '@enzymefinance/ethers';
 import {
@@ -21,12 +19,14 @@ async function deployStandaloneExitRateFee(fork: ProtocolDeployment) {
   const [EOAFeeManager] = fork.accounts.slice(-1);
 
   let exitRateFee = await ExitRateBurnFee.deploy(fork.deployer, EOAFeeManager);
+
   exitRateFee = exitRateFee.connect(EOAFeeManager);
 
   return exitRateFee;
 }
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });

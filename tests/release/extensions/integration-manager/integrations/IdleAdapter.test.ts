@@ -22,6 +22,7 @@ import {
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -82,6 +83,7 @@ describe('parseAssetsForAction', () => {
         signer: fundOwner,
       });
       const outgoingUnderlyingAmount = utils.parseUnits('1', await underlying.decimals());
+
       await underlying.transfer(vaultProxy, outgoingUnderlyingAmount);
       await idleLend({
         comptrollerProxy,
@@ -211,6 +213,7 @@ describe('claimRewards', () => {
 
     // Seed the fund with idleTokens to start accruing rewards
     const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
+
     await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
 
     await idleLend({
@@ -231,6 +234,7 @@ describe('claimRewards', () => {
       account: vaultProxy,
       assets: [idleTokenERC20],
     });
+
     expect(preTxVaultIdleTokenBalance).toBeGtBigNumber(0);
 
     await idleClaimRewards({
@@ -251,8 +255,10 @@ describe('claimRewards', () => {
 
     // Assert that the rewards wind up in the VaultProxy
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
+
     expect(govTokensLength).toBeGreaterThan(0);
     let totalGovTokenVaultBalances = BigNumber.from('0');
+
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);
 
@@ -282,6 +288,7 @@ describe('lend', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = utils.parseUnits('1', await idleToken.decimals());
+
     await outgoingToken.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
@@ -330,6 +337,7 @@ describe('redeem', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
+
     await token.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
 
     await idleLend({
@@ -343,6 +351,7 @@ describe('redeem', () => {
     });
 
     const vaultIdleTokenBalance = await idleTokenERC20.balanceOf(vaultProxy);
+
     expect(vaultIdleTokenBalance).toBeGtBigNumber(0);
 
     // Warp ahead in time to accrue rewards
@@ -373,9 +382,11 @@ describe('redeem', () => {
 
     // Assert that the rewards wind up in the VaultProxy
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
+
     expect(govTokensLength).toBeGreaterThan(0);
 
     let totalGovTokenVaultBalances = BigNumber.from('0');
+
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);
 
@@ -409,6 +420,7 @@ describe('rewards behavior', () => {
 
     // Lend for idleToken
     const lendAmount = utils.parseUnits('2', await outgoingToken.decimals());
+
     await outgoingToken.transfer(vaultProxy, lendAmount);
     await idleLend({
       comptrollerProxy,
@@ -438,6 +450,7 @@ describe('rewards behavior', () => {
     expect(preRedeemTotalVaultProxyGovTokensEarned).toBeGtBigNumber(0);
 
     const preRedeemAdapterGovTokenEarned = await idleToken.getGovTokensAmounts(idleAdapter);
+
     for (const amountEarned of preRedeemAdapterGovTokenEarned) {
       expect(amountEarned).toEqBigNumber(0);
     }
@@ -473,12 +486,14 @@ describe('rewards behavior', () => {
 
     // The adapter should still have no rewards unclaimed
     const postRedeemAdapterGovTokensEarned = await idleToken.getGovTokensAmounts(idleAdapter);
+
     for (const amountEarned of postRedeemAdapterGovTokensEarned) {
       expect(amountEarned).toEqBigNumber(0);
     }
 
     // Assert that the rewards wind up in the VaultProxy
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
+
     expect(govTokensLength).toBeGreaterThan(0);
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);

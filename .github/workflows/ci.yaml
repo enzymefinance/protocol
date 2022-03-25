@@ -12,7 +12,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         project:
@@ -36,19 +35,9 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
+          cache: yarn
+          cache-dependency-path: yarn.lock
           node-version: 16
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - name: Yarn cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
 
       - name: Hardhat artifact cache
         uses: actions/cache@v2
@@ -83,7 +72,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -91,19 +79,9 @@ jobs:
       - name: Set up node
         uses: actions/setup-node@v2
         with:
+          cache: yarn
+          cache-dependency-path: yarn.lock
           node-version: 16
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - name: Yarn cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
 
       - name: Hardhat artifact cache
         uses: actions/cache@v2

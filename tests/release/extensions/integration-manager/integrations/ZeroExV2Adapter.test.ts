@@ -14,6 +14,7 @@ import { BigNumber, constants, utils } from 'ethers';
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -23,13 +24,16 @@ describe('constructor', () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
 
     const getExchangeCall = await zeroExV2Adapter.getZeroExV2Exchange();
+
     expect(getExchangeCall).toMatchAddress(fork.config.zeroex.exchange);
 
     const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
+
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
     for (const allowedMaker of fork.config.zeroex.allowedMakers) {
       const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(allowedMaker);
+
       expect(isAllowedMakerCall).toBe(true);
     }
   });
@@ -443,6 +447,7 @@ describe('takeOrder', () => {
     });
 
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(makerAssetAmount);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(takerAssetFillAmount.add(takerFee)));
   });
@@ -510,6 +515,7 @@ describe('takeOrder', () => {
     });
 
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(takerAssetFillAmount));
   });

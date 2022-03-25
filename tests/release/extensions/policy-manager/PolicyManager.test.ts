@@ -131,6 +131,7 @@ describe('activateForFund', () => {
 
     // Warp to migratable time
     const migrationTimelock = await dispatcher.getMigrationTimelock();
+
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     // Migration execution settles the accrued fee
@@ -182,6 +183,7 @@ describe('disablePolicyForFund', () => {
 
     // Confirm the policy implements some hooks
     const implementedHooks = await mockPostBuySharesPolicy.implementedHooks();
+
     expect(implementedHooks.length).toBeGtBigNumber(0);
 
     // Create fund without policy config
@@ -218,6 +220,7 @@ describe('disablePolicyForFund', () => {
 
     // Assert that the proper event has been emitted
     const policyDisabledEvents = extractEvent(receipt, policyManager.abi.getEvent('PolicyDisabledOnHookForFund'));
+
     expect(policyDisabledEvents.length).toBe(implementedHooks.length);
     for (const i in implementedHooks) {
       expect(policyDisabledEvents[0]).toMatchEventArgs({
@@ -356,6 +359,7 @@ describe('enablePolicyForFund', () => {
 
     // Assert that the proper event has been emitted
     const enablePolicyEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+
     assertEvent(receipt, enablePolicyEvent, {
       comptrollerProxy,
       policy: mockPostBuySharesPolicy,
@@ -396,6 +400,7 @@ describe('enablePolicyForFund', () => {
 
     // Assert that the event has been emitted
     const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+
     assertEvent(receipt, policyEnabledForFundEvent);
 
     // Assert that addFundSettings() has NOT been called
@@ -481,6 +486,7 @@ describe('setConfigForFund', () => {
     const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
 
     const events = extractEvent(receipt, policyEnabledForFundEvent);
+
     expect(events.length).toBe(orderedPolicies.length);
     for (let i = 0; i < orderedPolicies.length; i++) {
       expect(events[i]).toMatchEventArgs({
@@ -521,6 +527,7 @@ describe('setConfigForFund', () => {
 
     // Assert that the event has been emitted
     const policyEnabledForFundEvent = policyManager.abi.getEvent('PolicyEnabledForFund');
+
     assertEvent(receipt, policyEnabledForFundEvent);
 
     // Assert that addFundSettings() has NOT been called
@@ -573,6 +580,7 @@ describe('updatePolicySettingsForFund', () => {
     });
 
     const policySettings = utils.randomBytes(10);
+
     // Update the mockPostBuySharesPolicy with new setting
     await policyManager
       .connect(fundOwner)
@@ -623,6 +631,7 @@ describe('validatePolicies', () => {
       assets: assetsToAdd,
       caller: fundOwner,
     });
+
     expect(mockAddTrackedAssetsPolicy.validateRule).toHaveBeenCalledOnContractWith(
       comptrollerProxy,
       PolicyHook.AddTrackedAssets,

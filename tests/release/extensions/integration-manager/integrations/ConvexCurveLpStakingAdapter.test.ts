@@ -23,6 +23,7 @@ import {
 
 let fork: ProtocolDeployment;
 let convexCurveLpStakingAdapter: ConvexCurveLpStakingAdapter;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   convexCurveLpStakingAdapter = fork.deployment.convexCurveLpStakingAdapter;
@@ -41,6 +42,7 @@ describe('actions', () => {
   let fundOwner: SignerWithAddress;
   let pool: AddressLike, lpToken: StandardToken, stakingWrapperToken: StandardToken;
   let weth: StandardToken, steth: StandardToken;
+
   beforeEach(async () => {
     integrationManager = fork.deployment.integrationManager;
     [fundOwner] = fork.accounts;
@@ -51,6 +53,7 @@ describe('actions', () => {
       fundOwner,
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
@@ -63,6 +66,7 @@ describe('actions', () => {
     // Deploy wrapper
     const pid = 25; // steth
     const convexCurveLpStakingWrapperFactory = fork.deployment.convexCurveLpStakingWrapperFactory;
+
     await convexCurveLpStakingWrapperFactory.deploy(pid);
 
     stakingWrapperToken = new StandardToken(
@@ -85,6 +89,7 @@ describe('actions', () => {
 
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
+
       await lpToken.transfer(vaultProxy, lpTokenAmount);
       await curveStake({
         amount: lpTokenAmount,
@@ -159,6 +164,7 @@ describe('actions', () => {
 
     it('works as expected', async () => {
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
+
       await lpToken.transfer(vaultProxy, lpTokenAmount);
 
       const receipt = await curveStake({
@@ -184,6 +190,7 @@ describe('actions', () => {
     it('works as expected', async () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
+
       await lpToken.transfer(vaultProxy, lpTokenAmount);
       await curveStake({
         amount: lpTokenAmount,
@@ -224,6 +231,7 @@ describe('actions', () => {
     it('works as expected', async () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
+
       await lpToken.transfer(vaultProxy, lpTokenAmount);
       await curveStake({
         amount: lpTokenAmount,

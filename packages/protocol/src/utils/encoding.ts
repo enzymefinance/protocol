@@ -3,7 +3,7 @@ import { utils } from 'ethers';
 
 import { sighash } from './sighash';
 
-export function encodeArgs(types: (string | utils.ParamType)[], args: any[]) {
+export function encodeArgs(types: (utils.ParamType | string)[], args: any[]) {
   const params = types.map((type) => utils.ParamType.from(type));
   const resolved = resolveArguments(params, args);
   const hex = utils.defaultAbiCoder.encode(params, resolved);

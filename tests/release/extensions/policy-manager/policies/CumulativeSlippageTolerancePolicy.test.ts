@@ -35,6 +35,7 @@ import {
 import { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -195,6 +196,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
   });
@@ -251,6 +253,7 @@ describe('validateRule', () => {
 
     // Assert state
     const postFirstSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
+
     expect(postFirstSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(TEN_PERCENT_IN_WEI);
     expect(postFirstSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(await transactionTimestamp(firstSwapReceipt));
 
@@ -299,6 +302,7 @@ describe('validateRule', () => {
 
     // The cumulative loss should be roughly 50% of the original loss (i.e., 5%) plus roughly the new loss (i.e., 0.01%)
     const postSecondSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
+
     expect(postSecondSwapPolicyInfo.cumulativeSlippage).toBeAroundBigNumber(
       FIVE_PERCENT_IN_WEI.add(ONE_ONE_HUNDREDTH_PERCENT_IN_WEI),
       ONE_ONE_HUNDREDTH_PERCENT_IN_WEI.div(100),
@@ -374,6 +378,7 @@ describe('validateRule', () => {
 
     // Assert state
     const postFirstSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
+
     expect(postFirstSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(firstSwapTimestamp);
     expect(postFirstSwapPolicyInfo.cumulativeSlippage).toBeAroundBigNumber(
       tolerance,
@@ -394,6 +399,7 @@ describe('validateRule', () => {
     const secondSwapIncomingAssetAmounts = zeroSlippageIncomingAssetAmounts.map((amount) =>
       amount.mul(insignificantPrecision.sub(2)).div(insignificantPrecision),
     );
+
     await mockGenericSwap({
       actualIncomingAssetAmounts: secondSwapIncomingAssetAmounts,
       actualSpendAssetAmounts: outgoingAssetAmounts,
@@ -408,6 +414,7 @@ describe('validateRule', () => {
 
     // State vars should not be updated
     const postSecondSwapPolicyInfo = await cumulativeSlippageTolerancePolicy.getPolicyInfoForFund(comptrollerProxy);
+
     expect(postSecondSwapPolicyInfo.lastSlippageTimestamp).toEqBigNumber(firstSwapTimestamp);
     expect(postSecondSwapPolicyInfo.cumulativeSlippage).toEqBigNumber(postFirstSwapPolicyInfo.cumulativeSlippage);
 
@@ -439,6 +446,7 @@ describe('validateRule', () => {
 
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
+
     await addNewAssetsToFund({
       amounts: [outgoingAssetAmount],
       assets: [outgoingAsset],
@@ -461,6 +469,7 @@ describe('validateRule', () => {
 
     // Add the MockGenericAdapter to the list
     const listId = await cumulativeSlippageTolerancePolicy.getBypassableAdaptersListId();
+
     await addressListRegistry.addToList(listId, [mockGenericAdapter]);
 
     // Same swap should now work
@@ -483,6 +492,7 @@ describe('validateRule', () => {
   it('happy path: edge case: allows bypassing a properly-queued outgoing asset that does not have a valid price', async () => {
     const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
+
     await addNewAssetsToFund({
       amounts: [outgoingAssetAmount],
       assets: [outgoingAsset],

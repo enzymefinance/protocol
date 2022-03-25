@@ -30,11 +30,13 @@ describe('setReconfigurationTimelock', () => {
     let fundDeployer: FundDeployer;
     let nextTimelock: BigNumber;
     let setReconfigurationTimelockReceipt: ContractReceipt<any>;
+
     beforeAll(async () => {
       fork = await deployProtocolFixture();
       fundDeployer = fork.deployment.fundDeployer;
 
       const prevTimelock = await fundDeployer.getReconfigurationTimelock();
+
       nextTimelock = prevTimelock.add(123);
 
       setReconfigurationTimelockReceipt = await fundDeployer.setReconfigurationTimelock(nextTimelock);
@@ -57,6 +59,7 @@ describe('createReconfigurationRequest', () => {
     let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
     let vaultProxy: VaultLib;
     let denominationAsset: StandardToken;
+
     beforeEach(async () => {
       fork = await deployProtocolFixture();
       [fundOwner, randomUser] = fork.accounts;
@@ -321,12 +324,14 @@ describe('executeReconfiguration', () => {
 
       // Warp to migration executable time
       const migrationTimelock = await fork.deployment.dispatcher.getMigrationTimelock();
+
       await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
       await nextFundDeployer.connect(fundOwner).executeMigration(vaultProxy, false);
 
       // Warp to reconfiguration executable time
       const reconfigurationTimelock = await fundDeployer.getReconfigurationTimelock();
+
       await provider.send('evm_increaseTime', [reconfigurationTimelock.toNumber()]);
 
       // Executing reconfiguration for the VaultProxy that has already migrated to the
@@ -360,6 +365,7 @@ describe('executeReconfiguration', () => {
 
       // Warp to executable time
       const reconfigurationTimelock = await fundDeployer.getReconfigurationTimelock();
+
       await provider.send('evm_increaseTime', [reconfigurationTimelock.toNumber()]);
 
       // Set the migrator
@@ -378,6 +384,7 @@ describe('executeReconfiguration', () => {
         fork = await deployProtocolFixture();
 
         const [fundOwner] = fork.accounts;
+
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
@@ -401,6 +408,7 @@ describe('executeReconfiguration', () => {
 
         // Warp to executable time
         const reconfigurationTimelock = await fundDeployer.getReconfigurationTimelock();
+
         await provider.send('evm_increaseTime', [reconfigurationTimelock.toNumber()]);
 
         executeReconfigurationReceipt = await fundDeployer.connect(fundOwner).executeReconfiguration(vaultProxy);
@@ -525,6 +533,7 @@ describe('cancelReconfiguration', () => {
         fork = await deployProtocolFixture();
 
         const [fundOwner] = fork.accounts;
+
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({

@@ -4,6 +4,7 @@ import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV2TakeOr
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -52,6 +53,7 @@ describe('adapters', () => {
     });
 
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(amountsOut[1]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });

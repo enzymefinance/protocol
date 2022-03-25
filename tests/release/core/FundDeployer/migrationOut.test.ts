@@ -39,6 +39,7 @@ async function snapshot() {
 
   // Mock a nextFundDeployer contract and nextVaultLib
   const mockNextFundDeployer = await IMigrationHookHandler.mock(deployer);
+
   await mockNextFundDeployer.invokeMigrationInCancelHook.returns(undefined);
   const mockNextVaultLib = await MockVaultLib.deploy(deployer);
 
@@ -101,6 +102,7 @@ describe('implementMigrationOutHook', () => {
 
       // Warp to migratable time
       const migrationTimelock = await dispatcher.getMigrationTimelock();
+
       await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
       // Execute migrate from nextFundDeployer
@@ -117,6 +119,7 @@ describe('implementMigrationOutHook', () => {
 
       const { deactivateFeeManagerGasLimit_, payProtocolFeeGasLimit_ } =
         await fundDeployer.getGasLimitsForDestructCall();
+
       expect(prevComptrollerProxy.destructActivated).toHaveBeenCalledOnContractWith(
         deactivateFeeManagerGasLimit_,
         payProtocolFeeGasLimit_,

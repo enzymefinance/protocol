@@ -6,6 +6,7 @@ import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 let fork: ProtocolDeployment;
 let usdEthSimulatedAggregator: UsdEthSimulatedAggregator;
 let valueInterpreter: ValueInterpreter;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   usdEthSimulatedAggregator = fork.deployment.usdEthSimulatedAggregator;

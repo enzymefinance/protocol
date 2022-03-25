@@ -6,6 +6,7 @@ import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -17,6 +18,7 @@ describe('constructor', () => {
     // Assert each derivative is properly registered
     for (const yVaultAddress of Object.values(fork.config.yearn.vaultV2.yVaults) as AddressLike[]) {
       const yVault = new IYearnVaultV2(yVaultAddress, provider);
+
       expect(await yearnVaultV2PriceFeed.isSupportedAsset(yVault)).toBe(true);
       expect(await yearnVaultV2PriceFeed.getUnderlyingForDerivative(yVault)).toMatchAddress(await yVault.token());
     }
@@ -84,11 +86,13 @@ describe('calcUnderlyingValues', () => {
 describe('isSupportedAsset', () => {
   it('returns false for a random asset', async () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
+
     expect(await yearnVaultV2PriceFeed.isSupportedAsset(randomAddress())).toBe(false);
   });
 
   it('returns true for a yVault', async () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
+
     expect(await yearnVaultV2PriceFeed.isSupportedAsset(fork.config.yearn.vaultV2.yVaults.yUsdc)).toBe(true);
   });
 });

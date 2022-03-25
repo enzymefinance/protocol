@@ -26,6 +26,7 @@ let fundOwner: SignerWithAddress;
 const roundingBuffer = BigNumber.from(2);
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   [fundOwner] = fork.accounts;
@@ -139,6 +140,7 @@ describe('removeCollateralAssets', () => {
     );
 
     const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
+
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(
       collateralAmounts[0].sub(collateralAmountsToBeRemoved[0]),
     );
@@ -193,6 +195,7 @@ describe('removeCollateralAssets', () => {
     expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toBeAroundBigNumber(collateralAmounts[0], roundingBuffer);
 
     const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
+
     expect(getManagedAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
       amounts_: [],
       assets_: [],
@@ -243,6 +246,7 @@ describe('borrowAssets', () => {
     expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
     const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
+
     expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
       amounts_: borrowedAmounts,
       assets_: borrowedAssets,
@@ -287,6 +291,7 @@ describe('repayBorrowedAssets', () => {
 
     // Warp some time to ensure there is an accruedInterest > 0
     const secondsToWarp = 100000000;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
@@ -342,6 +347,7 @@ describe('repayBorrowedAssets', () => {
 
     // Warp some time to ensure there is an accruedInterest > 0
     const secondsToWarp = 100000000;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
@@ -363,6 +369,7 @@ describe('repayBorrowedAssets', () => {
     expect(vaultBalanceAfter).toBeAroundBigNumber(vaultBalanceBefore.sub(borrowedBalancesBefore));
 
     const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
+
     expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
       amounts_: [],
       assets_: [],
@@ -396,6 +403,7 @@ describe('claimRewards', () => {
     });
 
     const secondsToWarp = 100000000;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 

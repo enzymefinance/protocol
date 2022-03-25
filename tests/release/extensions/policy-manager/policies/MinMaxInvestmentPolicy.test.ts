@@ -64,9 +64,10 @@ async function deployAndConfigureStandaloneMinMaxInvestmentPolicy(
   const [EOAPolicyManager] = fork.accounts.slice(-1);
 
   let minMaxInvestmentPolicy = await MinMaxInvestmentPolicy.deploy(fork.deployer, EOAPolicyManager);
+
   minMaxInvestmentPolicy = minMaxInvestmentPolicy.connect(EOAPolicyManager);
 
-  if (comptrollerProxy != '0x') {
+  if (comptrollerProxy !== '0x') {
     await addFundSettings({
       comptrollerProxy,
       maxInvestmentAmount,
@@ -83,9 +84,11 @@ describe('constructor', () => {
     const minMaxInvestmentPolicy = fork.deployment.minMaxInvestmentPolicy;
 
     const getPolicyManagerCall = await minMaxInvestmentPolicy.getPolicyManager();
+
     expect(getPolicyManagerCall).toMatchAddress(fork.deployment.policyManager);
 
     const implementedHooksCall = await minMaxInvestmentPolicy.implementedHooks();
+
     expect(implementedHooksCall).toMatchFunctionOutput(minMaxInvestmentPolicy.implementedHooks.fragment, [
       PolicyHook.PostBuyShares,
     ]);
@@ -236,6 +239,7 @@ describe('updateFundSettings', () => {
     });
 
     const fundSettings = await minMaxInvestmentPolicy.getFundSettings(comptrollerProxy);
+
     expect(fundSettings).toMatchFunctionOutput(minMaxInvestmentPolicy.getFundSettings, {
       maxInvestmentAmount,
       minInvestmentAmount,

@@ -3,6 +3,7 @@ import { deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -18,6 +19,7 @@ describe('constructor', () => {
     expect(await vaultLib.getWethToken()).toMatchAddress(fork.config.weth);
 
     let mlnBurner = constants.AddressZero;
+
     if (!fork.config.feeTokenBurn.burnFromVault) {
       if (fork.config.feeTokenBurn.sendToProtocolFeeReserve) {
         mlnBurner = fork.deployment.protocolFeeReserveProxy.address;
@@ -33,11 +35,13 @@ describe('constructor', () => {
 
     // SharesToken values
     const nameValue = await vaultLib.name();
+
     expect(nameValue).toBe('');
 
     // TODO: symbol
 
     const decimalsValue = await vaultLib.decimals();
+
     expect(decimalsValue).toBe(18);
   });
 });

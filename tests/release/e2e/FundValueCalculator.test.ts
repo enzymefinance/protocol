@@ -1,6 +1,4 @@
-/*
- * @file All test functions calls to the release-level FundValueCalculator are routed via FundValueCalculatorRouter
- */
+// @file All test functions calls to the release-level FundValueCalculator are routed via FundValueCalculatorRouter
 
 import {
   convertRateToScaledPerSecondRate,
@@ -19,6 +17,7 @@ import type { BigNumber } from 'ethers';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -90,6 +89,7 @@ describe('calcs', () => {
 
     // calcGav
     const actualGav = await comptrollerProxy.calcGav.args().call();
+
     expect(await fundValueCalculatorRouter.calcGav.args(vaultProxy).call()).toMatchFunctionOutput(
       fundValueCalculatorRouter.calcGav,
       {
@@ -102,10 +102,12 @@ describe('calcs', () => {
     const actualGavInEth = await valueInterpreter.calcCanonicalAssetValue
       .args(denominationAsset, actualGav, weth)
       .call();
+
     expect(await fundValueCalculatorRouter.calcGavInAsset.args(vaultProxy, weth).call()).toEqBigNumber(actualGavInEth);
 
     // calcGrossShareValue
     const actualGrossShareValue = await comptrollerProxy.calcGrossShareValue.call();
+
     expect(await fundValueCalculatorRouter.calcGrossShareValue.args(vaultProxy).call()).toMatchFunctionOutput(
       fundValueCalculatorRouter.calcGrossShareValue,
       {
@@ -118,6 +120,7 @@ describe('calcs', () => {
     const actualGrossShareValueInEth = await valueInterpreter.calcCanonicalAssetValue
       .args(denominationAsset, actualGrossShareValue, weth)
       .call();
+
     expect(await fundValueCalculatorRouter.calcGrossShareValueInAsset.args(vaultProxy, weth).call()).toEqBigNumber(
       actualGrossShareValueInEth,
     );
@@ -133,6 +136,7 @@ describe('calcs', () => {
     ); // 25 bps protocol fee, minted after management fee has been settled
 
     const calcNetShareValueRes = await fundValueCalculatorRouter.calcNetShareValue.args(vaultProxy).call();
+
     expect(calcNetShareValueRes.denominationAsset_).toMatchAddress(denominationAsset);
     expect(calcNetShareValueRes.netShareValue_).toBeAroundBigNumber(expectedNetShareValue, 100);
 
@@ -140,6 +144,7 @@ describe('calcs', () => {
     const actualNetShareValueInEth = await valueInterpreter.calcCanonicalAssetValue
       .args(denominationAsset, calcNetShareValueRes.netShareValue_, weth)
       .call();
+
     expect(await fundValueCalculatorRouter.calcNetShareValueInAsset.args(vaultProxy, weth).call()).toEqBigNumber(
       actualNetShareValueInEth,
     );
@@ -149,6 +154,7 @@ describe('calcs', () => {
     const expectedNav = totalSharesSupply.mul(expectedNetShareValue).div(SHARES_UNIT);
 
     const calcNavRes = await fundValueCalculatorRouter.calcNav.args(vaultProxy).call();
+
     expect(calcNavRes.denominationAsset_).toMatchAddress(denominationAsset);
     expect(calcNavRes.nav_).toBeAroundBigNumber(expectedNav, 100);
 
@@ -156,6 +162,7 @@ describe('calcs', () => {
     const actualNavInEth = await valueInterpreter.calcCanonicalAssetValue
       .args(denominationAsset, calcNavRes.nav_, weth)
       .call();
+
     expect(await fundValueCalculatorRouter.calcNavInAsset.args(vaultProxy, weth).call()).toEqBigNumber(actualNavInEth);
 
     // calcNetValueForSharesHolder
@@ -165,6 +172,7 @@ describe('calcs', () => {
     const calcNetValueForSharesHolderRes = await fundValueCalculatorRouter.calcNetValueForSharesHolder
       .args(vaultProxy, sharesHolder)
       .call();
+
     expect(calcNetValueForSharesHolderRes.denominationAsset_).toMatchAddress(denominationAsset);
     expect(calcNetValueForSharesHolderRes.netValue_).toBeAroundBigNumber(expectedNetValueForSharesHolder, 100);
 
@@ -172,6 +180,7 @@ describe('calcs', () => {
     const actualNetValueForSharesHolderInEth = await valueInterpreter.calcCanonicalAssetValue
       .args(denominationAsset, calcNetValueForSharesHolderRes.netValue_, weth)
       .call();
+
     expect(
       await fundValueCalculatorRouter.calcNetValueForSharesHolderInAsset.args(vaultProxy, sharesHolder, weth).call(),
     ).toEqBigNumber(actualNetValueForSharesHolderInEth);
@@ -182,17 +191,21 @@ describe('calcs', () => {
     const { 1: usdPerEthRate } = await ethUsdAggregator.latestRoundData();
 
     const actualGavInUsd = convertEthToUsd({ ethAmount: actualGavInEth, usdPerEthRate });
+
     expect(await fundValueCalculatorUsdWrapper.calcGav.args(vaultProxy).call()).toEqBigNumber(actualGavInUsd);
 
     const actualGrossShareValueInUsd = convertEthToUsd({ ethAmount: actualGrossShareValueInEth, usdPerEthRate });
+
     expect(await fundValueCalculatorUsdWrapper.calcGrossShareValue.args(vaultProxy).call()).toEqBigNumber(
       actualGrossShareValueInUsd,
     );
 
     const actualNavInUsd = convertEthToUsd({ ethAmount: actualNavInEth, usdPerEthRate });
+
     expect(await fundValueCalculatorUsdWrapper.calcNav.args(vaultProxy).call()).toEqBigNumber(actualNavInUsd);
 
     const actualNetShareValueInUsd = convertEthToUsd({ ethAmount: actualNetShareValueInEth, usdPerEthRate });
+
     expect(await fundValueCalculatorUsdWrapper.calcNetShareValue.args(vaultProxy).call()).toEqBigNumber(
       actualNetShareValueInUsd,
     );
@@ -201,6 +214,7 @@ describe('calcs', () => {
       ethAmount: actualNetValueForSharesHolderInEth,
       usdPerEthRate,
     });
+
     expect(
       await fundValueCalculatorUsdWrapper.calcNetValueForSharesHolder.args(vaultProxy, sharesHolder).call(),
     ).toEqBigNumber(actualNetValueForSharesHolderInUsd);

@@ -35,6 +35,7 @@ async function snapshot() {
   // Deploy connected mocks for ComptrollerProxy and VaultProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(deployer);
   const mockVaultProxy = await VaultLib.mock(deployer);
+
   await mockVaultProxy.getAccessor.returns(mockComptrollerProxy);
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 

@@ -43,9 +43,11 @@ export async function buySharesFunction({
   minSharesQuantity = 1,
   seedBuyer = false,
 }: BuySharesParams) {
-  if (investmentAmount == undefined) {
+  // eslint-disable-next-line eqeqeq
+  if (investmentAmount == null) {
     investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
   }
+
   if (seedBuyer) {
     await denominationAsset.transfer(buyer, investmentAmount);
   }

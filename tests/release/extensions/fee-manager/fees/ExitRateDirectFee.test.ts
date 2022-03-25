@@ -1,7 +1,5 @@
-/*
- * @file Only tests the ExitRateDirectFee functionality not covered by
- * the ExitRateFeeBase tests, i.e., the use of settlement type
- */
+// @file Only tests the ExitRateDirectFee functionality not covered by
+// the ExitRateFeeBase tests, i.e., the use of settlement type
 
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExitRateDirectFee, VaultLib } from '@enzymefinance/protocol';
@@ -65,6 +63,7 @@ describe('settle', () => {
 
   beforeEach(async () => {
     let fundOwner: SignerWithAddress;
+
     [fundOwner, investor, feeRecipient] = fork.accounts;
 
     exitRateDirectFee = fork.deployment.exitRateDirectFee;
@@ -114,6 +113,7 @@ describe('settle', () => {
       rate: specificAssetsRate,
       sharesRedeemed: sharesToRedeem,
     });
+
     expect(expectedFeeSharesDue).toBeGtBigNumber(0);
 
     // Assert the fees were correctly charged and transferred to fee recipient
@@ -143,6 +143,7 @@ describe('settle', () => {
       rate: inKindRate,
       sharesRedeemed: sharesToRedeem,
     });
+
     expect(expectedFeeSharesDue).toBeGtBigNumber(0);
 
     // Assert the fees were correctly charged and transferred to fee recipient

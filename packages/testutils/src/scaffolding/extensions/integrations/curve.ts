@@ -34,7 +34,7 @@ import { BigNumber, utils } from 'ethers';
 
 export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
   claim_rewards: Send<(_addr: AddressLike) => void>;
-  integrate_fraction: Call<(_for: AddressLike) => BigNumber, Contract<any>>;
+  integrate_fraction: Call<(_for: AddressLike) => BigNumber>;
 }
 
 export const CurveLiquidityGaugeV2 = contract<CurveLiquidityGaugeV2>()`
@@ -43,8 +43,8 @@ export const CurveLiquidityGaugeV2 = contract<CurveLiquidityGaugeV2>()`
 `;
 
 export interface CurveRegistry extends Contract<CurveRegistry> {
-  get_coins: Call<(_pool: AddressLike) => AddressLike[], Contract<any>>;
-  get_lp_token: Call<(_pool: AddressLike) => AddressLike, Contract<any>>;
+  get_coins: Call<(_pool: AddressLike) => AddressLike[]>;
+  get_lp_token: Call<(_pool: AddressLike) => AddressLike>;
 }
 
 export const CurveRegistry = contract<CurveRegistry>()`

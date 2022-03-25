@@ -12,6 +12,7 @@ import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV2TakeOr
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -21,9 +22,11 @@ describe('constructor', () => {
     const uniswapV2ExchangeAdapter = fork.deployment.uniswapV2ExchangeAdapter;
 
     const getRouterCall = await uniswapV2ExchangeAdapter.getUniswapV2Router2();
+
     expect(getRouterCall).toMatchAddress(fork.config.uniswap.router);
 
     const getIntegrationManagerCall = await uniswapV2ExchangeAdapter.getIntegrationManager();
+
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
   });
 });
@@ -155,6 +158,7 @@ describe('takeOrder', () => {
     });
 
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(amountsOut[1]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });
@@ -203,6 +207,7 @@ describe('takeOrder', () => {
     });
 
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
+
     expect(incomingAssetAmount).toEqBigNumber(amountsOut[2]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });

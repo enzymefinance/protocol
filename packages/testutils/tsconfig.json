@@ -1,5 +1,11 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src"],
-  "files": []
+  "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@enzymefinance/protocol": ["../protocol/src"]
+    }
+  }
 }

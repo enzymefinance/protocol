@@ -19,6 +19,7 @@ import {
 
 let fork: ProtocolDeployment;
 let minAssetBalancesPostRedemptionPolicy: MinAssetBalancesPostRedemptionPolicy;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -75,6 +76,7 @@ describe('addFundSettings', () => {
       receipt,
       minAssetBalancesPostRedemptionPolicy.abi.getEvent('MinAssetBalanceAddedForFund'),
     );
+
     expect(events.length).toBe(assets.length);
     for (const i in assets) {
       expect(

@@ -5,6 +5,7 @@ import { buyShares, compoundLend, createNewFund, deployProtocolFixture } from '@
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -135,6 +136,7 @@ describe('addCTokens', () => {
 
     // The correct event should have been emitted for each cToken
     const events = extractEvent(addCTokensTx, 'CTokenAdded');
+
     expect(events.length).toBe(2);
     expect(events[0]).toMatchEventArgs({
       cToken: newCToken1,
@@ -161,6 +163,7 @@ describe('calcUnderlyingValues', () => {
     const expectedRate = cTokenUnit.mul(await cdai.exchangeRateStored()).div(utils.parseEther('1'));
 
     const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(cdai, cTokenUnit).call();
+
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(dai);
 
@@ -179,6 +182,7 @@ describe('calcUnderlyingValues', () => {
     const expectedRate = cTokenUnit.mul(await ceth.exchangeRateStored()).div(utils.parseEther('1'));
 
     const feedRate = await compoundPriceFeed.calcUnderlyingValues.args(ceth, cTokenUnit).call();
+
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(weth);
 
@@ -194,6 +198,7 @@ describe('expected values', () => {
 
     const baseDecimals = await cdai.decimals();
     const quoteDecimals = await dai.decimals();
+
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
@@ -203,6 +208,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
+
     expect(canonicalAssetValue).toEqBigNumber('21918519449394613');
   });
 
@@ -213,6 +219,7 @@ describe('expected values', () => {
 
     const baseDecimals = await cusdc.decimals();
     const quoteDecimals = await usdc.decimals();
+
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
@@ -222,6 +229,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
+
     expect(canonicalAssetValue).toEqBigNumber('22538');
   });
 });

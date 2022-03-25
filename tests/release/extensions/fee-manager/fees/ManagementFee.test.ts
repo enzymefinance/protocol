@@ -19,11 +19,13 @@ import { BigNumber, utils } from 'ethers';
 async function createMocksForManagementConfig(fork: ProtocolDeployment) {
   // Mock a VaultProxy
   const mockVaultProxy = await VaultLib.mock(fork.deployer);
+
   await mockVaultProxy.totalSupply.returns(0);
   await mockVaultProxy.balanceOf.returns(0);
 
   // Mock a ComptrollerProxy
   const mockComptrollerProxy = await ComptrollerLib.mock(fork.deployer);
+
   await mockComptrollerProxy.getVaultProxy.returns(mockVaultProxy);
 
   return { mockComptrollerProxy, mockVaultProxy };
@@ -43,11 +45,13 @@ async function deployAndConfigureStandaloneManagementFee(
 
   // Create standalone ManagementFee
   let managementFee = await ManagementFee.deploy(fork.deployer, EOAFeeManager);
+
   managementFee = managementFee.connect(EOAFeeManager);
 
-  if (comptrollerProxy != '0x') {
+  if (comptrollerProxy !== '0x') {
     // Add fee settings for ComptrollerProxy
     const managementFeeConfig = managementFeeConfigArgs({ scaledPerSecondRate });
+
     await managementFee.addFundSettings(comptrollerProxy, managementFeeConfig);
   }
 
@@ -79,9 +83,11 @@ describe('addFundSettings', () => {
     fork = await deployProtocolFixture();
 
     const mocks = await createMocksForManagementConfig(fork);
+
     mockComptrollerProxy = mocks.mockComptrollerProxy;
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
+
     scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {});
   });
@@ -132,10 +138,12 @@ describe('activateForFund', () => {
     fork = await deployProtocolFixture();
 
     const mocks = await createMocksForManagementConfig(fork);
+
     mockComptrollerProxy = mocks.mockComptrollerProxy;
     mockVaultProxy = mocks.mockVaultProxy;
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
+
     scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {
       comptrollerProxy: mockComptrollerProxy,
@@ -158,6 +166,7 @@ describe('activateForFund', () => {
 
     // Assert lastSettled has not been set
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
       lastSettled: 0,
       scaledPerSecondRate,
@@ -165,6 +174,7 @@ describe('activateForFund', () => {
 
     // Assert no event emitted
     const events = extractEvent(receipt, 'ActivatedForMigratedFund');
+
     expect(events.length).toBe(0);
   });
 
@@ -179,6 +189,7 @@ describe('activateForFund', () => {
     // Assert lastSettled has been set to the tx timestamp
     const activationTimestamp = await transactionTimestamp(receipt);
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
       lastSettled: activationTimestamp,
       scaledPerSecondRate,
@@ -203,6 +214,7 @@ describe('payout', () => {
     });
 
     const payoutCall = await managementFee.payout.args(mocks.mockComptrollerProxy, mocks.mockVaultProxy).call();
+
     expect(payoutCall).toBe(false);
   });
 });
@@ -218,10 +230,12 @@ describe('settle', () => {
     fork = await deployProtocolFixture();
 
     const mocks = await createMocksForManagementConfig(fork);
+
     mockComptrollerProxy = mocks.mockComptrollerProxy;
     mockVaultProxy = mocks.mockVaultProxy;
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
+
     scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {
       comptrollerProxy: mockComptrollerProxy,
@@ -261,6 +275,7 @@ describe('settle', () => {
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
       lastSettled: BigNumber.from(settlementTimestamp),
       scaledPerSecondRate,
@@ -274,10 +289,12 @@ describe('settle', () => {
 
     // Update shares supply on mock
     const sharesSupply = utils.parseEther('1');
+
     await mockVaultProxy.totalSupply.returns(sharesSupply);
 
     // Mine a block after a time delay
     const secondsToWarp = 10;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
@@ -319,6 +336,7 @@ describe('settle', () => {
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
       lastSettled: BigNumber.from(settlementTimestampTwo),
       scaledPerSecondRate,
@@ -332,13 +350,16 @@ describe('settle', () => {
 
     // Update shares supply and add sharesOutstanding to mock vault
     const sharesSupply = utils.parseEther('1');
+
     await mockVaultProxy.totalSupply.returns(sharesSupply);
     const sharesOutstanding = utils.parseEther('0.1');
+
     await mockVaultProxy.balanceOf.given(mockVaultProxy).returns(sharesOutstanding);
     const netSharesSupply = sharesSupply.sub(sharesOutstanding);
 
     // Mine a block after a time delay
     const secondsToWarp = 10;
+
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
     const timestampPostWarp = (await provider.getBlock('latest')).timestamp;
@@ -381,6 +402,7 @@ describe('settle', () => {
 
     // Fee info should be updated with lastSettled, even though no shares were due
     const getFeeInfoForFundCall = await managementFee.getFeeInfoForFund(mockComptrollerProxy);
+
     expect(getFeeInfoForFundCall).toMatchFunctionOutput(managementFee.getFeeInfoForFund, {
       lastSettled: BigNumber.from(settlementTimestampTwo),
       scaledPerSecondRate,

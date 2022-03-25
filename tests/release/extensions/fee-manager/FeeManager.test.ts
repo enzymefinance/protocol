@@ -75,6 +75,7 @@ describe('constructor', () => {
 
     const fundDeployerOwner = await fundDeployer.getOwner();
     const getOwnerCall = await feeManager.getOwner();
+
     expect(getOwnerCall).toMatchAddress(fundDeployerOwner);
   });
 });
@@ -117,6 +118,7 @@ describe('deactivateForFund', () => {
 
     // Mint shares for a fee that are held as shares outstanding
     const feeAmount = utils.parseEther('0.5');
+
     await mockContinuousFeeSettleOnly.settle.returns(
       FeeSettlementType.MintSharesOutstanding,
       constants.AddressZero,
@@ -136,6 +138,7 @@ describe('deactivateForFund', () => {
     const mockNextFundDeployer = await IMigrationHookHandler.mock(deployer);
     const mockNextVaultAccessor = await IMigrationHookHandler.mock(deployer);
     const mockNextVaultLib = await MockVaultLib.deploy(deployer);
+
     await dispatcher.setCurrentFundDeployer(mockNextFundDeployer);
 
     // Signal migration and warp to migratable time
@@ -148,6 +151,7 @@ describe('deactivateForFund', () => {
     );
 
     const migrationTimelock = await dispatcher.getMigrationTimelock();
+
     await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
 
     const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -168,6 +172,7 @@ describe('deactivateForFund', () => {
 
     // Fees should be settled and payout of shares outstanding forced
     const expectedPayoutAmount = BigNumber.from(feeAmount);
+
     expect(postFundOwnerSharesCall).toEqBigNumber(preFundOwnerSharesCall.add(expectedPayoutAmount));
     expect(postSharesOutstandingCall).toEqBigNumber(0);
   });
@@ -185,6 +190,7 @@ describe('receiveCallFromComptroller', () => {
     // Calling with invalid actionID
     const actionId = 123;
     const callOnExtensionCall = callOnExtension({ actionId, comptrollerProxy, extension: feeManager });
+
     await expect(callOnExtensionCall).rejects.toBeRevertedWith('Invalid _actionId');
   });
 
@@ -224,6 +230,7 @@ describe('receiveCallFromComptroller', () => {
 
     // Check that the FeeSettledForFund event has been emitted
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
     assertEvent(receipt, feeSettledForFundEvent, {
       comptrollerProxy,
       fee: mockContinuousFeeSettleOnly,
@@ -330,6 +337,7 @@ describe('setConfigForFund', () => {
     // Assert state for fund
     expect(await feeManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
     const getEnabledFeesForFundCall = await feeManager.getEnabledFeesForFund(comptrollerProxy);
+
     expect(getEnabledFeesForFundCall).toMatchFunctionOutput(feeManager.getEnabledFeesForFund, fees);
 
     // Assert addFundSettings was called on each fee with its settingsData
@@ -340,6 +348,7 @@ describe('setConfigForFund', () => {
     // Assert FeeEnabledForFund events
     const feeEnabledForFundEvent = feeManager.abi.getEvent('FeeEnabledForFund');
     const events = extractEvent(receipt, feeEnabledForFundEvent);
+
     expect(events.length).toBe(fees.length);
     for (let i = 0; i < fees.length; i++) {
       expect(events[i].args).toMatchObject({
@@ -392,6 +401,7 @@ describe('invokeHook', () => {
     });
 
     const invokeHookCall = feeManager.invokeHook(FeeHook.Continuous, utils.randomBytes(10), 0);
+
     await expect(invokeHookCall).rejects.toBeRevertedWith('Fund is not active');
   });
 
@@ -422,6 +432,7 @@ describe('invokeHook', () => {
 
     // Assert that no "FeeSettledForFund" event was emitted
     const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
     assertNoEvent(receipt, feeSettledForFundEvent);
   });
 
@@ -450,6 +461,7 @@ describe('invokeHook', () => {
         // Define fee settlement
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.None;
+
         await mockContinuousFeeSettleOnly.settle.returns(settlementType, buyer, feeAmount);
 
         const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -465,6 +477,7 @@ describe('invokeHook', () => {
 
         // Assert that no "FeeSettledForFund" event was emitted
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
         assertNoEvent(receipt, feeSettledForFundEvent);
 
         const postFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -498,6 +511,7 @@ describe('invokeHook', () => {
         // Define fee settlement
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.Direct;
+
         await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
 
         const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -514,6 +528,7 @@ describe('invokeHook', () => {
 
         // Assert correct FeeSettledForFund emission for mockPostBuySharesFee
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
         assertEvent(receipt, feeSettledForFundEvent, {
           comptrollerProxy,
           fee: mockPostBuySharesFee,
@@ -550,6 +565,7 @@ describe('invokeHook', () => {
         // Define fee settlement
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.Burn;
+
         await mockPostBuySharesFee.settle.returns(settlementType, buyer, feeAmount);
 
         const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -619,6 +635,7 @@ describe('invokeHook', () => {
         // Define fee settlement
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.Mint;
+
         await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount);
 
         const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -634,6 +651,7 @@ describe('invokeHook', () => {
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
         assertEvent(receipt, feeSettledForFundEvent, {
           comptrollerProxy,
           fee: mockContinuousFeeSettleOnly,
@@ -679,6 +697,7 @@ describe('invokeHook', () => {
         // Define fee settlement
         const feeAmount = utils.parseEther('0.5');
         const settlementType = FeeSettlementType.MintSharesOutstanding;
+
         await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, feeAmount);
 
         const preFundOwnerSharesCall = await vaultProxy.balanceOf(fundOwner);
@@ -699,6 +718,7 @@ describe('invokeHook', () => {
 
         // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
         const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
         assertEvent(receipt, feeSettledForFundEvent, {
           comptrollerProxy,
           fee: mockContinuousFeeSettleOnly,
@@ -763,6 +783,7 @@ describe('invokeHook', () => {
 
       // First mint shares outstanding
       const mintFeeAmount = utils.parseEther('1');
+
       await mockContinuousFeeSettleOnly.settle.returns(
         FeeSettlementType.MintSharesOutstanding,
         constants.AddressZero,
@@ -786,6 +807,7 @@ describe('invokeHook', () => {
       // Then burn shares outstanding
       const burnFeeAmount = utils.parseEther('0.5');
       const settlementType = FeeSettlementType.BurnSharesOutstanding;
+
       await mockContinuousFeeSettleOnly.settle.returns(settlementType, constants.AddressZero, burnFeeAmount);
       const receipt = await callOnExtension({
         actionId: FeeManagerActionId.InvokeContinuousHook,
@@ -796,6 +818,7 @@ describe('invokeHook', () => {
 
       // Assert correct FeeSettledForFund emission for mockContinuousFeeSettleOnly
       const feeSettledForFundEvent = feeManager.abi.getEvent('FeeSettledForFund');
+
       assertEvent(receipt, feeSettledForFundEvent, {
         comptrollerProxy,
         fee: mockContinuousFeeSettleOnly,
@@ -981,11 +1004,14 @@ describe('__payoutSharesOutstandingForFees', () => {
 
     const fee1Recipient = fundOwner; // Unspecified
     const fee1Amount = utils.parseEther('0.5');
+
     await fee1.settle.returns(settlementType, constants.AddressZero, fee1Amount);
 
     const fee2Recipient = randomAddress();
+
     await fee2.getRecipientForFund.given(comptrollerProxy).returns(fee2Recipient);
     const fee2Amount = utils.parseEther('0.25');
+
     await fee2.settle.returns(settlementType, constants.AddressZero, fee2Amount);
 
     // Define param for all calls on extension
@@ -1035,6 +1061,7 @@ describe('__payoutSharesOutstandingForFees', () => {
 
     // One event should have been emitted for each fee
     const events = extractEvent(receipt, feeManager.abi.getEvent('SharesOutstandingPaidForFund'));
+
     expect(events.length).toBe(2);
     expect(events[0]).toMatchEventArgs({
       comptrollerProxy,

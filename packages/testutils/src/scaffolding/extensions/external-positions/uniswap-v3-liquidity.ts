@@ -44,8 +44,7 @@ export interface IUniswapV3NonFungibleTokenManager extends Contract<IUniswapV3No
       feeGrowthInside1LastX128: BigNumber;
       tokensOwed0: BigNumber;
       tokensOwed1: BigNumber;
-    },
-    Contract<any>
+    }
   >;
 }
 

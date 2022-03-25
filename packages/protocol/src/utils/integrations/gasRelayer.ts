@@ -7,7 +7,7 @@ import { GasRelayPaymasterLib } from '../../contracts';
 import { isTypedDataSigner } from '../signer';
 
 interface GsnForwarder extends Contract<GsnForwarder> {
-  getNonce: Call<(sender: AddressLike) => BigNumber, Contract<any>>;
+  getNonce: Call<(sender: AddressLike) => BigNumber>;
 }
 
 const GsnForwarder = contract<GsnForwarder>()`
@@ -65,17 +65,20 @@ export async function createSignedRelayRequest({
   paymasterData = utils.defaultAbiCoder.encode(['bool'], [true]),
 }: CreateSignedRelayRequestOptions): Promise<SignedRelayRequest> {
   const provider = customProvider ?? sendFunction.contract.signer?.provider;
+
   if (!provider) {
     throw new Error('Missing provider');
   }
 
   const signer = sendFunction.contract.signer;
+
   if (!(signer && isTypedDataSigner(signer))) {
     throw new Error('Missing or invalid signer');
   }
 
   const inputs = sendFunction.fragment.inputs;
   const args = resolveArguments(inputs, sendFunction.options.args);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const data = sendFunction.contract.abi.encodeFunctionData(sendFunction.fragment, args) ?? '0x';
   const value = BigNumber.from(sendFunction.options.value ?? BigNumber.from(0));
   const to = sendFunction.contract.address.toLowerCase();

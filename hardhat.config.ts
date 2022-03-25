@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import '@enzymefinance/hardhat/plugin';
 import '@nomiclabs/hardhat-etherscan';
+import 'hardhat-deploy/dist/src/type-extensions';
 import './tasks/verify';
 
 import { utils } from 'ethers';

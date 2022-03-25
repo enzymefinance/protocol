@@ -151,6 +151,7 @@ export async function createNewFund({
 
   const vaultProxy = new VaultLib(newFundDeployedArgs.vaultProxy, signer);
 
+  // eslint-disable-next-line eqeqeq
   if (investment != null) {
     await buyShares({
       comptrollerProxy,

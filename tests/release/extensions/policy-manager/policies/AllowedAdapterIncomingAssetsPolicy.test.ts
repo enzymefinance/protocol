@@ -19,6 +19,7 @@ import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -78,6 +79,7 @@ describe('validateRule', () => {
     mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
     const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+
     allowedAsset1 = denominationAsset;
     allowedAsset2 = new StandardToken(fork.config.primitives.mln, whales.mln);
     notAllowedAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
@@ -102,12 +104,14 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
   });
 
   it('does not allow an unlisted asset', async () => {
     const incomingAssetAmount = 123;
+
     await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
     await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
     await notAllowedAsset.transfer(mockGenericIntegratee, incomingAssetAmount);
@@ -127,6 +131,7 @@ describe('validateRule', () => {
 
   it('allows listed assets', async () => {
     const incomingAssetAmount = 123;
+
     await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
     await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
 

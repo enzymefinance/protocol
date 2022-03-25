@@ -1,7 +1,5 @@
-/*
- * @file Only tests the EntranceRateDirectFee functionality not covered by
- * the EntranceRateFeeBase tests
- */
+// @file Only tests the EntranceRateDirectFee functionality not covered by
+// the EntranceRateFeeBase tests
 
 import { randomAddress } from '@enzymefinance/ethers';
 import {
@@ -20,6 +18,7 @@ import { BigNumber, utils } from 'ethers';
 const TEN_PERCENT = BigNumber.from(1000);
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -95,6 +94,7 @@ describe('settle', () => {
     const comptrollerProxyAddress = randomAddress();
     const rate = TEN_PERCENT;
     const entranceRateFeeConfig = entranceRateDirectFeeConfigArgs({ rate });
+
     await standaloneEntranceRateFee
       .connect(EOAFeeManager)
       .addFundSettings(comptrollerProxyAddress, entranceRateFeeConfig);

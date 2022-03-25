@@ -24,6 +24,7 @@ import {
 import type { BigNumberish } from 'ethers';
 
 let fork: ProtocolDeployment;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
@@ -81,6 +82,7 @@ describe('validateRule', () => {
 
     // Use all USD stable coins to have similar values held by the fund
     const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+
     allowedAsset1 = denominationAsset;
     allowedAsset2 = new StandardToken(fork.config.primitives.dai, whales.dai);
     notAllowedAsset = new StandardToken(fork.config.primitives.usdt, whales.usdt);
@@ -110,6 +112,7 @@ describe('validateRule', () => {
       }),
       signer: fundOwner,
     });
+
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
