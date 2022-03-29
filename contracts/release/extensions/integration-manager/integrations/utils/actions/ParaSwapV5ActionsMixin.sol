@@ -26,8 +26,9 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
         PARA_SWAP_V5_TOKEN_TRANSFER_PROXY = _tokenTransferProxy;
     }
 
-    /// @dev Helper to execute a protectedMultiSwap() order
-    function __paraSwapV5ProtectedMultiSwap(
+    /// @dev Helper to execute a multiSwap() order.
+    /// Leaves any ETH remainder from intermediary steps in ParaSwap in order to save on gas.
+    function __paraSwapV5MultiSwap(
         address _fromToken,
         uint256 _fromAmount,
         uint256 _toAmount,
@@ -52,7 +53,7 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
             uuid: _uuid // Purely for data tracking by ParaSwap
         });
 
-        IParaSwapV5AugustusSwapper(getParaSwapV5AugustusSwapper()).protectedMultiSwap(sellData);
+        IParaSwapV5AugustusSwapper(getParaSwapV5AugustusSwapper()).multiSwap(sellData);
     }
 
     ///////////////////

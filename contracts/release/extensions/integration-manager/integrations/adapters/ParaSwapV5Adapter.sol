@@ -51,7 +51,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
             IParaSwapV5AugustusSwapper.Path[] memory paths
         ) = __decodeCallArgs(_actionData);
 
-        __paraSwapV5ProtectedMultiSwap(
+        __paraSwapV5MultiSwap(
             outgoingAsset,
             outgoingAssetAmount,
             minIncomingAssetAmount,

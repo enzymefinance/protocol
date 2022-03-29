@@ -49,5 +49,5 @@ interface IParaSwapV5AugustusSwapper {
         bytes16 uuid;
     }
 
-    function protectedMultiSwap(SellData calldata) external payable returns (uint256);
+    function multiSwap(SellData calldata) external payable returns (uint256);
 }
