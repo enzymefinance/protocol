@@ -1,0 +1,159 @@
+{
+  "name": "@enzymefinance/hardhat",
+  "version": "1.0.16",
+  "description": "Technology Regulated and Operated Investment Funds",
+  "author": "Enzyme Council DAO <council@enzyme.finance>",
+  "license": "MIT",
+  "homepage": "https://enzyme.finance",
+  "files": [
+    "dist",
+    "plugin",
+    "jest",
+    "types",
+    "jest-preset.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avantgardefinance/ethereum-devtools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/avantgardefinance/ethereum-devtools/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./types": {
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./plugin": {
+      "import": "./dist/plugin/index.mjs",
+      "require": "./dist/plugin/index.js"
+    },
+    "./plugin/compile": {
+      "import": "./dist/plugin/compile/index.mjs",
+      "require": "./dist/plugin/compile/index.js"
+    },
+    "./plugin/coverage": {
+      "import": "./dist/plugin/coverage/index.mjs",
+      "require": "./dist/plugin/coverage/index.js"
+    },
+    "./jest/config/setup": {
+      "import": "./dist/jest/config/setup.mjs",
+      "require": "./dist/jest/config/setup.js"
+    },
+    "./jest/config/environment": {
+      "import": "./dist/jest/config/environment.mjs",
+      "require": "./dist/jest/config/environment.js"
+    },
+    "./jest/config/global-setup": {
+      "import": "./dist/jest/config/global-setup.mjs",
+      "require": "./dist/jest/config/global-setup.js"
+    },
+    "./jest/config/global-teardown": {
+      "import": "./dist/jest/config/global-teardown.mjs",
+      "require": "./dist/jest/config/global-teardown.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "types": [
+        "dist/types.d.ts"
+      ],
+      "plugin": [
+        "dist/plugin/index.d.ts"
+      ],
+      "plugin/compile": [
+        "dist/plugin/compile/index.d.ts"
+      ],
+      "plugin/coverage": [
+        "dist/plugin/coverage/index.d.ts"
+      ],
+      "jest/config/setup": [
+        "dist/jest/config/setup.d.ts"
+      ],
+      "jest/config/environment": [
+        "dist/jest/config/environment.d.ts"
+      ],
+      "jest/config/global-setup": [
+        "dist/jest/config/global-setup.d.ts"
+      ],
+      "jest/config/global-teardown": [
+        "dist/jest/config/global-teardown.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rimraf .turbo .eslintcache node_modules dist",
+    "lint": "eslint \"src/**/*.{js,ts}\" --cache",
+    "format": "yarn lint --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@enzymefinance/codegen": "1.0.16",
+    "@enzymefinance/coverage": "1.0.16",
+    "@enzymefinance/ethers": "1.0.16",
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "deepmerge": "^4.2.2",
+    "ethers": "^5.6.2",
+    "fs-extra": "^10.0.1",
+    "glob": "^7.2.0",
+    "hardhat": "^2.9.2",
+    "hardhat-contract-sizer": "^2.5.1",
+    "hardhat-deploy": "^0.11.4",
+    "istanbul-lib-report": "^3.0.0",
+    "istanbul-reports": "^3.1.4",
+    "jest-diff": "^27.5.1",
+    "jest-environment-node": "^27.5.1",
+    "jest-matcher-utils": "^27.5.1",
+    "jest-snapshot": "^27.5.1",
+    "ts-node": "^10.7.0",
+    "uuid": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/istanbul-reports": "^3.0.0",
+    "@types/jest": "^27.4.0",
+    "@types/uuid": "^8.3.4",
+    "jest": "^27.4.7",
+    "tsup": "^5.11.13",
+    "typescript": "^4.5.5"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/types.ts",
+      "src/jest/config/*.ts",
+      "src/plugin/index.ts",
+      "src/plugin/compile/index.ts",
+      "src/plugin/coverage/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
+    ],
+    "dts": true,
+    "splitting": true,
+    "clean": true
+  },
+  "eslintConfig": {
+    "extends": "@enzymefinance/eslint-config",
+    "rules": {
+      "@typescript-eslint/no-shadow": "off"
+    },
+    "parserOptions": {
+      "project": [
+        "./tsconfig.json"
+      ]
+    }
+  }
+}

@@ -50,10 +50,10 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the LP token
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(91813));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`90305`);
   });
 });
 
@@ -94,7 +94,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toCostAround('96789');
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`95419`);
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -126,7 +126,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toCostAround('62649');
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`62649`);
   });
 });
 

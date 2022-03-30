@@ -52,10 +52,10 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the pool token
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(77121));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`77121`);
   });
 });
 
@@ -167,7 +167,7 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(dai);
 
-    expect(getRatesReceipt).toCostAround('51900');
+    expect(getRatesReceipt).toMatchInlineGasSnapshot(`51862`);
   });
 
   it('returns rate for underlying token (cETH)', async () => {
@@ -186,7 +186,7 @@ describe('calcUnderlyingValues', () => {
     expect(feedRate.underlyingAmounts_[0]).toEqBigNumber(expectedRate);
     expect(feedRate.underlyings_[0]).toMatchAddress(weth);
 
-    expect(getRatesReceipt).toCostAround('37000');
+    expect(getRatesReceipt).toMatchInlineGasSnapshot(`36339`);
   });
 });
 

@@ -38,7 +38,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostAround('393945');
+    expect(lendReceipt).toMatchInlineGasSnapshot(`402334`);
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
@@ -63,7 +63,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toCostAround('364177');
+    expect(lendReceipt).toMatchInlineGasSnapshot(`367924`);
   });
 });
 
@@ -88,7 +88,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toCostAround('332667');
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`342940`);
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -111,7 +111,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toCostAround('279729');
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`285588`);
   });
 });
 

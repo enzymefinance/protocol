@@ -1,0 +1,70 @@
+{
+  "name": "@enzymefinance/ethers",
+  "version": "1.0.16",
+  "description": "Technology Regulated and Operated Investment Funds",
+  "author": "Enzyme Council DAO <council@enzyme.finance>",
+  "license": "MIT",
+  "homepage": "https://enzyme.finance",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avantgardefinance/ethereum-devtools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/avantgardefinance/ethereum-devtools/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rimraf .turbo .eslintcache node_modules dist",
+    "lint": "eslint \"src/**/*.{js,ts}\" --cache",
+    "format": "yarn lint --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ethers": "^5.6.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "jest": "^27.4.7",
+    "tsup": "^5.11.13",
+    "typescript": "^4.5.5"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
+    ],
+    "dts": true,
+    "splitting": true,
+    "clean": true
+  },
+  "eslintConfig": {
+    "extends": "@enzymefinance/eslint-config",
+    "rules": {
+      "@typescript-eslint/no-shadow": "off"
+    },
+    "parserOptions": {
+      "project": [
+        "./tsconfig.json"
+      ]
+    }
+  }
+}

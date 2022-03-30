@@ -23,3 +23,8 @@ artifacts/
 deployments/
 coverage/
 node_modules/
+
+# allow previously ignored directories in special locations
+!packages/codegen
+!packages/coverage
+!packages/hardhat/src/plugin/coverage

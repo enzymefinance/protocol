@@ -164,7 +164,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(lendReceipt).toCostAround('610421');
+    expect(lendReceipt).toMatchInlineGasSnapshot(`610461`);
   });
 });
 
@@ -207,7 +207,7 @@ describe('redeem', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(redeemReceipt).toCostAround('494913');
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`494929`);
   });
 });
 

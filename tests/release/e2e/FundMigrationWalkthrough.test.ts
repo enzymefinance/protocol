@@ -198,7 +198,7 @@ describe('Walkthrough a fund migration', () => {
 
   //   newComptrollerProxy = createMigratedFundTx.comptrollerProxy;
 
-  //   expect(createMigratedFundTx.receipt).toCostAround(`317000`);
+  //   expect(createMigratedFundTx.receipt).toMatchInlineGasSnapshot(`317000`);
   // });
 
   // it('signals a fund migration', async () => {
@@ -206,7 +206,7 @@ describe('Walkthrough a fund migration', () => {
   //     .connect(manager)
   //     .signalMigration(vaultProxy, newComptrollerProxy);
 
-  //   expect(migrationSignal).toCostAround(`68000`);
+  //   expect(migrationSignal).toMatchInlineGasSnapshot(`68000`);
 
   //   const getPendingComptrollerProxyCreatorCall = await newRelease.fundDeployer.getPendingComptrollerProxyCreator(
   //     newComptrollerProxy,

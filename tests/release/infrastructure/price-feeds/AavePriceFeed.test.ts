@@ -50,11 +50,11 @@ describe('derivative gas costs', () => {
       integrationManager,
     });
 
-    // Get the calcGav() cost including adai
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    // Get the calcGav() cost including dai
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(69705));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`69705`);
   });
 });
 

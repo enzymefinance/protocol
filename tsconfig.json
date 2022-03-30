@@ -65,8 +65,13 @@
     // NOTE: These aliases are required for the IDE to properly link to the source files when navigating imports.
     "baseUrl": ".",
     "paths": {
-      "@enzymefinance/testutils": ["packages/testutils/src"],
-      "@enzymefinance/protocol": ["packages/protocol/src"]
+      "@enzymefinance/testutils": ["./packages/testutils/src"],
+      "@enzymefinance/protocol": ["./packages/protocol/src"],
+      "@enzymefinance/codegen": ["./packages/codegen/src"],
+      "@enzymefinance/coverage": ["./packages/coverage/src"],
+      "@enzymefinance/ethers": ["./packages/ethers/src"],
+      "@enzymefinance/hardhat": ["./packages/hardhat/src"],
+      "@enzymefinance/hardhat/*": ["./packages/hardhat/src/*"]
     }
   },
   "files": ["hardhat.config.ts", "jest.config.ts", "jest.setup.ts"],

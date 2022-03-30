@@ -24,17 +24,6 @@ import { BigNumber, utils } from 'ethers';
 const FIVE_PERCENT = BigNumber.from(500);
 const TEN_PERCENT = BigNumber.from(1000);
 
-const expectedGasCosts = {
-  'execute reconfiguration': {
-    usdc: 352203,
-    weth: 319784,
-  },
-  'signal reconfiguration': {
-    usdc: 556834,
-    weth: 554576,
-  },
-} as const;
-
 describe.each([['weth' as const], ['usdc' as const]])(
   'Walkthrough for %s as denomination asset',
   (denominationAssetId) => {
@@ -119,7 +108,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         vaultProxy,
       });
 
-      expect(receipt).toCostAround(expectedGasCosts['signal reconfiguration'][denominationAssetId]);
+      expect(receipt).toMatchGasSnapshot(denominationAssetId);
     });
 
     // TODO: there are currently no fees that use "shares outstanding," otherwise we should test they are paid out
@@ -133,7 +122,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       // Assert that DeactivateFeeManagerFailed did not fire
       assertNoEvent(receipt, comptrollerProxy.abi.getEvent('DeactivateFeeManagerFailed'));
 
-      expect(receipt).toCostAround(expectedGasCosts['execute reconfiguration'][denominationAssetId]);
+      expect(receipt).toMatchGasSnapshot(denominationAssetId);
     });
 
     // TODO: finish this test suite with more stuff as-needed, it fills a specific need for now

@@ -2,6 +2,7 @@
   "baseBranch": "origin/main",
   "pipeline": {
     "build": {
+      "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
     "typecheck": {

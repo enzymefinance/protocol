@@ -5,7 +5,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@enzymefinance/protocol": ["../protocol/src"]
+      "@enzymefinance/protocol": ["../protocol/src"],
+      "@enzymefinance/ethers": ["../ethers/src"],
+      "@enzymefinance/hardhat": ["../hardhat/src"]
     }
   }
 }

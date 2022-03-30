@@ -144,7 +144,7 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
-      expect(addCollateralReceipt).toCostAround('241246');
+      expect(addCollateralReceipt).toMatchInlineGasSnapshot(`242238`);
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
 
@@ -233,7 +233,7 @@ describe('receiveCallFromVault', () => {
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
 
-      expect(removeCollateralReceipt).toCostAround('283495');
+      expect(removeCollateralReceipt).toMatchInlineGasSnapshot(`284487`);
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
 
@@ -402,7 +402,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toCostAround('453543');
+      expect(borrowReceipt).toMatchInlineGasSnapshot(`450680`);
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
 
@@ -449,7 +449,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toCostAround('441329');
+      expect(borrowReceipt).toMatchInlineGasSnapshot(`441329`);
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
 
@@ -595,7 +595,7 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toCostAround('308887');
+      expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`306072`);
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);
@@ -660,7 +660,7 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toCostAround('290718');
+      expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`290853`);
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

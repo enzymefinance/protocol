@@ -132,7 +132,7 @@ describe('actions', () => {
       });
 
       // 2nd tx after time passes should be more expensive because rewards would have accrued
-      expect(receipt2).toCostAround(1295815);
+      expect(receipt2).toMatchInlineGasSnapshot(`1295734`);
     });
   });
 
@@ -199,7 +199,7 @@ describe('actions', () => {
       });
 
       // 2nd tx after time passes should be more expensive because rewards would have accrued
-      expect(receipt2).toCostAround(1106686);
+      expect(receipt2).toMatchInlineGasSnapshot(`1106875`);
     });
 
     it('withdrawOnBehalf: works as expected', async () => {
@@ -266,7 +266,7 @@ describe('actions', () => {
         expect(await token.balanceOf(wrapper)).toEqBigNumber(0);
       }
 
-      expect(receipt).toCostAround(1332523);
+      expect(receipt).toMatchInlineGasSnapshot(`1332509`);
     });
   });
 
@@ -403,7 +403,7 @@ describe('ERC20 calls', () => {
       // Assert transfer succeeded
       expect(await wrapper.balanceOf(randomRecipient)).toEqBigNumber(transfer1Amount);
 
-      expect(receipt).toCostAround(622348);
+      expect(receipt).toMatchInlineGasSnapshot(`624656`);
     });
 
     it('happy path: 2 stakers', async () => {
@@ -421,7 +421,7 @@ describe('ERC20 calls', () => {
       // Depositor1 transfers one wei to randomRecipient
       const receipt = await wrapper.connect(depositor1).transfer(randomRecipient, 1);
 
-      expect(receipt).toCostAround(402817);
+      expect(receipt).toMatchInlineGasSnapshot(`405125`);
     });
   });
 });

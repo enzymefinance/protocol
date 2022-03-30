@@ -137,7 +137,7 @@ describe('stake', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(stakeReceipt).toCostAround('235900');
+    expect(stakeReceipt).toMatchInlineGasSnapshot(`236006`);
   });
 });
 
@@ -179,7 +179,7 @@ describe('unstake', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(unstakeReceipt).toCostAround('235900');
+    expect(unstakeReceipt).toMatchInlineGasSnapshot(`236105`);
   });
 
   it('works as expected (max amount)', async () => {
@@ -219,6 +219,6 @@ describe('unstake', () => {
     expect(postTxIncomingAssetBalance).toEqBigNumber(preTxIncomingAssetBalance.add(amount));
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(amount));
 
-    expect(unstakeReceipt).toCostAround('239194');
+    expect(unstakeReceipt).toMatchInlineGasSnapshot(`239300`);
   });
 });

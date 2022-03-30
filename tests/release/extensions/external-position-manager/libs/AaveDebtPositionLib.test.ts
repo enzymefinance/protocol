@@ -86,7 +86,7 @@ describe('addCollateralAssets', () => {
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(collateralAmounts[0]);
     expect(getManagedAssetsCall.assets_).toEqual(collateralAssets);
 
-    expect(addCollateralReceipt).toCostAround('394567');
+    expect(addCollateralReceipt).toMatchInlineGasSnapshot(`395398`);
   });
 });
 
@@ -146,7 +146,7 @@ describe('removeCollateralAssets', () => {
     );
     expect(getManagedAssetsCall.assets_).toEqual(collateralAssets);
 
-    expect(removeCollateralReceipt).toCostAround('348997');
+    expect(removeCollateralReceipt).toMatchInlineGasSnapshot(`349931`);
   });
 
   it('works as expected when called to remove collateral by a Fund (max amount)', async () => {
@@ -201,7 +201,7 @@ describe('removeCollateralAssets', () => {
       assets_: [],
     });
 
-    expect(removeCollateralReceipt).toCostAround('342594');
+    expect(removeCollateralReceipt).toMatchInlineGasSnapshot(`343424`);
   });
 });
 
@@ -252,7 +252,7 @@ describe('borrowAssets', () => {
       assets_: borrowedAssets,
     });
 
-    expect(borrowReceipt).toCostAround('559052');
+    expect(borrowReceipt).toMatchInlineGasSnapshot(`559912`);
   });
 });
 
@@ -310,7 +310,7 @@ describe('repayBorrowedAssets', () => {
 
     expect(borrowedBalancesAfter).toBeAroundBigNumber(borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]));
 
-    expect(repayBorrowReceipt).toCostAround('436346');
+    expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`436346`);
   });
 
   it('works as expected when called to repay borrow by a fund (more than full amount)', async () => {
@@ -375,7 +375,7 @@ describe('repayBorrowedAssets', () => {
       assets_: [],
     });
 
-    expect(repayBorrowReceipt).toCostAround('442035');
+    expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`442035`);
   });
 });
 

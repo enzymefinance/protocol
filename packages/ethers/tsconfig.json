@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src"],
+  "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@enzymefinance/hardhat/types": ["../hardhat/src/types.ts"]
+    }
+  }
+}

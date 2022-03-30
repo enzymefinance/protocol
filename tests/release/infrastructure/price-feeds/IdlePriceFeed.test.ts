@@ -166,9 +166,9 @@ describe('derivative gas costs', () => {
     });
 
     // Get the calcGav() cost including the idleToken
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(147109));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`147236`);
   });
 });

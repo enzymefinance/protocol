@@ -100,10 +100,10 @@ describe('primitives gas costs', () => {
     });
 
     // Get the calcGav() cost including dai
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(35285));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`35285`);
   });
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
@@ -151,10 +151,10 @@ describe('primitives gas costs', () => {
     });
 
     // Get the calcGav() cost including dai
-    const calcGavWithToken = await comptrollerProxy.calcGav();
+    const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithToken).toCostAround(calcGavBaseGas.add(57244));
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`57244`);
   });
 });
 

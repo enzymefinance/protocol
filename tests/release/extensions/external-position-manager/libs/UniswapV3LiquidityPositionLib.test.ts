@@ -59,7 +59,7 @@ describe('init', () => {
       signer: fundOwner,
     });
 
-    expect(receipt).toCostAround(477927);
+    expect(receipt).toMatchInlineGasSnapshot(`478595`);
   });
 
   it('can create and Mint in same tx', async () => {
@@ -319,7 +319,7 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(amount0Desired);
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(amount1Desired);
 
-      expect(receipt).toCostAround(782514);
+      expect(receipt).toMatchInlineGasSnapshot(`795749`);
     });
   });
 
@@ -400,7 +400,7 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(addLiquidityAmount0Desired.add(mintAmount0Desired));
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(addLiquidityAmount1Desired.add(mintAmount1Desired));
 
-      expect(receipt).toCostAround(324201);
+      expect(receipt).toMatchInlineGasSnapshot(`338066`);
     });
   });
 
@@ -455,7 +455,7 @@ describe('receiveCallFromVault', () => {
       expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
       expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
 
-      expect(receipt).toCostAround(369504);
+      expect(receipt).toMatchInlineGasSnapshot(`352972`);
     });
   });
 
@@ -542,7 +542,7 @@ describe('receiveCallFromVault', () => {
         positionsBefore.tokensOwed1.sub(positionsAfter.tokensOwed1),
       );
 
-      expect(receipt).toCostAround(252174);
+      expect(receipt).toMatchInlineGasSnapshot(`252742`);
     });
 
     describe('Purge', () => {
@@ -596,7 +596,7 @@ describe('receiveCallFromVault', () => {
         expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
         expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
 
-        expect(receipt).toCostAround(392079);
+        expect(receipt).toMatchInlineGasSnapshot(`378441`);
       });
 
       it('works as expected (max liquidity specified)', async () => {
@@ -635,7 +635,7 @@ describe('receiveCallFromVault', () => {
         // Assert the old nft was removed from the external position
         expect(await uniswapV3LiquidityPosition.getNftIds()).not.toContain(nftId);
 
-        expect(receipt).toCostAround(396584);
+        expect(receipt).toMatchInlineGasSnapshot(`382947`);
       });
     });
   });
@@ -724,7 +724,7 @@ describe('receiveCallFromVault', () => {
       expect(amounts_[3]).toBeAroundBigNumber(uniquePairAmount1Desired);
 
       // Cost should be roughly 25k gas cheaper than 3x the case of a single nft, due to recycling the duplicate rate
-      expect(await uniswapV3LiquidityPosition.connect(fundOwner).getManagedAssets()).toCostAround(347538);
+      expect(await uniswapV3LiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot(`347538`);
     });
 
     it('works as expected (wide range, different price)', async () => {
@@ -764,7 +764,7 @@ describe('receiveCallFromVault', () => {
       expect(amounts_[0]).toBeAroundBigNumber(mintAmount0Desired);
       expect(amounts_[1]).toBeAroundBigNumber(mintAmount1Desired);
 
-      expect(await uniswapV3LiquidityPosition.connect(fundOwner).getManagedAssets()).toCostAround(174106);
+      expect(await uniswapV3LiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot(`174606`);
     });
 
     it('works as expected (wide range, same decimals, same price)', async () => {
