@@ -13,7 +13,7 @@
     "build:common": "turbo run build --cache-dir=.turbo/cache",
     "build:utils": "yarn build:common --no-deps --include-dependencies --scope=@enzymefinance/hardhat",
     "build:packages": "yarn build:common --no-deps --scope=@enzymefinance/protocol --scope=@enzymefinance/testutils",
-    "clean": "turbo run clean --no-cache && rimraf -rf node_modules .turbo artifacts",
+    "clean": "turbo run clean --no-cache && rimraf -rf node_modules .turbo artifacts cache/solidity-files-cache.json",
     "prettier": "prettier --list-different --ignore-path .gitignore \"**/*.{js,ts,json,md,yml,sol}\"",
     "format": "yarn prettier --write && eslint --fix \"tests/**/*.{js,ts}\" && solhint --fix --max-warnings 0 \"contracts/**/*.sol\" && turbo run format --cache-dir=.turbo/cache",
     "lint": "manypkg check && yarn prettier && eslint \"tests/**/*.{js,ts}\" && solhint --max-warnings 0 \"contracts/**/*.sol\" && turbo run lint --cache-dir=.turbo/cache",
