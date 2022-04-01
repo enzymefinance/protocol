@@ -137,6 +137,18 @@ const mainnetConfig: DeploymentConfig = {
     aggregators,
     ethusd: ethUsdAggregator,
   },
+  curve: {
+    addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
+    minter: constants.AddressZero, // Minter only exists on Ethereum mainnet
+    pools: {
+      aave: {
+        invariantProxyAsset: primitives.usdc,
+        liquidityGaugeToken: '0x19793B454D3AfC7b454F206Ffe95aDE26cA6912c',
+        lpToken: '0xE7a24EF0C5e95Ffb0f6684b813A78F2a3AD7D171',
+        pool: '0x445FE580eF8d70FF569aB36e80c647af338db351'
+      },
+    },
+  },
   feeBps: 50,
   feeToken,
   feeTokenBurn: {

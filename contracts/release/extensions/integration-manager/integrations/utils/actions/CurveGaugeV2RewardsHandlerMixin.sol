@@ -31,10 +31,12 @@ abstract contract CurveGaugeV2RewardsHandlerMixin is CurveGaugeV2ActionsMixin {
     }
 
     /// @dev Helper to claim all rewards (CRV and pool-specific).
-    /// Requires contract to be approved to use mint_for().
+    /// Requires contract to be approved to use ICurveMinter.mint_for().
     function __curveGaugeV2ClaimAllRewards(address _gauge, address _target) internal {
-        // Claim owed $CRV
-        ICurveMinter(CURVE_GAUGE_V2_REWARDS_HANDLER_MINTER).mint_for(_gauge, _target);
+        if (__curveGaugeV2MinterExists()) {
+            // Claim owed $CRV via Minter (only on Ethereum mainnet)
+            ICurveMinter(CURVE_GAUGE_V2_REWARDS_HANDLER_MINTER).mint_for(_gauge, _target);
+        }
 
         // Claim owed pool-specific rewards
         __curveGaugeV2ClaimRewards(_gauge, _target);
@@ -46,10 +48,20 @@ abstract contract CurveGaugeV2RewardsHandlerMixin is CurveGaugeV2ActionsMixin {
         view
         returns (address[] memory rewardsTokens_)
     {
-        return
-            __curveGaugeV2GetRewardsTokens(_gauge).addUniqueItem(
+        rewardsTokens_ = __curveGaugeV2GetRewardsTokens(_gauge);
+
+        if (__curveGaugeV2MinterExists()) {
+            rewardsTokens_ = rewardsTokens_.addUniqueItem(
                 CURVE_GAUGE_V2_REWARDS_HANDLER_CRV_TOKEN
             );
+        }
+
+        return rewardsTokens_;
+    }
+
+    /// @dev Helper to check if the Curve Minter contract is used on the network
+    function __curveGaugeV2MinterExists() internal view returns (bool exists_) {
+        return CURVE_GAUGE_V2_REWARDS_HANDLER_MINTER != address(0);
     }
 
     ///////////////////
