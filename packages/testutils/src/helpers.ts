@@ -1,13 +1,9 @@
 import type { AddressLike, ContractReceipt } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ValueInterpreter } from '@enzymefinance/protocol';
+import { SelfDestructEthPayer } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
-
-export async function transactionTimestamp(receipt: ContractReceipt<any>) {
-  const block = await provider.getBlock(receipt.blockNumber);
-
-  return block.timestamp;
-}
 
 export async function calcMlnValueAndBurnAmountForSharesBuyback({
   valueInterpreter,
@@ -36,4 +32,24 @@ export async function calcMlnValueAndBurnAmountForSharesBuyback({
   const mlnAmountToBurn = mlnValueOfBuyback.div(2);
 
   return { mlnAmountToBurn, mlnValue: mlnValueOfBuyback };
+}
+
+export async function sendEthBySelfDestruct({
+  signer,
+  recipient,
+  amount = utils.parseEther('1'),
+}: {
+  signer: SignerWithAddress;
+  recipient: AddressLike;
+  amount?: BigNumberish;
+}) {
+  const selfDestructEthPayer = await SelfDestructEthPayer.deploy(signer);
+
+  await selfDestructEthPayer.destructTo.args(recipient).value(amount).send();
+}
+
+export async function transactionTimestamp(receipt: ContractReceipt<any>) {
+  const block = await provider.getBlock(receipt.blockNumber);
+
+  return block.timestamp;
 }

@@ -109,6 +109,7 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/SelfDestructEthPayer';
 export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestPricelessAssetBypassMixin';
