@@ -14,6 +14,7 @@ const whales = {
   knc: '0x09d51654bd9efbfcb56da3491989cc1444095fff',
   ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
   link: '0xbe6977e08d4479c0a6777539ae0e8fa27be4e9d6',
+  lusd: '0x24cbbef882a77c5aaa9abd6558e68b4c648453c5',
   mana: '0xefb94ac00f1cee8a89d5c3f49faa799da6f03024',
   mln: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
   ohm: '0x2cfcbd233268c302996c767347eb45bec36fb08d',

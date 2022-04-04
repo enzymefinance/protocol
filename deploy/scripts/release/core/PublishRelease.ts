@@ -19,6 +19,8 @@ const fn: DeployFunction = async function (hre) {
   const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
   const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
   const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
+  const liquityDebtPositionLib = await getOrNull('LiquityDebtPositionLib');
+  const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
 
   // AF action: Set the release live, renouncing ownership
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
@@ -33,10 +35,16 @@ const fn: DeployFunction = async function (hre) {
     ...(compoundDebtPositionLib && compoundDebtPositionParser ? ['COMPOUND_DEBT'] : []),
     ...(uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser ? ['UNISWAP_V3_LIQUIDITY'] : []),
     ...(aaveDebtPositionLib && aaveDebtPositionParser ? ['AAVE_DEBT'] : []),
+    ...(liquityDebtPositionLib && liquityDebtPositionParser ? ['LIQUITY_DEBT'] : []),
   ];
 
   if (positionTypes.length) {
-    await externalPositionFactoryInstance.addNewPositionTypes(['COMPOUND_DEBT', 'UNISWAP_V3_LIQUIDITY', 'AAVE_DEBT']);
+    await externalPositionFactoryInstance.addNewPositionTypes([
+      'COMPOUND_DEBT',
+      'UNISWAP_V3_LIQUIDITY',
+      'AAVE_DEBT',
+      'LIQUITY_DEBT',
+    ]);
   }
 
   // Council action: Add the external position contracts (lib + parser) to the ExternalPositionManager
@@ -65,6 +73,14 @@ const fn: DeployFunction = async function (hre) {
       [2],
       [aaveDebtPositionLib],
       [aaveDebtPositionParser],
+    );
+  }
+
+  if (liquityDebtPositionLib && liquityDebtPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [3],
+      [liquityDebtPositionLib],
+      [liquityDebtPositionParser],
     );
   }
 

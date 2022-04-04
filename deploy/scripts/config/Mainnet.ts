@@ -34,6 +34,7 @@ const primitives = {
   ldo: '0x5a98fcbea516cf06857215779fd812ca3bef1b32',
   link: '0x514910771af9ca656af840dff83e8264ecf986ca',
   lrc: '0xbbbbca6a901c926f240b89eacb641d8aec7aeafd',
+  lusd: '0x5f98805A4E8be255a32880FDeC7F6728C6568bA0',
   mana: '0x0f5d2fb29fb7d3cfee444a200298f468908cc942',
   mkr: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2',
   mln,
@@ -75,6 +76,7 @@ const aggregators = {
   ldo: ['0x4e844125952D32AcdF339BE976c98E22F6F318dB', ChainlinkRateAsset.ETH],
   link: ['0xdc530d9457755926550b59e8eccdae7624181557', ChainlinkRateAsset.ETH],
   lrc: ['0x160AC928A16C93eD4895C2De6f81ECcE9a7eB7b4', ChainlinkRateAsset.ETH],
+  lusd: ['0x3D7aE7E594f2f2091Ad8798313450130d0Aba3a0', ChainlinkRateAsset.USD],
   mana: ['0x82a44d92d6c329826dc557c5e1be6ebec5d5feb9', ChainlinkRateAsset.ETH],
   mkr: ['0x24551a8fb2a7211a25a17b1481f043a8a8adc7f2', ChainlinkRateAsset.ETH],
   mln: ['0xdaea8386611a157b08829ed4997a8a62b557014c', ChainlinkRateAsset.ETH],
@@ -270,6 +272,10 @@ const mainnetConfig: DeploymentConfig = {
   },
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
+  },
+  liquity: {
+    borrowerOperations: '0x24179CD81c9e782A4096035f7eC97fB8B783e007',
+    troveManager: '0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2'
   },
   olympusV2: {
     stakingContract: '0xB63cac384247597756545b500253ff8E607a8020'

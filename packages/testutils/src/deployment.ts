@@ -42,6 +42,8 @@ import {
   IdlePriceFeed,
   IntegrationManager,
   LidoStethPriceFeed,
+  LiquityDebtPositionLib,
+  LiquityDebtPositionParser,
   ManagementFee,
   MinAssetBalancesPostRedemptionPolicy,
   MinMaxInvestmentPolicy,
@@ -137,6 +139,8 @@ export async function deployProtocolFixture() {
     idlePriceFeed: new IdlePriceFeed(fixture.IdlePriceFeed.address, deployer),
     integrationManager: new IntegrationManager(fixture.IntegrationManager.address, deployer),
     lidoStethPriceFeed: new LidoStethPriceFeed(fixture.LidoStethPriceFeed.address, deployer),
+    liquityDebtPositionLib: new LiquityDebtPositionLib(fixture.LiquityDebtPositionLib.address, deployer),
+    liquityDebtPositionParser: new LiquityDebtPositionParser(fixture.LiquityDebtPositionParser.address, deployer),
     managementFee: new ManagementFee(fixture.ManagementFee.address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture.MinAssetBalancesPostRedemptionPolicy.address, deployer),
     minMaxInvestmentPolicy: new MinMaxInvestmentPolicy(fixture.MinMaxInvestmentPolicy.address, deployer),
@@ -245,6 +249,10 @@ export interface DeploymentConfig {
   };
   lido: {
     steth: string;
+  };
+  liquity: {
+    borrowerOperations: string;
+    troveManager: string;
   };
   olympusV2: {
     stakingContract: string;

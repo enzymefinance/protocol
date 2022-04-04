@@ -77,6 +77,8 @@ export * from './codegen/AaveDebtPositionLib';
 export * from './codegen/CompoundDebtPositionParser';
 export * from './codegen/CompoundDebtPositionLib';
 export * from './codegen/IExternalPositionParser';
+export * from './codegen/LiquityDebtPositionLib';
+export * from './codegen/LiquityDebtPositionParser';
 export * from './codegen/UniswapV3LiquidityPositionParser';
 export * from './codegen/UniswapV3LiquidityPositionLib';
 
