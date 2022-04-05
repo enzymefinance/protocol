@@ -5,12 +5,15 @@ import { forcePass, isTransactionReceipt } from '../../utils';
 import { ensureBigNumbers } from '../bn/utils';
 import { ignoreGasMatchers } from './common/ignoreGasMatchers';
 
-const tolerance = 1000;
-
 // Dirty hack to extract the context type from jest-snapshot types.
 type Context = typeof toMatchInlineSnapshot extends (this: infer TArg, ...args: any) => any ? TArg : never;
 
-export function toMatchInlineGasSnapshot(this: jest.MatcherContext, received: any, expected?: string) {
+export function toMatchInlineGasSnapshot(
+  this: jest.MatcherContext,
+  received: any,
+  expected?: string,
+  tolerance = 1000,
+) {
   if (ignoreGasMatchers) {
     return forcePass(this.isNot);
   }

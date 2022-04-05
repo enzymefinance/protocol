@@ -45,8 +45,8 @@ declare global {
       toCostLessThan(expected: BigNumberish, tolerance?: BigNumberish): R;
       toCostAround(expected: BigNumberish, tolerance?: BigNumberish): R;
       toCostBetween(min: BigNumberish, max: BigNumberish): R;
-      toMatchInlineGasSnapshot(expected?: string): R;
-      toMatchGasSnapshot(hint?: string): R;
+      toMatchInlineGasSnapshot(expected?: string, tolerance?: number): R;
+      toMatchGasSnapshot(hint?: string, tolerance?: number): R;
       toHaveEmitted(event: utils.EventFragment | string): R;
       toHaveEmittedWith(event: utils.EventFragment | string, expected: any): R;
       toHaveBeenCalledOnContract(): R;
