@@ -23,11 +23,13 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     constructor(
         address _integrationManager,
         address _augustusSwapper,
-        address _tokenTransferProxy
+        address _tokenTransferProxy,
+        address _feePartner,
+        uint256 _feePercent
     )
         public
         AdapterBase(_integrationManager)
-        ParaSwapV5ActionsMixin(_augustusSwapper, _tokenTransferProxy)
+        ParaSwapV5ActionsMixin(_augustusSwapper, _tokenTransferProxy, _feePartner, _feePercent)
     {}
 
     // EXTERNAL FUNCTIONS

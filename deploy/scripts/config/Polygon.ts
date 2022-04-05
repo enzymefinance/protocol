@@ -164,6 +164,8 @@ const mainnetConfig: DeploymentConfig = {
   paraSwapV5: {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     tokenTransferProxy: '0x216B4B4Ba9F3e719726886d34a177484278Bfcae',
+    feePartner: constants.AddressZero,
+    feePercent: 0,
   },
   poolTogetherV4: {
     ptTokens: {

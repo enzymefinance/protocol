@@ -268,6 +268,8 @@ export interface DeploymentConfig {
   paraSwapV5: {
     augustusSwapper: string;
     tokenTransferProxy: string;
+    feePartner: string;
+    feePercent: number;
   };
   poolTogetherV4: {
     ptTokens: Record<string, [string, string]>;

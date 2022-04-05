@@ -19,10 +19,19 @@ import "../../../../../utils/AssetHelpers.sol";
 /// @notice Mixin contract for interacting with ParaSwap (v5)
 abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
     address private immutable PARA_SWAP_V5_AUGUSTUS_SWAPPER;
+    address payable private immutable PARA_SWAP_V5_FEE_PARTNER;
+    uint256 private immutable PARA_SWAP_V5_FEE_PERCENT;
     address private immutable PARA_SWAP_V5_TOKEN_TRANSFER_PROXY;
 
-    constructor(address _augustusSwapper, address _tokenTransferProxy) public {
+    constructor(
+        address _augustusSwapper,
+        address _tokenTransferProxy,
+        address _feePartner,
+        uint256 _feePercent
+    ) public {
         PARA_SWAP_V5_AUGUSTUS_SWAPPER = _augustusSwapper;
+        PARA_SWAP_V5_FEE_PARTNER = payable(_feePartner);
+        PARA_SWAP_V5_FEE_PERCENT = _feePercent;
         PARA_SWAP_V5_TOKEN_TRANSFER_PROXY = _tokenTransferProxy;
     }
 
@@ -46,8 +55,8 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
             expectedAmount: _expectedAmount,
             beneficiary: _beneficiary,
             path: _path,
-            partner: address(0),
-            feePercent: 0,
+            partner: PARA_SWAP_V5_FEE_PARTNER,
+            feePercent: PARA_SWAP_V5_FEE_PERCENT,
             permit: "",
             deadline: block.timestamp,
             uuid: _uuid // Purely for data tracking by ParaSwap

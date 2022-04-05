@@ -19,6 +19,8 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       config.paraSwapV5.augustusSwapper,
       config.paraSwapV5.tokenTransferProxy,
+      config.paraSwapV5.feePartner,
+      config.paraSwapV5.feePercent,
     ] as ParaSwapV5AdapterArgs,
     from: deployer.address,
     linkedData: {
