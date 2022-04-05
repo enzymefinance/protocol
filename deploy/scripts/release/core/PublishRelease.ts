@@ -1,4 +1,10 @@
-import { Dispatcher, ExternalPositionFactory, ExternalPositionManager, FundDeployer } from '@enzymefinance/protocol';
+import {
+  Dispatcher,
+  ExternalPositionFactory,
+  ExternalPositionManager,
+  ExternalPositionType,
+  FundDeployer,
+} from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
@@ -9,18 +15,20 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
 
+  const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
+  const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
   const compoundDebtPositionLib = await getOrNull('CompoundDebtPositionLib');
   const compoundDebtPositionParser = await getOrNull('CompoundDebtPositionParser');
+  const convexVotingPositionLib = await getOrNull('ConvexVotingPositionLib');
+  const convexVotingPositionParser = await getOrNull('ConvexVotingPositionParser');
   const dispatcher = await get('Dispatcher');
   const externalPositionFactory = await get('ExternalPositionFactory');
   const externalPositionManager = await get('ExternalPositionManager');
   const fundDeployer = await get('FundDeployer');
-  const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
-  const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
-  const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
-  const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
   const liquityDebtPositionLib = await getOrNull('LiquityDebtPositionLib');
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
+  const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
+  const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
 
   // AF action: Set the release live, renouncing ownership
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
@@ -36,6 +44,7 @@ const fn: DeployFunction = async function (hre) {
     ...(uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser ? ['UNISWAP_V3_LIQUIDITY'] : []),
     ...(aaveDebtPositionLib && aaveDebtPositionParser ? ['AAVE_DEBT'] : []),
     ...(liquityDebtPositionLib && liquityDebtPositionParser ? ['LIQUITY_DEBT'] : []),
+    ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
   ];
 
   if (positionTypes.length) {
@@ -44,6 +53,7 @@ const fn: DeployFunction = async function (hre) {
       'UNISWAP_V3_LIQUIDITY',
       'AAVE_DEBT',
       'LIQUITY_DEBT',
+      'CONVEX_VOTING',
     ]);
   }
 
@@ -54,7 +64,7 @@ const fn: DeployFunction = async function (hre) {
   // all position type labels on the factory to find the matching label (e.g., which id is "COMPOUND_DEBT")
   if (compoundDebtPositionLib && compoundDebtPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [0],
+      [ExternalPositionType.CompoundDebtPosition],
       [compoundDebtPositionLib],
       [compoundDebtPositionParser],
     );
@@ -62,7 +72,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [1],
+      [ExternalPositionType.UniswapV3LiquidityPosition],
       [uniswapV3ExternalPositionLib],
       [uniswapV3ExternalPositionParser],
     );
@@ -70,7 +80,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (aaveDebtPositionLib && aaveDebtPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [2],
+      [ExternalPositionType.AaveDebtPosition],
       [aaveDebtPositionLib],
       [aaveDebtPositionParser],
     );
@@ -78,9 +88,17 @@ const fn: DeployFunction = async function (hre) {
 
   if (liquityDebtPositionLib && liquityDebtPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [3],
+      [ExternalPositionType.LiquityDebtPosition],
       [liquityDebtPositionLib],
       [liquityDebtPositionParser],
+    );
+  }
+
+  if (convexVotingPositionLib && convexVotingPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.ConvexVotingPosition],
+      [convexVotingPositionLib],
+      [convexVotingPositionParser],
     );
   }
 
@@ -91,23 +109,8 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release'];
 
-const externalPositionContractDependencies = [
-  'CompoundDebtPositionLib',
-  'CompoundDebtPositionParser',
-  'UniswapV3LiquidityPositionLib',
-  'UniswapV3LiquidityPositionParser',
-  'AaveDebtPositionLib',
-  'AaveDebtPositionParser',
-];
-
 // Include PostDeployment so the handoff gets run afterwards
-fn.dependencies = [
-  'Dispatcher',
-  'ExternalPositionFactory',
-  'FundDeployer',
-  'PostDeployment',
-  ...externalPositionContractDependencies,
-];
+fn.dependencies = ['Dispatcher', 'ExternalPositionFactory', 'ExternalPositions', 'FundDeployer', 'PostDeployment'];
 fn.runAtTheEnd = true;
 
 // NOTE: On live networks, this is part of the hand over / release routine.

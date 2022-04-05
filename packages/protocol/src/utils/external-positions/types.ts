@@ -3,4 +3,5 @@ export enum ExternalPositionType {
   UniswapV3LiquidityPosition = '1',
   AaveDebtPosition = '2',
   LiquityDebtPosition = '3',
+  ConvexVotingPosition = '4',
 }

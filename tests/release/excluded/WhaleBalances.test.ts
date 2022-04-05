@@ -9,6 +9,7 @@ it('whales have adequate balances', async () => {
     bnb: fork.config.primitives.bnb,
     bnt: fork.config.primitives.bnt,
     comp: fork.config.primitives.comp,
+    crv: fork.config.primitives.crv,
     dai: fork.config.primitives.dai,
     knc: fork.config.primitives.knc,
     ldo: fork.config.primitives.ldo,
@@ -45,6 +46,7 @@ it('whales have adequate balances', async () => {
     // misc
     lidoSteth: fork.config.lido.steth,
     // Not supported assets, so no price lookups
+    // cvx: fork.config.convex.cvxToken
     // ftribe8: fork.config.fuse.ftokens.ftribe8, but underlying not in asset universe in config
     // seth: fork.config.unsupportedAssets.seth
     // sxag: 0x6a22e5e94388464181578aa7a6b869e00fe27846

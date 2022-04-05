@@ -9,7 +9,7 @@ const whales = {
   bnt: '0x7d1ed1601a12a172269436fa95fe156650603c1d',
   busd: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503',
   comp: '0x0f50d31b3eaefd65236dd3736b863cffa4c63c4e',
-  crv: '0x4ce799e6eD8D64536b67dD428565d52A531B3640',
+  crv: '0xf89501b77b2fa6329f94f5a05fe84cebb5c8b1a0',
   dai: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503',
   knc: '0x09d51654bd9efbfcb56da3491989cc1444095fff',
   ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
@@ -48,6 +48,7 @@ const whales = {
   sxag: '0x40d68c490bf7262ec40048099aec23535f734be2',
   sxau: '0x92eb453b7b5b8d41edb44e2c8b8b53eb70a482c7',
   // misc
+  cvx: '0x0aca67fa70b142a3b9bf2ed89a81b40ff85dacdc',
   lidoSteth: '0x06920c9fc643de77b99cb7670a944ad31eaaa260',
   ust: '0x738cf6903e6c4e699d1c2dd9ab8b67fcdb3121ea',
   // Curve steth pool related

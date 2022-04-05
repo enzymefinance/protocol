@@ -20,6 +20,9 @@ import {
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, utils } from 'ethers';
 
+// Use a liberal gas tolerance throughout the file to account for fluctuations in hint calc costs
+const gasAssertionTolerance = 10000;
+
 // Use 2% as global safe maxFee percentage
 const maxFeePercentage = utils.parseUnits('0.02', 18);
 const liquityLiquidationReserve = utils.parseEther('200');
@@ -110,7 +113,7 @@ describe('openTrove', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(openTroveReceipt).toMatchInlineGasSnapshot('748240');
+    expect(openTroveReceipt).toMatchInlineGasSnapshot('748240', gasAssertionTolerance);
   });
 });
 
@@ -162,7 +165,7 @@ describe('addCollateral', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(addCollateralReceipt).toMatchInlineGasSnapshot('417178');
+    expect(addCollateralReceipt).toMatchInlineGasSnapshot('417178', gasAssertionTolerance);
   });
 });
 
@@ -221,7 +224,7 @@ describe('removeCollateral', () => {
     expect(wethBalanceAfter).toEqBigNumber(wethBalanceBefore.add(collateralToBeRemoved));
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('562395');
+    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('562395', gasAssertionTolerance);
   });
 });
 
@@ -278,7 +281,7 @@ describe('borrowLusd', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('1194884');
+    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('1194884', gasAssertionTolerance);
   });
 });
 
@@ -340,7 +343,7 @@ describe('closeTrove', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(closeTroveReceipt).toMatchInlineGasSnapshot('438847');
+    expect(closeTroveReceipt).toMatchInlineGasSnapshot('438847', gasAssertionTolerance);
   });
 });
 
@@ -400,6 +403,6 @@ describe('repayBorrow', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(repayBorrowReceipt).toMatchGasSnapshot('391554');
+    expect(repayBorrowReceipt).toMatchInlineGasSnapshot('391554', gasAssertionTolerance);
   });
 });

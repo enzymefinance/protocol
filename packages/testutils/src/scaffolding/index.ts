@@ -3,6 +3,7 @@ export * from './chainlink';
 export * from './common';
 export * from './core';
 export * from './extensions';
+export * from './external-interfaces';
 export * from './setup';
 export * from './shares';
 export * from './vaultCalls';

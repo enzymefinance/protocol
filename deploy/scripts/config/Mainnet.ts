@@ -218,7 +218,11 @@ const mainnetConfig: DeploymentConfig = {
   convex: {
     booster: '0xF403C135812408BFbE8713b5A23a04b3D48AAE31',
     crvToken: primitives.crv,
-    cvxToken: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B'
+    cvxCrvStaking: '0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e',
+    cvxToken: '0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B',
+    vlCvx: '0x72a19342e8F1838460eBFCCEf09F6585e32db86E',
+    vlCvxExtraRewards: '0x9B622f2c40b80EF5efb14c2B2239511FfBFaB702',
+    votiumMultiMerkleStash: '0x378Ba9B73309bE80BF4C2c027aAD799766a7ED5A',
   },
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
@@ -291,6 +295,9 @@ const mainnetConfig: DeploymentConfig = {
   },
   positionsLimit: 20,
   primitives,
+  snapshot: {
+    delegateRegistry: '0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446'
+  },
   synthetix: {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',

@@ -18,6 +18,8 @@ import {
   ConvexCurveLpStakingAdapter,
   ConvexCurveLpStakingWrapperFactory,
   ConvexCurveLpStakingWrapperPriceFeed,
+  ConvexVotingPositionLib,
+  ConvexVotingPositionParser,
   CumulativeSlippageTolerancePolicy,
   CurveExchangeAdapter,
   CurveLiquidityAdapter,
@@ -115,6 +117,8 @@ export async function deployProtocolFixture() {
     convexCurveLpStakingAdapter: new ConvexCurveLpStakingAdapter(fixture.ConvexCurveLpStakingAdapter.address, deployer),
     convexCurveLpStakingWrapperFactory: new ConvexCurveLpStakingWrapperFactory(fixture.ConvexCurveLpStakingWrapperFactory.address, deployer),
     convexCurveLpStakingWrapperPriceFeed: new ConvexCurveLpStakingWrapperPriceFeed(fixture.ConvexCurveLpStakingWrapperPriceFeed.address, deployer),
+    convexVotingPositionLib: new ConvexVotingPositionLib(fixture.ConvexVotingPositionLib.address, deployer),
+    convexVotingPositionParser: new ConvexVotingPositionParser(fixture.ConvexVotingPositionParser.address, deployer),
     cumulativeSlippageTolerancePolicy: new CumulativeSlippageTolerancePolicy(fixture.CumulativeSlippageTolerancePolicy.address, deployer),
     curveExchangeAdapter: new CurveExchangeAdapter(fixture.CurveExchangeAdapter.address, deployer),
     curveLiquidityAdapter: new CurveLiquidityAdapter(fixture.CurveLiquidityAdapter.address, deployer),
@@ -215,7 +219,11 @@ export interface DeploymentConfig {
   convex: {
     booster: string;
     crvToken: string;
+    cvxCrvStaking: string;
     cvxToken: string;
+    vlCvx: string;
+    vlCvxExtraRewards: string;
+    votiumMultiMerkleStash: string;
   };
   curve: {
     addressProvider: string;
@@ -265,6 +273,9 @@ export interface DeploymentConfig {
     ptTokens: Record<string, [string, string]>;
   };
   positionsLimit: number;
+  snapshot: {
+    delegateRegistry: string;
+  };
   unsupportedAssets: Record<string, string>;
   uniswap: {
     factory: string;
