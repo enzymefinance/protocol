@@ -110,6 +110,8 @@ export function generateFunctions(contract: string, fragments: utils.FunctionFra
       output.push(`${fragment.name}: ${type}`);
     }
 
+    output.push(`'${fragment.format(utils.FormatTypes.sighash)}': ${type}`);
+
     return output;
   }, []);
 
