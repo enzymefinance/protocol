@@ -53,3 +53,15 @@ export interface ISnapshotDelegateRegistry extends Contract<ISnapshotDelegateReg
 export const ISnapshotDelegateRegistry = contract<ISnapshotDelegateRegistry>()`
   function delegation(address, bytes32) view returns (address)
 `;
+
+// VOTIUM
+
+export interface IVotiumMultiMerkleStash extends Contract<IVotiumMultiMerkleStash> {
+  owner: Call<() => AddressLike>;
+  updateMerkleRoot: Send<(token: AddressLike, merkleRoot: BytesLike) => void>;
+}
+
+export const IVotiumMultiMerkleStash = contract<IVotiumMultiMerkleStash>()`
+  function owner() view returns (address)
+  function updateMerkleRoot(address, bytes32)
+`;

@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
+import type { ComptrollerLib, ExternalPositionManager, VotiumClaimParam } from '@enzymefinance/protocol';
 import {
   ConvexVotingPositionActionId,
   convexVotingPositionClaimRewardsArgs,
@@ -8,7 +8,7 @@ import {
   convexVotingPositionLockArgs,
   ExternalPositionType,
 } from '@enzymefinance/protocol';
-import type { BigNumberish, BytesLike } from 'ethers';
+import type { BigNumberish } from 'ethers';
 import { BigNumber } from 'ethers';
 
 import { callOnExternalPosition, createExternalPosition } from './actions';
@@ -47,7 +47,7 @@ export function convexVotingPositionClaimRewards({
   externalPositionProxy: AddressLike;
   claimLockerRewards: boolean;
   extraRewardTokens: AddressLike[];
-  votiumClaims: BytesLike[];
+  votiumClaims: VotiumClaimParam[];
   unstakeCvxCrv: boolean;
   allTokensToTransfer: AddressLike[];
 }) {

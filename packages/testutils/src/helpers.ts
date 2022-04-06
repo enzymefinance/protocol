@@ -4,6 +4,7 @@ import type { ValueInterpreter } from '@enzymefinance/protocol';
 import { SelfDestructEthPayer } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
+import { MerkleTree } from 'merkletreejs';
 
 export async function calcMlnValueAndBurnAmountForSharesBuyback({
   valueInterpreter,
@@ -32,6 +33,22 @@ export async function calcMlnValueAndBurnAmountForSharesBuyback({
   const mlnAmountToBurn = mlnValueOfBuyback.div(2);
 
   return { mlnAmountToBurn, mlnValue: mlnValueOfBuyback };
+}
+
+export function generateMerkleTreeForContractProof({
+  itemArrays,
+  itemTypes,
+}: {
+  itemArrays: any[];
+  itemTypes: string[];
+}) {
+  // Leaves in contracts are constructed with `keccak256(abi.encodePacked(paramA, paramB, ..))`
+  const leaves = itemArrays.map((itemArray) => utils.solidityKeccak256(itemTypes, itemArray));
+  // Sorting keeps the order of itemArrays
+  const tree = new MerkleTree(leaves, utils.keccak256, { sort: true });
+  const root = tree.getHexRoot();
+
+  return { leaves, root, tree };
 }
 
 export async function sendEthBySelfDestruct({

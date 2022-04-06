@@ -12,12 +12,15 @@ import {
   createConvexVotingPosition,
   createNewFund,
   deployProtocolFixture,
+  generateMerkleTreeForContractProof,
   getAssetUnit,
   IConvexBaseRewardPool,
   IConvexCrvDepositor,
   IConvexCvxLocker,
   IConvexVlCvxExtraRewardDistribution,
+  impersonateContractSigner,
   ISnapshotDelegateRegistry,
+  IVotiumMultiMerkleStash,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -302,7 +305,58 @@ describe('actions', () => {
       expect(await extraRewardToken.balanceOf(vaultProxy)).toBeGtBigNumber(initialVaultExtraRewardTokenBalance);
     });
 
-    it.todo('votiumClaims only: works as expected');
+    it('votiumClaims only: works as expected', async () => {
+      const votiumMultiMerkleStash = new IVotiumMultiMerkleStash(fork.config.convex.votiumMultiMerkleStash, provider);
+      const rewardToken = cvx;
+      const claimAmount = (await getAssetUnit(rewardToken)).mul(3);
+      const claimIndex = 123;
+
+      // Construct the claims merkle tree for the reward token
+      // A leaf in the Votium claim is `keccak256(abi.encodePacked(index, account, amount))`
+      const claimTable = [
+        [claimIndex, convexVotingPosition.address, claimAmount.toString()],
+        [claimIndex + 1, randomAddress(), 1],
+        [claimIndex + 2, randomAddress(), 1],
+      ];
+      const { leaves, root, tree } = generateMerkleTreeForContractProof({
+        itemArrays: claimTable,
+        itemTypes: ['uint256', 'address', 'uint256'],
+      });
+
+      // Update merkle root for reward token, and seed with enough reward token
+      const votiumMultiMerkleStashOwner = await impersonateContractSigner({
+        contractAddress: await votiumMultiMerkleStash.owner(),
+        ethSeeder: fork.deployer,
+        provider,
+      });
+
+      await votiumMultiMerkleStash.connect(votiumMultiMerkleStashOwner).updateMerkleRoot(rewardToken, root);
+      await rewardToken.transfer(votiumMultiMerkleStash, claimAmount);
+
+      const preTxRewardTokenBalance = await rewardToken.balanceOf(vaultProxy);
+
+      // Claim Votium rewards only
+      await convexVotingPositionClaimRewards({
+        allTokensToTransfer: [rewardToken],
+        claimLockerRewards: false, // no claim
+        comptrollerProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: convexVotingPosition,
+        extraRewardTokens: [], // no claim
+        signer: fundOwner,
+        unstakeCvxCrv: false, // no claim
+        votiumClaims: [
+          {
+            amount: claimAmount,
+            index: claimIndex,
+            merkleProof: tree.getHexProof(leaves[0]),
+            token: rewardToken.address,
+          },
+        ],
+      });
+
+      expect(await rewardToken.balanceOf(vaultProxy)).toEqBigNumber(preTxRewardTokenBalance.add(claimAmount));
+    });
 
     it('unstakeCvxCrv only: works as expected', async () => {
       const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
