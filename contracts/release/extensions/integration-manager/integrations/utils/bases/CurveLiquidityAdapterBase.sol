@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ICurveRegistry.sol";
+import "../../../../../interfaces/ICurveLiquidityPool.sol";
 import "../actions/CurveLiquidityActionsMixin.sol";
 import "../AdapterBase.sol";
 
@@ -13,16 +13,14 @@ import "../AdapterBase.sol";
 abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityActionsMixin {
     enum RedeemType {Standard, OneCoin}
 
-    address private constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    address private immutable ADDRESS_PROVIDER;
+    address private immutable CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS;
 
     constructor(
         address _integrationManager,
-        address _addressProvider,
-        address _wrappedNativeAsset
+        address _wrappedNativeAsset,
+        address _nativeAssetAddress
     ) public AdapterBase(_integrationManager) CurveLiquidityActionsMixin(_wrappedNativeAsset) {
-        ADDRESS_PROVIDER = _addressProvider;
+        CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS = _nativeAssetAddress;
     }
 
     /// @dev Needed to unwrap and receive the native asset
@@ -36,7 +34,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         view
         returns (address token_)
     {
-        if (_tokenOrNativeAsset == ETH_ADDRESS) {
+        if (_tokenOrNativeAsset == CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS) {
             return getCurveLiquidityWrappedNativeAsset();
         }
 
@@ -76,7 +74,6 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
 
     /// @dev Helper function to parse spend assets for redeem() and unstakeAndRedeem() calls
     function __parseIncomingAssetsForRedemptionCalls(
-        address _curveRegistry,
         address _pool,
         bool _useUnderlyings,
         RedeemType _redeemType,
@@ -86,13 +83,6 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         view
         returns (address[] memory incomingAssets_, uint256[] memory minIncomingAssetAmounts_)
     {
-        address[8] memory canonicalPoolAssets;
-        if (_useUnderlyings) {
-            canonicalPoolAssets = ICurveRegistry(_curveRegistry).get_underlying_coins(_pool);
-        } else {
-            canonicalPoolAssets = ICurveRegistry(_curveRegistry).get_coins(_pool);
-        }
-
         if (_redeemType == RedeemType.OneCoin) {
             (
                 uint256 incomingAssetPoolIndex,
@@ -102,9 +92,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
             // No need to validate incomingAssetPoolIndex,
             // as an out-of-bounds index will fail in the call to Curve
             incomingAssets_ = new address[](1);
-            incomingAssets_[0] = __castWrappedIfNativeAsset(
-                canonicalPoolAssets[incomingAssetPoolIndex]
-            );
+            incomingAssets_[0] = __getPoolAsset(_pool, incomingAssetPoolIndex, _useUnderlyings);
 
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
@@ -117,7 +105,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
             // as an incorrect length will fail with the wrong n_tokens in the call to Curve
             incomingAssets_ = new address[](minIncomingAssetAmounts_.length);
             for (uint256 i; i < incomingAssets_.length; i++) {
-                incomingAssets_[i] = __castWrappedIfNativeAsset(canonicalPoolAssets[i]);
+                incomingAssets_[i] = __getPoolAsset(_pool, i, _useUnderlyings);
             }
         }
 
@@ -126,18 +114,10 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
 
     /// @dev Helper function to parse spend assets for lend() and lendAndStake() calls
     function __parseSpendAssetsForLendingCalls(
-        address _curveRegistry,
         address _pool,
         uint256[] memory _orderedOutgoingAssetAmounts,
         bool _useUnderlyings
     ) internal view returns (address[] memory spendAssets_, uint256[] memory spendAssetAmounts_) {
-        address[8] memory canonicalPoolAssets;
-        if (_useUnderlyings) {
-            canonicalPoolAssets = ICurveRegistry(_curveRegistry).get_underlying_coins(_pool);
-        } else {
-            canonicalPoolAssets = ICurveRegistry(_curveRegistry).get_coins(_pool);
-        }
-
         uint256 spendAssetsCount;
         for (uint256 i; i < _orderedOutgoingAssetAmounts.length; i++) {
             if (_orderedOutgoingAssetAmounts[i] > 0) {
@@ -150,9 +130,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         uint256 spendAssetsIndex;
         for (uint256 i; i < _orderedOutgoingAssetAmounts.length; i++) {
             if (_orderedOutgoingAssetAmounts[i] > 0) {
-                spendAssets_[spendAssetsIndex] = __castWrappedIfNativeAsset(
-                    canonicalPoolAssets[i]
-                );
+                spendAssets_[spendAssetsIndex] = __getPoolAsset(_pool, i, _useUnderlyings);
                 spendAssetAmounts_[spendAssetsIndex] = _orderedOutgoingAssetAmounts[i];
                 spendAssetsIndex++;
 
@@ -163,6 +141,31 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         }
 
         return (spendAssets_, spendAssetAmounts_);
+    }
+
+    /// @dev Helper to get a pool asset at a given index
+    function __getPoolAsset(
+        address _pool,
+        uint256 _index,
+        bool _useUnderlying
+    ) internal view returns (address asset_) {
+        if (_useUnderlying) {
+            try ICurveLiquidityPool(_pool).underlying_coins(_index) returns (
+                address underlyingCoin
+            ) {
+                asset_ = underlyingCoin;
+            } catch {
+                asset_ = ICurveLiquidityPool(_pool).underlying_coins(int128(_index));
+            }
+        } else {
+            try ICurveLiquidityPool(_pool).coins(_index) returns (address coin) {
+                asset_ = coin;
+            } catch {
+                asset_ = ICurveLiquidityPool(_pool).coins(int128(_index));
+            }
+        }
+
+        return __castWrappedIfNativeAsset(asset_);
     }
 
     ///////////////////////
@@ -284,15 +287,5 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         )
     {
         return abi.decode(_actionData, (address, address, uint256));
-    }
-
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
-
-    /// @notice Gets the `ADDRESS_PROVIDER` variable
-    /// @return addressProvider_ The `ADDRESS_PROVIDER` variable value
-    function getAddressProvider() public view returns (address addressProvider_) {
-        return ADDRESS_PROVIDER;
     }
 }

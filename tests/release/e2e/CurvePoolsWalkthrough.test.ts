@@ -1,3 +1,5 @@
+import { sameAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   CurveLiquidityAdapter,
@@ -11,6 +13,7 @@ import {
   curveIncomingAssetsDataRedeemStandardArgs,
   CurveRedeemType,
   ETH_ADDRESS,
+  ICurveLiquidityPool,
   StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -25,7 +28,6 @@ import {
   deployProtocolFixture,
   getAssetUnit,
 } from '@enzymefinance/testutils';
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
@@ -41,6 +43,7 @@ let poolInfo: Record<
     gaugeTokenAddress: string | null;
     assetToLendAddress: string;
     assetToLendWhale: SignerWithAddress;
+    supportsOneCoinRedeem: boolean;
   }
 >;
 
@@ -50,75 +53,122 @@ beforeAll(async () => {
   curveRegistry = new CurveRegistry('0x90e00ace148ca3b23ac1bc8c240c2a7dd9c2d7f5', provider);
 
   poolInfo = {
+    // old pool, pre-templates
     '3pool': {
       assetToLendAddress: fork.config.primitives.dai,
       assetToLendWhale: whales.dai,
       gaugeTokenAddress: null,
-      poolAddress: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+      poolAddress: fork.config.curve.pools['3pool'].pool,
+      supportsOneCoinRedeem: true,
     },
     aave: {
       assetToLendAddress: fork.config.aave.atokens.ausdc[0],
       assetToLendWhale: whales.ausdc,
       gaugeTokenAddress: fork.config.curve.pools.aave.liquidityGaugeToken,
       poolAddress: fork.config.curve.pools.aave.pool,
+      supportsOneCoinRedeem: true,
+    },
+    // metapool (from metapool factory registry)
+    // MIM-UST
+    mim: {
+      assetToLendAddress: fork.config.primitives.ust,
+      assetToLendWhale: whales.ust,
+      gaugeTokenAddress: fork.config.curve.pools.mim.liquidityGaugeToken,
+      poolAddress: fork.config.curve.pools.mim.pool,
+      supportsOneCoinRedeem: true,
     },
     seth: {
       assetToLendAddress: fork.config.weth,
       assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.seth.liquidityGaugeToken,
       poolAddress: fork.config.curve.pools.seth.pool,
+      supportsOneCoinRedeem: true,
     },
     steth: {
       assetToLendAddress: fork.config.weth,
       assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.steth.liquidityGaugeToken,
       poolAddress: fork.config.curve.pools.steth.pool,
+      supportsOneCoinRedeem: true,
     },
-    // metapool
+    // coins(int128) signature, no one-coin-redeem
+    usdt: {
+      assetToLendAddress: fork.config.primitives.usdt,
+      assetToLendWhale: whales.usdt,
+      gaugeTokenAddress: null,
+      poolAddress: fork.config.curve.pools.usdt.pool,
+      supportsOneCoinRedeem: false,
+    },
+    // metapool (from main registry)
     ust: {
-      assetToLendAddress: '0xa47c8bf37f92abed4a126bda807a7b7498661acd',
-      // UST
+      assetToLendAddress: fork.config.primitives.ust,
       assetToLendWhale: whales.ust,
-
-      gaugeTokenAddress: '0x3B7020743Bc2A4ca9EaF9D0722d42E20d6935855',
-      poolAddress: '0x890f4e345B1dAED0367A877a1612f86A1f86985f',
+      gaugeTokenAddress: fork.config.curve.pools.ust.liquidityGaugeToken,
+      poolAddress: fork.config.curve.pools.ust.pool,
+      supportsOneCoinRedeem: true,
     },
   };
 });
 
-const poolKeys = ['3pool', 'aave', 'seth', 'steth', 'ust'];
+const poolKeys = ['3pool', 'aave', 'mim', 'seth', 'steth', 'usdt', 'ust'];
 
 describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   let integrationManager: IntegrationManager;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let fundOwner: SignerWithAddress;
-  let nTokens: number, lpToken: StandardToken;
+  let nTokens: number, lpToken: StandardToken, pool: ICurveLiquidityPool;
   let assetToLend: StandardToken, assetToLendIndex: number, assetToLendAmount: BigNumber;
   let valueInterpreter: ValueInterpreter;
 
   beforeAll(async () => {
     integrationManager = fork.deployment.integrationManager;
     valueInterpreter = fork.deployment.valueInterpreter;
-    lpToken = new StandardToken(await curveRegistry.get_lp_token(poolInfo[poolKey].poolAddress), provider);
 
-    // Parse pool info
     assetToLend = new StandardToken(poolInfo[poolKey].assetToLendAddress, poolInfo[poolKey].assetToLendWhale);
     assetToLendAmount = await getAssetUnit(assetToLend);
-    const poolTokens = await curveRegistry.get_coins(poolInfo[poolKey].poolAddress);
+
+    // Parse pool info
+    pool = new ICurveLiquidityPool(poolInfo[poolKey].poolAddress, provider);
+
+    // If pool is not on the main registry, assume it is a new metapool factory,
+    // in which case poolAddress === lpTokenAddress
+    let lpTokenAddress = await curveRegistry.get_lp_token(pool);
+
+    if (lpTokenAddress === constants.AddressZero) {
+      lpTokenAddress = pool;
+    }
+    lpToken = new StandardToken(lpTokenAddress, provider);
 
     nTokens = 0;
-    for (let i = 0; i < poolTokens.length; i++) {
-      let asset = poolTokens[i] as string;
+    const poolTokens = [] as string[];
+
+    // Try to get up to 8 assets, the most technically allowed
+    for (let i = 0; i < 8; i++) {
+      let asset: string;
+
+      // Some pools have different index types for coin lookups.
+      // Neither call succeeding should mean the index is out-of-bounds.
+      try {
+        asset = await pool['coins(uint256)'](i);
+      } catch (e) {
+        try {
+          asset = await pool['coins(int128)'](i);
+        } catch (e) {
+          break;
+        }
+      }
 
       if (asset === constants.AddressZero) {
         break;
       }
 
-      if (asset.toLowerCase() === ETH_ADDRESS.toLowerCase()) {
+      poolTokens.push(asset);
+
+      if (sameAddress(asset, ETH_ADDRESS)) {
         asset = fork.config.weth;
       }
 
-      if (asset.toLowerCase() === assetToLend.address.toLowerCase()) {
+      if (sameAddress(asset, assetToLend)) {
         assetToLendIndex = i;
       }
       nTokens++;
@@ -149,7 +199,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     if (!(await valueInterpreter.isSupportedDerivativeAsset(lpToken))) {
       if (!(await curvePriceFeed.isSupportedAsset(lpToken))) {
-        await curvePriceFeed.addDerivatives([lpToken], [assetToLend]);
+        await curvePriceFeed.addPools([pool], [assetToLend], [lpToken], [constants.AddressZero]);
       }
       await valueInterpreter.addDerivatives([lpToken], [curvePriceFeed]);
     }
@@ -159,7 +209,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     if (gaugeTokenAddress && !(await valueInterpreter.isSupportedDerivativeAsset(gaugeTokenAddress))) {
       if (!(await curvePriceFeed.isSupportedAsset(gaugeTokenAddress))) {
-        await curvePriceFeed.addDerivatives([gaugeTokenAddress], [assetToLend]);
+        await curvePriceFeed.addGaugeTokens([gaugeTokenAddress], [pool]);
       }
       await valueInterpreter.addDerivatives([gaugeTokenAddress], [curvePriceFeed]);
     }
@@ -189,7 +239,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
       curveLiquidityAdapter,
       integrationManager,
       orderedOutgoingAssetAmounts,
-      pool: poolInfo[poolKey].poolAddress,
+      pool,
       signer: fundOwner,
       useUnderlyings: false,
     });
@@ -209,7 +259,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
       }),
       integrationManager,
       outgoingLpTokenAmount: redeemAmount,
-      pool: poolInfo[poolKey].poolAddress,
+      pool,
       redeemType: CurveRedeemType.Standard,
       signer: fundOwner,
       useUnderlyings: false,
@@ -219,27 +269,29 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   });
 
   it('can redeem (one-coin)', async () => {
-    const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
-    const redeemAmount = preTxLpTokenBalance.div(4);
+    if (poolInfo[poolKey].supportsOneCoinRedeem) {
+      const preTxLpTokenBalance = await lpToken.balanceOf(vaultProxy);
+      const redeemAmount = preTxLpTokenBalance.div(4);
 
-    expect(redeemAmount).toBeGtBigNumber(0);
+      expect(redeemAmount).toBeGtBigNumber(0);
 
-    await curveRedeem({
-      comptrollerProxy,
-      curveLiquidityAdapter,
-      incomingAssetData: curveIncomingAssetsDataRedeemOneCoinArgs({
-        incomingAssetPoolIndex: assetToLendIndex,
-        minIncomingAssetAmount: 0,
-      }),
-      integrationManager,
-      outgoingLpTokenAmount: redeemAmount,
-      pool: poolInfo[poolKey].poolAddress,
-      redeemType: CurveRedeemType.OneCoin,
-      signer: fundOwner,
-      useUnderlyings: false,
-    });
+      await curveRedeem({
+        comptrollerProxy,
+        curveLiquidityAdapter,
+        incomingAssetData: curveIncomingAssetsDataRedeemOneCoinArgs({
+          incomingAssetPoolIndex: assetToLendIndex,
+          minIncomingAssetAmount: 0,
+        }),
+        integrationManager,
+        outgoingLpTokenAmount: redeemAmount,
+        pool,
+        redeemType: CurveRedeemType.OneCoin,
+        signer: fundOwner,
+        useUnderlyings: false,
+      });
 
-    expect(await lpToken.balanceOf(vaultProxy)).toEqBigNumber(preTxLpTokenBalance.sub(redeemAmount));
+      expect(await lpToken.balanceOf(vaultProxy)).toEqBigNumber(preTxLpTokenBalance.sub(redeemAmount));
+    }
   });
 
   it('can stake (if gauge token given)', async () => {
@@ -257,7 +309,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         curveLiquidityAdapter,
         incomingStakingToken: gaugeTokenAddress,
         integrationManager,
-        pool: poolInfo[poolKey].poolAddress,
+        pool,
         signer: fundOwner,
       });
 
@@ -278,7 +330,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         curveLiquidityAdapter,
         integrationManager,
         outgoingStakingToken: gaugeTokenAddress,
-        pool: poolInfo[poolKey].poolAddress,
+        pool,
         signer: fundOwner,
       });
 

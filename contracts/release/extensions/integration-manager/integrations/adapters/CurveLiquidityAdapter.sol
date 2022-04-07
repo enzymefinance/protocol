@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/ICurveAddressProvider.sol";
-import "../../../../interfaces/ICurveRegistry.sol";
+import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
 import "../utils/bases/CurveLiquidityAdapterBase.sol";
 
@@ -17,17 +16,22 @@ import "../utils/bases/CurveLiquidityAdapterBase.sol";
 /// to enforce policy management or emit an event
 /// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2RewardsHandlerMixin {
+    CurvePriceFeed private immutable CURVE_PRICE_FEED_CONTRACT;
+
     constructor(
         address _integrationManager,
-        address _curveAddressProvider,
+        address _curvePriceFeed,
         address _wrappedNativeAsset,
         address _curveMinter,
-        address _crvToken
+        address _crvToken,
+        address _nativeAssetAddress
     )
         public
-        CurveLiquidityAdapterBase(_integrationManager, _curveAddressProvider, _wrappedNativeAsset)
+        CurveLiquidityAdapterBase(_integrationManager, _wrappedNativeAsset, _nativeAssetAddress)
         CurveGaugeV2RewardsHandlerMixin(_curveMinter, _crvToken)
-    {}
+    {
+        CURVE_PRICE_FEED_CONTRACT = CurvePriceFeed(_curvePriceFeed);
+    }
 
     // EXTERNAL FUNCTIONS
 
@@ -95,11 +99,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         ) = __decodeLendAndStakeCallArgs(_actionData);
         (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
 
-        // Pool already validated by validating the gauge
-        address lpToken = ICurveRegistry(
-            ICurveAddressProvider(getAddressProvider()).get_registry()
-        )
-            .get_lp_token(pool);
+        address lpToken = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         __curveAddLiquidity(
             pool,
@@ -303,19 +303,13 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             bool useUnderlyings
         ) = __decodeLendCallArgs(_actionData);
 
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-
-        address lpToken = ICurveRegistry(curveRegistry).get_lp_token(pool);
-        require(lpToken != address(0), "__parseAssetsForLend: Invalid pool");
-
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = lpToken;
+        incomingAssets_[0] = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = minIncomingLpTokenAmount;
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            curveRegistry,
             pool,
             orderedOutgoingAssetAmounts,
             useUnderlyings
@@ -351,12 +345,9 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             bool useUnderlyings
         ) = __decodeLendAndStakeCallArgs(_actionData);
 
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-
-        __validateGauge(curveRegistry, pool, incomingStakingToken);
+        __validatePoolForGauge(pool, incomingStakingToken);
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            curveRegistry,
             pool,
             orderedOutgoingAssetAmounts,
             useUnderlyings
@@ -398,18 +389,13 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             bytes memory incomingAssetsData
         ) = __decodeRedeemCallArgs(_actionData);
 
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-        address lpToken = ICurveRegistry(curveRegistry).get_lp_token(pool);
-        require(lpToken != address(0), "__parseAssetsForRedeem: Invalid pool");
-
         spendAssets_ = new address[](1);
-        spendAssets_[0] = lpToken;
+        spendAssets_[0] = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = outgoingLpTokenAmount;
 
         (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            curveRegistry,
             pool,
             useUnderlyings,
             redeemType,
@@ -442,14 +428,10 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             _actionData
         );
 
-        // No need to validate pool at this point, as the gauge is validated below
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-        address lpToken = ICurveRegistry(curveRegistry).get_lp_token(pool);
-
-        __validateGauge(curveRegistry, pool, incomingStakingToken);
+        __validatePoolForGauge(pool, incomingStakingToken);
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = lpToken;
+        spendAssets_[0] = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = amount;
@@ -486,12 +468,6 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             _actionData
         );
 
-        // No need to validate pool at this point, as the gauge is validated below
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-        address lpToken = ICurveRegistry(curveRegistry).get_lp_token(pool);
-
-        __validateGauge(curveRegistry, pool, outgoingStakingToken);
-
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingStakingToken;
 
@@ -499,7 +475,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         spendAssetAmounts_[0] = amount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = lpToken;
+        incomingAssets_[0] = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = amount;
@@ -535,10 +511,6 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             bytes memory incomingAssetsData
         ) = __decodeUnstakeAndRedeemCallArgs(_actionData);
 
-        address curveRegistry = ICurveAddressProvider(getAddressProvider()).get_registry();
-
-        __validateGauge(curveRegistry, pool, outgoingStakingToken);
-
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingStakingToken;
 
@@ -546,7 +518,6 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         spendAssetAmounts_[0] = outgoingStakingTokenAmount;
 
         (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            curveRegistry,
             pool,
             useUnderlyings,
             redeemType,
@@ -562,21 +533,11 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         );
     }
 
-    /// @dev Helper to validate a user-input liquidity gauge
-    function __validateGauge(
-        address _curveRegistry,
-        address _pool,
-        address _gauge
-    ) private view {
-        require(_gauge != address(0), "__validateGauge: Empty gauge");
-        (address[10] memory gauges, ) = ICurveRegistry(_curveRegistry).get_gauges(_pool);
-        bool isValid;
-        for (uint256 i; i < gauges.length; i++) {
-            if (_gauge == gauges[i]) {
-                isValid = true;
-                break;
-            }
-        }
-        require(isValid, "__validateGauge: Invalid gauge");
+    /// @dev Helper to validate that a gauge belongs to a given pool
+    function __validatePoolForGauge(address _pool, address _gauge) private view {
+        require(
+            CURVE_PRICE_FEED_CONTRACT.getPoolForDerivative(_gauge) == _pool,
+            "__validateGauge: Invalid"
+        );
     }
 }

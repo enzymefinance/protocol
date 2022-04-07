@@ -1,7 +1,9 @@
+import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import { CurvePriceFeed, ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, curveLend, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, buyShares, createNewFund, curveLend, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -53,16 +55,13 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`90305`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`88476`);
   });
 });
 
 describe('constructor', () => {
   it('sets state vars', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
-
-    expect(await curvePriceFeed.getAddressProvider()).toMatchAddress(fork.config.curve.addressProvider);
-    expect(await curvePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
 
     // FundDeployerOwnerMixin
     expect(await curvePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
@@ -94,22 +93,20 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`95419`);
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`93590`);
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
 
     // Curve pool: 3pool
-    const curvePool = new ICurveLiquidityPool('0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7', provider);
-    const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
+    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools['3pool'].pool, provider);
+    const curveLPToken = new StandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
 
     // USDC as invariant asset proxy
     const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
-
-    await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
 
     const invariantProxyAssetUnit = utils.parseUnits('1', await invariantProxyAsset.decimals());
     const lpTokenUnit = utils.parseUnits('1', await curveLPToken.decimals());
@@ -126,7 +123,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`62649`);
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`60826`);
   });
 });
 
@@ -148,18 +145,13 @@ describe('expected values', () => {
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
-    const curvePriceFeed = fork.deployment.curvePriceFeed;
     const valueInterpreter = fork.deployment.valueInterpreter;
 
     // Curve pool: 3pool
-    const curveLPToken = new StandardToken('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490', provider);
+    const curveLPToken = new StandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
     const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
-
-    // Add curveLPToken to price feed
-    await curvePriceFeed.addDerivatives([curveLPToken], [invariantProxyAsset]);
-    await valueInterpreter.addDerivatives([curveLPToken], [curvePriceFeed]);
 
     // Get value in terms of invariant proxy asset for easy comparison
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
@@ -172,158 +164,470 @@ describe('expected values', () => {
 });
 
 describe('derivatives registry', () => {
-  describe('addDerivatives', () => {
-    it('does not allow an empty _derivatives array', async () => {
-      await expect(fork.deployment.curvePriceFeed.addDerivatives([], [randomAddress()])).rejects.toBeRevertedWith(
-        'Empty _derivatives',
+  const randomAddressValue1 = randomAddress();
+  const randomAddressValue2 = randomAddress();
+
+  let curvePriceFeed: CurvePriceFeed;
+  let randomUser: SignerWithAddress;
+  let validPoolMainRegistry: AddressLike,
+    validPoolMainRegistryLpToken: AddressLike,
+    validPoolMainRegistryGauge: AddressLike;
+  let validPoolMetapoolFactoryRegistry: AddressLike,
+    validPoolMetapoolFactoryRegistryLpToken: AddressLike,
+    validPoolMetapoolFactoryRegistryGauge: AddressLike;
+  let invariantProxyAsset: StandardToken;
+
+  beforeEach(async () => {
+    [randomUser] = fork.accounts;
+
+    // Deploy fresh price feed with nothing registered
+    curvePriceFeed = await CurvePriceFeed.deploy(
+      fork.deployer,
+      fork.deployment.fundDeployer,
+      fork.config.curve.addressProvider,
+    );
+
+    // aave - main registry
+    validPoolMainRegistry = fork.config.curve.pools.aave.pool;
+    validPoolMainRegistryLpToken = fork.config.curve.pools.aave.lpToken;
+    validPoolMainRegistryGauge = fork.config.curve.pools.aave.liquidityGaugeToken;
+
+    // mim pool - metapool factory
+    validPoolMetapoolFactoryRegistry = fork.config.curve.pools.mim.pool;
+    validPoolMetapoolFactoryRegistryLpToken = fork.config.curve.pools.mim.lpToken;
+    validPoolMetapoolFactoryRegistryGauge = fork.config.curve.pools.mim.liquidityGaugeToken;
+
+    // Arbitrary invariant proxy asset to use
+    invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+  });
+
+  // This is the primary action for registering pool info (invariant proxy asset and lpToken),
+  // and then mapping the lpTokens plus any gauge tokens to those registered pools.
+  describe('addPools', () => {
+    // Common to both addPools~() functions
+
+    it('does not allow unequal array inputs', async () => {
+      // Does not test all combos of array lengths
+
+      await expect(
+        curvePriceFeed.addPools(
+          [validPoolMainRegistry],
+          [invariantProxyAsset, constants.AddressZero],
+          [validPoolMainRegistryLpToken],
+          [validPoolMainRegistryGauge],
+        ),
+      ).rejects.toBeRevertedWith('Unequal arrays');
+    });
+
+    it('does not allow already-added pool', async () => {
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [validPoolMainRegistryLpToken],
+        [validPoolMainRegistryGauge],
       );
-    });
 
-    it('does not allow unequal _derivatives and _invariantProxyAssets arrays', async () => {
-      await expect(fork.deployment.curvePriceFeed.addDerivatives([randomAddress()], [])).rejects.toBeRevertedWith(
-        'Unequal arrays',
-      );
-    });
-
-    it('does not allow an empty derivative', async () => {
+      // Repeating the registration of the same pool with new addresses should fail
       await expect(
-        fork.deployment.curvePriceFeed.addDerivatives([constants.AddressZero], [randomAddress()]),
-      ).rejects.toBeRevertedWith('Empty derivative');
+        curvePriceFeed.addPools(
+          [validPoolMainRegistry],
+          [invariantProxyAsset],
+          [validPoolMainRegistryLpToken],
+          [validPoolMainRegistryGauge],
+        ),
+      ).rejects.toBeRevertedWith('Already registered');
     });
 
-    it('does not allow an empty invariantProxyAsset', async () => {
+    // Unique to this function
+
+    it('does not allow a random caller', async () => {
       await expect(
-        fork.deployment.curvePriceFeed.addDerivatives([randomAddress()], [constants.AddressZero]),
-      ).rejects.toBeRevertedWith('Empty invariantProxyAsset');
+        curvePriceFeed
+          .connect(randomUser)
+          .addPools(
+            [validPoolMainRegistry],
+            [invariantProxyAsset],
+            [validPoolMainRegistryLpToken],
+            [validPoolMainRegistryGauge],
+          ),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
-    it('does not allow an already-added derivative', async () => {
+    it('does not allow a pool outside of the known Curve registries', async () => {
       await expect(
-        fork.deployment.curvePriceFeed.addDerivatives([fork.config.curve.pools.steth.lpToken], [randomAddress()]),
-      ).rejects.toBeRevertedWith('Value already set');
+        curvePriceFeed.addPools(
+          [randomAddressValue1],
+          [randomAddressValue1],
+          [randomAddressValue1],
+          [randomAddressValue1],
+        ),
+      ).rejects.toBeRevertedWith('Invalid inputs');
     });
 
-    it('does not allow an invalid derivative', async () => {
-      // Revert reason tough to reach as most assets will revert on Curve's end
+    it('does not allow an lpToken that does not match the registry (main registry)', async () => {
       await expect(
-        fork.deployment.curvePriceFeed.addDerivatives([fork.config.primitives.mln], [fork.config.weth]),
-      ).rejects.toBeReverted();
+        curvePriceFeed.addPools(
+          [validPoolMainRegistry],
+          [invariantProxyAsset],
+          [randomAddressValue1],
+          [validPoolMainRegistryGauge],
+        ),
+      ).rejects.toBeRevertedWith('Invalid inputs');
     });
 
-    it.todo('does not allow a derivative if the ValueInterpreter cannot produce a valid price for it');
+    it('does not allow an lpToken that does not match the registry (metapool factory registry)', async () => {
+      await expect(
+        curvePriceFeed.addPools(
+          [validPoolMetapoolFactoryRegistry],
+          [invariantProxyAsset],
+          [randomAddressValue1],
+          [validPoolMetapoolFactoryRegistryGauge],
+        ),
+      ).rejects.toBeRevertedWith('Invalid inputs');
+    });
 
-    it('adds multiple derivatives (both LP and liquidity gauge) and emits an event for each', async () => {
-      const curvePriceFeed = fork.deployment.curvePriceFeed;
+    it('does not allow a gauge token that does not match the registry (main registry)', async () => {
+      await expect(
+        curvePriceFeed.addPools(
+          [validPoolMainRegistry],
+          [invariantProxyAsset],
+          [validPoolMainRegistryLpToken],
+          [randomAddressValue1],
+        ),
+      ).rejects.toBeRevertedWith('Invalid gauge');
+    });
 
-      // Curve pool: bBTC
-      const curvePool = '0x071c661B4DeefB59E2a3DdB20Db036821eeE8F4b';
-      const curveLPToken = '0x410e3E86ef427e30B9235497143881f717d93c2A';
-      const curveLiquidityGaugeToken = '0xdFc7AdFa664b08767b735dE28f9E84cd30492aeE';
+    it('does not allow a gauge token that does not match the registry (metapool factory registry)', async () => {
+      await expect(
+        curvePriceFeed.addPools(
+          [validPoolMetapoolFactoryRegistry],
+          [invariantProxyAsset],
+          [validPoolMetapoolFactoryRegistryLpToken],
+          [randomAddressValue1],
+        ),
+      ).rejects.toBeRevertedWith('Invalid gauge');
+    });
 
-      const newDerivatives = [curveLPToken, curveLiquidityGaugeToken];
-      const invariantProxyAsset = new StandardToken(fork.config.weth, provider);
+    it('works as expected (main and metapool factory registries)', async () => {
       const invariantProxyAssetDecimals = await invariantProxyAsset.decimals();
 
-      // The derivatives should not be supported assets initially
-      expect(await curvePriceFeed.isSupportedAsset(newDerivatives[0])).toBe(false);
-      expect(await curvePriceFeed.isSupportedAsset(newDerivatives[1])).toBe(false);
-
-      // Add the new derivatives
-      const addDerivativesTx = await curvePriceFeed.addDerivatives(
-        newDerivatives,
-        new Array(newDerivatives.length).fill(invariantProxyAsset),
+      const receipt = await curvePriceFeed.addPools(
+        [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
+        [invariantProxyAsset, invariantProxyAsset],
+        [validPoolMainRegistryLpToken, validPoolMetapoolFactoryRegistryLpToken],
+        [validPoolMainRegistryGauge, validPoolMetapoolFactoryRegistryGauge],
       );
 
-      // The underlying tokens should be stored for each derivative
-      const getDerivativeInfoFragment = curvePriceFeed.getDerivativeInfo.fragment;
-
-      expect(await curvePriceFeed.getDerivativeInfo(newDerivatives[0])).toMatchFunctionOutput(
-        getDerivativeInfoFragment,
+      // Assert pool info storage
+      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getInvariantProxyAssetInfoForPool,
         {
-          invariantProxyAsset,
-          invariantProxyAssetDecimals,
-          pool: curvePool,
+          asset: invariantProxyAsset,
+          decimals: invariantProxyAssetDecimals,
         },
       );
-      expect(await curvePriceFeed.getDerivativeInfo(newDerivatives[1])).toMatchFunctionOutput(
-        getDerivativeInfoFragment,
-        {
-          invariantProxyAsset,
-          invariantProxyAssetDecimals,
-          pool: curvePool,
-        },
+      expect(
+        await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMetapoolFactoryRegistry),
+      ).toMatchFunctionOutput(curvePriceFeed.getInvariantProxyAssetInfoForPool, {
+        asset: invariantProxyAsset,
+        decimals: invariantProxyAssetDecimals,
+      });
+      expect(await curvePriceFeed.getLpTokenForPool(validPoolMainRegistry)).toMatchAddress(
+        validPoolMainRegistryLpToken,
+      );
+      expect(await curvePriceFeed.getLpTokenForPool(validPoolMetapoolFactoryRegistry)).toMatchAddress(
+        validPoolMetapoolFactoryRegistryLpToken,
       );
 
-      // The tokens should now be supported assets
-      expect(await curvePriceFeed.isSupportedAsset(newDerivatives[0])).toBe(true);
-      expect(await curvePriceFeed.isSupportedAsset(newDerivatives[1])).toBe(true);
+      // Assert pool info events
+      const invariantProxyAssetForPoolSetEvents = extractEvent(receipt, 'InvariantProxyAssetForPoolSet');
 
-      // The correct event should have been emitted for each derivative
-      const events = extractEvent(addDerivativesTx, 'DerivativeAdded');
-
-      expect(events.length).toBe(2);
-      expect(events[0]).toMatchEventArgs({
-        derivative: newDerivatives[0],
-        invariantProxyAsset,
-        invariantProxyAssetDecimals,
-        pool: curvePool,
+      expect(invariantProxyAssetForPoolSetEvents.length === 2);
+      expect(invariantProxyAssetForPoolSetEvents[0]).toMatchEventArgs({
+        invariantProxyAsset: invariantProxyAsset.address,
+        pool: validPoolMainRegistry,
+      });
+      expect(invariantProxyAssetForPoolSetEvents[1]).toMatchEventArgs({
+        invariantProxyAsset: invariantProxyAsset.address,
+        pool: validPoolMetapoolFactoryRegistry,
       });
 
-      expect(events[1]).toMatchEventArgs({
-        derivative: newDerivatives[1],
-        invariantProxyAsset,
-        invariantProxyAssetDecimals,
-        pool: curvePool,
+      // Assert derivative storage
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMainRegistryLpToken)).toMatchAddress(
+        validPoolMainRegistry,
+      );
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMainRegistryGauge)).toMatchAddress(
+        validPoolMainRegistry,
+      );
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMetapoolFactoryRegistryLpToken)).toMatchAddress(
+        validPoolMetapoolFactoryRegistry,
+      );
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMetapoolFactoryRegistryGauge)).toMatchAddress(
+        validPoolMetapoolFactoryRegistry,
+      );
+
+      // Assert derivative events
+      const derivativeAddedEvents = extractEvent(receipt, 'DerivativeAdded');
+
+      expect(derivativeAddedEvents.length === 4);
+      expect(derivativeAddedEvents[0]).toMatchEventArgs({
+        derivative: validPoolMainRegistryLpToken,
+        pool: validPoolMainRegistry,
+      });
+      expect(derivativeAddedEvents[1]).toMatchEventArgs({
+        derivative: validPoolMainRegistryGauge,
+        pool: validPoolMainRegistry,
+      });
+      expect(derivativeAddedEvents[2]).toMatchEventArgs({
+        derivative: validPoolMetapoolFactoryRegistryLpToken,
+        pool: validPoolMetapoolFactoryRegistry,
+      });
+      expect(derivativeAddedEvents[3]).toMatchEventArgs({
+        derivative: validPoolMetapoolFactoryRegistryGauge,
+        pool: validPoolMetapoolFactoryRegistry,
       });
     });
   });
 
+  describe('addPoolsWithoutValidation', () => {
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed
+          .connect(randomUser)
+          .addPoolsWithoutValidation(
+            [validPoolMainRegistry],
+            [invariantProxyAsset],
+            [validPoolMainRegistryLpToken],
+            [validPoolMainRegistryGauge],
+          ),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+    });
+
+    it('does not allow empty lpToken param', async () => {
+      await expect(
+        curvePriceFeed.addPoolsWithoutValidation(
+          [validPoolMainRegistry],
+          [invariantProxyAsset],
+          [constants.AddressZero],
+          [validPoolMainRegistryGauge],
+        ),
+      ).rejects.toBeRevertedWith('Empty lpToken');
+    });
+
+    it('does not allow an incompatible pool (no get_virtual_price())', async () => {
+      await expect(
+        curvePriceFeed.addPoolsWithoutValidation(
+          [randomAddressValue1],
+          [invariantProxyAsset],
+          [validPoolMainRegistryLpToken],
+          [validPoolMainRegistryGauge],
+        ),
+      ).rejects.toBeReverted();
+    });
+
+    // Since __addPools() logic is the same as tested in addPools(), only need to test that invalid config can pass
+    it('works as expected (main and metapool factory registries)', async () => {
+      await curvePriceFeed.addPoolsWithoutValidation(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [randomAddressValue1],
+        [randomAddressValue2],
+      );
+    });
+  });
+
+  describe('addGaugeTokens', () => {
+    // Common to both addGaugeTokens~() functions
+
+    it('does not allow unequal array inputs', async () => {
+      await expect(
+        curvePriceFeed.addGaugeTokens([validPoolMainRegistryGauge], [validPoolMainRegistry, constants.AddressZero]),
+      ).rejects.toBeRevertedWith('Unequal arrays');
+    });
+
+    it('does not allow adding a derivative with an unregistered pool', async () => {
+      await expect(
+        curvePriceFeed.addGaugeTokens([validPoolMainRegistryGauge], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Pool not registered');
+    });
+
+    // Unique to this function
+
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed.connect(randomUser).addGaugeTokens([validPoolMainRegistryGauge], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+    });
+
+    it('does not allow a gauge token that does not match the registry (main registry)', async () => {
+      await expect(
+        curvePriceFeed.addGaugeTokens([randomAddressValue1], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Invalid gauge');
+    });
+
+    it('does not allow a gauge token that does not match the registry (metapool factory registry)', async () => {
+      await expect(
+        curvePriceFeed.addGaugeTokens([randomAddressValue1], [validPoolMetapoolFactoryRegistry]),
+      ).rejects.toBeRevertedWith('Invalid gauge');
+    });
+
+    it('works as expected (main and metapool factory registries)', async () => {
+      // First add the pools without their gauges
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
+        [invariantProxyAsset, invariantProxyAsset],
+        [validPoolMainRegistryLpToken, validPoolMetapoolFactoryRegistryLpToken],
+        [constants.AddressZero, constants.AddressZero],
+      );
+
+      // Add the gauges
+      await curvePriceFeed.addGaugeTokens(
+        [validPoolMainRegistryGauge, validPoolMetapoolFactoryRegistryGauge],
+        [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
+      );
+
+      // Assert derivative storage
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMainRegistryGauge)).toMatchAddress(
+        validPoolMainRegistry,
+      );
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMetapoolFactoryRegistryGauge)).toMatchAddress(
+        validPoolMetapoolFactoryRegistry,
+      );
+
+      // DerivativeAdded events are tested in addPools() tests
+    });
+  });
+
+  describe('addGaugeTokensWithoutValidation', () => {
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed
+          .connect(randomUser)
+          .addGaugeTokensWithoutValidation([validPoolMainRegistryGauge], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+    });
+
+    it('works as expected', async () => {
+      // First add the pool without its gauge
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [validPoolMainRegistryLpToken],
+        [constants.AddressZero],
+      );
+
+      // Add a random gauge value
+      const randomGaugeValue = randomAddressValue1;
+
+      await curvePriceFeed.addGaugeTokensWithoutValidation([randomGaugeValue], [validPoolMainRegistry]);
+
+      // Assert derivative storage
+      expect(await curvePriceFeed.getPoolForDerivative(randomGaugeValue)).toMatchAddress(validPoolMainRegistry);
+    });
+  });
+
   describe('removeDerivatives', () => {
-    it('does not allow an empty _derivatives array', async () => {
-      await expect(fork.deployment.curvePriceFeed.removeDerivatives([])).rejects.toBeRevertedWith('Empty _derivatives');
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed.connect(randomUser).removeDerivatives([validPoolMainRegistryGauge]),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
-    it('does not allow an empty derivative', async () => {
-      await expect(fork.deployment.curvePriceFeed.removeDerivatives([constants.AddressZero])).rejects.toBeRevertedWith(
-        'Empty derivative',
+    it('works as expected', async () => {
+      // First add the pool with its lpToken and gauge token
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [validPoolMainRegistryLpToken],
+        [validPoolMainRegistryGauge],
+      );
+
+      // Remove the gauge token
+      const receipt = await curvePriceFeed.removeDerivatives([validPoolMainRegistryGauge]);
+
+      // Assert the derivative is no longer registered
+      expect(await curvePriceFeed.getPoolForDerivative(validPoolMainRegistryGauge)).toMatchAddress(
+        constants.AddressZero,
+      );
+
+      // Assert the event was correctly emitted
+      assertEvent(receipt, 'DerivativeRemoved', {
+        derivative: validPoolMainRegistryGauge,
+      });
+    });
+  });
+
+  describe('removePools', () => {
+    it('does not allow a random caller', async () => {
+      await expect(curvePriceFeed.connect(randomUser).removePools([validPoolMainRegistry])).rejects.toBeRevertedWith(
+        'Only the FundDeployer owner can call this function',
       );
     });
 
-    it('does not allow a non-added derivative', async () => {
-      await expect(fork.deployment.curvePriceFeed.removeDerivatives([randomAddress()])).rejects.toBeRevertedWith(
-        'Value is not set',
+    it('works as expected', async () => {
+      // First add the pool
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [validPoolMainRegistryLpToken],
+        [constants.AddressZero],
       );
+
+      // Remove the pool
+      const receipt = await curvePriceFeed.removePools([validPoolMainRegistry]);
+
+      // Assert the pool info is removed from storage
+      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getInvariantProxyAssetInfoForPool,
+        {
+          asset: constants.AddressZero,
+          decimals: 0,
+        },
+      );
+      expect(await curvePriceFeed.getLpTokenForPool(validPoolMainRegistry)).toMatchAddress(constants.AddressZero);
+
+      // Assert the event was correctly emitted
+      assertEvent(receipt, 'PoolRemoved', {
+        pool: validPoolMainRegistry,
+      });
+    });
+  });
+
+  describe('updateInvariantProxyAssets', () => {
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed.connect(randomUser).updateInvariantProxyAssets([validPoolMainRegistry], [invariantProxyAsset]),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
-    it('removes multiple derivatives from registry and emits an event for each', async () => {
-      const curvePriceFeed = fork.deployment.curvePriceFeed;
-      const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-      const curveLiquidityGaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+    it('works as expected', async () => {
+      // First add the pool
+      await curvePriceFeed.addPools(
+        [validPoolMainRegistry],
+        [invariantProxyAsset],
+        [validPoolMainRegistryLpToken],
+        [constants.AddressZero],
+      );
 
-      const derivativesToRemove = [curveLPToken, curveLiquidityGaugeToken];
+      // Update the pool with an invariant asset proxy of different decimals
+      const nextInvariantAssetProxy = new StandardToken(fork.config.primitives.mln, provider);
+      const nextInvariantAssetProxyDecimals = await nextInvariantAssetProxy.decimals();
 
-      // The tokens should initially be supported assets
-      expect(await curvePriceFeed.isSupportedAsset(derivativesToRemove[0])).toBe(true);
-      expect(await curvePriceFeed.isSupportedAsset(derivativesToRemove[1])).toBe(true);
+      expect(nextInvariantAssetProxyDecimals).not.toEqBigNumber(await invariantProxyAsset.decimals());
 
-      // Remove the derivatives
-      const removeDerivativesTx = await curvePriceFeed.removeDerivatives(derivativesToRemove);
+      // Set a new invariant proxy asset
+      await curvePriceFeed.updateInvariantProxyAssets([validPoolMainRegistry], [nextInvariantAssetProxy]);
 
-      // The tokens should no longer be supported assets
-      expect(await curvePriceFeed.isSupportedAsset(derivativesToRemove[0])).toBe(false);
-      expect(await curvePriceFeed.isSupportedAsset(derivativesToRemove[1])).toBe(false);
+      // Assert the invariant proxy asset was updated
+      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getInvariantProxyAssetInfoForPool,
+        {
+          asset: nextInvariantAssetProxy,
+          decimals: nextInvariantAssetProxyDecimals,
+        },
+      );
 
-      // The correct event should have been emitted for each derivative
-      const events = extractEvent(removeDerivativesTx, 'DerivativeRemoved');
-
-      expect(events.length).toBe(2);
-      expect(events[0]).toMatchEventArgs({
-        derivative: derivativesToRemove[0],
-      });
-
-      expect(events[1]).toMatchEventArgs({
-        derivative: derivativesToRemove[1],
-      });
+      // Event emission already tested in addPools()
     });
   });
 });

@@ -27,17 +27,12 @@ const fn: DeployFunction = async function (hre) {
     const pools = Object.values(config.curve.pools);
 
     if (!!pools.length) {
-      const flattened = pools.flatMap((pool) => {
-        return [
-          [pool.liquidityGaugeToken, pool.invariantProxyAsset],
-          [pool.lpToken, pool.invariantProxyAsset],
-        ] as const;
-      });
-
       log('Registering curve tokens');
-      const derivatives = flattened.map(([derivative]) => derivative);
-      const underlyings = flattened.map(([, underlying]) => underlying);
-      await curvePriceFeedInstance.addDerivatives(derivatives, underlyings);
+      const poolAddresses = pools.map((pool) => pool.pool);
+      const invariantProxyAssets = pools.map((pool) => pool.invariantProxyAsset);
+      const lpTokens = pools.map((pool) => pool.lpToken);
+      const gaugeTokens = pools.map((pool) => pool.liquidityGaugeToken);
+      await curvePriceFeedInstance.addPools(poolAddresses, invariantProxyAssets, lpTokens, gaugeTokens);
     }
   }
 };

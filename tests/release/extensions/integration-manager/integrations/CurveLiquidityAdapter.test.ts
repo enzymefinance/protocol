@@ -51,8 +51,6 @@ beforeEach(async () => {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    expect(await curveLiquidityAdapter.getAddressProvider()).toMatchAddress(fork.config.curve.addressProvider);
-
     // AdapterBase
     expect(await curveLiquidityAdapter.getIntegrationManager()).toMatchAddress(fork.deployment.integrationManager);
 
@@ -663,6 +661,37 @@ describe('actions', () => {
         // All of the outgoing assets should have been used
         expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
         expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
+      });
+    });
+    describe('USDT pool (coins(int128) signature)', () => {
+      it('works as expected', async () => {
+        const pool = fork.config.curve.pools.usdt.pool;
+        const lpToken = new StandardToken(fork.config.curve.pools.usdt.lpToken, provider);
+        const cDai = new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai);
+        const cUsdc = new StandardToken(fork.config.compound.ctokens.cusdc, whales.cusdc);
+        const usdt = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+        const amount = 1000;
+
+        // Seed vault
+        await addNewAssetsToFund({
+          amounts: [amount, amount, amount],
+          assets: [cDai, cUsdc, usdt],
+          comptrollerProxy,
+          integrationManager,
+          signer: fundOwner,
+        });
+
+        await curveLend({
+          comptrollerProxy,
+          curveLiquidityAdapter,
+          integrationManager,
+          orderedOutgoingAssetAmounts: [amount, amount, amount],
+          pool,
+          signer: fundOwner,
+          useUnderlyings: false,
+        });
+
+        expect(await lpToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
       });
     });
   });

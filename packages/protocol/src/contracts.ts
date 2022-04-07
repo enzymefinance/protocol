@@ -143,7 +143,6 @@ export * from './codegen/IConvexBooster';
 export * from './codegen/ICurveAddressProvider';
 export * from './codegen/ICurveLiquidityGaugeV2';
 export * from './codegen/ICurveLiquidityPool';
-export * from './codegen/ICurveRegistry';
 export * from './codegen/IGsnRelayHub';
 export * from './codegen/IIdleTokenV4';
 export * from './codegen/ISynthetixExchanger';

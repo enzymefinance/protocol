@@ -5,6 +5,7 @@ import {
   ONE_YEAR_IN_SECONDS,
   ValueInterpreter,
 } from '@enzymefinance/protocol';
+import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
@@ -83,10 +84,11 @@ const fn: DeployFunction = async function (hre) {
       ...(curvePriceFeed
         ? Object.values(config.curve.pools).map((pool) => [pool.lpToken, curvePriceFeed.address] as [string, string])
         : []),
+      // Filters out pools with no gauge token
       ...(curvePriceFeed
-        ? Object.values(config.curve.pools).map(
-            (pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string],
-          )
+        ? Object.values(config.curve.pools)
+            .filter((pool) => pool.liquidityGaugeToken !== constants.AddressZero)
+            .map((pool) => [pool.liquidityGaugeToken, curvePriceFeed.address] as [string, string])
         : []),
       ...(fusePriceFeed
         ? Object.values(config.fuse.ftokens).map((ftoken) => [ftoken, fusePriceFeed.address] as [string, string])

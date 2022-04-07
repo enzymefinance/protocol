@@ -25,6 +25,7 @@ it('whales have adequate balances', async () => {
     uni: fork.config.primitives.uni,
     usdc: fork.config.primitives.usdc,
     usdt: fork.config.primitives.usdt,
+    ust: fork.config.primitives.ust,
     weth: fork.config.weth,
     zrx: fork.config.primitives.zrx,
     // aTokens
@@ -51,7 +52,6 @@ it('whales have adequate balances', async () => {
     // seth: fork.config.unsupportedAssets.seth
     // sxag: 0x6a22e5e94388464181578aa7a6b869e00fe27846
     // sxau: 0x261efcdd24cea98652b9700800a13dfbca4103ff
-    // ust: 0xa47c8bf37f92abed4a126bda807a7b7498661acd
   };
   /* eslint-enable sort-keys-fix/sort-keys-fix */
 

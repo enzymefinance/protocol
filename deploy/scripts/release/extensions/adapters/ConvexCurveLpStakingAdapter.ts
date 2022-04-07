@@ -13,14 +13,16 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
   const convexCurveLpStakingWrapperFactory = await get('ConvexCurveLpStakingWrapperFactory');
+  const curvePriceFeed = await get('CurvePriceFeed');
   const integrationManager = await get('IntegrationManager');
 
   await deploy('ConvexCurveLpStakingAdapter', {
     args: [
       integrationManager.address,
-      config.curve.addressProvider,
+      curvePriceFeed.address,
       config.wrappedNativeAsset,
       convexCurveLpStakingWrapperFactory.address,
+      config.curve.nativeAssetAddress,
     ] as ConvexCurveLpStakingAdapterArgs,
     from: deployer.address,
     linkedData: {
@@ -33,7 +35,7 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'Adapters', 'ConvexCurveLpStakingAdapter'];
-fn.dependencies = ['Config', 'ConvexCurveLpStakingWrapperFactory', 'IntegrationManager'];
+fn.dependencies = ['Config', 'ConvexCurveLpStakingWrapperFactory', 'CurvePriceFeed', 'IntegrationManager'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

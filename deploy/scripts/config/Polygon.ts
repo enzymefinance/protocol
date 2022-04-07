@@ -140,6 +140,7 @@ const mainnetConfig: DeploymentConfig = {
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: constants.AddressZero, // Minter only exists on Ethereum mainnet
+    nativeAssetAddress: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
     pools: {
       aave: {
         invariantProxyAsset: primitives.usdc,

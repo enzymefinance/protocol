@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
+import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import "../../../../infrastructure/staking-wrappers/convex-curve-lp/ConvexCurveLpStakingWrapperFactory.sol";
-import "../../../../interfaces/ICurveAddressProvider.sol";
-import "../../../../interfaces/ICurveRegistry.sol";
 import "../utils/actions/StakingWrapperActionsMixin.sol";
 import "../utils/bases/CurveLiquidityAdapterBase.sol";
 
@@ -18,16 +17,19 @@ import "../utils/bases/CurveLiquidityAdapterBase.sol";
 /// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrapperActionsMixin {
     ConvexCurveLpStakingWrapperFactory private immutable STAKING_WRAPPER_FACTORY_CONTRACT;
+    CurvePriceFeed private immutable CURVE_PRICE_FEED_CONTRACT;
 
     constructor(
         address _integrationManager,
-        address _curveAddressProvider,
+        address _curvePriceFeed,
         address _wrappedNativeAsset,
-        address _stakingWrapperFactory
+        address _stakingWrapperFactory,
+        address _nativeAssetAddress
     )
         public
-        CurveLiquidityAdapterBase(_integrationManager, _curveAddressProvider, _wrappedNativeAsset)
+        CurveLiquidityAdapterBase(_integrationManager, _wrappedNativeAsset, _nativeAssetAddress)
     {
+        CURVE_PRICE_FEED_CONTRACT = CurvePriceFeed(_curvePriceFeed);
         STAKING_WRAPPER_FACTORY_CONTRACT = ConvexCurveLpStakingWrapperFactory(
             _stakingWrapperFactory
         );
@@ -64,10 +66,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         ) = __decodeLendAndStakeCallArgs(_actionData);
         (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
 
-        address lpToken = ICurveRegistry(
-            ICurveAddressProvider(getAddressProvider()).get_registry()
-        )
-            .get_lp_token(pool);
+        address lpToken = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         __curveAddLiquidity(
             pool,
@@ -244,7 +243,6 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         __validatePoolForWrapper(pool, incomingStakingToken);
 
         (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            ICurveAddressProvider(getAddressProvider()).get_registry(),
             pool,
             orderedOutgoingAssetAmounts,
             useUnderlyings
@@ -373,7 +371,6 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         spendAssetAmounts_[0] = outgoingStakingTokenAmount;
 
         (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            ICurveAddressProvider(getAddressProvider()).get_registry(),
             pool,
             useUnderlyings,
             redeemType,
@@ -394,9 +391,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     function __validatePoolForWrapper(address _pool, address _wrapper) private view {
         address lpToken = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(_wrapper);
         require(
-            lpToken ==
-                ICurveRegistry(ICurveAddressProvider(getAddressProvider()).get_registry())
-                    .get_lp_token(_pool),
+            lpToken == CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(_pool),
             "__validatePoolForWrapper: Invalid"
         );
     }

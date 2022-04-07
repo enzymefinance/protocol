@@ -12,15 +12,17 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
+  const curvePriceFeed = await get('CurvePriceFeed');
   const integrationManager = await get('IntegrationManager');
 
   await deploy('CurveLiquidityAdapter', {
     args: [
       integrationManager.address,
-      config.curve.addressProvider,
+      curvePriceFeed.address,
       config.wrappedNativeAsset,
       config.curve.minter,
       config.primitives.crv,
+      config.curve.nativeAssetAddress,
     ] as CurveLiquidityAdapterArgs,
     from: deployer.address,
     linkedData: {
@@ -33,7 +35,7 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'Adapters', 'CurveLiquidityAdapter'];
-fn.dependencies = ['Config', 'IntegrationManager'];
+fn.dependencies = ['Config', 'CurvePriceFeed', 'IntegrationManager'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

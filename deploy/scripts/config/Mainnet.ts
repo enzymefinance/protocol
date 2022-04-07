@@ -51,6 +51,7 @@ const primitives = {
   uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
   usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
   usdt: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+  ust: '0xa47c8bf37f92abed4a126bda807a7b7498661acd',
   wbtc: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   wnxm: '0x0d438f3b5175bebc262bf23753c1e53d03432bde',
   yfi: '0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e',
@@ -93,6 +94,7 @@ const aggregators = {
   uni: ['0xd6aa3d25116d8da79ea0246c4826eb951872e02e', ChainlinkRateAsset.ETH],
   usdc: ['0x986b5e1e1755e3c2440e960477f25201b0a8bbd4', ChainlinkRateAsset.ETH],
   usdt: ['0xee9f2375b4bdf6387aa8265dd4fb8f16512a1d46', ChainlinkRateAsset.ETH],
+  ust: ['0x8b6d9085f310396c6e4f0012783e9f850eaa8a82', ChainlinkRateAsset.USD],
   wbtc: ['0xdeb288f737066589598e9214e782fa5a8ed689e8', ChainlinkRateAsset.ETH],
   wnxm: ['0xe5dc0a609ab8bcf15d3f35cfaa1ff40f521173ea', ChainlinkRateAsset.ETH],
   yfi: ['0x7c5d4f8345e66f68099581db340cd65b078c41f4', ChainlinkRateAsset.ETH],
@@ -227,12 +229,25 @@ const mainnetConfig: DeploymentConfig = {
   curve: {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',
+    nativeAssetAddress: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
     pools: {
+      '3pool': {
+        invariantProxyAsset: primitives.usdc,
+        liquidityGaugeToken: constants.AddressZero,
+        lpToken: '0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490',
+        pool: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7'
+      },
       aave: {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: '0xd662908ADA2Ea1916B3318327A97eB18aD588b5d',
         lpToken: '0xFd2a8fA60Abd58Efe3EeE34dd494cD491dC14900',
         pool: '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE'
+      },
+      mim: {
+        invariantProxyAsset: primitives.usdc,
+        liquidityGaugeToken: '0xB518f5e3242393d4eC792BD3f44946A3b98d0E48',
+        lpToken: '0x55A8a39bc9694714E2874c1ce77aa1E599461E18',
+        pool: '0x55A8a39bc9694714E2874c1ce77aa1E599461E18'
       },
       seth: {
         invariantProxyAsset: weth,
@@ -245,6 +260,18 @@ const mainnetConfig: DeploymentConfig = {
         liquidityGaugeToken: '0x182B723a58739a9c974cFDB385ceaDb237453c28',
         lpToken: '0x06325440D014e39736583c165C2963BA99fAf14E',
         pool: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
+      },
+      usdt: {
+        invariantProxyAsset: primitives.usdc,
+        liquidityGaugeToken: constants.AddressZero,
+        lpToken: '0x9fc689ccada600b6df723d9e47d84d76664a1f23',
+        pool: '0x52ea46506b9cc5ef470c5bf89f17dc28bb35d85c'
+      },
+      ust: {
+        invariantProxyAsset: primitives.usdc,
+        liquidityGaugeToken: '0x3B7020743Bc2A4ca9EaF9D0722d42E20d6935855',
+        lpToken: '0x94e131324b6054c0D789b190b2dAC504e4361b53',
+        pool: '0x890f4e345B1dAED0367A877a1612f86A1f86985f'
       },
     },
   },

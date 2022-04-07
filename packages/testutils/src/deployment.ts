@@ -228,6 +228,7 @@ export interface DeploymentConfig {
   curve: {
     addressProvider: string;
     minter: string;
+    nativeAssetAddress: string;
     pools: Record<string, { pool: string; lpToken: string; liquidityGaugeToken: string; invariantProxyAsset: string }>;
   };
   aave: {

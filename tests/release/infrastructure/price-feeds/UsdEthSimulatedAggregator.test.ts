@@ -42,6 +42,7 @@ describe('e2e', () => {
   it('can be used as an invariantProxyAsset in the CurvePriceFeed', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     // Use a pool with USD as the invariant
+    const curvePool = fork.config.curve.pools.aave.pool;
     const curveLpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
     const curveLpTokenUnit = await getAssetUnit(curveLpToken);
 
@@ -52,16 +53,8 @@ describe('e2e', () => {
       [ChainlinkRateAsset.ETH],
     );
 
-    // Remove the derivative so it can be re-registered
-    await curvePriceFeed.removeDerivatives([curveLpToken]);
-
-    // Re-register the derivative with the new invariant proxy asset
-    await curvePriceFeed.addDerivatives([curveLpToken], [usdEthSimulatedAggregator]);
-
-    // Assert the invariant proxy is the newly set value
-    expect((await curvePriceFeed.getDerivativeInfo(curveLpToken)).invariantProxyAsset).toMatchAddress(
-      usdEthSimulatedAggregator,
-    );
+    // Update the Curve pool with the new invariant proxy asset
+    await curvePriceFeed.updateInvariantProxyAssets([curvePool], [usdEthSimulatedAggregator]);
 
     // Assert the expected Curve pool value in terms of USDC
     // a3CRV was approx $1.09 on Mar 22, 2022
