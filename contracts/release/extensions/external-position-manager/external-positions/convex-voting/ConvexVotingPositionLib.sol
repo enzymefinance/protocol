@@ -124,7 +124,7 @@ contract ConvexVotingPositionLib is
             address[] memory allTokensToTransfer,
             bool claimLockerRewards,
             address[] memory extraRewardTokens,
-            IVotiumMultiMerkleStash.ClaimParam[] memory _votiumClaims,
+            IVotiumMultiMerkleStash.ClaimParam[] memory votiumClaims,
             bool unstakeCvxCrv
         ) = __decodeClaimRewardsActionArgs(_actionArgs);
 
@@ -139,8 +139,8 @@ contract ConvexVotingPositionLib is
         }
 
         // Claim rewards from Votium
-        if (_votiumClaims.length > 0) {
-            VOTIUM_MULTI_MERKLE_STASH_CONTRACT.claimMulti(address(this), _votiumClaims);
+        if (votiumClaims.length > 0) {
+            VOTIUM_MULTI_MERKLE_STASH_CONTRACT.claimMulti(address(this), votiumClaims);
         }
 
         // Unstake any cvxCrv that was claimed and staked on behalf of address(this)
