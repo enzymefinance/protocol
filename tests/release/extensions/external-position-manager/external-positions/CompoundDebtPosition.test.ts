@@ -363,6 +363,23 @@ describe('receiveCallFromVault', () => {
   });
 
   describe('borrowAssets', () => {
+    it('does not allow borrowing an unsupported asset', async () => {
+      const [fundOwner] = fork.accounts;
+
+      await expect(
+        compoundDebtPositionBorrow({
+          amounts: [1],
+          assets: [randomAddress()],
+          cTokens: [fork.config.compound.ctokens.cdai],
+          comptrollerProxy: comptrollerProxyUsed,
+          externalPositionManager: fork.deployment.externalPositionManager,
+          externalPositionProxy: compoundDebtPosition.address,
+          fundOwner,
+          vaultProxy: vaultProxyUsed,
+        }),
+      ).rejects.toBeRevertedWith('Unsupported asset');
+    });
+
     it('works as expected when called for borrowing by a fund', async () => {
       const [fundOwner] = fork.accounts;
 
