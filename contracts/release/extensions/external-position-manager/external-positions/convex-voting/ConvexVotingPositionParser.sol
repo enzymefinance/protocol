@@ -57,9 +57,6 @@ contract ConvexVotingPositionParser is IExternalPositionParser, ConvexVotingPosi
             assetsToReceive_[0] = CVX_TOKEN;
         }
 
-        // TODO: should we start including claimed rewards tokens in assetsToReceive_?
-        // can either be via user-input, or create an array of all claimed tokens in the asset universe
-
         // No validations or transferred assets passed for Actions.ClaimRewards
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
