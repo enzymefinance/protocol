@@ -96,7 +96,7 @@ beforeEach(async () => {
 });
 
 describe('receiveCallFromVault', () => {
-  it('reverts when it is called from an acount different than vault', async () => {
+  it('reverts when it is called from an account different than vault', async () => {
     await expect(compoundDebtPosition.receiveCallFromVault(utils.randomBytes(0))).rejects.toBeRevertedWith(
       'Only the vault can make this call',
     );

@@ -81,6 +81,8 @@ export * from './codegen/ConvexVotingPositionLib';
 export * from './codegen/IExternalPositionParser';
 export * from './codegen/LiquityDebtPositionLib';
 export * from './codegen/LiquityDebtPositionParser';
+export * from './codegen/TheGraphDelegationPositionLib';
+export * from './codegen/TheGraphDelegationPositionParser';
 export * from './codegen/UniswapV3LiquidityPositionParser';
 export * from './codegen/UniswapV3LiquidityPositionLib';
 
@@ -113,6 +115,8 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestTheGraphEpochManager';
+export * from './codegen/ITestTheGraphStaking';
 export * from './codegen/SelfDestructEthPayer';
 export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestPeggedDerivativesPriceFeed';

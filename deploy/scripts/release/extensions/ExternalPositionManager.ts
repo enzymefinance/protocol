@@ -18,6 +18,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 };
+
 fn.tags = ['Release', 'ExternalPositionManager'];
 fn.dependencies = ['ExternalPositionFactory', 'FundDeployer', 'PolicyManager'];
 

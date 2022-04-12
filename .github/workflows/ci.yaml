@@ -53,10 +53,10 @@ jobs:
         uses: actions/cache@v2
         with:
           path: cache/hardhat-network-fork
-          key: fork-${{ matrix.project }}-${{ github.sha }}
+          key: fork-2-${{ matrix.project }}-${{ github.sha }}
           restore-keys: |
-            fork-${{ matrix.project }}-
-            fork-
+            fork-2-${{ matrix.project }}-
+            fork-2-
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile

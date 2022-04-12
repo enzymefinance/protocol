@@ -11,6 +11,7 @@ it('whales have adequate balances', async () => {
     comp: fork.config.primitives.comp,
     crv: fork.config.primitives.crv,
     dai: fork.config.primitives.dai,
+    grt: fork.config.primitives.grt,
     knc: fork.config.primitives.knc,
     ldo: fork.config.primitives.ldo,
     link: fork.config.primitives.link,

@@ -4,4 +4,5 @@ export enum ExternalPositionType {
   AaveDebtPosition = '2',
   LiquityDebtPosition = '3',
   ConvexVotingPosition = '4',
+  TheGraphDelegationPosition = '5',
 }

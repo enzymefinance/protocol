@@ -335,6 +335,10 @@ const mainnetConfig: DeploymentConfig = {
     susd: primitives.susd,
     trackingCode: '0x454e5a594d450000000000000000000000000000000000000000000000000000',
   },
+  theGraph: {
+    grt: '0xc944e90c64b2c07662a292be6244bdf05cda44a7',
+    stakingProxy: '0xf55041e37e12cd407ad00ce2910b8269b01263b9',
+  },
   uniswap: {
     factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
     pools,

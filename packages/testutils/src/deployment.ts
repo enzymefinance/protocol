@@ -279,6 +279,10 @@ export interface DeploymentConfig {
   snapshot: {
     delegateRegistry: string;
   };
+  theGraph: {
+    stakingProxy: string;
+    grt: string;
+  };
   unsupportedAssets: Record<string, string>;
   uniswap: {
     factory: string;

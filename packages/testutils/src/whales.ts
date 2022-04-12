@@ -11,6 +11,7 @@ const whales = {
   comp: '0x0f50d31b3eaefd65236dd3736b863cffa4c63c4e',
   crv: '0xf89501b77b2fa6329f94f5a05fe84cebb5c8b1a0',
   dai: '0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503',
+  grt: '0xf977814e90da44bfa03b6295a0616a897441acec',
   knc: '0x09d51654bd9efbfcb56da3491989cc1444095fff',
   ldo: '0x3dba737ccc50a32a1764b493285dd51c8af6c278',
   link: '0xbe6977e08d4479c0a6777539ae0e8fa27be4e9d6',

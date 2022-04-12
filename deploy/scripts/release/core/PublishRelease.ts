@@ -29,13 +29,17 @@ const fn: DeployFunction = async function (hre) {
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
   const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
   const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
+  const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
+  const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
 
   // AF action: Set the release live, renouncing ownership
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
+
   await fundDeployerInstance.setReleaseLive();
 
   // Council action: Add the ExternalPositionManager as a "deployer" on the ExternalPositionFactory
   const externalPositionFactoryInstance = new ExternalPositionFactory(externalPositionFactory.address, deployer);
+
   await externalPositionFactoryInstance.addPositionDeployers([externalPositionManager]);
 
   // Council action: Add the new external position types to the ExternalPositionFactory
@@ -45,6 +49,7 @@ const fn: DeployFunction = async function (hre) {
     ...(aaveDebtPositionLib && aaveDebtPositionParser ? ['AAVE_DEBT'] : []),
     ...(liquityDebtPositionLib && liquityDebtPositionParser ? ['LIQUITY_DEBT'] : []),
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
+    ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
   ];
 
   if (positionTypes.length) {
@@ -54,11 +59,13 @@ const fn: DeployFunction = async function (hre) {
       'AAVE_DEBT',
       'LIQUITY_DEBT',
       'CONVEX_VOTING',
+      'THE_GRAPH_DELEGATION',
     ]);
   }
 
   // Council action: Add the external position contracts (lib + parser) to the ExternalPositionManager
   const externalPositionManagerInstance = new ExternalPositionManager(externalPositionManager.address, deployer);
+
   // TODO: this can technically fail if the above "&&" statements yield false, because the typeIds will be thrown off.
   // Should either bundle these actions and add new types one-by-one, or more likely create a helper to loop through
   // all position type labels on the factory to find the matching label (e.g., which id is "COMPOUND_DEBT")
@@ -102,8 +109,17 @@ const fn: DeployFunction = async function (hre) {
     );
   }
 
+  if (theGraphDelegationPositionLib && theGraphDelegationPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.TheGraphDelegationPosition],
+      [theGraphDelegationPositionLib],
+      [theGraphDelegationPositionParser],
+    );
+  }
+
   // Council action: Set the current FundDeployer on the Dispatcher contract, making the release active
   const dispatcherInstance = new Dispatcher(dispatcher.address, deployer);
+
   await dispatcherInstance.setCurrentFundDeployer(fundDeployer.address);
 };
 

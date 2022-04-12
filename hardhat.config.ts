@@ -80,6 +80,8 @@ const config: HardhatUserConfig = {
       'ICurveRegistry',
       'IYearnVaultV2',
       'IGsnRelayHub',
+      'ITestTheGraphEpochManager',
+      'ITestTheGraphStaking',
     ],
     options: {
       ignoreContractsWithoutAbi: true,
