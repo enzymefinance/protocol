@@ -13,6 +13,8 @@ export * from './codegen/IMigrationHookHandler';
 export * from './codegen/AddressListRegistry';
 export * from './codegen/FundValueCalculatorRouter';
 export * from './codegen/FundValueCalculatorUsdWrapper';
+export * from './codegen/GlobalConfigLib';
+export * from './codegen/GlobalConfigProxy';
 
 // Release core
 export * from './codegen/FundDeployer';
