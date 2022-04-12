@@ -8,7 +8,7 @@
     "precompile": "yarn build:utils --output-logs=new-only",
     "compile": "hardhat compile",
     "postcompile": "yarn build:packages --output-logs=new-only",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--max_old_space_size=4096 jest",
     "build": "yarn compile",
     "build:common": "turbo run build --cache-dir=.turbo/cache",
     "build:utils": "yarn build:common --no-deps --include-dependencies --scope=@enzymefinance/hardhat",

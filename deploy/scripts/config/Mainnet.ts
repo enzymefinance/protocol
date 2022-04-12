@@ -304,6 +304,10 @@ const mainnetConfig: DeploymentConfig = {
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
   },
+  maple: {
+    mplRewardsFactory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',
+    poolFactory: '0x2Cd79F7f8b38B9c0D80EA6B230441841A31537eC'
+  },
   liquity: {
     borrowerOperations: '0x24179CD81c9e782A4096035f7eC97fB8B783e007',
     troveManager: '0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2'

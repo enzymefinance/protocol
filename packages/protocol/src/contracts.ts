@@ -79,6 +79,8 @@ export * from './codegen/CompoundDebtPositionLib';
 export * from './codegen/ConvexVotingPositionParser';
 export * from './codegen/ConvexVotingPositionLib';
 export * from './codegen/IExternalPositionParser';
+export * from './codegen/MapleLiquidityPositionParser';
+export * from './codegen/MapleLiquidityPositionLib';
 export * from './codegen/LiquityDebtPositionLib';
 export * from './codegen/LiquityDebtPositionParser';
 export * from './codegen/TheGraphDelegationPositionLib';
@@ -115,6 +117,8 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestMapleGlobals';
+export * from './codegen/ITestMaplePool';
 export * from './codegen/ITestTheGraphEpochManager';
 export * from './codegen/ITestTheGraphStaking';
 export * from './codegen/SelfDestructEthPayer';

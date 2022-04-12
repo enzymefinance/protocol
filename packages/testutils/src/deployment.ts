@@ -47,6 +47,8 @@ import {
   LiquityDebtPositionLib,
   LiquityDebtPositionParser,
   ManagementFee,
+  MapleLiquidityPositionLib,
+  MapleLiquidityPositionParser,
   MinAssetBalancesPostRedemptionPolicy,
   MinMaxInvestmentPolicy,
   OlympusV2Adapter,
@@ -146,6 +148,8 @@ export async function deployProtocolFixture() {
     liquityDebtPositionLib: new LiquityDebtPositionLib(fixture.LiquityDebtPositionLib.address, deployer),
     liquityDebtPositionParser: new LiquityDebtPositionParser(fixture.LiquityDebtPositionParser.address, deployer),
     managementFee: new ManagementFee(fixture.ManagementFee.address, deployer),
+    mapleLiquidityPositionLib: new MapleLiquidityPositionLib(fixture.MapleLiquidityPositionLib.address, deployer),
+    mapleLiquidityPositionParser: new MapleLiquidityPositionParser(fixture.MapleLiquidityPositionParser.address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture.MinAssetBalancesPostRedemptionPolicy.address, deployer),
     minMaxInvestmentPolicy: new MinMaxInvestmentPolicy(fixture.MinMaxInvestmentPolicy.address, deployer),
     olympusV2Adapter: new OlympusV2Adapter(fixture.OlympusV2Adapter.address, deployer),
@@ -262,6 +266,10 @@ export interface DeploymentConfig {
   liquity: {
     borrowerOperations: string;
     troveManager: string;
+  };
+  maple: {
+    mplRewardsFactory: string;
+    poolFactory: string;
   };
   olympusV2: {
     stakingContract: string;

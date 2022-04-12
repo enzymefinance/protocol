@@ -27,10 +27,12 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
   const liquityDebtPositionLib = await getOrNull('LiquityDebtPositionLib');
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
-  const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
-  const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
+  const mapleLiquidityPositionLib = await getOrNull('MapleLiquidityPositionLib');
+  const mapleLiquidityPositionParser = await getOrNull('MapleLiquidityPositionParser');
   const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
   const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
+  const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
+  const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
 
   // AF action: Set the release live, renouncing ownership
   const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
@@ -50,6 +52,7 @@ const fn: DeployFunction = async function (hre) {
     ...(liquityDebtPositionLib && liquityDebtPositionParser ? ['LIQUITY_DEBT'] : []),
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
+    ...(mapleLiquidityPositionLib && mapleLiquidityPositionParser ? ['MAPLE_LIQUIDITY'] : []),
   ];
 
   if (positionTypes.length) {
@@ -60,6 +63,7 @@ const fn: DeployFunction = async function (hre) {
       'LIQUITY_DEBT',
       'CONVEX_VOTING',
       'THE_GRAPH_DELEGATION',
+      'MAPLE_LIQUIDITY',
     ]);
   }
 
@@ -114,6 +118,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.TheGraphDelegationPosition],
       [theGraphDelegationPositionLib],
       [theGraphDelegationPositionParser],
+    );
+  }
+
+  if (mapleLiquidityPositionLib && mapleLiquidityPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.MapleLiquidityPosition],
+      [mapleLiquidityPositionLib],
+      [mapleLiquidityPositionParser],
     );
   }
 

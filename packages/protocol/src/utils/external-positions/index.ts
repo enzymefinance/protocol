@@ -5,3 +5,4 @@ export * from './the-graph-delegation';
 export * from './types';
 export * from './uniswap-v3-liquidity';
 export * from './liquity-debt';
+export * from './maple-liquidity';

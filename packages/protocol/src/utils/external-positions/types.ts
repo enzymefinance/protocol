@@ -5,4 +5,5 @@ export enum ExternalPositionType {
   LiquityDebtPosition = '3',
   ConvexVotingPosition = '4',
   TheGraphDelegationPosition = '5',
+  MapleLiquidityPosition = '6',
 }
