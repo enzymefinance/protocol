@@ -116,6 +116,8 @@ export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 // Peripheral
 export * from './codegen/DepositWrapper';
 export * from './codegen/FundValueCalculator';
+export * from './codegen/SharesSplitterFactory';
+export * from './codegen/SharesSplitterLib';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
@@ -129,6 +131,7 @@ export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestPricelessAssetBypassMixin';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
 export * from './codegen/TestSingleUnderlyingDerivativeRegistry';
+export * from './codegen/TestTreasurySplitterMixin';
 export * from './codegen/TestUpdatableFeeRecipientBase';
 
 // Mocks

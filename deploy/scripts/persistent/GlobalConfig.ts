@@ -1,6 +1,7 @@
 import {
   encodeFunctionData,
   GlobalConfigLib as GlobalConfigLibContract,
+  GlobalConfigLibArgs,
   GlobalConfigProxyArgs,
 } from '@enzymefinance/protocol';
 import { DeployFunction } from 'hardhat-deploy/types';
@@ -13,8 +14,10 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const dispatcher = await get('Dispatcher');
+  const fundDeployer = await get('FundDeployer');
 
   const globalConfigLib = await deploy('GlobalConfigLib', {
+    args: [fundDeployer.address] as GlobalConfigLibArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -38,6 +41,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Persistent', 'GlobalConfig'];
-fn.dependencies = ['Dispatcher'];
+fn.dependencies = ['Dispatcher', 'FundDeployer'];
 
 export default fn;
