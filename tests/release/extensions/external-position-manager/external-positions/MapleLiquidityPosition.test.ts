@@ -35,6 +35,9 @@ const rewardsContract = '0x7C57bF654Bc16B0C9080F4F75FF62876f50B8259';
 const mapleGlobals = '0xc234c62c8c09687dff0d9047e40042cd166f3600';
 const mplTokenAddress = '0x33349B282065b0284d756F0577FB39c158F935e6';
 
+// Orthogonal pool / liquidity asset USDC
+const orthogonalPoolAddress = '0xfebd6f15df3b73dc4307b1d7e65d46413e710c27';
+
 let mapleLiquidityPosition: MapleLiquidityPositionLib;
 
 let comptrollerProxyUsed: ComptrollerLib;
@@ -680,5 +683,62 @@ describe('claimRewards', () => {
         signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Invalid rewards contract');
+  });
+});
+
+describe('getManagedAssets', () => {
+  it('works as expected (one pool)', async () => {
+    await mapleLiquidityPositionLend({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    expect(await mapleLiquidityPosition.getManagedAssets.call()).toMatchFunctionOutput(
+      mapleLiquidityPosition.getManagedAssets.fragment,
+      {
+        amounts_: [lendAmount],
+        assets_: [liquidityAsset],
+      },
+    );
+
+    expect(await mapleLiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot('78976');
+  });
+
+  it('works as expected (two pool with same asset are aggregated)', async () => {
+    // Lend to two different pools, both with the same liquidity asset
+    await mapleLiquidityPositionLend({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    await mapleLiquidityPositionLend({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: orthogonalPoolAddress,
+      signer: fundOwner,
+    });
+
+    // Two pools should be used, but only one liquidityAsset is reported
+    expect((await mapleLiquidityPosition.getUsedLendingPools()).length).toBe(2);
+    expect(await mapleLiquidityPosition.getManagedAssets.call()).toMatchFunctionOutput(
+      mapleLiquidityPosition.getManagedAssets.fragment,
+      {
+        amounts_: [lendAmount.mul(2)],
+        assets_: [liquidityAsset],
+      },
+    );
   });
 });

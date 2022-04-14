@@ -22,6 +22,54 @@ abstract contract AssetHelpers {
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
+    /// @dev Helper to aggregate amounts of the same assets
+    function __aggregateAssetAmounts(address[] memory _rawAssets, uint256[] memory _rawAmounts)
+        internal
+        pure
+        returns (address[] memory aggregatedAssets_, uint256[] memory aggregatedAmounts_)
+    {
+        if (_rawAssets.length == 0) {
+            return (aggregatedAssets_, aggregatedAmounts_);
+        }
+
+        uint256 aggregatedAssetCount = 1;
+        for (uint256 i = 1; i < _rawAssets.length; i++) {
+            bool contains;
+            for (uint256 j; j < i; j++) {
+                if (_rawAssets[i] == _rawAssets[j]) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (!contains) {
+                aggregatedAssetCount++;
+            }
+        }
+
+        aggregatedAssets_ = new address[](aggregatedAssetCount);
+        aggregatedAmounts_ = new uint256[](aggregatedAssetCount);
+        uint256 aggregatedAssetIndex;
+        for (uint256 i; i < _rawAssets.length; i++) {
+            bool contains;
+            for (uint256 j; j < aggregatedAssetIndex; j++) {
+                if (_rawAssets[i] == aggregatedAssets_[j]) {
+                    contains = true;
+
+                    aggregatedAmounts_[j] += _rawAmounts[i];
+
+                    break;
+                }
+            }
+            if (!contains) {
+                aggregatedAssets_[aggregatedAssetIndex] = _rawAssets[i];
+                aggregatedAmounts_[aggregatedAssetIndex] = _rawAmounts[i];
+                aggregatedAssetIndex++;
+            }
+        }
+
+        return (aggregatedAssets_, aggregatedAmounts_);
+    }
+
     /// @dev Helper to approve a target account with the max amount of an asset.
     /// This is helpful for fully trusted contracts, such as adapters that
     /// interact with external protocol like Uniswap, Compound, etc.

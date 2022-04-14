@@ -279,7 +279,13 @@ contract MapleLiquidityPositionLib is
             uint256 accumulatedInterest = pool.withdrawableFundsOf(address(this));
             uint256 accumulatedLosses = pool.recognizableLossesOf(address(this));
 
-            amounts_[0] = liquidityAssetBalance.add(accumulatedInterest).sub(accumulatedLosses);
+            amounts_[i] = liquidityAssetBalance.add(accumulatedInterest).sub(accumulatedLosses);
+        }
+
+        // If more than 1 pool position, combine amounts of the same asset.
+        // We can remove this if/when we aggregate asset amounts at the ComptrollerLib level.
+        if (usedLendingPoolsLength > 1) {
+            (assets_, amounts_) = __aggregateAssetAmounts(assets_, amounts_);
         }
 
         return (assets_, amounts_);
