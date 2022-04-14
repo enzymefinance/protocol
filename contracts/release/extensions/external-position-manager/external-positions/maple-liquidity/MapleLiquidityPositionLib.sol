@@ -259,7 +259,7 @@ contract MapleLiquidityPositionLib is
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
-        uint256 usedLendingPoolsLength = usedLendingPools.length;
+        uint256 usedLendingPoolsLength = getUsedLendingPools().length;
 
         assets_ = new address[](usedLendingPoolsLength);
         amounts_ = new uint256[](usedLendingPoolsLength);
@@ -289,11 +289,16 @@ contract MapleLiquidityPositionLib is
     // STATE GETTERS //
     ///////////////////
 
-    // EXTERNAL FUNCTIONS
+    /// @notice Gets all pools currently lent to
+    /// @return pools_ The pools currently lent to
+    function getUsedLendingPools() public view returns (address[] memory pools_) {
+        return usedLendingPools;
+    }
 
-    /// @notice Checks whether a poolToken has been used to lend
-    /// @return isUsedLendingPool True if the asset is part of the used lending pools
-    function isUsedLendingPool(address _asset) public view returns (bool) {
-        return usedLendingPools.contains(_asset);
+    /// @notice Checks whether a pool is currently lent to
+    /// @param _pool The pool
+    /// @return isUsed_ True if the pool is lent to
+    function isUsedLendingPool(address _pool) public view returns (bool isUsed_) {
+        return usedLendingPools.contains(_pool);
     }
 }

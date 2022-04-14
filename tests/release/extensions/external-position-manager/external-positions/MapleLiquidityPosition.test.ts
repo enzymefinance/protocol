@@ -10,6 +10,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
+  assertEvent,
   createMapleLiquidityPosition,
   createNewFund,
   deployProtocolFixture,
@@ -114,11 +115,21 @@ describe('lend', () => {
       assets_: [liquidityAsset],
     });
 
+    expect(await mapleLiquidityPosition.getUsedLendingPools()).toMatchFunctionOutput(
+      mapleLiquidityPosition.getUsedLendingPools,
+      [poolAddress],
+    );
+    expect(await mapleLiquidityPosition.isUsedLendingPool(poolAddress)).toBe(true);
+
     // Pool tokens are represented as the the liquidity token with 18 asset decimals
     // https://github.dev/maple-labs/maple-core/blob/4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea/contracts/Pool.sol#L619
     expect(await poolToken.balanceOf(mapleLiquidityPosition)).toEqBigNumber(
       lendAmount.mul(utils.parseUnits('1', 18)).div(liquidityAssetUnit),
     );
+
+    assertEvent(lendReceipt, mapleLiquidityPosition.abi.getEvent('UsedLendingPoolAdded'), {
+      lendingPool: poolAddress,
+    });
 
     expect(lendReceipt).toMatchInlineGasSnapshot('351087');
   });
@@ -205,7 +216,7 @@ describe('lendAndStake', () => {
 });
 
 describe('redeem', () => {
-  it('works as expected', async () => {
+  it('works as expected (partial redemption)', async () => {
     const redeemAmount = lendAmount.div(2);
 
     await mapleLiquidityPositionLend({
@@ -260,8 +271,72 @@ describe('redeem', () => {
 
     expect(vaultProxyTokenBalanceDiff).toEqBigNumber(redeemAmount);
 
+    // After a partial redemption, the lending pool should still be tracked
+    expect(await mapleLiquidityPosition.getUsedLendingPools()).toMatchFunctionOutput(
+      mapleLiquidityPosition.getUsedLendingPools,
+      [poolAddress],
+    );
+    expect(await mapleLiquidityPosition.isUsedLendingPool(poolAddress)).toBe(true);
+
     expect(intendToRedeemReceipt).toMatchInlineGasSnapshot('136982');
     expect(redeemReceipt).toMatchInlineGasSnapshot('238144');
+  });
+
+  it('works as expected (full redemption)', async () => {
+    const redeemAmount = lendAmount;
+
+    await mapleLiquidityPositionLend({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    const testMaplePool = new ITestMaplePool(poolAddress, provider);
+    const testMapleGlobals = new ITestMapleGlobals(mapleGlobals, provider);
+
+    const lockupPeriod = await testMaplePool.lockupPeriod();
+
+    await provider.send('evm_increaseTime', [lockupPeriod.toNumber() + 1]);
+
+    await mapleLiquidityPositionIntendToRedeem({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    // After notifying the intention to redeem, await for the cooldown period to finally redeem
+    const cooldownPeriod = await testMapleGlobals.lpCooldownPeriod();
+
+    await provider.send('evm_increaseTime', [cooldownPeriod.toNumber() + 1]);
+
+    const redeemReceipt = await mapleLiquidityPositionRedeem({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: redeemAmount,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    // After a full redemption, the lending pool should no longer be tracked
+    expect(await mapleLiquidityPosition.getUsedLendingPools()).toMatchFunctionOutput(
+      mapleLiquidityPosition.getUsedLendingPools,
+      [],
+    );
+    expect(await mapleLiquidityPosition.isUsedLendingPool(poolAddress)).toBe(false);
+
+    assertEvent(redeemReceipt, mapleLiquidityPosition.abi.getEvent('UsedLendingPoolRemoved'), {
+      lendingPool: poolAddress,
+    });
+
+    // Other assertions are made in the partial redemption test above
   });
 
   it('reverts if the pool is not deployed from Maple factory ', async () => {
