@@ -14,5 +14,15 @@ pragma solidity 0.6.12;
 /// @title IMapleLiquidityPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IMapleLiquidityPosition is IExternalPosition {
-    enum Actions {Lend, IntendToRedeem, Redeem, Stake, Unstake, ClaimInterest, ClaimRewards}
+    enum Actions {
+        Lend,
+        LendAndStake,
+        IntendToRedeem,
+        Redeem,
+        Stake,
+        Unstake,
+        UnstakeAndRedeem,
+        ClaimInterest,
+        ClaimRewards
+    }
 }

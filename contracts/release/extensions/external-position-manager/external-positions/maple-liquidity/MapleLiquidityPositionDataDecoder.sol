@@ -44,6 +44,20 @@ abstract contract MapleLiquidityPositionDataDecoder {
         return abi.decode(_actionArgs, (address, address, uint256));
     }
 
+    /// @dev Helper to decode args used during the LendAndStake action
+    function __decodeLendAndStakeActionArgs(bytes memory _actionArgs)
+        internal
+        pure
+        returns (
+            address liquidityAsset_,
+            address pool_,
+            address rewardsContract_,
+            uint256 liquidityAssetAmount_
+        )
+    {
+        return abi.decode(_actionArgs, (address, address, address, uint256));
+    }
+
     /// @dev Helper to decode args used during the IntendToRedeem action
     function __decodeIntendToRedeemActionArgs(bytes memory _actionArgs)
         internal
@@ -57,13 +71,9 @@ abstract contract MapleLiquidityPositionDataDecoder {
     function __decodeRedeemActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            address liquidityAsset_,
-            address pool_,
-            uint256 liquidityAssetAmount_
-        )
+        returns (address pool_, uint256 liquidityAssetAmount_)
     {
-        return abi.decode(_actionArgs, (address, address, uint256));
+        return abi.decode(_actionArgs, (address, uint256));
     }
 
     /// @dev Helper to decode args used during the Stake action
@@ -86,5 +96,18 @@ abstract contract MapleLiquidityPositionDataDecoder {
         returns (address rewardsContract_, uint256 poolTokenAmount_)
     {
         return abi.decode(_actionArgs, (address, uint256));
+    }
+
+    /// @dev Helper to decode args used during the UnstakeAndRedeem action
+    function __decodeUnstakeAndRedeemActionArgs(bytes memory _actionArgs)
+        internal
+        pure
+        returns (
+            address pool_,
+            address rewardsContract_,
+            uint256 poolTokenAmount_
+        )
+    {
+        return abi.decode(_actionArgs, (address, address, uint256));
     }
 }

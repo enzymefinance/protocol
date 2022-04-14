@@ -18,9 +18,11 @@ import {
   mapleLiquidityPositionClaimRewards,
   mapleLiquidityPositionIntendToRedeem,
   mapleLiquidityPositionLend,
+  mapleLiquidityPositionLendAndStake,
   mapleLiquidityPositionRedeem,
   mapleLiquidityPositionStake,
   mapleLiquidityPositionUnstake,
+  mapleLiquidityPositionUnstakeAndRedeem,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { utils } from 'ethers';
@@ -118,11 +120,11 @@ describe('lend', () => {
       lendAmount.mul(utils.parseUnits('1', 18)).div(liquidityAssetUnit),
     );
 
-    expect(lendReceipt).toMatchInlineGasSnapshot('350995');
+    expect(lendReceipt).toMatchInlineGasSnapshot('351087');
   });
 
   it('reverts if the pool is not deployed from Maple factory ', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionLend({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -133,6 +135,72 @@ describe('lend', () => {
         signer: fundOwner,
       }),
     ).rejects.toBeRevertedWith('Invalid pool');
+  });
+});
+
+describe('lendAndStake', () => {
+  it('works as expected ', async () => {
+    const testMaplePool = new ITestMaplePool(poolAddress, provider);
+
+    const custodyAllowanceBefore = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
+
+    const lendAndStakeReceipt = await mapleLiquidityPositionLendAndStake({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: poolAddress,
+      rewardsContract,
+      signer: fundOwner,
+    });
+
+    const custodyAllowanceAfter = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
+
+    const getManagedAssetsCall = await mapleLiquidityPosition.getManagedAssets.call();
+
+    expect(getManagedAssetsCall).toMatchFunctionOutput(mapleLiquidityPosition.getManagedAssets.fragment, {
+      amounts_: [lendAmount],
+      assets_: [liquidityAsset],
+    });
+
+    // Pool tokens are represented as the the liquidity token with 18 asset decimals
+    // https://github.dev/maple-labs/maple-core/blob/4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea/contracts/Pool.sol#L619
+    const stakeAmount = lendAmount.mul(utils.parseUnits('1', 18)).div(liquidityAssetUnit);
+
+    expect(await poolToken.balanceOf(mapleLiquidityPosition)).toEqBigNumber(stakeAmount);
+
+    expect(custodyAllowanceAfter.sub(custodyAllowanceBefore)).toEqBigNumber(stakeAmount);
+
+    expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('489630');
+  });
+
+  it('reverts if the pool or rewards contract is not deployed from a Maple factory ', async () => {
+    await expect(
+      mapleLiquidityPositionLendAndStake({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: mapleLiquidityPosition,
+        liquidityAsset,
+        liquidityAssetAmount: 1,
+        pool: randomAddress(),
+        rewardsContract,
+        signer: fundOwner,
+      }),
+    ).rejects.toBeRevertedWith('Invalid pool');
+
+    await expect(
+      mapleLiquidityPositionLendAndStake({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: mapleLiquidityPosition,
+        liquidityAsset,
+        liquidityAssetAmount: 1,
+        pool: poolAddress,
+        rewardsContract: randomAddress(),
+        signer: fundOwner,
+      }),
+    ).rejects.toBeRevertedWith('Invalid rewards contract');
   });
 });
 
@@ -180,13 +248,13 @@ describe('redeem', () => {
       signer: fundOwner,
     });
 
-    const extenalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
+    const externalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
 
     const vaultProxyTokenBalanceDiff = seedAmount.sub(await liquidityAsset.balanceOf(vaultProxyUsed));
 
     // Pool tokens are represented as the the liquidity token with 18 asset decimals
     // https://github.dev/maple-labs/maple-core/blob/4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea/contracts/Pool.sol#L619
-    expect(extenalPositionPoolBalanceAfter).toEqBigNumber(
+    expect(externalPositionPoolBalanceAfter).toEqBigNumber(
       redeemAmount.mul(await getAssetUnit(poolToken)).div(await getAssetUnit(liquidityAsset)),
     );
 
@@ -197,7 +265,7 @@ describe('redeem', () => {
   });
 
   it('reverts if the pool is not deployed from Maple factory ', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionIntendToRedeem({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -207,7 +275,7 @@ describe('redeem', () => {
       }),
     ).rejects.toBeRevertedWith('Invalid pool');
 
-    expect(
+    await expect(
       mapleLiquidityPositionRedeem({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -237,7 +305,7 @@ describe('stake', () => {
 
     const testMaplePool = new ITestMaplePool(poolAddress, provider);
 
-    const extenalPositionPoolBalanceBefore = await poolToken.balanceOf(mapleLiquidityPosition);
+    const externalPositionPoolBalanceBefore = await poolToken.balanceOf(mapleLiquidityPosition);
     const custodyAllowanceBefore = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
 
     const stakeReceipt = await mapleLiquidityPositionStake({
@@ -250,19 +318,19 @@ describe('stake', () => {
       signer: fundOwner,
     });
 
-    const extenalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
+    const externalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
     const custodyAllowanceAfter = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
 
     expect(custodyAllowanceAfter.sub(custodyAllowanceBefore)).toEqBigNumber(stakeAmount);
 
     // Pool token balance should not change
-    expect(extenalPositionPoolBalanceAfter).toEqBigNumber(extenalPositionPoolBalanceBefore);
+    expect(externalPositionPoolBalanceAfter).toEqBigNumber(externalPositionPoolBalanceBefore);
 
     expect(stakeReceipt).toMatchInlineGasSnapshot('251372');
   });
 
   it('reverts if the pool or rewardsContract is not deployed from Maple factory ', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionStake({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -274,7 +342,7 @@ describe('stake', () => {
       }),
     ).rejects.toBeRevertedWith('Invalid pool');
 
-    expect(
+    await expect(
       mapleLiquidityPositionStake({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -315,7 +383,7 @@ describe('unstake', () => {
     const testMaplePool = new ITestMaplePool(poolAddress, provider);
 
     const custodyAllowanceBefore = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
-    const extenalPositionPoolBalanceBefore = await poolToken.balanceOf(mapleLiquidityPosition);
+    const externalPositionPoolBalanceBefore = await poolToken.balanceOf(mapleLiquidityPosition);
 
     const unstakeReceipt = await mapleLiquidityPositionUnstake({
       comptrollerProxy: comptrollerProxyUsed,
@@ -327,21 +395,114 @@ describe('unstake', () => {
     });
 
     const custodyAllowanceAfter = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
-    const extenalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
+    const externalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
 
     // Pool token balance should not change
-    expect(extenalPositionPoolBalanceAfter).toEqBigNumber(extenalPositionPoolBalanceBefore);
+    expect(externalPositionPoolBalanceAfter).toEqBigNumber(externalPositionPoolBalanceBefore);
     expect(custodyAllowanceBefore.sub(custodyAllowanceAfter)).toEqBigNumber(stakeAmount);
 
     expect(unstakeReceipt).toMatchInlineGasSnapshot('161137');
   });
 
   it('reverts if the rewardsContract is not deployed from Maple factory', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionUnstake({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: mapleLiquidityPosition,
+        poolTokenAmount: 1,
+        rewardsContract: randomAddress(),
+        signer: fundOwner,
+      }),
+    ).rejects.toBeRevertedWith('Invalid rewards contract');
+  });
+});
+
+describe('unstakeAndRedeem', () => {
+  it('works as expected', async () => {
+    const stakeAmount = lendAmount.mul(utils.parseUnits('1', 18)).div(liquidityAssetUnit);
+
+    const unstakeAndRedeemAmount = stakeAmount.div(2);
+
+    await mapleLiquidityPositionLendAndStake({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAsset,
+      liquidityAssetAmount: lendAmount,
+      pool: poolAddress,
+      rewardsContract,
+      signer: fundOwner,
+    });
+
+    const testMaplePool = new ITestMaplePool(poolAddress, provider);
+    const testMapleGlobals = new ITestMapleGlobals(mapleGlobals, provider);
+
+    const cooldownPeriod = await testMapleGlobals.lpCooldownPeriod();
+    const lockupPeriod = await testMaplePool.lockupPeriod();
+
+    await provider.send('evm_increaseTime', [lockupPeriod.toNumber() + 1]);
+
+    await mapleLiquidityPositionIntendToRedeem({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      pool: poolAddress,
+      signer: fundOwner,
+    });
+
+    await provider.send('evm_increaseTime', [cooldownPeriod.toNumber() + 1]);
+
+    const vaultProxyLiquidityAssetBalanceBefore = await liquidityAsset.balanceOf(vaultProxyUsed);
+    const custodyAllowanceBefore = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
+    const externalPositionPoolBalanceBefore = await poolToken.balanceOf(mapleLiquidityPosition);
+
+    const unstakeAndRedeemReceipt = await mapleLiquidityPositionUnstakeAndRedeem({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager: fork.deployment.externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      pool: poolAddress,
+      poolTokenAmount: unstakeAndRedeemAmount,
+      rewardsContract,
+      signer: fundOwner,
+    });
+
+    const vaultProxyLiquidityAssetBalanceAfter = await liquidityAsset.balanceOf(vaultProxyUsed);
+    const custodyAllowanceAfter = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
+    const externalPositionPoolBalanceAfter = await poolToken.balanceOf(mapleLiquidityPosition);
+
+    const liquidityAssetAmount = unstakeAndRedeemAmount.mul(liquidityAssetUnit).div(utils.parseUnits('1', 18));
+
+    expect(vaultProxyLiquidityAssetBalanceAfter.sub(vaultProxyLiquidityAssetBalanceBefore)).toEqBigNumber(
+      liquidityAssetAmount,
+    );
+    expect(externalPositionPoolBalanceBefore.sub(externalPositionPoolBalanceAfter)).toEqBigNumber(
+      unstakeAndRedeemAmount,
+    );
+    expect(custodyAllowanceBefore.sub(custodyAllowanceAfter)).toEqBigNumber(unstakeAndRedeemAmount);
+
+    expect(unstakeAndRedeemReceipt).toMatchInlineGasSnapshot('330709');
+  });
+
+  it('reverts if the pool or rewardsContract is not deployed from Maple factory', async () => {
+    await expect(
+      mapleLiquidityPositionUnstakeAndRedeem({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: mapleLiquidityPosition,
+        pool: randomAddress(),
+        poolTokenAmount: 1,
+        rewardsContract,
+        signer: fundOwner,
+      }),
+    ).rejects.toBeRevertedWith('Invalid pool');
+
+    await expect(
+      mapleLiquidityPositionUnstakeAndRedeem({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy: mapleLiquidityPosition,
+        pool: poolAddress,
         poolTokenAmount: 1,
         rewardsContract: randomAddress(),
         signer: fundOwner,
@@ -380,7 +541,7 @@ describe('claimInterest', () => {
   });
 
   it('reverts if the pool is not deployed from Maple factory ', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionClaimInterest({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
@@ -435,7 +596,7 @@ describe('claimRewards', () => {
   });
 
   it('reverts if the rewardsContract is not deployed from Maple factory ', async () => {
-    expect(
+    await expect(
       mapleLiquidityPositionClaimRewards({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,

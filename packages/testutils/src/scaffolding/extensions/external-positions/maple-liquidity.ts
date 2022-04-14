@@ -7,9 +7,11 @@ import {
   mapleLiquidityPositionClaimInterestArgs,
   mapleLiquidityPositionClaimRewardsArgs,
   mapleLiquidityPositionIntendToRedeemArgs,
+  mapleLiquidityPositionLendAndStakeArgs,
   mapleLiquidityPositionLendArgs,
   mapleLiquidityPositionRedeemArgs,
   mapleLiquidityPositionStakeArgs,
+  mapleLiquidityPositionUnstakeAndRedeemArgs,
   mapleLiquidityPositionUnstakeArgs,
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
@@ -147,11 +149,46 @@ export async function mapleLiquidityPositionLend({
   });
 }
 
-export async function mapleLiquidityPositionRedeem({
+export async function mapleLiquidityPositionLendAndStake({
   comptrollerProxy,
   externalPositionManager,
   signer,
   liquidityAsset,
+  liquidityAssetAmount,
+  pool,
+  rewardsContract,
+  externalPositionProxy,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  externalPositionManager: ExternalPositionManager;
+  signer: SignerWithAddress;
+  liquidityAsset: AddressLike;
+  pool: AddressLike;
+  rewardsContract: AddressLike;
+  liquidityAssetAmount: BigNumberish;
+  externalPositionProxy: AddressLike;
+}) {
+  const actionArgs = mapleLiquidityPositionLendAndStakeArgs({
+    liquidityAsset,
+    liquidityAssetAmount,
+    pool,
+    rewardsContract,
+  });
+
+  return callOnExternalPosition({
+    actionArgs,
+    actionId: MapleLiquidityPositionActionId.LendAndStake,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionProxy,
+    signer,
+  });
+}
+
+export async function mapleLiquidityPositionRedeem({
+  comptrollerProxy,
+  externalPositionManager,
+  signer,
   liquidityAssetAmount,
   pool,
   externalPositionProxy,
@@ -165,7 +202,6 @@ export async function mapleLiquidityPositionRedeem({
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = mapleLiquidityPositionRedeemArgs({
-    liquidityAsset,
     liquidityAssetAmount,
     pool,
   });
@@ -236,6 +272,39 @@ export async function mapleLiquidityPositionUnstake({
   return callOnExternalPosition({
     actionArgs,
     actionId: MapleLiquidityPositionActionId.Unstake,
+    comptrollerProxy,
+    externalPositionManager,
+    externalPositionProxy,
+    signer,
+  });
+}
+
+export async function mapleLiquidityPositionUnstakeAndRedeem({
+  comptrollerProxy,
+  externalPositionManager,
+  signer,
+  pool,
+  poolTokenAmount,
+  rewardsContract,
+  externalPositionProxy,
+}: {
+  comptrollerProxy: ComptrollerLib;
+  externalPositionManager: ExternalPositionManager;
+  signer: SignerWithAddress;
+  pool: AddressLike;
+  poolTokenAmount: BigNumberish;
+  rewardsContract: AddressLike;
+  externalPositionProxy: AddressLike;
+}) {
+  const actionArgs = mapleLiquidityPositionUnstakeAndRedeemArgs({
+    pool,
+    poolTokenAmount,
+    rewardsContract,
+  });
+
+  return callOnExternalPosition({
+    actionArgs,
+    actionId: MapleLiquidityPositionActionId.UnstakeAndRedeem,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,

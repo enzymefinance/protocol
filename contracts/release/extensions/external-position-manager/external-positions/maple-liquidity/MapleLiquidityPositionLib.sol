@@ -45,26 +45,44 @@ contract MapleLiquidityPositionLib is
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
         if (actionId == uint256(Actions.Lend)) {
-            __lend(actionArgs);
+            __lendAction(actionArgs);
+        } else if (actionId == uint256(Actions.LendAndStake)) {
+            __lendAndStakeAction(actionArgs);
         } else if (actionId == uint256(Actions.IntendToRedeem)) {
-            __intendToRedeem(actionArgs);
+            __intendToRedeemAction(actionArgs);
         } else if (actionId == uint256(Actions.Redeem)) {
-            __redeem(actionArgs);
+            __redeemAction(actionArgs);
         } else if (actionId == uint256(Actions.Stake)) {
-            __stake(actionArgs);
+            __stakeAction(actionArgs);
         } else if (actionId == uint256(Actions.Unstake)) {
-            __unstake(actionArgs);
+            __unstakeAction(actionArgs);
+        } else if (actionId == uint256(Actions.UnstakeAndRedeem)) {
+            __unstakeAndRedeemAction(actionArgs);
         } else if (actionId == uint256(Actions.ClaimInterest)) {
-            __claimInterest(actionArgs);
+            __claimInterestAction(actionArgs);
         } else if (actionId == uint256(Actions.ClaimRewards)) {
-            __claimRewards(actionArgs);
+            __claimRewardsAction(actionArgs);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
     }
 
+    // @dev Calculates the value of pool tokens referenced in liquidityAsset
+    function __calcLiquidityAssetValueOfPoolTokens(
+        address _liquidityAsset,
+        uint256 _poolTokenAmount
+    ) private view returns (uint256 liquidityValue_) {
+        uint256 liquidityAssetDecimalsFactor = 10**(uint256(ERC20(_liquidityAsset).decimals()));
+
+        liquidityValue_ = _poolTokenAmount.mul(liquidityAssetDecimalsFactor).div(
+            MPT_DECIMALS_FACTOR
+        );
+
+        return liquidityValue_;
+    }
+
     /// @dev Claims all interest accrued and send it to the Vault
-    function __claimInterest(bytes memory _actionArgs) private {
+    function __claimInterestAction(bytes memory _actionArgs) private {
         IMaplePool pool = IMaplePool(__decodeClaimInterestActionArgs(_actionArgs));
 
         pool.withdrawFunds();
@@ -79,7 +97,7 @@ contract MapleLiquidityPositionLib is
     }
 
     /// @dev Claims all rewards accrued and send it to the Vault
-    function __claimRewards(bytes memory _actionArgs) private {
+    function __claimRewardsAction(bytes memory _actionArgs) private {
         address rewardsContract = __decodeClaimRewardsActionArgs(_actionArgs);
 
         IMapleMplRewards mapleRewards = IMapleMplRewards(rewardsContract);
@@ -90,72 +108,132 @@ contract MapleLiquidityPositionLib is
     }
 
     /// @dev Activates the cooldown period to redeem an asset from a Maple pool
-    function __intendToRedeem(bytes memory _actionArgs) private {
+    function __intendToRedeemAction(bytes memory _actionArgs) private {
         address pool = __decodeIntendToRedeemActionArgs(_actionArgs);
 
         IMaplePool(pool).intendToWithdraw();
     }
 
     /// @dev Lends assets to a Maple pool
-    function __lend(bytes memory _actionArgs) private {
+    function __lend(
+        address _liquidityAsset,
+        address _pool,
+        uint256 _liquidityAssetAmount
+    ) private {
+        __approveAssetMaxAsNeeded(_liquidityAsset, _pool, _liquidityAssetAmount);
+
+        IMaplePool(_pool).deposit(_liquidityAssetAmount);
+
+        if (!isUsedLendingPool(_pool)) {
+            usedLendingPools.push(_pool);
+
+            emit UsedLendingPoolAdded(_pool);
+        }
+    }
+
+    /// @dev Lends assets to a Maple pool (action)
+    function __lendAction(bytes memory _actionArgs) private {
         (
             address liquidityAsset,
             address pool,
             uint256 liquidityAssetAmount
         ) = __decodeLendActionArgs(_actionArgs);
-        __approveAssetMaxAsNeeded(liquidityAsset, pool, liquidityAssetAmount);
 
-        IMaplePool(pool).deposit(liquidityAssetAmount);
-
-        if (!isUsedLendingPool(pool)) {
-            usedLendingPools.push(pool);
-
-            emit UsedLendingPoolAdded(pool);
-        }
+        __lend(liquidityAsset, pool, liquidityAssetAmount);
     }
 
-    /// @dev Redeems assets from a Maple pool and claims all accrued interest
-    function __redeem(bytes memory actionArgs) private {
+    /// @dev Lends assets to a Maple pool, then stakes to a rewardsContract (action)
+    function __lendAndStakeAction(bytes memory _actionArgs) private {
         (
             address liquidityAsset,
             address pool,
+            address rewardsContract,
             uint256 liquidityAssetAmount
-        ) = __decodeRedeemActionArgs(actionArgs);
+        ) = __decodeLendAndStakeActionArgs(_actionArgs);
+        __lend(liquidityAsset, pool, liquidityAssetAmount);
 
+        __stake(rewardsContract, pool, ERC20(pool).balanceOf(address(this)));
+    }
+
+    /// @dev Redeems assets from a Maple pool and claims all accrued interest
+    function __redeem(address _pool, uint256 _liquidityAssetAmount) private {
         // Also claims all accrued interest
-        IMaplePool(pool).withdraw(liquidityAssetAmount);
+        IMaplePool(_pool).withdraw(_liquidityAssetAmount);
+
+        // If the full amount of pool tokens has been redeemed, it can be removed from usedLendingPools
+        if (ERC20(_pool).balanceOf(address(this)) == 0) {
+            usedLendingPools.removeStorageItem(_pool);
+
+            emit UsedLendingPoolRemoved(_pool);
+        }
+    }
+
+    /// @dev Redeems assets from a Maple pool and claims all accrued interest (action)
+    function __redeemAction(bytes memory actionArgs) private {
+        (address pool, uint256 liquidityAssetAmount) = __decodeRedeemActionArgs(actionArgs);
+
+        __redeem(pool, liquidityAssetAmount);
+
+        address liquidityAsset = IMaplePool(pool).liquidityAsset();
 
         // Send liquidity asset back to the vault
-        // Balance will be greater than liquidityAssetAmount if accrued interest is > 0
         ERC20(liquidityAsset).safeTransfer(
             msg.sender,
             ERC20(liquidityAsset).balanceOf(address(this))
         );
-
-        // If the full amount of pool tokens has been redeemed, it can be removed from usedLendingPools
-        if (ERC20(pool).balanceOf(address(this)) == 0) {
-            usedLendingPools.removeStorageItem(pool);
-
-            emit UsedLendingPoolRemoved(pool);
-        }
     }
 
     /// @dev Stakes assets to a rewardsContract
-    function __stake(bytes memory _actionArgs) private {
+    function __stake(
+        address _rewardsContract,
+        address _pool,
+        uint256 _poolTokenAmount
+    ) private {
+        IMaplePool(_pool).increaseCustodyAllowance(_rewardsContract, _poolTokenAmount);
+
+        IMapleMplRewards(_rewardsContract).stake(_poolTokenAmount);
+    }
+
+    /// @dev Decodes actionArgs and calls __stake with args function (action)
+    function __stakeAction(bytes memory _actionArgs) private {
         (address rewardsContract, address pool, uint256 poolTokenAmount) = __decodeStakeActionArgs(
             _actionArgs
         );
 
-        IMaplePool(pool).increaseCustodyAllowance(rewardsContract, poolTokenAmount);
-        IMapleMplRewards(rewardsContract).stake(poolTokenAmount);
+        __stake(rewardsContract, pool, poolTokenAmount);
     }
 
     /// @dev Unstakes assets from a rewardsContract
-    function __unstake(bytes memory _actionArgs) private {
+    function __unstake(address _rewardsContract, uint256 _poolTokenAmount) private {
+        IMapleMplRewards(_rewardsContract).withdraw(_poolTokenAmount);
+    }
+
+    /// @dev Unstakes assets from a rewardsContract (action)
+    function __unstakeAction(bytes memory _actionArgs) private {
         (address rewardsContract, uint256 poolTokenAmount) = __decodeUnstakeActionArgs(
             _actionArgs
         );
-        IMapleMplRewards(rewardsContract).withdraw(poolTokenAmount);
+        __unstake(rewardsContract, poolTokenAmount);
+    }
+
+    /// @dev Unstakes assets from a rewardsContract, then redeems assets from a Maple pool and claims all accrued interest (action)
+    function __unstakeAndRedeemAction(bytes memory actionArgs) private {
+        (
+            address pool,
+            address rewardsContract,
+            uint256 poolTokenAmount
+        ) = __decodeUnstakeAndRedeemActionArgs(actionArgs);
+
+        address liquidityAsset = IMaplePool(pool).liquidityAsset();
+
+        __unstake(rewardsContract, poolTokenAmount);
+        __redeem(pool, __calcLiquidityAssetValueOfPoolTokens(liquidityAsset, poolTokenAmount));
+
+        // Send liquidity asset back to the vault
+        ERC20(liquidityAsset).safeTransfer(
+            msg.sender,
+            ERC20(liquidityAsset).balanceOf(address(this))
+        );
     }
 
     ////////////////////
@@ -193,10 +271,10 @@ contract MapleLiquidityPositionLib is
 
             // The liquidity asset balance is derived from the pool token balance (which is stored as a wad),
             // while interest and losses are already returned in terms of the liquidity asset (not pool token)
-            uint256 liquidityAssetBalance = ERC20(usedLendingPools[i])
-                .balanceOf(address(this))
-                .mul(10**(uint256(ERC20(assets_[i]).decimals())))
-                .div(MPT_DECIMALS_FACTOR);
+            uint256 liquidityAssetBalance = __calcLiquidityAssetValueOfPoolTokens(
+                assets_[i],
+                ERC20(usedLendingPools[i]).balanceOf(address(this))
+            );
 
             uint256 accumulatedInterest = pool.withdrawableFundsOf(address(this));
             uint256 accumulatedLosses = pool.recognizableLossesOf(address(this));

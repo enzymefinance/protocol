@@ -55,18 +55,38 @@ contract MapleLiquidityPositionParser is
         __validateActionData(_actionId, _encodedActionArgs);
 
         if (_actionId == uint256(IMapleLiquidityPosition.Actions.Lend)) {
-            (address asset, , uint256 amount) = __decodeLendActionArgs(_encodedActionArgs);
+            (address liquidityAsset, , uint256 liquidityAssetAmount) = __decodeLendActionArgs(
+                _encodedActionArgs
+            );
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
 
-            assetsToTransfer_[0] = asset;
-            amountsToTransfer_[0] = amount;
+            assetsToTransfer_[0] = liquidityAsset;
+            amountsToTransfer_[0] = liquidityAssetAmount;
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
+            (
+                address liquidityAsset,
+                ,
+                ,
+                uint256 liquidityAssetAmount
+            ) = __decodeLendAndStakeActionArgs(_encodedActionArgs);
+
+            assetsToTransfer_ = new address[](1);
+            amountsToTransfer_ = new uint256[](1);
+
+            assetsToTransfer_[0] = liquidityAsset;
+            amountsToTransfer_[0] = liquidityAssetAmount;
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Redeem)) {
-            (address asset, , ) = __decodeRedeemActionArgs(_encodedActionArgs);
+            (address pool, ) = __decodeRedeemActionArgs(_encodedActionArgs);
 
             assetsToReceive_ = new address[](1);
-            assetsToReceive_[0] = asset;
+            assetsToReceive_[0] = IMaplePool(pool).liquidityAsset();
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.UnstakeAndRedeem)) {
+            (address pool, , ) = __decodeUnstakeAndRedeemActionArgs(_encodedActionArgs);
+
+            assetsToReceive_ = new address[](1);
+            assetsToReceive_[0] = IMaplePool(pool).liquidityAsset();
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimInterest)) {
             address pool = __decodeClaimInterestActionArgs(_encodedActionArgs);
 
@@ -95,12 +115,19 @@ contract MapleLiquidityPositionParser is
             (, address pool, ) = __decodeLendActionArgs(_actionArgs);
 
             __validatePool(pool);
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
+            (, address pool, address rewardsContract, ) = __decodeLendAndStakeActionArgs(
+                _actionArgs
+            );
+
+            __validatePool(pool);
+            __validateRewardsContract(rewardsContract);
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.IntendToRedeem)) {
             address pool = __decodeIntendToRedeemActionArgs(_actionArgs);
 
             __validatePool(pool);
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Redeem)) {
-            (, address pool, ) = __decodeRedeemActionArgs(_actionArgs);
+            (address pool, ) = __decodeRedeemActionArgs(_actionArgs);
 
             __validatePool(pool);
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Stake)) {
@@ -111,6 +138,13 @@ contract MapleLiquidityPositionParser is
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Unstake)) {
             (address rewardsContract, ) = __decodeUnstakeActionArgs(_actionArgs);
 
+            __validateRewardsContract(rewardsContract);
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.UnstakeAndRedeem)) {
+            (address pool, address rewardsContract, ) = __decodeUnstakeAndRedeemActionArgs(
+                _actionArgs
+            );
+
+            __validatePool(pool);
             __validateRewardsContract(rewardsContract);
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimInterest)) {
             address pool = __decodeClaimInterestActionArgs(_actionArgs);
