@@ -133,24 +133,19 @@ contract MapleLiquidityPositionLib is
 
     /// @dev Lends assets to a Maple pool (action)
     function __lendAction(bytes memory _actionArgs) private {
-        (
-            address liquidityAsset,
-            address pool,
-            uint256 liquidityAssetAmount
-        ) = __decodeLendActionArgs(_actionArgs);
+        (address pool, uint256 liquidityAssetAmount) = __decodeLendActionArgs(_actionArgs);
 
-        __lend(liquidityAsset, pool, liquidityAssetAmount);
+        __lend(IMaplePool(pool).liquidityAsset(), pool, liquidityAssetAmount);
     }
 
     /// @dev Lends assets to a Maple pool, then stakes to a rewardsContract (action)
     function __lendAndStakeAction(bytes memory _actionArgs) private {
         (
-            address liquidityAsset,
             address pool,
             address rewardsContract,
             uint256 liquidityAssetAmount
         ) = __decodeLendAndStakeActionArgs(_actionArgs);
-        __lend(liquidityAsset, pool, liquidityAssetAmount);
+        __lend(IMaplePool(pool).liquidityAsset(), pool, liquidityAssetAmount);
 
         __stake(rewardsContract, pool, ERC20(pool).balanceOf(address(this)));
     }

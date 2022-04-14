@@ -35,13 +35,9 @@ abstract contract MapleLiquidityPositionDataDecoder {
     function __decodeLendActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            address liquidityAsset_,
-            address pool_,
-            uint256 liquidityAssetAmount_
-        )
+        returns (address pool_, uint256 liquidityAssetAmount_)
     {
-        return abi.decode(_actionArgs, (address, address, uint256));
+        return abi.decode(_actionArgs, (address, uint256));
     }
 
     /// @dev Helper to decode args used during the LendAndStake action
@@ -49,13 +45,12 @@ abstract contract MapleLiquidityPositionDataDecoder {
         internal
         pure
         returns (
-            address liquidityAsset_,
             address pool_,
             address rewardsContract_,
             uint256 liquidityAssetAmount_
         )
     {
-        return abi.decode(_actionArgs, (address, address, address, uint256));
+        return abi.decode(_actionArgs, (address, address, uint256));
     }
 
     /// @dev Helper to decode args used during the IntendToRedeem action

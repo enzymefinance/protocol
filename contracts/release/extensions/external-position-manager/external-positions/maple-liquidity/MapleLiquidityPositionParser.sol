@@ -55,27 +55,24 @@ contract MapleLiquidityPositionParser is
         __validateActionData(_actionId, _encodedActionArgs);
 
         if (_actionId == uint256(IMapleLiquidityPosition.Actions.Lend)) {
-            (address liquidityAsset, , uint256 liquidityAssetAmount) = __decodeLendActionArgs(
+            (address pool, uint256 liquidityAssetAmount) = __decodeLendActionArgs(
                 _encodedActionArgs
             );
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
 
-            assetsToTransfer_[0] = liquidityAsset;
+            assetsToTransfer_[0] = IMaplePool(pool).liquidityAsset();
             amountsToTransfer_[0] = liquidityAssetAmount;
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
-            (
-                address liquidityAsset,
-                ,
-                ,
-                uint256 liquidityAssetAmount
-            ) = __decodeLendAndStakeActionArgs(_encodedActionArgs);
+            (address pool, , uint256 liquidityAssetAmount) = __decodeLendAndStakeActionArgs(
+                _encodedActionArgs
+            );
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
 
-            assetsToTransfer_[0] = liquidityAsset;
+            assetsToTransfer_[0] = IMaplePool(pool).liquidityAsset();
             amountsToTransfer_[0] = liquidityAssetAmount;
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Redeem)) {
             (address pool, ) = __decodeRedeemActionArgs(_encodedActionArgs);
@@ -112,11 +109,11 @@ contract MapleLiquidityPositionParser is
     /// @dev Runs validations before running a callOnExternalPosition.
     function __validateActionData(uint256 _actionId, bytes memory _actionArgs) private view {
         if (_actionId == uint256(IMapleLiquidityPosition.Actions.Lend)) {
-            (, address pool, ) = __decodeLendActionArgs(_actionArgs);
+            (address pool, ) = __decodeLendActionArgs(_actionArgs);
 
             __validatePool(pool);
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
-            (, address pool, address rewardsContract, ) = __decodeLendAndStakeActionArgs(
+            (address pool, address rewardsContract, ) = __decodeLendAndStakeActionArgs(
                 _actionArgs
             );
 

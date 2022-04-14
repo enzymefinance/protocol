@@ -28,32 +28,25 @@ export function mapleLiquidityPositionIntendToRedeemArgs({ pool }: { pool: Addre
 }
 
 export function mapleLiquidityPositionLendArgs({
-  liquidityAsset,
   pool,
   liquidityAssetAmount,
 }: {
-  liquidityAsset: AddressLike;
   pool: AddressLike;
   liquidityAssetAmount: BigNumberish;
 }) {
-  return encodeArgs(['address', 'address', 'uint256'], [liquidityAsset, pool, liquidityAssetAmount]);
+  return encodeArgs(['address', 'uint256'], [pool, liquidityAssetAmount]);
 }
 
 export function mapleLiquidityPositionLendAndStakeArgs({
-  liquidityAsset,
   pool,
   rewardsContract,
   liquidityAssetAmount,
 }: {
-  liquidityAsset: AddressLike;
   pool: AddressLike;
   rewardsContract: AddressLike;
   liquidityAssetAmount: BigNumberish;
 }) {
-  return encodeArgs(
-    ['address', 'address', 'address', 'uint256'],
-    [liquidityAsset, pool, rewardsContract, liquidityAssetAmount],
-  );
+  return encodeArgs(['address', 'address', 'uint256'], [pool, rewardsContract, liquidityAssetAmount]);
 }
 
 export function mapleLiquidityPositionRedeemArgs({

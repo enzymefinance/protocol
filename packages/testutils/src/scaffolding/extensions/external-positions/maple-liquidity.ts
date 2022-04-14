@@ -120,7 +120,6 @@ export async function mapleLiquidityPositionLend({
   comptrollerProxy,
   externalPositionManager,
   signer,
-  liquidityAsset,
   liquidityAssetAmount,
   pool,
   externalPositionProxy,
@@ -128,13 +127,11 @@ export async function mapleLiquidityPositionLend({
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
-  liquidityAsset: AddressLike;
   pool: AddressLike;
   liquidityAssetAmount: BigNumberish;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = mapleLiquidityPositionLendArgs({
-    liquidityAsset,
     liquidityAssetAmount,
     pool,
   });
@@ -153,7 +150,6 @@ export async function mapleLiquidityPositionLendAndStake({
   comptrollerProxy,
   externalPositionManager,
   signer,
-  liquidityAsset,
   liquidityAssetAmount,
   pool,
   rewardsContract,
@@ -162,14 +158,12 @@ export async function mapleLiquidityPositionLendAndStake({
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
-  liquidityAsset: AddressLike;
   pool: AddressLike;
   rewardsContract: AddressLike;
   liquidityAssetAmount: BigNumberish;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = mapleLiquidityPositionLendAndStakeArgs({
-    liquidityAsset,
     liquidityAssetAmount,
     pool,
     rewardsContract,
