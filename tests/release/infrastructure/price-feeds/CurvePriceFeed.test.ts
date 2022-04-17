@@ -1,9 +1,22 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import { CurvePriceFeed, ICurveLiquidityPool, StandardToken } from '@enzymefinance/protocol';
+import {
+  CurvePriceFeed,
+  ICurveLiquidityPool,
+  ONE_HUNDRED_PERCENT_IN_BPS,
+  StandardToken,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, buyShares, createNewFund, curveLend, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  assertEvent,
+  assertNoEvent,
+  buyShares,
+  createNewFund,
+  curveLend,
+  deployProtocolFixture,
+  getAssetUnit,
+} from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -55,7 +68,7 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`88476`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`88921`);
   });
 });
 
@@ -93,7 +106,10 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`93590`);
+    // Note that steth pool has a reenterable virtual price,
+    // but since this lookup is run soon after it is added to the asset universe,
+    // the virtual price has not deviated enough to trigger an update to the last validated virtual price
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`94035`);
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -124,6 +140,54 @@ describe('calcUnderlyingValues', () => {
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
     expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`60826`);
+  });
+
+  // TODO: can make this better / more accurate
+  // Uses steth pool, a pool with a reentrant price
+  it('respects the tolerance for updating the lastValidatedVirtualPrice', async () => {
+    const curvePriceFeed = fork.deployment.curvePriceFeed;
+    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
+    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+
+    const stethUnit = await getAssetUnit(steth);
+
+    const initialVirtualPrice = await curvePool.get_virtual_price();
+
+    // Since the virtual price was recently set upon contract deployment, it should not be set again now
+    const receipt1 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);
+
+    assertNoEvent(receipt1, 'ValidatedVirtualPriceForPoolUpdated');
+
+    // Send a small amount steth to NOT push the virtual price significantly
+    await steth.transfer(curvePool, stethUnit);
+
+    // The validated virtual price should NOT have been updated
+    const receipt2 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);
+
+    expect((await curvePriceFeed.getPoolInfo(curvePool)).lastValidatedVirtualPrice).toEqBigNumber(initialVirtualPrice);
+    assertNoEvent(receipt2, 'ValidatedVirtualPriceForPoolUpdated');
+
+    // Send enough steth to push the virtual price significantly.
+    // At time of writing tests, boosts the virtual price by a little more than 1%.
+    await steth.transfer(curvePool, stethUnit.mul(20000));
+
+    // The final virtual price should exceed the tolerance for a validated update
+    const receipt3 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);
+
+    const finalVirtualPrice = await curvePool.get_virtual_price();
+
+    expect(finalVirtualPrice).toBeGtBigNumber(
+      initialVirtualPrice
+        .add(initialVirtualPrice.mul(fork.config.curve.virtualPriceDeviationThreshold))
+        .div(ONE_HUNDRED_PERCENT_IN_BPS),
+    );
+
+    expect((await curvePriceFeed.getPoolInfo(curvePool)).lastValidatedVirtualPrice).toEqBigNumber(finalVirtualPrice);
+    assertEvent(receipt3, 'ValidatedVirtualPriceForPoolUpdated', {
+      pool: curvePool,
+      virtualPrice: finalVirtualPrice,
+    });
   });
 });
 
@@ -185,6 +249,8 @@ describe('derivatives registry', () => {
       fork.deployer,
       fork.deployment.fundDeployer,
       fork.config.curve.addressProvider,
+      fork.config.curve.poolOwner,
+      fork.config.curve.virtualPriceDeviationThreshold,
     );
 
     // aave - main registry
@@ -213,6 +279,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMainRegistry],
           [invariantProxyAsset, constants.AddressZero],
+          [false],
           [validPoolMainRegistryLpToken],
           [validPoolMainRegistryGauge],
         ),
@@ -223,6 +290,7 @@ describe('derivatives registry', () => {
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [false],
         [validPoolMainRegistryLpToken],
         [validPoolMainRegistryGauge],
       );
@@ -232,6 +300,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMainRegistry],
           [invariantProxyAsset],
+          [false],
           [validPoolMainRegistryLpToken],
           [validPoolMainRegistryGauge],
         ),
@@ -247,6 +316,7 @@ describe('derivatives registry', () => {
           .addPools(
             [validPoolMainRegistry],
             [invariantProxyAsset],
+            [false],
             [validPoolMainRegistryLpToken],
             [validPoolMainRegistryGauge],
           ),
@@ -258,6 +328,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [randomAddressValue1],
           [randomAddressValue1],
+          [false],
           [randomAddressValue1],
           [randomAddressValue1],
         ),
@@ -269,6 +340,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMainRegistry],
           [invariantProxyAsset],
+          [false],
           [randomAddressValue1],
           [validPoolMainRegistryGauge],
         ),
@@ -280,6 +352,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMetapoolFactoryRegistry],
           [invariantProxyAsset],
+          [false],
           [randomAddressValue1],
           [validPoolMetapoolFactoryRegistryGauge],
         ),
@@ -291,6 +364,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMainRegistry],
           [invariantProxyAsset],
+          [false],
           [validPoolMainRegistryLpToken],
           [randomAddressValue1],
         ),
@@ -302,36 +376,41 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPools(
           [validPoolMetapoolFactoryRegistry],
           [invariantProxyAsset],
+          [false],
           [validPoolMetapoolFactoryRegistryLpToken],
           [randomAddressValue1],
         ),
       ).rejects.toBeRevertedWith('Invalid gauge');
     });
 
-    it('works as expected (main and metapool factory registries)', async () => {
+    it('works as expected (main and metapool factory registries, no reentrant virtual prices)', async () => {
       const invariantProxyAssetDecimals = await invariantProxyAsset.decimals();
 
       const receipt = await curvePriceFeed.addPools(
         [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
         [invariantProxyAsset, invariantProxyAsset],
+        [false, false],
         [validPoolMainRegistryLpToken, validPoolMetapoolFactoryRegistryLpToken],
         [validPoolMainRegistryGauge, validPoolMetapoolFactoryRegistryGauge],
       );
 
       // Assert pool info storage
-      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
-        curvePriceFeed.getInvariantProxyAssetInfoForPool,
+      expect(await curvePriceFeed.getPoolInfo(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
         {
-          asset: invariantProxyAsset,
-          decimals: invariantProxyAssetDecimals,
+          invariantProxyAsset,
+          invariantProxyAssetDecimals,
+          lastValidatedVirtualPrice: 0,
         },
       );
-      expect(
-        await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMetapoolFactoryRegistry),
-      ).toMatchFunctionOutput(curvePriceFeed.getInvariantProxyAssetInfoForPool, {
-        asset: invariantProxyAsset,
-        decimals: invariantProxyAssetDecimals,
-      });
+      expect(await curvePriceFeed.getPoolInfo(validPoolMetapoolFactoryRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
+        {
+          invariantProxyAsset,
+          invariantProxyAssetDecimals,
+          lastValidatedVirtualPrice: 0,
+        },
+      );
       expect(await curvePriceFeed.getLpTokenForPool(validPoolMainRegistry)).toMatchAddress(
         validPoolMainRegistryLpToken,
       );
@@ -387,6 +466,56 @@ describe('derivatives registry', () => {
         pool: validPoolMetapoolFactoryRegistry,
       });
     });
+
+    it('works as expected (main and metapool factory registries, with reentrant virtual prices)', async () => {
+      const mainRegistryPool = new ICurveLiquidityPool(validPoolMainRegistry, provider);
+      const metapoolFactoryRegistryPool = new ICurveLiquidityPool(validPoolMetapoolFactoryRegistry, provider);
+
+      const invariantProxyAssetDecimals = await invariantProxyAsset.decimals();
+
+      const receipt = await curvePriceFeed.addPools(
+        [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
+        [invariantProxyAsset, invariantProxyAsset],
+        [true, true],
+        [validPoolMainRegistryLpToken, validPoolMetapoolFactoryRegistryLpToken],
+        [validPoolMainRegistryGauge, validPoolMetapoolFactoryRegistryGauge],
+      );
+
+      // Assert pool info storage
+      const mainRegistryPoolVirtualPrice = await mainRegistryPool.get_virtual_price();
+
+      expect(await curvePriceFeed.getPoolInfo(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
+        {
+          invariantProxyAsset,
+          invariantProxyAssetDecimals,
+          lastValidatedVirtualPrice: mainRegistryPoolVirtualPrice,
+        },
+      );
+      const factoryPoolRegistryPoolVirtualPrice = await metapoolFactoryRegistryPool.get_virtual_price();
+
+      expect(await curvePriceFeed.getPoolInfo(validPoolMetapoolFactoryRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
+        {
+          invariantProxyAsset,
+          invariantProxyAssetDecimals,
+          lastValidatedVirtualPrice: factoryPoolRegistryPoolVirtualPrice,
+        },
+      );
+
+      // Assert events
+      const events = extractEvent(receipt, 'ValidatedVirtualPriceForPoolUpdated');
+
+      expect(events.length === 2);
+      expect(events[0]).toMatchEventArgs({
+        pool: validPoolMainRegistry,
+        virtualPrice: mainRegistryPoolVirtualPrice,
+      });
+      expect(events[1]).toMatchEventArgs({
+        pool: validPoolMetapoolFactoryRegistry,
+        virtualPrice: factoryPoolRegistryPoolVirtualPrice,
+      });
+    });
   });
 
   describe('addPoolsWithoutValidation', () => {
@@ -397,6 +526,7 @@ describe('derivatives registry', () => {
           .addPoolsWithoutValidation(
             [validPoolMainRegistry],
             [invariantProxyAsset],
+            [false],
             [validPoolMainRegistryLpToken],
             [validPoolMainRegistryGauge],
           ),
@@ -408,6 +538,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPoolsWithoutValidation(
           [validPoolMainRegistry],
           [invariantProxyAsset],
+          [false],
           [constants.AddressZero],
           [validPoolMainRegistryGauge],
         ),
@@ -419,6 +550,7 @@ describe('derivatives registry', () => {
         curvePriceFeed.addPoolsWithoutValidation(
           [randomAddressValue1],
           [invariantProxyAsset],
+          [false],
           [validPoolMainRegistryLpToken],
           [validPoolMainRegistryGauge],
         ),
@@ -430,6 +562,7 @@ describe('derivatives registry', () => {
       await curvePriceFeed.addPoolsWithoutValidation(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [false],
         [randomAddressValue1],
         [randomAddressValue2],
       );
@@ -476,6 +609,7 @@ describe('derivatives registry', () => {
       await curvePriceFeed.addPools(
         [validPoolMainRegistry, validPoolMetapoolFactoryRegistry],
         [invariantProxyAsset, invariantProxyAsset],
+        [false, false],
         [validPoolMainRegistryLpToken, validPoolMetapoolFactoryRegistryLpToken],
         [constants.AddressZero, constants.AddressZero],
       );
@@ -512,6 +646,7 @@ describe('derivatives registry', () => {
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [false],
         [validPoolMainRegistryLpToken],
         [constants.AddressZero],
       );
@@ -538,6 +673,7 @@ describe('derivatives registry', () => {
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [false],
         [validPoolMainRegistryLpToken],
         [validPoolMainRegistryGauge],
       );
@@ -566,9 +702,11 @@ describe('derivatives registry', () => {
 
     it('works as expected', async () => {
       // First add the pool
+      // Use `true` for _reentrantVirtualPrices so the non-zero value gets reset
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [true],
         [validPoolMainRegistryLpToken],
         [constants.AddressZero],
       );
@@ -577,11 +715,12 @@ describe('derivatives registry', () => {
       const receipt = await curvePriceFeed.removePools([validPoolMainRegistry]);
 
       // Assert the pool info is removed from storage
-      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
-        curvePriceFeed.getInvariantProxyAssetInfoForPool,
+      expect(await curvePriceFeed.getPoolInfo(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
         {
-          asset: constants.AddressZero,
-          decimals: 0,
+          invariantProxyAsset: constants.AddressZero,
+          invariantProxyAssetDecimals: 0,
+          lastValidatedVirtualPrice: 0,
         },
       );
       expect(await curvePriceFeed.getLpTokenForPool(validPoolMainRegistry)).toMatchAddress(constants.AddressZero);
@@ -593,18 +732,21 @@ describe('derivatives registry', () => {
     });
   });
 
-  describe('updateInvariantProxyAssets', () => {
+  describe('updatePoolInfo', () => {
     it('does not allow a random caller', async () => {
       await expect(
-        curvePriceFeed.connect(randomUser).updateInvariantProxyAssets([validPoolMainRegistry], [invariantProxyAsset]),
+        curvePriceFeed.connect(randomUser).updatePoolInfo([validPoolMainRegistry], [invariantProxyAsset], [false]),
       ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
     });
 
     it('works as expected', async () => {
+      const mainRegistryPool = new ICurveLiquidityPool(validPoolMainRegistry, provider);
+
       // First add the pool
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
+        [false],
         [validPoolMainRegistryLpToken],
         [constants.AddressZero],
       );
@@ -615,15 +757,16 @@ describe('derivatives registry', () => {
 
       expect(nextInvariantAssetProxyDecimals).not.toEqBigNumber(await invariantProxyAsset.decimals());
 
-      // Set a new invariant proxy asset
-      await curvePriceFeed.updateInvariantProxyAssets([validPoolMainRegistry], [nextInvariantAssetProxy]);
+      // Set a new invariant proxy asset, with `true` for _reentrantVirtualPrices
+      await curvePriceFeed.updatePoolInfo([validPoolMainRegistry], [nextInvariantAssetProxy], [true]);
 
       // Assert the invariant proxy asset was updated
-      expect(await curvePriceFeed.getInvariantProxyAssetInfoForPool(validPoolMainRegistry)).toMatchFunctionOutput(
-        curvePriceFeed.getInvariantProxyAssetInfoForPool,
+      expect(await curvePriceFeed.getPoolInfo(validPoolMainRegistry)).toMatchFunctionOutput(
+        curvePriceFeed.getPoolInfo,
         {
-          asset: nextInvariantAssetProxy,
-          decimals: nextInvariantAssetProxyDecimals,
+          invariantProxyAsset: nextInvariantAssetProxy,
+          invariantProxyAssetDecimals: nextInvariantAssetProxyDecimals,
+          lastValidatedVirtualPrice: await mainRegistryPool.get_virtual_price(),
         },
       );
 

@@ -16,7 +16,12 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
 
   const curvePriceFeed = await deploy('CurvePriceFeed', {
-    args: [fundDeployer.address, config.curve.addressProvider] as CurvePriceFeedArgs,
+    args: [
+      fundDeployer.address,
+      config.curve.addressProvider,
+      config.curve.poolOwner,
+      config.curve.virtualPriceDeviationThreshold,
+    ] as CurvePriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -30,9 +35,16 @@ const fn: DeployFunction = async function (hre) {
       log('Registering curve tokens');
       const poolAddresses = pools.map((pool) => pool.pool);
       const invariantProxyAssets = pools.map((pool) => pool.invariantProxyAsset);
+      const reentrantVirtualPrices = pools.map((pool) => pool.hasReentrantVirtualPrice);
       const lpTokens = pools.map((pool) => pool.lpToken);
       const gaugeTokens = pools.map((pool) => pool.liquidityGaugeToken);
-      await curvePriceFeedInstance.addPools(poolAddresses, invariantProxyAssets, lpTokens, gaugeTokens);
+      await curvePriceFeedInstance.addPools(
+        poolAddresses,
+        invariantProxyAssets,
+        reentrantVirtualPrices,
+        lpTokens,
+        gaugeTokens,
+      );
     }
   }
 };

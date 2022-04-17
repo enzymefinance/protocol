@@ -230,50 +230,59 @@ const mainnetConfig: DeploymentConfig = {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: '0xd061D61a4d941c39E5453435B6345Dc261C2fcE0',
     nativeAssetAddress: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    poolOwner: '0xeCb456EA5365865EbAb8a2661B0c503410e9B347',
     pools: {
       '3pool': {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: constants.AddressZero,
         lpToken: '0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490',
-        pool: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7'
+        pool: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+        hasReentrantVirtualPrice: false
       },
       aave: {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: '0xd662908ADA2Ea1916B3318327A97eB18aD588b5d',
         lpToken: '0xFd2a8fA60Abd58Efe3EeE34dd494cD491dC14900',
-        pool: '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE'
+        pool: '0xDeBF20617708857ebe4F679508E7b7863a8A8EeE',
+        hasReentrantVirtualPrice: false
       },
       mim: {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: '0xB518f5e3242393d4eC792BD3f44946A3b98d0E48',
         lpToken: '0x55A8a39bc9694714E2874c1ce77aa1E599461E18',
-        pool: '0x55A8a39bc9694714E2874c1ce77aa1E599461E18'
+        pool: '0x55A8a39bc9694714E2874c1ce77aa1E599461E18',
+        hasReentrantVirtualPrice: false
       },
       seth: {
         invariantProxyAsset: weth,
         liquidityGaugeToken: '0x3C0FFFF15EA30C35d7A85B85c0782D6c94e1d238',
         lpToken: '0xA3D87FffcE63B53E0d54fAa1cc983B7eB0b74A9c',
-        pool: '0xc5424B857f758E906013F3555Dad202e4bdB4567'
+        pool: '0xc5424B857f758E906013F3555Dad202e4bdB4567',
+        hasReentrantVirtualPrice: true
       },
       steth: {
         invariantProxyAsset: weth,
         liquidityGaugeToken: '0x182B723a58739a9c974cFDB385ceaDb237453c28',
         lpToken: '0x06325440D014e39736583c165C2963BA99fAf14E',
-        pool: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022'
+        pool: '0xDC24316b9AE028F1497c275EB9192a3Ea0f67022',
+        hasReentrantVirtualPrice: true
       },
       usdt: {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: constants.AddressZero,
         lpToken: '0x9fc689ccada600b6df723d9e47d84d76664a1f23',
-        pool: '0x52ea46506b9cc5ef470c5bf89f17dc28bb35d85c'
+        pool: '0x52ea46506b9cc5ef470c5bf89f17dc28bb35d85c',
+        hasReentrantVirtualPrice: false
       },
       ust: {
         invariantProxyAsset: primitives.usdc,
         liquidityGaugeToken: '0x3B7020743Bc2A4ca9EaF9D0722d42E20d6935855',
         lpToken: '0x94e131324b6054c0D789b190b2dAC504e4361b53',
-        pool: '0x890f4e345B1dAED0367A877a1612f86A1f86985f'
+        pool: '0x890f4e345B1dAED0367A877a1612f86A1f86985f',
+        hasReentrantVirtualPrice: false
       },
     },
+    virtualPriceDeviationThreshold: 50, // 0.5%
   },
   feeBps: 50,
   feeToken,

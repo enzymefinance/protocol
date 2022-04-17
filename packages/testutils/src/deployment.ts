@@ -238,7 +238,18 @@ export interface DeploymentConfig {
     addressProvider: string;
     minter: string;
     nativeAssetAddress: string;
-    pools: Record<string, { pool: string; lpToken: string; liquidityGaugeToken: string; invariantProxyAsset: string }>;
+    poolOwner: string;
+    pools: Record<
+      string,
+      {
+        pool: string;
+        lpToken: string;
+        liquidityGaugeToken: string;
+        invariantProxyAsset: string;
+        hasReentrantVirtualPrice: boolean;
+      }
+    >;
+    virtualPriceDeviationThreshold: number;
   };
   aave: {
     incentivesController: string;

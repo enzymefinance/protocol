@@ -141,6 +141,7 @@ const mainnetConfig: DeploymentConfig = {
     addressProvider: '0x0000000022D53366457F9d5E68Ec105046FC4383',
     minter: constants.AddressZero, // Minter only exists on Ethereum mainnet
     nativeAssetAddress: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE',
+    poolOwner: '0x774D1Dba98cfBD1F2Bc3A1F59c494125e07C48F9',
     pools: {
       aave: {
         invariantProxyAsset: primitives.usdc,
@@ -149,6 +150,7 @@ const mainnetConfig: DeploymentConfig = {
         pool: '0x445FE580eF8d70FF569aB36e80c647af338db351'
       },
     },
+    virtualPriceDeviationThreshold: 50, // 0.5%
   },
   feeBps: 50,
   feeToken,

@@ -44,6 +44,7 @@ let poolInfo: Record<
     assetToLendAddress: string;
     assetToLendWhale: SignerWithAddress;
     supportsOneCoinRedeem: boolean;
+    hasReentrantVirtualPrice: boolean;
   }
 >;
 
@@ -58,6 +59,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.primitives.dai,
       assetToLendWhale: whales.dai,
       gaugeTokenAddress: null,
+      hasReentrantVirtualPrice: fork.config.curve.pools['3pool'].hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools['3pool'].pool,
       supportsOneCoinRedeem: true,
     },
@@ -65,6 +67,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.aave.atokens.ausdc[0],
       assetToLendWhale: whales.ausdc,
       gaugeTokenAddress: fork.config.curve.pools.aave.liquidityGaugeToken,
+      hasReentrantVirtualPrice: fork.config.curve.pools.aave.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.aave.pool,
       supportsOneCoinRedeem: true,
     },
@@ -74,6 +77,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.primitives.ust,
       assetToLendWhale: whales.ust,
       gaugeTokenAddress: fork.config.curve.pools.mim.liquidityGaugeToken,
+      hasReentrantVirtualPrice: fork.config.curve.pools.mim.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.mim.pool,
       supportsOneCoinRedeem: true,
     },
@@ -81,6 +85,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.weth,
       assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.seth.liquidityGaugeToken,
+      hasReentrantVirtualPrice: fork.config.curve.pools.seth.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.seth.pool,
       supportsOneCoinRedeem: true,
     },
@@ -88,6 +93,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.weth,
       assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.steth.liquidityGaugeToken,
+      hasReentrantVirtualPrice: fork.config.curve.pools.steth.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.steth.pool,
       supportsOneCoinRedeem: true,
     },
@@ -96,6 +102,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.primitives.usdt,
       assetToLendWhale: whales.usdt,
       gaugeTokenAddress: null,
+      hasReentrantVirtualPrice: fork.config.curve.pools.usdt.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.usdt.pool,
       supportsOneCoinRedeem: false,
     },
@@ -104,6 +111,7 @@ beforeAll(async () => {
       assetToLendAddress: fork.config.primitives.ust,
       assetToLendWhale: whales.ust,
       gaugeTokenAddress: fork.config.curve.pools.ust.liquidityGaugeToken,
+      hasReentrantVirtualPrice: fork.config.curve.pools.ust.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.ust.pool,
       supportsOneCoinRedeem: true,
     },
@@ -199,7 +207,13 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
 
     if (!(await valueInterpreter.isSupportedDerivativeAsset(lpToken))) {
       if (!(await curvePriceFeed.isSupportedAsset(lpToken))) {
-        await curvePriceFeed.addPools([pool], [assetToLend], [lpToken], [constants.AddressZero]);
+        await curvePriceFeed.addPools(
+          [pool],
+          [assetToLend],
+          [poolInfo[poolKey].hasReentrantVirtualPrice],
+          [lpToken],
+          [constants.AddressZero],
+        );
       }
       await valueInterpreter.addDerivatives([lpToken], [curvePriceFeed]);
     }
