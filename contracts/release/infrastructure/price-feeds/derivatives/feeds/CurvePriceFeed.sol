@@ -44,7 +44,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     ICurveAddressProvider private immutable ADDRESS_PROVIDER_CONTRACT;
     ICurvePoolOwner private immutable CURVE_POOL_OWNER_CONTRACT;
-    uint256 private immutable VIRTUAL_PRICE_DEVIATION_THRESHOLD_PLUS_DIVISOR;
+    uint256 private immutable VIRTUAL_PRICE_DEVIATION_THRESHOLD;
 
     // We take one asset as representative of the pool's invariant, e.g., WETH for ETH-based pools.
     // Caching invariantProxyAssetDecimals in a packed storage slot
@@ -70,9 +70,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         ADDRESS_PROVIDER_CONTRACT = ICurveAddressProvider(_addressProvider);
         CURVE_POOL_OWNER_CONTRACT = ICurvePoolOwner(_poolOwner);
-        VIRTUAL_PRICE_DEVIATION_THRESHOLD_PLUS_DIVISOR = _virtualPriceDeviationThreshold.add(
-            VIRTUAL_PRICE_DEVIATION_DIVISOR
-        );
+        VIRTUAL_PRICE_DEVIATION_THRESHOLD = _virtualPriceDeviationThreshold;
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -94,7 +92,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
         // Validate and update the cached lastValidatedVirtualPrice if:
         /// 1. a pool requires virtual price validation, and
-        /// 2. the unvalidated `virtualPrice` exceeds the PoolInfo.lastValidatedVirtualPrice value
+        /// 2. the unvalidated `virtualPrice` deviates from the PoolInfo.lastValidatedVirtualPrice value
         /// by more than the tolerated "deviation threshold" (e.g., 1%).
         /// This is an optimization to save gas on validating non-reentrancy during the virtual price query,
         /// since the virtual price increases relatively slowly as the pool accrues fees over time.
@@ -491,9 +489,19 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         uint256 _currentVirtualPrice,
         uint256 _lastValidatedVirtualPrice
     ) private view returns (bool exceedsThreshold_) {
+        // Uses the absolute delta between current and last validated virtual prices for the rare
+        // case where a virtual price might have decreased (e.g., rounding, slashing, yet unknown
+        // manipulation vector, etc)
+        uint256 absDiff;
+        if (_currentVirtualPrice > _lastValidatedVirtualPrice) {
+            absDiff = _currentVirtualPrice.sub(_lastValidatedVirtualPrice);
+        } else {
+            absDiff = _lastValidatedVirtualPrice.sub(_currentVirtualPrice);
+        }
+
         return
-            _currentVirtualPrice >
-            _lastValidatedVirtualPrice.mul(VIRTUAL_PRICE_DEVIATION_THRESHOLD_PLUS_DIVISOR).div(
+            absDiff >
+            _lastValidatedVirtualPrice.mul(VIRTUAL_PRICE_DEVIATION_THRESHOLD).div(
                 VIRTUAL_PRICE_DEVIATION_DIVISOR
             );
     }
