@@ -28,6 +28,8 @@ import "../IDerivativePriceFeed.sol";
 contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
+    event CurvePoolOwnerSet(address poolOwner);
+
     event DerivativeAdded(address indexed derivative, address indexed pool);
 
     event DerivativeRemoved(address indexed derivative);
@@ -43,7 +45,6 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     uint256 private constant VIRTUAL_PRICE_UNIT = 10**18;
 
     ICurveAddressProvider private immutable ADDRESS_PROVIDER_CONTRACT;
-    ICurvePoolOwner private immutable CURVE_POOL_OWNER_CONTRACT;
     uint256 private immutable VIRTUAL_PRICE_DEVIATION_THRESHOLD;
 
     // We take one asset as representative of the pool's invariant, e.g., WETH for ETH-based pools.
@@ -54,6 +55,8 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         uint8 invariantProxyAssetDecimals; // 1 byte
         uint88 lastValidatedVirtualPrice; // 11 bytes (could safely be 8-10 bytes)
     }
+
+    address private curvePoolOwner;
 
     // Pool tokens and liquidity gauge tokens are treated the same for pricing purposes
     mapping(address => address) private derivativeToPool;
@@ -69,8 +72,9 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         uint256 _virtualPriceDeviationThreshold
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         ADDRESS_PROVIDER_CONTRACT = ICurveAddressProvider(_addressProvider);
-        CURVE_POOL_OWNER_CONTRACT = ICurvePoolOwner(_poolOwner);
         VIRTUAL_PRICE_DEVIATION_THRESHOLD = _virtualPriceDeviationThreshold;
+
+        __setCurvePoolOwner(_poolOwner);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
@@ -79,7 +83,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// @return underlyings_ The underlying assets for the _derivative
     /// @return underlyingAmounts_ The amount of each underlying asset for the equivalent derivative amount
     function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
-        public
+        external
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
@@ -126,7 +130,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// @notice Checks if an asset is supported by the price feed
     /// @param _asset The asset to check
     /// @return isSupported_ True if the asset is supported
-    function isSupportedAsset(address _asset) public view override returns (bool isSupported_) {
+    function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
         return getPoolForDerivative(_asset) != address(0);
     }
 
@@ -287,6 +291,12 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         }
     }
 
+    /// @notice Sets the Curve pool owner
+    /// @param _nextPoolOwner The next pool owner value
+    function setCurvePoolOwner(address _nextPoolOwner) external onlyFundDeployerOwner {
+        __setCurvePoolOwner(_nextPoolOwner);
+    }
+
     /// @notice Updates the PoolInfo for the given pools
     /// @param _pools The ordered pools
     /// @param _invariantProxyAssets The ordered invariant asset proxy assets
@@ -308,19 +318,6 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         }
     }
 
-    /// @notice Updates the validated virtual price for the given pools
-    /// @param _pools The ordered pools
-    /// @dev Allows any caller
-    function updateValidatedVirtualPrices(address[] calldata _pools) external {
-        for (uint256 i; i < _pools.length; i++) {
-            if (getPoolInfo(_pools[i]).lastValidatedVirtualPrice > 0)
-                __updateValidatedVirtualPrice(
-                    _pools[i],
-                    ICurveLiquidityPool(_pools[i]).get_virtual_price()
-                );
-        }
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to add a derivative to the price feed
@@ -329,6 +326,9 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
             getPoolForDerivative(_derivative) == address(0),
             "__addDerivative: Already exists"
         );
+
+        // Assert that the assumption that all Curve pool tokens are 18 decimals
+        require(ERC20(_derivative).decimals() == 18, "__addDerivative: Not 18-decimal");
 
         derivativeToPool[_derivative] = _pool;
 
@@ -407,7 +407,14 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     /// @dev Helper to call a known non-reenterable pool function
     function __makeNonReentrantPoolCall(address _pool) private {
-        CURVE_POOL_OWNER_CONTRACT.withdraw_admin_fees(_pool);
+        ICurvePoolOwner(getCurvePoolOwner()).withdraw_admin_fees(_pool);
+    }
+
+    /// @dev Helper to set the Curve pool owner
+    function __setCurvePoolOwner(address _nextPoolOwner) private {
+        curvePoolOwner = _nextPoolOwner;
+
+        emit CurvePoolOwnerSet(_nextPoolOwner);
     }
 
     /// @dev Helper to set the PoolInfo for a given pool
@@ -509,6 +516,12 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     ///////////////////
     // STATE GETTERS //
     ///////////////////
+
+    /// @notice Gets the Curve pool owner
+    /// @return poolOwner_ The Curve pool owner
+    function getCurvePoolOwner() public view returns (address poolOwner_) {
+        return curvePoolOwner;
+    }
 
     /// @notice Gets the lpToken for a given pool
     /// @param _pool The pool

@@ -76,6 +76,8 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
 
+    expect(await curvePriceFeed.getCurvePoolOwner()).toMatchAddress(fork.config.curve.poolOwner);
+
     // FundDeployerOwnerMixin
     expect(await curvePriceFeed.getFundDeployer()).toMatchAddress(fork.deployment.fundDeployer);
   });
@@ -227,9 +229,35 @@ describe('expected values', () => {
   });
 });
 
+describe('setCurvePoolOwner', () => {
+  const nextPoolOwner = randomAddress();
+  let curvePriceFeed: CurvePriceFeed;
+  let randomUser: SignerWithAddress;
+
+  beforeEach(async () => {
+    curvePriceFeed = fork.deployment.curvePriceFeed;
+    [randomUser] = fork.accounts;
+  });
+
+  it('cannot be called by a random user', async () => {
+    await expect(curvePriceFeed.connect(randomUser).setCurvePoolOwner(nextPoolOwner)).rejects.toBeRevertedWith(
+      'Only the FundDeployer owner can call this function',
+    );
+  });
+
+  it('works as expected', async () => {
+    const receipt = await curvePriceFeed.setCurvePoolOwner(nextPoolOwner);
+
+    expect(await curvePriceFeed.getCurvePoolOwner()).toMatchAddress(nextPoolOwner);
+
+    assertEvent(receipt, 'CurvePoolOwnerSet', {
+      poolOwner: nextPoolOwner,
+    });
+  });
+});
+
 describe('derivatives registry', () => {
   const randomAddressValue1 = randomAddress();
-  const randomAddressValue2 = randomAddress();
 
   let curvePriceFeed: CurvePriceFeed;
   let randomUser: SignerWithAddress;
@@ -559,12 +587,16 @@ describe('derivatives registry', () => {
 
     // Since __addPools() logic is the same as tested in addPools(), only need to test that invalid config can pass
     it('works as expected (main and metapool factory registries)', async () => {
+      // Tokens must be 18-decimals
+      const arbitraryTokenAddress1 = fork.config.weth;
+      const arbitraryTokenAddress2 = fork.config.primitives.mln;
+
       await curvePriceFeed.addPoolsWithoutValidation(
         [validPoolMainRegistry],
         [invariantProxyAsset],
         [false],
-        [randomAddressValue1],
-        [randomAddressValue2],
+        [arbitraryTokenAddress1],
+        [arbitraryTokenAddress2],
       );
     });
   });
@@ -633,16 +665,10 @@ describe('derivatives registry', () => {
   });
 
   describe('addGaugeTokensWithoutValidation', () => {
-    it('does not allow a random caller', async () => {
-      await expect(
-        curvePriceFeed
-          .connect(randomUser)
-          .addGaugeTokensWithoutValidation([validPoolMainRegistryGauge], [validPoolMainRegistry]),
-      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
-    });
+    let arbitraryTokenAddress: AddressLike;
 
-    it('works as expected', async () => {
-      // First add the pool without its gauge
+    beforeEach(async () => {
+      // Add the pool without its gauge
       await curvePriceFeed.addPools(
         [validPoolMainRegistry],
         [invariantProxyAsset],
@@ -651,13 +677,30 @@ describe('derivatives registry', () => {
         [constants.AddressZero],
       );
 
-      // Add a random gauge value
-      const randomGaugeValue = randomAddressValue1;
+      // Token must be 18-decimals
+      arbitraryTokenAddress = fork.config.weth;
+    });
 
-      await curvePriceFeed.addGaugeTokensWithoutValidation([randomGaugeValue], [validPoolMainRegistry]);
+    it('does not allow a random caller', async () => {
+      await expect(
+        curvePriceFeed
+          .connect(randomUser)
+          .addGaugeTokensWithoutValidation([arbitraryTokenAddress], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Only the FundDeployer owner can call this function');
+    });
+
+    it('does not allow a non-18 decimal token', async () => {
+      await expect(
+        curvePriceFeed.addGaugeTokensWithoutValidation([fork.config.primitives.usdc], [validPoolMainRegistry]),
+      ).rejects.toBeRevertedWith('Not 18-decimal');
+    });
+
+    it('works as expected', async () => {
+      // Add a random gauge value
+      await curvePriceFeed.addGaugeTokensWithoutValidation([arbitraryTokenAddress], [validPoolMainRegistry]);
 
       // Assert derivative storage
-      expect(await curvePriceFeed.getPoolForDerivative(randomGaugeValue)).toMatchAddress(validPoolMainRegistry);
+      expect(await curvePriceFeed.getPoolForDerivative(arbitraryTokenAddress)).toMatchAddress(validPoolMainRegistry);
     });
   });
 

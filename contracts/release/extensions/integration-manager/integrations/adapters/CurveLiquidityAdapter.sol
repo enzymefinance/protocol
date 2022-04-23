@@ -468,6 +468,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             _actionData
         );
 
+        __validatePoolForGauge(pool, outgoingStakingToken);
+
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingStakingToken;
 
@@ -510,6 +512,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             RedeemType redeemType,
             bytes memory incomingAssetsData
         ) = __decodeUnstakeAndRedeemCallArgs(_actionData);
+
+        __validatePoolForGauge(pool, outgoingStakingToken);
 
         spendAssets_ = new address[](1);
         spendAssets_[0] = outgoingStakingToken;

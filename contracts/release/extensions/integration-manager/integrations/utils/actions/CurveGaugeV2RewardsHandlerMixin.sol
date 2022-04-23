@@ -42,23 +42,6 @@ abstract contract CurveGaugeV2RewardsHandlerMixin is CurveGaugeV2ActionsMixin {
         __curveGaugeV2ClaimRewards(_gauge, _target);
     }
 
-    /// @dev Helper to get all rewards tokens for staking LP tokens
-    function __curveGaugeV2GetRewardsTokensWithCrv(address _gauge)
-        internal
-        view
-        returns (address[] memory rewardsTokens_)
-    {
-        rewardsTokens_ = __curveGaugeV2GetRewardsTokens(_gauge);
-
-        if (__curveGaugeV2MinterExists()) {
-            rewardsTokens_ = rewardsTokens_.addUniqueItem(
-                CURVE_GAUGE_V2_REWARDS_HANDLER_CRV_TOKEN
-            );
-        }
-
-        return rewardsTokens_;
-    }
-
     /// @dev Helper to check if the Curve Minter contract is used on the network
     function __curveGaugeV2MinterExists() internal view returns (bool exists_) {
         return CURVE_GAUGE_V2_REWARDS_HANDLER_MINTER != address(0);
