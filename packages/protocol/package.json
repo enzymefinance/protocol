@@ -1,6 +1,6 @@
 {
   "name": "@enzymefinance/protocol",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Technology Regulated and Operated Investment Funds",
   "author": "Enzyme Council DAO <council@enzyme.finance>",
   "license": "GPL-3.0",
@@ -45,7 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@enzymefinance/ethers": "^1.0.16",
+    "@enzymefinance/ethers": "^4.0.1",
     "decimal.js": "^10.3.1",
     "ethers": "^5.6.2"
   },

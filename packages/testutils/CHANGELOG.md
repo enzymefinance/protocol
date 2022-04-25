@@ -1,5 +1,17 @@
 # @enzymefinance/testutils
 
+## 4.0.1
+
+### Patch Changes
+
+- 2b54b39f: Add devtools to monorepo
+- 75b52bb2: Build with tsup
+- Updated dependencies [2b54b39f]
+- Updated dependencies [75b52bb2]
+  - @enzymefinance/ethers@4.0.1
+  - @enzymefinance/hardhat@4.0.1
+  - @enzymefinance/protocol@4.0.1
+
 ## 4.0.0
 
 ### Major Changes
