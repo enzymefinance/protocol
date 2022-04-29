@@ -151,7 +151,7 @@ describe('lend', () => {
 });
 
 describe('lendAndStake', () => {
-  it('works as expected ', async () => {
+  it('works as expected', async () => {
     const testMaplePool = new ITestMaplePool(poolAddress, provider);
 
     const custodyAllowanceBefore = await testMaplePool.custodyAllowance(mapleLiquidityPosition, rewardsContract);
@@ -183,7 +183,7 @@ describe('lendAndStake', () => {
 
     expect(custodyAllowanceAfter.sub(custodyAllowanceBefore)).toEqBigNumber(stakeAmount);
 
-    expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('489630');
+    expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('491241');
   });
 
   it('reverts if the pool or rewards contract is not deployed from a Maple factory ', async () => {

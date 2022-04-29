@@ -145,9 +145,13 @@ contract MapleLiquidityPositionLib is
             address rewardsContract,
             uint256 liquidityAssetAmount
         ) = __decodeLendAndStakeActionArgs(_actionArgs);
+        uint256 poolTokenBalanceBefore = ERC20(pool).balanceOf(address(this));
+
         __lend(IMaplePool(pool).liquidityAsset(), pool, liquidityAssetAmount);
 
-        __stake(rewardsContract, pool, ERC20(pool).balanceOf(address(this)));
+        uint256 poolTokenBalanceAfter = ERC20(pool).balanceOf(address(this));
+
+        __stake(rewardsContract, pool, poolTokenBalanceAfter.sub(poolTokenBalanceBefore));
     }
 
     /// @dev Redeems assets from a Maple pool and claims all accrued interest
