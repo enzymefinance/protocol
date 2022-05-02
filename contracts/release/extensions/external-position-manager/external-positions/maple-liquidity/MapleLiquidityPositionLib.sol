@@ -258,25 +258,26 @@ contract MapleLiquidityPositionLib is
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
-        uint256 usedLendingPoolsLength = getUsedLendingPools().length;
+        address[] memory pools = getUsedLendingPools();
+        uint256 usedLendingPoolsLength = pools.length;
 
         assets_ = new address[](usedLendingPoolsLength);
         amounts_ = new uint256[](usedLendingPoolsLength);
 
         for (uint256 i; i < usedLendingPoolsLength; i++) {
-            IMaplePool pool = IMaplePool(usedLendingPools[i]);
+            IMaplePool poolContract = IMaplePool(pools[i]);
 
-            assets_[i] = pool.liquidityAsset();
+            assets_[i] = poolContract.liquidityAsset();
 
             // The liquidity asset balance is derived from the pool token balance (which is stored as a wad),
             // while interest and losses are already returned in terms of the liquidity asset (not pool token)
             uint256 liquidityAssetBalance = __calcLiquidityAssetValueOfPoolTokens(
                 assets_[i],
-                ERC20(usedLendingPools[i]).balanceOf(address(this))
+                ERC20(address(poolContract)).balanceOf(address(this))
             );
 
-            uint256 accumulatedInterest = pool.withdrawableFundsOf(address(this));
-            uint256 accumulatedLosses = pool.recognizableLossesOf(address(this));
+            uint256 accumulatedInterest = poolContract.withdrawableFundsOf(address(this));
+            uint256 accumulatedLosses = poolContract.recognizableLossesOf(address(this));
 
             amounts_[i] = liquidityAssetBalance.add(accumulatedInterest).sub(accumulatedLosses);
         }
