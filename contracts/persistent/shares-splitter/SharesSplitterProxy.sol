@@ -17,8 +17,8 @@ import "../../release/utils/NonUpgradableProxy.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A proxy contract for all SharesSplitterProxy instances
 contract SharesSplitterProxy is NonUpgradableProxy {
-    constructor(bytes memory _constructData, address _comptrollerLib)
+    constructor(bytes memory _constructData, address _sharesSplitterLib)
         public
-        NonUpgradableProxy(_constructData, _comptrollerLib)
+        NonUpgradableProxy(_constructData, _sharesSplitterLib)
     {}
 }
