@@ -17,7 +17,7 @@ import { BigNumber, utils } from 'ethers';
 import { callOnExternalPosition, createExternalPosition } from './actions';
 
 export interface ILiquityTroveManager extends Contract<ILiquityTroveManager> {
-  getBorrowingFee: Call<(_LUSDDebt: BigNumberish) => BigNumberish>;
+  getBorrowingFee: Call<(_LUSDDebt: BigNumberish) => BigNumber>;
 }
 
 export const ILiquityTroveManager = contract<ILiquityTroveManager>()`
@@ -30,7 +30,7 @@ export interface ILiquityHintHelper extends Contract<ILiquityHintHelper> {
       _cr: BigNumberish,
       _numTrials: BigNumberish,
       _inputRandomSeed: BigNumberish,
-    ) => [hintAddress_: AddressLike, diff_: BigNumberish, latestRandomSeed_: BigNumberish]
+    ) => [hintAddress_: AddressLike, diff_: BigNumber, latestRandomSeed_: BigNumber]
   >;
 }
 
@@ -65,30 +65,34 @@ export async function createLiquityDebtPosition({
   });
 }
 
-// Based on the following util function from liquity
+// Based on the following util function from liquity:
 // https://github.com/liquity/dev/blob/7e5c38eff92c7de7b366ec791fd86abc2012952c/packages/contracts/tests/simulation_helpers.py#L557
+// Note that the math for calculating numTrials in that example is incorrect. According to the Liquity team,
+// these use the following in their frontend: `const numTrials = Math.ceil(10 * Math.sqrt(numberOfTroves))`
 export async function liquityCalcHints({
   collateralAmount,
-  lusdAmount,
-  numTrials = BigNumber.from('15'),
+  debtAmount, // Total debt, inclusive of fees
+  numTrials = BigNumber.from('100'), // See note above for recommended value. This helper uses a static value for testing purposes.
   liquitySortedTroves,
   liquityHintHelper,
   inputRandomSeed = BigNumber.from('4'),
 }: {
   collateralAmount: BigNumber;
-  lusdAmount: BigNumber;
+  debtAmount: BigNumber;
   numTrials?: BigNumber;
   liquitySortedTroves: ILiquitySortedTroves;
   liquityHintHelper: ILiquityHintHelper;
   inputRandomSeed?: BigNumber;
 }) {
-  const nicr = collateralAmount.mul(utils.parseEther('100')).div(lusdAmount);
+  const nicr = collateralAmount.mul(utils.parseEther('100')).div(debtAmount);
 
   const approxHint = await liquityHintHelper.getApproxHint.args(nicr, numTrials, inputRandomSeed).call();
 
-  const hints = await liquitySortedTroves.findInsertPosition.args(nicr, approxHint[0], approxHint[0]).call();
+  const [upperHint, lowerHint] = await liquitySortedTroves.findInsertPosition
+    .args(nicr, approxHint[0], approxHint[0])
+    .call();
 
-  return hints;
+  return { lowerHint, upperHint };
 }
 
 export async function liquityDebtPositionAddCollateral({
@@ -96,16 +100,16 @@ export async function liquityDebtPositionAddCollateral({
   externalPositionManager,
   signer,
   collateralAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
   collateralAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = liquityDebtPositionAddCollateralArgs({
@@ -130,8 +134,8 @@ export async function liquityDebtPositionBorrow({
   signer,
   maxFeePercentage,
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -139,8 +143,8 @@ export async function liquityDebtPositionBorrow({
   signer: SignerWithAddress;
   maxFeePercentage: BigNumberish;
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = liquityDebtPositionBorrowArgs({
@@ -190,8 +194,8 @@ export async function liquityDebtPositionOpenTrove({
   maxFeePercentage,
   collateralAmount,
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -200,8 +204,8 @@ export async function liquityDebtPositionOpenTrove({
   maxFeePercentage: BigNumberish;
   collateralAmount: BigNumberish;
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = liquityDebtPositionOpenTroveArgs({
@@ -227,16 +231,16 @@ export async function liquityDebtPositionRemoveCollateral({
   externalPositionManager,
   signer,
   collateralAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
   collateralAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = liquityDebtPositionRemoveCollateralArgs({
@@ -260,16 +264,16 @@ export async function liquityDebtPositionRepay({
   externalPositionManager,
   signer,
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
   externalPositionProxy,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = liquityDebtPositionRepayBorrowArgs({

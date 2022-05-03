@@ -14,69 +14,69 @@ export enum LiquityDebtPositionActionId {
 
 export function liquityDebtPositionAddCollateralArgs({
   collateralAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
 }: {
   collateralAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
 }) {
-  return encodeArgs(['uint256', 'address', 'address'], [collateralAmount, lowerHint, upperHint]);
+  return encodeArgs(['uint256', 'address', 'address'], [collateralAmount, upperHint, lowerHint]);
 }
 
 export function liquityDebtPositionBorrowArgs({
   maxFeePercentage,
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
 }: {
   maxFeePercentage: BigNumberish;
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
 }) {
-  return encodeArgs(['uint256', 'uint256', 'address', 'address'], [maxFeePercentage, lusdAmount, lowerHint, upperHint]);
+  return encodeArgs(['uint256', 'uint256', 'address', 'address'], [maxFeePercentage, lusdAmount, upperHint, lowerHint]);
 }
 
 export function liquityDebtPositionOpenTroveArgs({
   maxFeePercentage,
   collateralAmount,
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
 }: {
   maxFeePercentage: BigNumberish;
   collateralAmount: BigNumberish;
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
 }) {
   return encodeArgs(
     ['uint256', 'uint256', 'uint256', 'address', 'address'],
-    [maxFeePercentage, collateralAmount, lusdAmount, lowerHint, upperHint],
+    [maxFeePercentage, collateralAmount, lusdAmount, upperHint, lowerHint],
   );
 }
 
 export function liquityDebtPositionRemoveCollateralArgs({
   collateralAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
 }: {
   collateralAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
 }) {
-  return encodeArgs(['uint256', 'address', 'address'], [collateralAmount, lowerHint, upperHint]);
+  return encodeArgs(['uint256', 'address', 'address'], [collateralAmount, upperHint, lowerHint]);
 }
 
 export function liquityDebtPositionRepayBorrowArgs({
   lusdAmount,
-  lowerHint,
   upperHint,
+  lowerHint,
 }: {
   lusdAmount: BigNumberish;
-  lowerHint: AddressLike;
   upperHint: AddressLike;
+  lowerHint: AddressLike;
 }) {
-  return encodeArgs(['uint256', 'address', 'address'], [lusdAmount, lowerHint, upperHint]);
+  return encodeArgs(['uint256', 'address', 'address'], [lusdAmount, upperHint, lowerHint]);
 }

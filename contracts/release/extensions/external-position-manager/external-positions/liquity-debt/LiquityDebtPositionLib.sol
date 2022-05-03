@@ -16,7 +16,6 @@ import "../../../../interfaces/ILiquityTroveManager.sol";
 import "../../../../interfaces/IWETH.sol";
 import "./ILiquityDebtPosition.sol";
 import "./LiquityDebtPositionDataDecoder.sol";
-import "hardhat/console.sol";
 
 /// @title LiquityDebtPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -56,39 +55,39 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
                 uint256 maxFeePercentage,
                 uint256 collateralAmount,
                 uint256 lusdAmount,
-                address lowerHint,
-                address upperHint
+                address upperHint,
+                address lowerHint
             ) = __decodeOpenTroveArgs(actionArgs);
-            __openTrove(maxFeePercentage, collateralAmount, lusdAmount, lowerHint, upperHint);
+            __openTrove(maxFeePercentage, collateralAmount, lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.AddCollateral)) {
             (
                 uint256 collateralAmount,
-                address lowerHint,
-                address upperHint
+                address upperHint,
+                address lowerHint
             ) = __decodeAddCollateralActionArgs(actionArgs);
-            __addCollateral(collateralAmount, lowerHint, upperHint);
+            __addCollateral(collateralAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.RemoveCollateral)) {
             (
                 uint256 collateralAmount,
-                address lowerHint,
-                address upperHint
+                address upperHint,
+                address lowerHint
             ) = __decodeRemoveCollateralActionArgs(actionArgs);
-            __removeCollateral(collateralAmount, lowerHint, upperHint);
+            __removeCollateral(collateralAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.Borrow)) {
             (
                 uint256 maxFeePercentage,
                 uint256 lusdAmount,
-                address lowerHint,
-                address upperHint
+                address upperHint,
+                address lowerHint
             ) = __decodeBorrowActionArgs(actionArgs);
-            __borrow(maxFeePercentage, lusdAmount, lowerHint, upperHint);
+            __borrow(maxFeePercentage, lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.RepayBorrow)) {
             (
                 uint256 lusdAmount,
-                address lowerHint,
-                address upperHint
+                address upperHint,
+                address lowerHint
             ) = __decodeRepayBorrowActionArgs(actionArgs);
-            __repayBorrow(lusdAmount, lowerHint, upperHint);
+            __repayBorrow(lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.CloseTrove)) {
             __closeTrove();
         } else {
@@ -99,14 +98,14 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     /// @dev Adds ETH as collateral
     function __addCollateral(
         uint256 _amount,
-        address _lowerHint,
-        address _upperHint
+        address _upperHint,
+        address _lowerHint
     ) private {
         IWETH(WETH_TOKEN).withdraw(_amount);
 
         ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).addColl{value: _amount}(
-            _lowerHint,
-            _upperHint
+            _upperHint,
+            _lowerHint
         );
     }
 
@@ -153,7 +152,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
 
         ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).openTrove{
             value: _collateralAmount
-        }(_maxFeePercentage, _lusdAmount, _lowerHint, _upperHint);
+        }(_maxFeePercentage, _lusdAmount, _upperHint, _lowerHint);
 
         ERC20(LUSD_TOKEN).safeTransfer(msg.sender, _lusdAmount);
     }
@@ -161,13 +160,13 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     /// @dev Removes ETH as collateral
     function __removeCollateral(
         uint256 _amount,
-        address _lowerHint,
-        address _upperHint
+        address _upperHint,
+        address _lowerHint
     ) private {
         ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).withdrawColl(
             _amount,
-            _lowerHint,
-            _upperHint
+            _upperHint,
+            _lowerHint
         );
 
         IWETH(WETH_TOKEN).deposit{value: _amount}();

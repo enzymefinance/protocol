@@ -19,8 +19,8 @@ abstract contract LiquityDebtPositionDataDecoder {
         pure
         returns (
             uint256 collateralAmount_,
-            address lowerHint_,
-            address upperHint_
+            address upperHint_,
+            address lowerHint_
         )
     {
         return abi.decode(_actionArgs, (uint256, address, address));
@@ -33,8 +33,8 @@ abstract contract LiquityDebtPositionDataDecoder {
         returns (
             uint256 maxFeePercentage_,
             uint256 lusdAmount_,
-            address lowerHint_,
-            address upperHint_
+            address upperHint_,
+            address lowerHint_
         )
     {
         return abi.decode(_actionArgs, (uint256, uint256, address, address));
@@ -57,8 +57,8 @@ abstract contract LiquityDebtPositionDataDecoder {
             uint256 maxFeePercentage_,
             uint256 collateralAmount_,
             uint256 lusdAmount_,
-            address lowerHint_,
-            address upperHint_
+            address upperHint_,
+            address lowerHint_
         )
     {
         return abi.decode(_actionArgs, (uint256, uint256, uint256, address, address));
@@ -70,8 +70,8 @@ abstract contract LiquityDebtPositionDataDecoder {
         pure
         returns (
             uint256 collateralAmount_,
-            address lowerHint_,
-            address upperHint_
+            address upperHint_,
+            address lowerHint_
         )
     {
         return abi.decode(_actionArgs, (uint256, address, address));
@@ -83,8 +83,8 @@ abstract contract LiquityDebtPositionDataDecoder {
         pure
         returns (
             uint256 lusdAmount_,
-            address lowerHint_,
-            address upperHint_
+            address upperHint_,
+            address lowerHint_
         )
     {
         return abi.decode(_actionArgs, (uint256, address, address));
