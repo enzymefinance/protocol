@@ -39,6 +39,21 @@ library AddressArrayLib {
         return removed_;
     }
 
+    /// @dev Helper to verify if a storage array contains a particular value
+    function storageArrayContains(address[] storage _self, address _target)
+        internal
+        view
+        returns (bool doesContain_)
+    {
+        uint256 arrLength = _self.length;
+        for (uint256 i; i < arrLength; i++) {
+            if (_target == _self[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     ////////////
     // MEMORY //
     ////////////

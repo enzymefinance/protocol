@@ -305,6 +305,6 @@ contract MapleLiquidityPositionLib is
     /// @param _pool The pool
     /// @return isUsed_ True if the pool is lent to
     function isUsedLendingPool(address _pool) public view returns (bool isUsed_) {
-        return usedLendingPools.contains(_pool);
+        return usedLendingPools.storageArrayContains(_pool);
     }
 }
