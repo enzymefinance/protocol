@@ -163,7 +163,7 @@ contract TheGraphDelegationPositionLib is
             address(this)
         );
 
-        (, , , , uint256 poolShares, uint256 poolTokens) = GRAPH_STAKING_CONTRACT.delegationPools(
+        (, , , , uint256 poolTokens, uint256 poolShares) = GRAPH_STAKING_CONTRACT.delegationPools(
             _indexer
         );
 
@@ -187,6 +187,6 @@ contract TheGraphDelegationPositionLib is
     /// @param _indexer Address of the indexer
     /// @return isDelegator_ True if delegator of indexer
     function isDelegatorTo(address _indexer) public view returns (bool isDelegator_) {
-        return getIndexers().contains(_indexer);
+        return indexers.storageArrayContains(_indexer);
     }
 }
