@@ -1,5 +1,15 @@
 # @enzymefinance/testutils
 
+## 4.0.2
+
+### Patch Changes
+
+- b4fcf8bc: Update packages after audit feedback and fixes.
+- Updated dependencies [b4fcf8bc]
+  - @enzymefinance/ethers@4.0.2
+  - @enzymefinance/hardhat@4.0.2
+  - @enzymefinance/protocol@4.0.2
+
 ## 4.0.1
 
 ### Patch Changes
