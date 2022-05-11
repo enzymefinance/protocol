@@ -49,9 +49,23 @@ task('verify-comptroller-proxy', 'Verifies the comptroller proxy contract')
     });
   });
 
+task('verify-external-position-proxy', 'Verifies the external position proxy contract')
+  .addParam('address', 'The address of the external position proxy contract')
+  .addParam('vault', 'The vault proxy contract address')
+  .addParam('type', 'The external position type id')
+  .addParam('lib', 'The external position lib address')
+  .addParam('data', 'The external position construct data payload')
+  .setAction(async (params, hre) => {
+    await hre.run('verify:verify', {
+      address: params.address,
+      constructorArguments: [params.vault, params.type, params.lib, params.data],
+      contract: 'contracts/persistent/external-positions/ExternalPositionProxy.sol:ExternalPositionProxy',
+    });
+  });
+
 task('verify-convex-wrapper', 'Verifies a convex wrapper proxy contract')
-  .addPositionalParam('factory', 'The proxy factory contract address')
-  .addPositionalParam('pid', 'The pool id')
+  .addParam('factory', 'The proxy factory contract address')
+  .addParam('pid', 'The pool id')
   .setAction(async (params, hre) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { ConvexCurveLpStakingWrapperFactory, encodeFunctionData } = require('@enzymefinance/protocol');
