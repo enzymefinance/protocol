@@ -33,7 +33,7 @@ const fn: DeployFunction = async function (hre) {
       }),
     );
 
-    if (!!yVaults.length) {
+    if (yVaults.length) {
       log('Registering yearn vault v2 tokens');
       await yearnVaultV2PriceFeedInstance.addDerivatives(yVaults, underlyings);
     }

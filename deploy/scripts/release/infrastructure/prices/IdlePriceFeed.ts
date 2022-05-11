@@ -33,7 +33,7 @@ const fn: DeployFunction = async function (hre) {
       }),
     );
 
-    if (!!idleTokens.length) {
+    if (idleTokens.length) {
       log('Registering idle tokens');
       await idlePriceFeedInstance.addDerivatives(idleTokens, underlyings);
     }

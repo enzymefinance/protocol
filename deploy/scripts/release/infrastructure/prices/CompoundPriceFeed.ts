@@ -25,9 +25,11 @@ const fn: DeployFunction = async function (hre) {
   // Register all uniswap pool tokens with the derivative price feed.
   if (compoundPriceFeed.newlyDeployed) {
     const ctokens = Object.values(config.compound.ctokens);
-    if (!!ctokens.length) {
+
+    if (ctokens.length) {
       log('Registering Compound cTokens');
       const compoundPriceFeedInstance = new CompoundPriceFeed(compoundPriceFeed.address, deployer);
+
       await compoundPriceFeedInstance.addCTokens(ctokens);
     }
   }

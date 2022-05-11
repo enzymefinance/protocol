@@ -39,6 +39,7 @@ const fn: DeployFunction = async function (hre) {
       onlyUntrackDustOrPricelessAssetsPolicy.address,
       deployer,
     );
+
     await onlyUntrackDustOrPricelessAssetsPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
   }
 };

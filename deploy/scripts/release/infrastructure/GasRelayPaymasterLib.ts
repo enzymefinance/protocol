@@ -22,6 +22,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (gasRelayPaymasterLib.newlyDeployed) {
     const gasRelayPaymasterLibInstance = new GasRelayPaymasterLib(gasRelayPaymasterLib, deployer);
+
     // Initialize the lib with dummy data to prevent another init() call
     await gasRelayPaymasterLibInstance.init(LIB_INIT_GENERIC_DUMMY_ADDRESS);
   }

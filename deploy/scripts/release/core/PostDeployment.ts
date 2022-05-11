@@ -24,7 +24,7 @@ import { loadConfig } from '../../../utils/config';
 
 const fn: DeployFunction = async function (hre) {
   const {
-    deployments: { all, get, log },
+    deployments: { all, get, getOrNull, log },
     ethers: { getSigners },
   } = hre;
 
@@ -38,7 +38,7 @@ const fn: DeployFunction = async function (hre) {
   const onlyRemoveDustExternalPositionPolicy = await get('OnlyRemoveDustExternalPositionPolicy');
   const onlyUntrackDustOrPricelessAssetsPolicy = await get('OnlyUntrackDustOrPricelessAssetsPolicy');
   const protocolFeeTracker = await get('ProtocolFeeTracker');
-  const synthetixAdapter = await get('SynthetixAdapter');
+  const synthetixAdapter = await getOrNull('SynthetixAdapter');
 
   const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
 
@@ -70,6 +70,7 @@ const fn: DeployFunction = async function (hre) {
   ];
 
   // Calls to allow claiming rewards from Curve's Minter
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (config.curve) {
     vaultCalls.push(
       [config.curve.minter, curveMinterMintSelector, vaultCallAnyDataHash],
@@ -79,7 +80,8 @@ const fn: DeployFunction = async function (hre) {
   }
 
   // Allows delegating trading on Synthetix to the SynthetixAdapter only
-  if (config.synthetix) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (config.synthetix && synthetixAdapter) {
     vaultCalls.push([
       config.synthetix.delegateApprovals,
       synthetixAssignExchangeDelegateSelector,
@@ -91,6 +93,7 @@ const fn: DeployFunction = async function (hre) {
   const vaultCallContracts = vaultCallValues.map(([contract]) => contract);
   const vaultCallFunctionSigs = vaultCallValues.map(([, functionSig]) => functionSig);
   const vaultCallDataHashes = vaultCallValues.map(([, , dataHash]) => dataHash);
+
   log('Registering vault calls');
 
   await fundDeployerInstance.registerVaultCalls(vaultCallContracts, vaultCallFunctionSigs, vaultCallDataHashes);
@@ -101,20 +104,24 @@ const fn: DeployFunction = async function (hre) {
   const adapters = Object.values(await all())
     .filter((item) => item.linkedData?.type === 'ADAPTER')
     .map((item) => item.address.toLowerCase());
+
   await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, adapters);
 
   const fees = Object.values(await all())
     .filter((item) => item.linkedData?.type === 'FEE')
     .map((item) => item.address.toLowerCase());
+
   await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, fees);
 
   const policies = Object.values(await all())
     .filter((item) => item.linkedData?.type === 'POLICY')
     .map((item) => item.address.toLowerCase());
+
   await addressListRegistryContract.createList(dispatcher.address, AddressListUpdateType.AddAndRemove, policies);
 
   // Set the protocol fee
   const protocolFeeTrackerInstance = new ProtocolFeeTracker(protocolFeeTracker.address, deployer);
+
   await protocolFeeTrackerInstance.setFeeBpsDefault(config.feeBps);
 };
 

@@ -45,10 +45,12 @@ const fn: DeployFunction = async function (hre) {
 
   if (comptrollerLib.newlyDeployed) {
     const comptrollerLibInstance = new ComptrollerLib(comptrollerLib.address, deployer);
+
     // Initialize the lib with dummy data to prevent another init() call
     await comptrollerLibInstance.init(config.weth, 0);
 
     const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
+
     log('Updating ComptrollerLib on FundDeployer');
     await fundDeployerInstance.setComptrollerLib(comptrollerLib.address);
   }

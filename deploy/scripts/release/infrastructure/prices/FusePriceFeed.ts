@@ -26,9 +26,11 @@ const fn: DeployFunction = async function (hre) {
   if (fusePriceFeed.newlyDeployed) {
     const ftokens = Object.values(config.fuse.ftokens);
     const fetherTokens = Object.values(config.fuse.fetherTokens);
-    if (!!ftokens.length) {
+
+    if (ftokens.length) {
       log('Registering Fuse fTokens');
       const fusePriceFeedInstance = new FusePriceFeed(fusePriceFeed.address, deployer);
+
       await fusePriceFeedInstance.addCTokens(ftokens);
       await fusePriceFeedInstance.addCEtherTokens(fetherTokens);
     }

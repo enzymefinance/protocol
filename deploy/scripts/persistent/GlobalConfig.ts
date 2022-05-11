@@ -1,10 +1,7 @@
-import {
-  encodeFunctionData,
-  GlobalConfigLib as GlobalConfigLibContract,
-  GlobalConfigLibArgs,
-  GlobalConfigProxyArgs,
-} from '@enzymefinance/protocol';
-import { DeployFunction } from 'hardhat-deploy/types';
+import { sameAddress } from '@enzymefinance/ethers';
+import type { GlobalConfigLibArgs, GlobalConfigProxyArgs } from '@enzymefinance/protocol';
+import { encodeFunctionData, GlobalConfigLib as GlobalConfigLibContract } from '@enzymefinance/protocol';
+import type { DeployFunction } from 'hardhat-deploy/types';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -33,7 +30,8 @@ const fn: DeployFunction = async function (hre) {
 
   if (!globalConfigProxy.newlyDeployed) {
     const globalConfigProxyInstance = new GlobalConfigLibContract(globalConfigProxy.address, deployer);
-    if ((await globalConfigProxyInstance.getGlobalConfigLib()) != globalConfigLib.address) {
+
+    if (!sameAddress(await globalConfigProxyInstance.getGlobalConfigLib(), globalConfigLib.address)) {
       log('Updating GlobalConfigLib on GlobalConfigProxy');
       await globalConfigProxyInstance.setGlobalConfigLib(globalConfigLib.address);
     }

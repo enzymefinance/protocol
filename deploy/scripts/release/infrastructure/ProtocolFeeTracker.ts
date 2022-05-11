@@ -20,6 +20,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (protocolFeeTracker.newlyDeployed) {
     const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
+
     log('Updating ProtocolFeeTracker on FundDeployer');
     await fundDeployerInstance.setProtocolFeeTracker(protocolFeeTracker.address);
   }

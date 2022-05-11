@@ -1,3 +1,4 @@
+import { sameAddress } from '@enzymefinance/ethers';
 import type { ProtocolFeeReserveLibArgs, ProtocolFeeReserveProxyArgs } from '@enzymefinance/protocol';
 import {
   encodeFunctionData,
@@ -28,6 +29,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (protocolFeeReserveLib.newlyDeployed) {
     const protocolFeeReserveLibInstance = new ProtocolFeeReserveLib(protocolFeeReserveLib, deployer);
+
     // Initialize the lib with dummy data to prevent another init() call
     await protocolFeeReserveLibInstance.init(LIB_INIT_GENERIC_DUMMY_ADDRESS);
   }
@@ -45,7 +47,8 @@ const fn: DeployFunction = async function (hre) {
       protocolFeeReserveProxy.address,
       deployer,
     );
-    if ((await protocolFeeReserveProxyInstance.getProtocolFeeReserveLib()) != protocolFeeReserveLib.address) {
+
+    if (!sameAddress(await protocolFeeReserveProxyInstance.getProtocolFeeReserveLib(), protocolFeeReserveLib.address)) {
       log('Updating ProtocolFeeReserveLib on ProtocolFeeReserveProxy');
       await protocolFeeReserveProxyInstance.setProtocolFeeReserveLib(protocolFeeReserveLib.address);
     }

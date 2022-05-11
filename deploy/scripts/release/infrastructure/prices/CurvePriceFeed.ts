@@ -31,13 +31,14 @@ const fn: DeployFunction = async function (hre) {
     const curvePriceFeedInstance = new CurvePriceFeed(curvePriceFeed.address, deployer);
     const pools = Object.values(config.curve.pools);
 
-    if (!!pools.length) {
+    if (pools.length) {
       log('Registering curve tokens');
       const poolAddresses = pools.map((pool) => pool.pool);
       const invariantProxyAssets = pools.map((pool) => pool.invariantProxyAsset);
       const reentrantVirtualPrices = pools.map((pool) => pool.hasReentrantVirtualPrice);
       const lpTokens = pools.map((pool) => pool.lpToken);
       const gaugeTokens = pools.map((pool) => pool.liquidityGaugeToken);
+
       await curvePriceFeedInstance.addPools(
         poolAddresses,
         invariantProxyAssets,

@@ -26,12 +26,15 @@ const fn: DeployFunction = async function (hre) {
   // Register all uniswap pool tokens with the derivative price feed
   if (uniswapPoolPriceFeed.newlyDeployed) {
     const pools = Object.values(config.uniswap.pools);
-    if (!!pools.length) {
+
+    if (pools.length) {
       log('Registering UniswapV2 pool tokens');
       const uniswapPoolPriceFeedInstance = new UniswapV2PoolPriceFeed(uniswapPoolPriceFeed.address, deployer);
+
       await uniswapPoolPriceFeedInstance.addPoolTokens(pools);
 
       const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
+
       await valueInterpreterInstance.addDerivatives(
         pools,
         pools.map(() => uniswapPoolPriceFeed.address),

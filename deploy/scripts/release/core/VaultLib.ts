@@ -26,7 +26,7 @@ const fn: DeployFunction = async function (hre) {
   const feeTokenBurner = config.feeTokenBurn.burnFromVault
     ? constants.AddressZero
     : config.feeTokenBurn.sendToProtocolFeeReserve
-    ? protocolFeeReserveProxy
+    ? protocolFeeReserveProxy.address
     : config.feeTokenBurn.externalBurnerAddress;
 
   const vaultLib = await deploy('VaultLib', {
@@ -47,10 +47,12 @@ const fn: DeployFunction = async function (hre) {
 
   if (vaultLib.newlyDeployed) {
     const vaultLibInstance = new VaultLib(vaultLib, deployer);
+
     // Initialize the lib with dummy data to prevent another init() call
     await vaultLibInstance.init(LIB_INIT_GENERIC_DUMMY_ADDRESS, LIB_INIT_GENERIC_DUMMY_ADDRESS, '');
 
     const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
+
     log('Updating VaultLib on FundDeployer');
     await fundDeployerInstance.setVaultLib(vaultLib.address);
   }

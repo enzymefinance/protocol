@@ -119,10 +119,6 @@ const config: HardhatUserConfig = {
       gasPrice: 0, // TODO: Consider removing this again.
       initialBaseFeePerGas: 0,
     },
-    kovan: {
-      accounts: accounts('kovan'),
-      url: node('kovan'),
-    },
     mainnet: {
       accounts: accounts('mainnet'),
       url: node('mainnet'),
@@ -130,6 +126,10 @@ const config: HardhatUserConfig = {
     matic: {
       accounts: accounts('matic'),
       url: node('matic'),
+    },
+    testnet: {
+      accounts: accounts('testnet'),
+      url: node('testnet'),
     },
   },
   paths: {

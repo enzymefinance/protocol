@@ -24,6 +24,7 @@ const fn: DeployFunction = async function (hre) {
     const addressListRegistry = await get('AddressListRegistry');
     const addressListRegistryContract = new AddressListRegistry(addressListRegistry.address, deployer);
     const nonSlippageAdaptersListId = await addressListRegistryContract.getListCount();
+
     await addressListRegistryContract.createList(
       dispatcher.address,
       AddressListUpdateType.AddAndRemove,

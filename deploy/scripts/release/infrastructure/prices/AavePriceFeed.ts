@@ -26,9 +26,10 @@ const fn: DeployFunction = async function (hre) {
     const aavePriceFeedInstance = new AavePriceFeed(aavePriceFeed.address, deployer);
     const atokenValues = Object.values(config.aave.atokens);
 
-    if (!!atokenValues.length) {
+    if (atokenValues.length) {
       const atokenDerivatives = atokenValues.map(([derivative]) => derivative);
       const atokenUnderlyings = atokenValues.map(([, underlying]) => underlying);
+
       log('Registering aave tokens');
       await aavePriceFeedInstance.addDerivatives(atokenDerivatives, atokenUnderlyings);
     }

@@ -39,6 +39,7 @@ const fn: DeployFunction = async function (hre) {
     await valueInterpreterInstance.setEthUsdAggregator(config.chainlink.ethusd);
 
     const primitivesInfo = Object.keys(config.primitives).map((key) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!config.chainlink.aggregators[key]) {
         throw new Error(`Missing aggregator for ${key}`);
       }
@@ -110,6 +111,7 @@ const fn: DeployFunction = async function (hre) {
 
     const derivatives = derivativePairs.map(([derivative]) => derivative);
     const derivativeFeeds = derivativePairs.map(([, feed]) => feed);
+
     if (derivatives.length && derivativeFeeds.length) {
       await valueInterpreterInstance.addDerivatives(derivatives, derivativeFeeds);
     }

@@ -20,6 +20,7 @@ const fn: DeployFunction = async function (hre) {
 
   if (depositWrapper.newlyDeployed) {
     const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
+
     log('Adding DepositWrapper as buySharesOnBehalf caller on FundDeployer');
     await fundDeployerInstance.registerBuySharesOnBehalfCallers([depositWrapper]);
   }

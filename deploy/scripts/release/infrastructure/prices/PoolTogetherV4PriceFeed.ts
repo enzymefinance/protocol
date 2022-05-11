@@ -26,9 +26,10 @@ const fn: DeployFunction = async function (hre) {
     const poolTogetherV4PriceFeedInstance = new PoolTogetherV4PriceFeed(poolTogetherV4PriceFeed.address, deployer);
     const ptTokenValues = Object.values(config.poolTogetherV4.ptTokens);
 
-    if (!!ptTokenValues.length) {
+    if (ptTokenValues.length) {
       const ptTokenDerivatives = ptTokenValues.map(([derivative]) => derivative);
       const ptTokenUnderlyings = ptTokenValues.map(([, underlying]) => underlying);
+
       log('Registering poolTogether tokens');
       await poolTogetherV4PriceFeedInstance.addDerivatives(ptTokenDerivatives, ptTokenUnderlyings);
     }
@@ -40,7 +41,7 @@ fn.dependencies = ['Config', 'FundDeployer'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 
-  return !isOneOfNetworks(chain, [Network.HOMESTEAD]);
+  return !isOneOfNetworks(chain, [Network.HOMESTEAD, Network.MATIC]);
 };
 
 export default fn;

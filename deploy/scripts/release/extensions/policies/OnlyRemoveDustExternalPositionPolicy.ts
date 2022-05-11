@@ -39,6 +39,7 @@ const fn: DeployFunction = async function (hre) {
       onlyRemoveDustExternalPositionPolicy.address,
       deployer,
     );
+
     await onlyRemoveDustExternalPositionPolicyContract.setDustToleranceInWeth(utils.parseEther('0.05'));
   }
 };
