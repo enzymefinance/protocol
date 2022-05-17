@@ -29,6 +29,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'ConvexCurveLpStakingWrapperFactory'];
 fn.dependencies = ['Config', 'Dispatcher'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

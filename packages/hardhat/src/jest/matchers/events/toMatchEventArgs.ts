@@ -26,6 +26,7 @@ export function toMatchEventArgs(this: jest.MatcherContext, received: utils.LogD
   }
 
   const pass = this.equals(receivedParams, expectedMatchers);
+
   const message = pass
     ? () => matcherHint('.toMatchEventArgs', undefined, undefined, this)
     : () => {

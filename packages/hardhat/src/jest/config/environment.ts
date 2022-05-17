@@ -46,6 +46,7 @@ export default class EnzymeHardhatEnvironment extends NodeEnvironment {
     this.recordCallHistory = options.history;
 
     this.tempDir = process.env.__HARDHAT_COVERAGE_TEMPDIR__ ?? '';
+
     if (this.recordCodeCoverage && !this.tempDir) {
       throw new Error('Missing shared temporary directory for code coverage data collection');
     }

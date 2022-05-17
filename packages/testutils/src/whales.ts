@@ -1,7 +1,6 @@
 import { resolveAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 
-/* eslint-disable sort-keys-fix/sort-keys-fix */
 const whales = {
   // primitives
   bat: '0x12274c71304bc0e6b38a56b94d2949b118feb838',
@@ -55,7 +54,6 @@ const whales = {
   // Curve steth pool related
   stecrv: '0x56c915758ad3f76fd287fff7563ee313142fb663',
 } as const;
-/* eslint-enable sort-keys-fix/sort-keys-fix */
 
 export type Whale = keyof typeof whales;
 export type WhaleSigners<T extends Partial<Whale> = Whale> = Record<T, SignerWithAddress>;

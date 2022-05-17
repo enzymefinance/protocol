@@ -214,6 +214,7 @@ describe('disablePolicyForFund', () => {
         false,
       );
     }
+
     expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).not.toEqual(
       expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
@@ -222,6 +223,7 @@ describe('disablePolicyForFund', () => {
     const policyDisabledEvents = extractEvent(receipt, policyManager.abi.getEvent('PolicyDisabledOnHookForFund'));
 
     expect(policyDisabledEvents.length).toBe(implementedHooks.length);
+
     for (const i in implementedHooks) {
       expect(policyDisabledEvents[0]).toMatchEventArgs({
         comptrollerProxy,
@@ -337,6 +339,7 @@ describe('enablePolicyForFund', () => {
         false,
       );
     }
+
     expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).not.toEqual(
       expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
@@ -353,6 +356,7 @@ describe('enablePolicyForFund', () => {
         true,
       );
     }
+
     expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toEqual(
       expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
@@ -394,6 +398,7 @@ describe('enablePolicyForFund', () => {
         true,
       );
     }
+
     expect(await policyManager.getEnabledPoliciesForFund(comptrollerProxy)).toEqual(
       expect.arrayContaining([mockPostBuySharesPolicy.address]),
     );
@@ -463,6 +468,7 @@ describe('setConfigForFund', () => {
 
     // Assert state for fund
     expect(await policyManager.getVaultProxyForFund(comptrollerProxy)).toMatchAddress(vaultProxy);
+
     for (const policy of orderedPolicies) {
       for (const hook of await policy.implementedHooks()) {
         expect(await policyManager.policyIsEnabledOnHookForFund(comptrollerProxy, hook, policy)).toBe(true);
@@ -488,6 +494,7 @@ describe('setConfigForFund', () => {
     const events = extractEvent(receipt, policyEnabledForFundEvent);
 
     expect(events.length).toBe(orderedPolicies.length);
+
     for (let i = 0; i < orderedPolicies.length; i++) {
       expect(events[i]).toMatchEventArgs({
         comptrollerProxy: comptrollerProxy.address,

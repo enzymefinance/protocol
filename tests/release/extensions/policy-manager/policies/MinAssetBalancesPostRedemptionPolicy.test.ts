@@ -78,6 +78,7 @@ describe('addFundSettings', () => {
     );
 
     expect(events.length).toBe(assets.length);
+
     for (const i in assets) {
       expect(
         await minAssetBalancesPostRedemptionPolicy.getMinAssetBalanceForFund(comptrollerProxy, assets[i]),

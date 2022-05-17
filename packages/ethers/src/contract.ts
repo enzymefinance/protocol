@@ -55,6 +55,7 @@ export class Contract<TContract extends Contract = any> {
   constructor(abi: Interface | PossibleInterface, address: AddressLike, provider: providers.Provider | Signer) {
     this.address = resolveAddress(address);
     this.abi = ensureInterface(abi);
+
     if (Signer.isSigner(provider)) {
       this._signer = provider;
     } else if (providers.Provider.isProvider(provider)) {

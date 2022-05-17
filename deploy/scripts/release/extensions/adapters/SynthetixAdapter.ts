@@ -37,6 +37,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'SynthetixAdapter'];
 fn.dependencies = ['Config', 'IntegrationManager', 'ValueInterpreter'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

@@ -33,6 +33,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'OlympusV2Adapter'];
 fn.dependencies = ['Config', 'IntegrationManager'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

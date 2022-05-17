@@ -37,6 +37,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'CompoundPriceFeed'];
 fn.dependencies = ['Config', 'FundDeployer'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

@@ -39,6 +39,7 @@ export function toHaveEmittedWith(
   const matcher = expect.arrayContaining([expectedMatchers]);
   const pass = this.equals(args, matcher);
   const signature = resolvedFragment.format('full');
+
   const message = pass
     ? () => matcherHint('.toHaveEmittedWith', signature, undefined, this)
     : () => {

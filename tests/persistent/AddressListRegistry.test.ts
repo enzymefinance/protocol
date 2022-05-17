@@ -88,6 +88,7 @@ describe('addToList', () => {
     const events = extractEvent(receipt, 'ItemAddedToList');
 
     expect(events.length).toBe(itemsToAdd.length);
+
     for (const i in itemsToAdd) {
       expect(events[i].args).toMatchObject({
         id: listId,
@@ -124,6 +125,7 @@ describe('createList', () => {
       addressListRegistry.getListUpdateType,
       updateType,
     );
+
     for (const item of initialItems) {
       expect(await addressListRegistry.isInList(expectedListId, item)).toBe(true);
     }
@@ -194,6 +196,7 @@ describe('removeFromList', () => {
     const events = extractEvent(receipt, 'ItemRemovedFromList');
 
     expect(events.length).toBe(itemsToRemove.length);
+
     for (const i in itemsToRemove) {
       expect(events[i].args).toMatchObject({
         id: listId,

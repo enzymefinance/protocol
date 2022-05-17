@@ -211,6 +211,7 @@ describe('updateFundSettings', () => {
         minMaxInvestmentPolicy.updateFundSettings(comptrollerProxy, minMaxInvestmentPolicyConfig),
       ).rejects.toBeRevertedWith('minInvestmentAmount must be less than maxInvestmentAmount');
     }
+
     const minMaxInvestmentPolicyConfig = minMaxInvestmentPolicyArgs({
       maxInvestmentAmount: utils.parseEther('1'),
       minInvestmentAmount: utils.parseEther('2'),

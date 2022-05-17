@@ -87,6 +87,7 @@ describe('addFundSettings', () => {
     );
 
     expect(events.length).toBe(externalPositionTypeIds.length);
+
     for (const i in externalPositionTypeIds) {
       expect(
         await allowedExternalPositionTypesPolicy.externalPositionTypeIsAllowedForFund(

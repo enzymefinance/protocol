@@ -23,6 +23,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'UsdEthSimulatedAggregator'];
 fn.dependencies = ['Config'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

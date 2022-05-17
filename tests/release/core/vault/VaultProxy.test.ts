@@ -794,6 +794,7 @@ describe('asset managers', () => {
       const events = extractEvent(receipt, 'AssetManagerAdded');
 
       expect(events.length).toBe(assetManagersToAdd.length);
+
       for (const i in assetManagersToAdd) {
         expect(events[i].args).toMatchObject({
           manager: assetManagersToAdd[i],
@@ -839,6 +840,7 @@ describe('asset managers', () => {
       const events = extractEvent(receipt, 'AssetManagerRemoved');
 
       expect(events.length).toBe(assetManagersToRemove.length);
+
       for (const i in assetManagersToRemove) {
         expect(events[i].args).toMatchObject({
           manager: assetManagersToRemove[i],

@@ -190,6 +190,7 @@ const fn: DeployFunction = async (hre) => {
 };
 
 fn.tags = ['Config'];
+
 fn.skip = async (hre) => {
   // Run this only for polygon.
   const chain = await hre.getChainId();

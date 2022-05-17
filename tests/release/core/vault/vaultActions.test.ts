@@ -56,6 +56,7 @@ describe('AddExternalPosition', () => {
       );
       i++;
     }
+
     expect((await vaultProxy.getTrackedAssets()).length).toBe(19);
 
     // Add 1 external position
@@ -172,6 +173,7 @@ describe('AddTrackedAsset', () => {
       );
       i++;
     }
+
     expect((await vaultProxy.getTrackedAssets()).length).toBe(20);
 
     // Adding a new asset should fail

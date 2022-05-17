@@ -27,6 +27,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'PoolTogetherV4Adapter'];
 fn.dependencies = ['IntegrationManager', 'PoolTogetherV4PriceFeed'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

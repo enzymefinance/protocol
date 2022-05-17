@@ -23,6 +23,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'ExternalPositions', 'UniswapV3LiquidityPositionParser'];
 fn.dependencies = ['Config', 'ValueInterpreter'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

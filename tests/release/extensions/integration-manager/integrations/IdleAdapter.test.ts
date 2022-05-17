@@ -495,6 +495,7 @@ describe('rewards behavior', () => {
     const govTokensLength = (await idleToken.getGovTokensAmounts(idleAdapter)).length;
 
     expect(govTokensLength).toBeGreaterThan(0);
+
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
       const govToken = new StandardToken(await idleToken.govTokens(i), provider);
 

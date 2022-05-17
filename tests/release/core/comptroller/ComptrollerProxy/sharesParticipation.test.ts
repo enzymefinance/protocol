@@ -1128,6 +1128,7 @@ describe('redeem', () => {
 
       // Assert the redeemer has redeemed all shares and received the expected assets and full balances
       expect(await vaultProxy.balanceOf(investor)).toEqBigNumber(0);
+
       for (const i in expectedPayoutAssets) {
         expect(await expectedPayoutAssets[i].balanceOf(investor)).toEqBigNumber(
           preTxInvestorExpectedAssetsBalances[i].add(expectedPayoutAmounts[i]),

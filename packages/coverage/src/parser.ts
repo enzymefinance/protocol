@@ -224,6 +224,7 @@ function parseFunctionDefinition(state: ParseState, expression: FunctionDefiniti
   }
 
   registerFunction(state, expression);
+
   if (expression.body) {
     parseExpression(state, expression.body);
   }
@@ -265,6 +266,7 @@ function parseModifierDefinition(state: ParseState, expression: ModifierDefiniti
   }
 
   registerFunction(state, expression);
+
   if (expression.body) {
     parseExpression(state, expression.body);
   }

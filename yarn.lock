@@ -1493,10 +1493,10 @@
     "@babel/preset-react" "^7.16.7"
     "@babel/preset-typescript" "^7.16.7"
 
-"@enzymefinance/eslint-config@^1.0.24":
-  version "1.0.24"
-  resolved "https://registry.yarnpkg.com/@enzymefinance/eslint-config/-/eslint-config-1.0.24.tgz#6d4a4444128fb8efe7e5301a7e5c0372420a5811"
-  integrity sha512-Lo/mzGyKTWwGmj+cg22UPc7HOnpvS/zj3irErcf3xyQJtTz+OKQD6xi4z/LH1YaNA013CBHwqlud6Z+gy3Lshg==
+"@enzymefinance/eslint-config@^1.0.25":
+  version "1.0.25"
+  resolved "https://registry.yarnpkg.com/@enzymefinance/eslint-config/-/eslint-config-1.0.25.tgz#80520241c229a54da2ca4862e0d23a16bbe057b1"
+  integrity sha512-g9xA2jQmZeUHdB+Cp6xlWOb0JwQdb0s37pMo3m1HiMM03qImVgaHlu+8pafrc7yxXChi4iStE92boJE3FqXC1A==
   dependencies:
     "@typescript-eslint/eslint-plugin" "^5.12.1"
     "@typescript-eslint/parser" "^5.12.1"
@@ -1506,7 +1506,6 @@
     eslint-plugin-react-hooks "^4.3.0"
     eslint-plugin-security "^1.4.0"
     eslint-plugin-simple-import-sort "^7.0.0"
-    eslint-plugin-sort-keys-fix "^1.1.1"
     eslint-plugin-tailwindcss "^3.5.0"
     eslint-plugin-unused-imports "^2.0.0"
 
@@ -3199,7 +3198,7 @@ acorn-globals@^6.0.0:
     acorn "^7.1.1"
     acorn-walk "^7.1.1"
 
-acorn-jsx@^5.0.0, acorn-jsx@^5.2.0, acorn-jsx@^5.3.1:
+acorn-jsx@^5.0.0, acorn-jsx@^5.3.1:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
   integrity sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==
@@ -5051,16 +5050,6 @@ eslint-plugin-simple-import-sort@^7.0.0:
   resolved "https://registry.yarnpkg.com/eslint-plugin-simple-import-sort/-/eslint-plugin-simple-import-sort-7.0.0.tgz#a1dad262f46d2184a90095a60c66fef74727f0f8"
   integrity sha512-U3vEDB5zhYPNfxT5TYR7u01dboFZp+HNpnGhkDB2g/2E4wZ/g1Q9Ton8UwCLfRV9yAKyYqDh62oHOamvkFxsvw==
 
-eslint-plugin-sort-keys-fix@^1.1.1:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-sort-keys-fix/-/eslint-plugin-sort-keys-fix-1.1.2.tgz#00c8b5791612ec32162b8d7a0563e9c6eb27ec59"
-  integrity sha512-DNPHFGCA0/hZIsfODbeLZqaGY/+q3vgtshF85r+YWDNCQ2apd9PNs/zL6ttKm0nD1IFwvxyg3YOTI7FHl4unrw==
-  dependencies:
-    espree "^6.1.2"
-    esutils "^2.0.2"
-    natural-compare "^1.4.0"
-    requireindex "~1.2.0"
-
 eslint-plugin-tailwindcss@^3.5.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-tailwindcss/-/eslint-plugin-tailwindcss-3.5.0.tgz#861b2c3bc7c058fa24e72ca49910e2ad487cda33"
@@ -5231,15 +5220,6 @@ espree@^5.0.1:
     acorn "^6.0.7"
     acorn-jsx "^5.0.0"
     eslint-visitor-keys "^1.0.0"
-
-espree@^6.1.2:
-  version "6.2.1"
-  resolved "https://registry.yarnpkg.com/espree/-/espree-6.2.1.tgz#77fc72e1fd744a2052c20f38a5b575832e82734a"
-  integrity sha512-ysCxRQY3WaXJz9tdbWOwuWr5Y/XrPTGX9Kiz3yoUXwW0VZ4w30HTkQLaGx/+ttFjF8i+ACbArnB4ce68a9m5hw==
-  dependencies:
-    acorn "^7.1.1"
-    acorn-jsx "^5.2.0"
-    eslint-visitor-keys "^1.1.0"
 
 espree@^9.3.1:
   version "9.3.1"
@@ -8992,11 +8972,6 @@ require-main-filename@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/require-main-filename/-/require-main-filename-2.0.0.tgz#d0b329ecc7cc0f61649f62215be69af54aa8989b"
   integrity sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==
-
-requireindex@~1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/requireindex/-/requireindex-1.2.0.tgz#3463cdb22ee151902635aa6c9535d4de9c2ef1ef"
-  integrity sha512-L9jEkOi3ASd9PYit2cwRfyppc9NoABujTP8/5gFcbERmo5jUoAKovIC3fsF17pkTnGsrByysqX+Kxd2OTNI1ww==
 
 resolve-cwd@^3.0.0:
   version "3.0.0"

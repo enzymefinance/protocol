@@ -39,6 +39,7 @@ function enhanceResponse<TFunction extends ConstructorFunction<any> | SendFuncti
   const enhanced = response as any as ContractTransaction<TFunction>;
 
   enhanced.function = fn;
+
   enhanced.wait = async (confirmations?: number) => {
     const receipt = await wait(confirmations);
     const enhanced = receipt as any as ContractReceipt<TFunction>;
@@ -398,6 +399,7 @@ export class ConstructorFunction<
     if (!this.contract.signer) {
       throw new Error('Missing signer');
     }
+
     const populated = await this.populate();
     const response = await this.contract.signer.sendTransaction(populated);
     const enhanced = enhanceResponse(this, response);

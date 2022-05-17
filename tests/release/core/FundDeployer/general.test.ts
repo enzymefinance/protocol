@@ -275,6 +275,7 @@ describe('buyShares caller registry', () => {
       const events = extractEvent(receipt, 'BuySharesOnBehalfCallerRegistered');
 
       expect(events.length).toBe(buySharesCallersToRegister.length);
+
       for (const i in buySharesCallersToRegister) {
         expect(events[i].args).toMatchObject({
           caller: buySharesCallersToRegister[i],
@@ -318,6 +319,7 @@ describe('buyShares caller registry', () => {
       const events = extractEvent(receipt, 'BuySharesOnBehalfCallerDeregistered');
 
       expect(events.length).toBe(buySharesCallersToDeregister.length);
+
       for (const i in buySharesCallersToDeregister) {
         expect(events[i].args).toMatchObject({
           caller: buySharesCallersToDeregister[i],
@@ -425,6 +427,7 @@ describe('vault call registry', () => {
       const events = extractEvent(tx, 'VaultCallDeregistered');
 
       expect(events.length).toBe(contracts.length);
+
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({
           contractAddress: contracts[i],
@@ -511,6 +514,7 @@ describe('vault call registry', () => {
       const events = extractEvent(tx, 'VaultCallRegistered');
 
       expect(events.length).toBe(contracts.length);
+
       for (const i in contracts) {
         expect(events[i].args).toMatchObject({
           contractAddress: contracts[i],

@@ -33,6 +33,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'AaveAdapter'];
 fn.dependencies = ['Config', 'IntegrationManager', 'AavePriceFeed'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 

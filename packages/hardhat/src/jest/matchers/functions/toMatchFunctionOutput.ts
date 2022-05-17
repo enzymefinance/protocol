@@ -52,6 +52,7 @@ export function toMatchFunctionOutput(
   }
 
   const pass = this.equals(receivedParams, expectedMatchers);
+
   const message = pass
     ? () => matcherHint('.toMatchFunctionOutput', undefined, undefined, this)
     : () => {

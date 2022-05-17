@@ -5,6 +5,7 @@ import { ensureParameters } from './utils';
 
 export function toHaveBeenCalledOnContract(this: jest.MatcherContext, fn: ContractFunction): jest.CustomMatcherResult;
 export function toHaveBeenCalledOnContract(this: jest.MatcherContext, contract: Contract): jest.CustomMatcherResult;
+
 export function toHaveBeenCalledOnContract(
   this: jest.MatcherContext,
   subject: Contract | ContractFunction,

@@ -350,6 +350,7 @@ describe('setConfigForFund', () => {
     const events = extractEvent(receipt, feeEnabledForFundEvent);
 
     expect(events.length).toBe(fees.length);
+
     for (let i = 0; i < fees.length; i++) {
       expect(events[i].args).toMatchObject({
         comptrollerProxy: comptrollerProxy.address,

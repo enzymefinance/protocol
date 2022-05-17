@@ -145,6 +145,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     if (lpTokenAddress === constants.AddressZero) {
       lpTokenAddress = pool;
     }
+
     lpToken = new StandardToken(lpTokenAddress, provider);
 
     nTokens = 0;
@@ -179,6 +180,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
       if (sameAddress(asset, assetToLend)) {
         assetToLendIndex = i;
       }
+
       nTokens++;
     }
 
@@ -194,6 +196,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
         primitivesToAdd.push(tokenAddress);
       }
     }
+
     if (primitivesToAdd.length > 0) {
       await valueInterpreter.addPrimitives(
         primitivesToAdd,
@@ -215,6 +218,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
           [constants.AddressZero],
         );
       }
+
       await valueInterpreter.addDerivatives([lpToken], [curvePriceFeed]);
     }
 
@@ -225,6 +229,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
       if (!(await curvePriceFeed.isSupportedAsset(gaugeTokenAddress))) {
         await curvePriceFeed.addGaugeTokens([gaugeTokenAddress], [pool]);
       }
+
       await valueInterpreter.addDerivatives([gaugeTokenAddress], [curvePriceFeed]);
     }
 

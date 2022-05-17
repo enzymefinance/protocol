@@ -35,7 +35,7 @@
     "@commitlint/cli": "^16.2.3",
     "@commitlint/config-conventional": "^16.2.1",
     "@enzymefinance/babel-config": "^1.0.19",
-    "@enzymefinance/eslint-config": "^1.0.24",
+    "@enzymefinance/eslint-config": "^1.0.25",
     "@enzymefinance/prettier-config": "^1.0.9",
     "@manypkg/cli": "^0.19.1",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",

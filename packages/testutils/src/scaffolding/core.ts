@@ -97,6 +97,7 @@ export async function createFundDeployer({
   if (setReleaseLive) {
     await nextFundDeployer.setReleaseLive();
   }
+
   if (setOnDispatcher) {
     await dispatcher.setCurrentFundDeployer(nextFundDeployer);
   }

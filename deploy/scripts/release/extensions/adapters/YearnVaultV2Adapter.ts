@@ -27,6 +27,7 @@ const fn: DeployFunction = async function (hre) {
 
 fn.tags = ['Release', 'Adapters', 'YearnVaultV2Adapter'];
 fn.dependencies = ['IntegrationManager', 'YearnVaultV2PriceFeed'];
+
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 
