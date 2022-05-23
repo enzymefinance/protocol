@@ -15,6 +15,10 @@ export * from './codegen/FundValueCalculatorRouter';
 export * from './codegen/FundValueCalculatorUsdWrapper';
 export * from './codegen/GlobalConfigLib';
 export * from './codegen/GlobalConfigProxy';
+export * from './codegen/ManualValueOracleFactory';
+export * from './codegen/ManualValueOracleLib';
+export * from './codegen/SharesSplitterFactory';
+export * from './codegen/SharesSplitterLib';
 
 // Release core
 export * from './codegen/FundDeployer';
@@ -116,8 +120,6 @@ export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 // Peripheral
 export * from './codegen/DepositWrapper';
 export * from './codegen/FundValueCalculator';
-export * from './codegen/SharesSplitterFactory';
-export * from './codegen/SharesSplitterLib';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
