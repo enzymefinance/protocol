@@ -127,6 +127,7 @@ export * from './codegen/ITestTheGraphEpochManager';
 export * from './codegen/ITestTheGraphStaking';
 export * from './codegen/SelfDestructEthPayer';
 export * from './codegen/TestAddressArrayLib';
+export * from './codegen/TestNominatedOwnerMixin';
 export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestPricelessAssetBypassMixin';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
