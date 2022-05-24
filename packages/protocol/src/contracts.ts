@@ -19,6 +19,7 @@ export * from './codegen/ManualValueOracleFactory';
 export * from './codegen/ManualValueOracleLib';
 export * from './codegen/SharesSplitterFactory';
 export * from './codegen/SharesSplitterLib';
+export * from './codegen/UintListRegistry';
 
 // Release core
 export * from './codegen/FundDeployer';

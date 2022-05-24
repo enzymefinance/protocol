@@ -9,4 +9,5 @@ export * from './policies';
 export * from './protocol-fees';
 export * from './sighash';
 export * from './signer';
+export * from './uintListRegistry';
 export * from './vaultCalls';
