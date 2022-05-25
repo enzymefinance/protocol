@@ -1,5 +1,15 @@
 # @enzymefinance/hardhat
 
+## 4.0.3
+
+### Patch Changes
+
+- e8d978204: Upgrading ethers.js
+- Updated dependencies [e8d978204]
+  - @enzymefinance/codegen@4.0.3
+  - @enzymefinance/coverage@4.0.3
+  - @enzymefinance/ethers@4.0.3
+
 ## 4.0.2
 
 ### Patch Changes
