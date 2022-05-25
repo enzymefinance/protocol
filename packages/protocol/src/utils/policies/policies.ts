@@ -25,6 +25,32 @@ export function addressListRegistryPolicyArgs({
   );
 }
 
+interface ListData {
+  existingListIds?: BigNumberish[];
+  newListsArgs?: {
+    updateType: AddressListUpdateType;
+    initialItems: AddressLike[];
+  }[];
+}
+
+export function addressListRegistryPerUserPolicyArgs({
+  users = [],
+  listsData = [],
+}: {
+  users?: AddressLike[];
+  listsData?: ListData[];
+}) {
+  return encodeArgs(
+    ['address[]', 'bytes[]'],
+    [
+      users,
+      listsData.map(({ existingListIds, newListsArgs }) =>
+        addressListRegistryPolicyArgs({ existingListIds, newListsArgs }),
+      ),
+    ],
+  );
+}
+
 export function allowedExternalPositionTypesPolicyArgs({
   externalPositionTypeIds,
 }: {

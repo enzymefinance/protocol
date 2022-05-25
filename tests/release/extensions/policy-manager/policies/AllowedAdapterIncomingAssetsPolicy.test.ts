@@ -120,7 +120,7 @@ describe('validateRule', () => {
       mockGenericSwap({
         actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount, incomingAssetAmount],
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         incomingAssets: [allowedAsset1, allowedAsset2, notAllowedAsset],
         integrationManager,
         mockGenericAdapter,
@@ -138,7 +138,7 @@ describe('validateRule', () => {
     await mockGenericSwap({
       actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount],
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       incomingAssets: [allowedAsset1, allowedAsset2],
       integrationManager,
       mockGenericAdapter,

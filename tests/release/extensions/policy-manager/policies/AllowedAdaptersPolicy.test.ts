@@ -102,7 +102,7 @@ describe('validateRule', () => {
     await expect(
       mockGenericSwap({
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         integrationManager,
         mockGenericAdapter: unallowedMockGenericAdapter,
         vaultProxy,
@@ -113,7 +113,7 @@ describe('validateRule', () => {
   it('allows listed assets', async () => {
     await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter: allowedMockGenericAdapter,
       vaultProxy,

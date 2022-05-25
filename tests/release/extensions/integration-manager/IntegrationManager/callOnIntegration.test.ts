@@ -238,7 +238,7 @@ describe('callOnIntegration', () => {
       mockGenericSwap({
         actualSpendAssetAmounts: [utils.parseEther('1')],
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         incomingAssets: [nonReceivableToken],
         integrationManager,
         minIncomingAssetAmounts: [utils.parseEther('1')],
@@ -285,7 +285,7 @@ describe('callOnIntegration', () => {
       mockGenericSwap({
         actualSpendAssetAmounts: [actualSpendAssetAmount],
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         integrationManager,
         maxSpendAssetAmounts: [maxSpendAssetAmount],
         mockGenericAdapter,
@@ -309,7 +309,7 @@ describe('callOnIntegration', () => {
         actualIncomingAssetAmounts: [utils.parseEther('1')],
         actualSpendAssetAmounts: [utils.parseEther('1')],
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         incomingAssets: [incomingAsset],
         integrationManager,
         minIncomingAssetAmounts: [utils.parseEther('2')],
@@ -347,7 +347,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       seedFund: true,
@@ -431,7 +431,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       vaultProxy,
@@ -504,7 +504,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       vaultProxy,
@@ -584,7 +584,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       seedFund: true,
@@ -653,7 +653,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       seedFund: true,
@@ -733,7 +733,7 @@ describe('valid calls', () => {
     const receipt = await mockGenericSwap({
       actualSpendAssetAmounts,
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       spendAssets,
@@ -791,7 +791,7 @@ describe('valid calls', () => {
 
     const receipt = await mockGenericSwap({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       mockGenericAdapter,
       vaultProxy,
@@ -842,7 +842,7 @@ describe('valid calls', () => {
     await mockGenericSwap({
       actualIncomingAssetAmounts: [1],
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       incomingAssets: [mln],
       integrationManager,
       mockGenericAdapter,

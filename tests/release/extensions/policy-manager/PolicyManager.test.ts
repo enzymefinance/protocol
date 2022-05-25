@@ -674,7 +674,7 @@ describe('validatePolicies', () => {
     await expect(
       mockGenericSwap({
         comptrollerProxy,
-        fundOwner,
+        signer: fundOwner,
         integrationManager,
         mockGenericAdapter,
         vaultProxy,

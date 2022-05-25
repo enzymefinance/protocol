@@ -59,7 +59,7 @@ export async function mockGenericSwap({
   comptrollerProxy,
   vaultProxy,
   integrationManager,
-  fundOwner,
+  signer,
   mockGenericAdapter,
   selector = mockGenericSwapASelector,
   spendAssets = [],
@@ -73,7 +73,7 @@ export async function mockGenericSwap({
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
-  fundOwner: SignerWithAddress;
+  signer: SignerWithAddress;
   mockGenericAdapter: MockGenericAdapter;
   selector?: BytesLike;
   spendAssets?: StandardToken[];
@@ -107,7 +107,7 @@ export async function mockGenericSwap({
   });
 
   const swapTx = comptrollerProxy
-    .connect(fundOwner)
+    .connect(signer)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
   await expect(swapTx).resolves.toBeReceipt();

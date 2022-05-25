@@ -108,6 +108,7 @@ export * from './codegen/PerformanceFee';
 export * from './codegen/IPolicy';
 export * from './codegen/AllowedAdapterIncomingAssetsPolicy';
 export * from './codegen/AllowedAdaptersPolicy';
+export * from './codegen/AllowedAdaptersPerManagerPolicy';
 export * from './codegen/AllowedAssetsForRedemptionPolicy';
 export * from './codegen/AllowedDepositRecipientsPolicy';
 export * from './codegen/AllowedExternalPositionTypesPolicy';
