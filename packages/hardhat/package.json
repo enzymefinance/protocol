@@ -104,7 +104,7 @@
     "@enzymefinance/ethers": "4.0.2",
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "deepmerge": "^4.2.2",
-    "ethers": "^5.6.2",
+    "ethers": "^5.6.8",
     "fs-extra": "^10.0.1",
     "glob": "^7.2.0",
     "hardhat": "^2.9.2",

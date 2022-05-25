@@ -48,7 +48,7 @@
     "@enzymefinance/ethers": "^4.0.2",
     "@enzymefinance/hardhat": "^4.0.2",
     "@enzymefinance/protocol": "^4.0.2",
-    "ethers": "^5.6.2",
+    "ethers": "^5.6.8",
     "merkletreejs": "^0.2.31"
   },
   "devDependencies": {

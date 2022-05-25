@@ -47,7 +47,7 @@
   "dependencies": {
     "@enzymefinance/ethers": "^4.0.2",
     "decimal.js": "^10.3.1",
-    "ethers": "^5.6.2"
+    "ethers": "^5.6.8"
   },
   "devDependencies": {
     "eslint": "^8.12.0",
