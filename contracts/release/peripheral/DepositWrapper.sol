@@ -19,6 +19,7 @@ import "../utils/AssetHelpers.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Logic related to wrapping deposit actions
 contract DepositWrapper is AssetHelpers {
+    bytes4 private constant BUY_SHARES_ON_BEHALF_SELECTOR = 0x877fd894;
     address private immutable WETH_TOKEN;
 
     constructor(address _weth) public {
@@ -55,6 +56,13 @@ contract DepositWrapper is AssetHelpers {
         bytes calldata _exchangeData,
         uint256 _minInvestmentAmount
     ) external payable returns (uint256 sharesReceived_) {
+        // Deny access to privileged core calls originating from this contract
+        bytes4 exchangeSelector = abi.decode(_exchangeData, (bytes4));
+        require(
+            exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR,
+            "exchangeEthAndBuyShares: Disallowed selector"
+        );
+
         // Wrap ETH into WETH
         IWETH(payable(getWethToken())).deposit{value: msg.value}();
 

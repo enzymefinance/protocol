@@ -1,7 +1,10 @@
+import { randomAddress } from '@enzymefinance/ethers';
 import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
+
+const randomAddress1 = randomAddress();
 
 let fork: ProtocolDeployment;
 
@@ -18,6 +21,42 @@ describe('constructor', () => {
 });
 
 describe('exchangeEthAndBuyShares', () => {
+  it('does not allow arbitrary call to buySharesOnBehalf', async () => {
+    const depositWrapper = fork.deployment.depositWrapper;
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const [fundOwner, buyer] = fork.accounts;
+
+    const { comptrollerProxy } = await createNewFund({
+      denominationAsset,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
+    });
+
+    const buySharesOnBehalfData = encodeFunctionData(comptrollerProxy.buySharesOnBehalf.fragment, [
+      randomAddress1,
+      1,
+      1,
+    ]);
+
+    await expect(
+      depositWrapper
+        .connect(buyer)
+        .exchangeEthAndBuyShares.args(
+          comptrollerProxy,
+          denominationAsset,
+          1,
+          comptrollerProxy.address, // buySharesOnBehalf contract
+          constants.AddressZero,
+          buySharesOnBehalfData,
+          0,
+        )
+        .value(utils.parseEther('1'))
+        .gas(1000000)
+        .send(),
+    ).rejects.toBeRevertedWith('Disallowed selector');
+  });
+
   it('handles a WETH denominationAsset', async () => {
     const depositWrapper = fork.deployment.depositWrapper;
     const denominationAsset = new StandardToken(fork.config.weth, provider);
