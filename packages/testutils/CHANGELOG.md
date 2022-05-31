@@ -1,5 +1,17 @@
 # @enzymefinance/testutils
 
+## 4.0.4
+
+### Patch Changes
+
+- 84c2e211e: Lock bn.js dependency version
+- c030c92cd: Aave claimRewardsToSelf selector
+- Updated dependencies [84c2e211e]
+- Updated dependencies [c030c92cd]
+  - @enzymefinance/ethers@4.0.4
+  - @enzymefinance/hardhat@4.0.4
+  - @enzymefinance/protocol@4.0.4
+
 ## 4.0.3
 
 ### Patch Changes
