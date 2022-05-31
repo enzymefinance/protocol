@@ -1,4 +1,5 @@
 import {
+  aaveClaimRewardsToSelfSelector,
   AddressListRegistry,
   addressListRegistryAddToListSelector,
   addressListRegistryAttestListsSelector,
@@ -21,12 +22,15 @@ import { utils } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../utils/config';
+import { isHomestead } from '../../../utils/helpers';
 
 const fn: DeployFunction = async function (hre) {
   const {
     deployments: { all, get, getOrNull, log },
     ethers: { getSigners },
   } = hre;
+
+  const chainId = await hre.getChainId();
 
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
@@ -69,9 +73,16 @@ const fn: DeployFunction = async function (hre) {
     [addressListRegistry.address, addressListRegistrySetListUpdateTypeSelector, vaultCallAnyDataHash],
   ];
 
-  // Calls to allow claiming rewards from Curve's Minter
+  // Calls to allow claiming Aave rewards
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (config.curve) {
+  if (config.aave) {
+    vaultCalls.push([config.aave.incentivesController, aaveClaimRewardsToSelfSelector, vaultCallAnyDataHash]);
+  }
+
+  // Calls to allow claiming rewards from Curve's Minter.
+  // Only applicable to Ethereum mainnet.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (config.curve && isHomestead(chainId)) {
     vaultCalls.push(
       [config.curve.minter, curveMinterMintSelector, vaultCallAnyDataHash],
       [config.curve.minter, curveMinterMintManySelector, vaultCallAnyDataHash],

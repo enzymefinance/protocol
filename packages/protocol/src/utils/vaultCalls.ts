@@ -2,6 +2,10 @@ import { utils } from 'ethers';
 
 import { sighash } from './sighash';
 
+export const aaveClaimRewardsToSelfSelector = sighash(
+  utils.FunctionFragment.fromString('claimRewardsToSelf(address[], uint256)'),
+);
+
 export const addressListRegistryAddToListSelector = sighash(
   utils.FunctionFragment.fromString('addToList(uint256,address[])'),
 );
