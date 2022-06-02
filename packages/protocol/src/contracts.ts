@@ -102,6 +102,7 @@ export * from './codegen/EntranceRateDirectFee';
 export * from './codegen/ExitRateBurnFee';
 export * from './codegen/ExitRateDirectFee';
 export * from './codegen/ManagementFee';
+export * from './codegen/MinSharesSupplyFee';
 export * from './codegen/PerformanceFee';
 
 // Policies

@@ -26,5 +26,7 @@ export const LIB_INIT_GENERIC_DUMMY_ADDRESS = '0x0000000000000000000000000000000
 export const SHARES_UNIT = utils.parseEther('1');
 
 export const ETH_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+// some tokens, e.g., Enzyme vault shares, do not allow transfers to the zero address
+export const NULL_ADDRESS_ALT = '0x0000000000000000000000000000000000000001';
 
 export const MAX_UINT128 = BigNumber.from(2).pow(128).sub(1);
