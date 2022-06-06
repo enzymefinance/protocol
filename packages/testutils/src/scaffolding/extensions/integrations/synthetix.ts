@@ -99,7 +99,7 @@ export async function synthetixTakeOrder({
     outgoingAssetAmount,
   });
 
-  const callArgs = await callOnIntegrationArgs({
+  const callArgs = callOnIntegrationArgs({
     adapter: synthetixAdapter,
     encodedCallArgs: takeOrderArgs,
     selector: takeOrderSelector,

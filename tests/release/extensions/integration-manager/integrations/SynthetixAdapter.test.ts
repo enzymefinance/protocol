@@ -239,7 +239,7 @@ describe('takeOrder', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
-      minIncomingSusdAmount: expectedIncomingAssetAmount,
+      minIncomingSusdAmount: expectedIncomingAssetAmount.mul(99).div(100),
       outgoingAsset,
       outgoingAssetAmount,
       synthetixAdapter,
@@ -255,7 +255,7 @@ describe('takeOrder', () => {
     // Assert the expected final token balances of the VaultProxy
     const incomingAssetAmount = postTxIncomingAssetBalance.sub(preTxIncomingAssetBalance);
 
-    expect(incomingAssetAmount).toEqBigNumber(expectedIncomingAssetAmount);
+    expect(incomingAssetAmount).toBeAroundBigNumber(expectedIncomingAssetAmount, 0.01);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
   });
 });

@@ -104,7 +104,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['104353717206823', '34725387851817461311233'],
+      underlyingAmounts_: ['88326752710344', '42831755000203311595451'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -174,9 +174,9 @@ describe('calcUnderlyingValues', () => {
         .args(usdcWeth, utils.parseUnits('1', baseDecimals), usdc)
         .call();
 
-      // usdc/weth on Mar 22, 2022 was worth about $209M
+      // usdc/weth on May 13, 2022 was worth about $176M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toEqBigNumber('208432708710136');
+      expect(canonicalAssetValue).toEqBigNumber('176389152851211');
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -194,9 +194,9 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on Mar 22, 2022 was worth about $292
+      // knc/weth on May 13, 2022 was worth about $173
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toEqBigNumber('293163456791708966384');
+      expect(canonicalAssetValue).toEqBigNumber('173864588325883569183');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

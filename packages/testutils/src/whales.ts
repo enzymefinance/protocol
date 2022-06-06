@@ -17,10 +17,10 @@ const whales = {
   lusd: '0x24cbbef882a77c5aaa9abd6558e68b4c648453c5',
   mana: '0xefb94ac00f1cee8a89d5c3f49faa799da6f03024',
   mln: '0xd8f8a53945bcfbbc19da162aa405e662ef71c40d',
-  ohm: '0x2cfcbd233268c302996c767347eb45bec36fb08d',
+  ohm: '0x0d0707963952f2fba59dd06f2b425ace40b492fe',
   rep: '0xc6a043b07d33b6f30d8cb501026c391cfd25abe1',
   ren: '0xbe0eb53f46cd790cd13851d5eff43d12404d33e8',
-  susd: '0xa5f7a39e55d7878bc5bd754ee5d6bd7a7662355b',
+  susd: '0xcfb87039a1eda5428e2c8386d31ccf121835ecdb',
   sohm: '0x3d5c83351c872fdf07da498c84ca3275222f284c',
   uni: '0x47173b170c64d16393a52e6c480b3ad8c302ba1e',
   usdc: '0xae2d4617c862309a3d75a0ffb358c7a5009c673f',
@@ -32,24 +32,24 @@ const whales = {
   ausdt: '0x7d6149ad9a573a6e2ca6ebf7d4897c1b766841b4',
   // cTokens
   ccomp: '0xd74f186194ab9219fafac5c2fe4b3270169666db',
-  cdai: '0x22fa8cc33a42320385cbd3690ed60a021891cb32',
+  cdai: '0x30030383d959675ec884e7ec88f05ee0f186cc06',
   ceth: '0x8aceab8167c80cb8b3de7fa6228b889bb1130ee8',
   cuni: '0x39d8014b4f40d2cbc441137011d32023f4f1fd87',
   cusdc: '0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be',
   // fTokens
   fdai7: '0xa993d62492f41703f6185881eae755b0966ea5b0',
-  feth7: '0x05f284897641661fee9f1c1413a4f599a43a746f',
+  feth7: '0xd63d406180ea3b47f98422bf5fad902fe6ccfbec',
   fdai8: '0xd6bf9d9079139dbb3a4fdb84b07efc75ea77838f',
   ftribe8: '0xdb5ac83c137321da29a59a7592232bc4ed461730',
   // ptTokens
-  ptUsdc: '0x8904ffc6aa039db5941de11309a42372f3f7d2fd',
+  ptUsdc: '0x92c48a51df43e0ec3ebc1a53d0e6f8d40f5bacac',
   // synths (unsupported)
   seth: '0xc34a7c65aa08cb36744bda8eeec7b8e9891e147c',
   sxag: '0x40d68c490bf7262ec40048099aec23535f734be2',
   sxau: '0x92eb453b7b5b8d41edb44e2c8b8b53eb70a482c7',
   // misc
   cvx: '0x0aca67fa70b142a3b9bf2ed89a81b40ff85dacdc',
-  lidoSteth: '0x06920c9fc643de77b99cb7670a944ad31eaaa260',
+  lidoSteth: '0x6cf9aa65ebad7028536e353393630e2340ca6049',
   ust: '0x738cf6903e6c4e699d1c2dd9ab8b67fcdb3121ea',
   // Curve steth pool related
   stecrv: '0x56c915758ad3f76fd287fff7563ee313142fb663',

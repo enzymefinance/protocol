@@ -68,7 +68,7 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`88921`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`90511`);
   });
 });
 
@@ -111,7 +111,7 @@ describe('calcUnderlyingValues', () => {
     // Note that steth pool has a reenterable virtual price,
     // but since this lookup is run soon after it is added to the asset universe,
     // the virtual price has not deviated enough to trigger an update to the last validated virtual price
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`94035`);
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`95615`);
   });
 
   it('returns correct values (non 18-decimal invariant asset proxy)', async () => {
@@ -141,7 +141,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`60826`);
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`62581`);
   });
 
   // TODO: can make this better / more accurate
@@ -207,7 +207,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of WETH (10^18)
-    expect(canonicalAssetValue).toEqBigNumber('1036302310086699090');
+    expect(canonicalAssetValue).toBeBetweenBigNumber('1000000000000000000', '1050000000000000000');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
@@ -225,7 +225,7 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of USDC (10^6)
-    expect(canonicalAssetValue).toEqBigNumber('1020540');
+    expect(canonicalAssetValue).toBeBetweenBigNumber('1000000', '1050000');
   });
 });
 

@@ -33,8 +33,8 @@ describe('latestRoundData', () => {
     expect(latestRoundDataRes.answeredInRound_).toEqBigNumber(chainlinkLatestRoundDataRes[4]);
 
     // Rate should be inverse ETH/USD price with the target precision (1/price * 1e18).
-    // On Mar 22, 2022 ETH/USD was $3000.
-    expect(latestRoundDataRes.answer_).toEqBigNumber(333670916532464);
+    // On May 13, 2022 ETH/USD was around $2000.
+    expect(latestRoundDataRes.answer_).toEqBigNumber(483034247135338);
   });
 });
 
@@ -58,11 +58,11 @@ describe('e2e', () => {
     await curvePriceFeed.updatePoolInfo([curvePool], [usdEthSimulatedAggregator], [curvePoolHasReentrantVirtualPrice]);
 
     // Assert the expected Curve pool value in terms of USDC
-    // a3CRV was approx $1.09 on Mar 22, 2022
+    // a3CRV was approx $1.08 on May 13, 2022
     expect(
       await valueInterpreter.calcCanonicalAssetValue
         .args(curveLpToken, curveLpTokenUnit, fork.config.primitives.usdc)
         .call(),
-    ).toEqBigNumber(1086761);
+    ).toEqBigNumber(1083458);
   });
 });

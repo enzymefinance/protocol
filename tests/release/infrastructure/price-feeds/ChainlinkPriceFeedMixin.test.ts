@@ -545,7 +545,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1006651');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000', 0.02);
     });
 
     // SUSD/ETH and USDC/ETH
@@ -564,7 +564,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('997452');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000', 0.01);
     });
   });
 
@@ -593,7 +593,7 @@ describe('expected values', () => {
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('1093332275611508076771');
+      expect(canonicalAssetValue).toEqBigNumber('1850930596717258220921');
     });
   });
 
@@ -620,7 +620,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('997038025259813283');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000000000000000', 0.01);
     });
 
     // USDC/ETH and DAI/USD
@@ -645,7 +645,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('999584937499850675');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000000000000000', 0.01);
     });
   });
 
@@ -672,7 +672,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000000000000000 (10^18)
-      expect(canonicalAssetValue).toEqBigNumber('1002970774098023864');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000000000000000', 0.01);
     });
 
     // DAI/USD and USDC/ETH
@@ -697,7 +697,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toEqBigNumber('1000415');
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000', 0.01);
     });
   });
 });

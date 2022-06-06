@@ -319,7 +319,7 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(amount0Desired);
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(amount1Desired);
 
-      expect(receipt).toMatchInlineGasSnapshot(`795749`);
+      expect(receipt).toMatchInlineGasSnapshot(`782567`);
     });
   });
 
@@ -400,7 +400,7 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(addLiquidityAmount0Desired.add(mintAmount0Desired));
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(addLiquidityAmount1Desired.add(mintAmount1Desired));
 
-      expect(receipt).toMatchInlineGasSnapshot(`338066`);
+      expect(receipt).toMatchInlineGasSnapshot(`324660`);
     });
   });
 
@@ -455,7 +455,7 @@ describe('receiveCallFromVault', () => {
       expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
       expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
 
-      expect(receipt).toMatchInlineGasSnapshot(`352972`);
+      expect(receipt).toMatchInlineGasSnapshot(`370072`);
     });
   });
 
@@ -596,7 +596,7 @@ describe('receiveCallFromVault', () => {
         expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
         expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
 
-        expect(receipt).toMatchInlineGasSnapshot(`378441`);
+        expect(receipt).toMatchInlineGasSnapshot(`392121`);
       });
 
       it('works as expected (max liquidity specified)', async () => {
@@ -635,7 +635,7 @@ describe('receiveCallFromVault', () => {
         // Assert the old nft was removed from the external position
         expect(await uniswapV3LiquidityPosition.getNftIds()).not.toContain(nftId);
 
-        expect(receipt).toMatchInlineGasSnapshot(`382947`);
+        expect(receipt).toMatchInlineGasSnapshot(`396627`);
       });
     });
   });

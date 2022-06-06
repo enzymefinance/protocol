@@ -253,7 +253,7 @@ describe('removeCollateral', () => {
     expect(wethBalanceAfter).toEqBigNumber(wethBalanceBefore.add(collateralToRemoveAmount));
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('451619', gasAssertionTolerance);
+    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('462406', gasAssertionTolerance);
   });
 });
 
@@ -308,7 +308,7 @@ describe('borrowLusd', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('415231', gasAssertionTolerance);
+    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('426018', gasAssertionTolerance);
   });
 });
 

@@ -116,7 +116,7 @@ describe('delegate', () => {
     // Assert that the delegation to the indexer is worth the delegated amount
     expect(delegationGrtValue).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees));
 
-    expect(delegateReceipt).toMatchInlineGasSnapshot(`283286`);
+    expect(delegateReceipt).toMatchInlineGasSnapshot(`249317`);
   });
 
   it('works as expected when delegating to two indexers', async () => {

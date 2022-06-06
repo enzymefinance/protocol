@@ -155,7 +155,7 @@ describe('actions', () => {
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
       expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1490414`);
+      expect(receipt).toMatchInlineGasSnapshot(`1507514`);
     });
   });
 
@@ -180,7 +180,7 @@ describe('actions', () => {
       // All lpToken should be converted into gauge token
       expect(await stakingWrapperToken.balanceOf(vaultProxy)).toEqBigNumber(lpTokenAmount);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1255847`);
+      expect(receipt).toMatchInlineGasSnapshot(`1268287`);
     });
   });
 
@@ -220,7 +220,7 @@ describe('actions', () => {
       );
       expect(await lpToken.balanceOf(vaultProxy)).toEqBigNumber(unstakeAmount);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1427465`);
+      expect(receipt).toMatchInlineGasSnapshot(`1439927`);
     });
   });
 
@@ -275,7 +275,7 @@ describe('actions', () => {
       expect(postTxWethBalance).toBeGtBigNumber(preTxWethBalance);
       expect(postTxStethBalance).toBeGtBigNumber(preTxStethBalance);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1689802`);
+      expect(receipt).toMatchInlineGasSnapshot(`1702356`);
     });
   });
 });
