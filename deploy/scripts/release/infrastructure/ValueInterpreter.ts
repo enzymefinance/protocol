@@ -63,6 +63,7 @@ const fn: DeployFunction = async function (hre) {
     const compoundPriceFeed = await getOrNull('CompoundPriceFeed');
     const fusePriceFeed = await getOrNull('FusePriceFeed');
 
+    const fiduPriceFeed = await getOrNull('FiduPriceFeed');
     const idlePriceFeed = await getOrNull('IdlePriceFeed');
     const lidoStethPriceFeed = await getOrNull('LidoStethPriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
@@ -70,6 +71,7 @@ const fn: DeployFunction = async function (hre) {
 
     const derivativePairs: [string, string][] = [
       ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
+      ...(fiduPriceFeed ? [[config.goldfinch.fidu, fiduPriceFeed.address] as [string, string]] : []),
       ...(fusePriceFeed
         ? Object.values(config.fuse.fetherTokens).map((fether) => [fether, fusePriceFeed.address] as [string, string])
         : []),
@@ -127,6 +129,7 @@ fn.dependencies = [
   'AlphaHomoraV1PriceFeed',
   'CurvePriceFeed',
   'CompoundPriceFeed',
+  'FiduPriceFeed',
   'FusePriceFeed',
   'IdlePriceFeed',
   'LidoStethPriceFeed',

@@ -45,9 +45,9 @@ jobs:
           path: |
             artifacts
             cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-${{ hashFiles('contracts/**/*.sol') }}
+          key: ${{ runner.os }}-artifacts-2-${{ hashFiles('contracts/**/*.sol') }}
           restore-keys: |
-            ${{ runner.os }}-artifacts-
+            ${{ runner.os }}-artifacts-2-
 
       - name: Hardhat fork cache
         uses: actions/cache@v2
@@ -89,9 +89,9 @@ jobs:
           path: |
             artifacts
             cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-${{ hashFiles('contracts/**/*.sol') }}
+          key: ${{ runner.os }}-artifacts-2-${{ hashFiles('contracts/**/*.sol') }}
           restore-keys: |
-            ${{ runner.os }}-artifacts-
+            ${{ runner.os }}-artifacts-2-
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile

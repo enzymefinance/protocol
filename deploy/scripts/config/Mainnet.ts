@@ -295,6 +295,10 @@ const mainnetConfig: DeploymentConfig = {
     fetherTokens,
     ftokens
   },
+  goldfinch: {
+    fidu: '0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF',
+    seniorPool: '0x8481a6EbAf5c7DABc3F7e09e44A89531fd31F822',
+  },
   gsn: {
     relayHub: '0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D',
     relayWorker: '0x1fd0c666094d8c5dae247aa6c3c4c33fd21bdc91',

@@ -52,6 +52,7 @@ export * from './codegen/AavePriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/ConvexCurveLpStakingWrapperPriceFeed';
 export * from './codegen/CurvePriceFeed';
+export * from './codegen/FiduPriceFeed';
 export * from './codegen/FusePriceFeed';
 export * from './codegen/IdlePriceFeed';
 export * from './codegen/LidoStethPriceFeed';
@@ -127,6 +128,8 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestGoldfinchConfig';
+export * from './codegen/ITestGoldfinchSeniorPool';
 export * from './codegen/ITestMapleGlobals';
 export * from './codegen/ITestMaplePool';
 export * from './codegen/ITestTheGraphEpochManager';

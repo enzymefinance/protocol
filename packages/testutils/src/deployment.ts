@@ -35,6 +35,7 @@ import {
   ExternalPositionFactory,
   ExternalPositionManager,
   FeeManager,
+  FiduPriceFeed,
   FundDeployer,
   FundValueCalculator,
   FundValueCalculatorRouter,
@@ -143,6 +144,7 @@ export async function deployProtocolFixture() {
     externalPositionFactory: new ExternalPositionFactory(fixture.ExternalPositionFactory.address, deployer),
     externalPositionManager: new ExternalPositionManager(fixture.ExternalPositionManager.address, deployer),
     feeManager: new FeeManager(fixture.FeeManager.address, deployer),
+    fiduPriceFeed: new FiduPriceFeed(fixture.FiduPriceFeed.address, deployer),
     fundDeployer: new FundDeployer(fixture.FundDeployer.address, deployer),
     fundValueCalculator: new FundValueCalculator(fixture.FundValueCalculator.address, deployer),
     fundValueCalculatorRouter: new FundValueCalculatorRouter(fixture.FundValueCalculatorRouter.address, deployer),
@@ -275,6 +277,10 @@ export interface DeploymentConfig {
   fuse: {
     fetherTokens: Record<string, string>;
     ftokens: Record<string, string>;
+  };
+  goldfinch: {
+    fidu: string;
+    seniorPool: string;
   };
   idle: {
     bestYieldIdleDai: string;

@@ -75,6 +75,8 @@ const config: HardhatUserConfig = {
       'ISynthetixExchanger',
       'ISynthetixProxyERC20',
       'ISynthetixSynth',
+      'ITestGoldfinchConfig',
+      'ITestGoldfinchSeniorPool',
       'ITestMapleGlobals',
       'ITestMaplePool',
       'ICurveAddressProvider',
