@@ -196,6 +196,7 @@ const yVaultsV2 = {
 
 const unsupportedAssets = {
   seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb',
+  usf: '0xe0e05c43c097b0982db6c9d626c4eb9e95c3b9ce',
 };
 
 const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
@@ -344,6 +345,15 @@ const mainnetConfig: DeploymentConfig = {
   snapshot: {
     delegateRegistry: '0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446'
   },
+  solvFinanceV2: {
+    convertibleMarket: '0x962e18f89d27Cfc84c8fFA2ec7C90b3D933AD685',
+    initialConvertibleOfferingMarket: '0x83208b368c34dac1a0f8b616f278ed42f1ffb8cd',
+    deployer: '0x21bc9179d5c529b52e3ee8f6ecf0e63fa231d16c',
+    manualPriceOracle: '0x19337144D223B0cA0d3d19472f4b848D2B6E45e2',
+    priceOracleManager: '0x7b430d4ffd1bc1f635b9375c5dc602df44e2edc4',
+    convertible: {underlying: unsupportedAssets.usf, voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034', pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57' }
+  },
+  
   synthetix: {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',

@@ -6,4 +6,5 @@ export enum ExternalPositionType {
   ConvexVotingPosition = '4',
   TheGraphDelegationPosition = '5',
   MapleLiquidityPosition = '6',
+  SolvV2ConvertibleBuyerPosition = '7',
 }

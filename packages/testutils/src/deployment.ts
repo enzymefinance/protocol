@@ -319,6 +319,18 @@ export interface DeploymentConfig {
   snapshot: {
     delegateRegistry: string;
   };
+  solvFinanceV2: {
+    convertibleMarket: string;
+    initialConvertibleOfferingMarket: string;
+    deployer: string;
+    priceOracleManager: string;
+    manualPriceOracle: string;
+    convertible: {
+      underlying: string;
+      voucher: string;
+      pool: string;
+    };
+  };
   theGraph: {
     stakingProxy: string;
     grt: string;

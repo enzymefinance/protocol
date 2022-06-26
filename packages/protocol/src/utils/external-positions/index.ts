@@ -1,6 +1,7 @@
 export * from './aave-debt';
 export * from './actions';
 export * from './convex-voting';
+export * from './solv-v2-convertible-buyer';
 export * from './the-graph-delegation';
 export * from './types';
 export * from './uniswap-v3-liquidity';

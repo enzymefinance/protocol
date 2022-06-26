@@ -31,6 +31,8 @@ const fn: DeployFunction = async function (hre) {
   const mapleLiquidityPositionParser = await getOrNull('MapleLiquidityPositionParser');
   const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
   const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
+  const solvV2ConvertibleBuyerPositionLib = await getOrNull('SolvV2ConvertibleBuyerPositionLib');
+  const solvV2ConvertibleBuyerPositionParser = await getOrNull('SolvV2ConvertibleBuyerPositionParser');
   const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
   const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
 
@@ -53,6 +55,7 @@ const fn: DeployFunction = async function (hre) {
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
     ...(mapleLiquidityPositionLib && mapleLiquidityPositionParser ? ['MAPLE_LIQUIDITY'] : []),
+    ...(solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser ? ['SOLV_CONVERTIBLE_BUYER'] : []),
   ];
 
   if (positionTypes.length) {
@@ -64,6 +67,7 @@ const fn: DeployFunction = async function (hre) {
       'CONVEX_VOTING',
       'THE_GRAPH_DELEGATION',
       'MAPLE_LIQUIDITY',
+      'SOLV_V2_CONVERTIBLE_BUYER',
     ]);
   }
 
@@ -126,6 +130,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.MapleLiquidityPosition],
       [mapleLiquidityPositionLib],
       [mapleLiquidityPositionParser],
+    );
+  }
+
+  if (solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.SolvV2ConvertibleBuyerPosition],
+      [solvV2ConvertibleBuyerPositionLib],
+      [solvV2ConvertibleBuyerPositionParser],
     );
   }
 
