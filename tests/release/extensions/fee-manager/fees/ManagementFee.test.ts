@@ -2,12 +2,12 @@ import type { AddressLike, MockContract } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
-  convertRateToScaledPerSecondRate,
   convertScaledPerSecondRateToRate,
   FeeHook,
   FeeSettlementType,
   ManagementFee,
   managementFeeConfigArgs,
+  managementFeeConvertRateToScaledPerSecondRate,
   managementFeeSharesDue,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -88,7 +88,7 @@ describe('addFundSettings', () => {
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
 
-    scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
+    scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {});
   });
 
@@ -144,7 +144,7 @@ describe('activateForFund', () => {
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
 
-    scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
+    scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {
       comptrollerProxy: mockComptrollerProxy,
       scaledPerSecondRate,
@@ -207,7 +207,7 @@ describe('payout', () => {
     const fork = await deployProtocolFixture();
     const mocks = await createMocksForManagementConfig(fork);
     const managementFeeRate = utils.parseEther('0.1'); // 10%
-    const scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
+    const scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(managementFeeRate);
     const managementFee = await deployAndConfigureStandaloneManagementFee(fork, {
       comptrollerProxy: mocks.mockComptrollerProxy,
       scaledPerSecondRate,
@@ -236,7 +236,7 @@ describe('settle', () => {
 
     const managementFeeRate = utils.parseEther('0.1'); // 10%
 
-    scaledPerSecondRate = convertRateToScaledPerSecondRate(managementFeeRate);
+    scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(managementFeeRate);
     managementFee = await deployAndConfigureStandaloneManagementFee(fork, {
       comptrollerProxy: mockComptrollerProxy,
       scaledPerSecondRate,
@@ -413,8 +413,11 @@ describe('settle', () => {
 describe('utils', () => {
   it('correctly converts a rate to scaledPerSecondRate and back', async () => {
     const initialRate = utils.parseEther(`0.01`);
-    const scaledPerSecondRate = convertRateToScaledPerSecondRate(initialRate);
-    const finalRate = convertScaledPerSecondRateToRate(scaledPerSecondRate);
+    const scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(initialRate);
+    const finalRate = convertScaledPerSecondRateToRate({
+      scaledPerSecondRate,
+      adjustInflation: true,
+    });
 
     expect(initialRate).toEqBigNumber(finalRate);
   });

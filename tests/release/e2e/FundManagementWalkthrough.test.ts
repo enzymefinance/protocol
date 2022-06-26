@@ -4,10 +4,10 @@ import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   addressListRegistryPolicyArgs,
   AddressListUpdateType,
-  convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
+  managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -62,7 +62,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('creates a new fund', async () => {
       // fees
-      const scaledPerSecondRate = convertRateToScaledPerSecondRate(utils.parseEther('0.01')); // 1%
+      const scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(utils.parseEther('0.01')); // 1%
       const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
       const performanceFeeSettings = performanceFeeConfigArgs({
         rate: TEN_PERCENT,

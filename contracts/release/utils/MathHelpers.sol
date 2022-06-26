@@ -30,4 +30,13 @@ abstract contract MathHelpers {
     ) internal pure returns (uint256 relativeQuantity2_) {
         return _relativeQuantity1.mul(_quantity2).div(_quantity1);
     }
+
+    /// @dev Helper to subtract uint amounts, but returning zero on underflow instead of reverting
+    function __subOrZero(uint256 _amountA, uint256 _amountB) internal pure returns (uint256 res_) {
+        if (_amountA > _amountB) {
+            return _amountA - _amountB;
+        }
+
+        return 0;
+    }
 }

@@ -1,11 +1,11 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
 import {
-  convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   FeeManagerActionId,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
+  managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -50,7 +50,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       // Create a fund with management and performance fee
       const managementFeeSettings = managementFeeConfigArgs({
-        scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')),
+        scaledPerSecondRate: managementFeeConvertRateToScaledPerSecondRate(utils.parseEther('0.01')),
       });
       const performanceFeeSettings = performanceFeeConfigArgs({
         rate: TEN_PERCENT,

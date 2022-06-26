@@ -7,6 +7,7 @@ export * from './integrations';
 export * from './migrations';
 export * from './policies';
 export * from './protocol-fees';
+export * from './rates';
 export * from './sighash';
 export * from './signer';
 export * from './uintListRegistry';

@@ -12,6 +12,10 @@ import {
   AllowedExternalPositionTypesPerManagerPolicy,
   AllowedExternalPositionTypesPolicy,
   AllowedSharesTransferRecipientsPolicy,
+  ArbitraryLoanFixedInterestModule,
+  ArbitraryLoanPositionLib,
+  ArbitraryLoanPositionParser,
+  ArbitraryLoanTotalNominalDeltaOracleModule,
   CompoundAdapter,
   CompoundDebtPositionLib,
   CompoundDebtPositionParser,
@@ -121,6 +125,10 @@ export async function deployProtocolFixture() {
     allowedExternalPositionTypesPerManagerPolicy: new AllowedExternalPositionTypesPerManagerPolicy(fixture.AllowedExternalPositionTypesPerManagerPolicy.address, deployer),
     allowedExternalPositionTypesPolicy: new AllowedExternalPositionTypesPolicy(fixture.AllowedExternalPositionTypesPolicy.address, deployer),
     allowedSharesTransferRecipientsPolicy: new AllowedSharesTransferRecipientsPolicy(fixture.AllowedSharesTransferRecipientsPolicy.address, deployer),
+    arbitraryLoanFixedInterestModule: new ArbitraryLoanFixedInterestModule(fixture.ArbitraryLoanFixedInterestModule.address, deployer),
+    arbitraryLoanPositionLib: new ArbitraryLoanPositionLib(fixture.ArbitraryLoanPositionLib.address, deployer),
+    arbitraryLoanPositionParser: new ArbitraryLoanPositionParser(fixture.ArbitraryLoanPositionParser.address, deployer),
+    arbitraryLoanTotalNominalDeltaOracleModule: new ArbitraryLoanTotalNominalDeltaOracleModule(fixture.ArbitraryLoanTotalNominalDeltaOracleModule.address, deployer),
     compoundAdapter: new CompoundAdapter(fixture.CompoundAdapter.address, deployer),
     compoundDebtPositionLib: new CompoundDebtPositionLib(fixture.CompoundDebtPositionLib.address, deployer),
     compoundDebtPositionParser: new CompoundDebtPositionParser(fixture.CompoundDebtPositionParser.address, deployer),
@@ -200,6 +208,7 @@ export async function deployProtocolFixture() {
     config,
     deployer,
     deployment,
+    fixture,
   } as const;
 }
 

@@ -1,16 +1,9 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import { Decimal } from 'decimal.js';
 import type { BigNumberish } from 'ethers';
-import { BigNumber, constants, utils } from 'ethers';
+import { constants } from 'ethers';
 
 import { encodeArgs } from '../encoding';
-
-export const managementFeeDigits = 27;
-export const managementFeeScale = BigNumber.from(10).pow(managementFeeDigits);
-export const managementFeeScaleDecimal = new Decimal(managementFeeScale.toString());
-export const secondsPerYear = 365 * 24 * 60 * 60;
-
-Decimal.set({ precision: 2 * managementFeeDigits });
+import { calcAmountDueForScaledPerSecondRate, convertRateToScaledPerSecondRate } from '../rates';
 
 export function managementFeeConfigArgs({
   scaledPerSecondRate,
@@ -22,35 +15,8 @@ export function managementFeeConfigArgs({
   return encodeArgs(['uint256', 'address'], [scaledPerSecondRate, recipient]);
 }
 
-export function convertRateToScaledPerSecondRate(rate: BigNumberish) {
-  const rateD = new Decimal(utils.formatEther(rate));
-  const effectiveRate = rateD.div(new Decimal(1).minus(rateD));
-
-  const factor = new Decimal(1)
-    .plus(effectiveRate)
-    .pow(1 / secondsPerYear)
-    .toSignificantDigits(managementFeeDigits)
-    .mul(managementFeeScaleDecimal);
-
-  return BigNumber.from(factor.toFixed(0));
-}
-
-export function convertScaledPerSecondRateToRate(scaledPerSecondRate: BigNumberish) {
-  const scaledPerSecondRateD = new Decimal(scaledPerSecondRate.toString()).div(managementFeeScaleDecimal);
-  const effectiveRate = scaledPerSecondRateD.pow(secondsPerYear).minus(new Decimal(1));
-  const rate = effectiveRate.div(new Decimal(1).plus(effectiveRate));
-
-  return utils.parseEther(rate.toFixed(17, Decimal.ROUND_UP));
-}
-
-export function rpow(x: BigNumberish, n: BigNumberish, b: BigNumberish) {
-  const xD = new Decimal(BigNumber.from(x).toString());
-  const bD = new Decimal(BigNumber.from(b).toString());
-  const nD = new Decimal(BigNumber.from(n).toString());
-
-  const xDPow = xD.div(bD).pow(nD);
-
-  return BigNumber.from(xDPow.mul(bD).toFixed(0));
+export function managementFeeConvertRateToScaledPerSecondRate(rate: BigNumberish) {
+  return convertRateToScaledPerSecondRate({ rate, adjustInflation: true });
 }
 
 export function managementFeeSharesDue({
@@ -62,9 +28,9 @@ export function managementFeeSharesDue({
   sharesSupply: BigNumberish;
   secondsSinceLastSettled: BigNumberish;
 }) {
-  const timeFactor = rpow(scaledPerSecondRate, secondsSinceLastSettled, managementFeeScale);
-
-  const sharesDue = BigNumber.from(sharesSupply).mul(timeFactor.sub(managementFeeScale)).div(managementFeeScale);
-
-  return sharesDue;
+  return calcAmountDueForScaledPerSecondRate({
+    scaledPerSecondRate,
+    totalAmount: sharesSupply,
+    secondsSinceLastSettled,
+  });
 }

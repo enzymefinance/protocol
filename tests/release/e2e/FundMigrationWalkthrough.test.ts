@@ -1,10 +1,10 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
-  convertRateToScaledPerSecondRate,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
   managementFeeConfigArgs,
+  managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -52,7 +52,7 @@ describe('Walkthrough a fund migration', () => {
 
   it('creates a fund', async () => {
     // fees
-    const scaledPerSecondRate = convertRateToScaledPerSecondRate(utils.parseEther('0.01'));
+    const scaledPerSecondRate = managementFeeConvertRateToScaledPerSecondRate(utils.parseEther('0.01'));
 
     const managementFeeSettings = managementFeeConfigArgs({ scaledPerSecondRate });
     const performanceFeeSettings = performanceFeeConfigArgs({

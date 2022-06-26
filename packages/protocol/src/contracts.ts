@@ -82,6 +82,10 @@ export * from './codegen/ZeroExV2Adapter';
 // External positions
 export * from './codegen/AaveDebtPositionParser';
 export * from './codegen/AaveDebtPositionLib';
+export * from './codegen/ArbitraryLoanFixedInterestModule';
+export * from './codegen/ArbitraryLoanPositionParser';
+export * from './codegen/ArbitraryLoanPositionLib';
+export * from './codegen/ArbitraryLoanTotalNominalDeltaOracleModule';
 export * from './codegen/CompoundDebtPositionParser';
 export * from './codegen/CompoundDebtPositionLib';
 export * from './codegen/ConvexVotingPositionParser';

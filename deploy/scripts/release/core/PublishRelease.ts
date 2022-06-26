@@ -17,6 +17,8 @@ const fn: DeployFunction = async function (hre) {
 
   const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
   const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
+  const arbitraryLoanPositionLib = await getOrNull('ArbitraryLoanPositionLib');
+  const arbitraryLoanPositionParser = await getOrNull('ArbitraryLoanPositionParser');
   const compoundDebtPositionLib = await getOrNull('CompoundDebtPositionLib');
   const compoundDebtPositionParser = await getOrNull('CompoundDebtPositionParser');
   const convexVotingPositionLib = await getOrNull('ConvexVotingPositionLib');
@@ -56,19 +58,11 @@ const fn: DeployFunction = async function (hre) {
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
     ...(mapleLiquidityPositionLib && mapleLiquidityPositionParser ? ['MAPLE_LIQUIDITY'] : []),
     ...(solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser ? ['SOLV_CONVERTIBLE_BUYER'] : []),
+    ...(arbitraryLoanPositionLib && arbitraryLoanPositionParser ? ['ARBITRARY_LOAN'] : []),
   ];
 
   if (positionTypes.length) {
-    await externalPositionFactoryInstance.addNewPositionTypes([
-      'COMPOUND_DEBT',
-      'UNISWAP_V3_LIQUIDITY',
-      'AAVE_DEBT',
-      'LIQUITY_DEBT',
-      'CONVEX_VOTING',
-      'THE_GRAPH_DELEGATION',
-      'MAPLE_LIQUIDITY',
-      'SOLV_V2_CONVERTIBLE_BUYER',
-    ]);
+    await externalPositionFactoryInstance.addNewPositionTypes(positionTypes);
   }
 
   // Council action: Add the external position contracts (lib + parser) to the ExternalPositionManager
@@ -138,6 +132,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.SolvV2ConvertibleBuyerPosition],
       [solvV2ConvertibleBuyerPositionLib],
       [solvV2ConvertibleBuyerPositionParser],
+    );
+  }
+
+  if (arbitraryLoanPositionLib && arbitraryLoanPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.ArbitraryLoanPosition],
+      [arbitraryLoanPositionLib],
+      [arbitraryLoanPositionParser],
     );
   }
 

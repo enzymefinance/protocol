@@ -1,10 +1,10 @@
 // @file All test functions calls to the release-level FundValueCalculator are routed via FundValueCalculatorRouter
 
 import {
-  convertRateToScaledPerSecondRate,
   feeManagerConfigArgs,
   IChainlinkAggregator,
   managementFeeConfigArgs,
+  managementFeeConvertRateToScaledPerSecondRate,
   ONE_HUNDRED_PERCENT_IN_BPS,
   ONE_PERCENT_IN_BPS,
   ONE_YEAR_IN_SECONDS,
@@ -70,7 +70,9 @@ describe('calcs', () => {
       feeManagerConfig: feeManagerConfigArgs({
         fees: [fork.deployment.managementFee],
         settings: [
-          managementFeeConfigArgs({ scaledPerSecondRate: convertRateToScaledPerSecondRate(utils.parseEther('0.01')) }),
+          managementFeeConfigArgs({
+            scaledPerSecondRate: managementFeeConvertRateToScaledPerSecondRate(utils.parseEther('0.01')),
+          }),
         ], // 1% ManagementFee
       }),
       fundDeployer: fork.deployment.fundDeployer,
