@@ -8,4 +8,5 @@ export enum ExternalPositionType {
   MapleLiquidityPosition = '6',
   SolvV2ConvertibleBuyerPosition = '7',
   ArbitraryLoanPosition = '8',
+  SolvV2ConvertibleIssuerPosition = '9',
 }

@@ -93,7 +93,7 @@ beforeEach(async () => {
   // All tests use the USF convertible voucher
   currencyToken = new StandardToken(fork.config.primitives.usdt, whales.usdt);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new StandardToken(fork.config.solvFinanceV2.convertible.underlying, whales.usf);
+  underlyingToken = new StandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, whales.usf);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvConvertibleBuyerPosition = new SolvV2ConvertibleBuyerPositionLib(externalPositionProxy, provider);
@@ -105,8 +105,8 @@ beforeEach(async () => {
     fork.config.solvFinanceV2.initialConvertibleOfferingMarket,
     solvDeployer,
   );
-  voucher = new ITestSolvV2ConvertibleVoucher(fork.config.solvFinanceV2.convertible.voucher, provider);
-  voucherPool = new ITestSolvV2ConvertiblePool(fork.config.solvFinanceV2.convertible.pool, solvDeployer);
+  voucher = new ITestSolvV2ConvertibleVoucher(fork.config.solvFinanceV2.convertibles.usf.voucher, provider);
+  voucherPool = new ITestSolvV2ConvertiblePool(fork.config.solvFinanceV2.convertibles.usf.pool, solvDeployer);
 
   // Seed the vaultProxy with currency, and issuer with underlying and currency
   const underlyingAmount = underlyingUnit.mul(100_000);

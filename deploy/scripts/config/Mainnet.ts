@@ -195,6 +195,7 @@ const yVaultsV2 = {
 };
 
 const unsupportedAssets = {
+  perp: '0xbc396689893d065f41bc2c6ecbee5e0085233447',
   seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb',
   usf: '0xe0e05c43c097b0982db6c9d626c4eb9e95c3b9ce',
 };
@@ -351,7 +352,9 @@ const mainnetConfig: DeploymentConfig = {
     deployer: '0x21bc9179d5c529b52e3ee8f6ecf0e63fa231d16c',
     manualPriceOracle: '0x19337144D223B0cA0d3d19472f4b848D2B6E45e2',
     priceOracleManager: '0x7b430d4ffd1bc1f635b9375c5dc602df44e2edc4',
-    convertible: {underlying: unsupportedAssets.usf, voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034', pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57' }
+    convertibles: {
+      perp: {underlying: unsupportedAssets.perp, pool: '0xe8865b89576866da3f9b7fc868e057fb37f9b5a5', voucher: '0x2d53f42b2edf8907bcaa4d3f28e6f76bd95334e3'},
+      usf: {underlying: unsupportedAssets.usf, pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57', voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034' }},
   },
   
   synthetix: {

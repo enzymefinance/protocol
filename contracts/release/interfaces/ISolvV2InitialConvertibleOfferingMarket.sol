@@ -12,8 +12,7 @@ pragma experimental ABIEncoderV2;
 
 /// @title ISolvV2InitialConvertibleOfferingMarket Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @dev Source: https://github.com/solv-finance/solv-v2-ivo/blob/main/vouchers/convertible-voucher/contracts/ConvertiblePool.sol
-
+/// @dev Source: https://github.com/solv-finance/solv-v2-ivo/blob/main/markets/convertible-offering-market/contracts/InitialConvertibleOfferingMarket.sol
 interface ISolvV2InitialConvertibleOfferingMarket {
     enum VoucherType {STANDARD_VESTING, FLEXIBLE_DATE_VESTING, BOUNDING}
 
@@ -60,13 +59,32 @@ interface ISolvV2InitialConvertibleOfferingMarket {
         bool isValid;
     }
 
-    function buy(uint24 offeringId_, uint128 units_)
+    function buy(uint24 _offeringId, uint128 _units)
         external
         returns (uint256 amount_, uint128 fee_);
 
-    function getPrice(uint24 offeringId_) external returns (uint256 price_);
+    function getPrice(uint24 _offeringId) external returns (uint256 price_);
 
-    function markets(address voucher_) external returns (Market memory market_);
+    function markets(address _voucher) external returns (Market memory market_);
+
+    function mintParameters(uint24 _offeringId)
+        external
+        returns (MintParameter memory mintParameter_);
+
+    function offer(
+        address _voucher,
+        address _currency,
+        uint128 _min,
+        uint128 _max,
+        uint32 _startTime,
+        uint32 _endTime,
+        bool _useAllowList,
+        PriceType _priceType,
+        bytes calldata _priceData,
+        MintParameter calldata _mintParameter
+    ) external returns (uint24 offeringId_);
 
     function offerings(uint24 _offerId) external returns (Offering memory offering_);
+
+    function remove(uint24 _offeringId) external;
 }

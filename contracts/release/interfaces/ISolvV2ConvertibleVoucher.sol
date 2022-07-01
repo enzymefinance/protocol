@@ -39,7 +39,7 @@ interface ISolvV2ConvertibleVoucher {
     function getSlotDetail(uint256 _slot)
         external
         view
-        returns (ISolvV2ConvertiblePool.SlotDetail memory);
+        returns (ISolvV2ConvertiblePool.SlotDetail memory slotDetail_);
 
     function nextTokenId() external returns (uint32 nextTokenId_);
 
@@ -47,7 +47,7 @@ interface ISolvV2ConvertibleVoucher {
 
     function voucherSlotMapping(uint256 _tokenId) external returns (uint256 slotId_);
 
-    function underlying() external view returns (address);
+    function underlying() external view returns (address underlying_);
 
-    function unitsInToken(uint256 tokenId_) external view returns (uint256);
+    function unitsInToken(uint256 tokenId_) external view returns (uint256 units_);
 }

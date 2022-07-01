@@ -31,10 +31,12 @@ const fn: DeployFunction = async function (hre) {
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
   const mapleLiquidityPositionLib = await getOrNull('MapleLiquidityPositionLib');
   const mapleLiquidityPositionParser = await getOrNull('MapleLiquidityPositionParser');
-  const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
-  const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
   const solvV2ConvertibleBuyerPositionLib = await getOrNull('SolvV2ConvertibleBuyerPositionLib');
   const solvV2ConvertibleBuyerPositionParser = await getOrNull('SolvV2ConvertibleBuyerPositionParser');
+  const solvV2ConvertibleIssuerPositionLib = await getOrNull('SolvV2ConvertibleIssuerPositionLib');
+  const solvV2ConvertibleIssuerPositionParser = await getOrNull('SolvV2ConvertibleIssuerPositionParser');
+  const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
+  const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
   const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
   const uniswapV3ExternalPositionParser = await getOrNull('UniswapV3LiquidityPositionParser');
 
@@ -57,8 +59,11 @@ const fn: DeployFunction = async function (hre) {
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
     ...(mapleLiquidityPositionLib && mapleLiquidityPositionParser ? ['MAPLE_LIQUIDITY'] : []),
-    ...(solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser ? ['SOLV_CONVERTIBLE_BUYER'] : []),
+    ...(solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser ? ['SOLV_V2_CONVERTIBLE_BUYER'] : []),
     ...(arbitraryLoanPositionLib && arbitraryLoanPositionParser ? ['ARBITRARY_LOAN'] : []),
+    ...(solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser
+      ? ['SOLV_V2_CONVERTIBLE_ISSUER']
+      : []),
   ];
 
   if (positionTypes.length) {
@@ -140,6 +145,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.ArbitraryLoanPosition],
       [arbitraryLoanPositionLib],
       [arbitraryLoanPositionParser],
+    );
+  }
+
+  if (solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.SolvV2ConvertibleIssuerPosition],
+      [solvV2ConvertibleIssuerPositionLib],
+      [solvV2ConvertibleIssuerPositionParser],
     );
   }
 

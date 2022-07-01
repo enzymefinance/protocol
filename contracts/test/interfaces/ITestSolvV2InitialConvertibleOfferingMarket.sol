@@ -37,6 +37,22 @@ interface ITestSolvV2InitialConvertibleOfferingMarket {
         uint64 maturity;
     }
 
+    struct Offering {
+        uint24 offeringId;
+        uint32 startTime;
+        uint32 endTime;
+        PriceType priceType;
+        uint128 totalUnits;
+        uint128 units;
+        uint128 min;
+        uint128 max;
+        address voucher;
+        address currency;
+        address issuer;
+        bool useAllowList;
+        bool isValid;
+    }
+
     enum PriceType {FIXED, DECLIINING_BY_TIME}
 
     function addAllowAddress(
@@ -45,9 +61,14 @@ interface ITestSolvV2InitialConvertibleOfferingMarket {
         bool _resetExisting
     ) external;
 
-    function buy(uint24 offeringId_, uint128 units_)
+    function buy(uint24 _offeringId, uint128 _units)
         external
         returns (uint256 amount_, uint128 fee_);
+
+    function mintParameters(uint24 _offeringId)
+        external
+        view
+        returns (MintParameter memory mintParameter_);
 
     function nextOfferingId() external returns (uint24 offeringId_);
 
@@ -63,6 +84,8 @@ interface ITestSolvV2InitialConvertibleOfferingMarket {
         bytes calldata _priceData,
         MintParameter calldata _mintParameter
     ) external returns (uint24 offeringId_);
+
+    function offerings(uint24 _offeringId) external view returns (Offering memory offering_);
 
     function setVoucherManager(
         address _voucher,

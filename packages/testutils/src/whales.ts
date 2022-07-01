@@ -50,6 +50,7 @@ const whales = {
   // misc
   cvx: '0x0aca67fa70b142a3b9bf2ed89a81b40ff85dacdc',
   lidoSteth: '0x6cf9aa65ebad7028536e353393630e2340ca6049',
+  perp: '0xfad531c62757cf18391e48ee0959ab9ba106decc',
   usf: '0xe8bb5f49990d16851e86698db621bcc8f834ca1a',
   ust: '0x738cf6903e6c4e699d1c2dd9ab8b67fcdb3121ea',
   // Curve steth pool related

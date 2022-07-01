@@ -29,5 +29,10 @@ interface ITestSolvV2ConvertibleVoucher {
         uint8 _collateralType
     ) external view returns (uint256 slot_);
 
+    function getSlotDetail(uint256 _slot)
+        external
+        view
+        returns (ITestSolvV2ConvertiblePool.SlotDetail memory slotDetail_);
+
     function ownerOf(uint256 _tokenId) external view returns (address owner_);
 }

@@ -32,14 +32,26 @@ interface ISolvV2ConvertiblePool {
         bool isValid;
     }
 
+    function getIssuerSlots(address _issuer) external view returns (uint256[] memory slots_);
+
     function getSettlePrice(uint256 _slot) external view returns (uint128 settlePrice_);
 
     function getSlotDetail(uint256 _slot)
         external
         view
-        returns (ISolvV2ConvertiblePool.SlotDetail memory);
+        returns (ISolvV2ConvertiblePool.SlotDetail memory slotDetail_);
+
+    function getWithdrawableAmount(uint256 _slot)
+        external
+        returns (uint256 withdrawCurrencyAmount_, uint256 withdrawTokenAmount_);
+
+    function refund(uint256 _slot) external;
 
     function slotBalances(uint256 _slotId, address _currency) external returns (uint256 balance_);
 
-    function valueDecimals() external returns (uint8);
+    function valueDecimals() external returns (uint8 decimals_);
+
+    function withdraw(uint256 _slot)
+        external
+        returns (uint256 withdrawCurrencyAmount_, uint256 withdrawTokenAmount_);
 }
