@@ -31,6 +31,8 @@ const fn: DeployFunction = async function (hre) {
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
   const mapleLiquidityPositionLib = await getOrNull('MapleLiquidityPositionLib');
   const mapleLiquidityPositionParser = await getOrNull('MapleLiquidityPositionParser');
+  const notionalV2PositionLib = await getOrNull('NotionalV2PositionLib');
+  const notionalV2PositionParser = await getOrNull('NotionalV2PositionParser');
   const solvV2ConvertibleBuyerPositionLib = await getOrNull('SolvV2ConvertibleBuyerPositionLib');
   const solvV2ConvertibleBuyerPositionParser = await getOrNull('SolvV2ConvertibleBuyerPositionParser');
   const solvV2ConvertibleIssuerPositionLib = await getOrNull('SolvV2ConvertibleIssuerPositionLib');
@@ -64,6 +66,7 @@ const fn: DeployFunction = async function (hre) {
     ...(solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser
       ? ['SOLV_V2_CONVERTIBLE_ISSUER']
       : []),
+    ...(notionalV2PositionLib && notionalV2PositionParser ? ['NOTIONAL_V2'] : []),
   ];
 
   if (positionTypes.length) {
@@ -153,6 +156,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.SolvV2ConvertibleIssuerPosition],
       [solvV2ConvertibleIssuerPositionLib],
       [solvV2ConvertibleIssuerPositionParser],
+    );
+  }
+
+  if (notionalV2PositionLib && notionalV2PositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.NotionalV2Position],
+      [notionalV2PositionLib],
+      [notionalV2PositionParser],
     );
   }
 

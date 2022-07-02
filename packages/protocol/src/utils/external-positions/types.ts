@@ -9,4 +9,5 @@ export enum ExternalPositionType {
   SolvV2ConvertibleBuyerPosition = '7',
   ArbitraryLoanPosition = '8',
   SolvV2ConvertibleIssuerPosition = '9',
+  NotionalV2Position = '10',
 }

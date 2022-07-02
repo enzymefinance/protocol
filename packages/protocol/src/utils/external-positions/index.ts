@@ -4,6 +4,7 @@ export * from './arbitrary-loan';
 export * from './convex-voting';
 export * from './liquity-debt';
 export * from './maple-liquidity';
+export * from './notional-v2';
 export * from './solv-v2-convertible-buyer';
 export * from './solv-v2-convertible-issuer';
 export * from './the-graph-delegation';
