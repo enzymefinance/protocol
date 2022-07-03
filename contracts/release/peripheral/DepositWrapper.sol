@@ -49,13 +49,24 @@ contract DepositWrapper is AssetHelpers {
     /// and _minInvestmentAmount will be ignored.
     function exchangeEthAndBuyShares(
         address _comptrollerProxy,
-        address _denominationAsset,
         uint256 _minSharesQuantity,
         address _exchange,
         address _exchangeApproveTarget,
         bytes calldata _exchangeData,
         uint256 _minInvestmentAmount
     ) external payable returns (uint256 sharesReceived_) {
+        address denominationAsset = ComptrollerLib(_comptrollerProxy).getDenominationAsset();
+
+        // Wrap ETH into WETH
+        IWETH(payable(getWethToken())).deposit{value: msg.value}();
+
+        // If denominationAsset is WETH, can just buy shares directly
+        if (denominationAsset == getWethToken()) {
+            __approveAssetMaxAsNeeded(getWethToken(), _comptrollerProxy, msg.value);
+
+            return __buyShares(_comptrollerProxy, msg.sender, msg.value, _minSharesQuantity);
+        }
+
         // Deny access to privileged core calls originating from this contract
         bytes4 exchangeSelector = abi.decode(_exchangeData, (bytes4));
         require(
@@ -63,30 +74,20 @@ contract DepositWrapper is AssetHelpers {
             "exchangeEthAndBuyShares: Disallowed selector"
         );
 
-        // Wrap ETH into WETH
-        IWETH(payable(getWethToken())).deposit{value: msg.value}();
-
-        // If denominationAsset is WETH, can just buy shares directly
-        if (_denominationAsset == getWethToken()) {
-            __approveAssetMaxAsNeeded(getWethToken(), _comptrollerProxy, msg.value);
-
-            return __buyShares(_comptrollerProxy, msg.sender, msg.value, _minSharesQuantity);
-        }
-
         // Exchange ETH to the fund's denomination asset
         __approveAssetMaxAsNeeded(getWethToken(), _exchangeApproveTarget, msg.value);
         (bool success, bytes memory returnData) = _exchange.call(_exchangeData);
         require(success, string(returnData));
 
         // Confirm the amount received in the exchange is above the min acceptable amount
-        uint256 investmentAmount = ERC20(_denominationAsset).balanceOf(address(this));
+        uint256 investmentAmount = ERC20(denominationAsset).balanceOf(address(this));
         require(
             investmentAmount >= _minInvestmentAmount,
-            "exchangeAndBuyShares: _minInvestmentAmount not met"
+            "exchangeEthAndBuyShares: _minInvestmentAmount not met"
         );
 
         // Give the ComptrollerProxy max allowance for its denomination asset as necessary
-        __approveAssetMaxAsNeeded(_denominationAsset, _comptrollerProxy, investmentAmount);
+        __approveAssetMaxAsNeeded(denominationAsset, _comptrollerProxy, investmentAmount);
 
         // Buy fund shares
         sharesReceived_ = __buyShares(

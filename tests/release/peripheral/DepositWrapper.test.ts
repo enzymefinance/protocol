@@ -44,7 +44,6 @@ describe('exchangeEthAndBuyShares', () => {
         .connect(buyer)
         .exchangeEthAndBuyShares.args(
           comptrollerProxy,
-          denominationAsset,
           1,
           comptrollerProxy.address, // buySharesOnBehalf contract
           constants.AddressZero,
@@ -77,7 +76,6 @@ describe('exchangeEthAndBuyShares', () => {
       .connect(buyer)
       .exchangeEthAndBuyShares.args(
         comptrollerProxy,
-        denominationAsset,
         1,
         constants.AddressZero,
         constants.AddressZero,
@@ -134,7 +132,6 @@ describe('exchangeEthAndBuyShares', () => {
         .connect(buyer)
         .exchangeEthAndBuyShares.args(
           comptrollerProxy,
-          denominationAsset,
           1,
           fork.config.uniswap.router,
           fork.config.uniswap.router,
@@ -152,7 +149,6 @@ describe('exchangeEthAndBuyShares', () => {
       .connect(buyer)
       .exchangeEthAndBuyShares.args(
         comptrollerProxy,
-        denominationAsset,
         1,
         fork.config.uniswap.router,
         fork.config.uniswap.router,
