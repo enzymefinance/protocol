@@ -93,6 +93,7 @@ describe('implementsHooks', () => {
 describe('validateRule', () => {
   it('does not allow an unlisted adapter', async () => {
     const swapTx = mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: restrictedManager,
       integrationManager,
@@ -105,6 +106,7 @@ describe('validateRule', () => {
 
   it('allows listed adapter', async () => {
     await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: restrictedManager,
       integrationManager,
@@ -115,6 +117,7 @@ describe('validateRule', () => {
 
   it('allows adapter for manager with no list', async () => {
     await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: unrestrictedManager,
       integrationManager,
@@ -123,6 +126,7 @@ describe('validateRule', () => {
     });
 
     await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: unrestrictedManager,
       integrationManager,

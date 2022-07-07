@@ -15,6 +15,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockExternalPositionAddManagedAssets,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -367,11 +368,11 @@ describe('CallOnExternalPosition', () => {
       signer: fundOwner,
     });
 
-    const assetsToTransfer = [new StandardToken(fork.config.primitives.dai, whales.dai)];
-    const assetsToReceive = [new StandardToken(fork.config.primitives.mln, whales.mln)];
+    const assetsToTransfer = [new StandardToken(fork.config.primitives.dai, provider)];
+    const assetsToReceive = [new StandardToken(fork.config.primitives.mln, provider)];
     const amountsToTransfer = [1];
 
-    await assetsToTransfer[0].transfer(vaultProxy, seedAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: seedAmount, token: assetsToTransfer[0] });
 
     const { externalPositionProxy } = await createMockExternalPosition({
       comptrollerProxy,
@@ -653,7 +654,7 @@ describe('WithdrawAssetTo', () => {
       fork.config.weth,
       fork.config.positionsLimit,
     );
-    const asset = new StandardToken(fork.config.weth, whales.weth);
+    const asset = new StandardToken(fork.config.weth, provider);
 
     const vaultProxy = await createVaultProxy({
       fundAccessor,
@@ -662,10 +663,9 @@ describe('WithdrawAssetTo', () => {
       vaultLib,
     });
 
-    // Seed the vault with the asset
     const amountToTransfer = await getAssetUnit(asset);
+    await seedAccount({ account: vaultProxy, amount: amountToTransfer, provider, token: asset });
 
-    await asset.transfer(vaultProxy, amountToTransfer);
     await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [asset]));
 
     // Withdraw a partial amount of asset

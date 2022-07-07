@@ -1,5 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
@@ -10,6 +10,8 @@ import type {
 import { callOnIntegrationArgs, encodeArgs, IntegrationManagerActionId, sighash } from '@enzymefinance/protocol';
 import type { BigNumberish, BytesLike } from 'ethers';
 import { utils } from 'ethers';
+
+import { seedAccount } from '../../../accounts';
 
 export const mockGenericRemoveOnlySelector = sighash(
   utils.FunctionFragment.fromString('removeOnly(address,bytes,bytes)'),
@@ -69,12 +71,14 @@ export async function mockGenericSwap({
   actualIncomingAssetAmounts = [],
   minIncomingAssetAmounts = actualIncomingAssetAmounts,
   seedFund = false,
+  provider,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   signer: SignerWithAddress;
   mockGenericAdapter: MockGenericAdapter;
+  provider: EthereumTestnetProvider;
   selector?: BytesLike;
   spendAssets?: StandardToken[];
   maxSpendAssetAmounts?: BigNumberish[];
@@ -87,7 +91,7 @@ export async function mockGenericSwap({
   // Seed the VaultProxy with enough spendAssets for the tx
   if (seedFund) {
     for (const key in spendAssets) {
-      await spendAssets[key].transfer(vaultProxy, maxSpendAssetAmounts[key]);
+      await seedAccount({ account: vaultProxy, amount: maxSpendAssetAmounts[key], provider, token: spendAssets[key] });
     }
   }
 

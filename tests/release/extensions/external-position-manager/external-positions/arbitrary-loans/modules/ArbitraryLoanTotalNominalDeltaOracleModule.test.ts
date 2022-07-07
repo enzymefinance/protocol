@@ -20,6 +20,7 @@ import {
   deployManualValueOracle,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
@@ -71,13 +72,13 @@ beforeEach(async () => {
   arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
   // Define common loan params
-  loanAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+  loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
   // Seed vault and borrower with asset
   const assetUnit = await getAssetUnit(loanAsset);
 
-  await loanAsset.transfer(vaultProxy, assetUnit.mul(1000));
-  await loanAsset.transfer(borrower, assetUnit.mul(1000));
+  await seedAccount({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
+  await seedAccount({ account: borrower, amount: assetUnit.mul(1000), provider, token: loanAsset });
 });
 
 describe('configure', () => {

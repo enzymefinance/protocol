@@ -1,7 +1,8 @@
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
+import { seedAccount } from '../accounts';
 import { addTrackedAssetsToVault } from './extensions/integrations/trackedAssets';
 
 export async function addNewAssetsToFund({
@@ -10,12 +11,14 @@ export async function addNewAssetsToFund({
   integrationManager,
   assets,
   amounts = new Array(assets.length).fill(1),
+  provider,
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   assets: StandardToken[];
   amounts?: BigNumberish[];
+  provider: EthereumTestnetProvider;
 }) {
   // First, add tracked assets
   const receipt = addTrackedAssetsToVault({
@@ -28,11 +31,9 @@ export async function addNewAssetsToFund({
   // Then seed the vault with balances as necessary
   const vaultProxy = await comptrollerProxy.getVaultProxy();
 
-  for (const i in assets) {
-    if (amounts[i] > 0) {
-      await assets[i].transfer(vaultProxy, amounts[i]);
-    }
-  }
+  await Promise.all(
+    assets.map((asset, i) => seedAccount({ account: vaultProxy, amount: amounts[i], provider, token: asset })),
+  );
 
   return receipt;
 }

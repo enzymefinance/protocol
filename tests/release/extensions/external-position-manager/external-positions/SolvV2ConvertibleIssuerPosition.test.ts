@@ -22,6 +22,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   impersonateSigner,
+  seedAccount,
   solvV2ConvertibleIssuerPositionCreateOffer,
   solvV2ConvertibleIssuerPositionReconcile,
   solvV2ConvertibleIssuerPositionRefund,
@@ -88,9 +89,9 @@ beforeEach(async () => {
   solvV2ConvertibleIssuerPosition = new SolvV2ConvertibleIssuerPositionLib(externalPositionProxy, provider);
 
   // All tests use the USF convertible voucher (except the test for multiple voucher issuance)
-  currencyToken = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+  currencyToken = new StandardToken(fork.config.primitives.usdt, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new StandardToken(fork.config.unsupportedAssets.usf, whales.usf);
+  underlyingToken = new StandardToken(fork.config.unsupportedAssets.usf, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvDeployer = await impersonateSigner({ provider, signerAddress: fork.config.solvFinanceV2.deployer });
@@ -104,9 +105,9 @@ beforeEach(async () => {
   // Seed the vaultProxy with underlying and currency, and buyer with currency
   const underlyingAmount = underlyingUnit.mul(100_000);
   const currencyAmount = currencyUnit.mul(100_000);
-  await currencyToken.transfer(buyer, currencyAmount);
-  await currencyToken.transfer(vaultProxy, currencyAmount);
-  await underlyingToken.transfer(vaultProxy, underlyingAmount);
+  await seedAccount({ account: buyer, amount: currencyAmount, provider, token: currencyToken });
+  await seedAccount({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
+  await seedAccount({ account: vaultProxy, amount: underlyingAmount, provider, token: underlyingToken });
 
   // Approve buyer spend on solv offering market
   await currencyToken.connect(buyer).approve(initialConvertibleOfferingMarket, constants.MaxUint256);
@@ -533,14 +534,24 @@ describe('Actions.Withdraw', () => {
 describe('multiple voucher issuance', () => {
   it('works as expected', async () => {
     // Seed underlying and currency
-    const underlyingToken2 = new StandardToken(fork.config.unsupportedAssets.perp, whales.perp);
-    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const underlyingToken2 = new StandardToken(fork.config.unsupportedAssets.perp, provider);
+    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, provider);
 
     const underlyingToken2Unit = await getAssetUnit(underlyingToken2);
     const currencyToken2Unit = await getAssetUnit(currencyToken2);
 
-    await underlyingToken2.transfer(vaultProxy, underlyingToken2Unit.mul(100_000));
-    await currencyToken2.transfer(vaultProxy, currencyToken2Unit.mul(100_000));
+    await seedAccount({
+      account: vaultProxy,
+      amount: underlyingToken2Unit.mul(100_000),
+      provider,
+      token: underlyingToken2,
+    });
+    await seedAccount({
+      account: vaultProxy,
+      amount: currencyToken2Unit.mul(100_000),
+      provider,
+      token: currencyToken2,
+    });
 
     const voucher2 = new ITestSolvV2ConvertibleVoucher(
       fork.config.solvFinanceV2.convertibles.perp.voucher,

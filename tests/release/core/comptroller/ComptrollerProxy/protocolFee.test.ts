@@ -7,7 +7,7 @@ import type {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ONE_YEAR_IN_SECONDS, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -25,7 +25,7 @@ import type { BigNumberish } from 'ethers';
 import { BigNumber } from 'ethers';
 
 // Use a half year for fees just to not use exactly 1 year
-const halfYearInSeconds = (60 * 60 * 24 * 365.25) / 2;
+const halfYearInSeconds = ONE_YEAR_IN_SECONDS / 2;
 let fork: ProtocolDeployment;
 
 beforeEach(async () => {
@@ -45,8 +45,8 @@ describe('buyBackProtocolFeeShares', () => {
 
     protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    mln = new StandardToken(fork.config.primitives.mln, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -56,6 +56,7 @@ describe('buyBackProtocolFeeShares', () => {
       investment: {
         buyer: fundOwner,
         investmentAmount: await getAssetUnit(denominationAsset),
+        provider,
         seedBuyer: true,
       },
 
@@ -81,6 +82,7 @@ describe('buyBackProtocolFeeShares', () => {
     // Seed the fund with more MLN than needed to buyback the target shares
     // 1 MLN : 1 USDC is more than enough
     await addNewAssetsToFund({
+      provider,
       amounts: [await getAssetUnit(mln)],
       assets: [mln],
       comptrollerProxy,
@@ -178,8 +180,8 @@ describe('auto-buybacks', () => {
     protocolFeeTracker = fork.deployment.protocolFeeTracker;
     valueInterpreter = fork.deployment.valueInterpreter;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    mln = new StandardToken(fork.config.primitives.mln, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -189,6 +191,7 @@ describe('auto-buybacks', () => {
       investment: {
         buyer: fundOwner,
         investmentAmount: await getAssetUnit(denominationAsset),
+        provider,
         seedBuyer: true,
       },
 
@@ -217,6 +220,7 @@ describe('auto-buybacks', () => {
     beforeEach(async () => {
       // Seed the fund with a very small amount of MLN, not enough to buyback the target shares
       await addNewAssetsToFund({
+        provider,
         amounts: [10],
         assets: [mln],
         comptrollerProxy,
@@ -232,6 +236,7 @@ describe('auto-buybacks', () => {
         buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
+        provider,
         seedBuyer: true,
       });
 
@@ -351,6 +356,7 @@ describe('auto-buybacks', () => {
       // Seed the fund with more MLN than needed to buyback the target shares
       // 1 MLN : 1 USDC is more than enough
       await addNewAssetsToFund({
+        provider,
         amounts: [await getAssetUnit(mln)],
         assets: [mln],
         comptrollerProxy,
@@ -366,6 +372,7 @@ describe('auto-buybacks', () => {
         buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
+        provider,
         seedBuyer: true,
       });
 

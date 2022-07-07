@@ -13,11 +13,13 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  addTrackedAssetsToVault,
+  addNewAssetsToFund,
   buyShares,
   createNewFund,
   deployProtocolFixture,
+  getAssetUnit,
   redeemSharesInKind,
+  seedAccount,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
@@ -47,17 +49,22 @@ describe.each([['weth' as const], ['usdc' as const]])(
       investor = fork.accounts[2];
       anotherInvestor = fork.accounts[3];
 
-      denominationAsset =
-        denominationAssetId === 'weth'
-          ? new StandardToken(fork.config.weth, whales.weth)
-          : new StandardToken(fork.config.primitives[denominationAssetId], whales[denominationAssetId]);
+      denominationAsset = new StandardToken(
+        denominationAssetId === 'weth' ? fork.config.weth : fork.config.primitives[denominationAssetId],
+        provider,
+      );
       denominationAssetDecimals = await denominationAsset.decimals();
 
       // Seed investors with denomination asset
-      const denominationAssetSeedAmount = utils.parseUnits('100', await denominationAsset.decimals());
+      const denominationAssetSeedAmount = (await getAssetUnit(denominationAsset)).mul(100);
 
-      await denominationAsset.transfer(investor, denominationAssetSeedAmount);
-      await denominationAsset.transfer(anotherInvestor, denominationAssetSeedAmount);
+      await seedAccount({ account: investor, amount: denominationAssetSeedAmount, provider, token: denominationAsset });
+      await seedAccount({
+        account: anotherInvestor,
+        amount: denominationAssetSeedAmount,
+        provider,
+        token: denominationAsset,
+      });
     });
 
     it('creates a new fund', async () => {
@@ -115,6 +122,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
+        provider,
       });
 
       const rate = FIVE_PERCENT;
@@ -136,6 +144,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
+        provider,
       });
 
       expect(await vaultProxy.balanceOf(investor)).toBeGteBigNumber(minSharesAmount.add(previousBalance));
@@ -151,71 +160,49 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('seeds the fund with all more assets', async () => {
       const assets = [
-        new StandardToken(fork.config.primitives.bat, whales.bat),
-        new StandardToken(fork.config.primitives.bnb, whales.bnb),
-        new StandardToken(fork.config.primitives.bnt, whales.bnt),
-        new StandardToken(fork.config.primitives.comp, whales.comp),
-        new StandardToken(fork.config.primitives.dai, whales.dai),
-        new StandardToken(fork.config.primitives.link, whales.link),
-        new StandardToken(fork.config.primitives.mana, whales.mana),
-        new StandardToken(fork.config.primitives.mln, whales.mln),
-        new StandardToken(fork.config.primitives.ren, whales.ren),
-        new StandardToken(fork.config.primitives.rep, whales.rep),
-        new StandardToken(fork.config.primitives.susd, whales.susd),
-        new StandardToken(fork.config.primitives.uni, whales.uni),
-        new StandardToken(fork.config.primitives.usdt, whales.usdt),
-        new StandardToken(fork.config.primitives.zrx, whales.zrx),
+        new StandardToken(fork.config.primitives.bat, provider),
+        new StandardToken(fork.config.primitives.bnb, provider),
+        new StandardToken(fork.config.primitives.bnt, provider),
+        new StandardToken(fork.config.primitives.comp, provider),
+        new StandardToken(fork.config.primitives.dai, provider),
+        new StandardToken(fork.config.primitives.link, provider),
+        new StandardToken(fork.config.primitives.mana, provider),
+        new StandardToken(fork.config.primitives.mln, provider),
+        new StandardToken(fork.config.primitives.ren, provider),
+        new StandardToken(fork.config.primitives.rep, provider),
+        new StandardToken(fork.config.primitives.susd, provider),
+        new StandardToken(fork.config.primitives.uni, provider),
+        new StandardToken(fork.config.primitives.usdt, provider),
+        new StandardToken(fork.config.primitives.zrx, provider),
       ];
 
-      await addTrackedAssetsToVault({
+      await addNewAssetsToFund({
         assets,
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
+        provider,
         signer: manager,
+        amounts: await Promise.all(assets.map((asset) => getAssetUnit(asset))),
       });
-
-      // Use this loop instead of addNewAssetsToFund() to make debugging easier
-      // when a whale changes.
-      for (const asset of assets) {
-        const decimals = await asset.decimals();
-        const transferAmount = utils.parseUnits('1', decimals);
-
-        await asset.transfer(vaultProxy, transferAmount);
-
-        const balance = await asset.balanceOf(vaultProxy);
-
-        expect(balance).toBeGteBigNumber(transferAmount);
-      }
     });
 
     it('seeds the fund with cTokens', async () => {
       const compoundAssets = [
-        new StandardToken(fork.config.compound.ctokens.ccomp, whales.ccomp),
-        new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai),
-        new StandardToken(fork.config.compound.ceth, whales.ceth),
-        new StandardToken(fork.config.compound.ctokens.cusdc, whales.cusdc),
-        new StandardToken(fork.config.compound.ctokens.cuni, whales.cuni),
+        new StandardToken(fork.config.compound.ctokens.ccomp, provider),
+        new StandardToken(fork.config.compound.ctokens.cdai, provider),
+        new StandardToken(fork.config.compound.ceth, provider),
+        new StandardToken(fork.config.compound.ctokens.cusdc, provider),
+        new StandardToken(fork.config.compound.ctokens.cuni, provider),
       ];
 
-      await addTrackedAssetsToVault({
+      await addNewAssetsToFund({
+        provider,
         assets: compoundAssets,
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
         signer: manager,
+        amounts: await Promise.all(compoundAssets.map((asset) => getAssetUnit(asset))),
       });
-
-      // Use this loop instead of addNewAssetsToFund() to make debugging easier
-      // when a whale changes.
-      for (const asset of compoundAssets) {
-        const decimals = await asset.decimals();
-        const transferAmount = utils.parseUnits('1', decimals);
-
-        await asset.transfer(vaultProxy, transferAmount);
-
-        const balance = await asset.balanceOf(vaultProxy);
-
-        expect(balance).toBeGteBigNumber(transferAmount);
-      }
     });
 
     it('calculates the GAV of the fund with 20 assets', async () => {
@@ -234,6 +221,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         minIncomingAssetAmount: BigNumber.from(1),
         outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
         path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
+        provider,
         uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
         vaultProxy,
       });
@@ -245,10 +233,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-      const amount = utils.parseEther('1');
+      const asset = new StandardToken(fork.config.primitives.dai, provider);
+      const balance = await asset.balanceOf(vaultProxy);
+      const amount = balance.add(utils.parseEther('1'));
 
-      await dai.transfer(vaultProxy, amount);
+      await seedAccount({ provider, account: vaultProxy, amount, token: fork.config.primitives.dai });
 
       const gavAfter = await comptrollerProxy.calcGav.args().call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
@@ -280,10 +269,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const zrx = new StandardToken(fork.config.primitives.zrx, whales.zrx);
-      const amount = utils.parseEther('1');
+      const token = new StandardToken(fork.config.primitives.zrx, provider);
+      const balance = await token.balanceOf(vaultProxy);
+      const amount = balance.add(utils.parseEther('1'));
 
-      await zrx.transfer(vaultProxy, amount);
+      await seedAccount({ provider, account: vaultProxy, amount, token: fork.config.primitives.zrx });
 
       const gavAfter = await comptrollerProxy.calcGav.args().call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
@@ -310,6 +300,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         buyer: anotherInvestor,
         comptrollerProxy,
         denominationAsset,
+        provider,
       });
 
       expect(buySharesTx).toMatchGasSnapshot(denominationAssetId);

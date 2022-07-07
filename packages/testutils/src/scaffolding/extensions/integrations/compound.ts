@@ -1,6 +1,6 @@
 import type { AddressLike, Contract, Send } from '@enzymefinance/ethers';
 import { contract, resolveAddress } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   CompoundAdapter,
   CompoundPriceFeed,
@@ -22,6 +22,7 @@ import {
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
+import { seedAccount } from '../../../accounts';
 import { getAssetBalances } from '../../common';
 
 export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
@@ -33,7 +34,6 @@ export const ICompoundComptroller = contract<ICompoundComptroller>()`
 `;
 
 export async function assertCompoundLend({
-  tokenWhale,
   comptrollerProxy,
   vaultProxy,
   integrationManager,
@@ -42,8 +42,8 @@ export async function assertCompoundLend({
   tokenAmount = utils.parseEther('1'),
   cToken,
   compoundPriceFeed,
+  provider,
 }: {
-  tokenWhale: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
@@ -52,10 +52,12 @@ export async function assertCompoundLend({
   tokenAmount?: BigNumber;
   cToken: ICERC20;
   compoundPriceFeed: CompoundPriceFeed;
+  provider: EthereumTestnetProvider;
 }) {
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), tokenWhale);
+  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken(cToken), provider);
 
-  await token.connect(tokenWhale).transfer(vaultProxy, tokenAmount);
+  await seedAccount({ account: vaultProxy, amount: tokenAmount, provider, token });
+
   const rateBefore = await cToken.exchangeRateStored.call();
 
   // Exchange rate stored can have a small deviation from exchangeRateStored
@@ -67,7 +69,7 @@ export async function assertCompoundLend({
 
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [cToken as any, token],
+    assets: [cToken, token],
   });
 
   const lendReceipt = await compoundLend({
@@ -84,7 +86,7 @@ export async function assertCompoundLend({
   const rate = await cToken.exchangeRateStored();
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [cToken as any, token],
+    assets: [cToken, token],
   });
 
   const expectedCTokenAmount = tokenAmount.mul(utils.parseEther('1')).div(rate);
@@ -103,6 +105,7 @@ export async function assertCompoundRedeem({
   compoundAdapter,
   cToken,
   compoundPriceFeed,
+  provider,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
@@ -111,15 +114,16 @@ export async function assertCompoundRedeem({
   compoundAdapter: CompoundAdapter;
   cToken: ICERC20;
   compoundPriceFeed: CompoundPriceFeed;
+  provider: EthereumTestnetProvider;
 }) {
   const cTokenAmount = utils.parseUnits('1', await cToken.decimals());
 
-  await cToken.transfer(vaultProxy, cTokenAmount);
+  await seedAccount({ account: vaultProxy, amount: cTokenAmount, provider, token: cToken });
 
   const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [token, cToken as any],
+    assets: [token, cToken],
   });
 
   const rateBefore = await cToken.exchangeRateStored();
@@ -138,7 +142,7 @@ export async function assertCompoundRedeem({
 
   const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
-    assets: [token, cToken as any],
+    assets: [token, cToken],
   });
 
   // Get exchange rate after tx (the rate is updated right after)

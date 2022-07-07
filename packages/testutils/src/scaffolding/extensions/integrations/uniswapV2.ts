@@ -1,6 +1,6 @@
 import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
 import { contract } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
@@ -20,6 +20,8 @@ import {
   uniswapV2TakeOrderArgs,
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
+
+import { seedAccount } from '../../../accounts';
 
 export interface UniswapV2Factory extends Contract<UniswapV2Factory> {
   createPair: Send<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
@@ -44,6 +46,7 @@ export async function uniswapV2Lend({
   amountAMin,
   amountBMin,
   minPoolTokenAmount,
+  provider,
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
@@ -58,12 +61,12 @@ export async function uniswapV2Lend({
   amountAMin: BigNumberish;
   amountBMin: BigNumberish;
   minPoolTokenAmount: BigNumberish;
+  provider: EthereumTestnetProvider;
   seedFund?: boolean;
 }) {
   if (seedFund) {
-    // Seed the VaultProxy with enough tokenA and tokenB for the tx
-    await tokenA.transfer(vaultProxy, amountADesired);
-    await tokenB.transfer(vaultProxy, amountBDesired);
+    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
   }
 
   const lendArgs = uniswapV2LendArgs({
@@ -144,6 +147,7 @@ export async function uniswapV2TakeOrder({
   outgoingAssetAmount,
   minIncomingAssetAmount,
   seedFund = false,
+  provider,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
@@ -154,10 +158,10 @@ export async function uniswapV2TakeOrder({
   outgoingAssetAmount: BigNumberish;
   minIncomingAssetAmount: BigNumberish;
   seedFund?: boolean;
+  provider: EthereumTestnetProvider;
 }) {
   if (seedFund) {
-    // Seed the VaultProxy with enough outgoingAsset for the tx
-    await path[0].transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: path[0] });
   }
 
   const takeOrderArgs = uniswapV2TakeOrderArgs({

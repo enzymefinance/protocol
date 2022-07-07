@@ -10,6 +10,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   redeemSharesInKind,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -50,7 +51,7 @@ describe('addFundSettings', () => {
 
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -117,7 +118,7 @@ describe('activateForFund', () => {
 
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -178,7 +179,7 @@ describe('settle', () => {
 
   beforeEach(async () => {
     [fundOwner, investor, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -212,8 +213,8 @@ describe('settle', () => {
 
     const initialInvestmentAmount = denominationAssetUnit.mul(2);
 
-    // await denominationAsset.transfer(investor, initialInvestmentAmount);
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -226,6 +227,7 @@ describe('settle', () => {
     const preBuyAndRedeemInvestorShares = await vaultProxy.balanceOf(investor);
 
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -243,7 +245,13 @@ describe('settle', () => {
     // Bump performance by sending denomination asset to the vault
     const gavIncreaseAmount = denominationAssetUnit;
 
-    await denominationAsset.transfer(vaultProxy, gavIncreaseAmount);
+    const vaultDenominationBalance = await denominationAsset.balanceOf(vaultProxy);
+    await seedAccount({
+      account: vaultProxy,
+      amount: vaultDenominationBalance.add(gavIncreaseAmount),
+      provider,
+      token: denominationAsset,
+    });
 
     const preRedeemSharePrice = await comptrollerProxy.calcGrossShareValue.call();
 

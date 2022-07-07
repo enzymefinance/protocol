@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type { FundDeployer, StandardToken } from '@enzymefinance/protocol';
 import {
   ComptrollerLib,
@@ -13,6 +13,7 @@ import {
 import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
+import { seedAccount } from '../accounts';
 import { assertEvent } from '../assertions';
 import type { BuySharesParams } from './shares';
 import { buyShares } from './shares';
@@ -223,16 +224,21 @@ export async function setupGasRelayerPaymaster({
   signer,
   vaultProxy,
   fundAccessor,
+  provider,
   weth,
   startingBalance = utils.parseUnits('10', 18),
 }: {
   signer: SignerWithAddress;
   vaultProxy: AddressLike;
   fundAccessor: AddressLike;
+  provider: EthereumTestnetProvider;
   weth: StandardToken;
   startingBalance?: BigNumberish;
 }) {
-  await weth.transfer(vaultProxy, startingBalance);
+  if (startingBalance) {
+    await seedAccount({ account: vaultProxy, amount: startingBalance, provider, token: weth });
+  }
+
   const comptrollerProxy = new ComptrollerLib(fundAccessor, signer);
   const receipt = await comptrollerProxy.deployGasRelayPaymaster();
 

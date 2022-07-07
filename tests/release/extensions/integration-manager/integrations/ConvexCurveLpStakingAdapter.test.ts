@@ -6,7 +6,12 @@ import type {
   IntegrationManager,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { curveIncomingAssetsDataRedeemStandardArgs, CurveRedeemType, StandardToken } from '@enzymefinance/protocol';
+import {
+  curveIncomingAssetsDataRedeemStandardArgs,
+  CurveRedeemType,
+  ONE_DAY_IN_SECONDS,
+  StandardToken,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -19,6 +24,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
@@ -58,9 +64,9 @@ describe('actions', () => {
     vaultProxy = newFundRes.vaultProxy;
 
     pool = fork.config.curve.pools.steth.pool;
-    lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, whales.stecrv);
-    weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-    steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+    steth = new StandardToken(fork.config.lido.steth, provider);
 
     // TODO: make distinction between valid and invalid cases?
     // Deploy wrapper
@@ -90,7 +96,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await lpToken.transfer(vaultProxy, lpTokenAmount);
+      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,
@@ -102,7 +108,7 @@ describe('actions', () => {
       });
 
       // Warp ahead in time to accrue significant rewards
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
 
       // Claim all earned rewards
       const receipt = await curveClaimRewards({
@@ -131,12 +137,15 @@ describe('actions', () => {
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethAmount, stethAmount],
         assets: [weth, steth],
         comptrollerProxy,
         integrationManager,
         signer: fundOwner,
       });
+
+      const preStethBalance = await steth.balanceOf(vaultProxy);
 
       const receipt = await curveLendAndStake({
         comptrollerProxy,
@@ -149,13 +158,16 @@ describe('actions', () => {
         useUnderlyings: false,
       });
 
+      const postStethBalance = await steth.balanceOf(vaultProxy);
+
       expect(await stakingWrapperToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
       // All of the outgoing assets should have been used
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-      expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
+      // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
+      expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1507514`);
+      expect(receipt).toMatchInlineGasSnapshot(`1512442`);
     });
   });
 
@@ -165,7 +177,7 @@ describe('actions', () => {
     it('works as expected', async () => {
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await lpToken.transfer(vaultProxy, lpTokenAmount);
+      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
 
       const receipt = await curveStake({
         amount: lpTokenAmount,
@@ -180,7 +192,7 @@ describe('actions', () => {
       // All lpToken should be converted into gauge token
       expect(await stakingWrapperToken.balanceOf(vaultProxy)).toEqBigNumber(lpTokenAmount);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1268287`);
+      expect(receipt).toMatchInlineGasSnapshot(`1268299`);
     });
   });
 
@@ -191,7 +203,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await lpToken.transfer(vaultProxy, lpTokenAmount);
+      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,
@@ -220,7 +232,7 @@ describe('actions', () => {
       );
       expect(await lpToken.balanceOf(vaultProxy)).toEqBigNumber(unstakeAmount);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1439927`);
+      expect(receipt).toMatchInlineGasSnapshot(`1439939`);
     });
   });
 
@@ -232,7 +244,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await lpToken.transfer(vaultProxy, lpTokenAmount);
+      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,
@@ -275,7 +287,7 @@ describe('actions', () => {
       expect(postTxWethBalance).toBeGtBigNumber(preTxWethBalance);
       expect(postTxStethBalance).toBeGtBigNumber(preTxStethBalance);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1702356`);
+      expect(receipt).toMatchInlineGasSnapshot(`1702368`);
     });
   });
 });

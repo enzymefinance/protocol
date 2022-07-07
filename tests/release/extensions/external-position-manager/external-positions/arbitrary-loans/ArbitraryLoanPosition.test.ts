@@ -12,6 +12,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -65,12 +66,12 @@ describe('manager actions', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
 
-    await loanAsset.transfer(vaultProxy, assetUnit.mul(10));
+    await seedAccount({ account: vaultProxy, amount: assetUnit.mul(10), provider, token: loanAsset });
   });
 
   describe('ConfigureLoan', () => {
@@ -325,7 +326,7 @@ describe('manager actions', () => {
     });
 
     it('happy path', async () => {
-      const extraAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+      const extraAsset = new StandardToken(fork.config.primitives.mln, provider);
       const wrappedNativeAsset = new StandardToken(fork.config.wrappedNativeAsset, provider);
 
       const totalBorrowed = await arbitraryLoanPosition.getTotalBorrowed();
@@ -337,7 +338,13 @@ describe('manager actions', () => {
       const extraAssetAmount = 456;
 
       // Transfer some of the borrowed amount back to the EP
-      await loanAsset.transfer(arbitraryLoanPosition, loanAssetAmount);
+      const loanAssetNextAmount = (await loanAsset.balanceOf(arbitraryLoanPosition)).add(loanAssetAmount);
+      await seedAccount({
+        account: arbitraryLoanPosition,
+        amount: loanAssetNextAmount,
+        provider,
+        token: loanAsset,
+      });
 
       // Transfer some of the native asset to the EP
       await borrower.sendTransaction({
@@ -346,7 +353,7 @@ describe('manager actions', () => {
       });
 
       // Transfer another misc asset to the EP
-      await extraAsset.transfer(arbitraryLoanPosition, extraAssetAmount);
+      await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
 
       // The loan should not yet be marked as closed
       expect(await arbitraryLoanPosition.loanIsClosed()).toBe(false);
@@ -413,11 +420,11 @@ describe('manager actions', () => {
         accountingModuleConfigData: '0x',
       });
 
-      const extraAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+      const extraAsset = new StandardToken(fork.config.primitives.mln, provider);
       const extraAssetAmount = 456;
 
       // Transfer a misc asset to the EP
-      await extraAsset.transfer(arbitraryLoanPosition, extraAssetAmount);
+      await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
 
       const preTxVaultExtraAssetBalance = await extraAsset.balanceOf(vaultProxy);
 
@@ -450,12 +457,12 @@ describe('borrower actions', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
     const seedAmount = assetUnit.mul(1000);
-    await loanAsset.transfer(vaultProxy, seedAmount);
+    await seedAccount({ account: vaultProxy, amount: seedAmount, provider, token: loanAsset });
 
     // Configure a loan
     const borrowableAmount = seedAmount.div(4);
@@ -598,11 +605,11 @@ describe('position value', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
-    await loanAsset.transfer(vaultProxy, assetUnit.mul(1000));
+    await seedAccount({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
   });
 
   describe('getManagedAssets', () => {
@@ -686,7 +693,7 @@ describe('position value', () => {
 
       // Repay without borrowing anything (i.e., repay > borrowed)
       const repayAmount = 123;
-      await loanAsset.transfer(borrower, repayAmount);
+      await seedAccount({ account: borrower, amount: repayAmount, provider, token: loanAsset });
       await loanAsset.connect(borrower).approve(arbitraryLoanPosition, repayAmount);
       await arbitraryLoanPosition.connect(borrower).repay(repayAmount);
 

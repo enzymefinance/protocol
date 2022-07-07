@@ -11,7 +11,7 @@ beforeEach(async () => {
 describe('transfer', () => {
   it('can transfer own tokens to another user', async () => {
     const [fundOwner, investor, transferee] = fork.accounts;
-    const denominationAsset = new StandardToken(fork.config.weth, whales.weth);
+    const denominationAsset = new StandardToken(fork.config.weth, provider);
 
     // Spin up and invest in a fund to create shares
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -20,6 +20,7 @@ describe('transfer', () => {
       fundOwner,
       investment: {
         buyer: investor,
+        provider,
         seedBuyer: true,
       },
       signer: fundOwner,
@@ -50,7 +51,7 @@ describe('transfer', () => {
 describe('transferFrom', () => {
   it('can transfer tokens on behalf of another user when granted an allowance', async () => {
     const [fundOwner, investor, transferee, approvedCaller] = fork.accounts;
-    const denominationAsset = new StandardToken(fork.config.weth, whales.weth);
+    const denominationAsset = new StandardToken(fork.config.weth, provider);
 
     // Spin up and invest in a fund to create shares
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -59,6 +60,7 @@ describe('transferFrom', () => {
       fundOwner,
       investment: {
         buyer: investor,
+        provider,
         seedBuyer: true,
       },
       signer: fundOwner,

@@ -30,6 +30,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
+  seedAccount,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -61,13 +62,13 @@ beforeEach(async () => {
   protocolFeeRecipient = fork.deployment.protocolFeeReserveProxy;
 
   // Define assets
-  denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+  denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
   denominationAssetUnit = await getAssetUnit(denominationAsset);
-  depositToken = new StandardToken(fork.config.unsupportedAssets.usf, whales.usf);
+  depositToken = new StandardToken(fork.config.unsupportedAssets.usf, provider);
   depositTokenUnit = await getAssetUnit(depositToken);
-  miscAsset1 = new StandardToken(fork.config.primitives.dai, whales.dai);
+  miscAsset1 = new StandardToken(fork.config.primitives.dai, provider);
   miscAsset1Unit = await getAssetUnit(miscAsset1);
-  miscAsset2 = new StandardToken(fork.config.primitives.mln, whales.mln);
+  miscAsset2 = new StandardToken(fork.config.primitives.mln, provider);
   miscAsset2Unit = await getAssetUnit(miscAsset2);
 
   // Deploy a new fund
@@ -85,9 +86,9 @@ beforeEach(async () => {
   await fork.deployment.protocolFeeTracker.setLastPaidForVault(vaultProxy, constants.MaxUint256);
 
   // Seed relevant accounts with deposit token
-  const seedAmount = depositTokenUnit.mul(1000);
-  await depositToken.transfer(investor, seedAmount);
-  await depositToken.transfer(randomUser, seedAmount);
+  const amount = depositTokenUnit.mul(1000);
+  await seedAccount({ account: investor, amount, provider, token: depositToken });
+  await seedAccount({ account: randomUser, amount, provider, token: depositToken });
 });
 
 describe('library', () => {
@@ -315,7 +316,12 @@ describe('investor actions', () => {
 
       it('does not allow a non-Deposit state', async () => {
         // Send 1 denomination asset unit to the wrapper to buy some vault shares
-        await denominationAsset.transfer(sharesWrapper, denominationAssetUnit);
+        await seedAccount({
+          account: sharesWrapper,
+          amount: denominationAssetUnit,
+          provider,
+          token: denominationAsset,
+        });
 
         // Deposit a small amount
         await sharesWrapper.connect(investor).deposit(1);
@@ -438,7 +444,7 @@ describe('investor actions', () => {
       await sharesWrapper.connect(investor).deposit(depositAmount);
 
       // Send 1 denomination asset unit to the wrapper to buy some vault shares
-      await denominationAsset.transfer(sharesWrapper, denominationAssetUnit);
+      await seedAccount({ account: sharesWrapper, amount: denominationAssetUnit, provider, token: denominationAsset });
     });
 
     it.todo('does not allow reentrancy');
@@ -488,7 +494,8 @@ describe('investor actions', () => {
 
       // Send some more deposit token to the vault to simulate a gain
       const depositTokenGain = depositTokenUnit.div(3);
-      await depositToken.transfer(vaultProxy, depositTokenGain);
+      const nextDepositTokenBalance = (await depositToken.balanceOf(vaultProxy)).add(depositTokenGain);
+      await seedAccount({ account: vaultProxy, amount: nextDepositTokenBalance, provider, token: depositToken });
 
       // Enter redeem state
       await sharesWrapper.connect(manager).enterRedeemState([]);
@@ -557,8 +564,8 @@ describe('investor actions', () => {
       await sharesWrapper.connect(manager).enterRedeemState([]);
 
       // Transfer a couple misc assets directly to the wrapper
-      await miscAsset1.transfer(sharesWrapper, miscAsset1Unit);
-      await miscAsset2.transfer(sharesWrapper, miscAsset2Unit);
+      await seedAccount({ account: sharesWrapper, amount: miscAsset1Unit, provider, token: miscAsset1 });
+      await seedAccount({ account: sharesWrapper, amount: miscAsset2Unit, provider, token: miscAsset2 });
       const additionalAssets = [miscAsset1, miscAsset2];
       const allAssets = [denominationAsset, depositToken, ...additionalAssets];
 
@@ -612,7 +619,7 @@ describe('manager actions', () => {
 
     it('can only be called by manager or owner', async () => {
       // Send 1 denomination asset unit to the wrapper to buy some vault shares
-      await denominationAsset.transfer(sharesWrapper, denominationAssetUnit);
+      await seedAccount({ account: sharesWrapper, amount: denominationAssetUnit, provider, token: denominationAsset });
 
       // Calling with random user should fail
       await expect(sharesWrapper.connect(randomUser).enterLockedState()).rejects.toBeRevertedWith('Unauthorized');
@@ -636,24 +643,36 @@ describe('manager actions', () => {
         denominationAsset,
         buyer: randomUser,
         investmentAmount: initialInvestment,
+        provider,
         seedBuyer: true,
       });
 
       // Send the threshold limit (too little) of denomination asset to the wrapper
-      await denominationAsset.transfer(sharesWrapper, initialInvestment.mul(ONE_HUNDRED_PERCENT_IN_BPS));
+      await seedAccount({
+        account: sharesWrapper,
+        amount: initialInvestment.mul(ONE_HUNDRED_PERCENT_IN_BPS),
+        provider,
+        token: denominationAsset,
+      });
 
       // Entering locked state should fail
       await expect(sharesWrapper.connect(manager).enterLockedState()).rejects.toBeRevertedWith('Min shares not met');
 
       // Send 1 more increment of denomination asset to the wrapper, and it should now succeed
-      await denominationAsset.transfer(sharesWrapper, 1);
+      const nextBalance = (await denominationAsset.balanceOf(sharesWrapper)).add(1);
+      await seedAccount({
+        account: sharesWrapper,
+        amount: nextBalance,
+        provider,
+        token: denominationAsset,
+      });
 
       await sharesWrapper.connect(manager).enterLockedState();
     });
 
     it('happy path', async () => {
       // Send 1 denomination asset unit to the wrapper to buy some vault shares
-      await denominationAsset.transfer(sharesWrapper, denominationAssetUnit);
+      await seedAccount({ account: sharesWrapper, amount: denominationAssetUnit, provider, token: denominationAsset });
 
       const preTxWrapperDepositTokenBalance = await depositToken.balanceOf(sharesWrapper);
       expect(preTxWrapperDepositTokenBalance).toBeGtBigNumber(0);
@@ -704,7 +723,12 @@ describe('manager actions', () => {
         await sharesWrapper.connect(investor).deposit(depositAmount);
 
         // Send 1 denomination asset unit to the wrapper to buy some vault shares
-        await denominationAsset.transfer(sharesWrapper, denominationAssetUnit);
+        await seedAccount({
+          account: sharesWrapper,
+          amount: denominationAssetUnit,
+          provider,
+          token: denominationAsset,
+        });
       });
 
       it('can only be called by manager or owner', async () => {
@@ -737,8 +761,8 @@ describe('manager actions', () => {
         await sharesWrapper.connect(manager).enterLockedState();
 
         // Transfer a couple misc assets directly to the vault
-        await miscAsset1.transfer(vaultProxy, miscAsset1Unit);
-        await miscAsset2.transfer(vaultProxy, miscAsset2Unit);
+        await seedAccount({ account: vaultProxy, amount: miscAsset1Unit, provider, token: miscAsset1 });
+        await seedAccount({ account: vaultProxy, amount: miscAsset2Unit, provider, token: miscAsset2 });
         const additionalAssets = [miscAsset1, miscAsset2];
         const allAssets = [denominationAsset, depositToken, ...additionalAssets];
 
@@ -782,9 +806,9 @@ describe('manager actions', () => {
 
         it('does not allow an active external position with value', async () => {
           // Seed vault with CVX
-          const cvx = new StandardToken(fork.config.convex.cvxToken, whales.cvx);
+          const cvx = new StandardToken(fork.config.convex.cvxToken, provider);
           const cvxPositionAmount = 1;
-          await cvx.transfer(vaultProxy, cvxPositionAmount);
+          await seedAccount({ account: vaultProxy, amount: cvxPositionAmount, provider, token: cvx });
 
           await convexVotingPositionLock({
             comptrollerProxy,
@@ -829,14 +853,20 @@ describe('manager actions', () => {
 
       // Send 1 denomination asset unit to the wrapper to buy some vault shares
       const denominationAssetAmount = denominationAssetUnit;
-      await denominationAsset.transfer(sharesWrapper, denominationAssetAmount);
+      await seedAccount({
+        account: sharesWrapper,
+        amount: denominationAssetAmount,
+        provider,
+        token: denominationAsset,
+      });
 
       // Enter Locked state
       await sharesWrapper.connect(manager).enterLockedState();
 
       // Send some more deposit token to the vault to simulate a gain
       const depositTokenGain = depositTokenUnit.div(3);
-      await depositToken.transfer(vaultProxy, depositTokenGain);
+      const nextDepositTokenBalance = (await depositToken.balanceOf(vaultProxy)).add(depositTokenGain);
+      await seedAccount({ account: vaultProxy, amount: nextDepositTokenBalance, provider, token: depositToken });
 
       // Wait some time to accrue protocol fees
       await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS * 30]);

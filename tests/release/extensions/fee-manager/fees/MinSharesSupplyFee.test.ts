@@ -31,7 +31,7 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
   // We use WETH for the denominationAsset here to make it is possible to buy
   // a shares quantity less than the min shares supply
-  denominationAsset = new StandardToken(fork.config.weth, whales.weth);
+  denominationAsset = new StandardToken(fork.config.weth, provider);
 
   const newFundRes = await createNewFund({
     denominationAsset,
@@ -82,6 +82,7 @@ describe('settle', () => {
     const investmentAmount = denominationAssetUnit;
 
     const receipt = await buyShares({
+      provider,
       comptrollerProxy,
       denominationAsset,
       buyer: fundOwner,
@@ -110,6 +111,7 @@ describe('settle', () => {
 
     // Invest a first time
     await buyShares({
+      provider,
       comptrollerProxy,
       denominationAsset,
       buyer: fundOwner,
@@ -121,6 +123,7 @@ describe('settle', () => {
 
     // Invest a second time
     const secondBuySharesReceipt = await buyShares({
+      provider,
       comptrollerProxy,
       denominationAsset,
       buyer: fundOwner,

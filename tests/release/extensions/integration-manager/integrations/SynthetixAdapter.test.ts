@@ -15,6 +15,8 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  getAssetUnit,
+  seedAccount,
   synthetixAssignExchangeDelegate,
   synthetixRedeem,
   synthetixTakeOrder,
@@ -100,7 +102,7 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for redeem', async () => {
     const [fundOwner] = fork.accounts;
-    const sxagSynth = new StandardToken(sxagAddress, whales.sxag);
+    const sxagSynth = new StandardToken(sxagAddress, provider);
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const redeemArgs = synthetixRedeemArgs({
@@ -114,17 +116,16 @@ describe('parseAssetsForAction', () => {
       signer: fork.deployer,
     });
 
-    // All synths have 18 decimals
-    const seedAmount = utils.parseUnits('1', 18);
+    const amount = await getAssetUnit(sxagSynth);
 
-    await sxagSynth.transfer(vaultProxy, seedAmount);
+    await seedAccount({ provider, account: vaultProxy, amount, token: sxagSynth });
 
     const result = await synthetixAdapter.parseAssetsForAction(vaultProxy, redeemSelector, redeemArgs);
 
     expect(result).toMatchFunctionOutput(synthetixAdapter.parseAssetsForAction, {
       incomingAssets_: [fork.config.synthetix.susd],
       minIncomingAssetAmounts_: [1],
-      spendAssetAmounts_: [seedAmount],
+      spendAssetAmounts_: [amount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       spendAssets_: [sxagAddress],
     });
@@ -165,7 +166,7 @@ describe('takeOrder', () => {
   it('does not allow an outgoing asset in the asset universe', async () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
-    const seth = new StandardToken(fork.config.unsupportedAssets.seth, whales.seth);
+    const seth = new StandardToken(fork.config.unsupportedAssets.seth, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
@@ -188,6 +189,7 @@ describe('takeOrder', () => {
         integrationManager: fork.deployment.integrationManager,
         outgoingAsset: seth,
         outgoingAssetAmount: 123,
+        provider,
         seedFund: true,
         synthetixAdapter,
         vaultProxy,
@@ -199,7 +201,7 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
     const incomingAsset = new StandardToken(fork.config.primitives.susd, provider);
-    const outgoingAsset = new StandardToken(fork.config.unsupportedAssets.seth, whales.seth);
+    const outgoingAsset = new StandardToken(fork.config.unsupportedAssets.seth, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
@@ -234,7 +236,7 @@ describe('takeOrder', () => {
     });
 
     // Seed fund and execute Synthetix order
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
     await synthetixTakeOrder({
       comptrollerProxy,
       fundOwner,
@@ -242,6 +244,7 @@ describe('takeOrder', () => {
       minIncomingSusdAmount: expectedIncomingAssetAmount.mul(99).div(100),
       outgoingAsset,
       outgoingAssetAmount,
+      provider,
       synthetixAdapter,
       vaultProxy,
     });
@@ -291,8 +294,8 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
-    const sxagSynth = new StandardToken(sxagAddress, whales.sxag);
-    const sxauSynth = new StandardToken(sxauAddress, whales.sxau);
+    const sxagSynth = new StandardToken(sxagAddress, provider);
+    const sxauSynth = new StandardToken(sxauAddress, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.susd, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -302,11 +305,11 @@ describe('redeem', () => {
       signer: fork.deployer,
     });
 
-    // All synths have 18 decimals
-    const seedAmount = utils.parseUnits('1', 18);
+    const sxagAmount = await getAssetUnit(sxagSynth);
+    const sxauAmount = await getAssetUnit(sxauSynth);
 
-    await sxagSynth.transfer(vaultProxy, seedAmount);
-    await sxauSynth.transfer(vaultProxy, seedAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: sxagAmount, token: sxagSynth });
+    await seedAccount({ provider, account: vaultProxy, amount: sxauAmount, token: sxauSynth });
 
     // Get incoming asset balance prior to tx
     const [preTxIncomingAssetBalance, preTxSxagAssetBalance, preTxSxauAssetBalance] = await getAssetBalances({
@@ -328,9 +331,9 @@ describe('redeem', () => {
       assets: [incomingAsset, sxagSynth, sxauSynth],
     });
 
-    expect(preTxSxagAssetBalance).toEqBigNumber(seedAmount);
+    expect(preTxSxagAssetBalance).toEqBigNumber(sxagAmount);
     expect(postTxSxagAssetBalance).toEqBigNumber(0);
-    expect(preTxSxauAssetBalance).toEqBigNumber(seedAmount);
+    expect(preTxSxauAssetBalance).toEqBigNumber(sxauAmount);
     expect(postTxSxauAssetBalance).toEqBigNumber(0);
     expect(preTxIncomingAssetBalance).toEqBigNumber(0);
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);

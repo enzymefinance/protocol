@@ -130,7 +130,7 @@ describe('validateRule', () => {
     [fundOwner, allowedDepositRecipient, nonAllowedDepositRecipient] = fork.accounts;
     allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -162,6 +162,7 @@ describe('validateRule', () => {
         buyer: nonAllowedDepositRecipient,
         comptrollerProxy,
         denominationAsset,
+        provider,
         seedBuyer: true,
       }),
     ).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_DEPOSIT_RECIPIENTS');
@@ -172,6 +173,7 @@ describe('validateRule', () => {
       buyer: allowedDepositRecipient,
       comptrollerProxy,
       denominationAsset,
+      provider,
       seedBuyer: true,
     });
   });

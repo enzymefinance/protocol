@@ -101,6 +101,7 @@ describe('validateRule', () => {
   it('does not allow an unlisted adapter', async () => {
     await expect(
       mockGenericSwap({
+        provider,
         comptrollerProxy,
         signer: fundOwner,
         integrationManager,
@@ -112,6 +113,7 @@ describe('validateRule', () => {
 
   it('allows listed assets', async () => {
     await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,

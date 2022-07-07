@@ -1,4 +1,4 @@
-import { ICERC20, StandardToken } from '@enzymefinance/protocol';
+import { ICERC20, ONE_DAY_IN_SECONDS, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertCompoundLend,
@@ -6,6 +6,8 @@ import {
   compoundClaim,
   createNewFund,
   deployProtocolFixture,
+  getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -33,8 +35,8 @@ describe('lend', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.dai,
       vaultProxy,
     });
 
@@ -58,8 +60,8 @@ describe('lend', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.weth,
       vaultProxy,
     });
 
@@ -79,12 +81,13 @@ describe('redeem', () => {
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.fuse.ftokens.fdai7, whales.fdai7),
+      cToken: new ICERC20(fork.config.fuse.ftokens.fdai7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       vaultProxy,
     });
 
@@ -102,12 +105,13 @@ describe('redeem', () => {
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.fuse.fetherTokens.feth7, whales.feth7),
+      cToken: new ICERC20(fork.config.fuse.fetherTokens.feth7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       vaultProxy,
     });
 
@@ -119,7 +123,7 @@ describe('claimComp', () => {
   it('should accrue rewards on the fund after lending, adapter', async () => {
     const [fundOwner] = fork.accounts;
     const tribe = new StandardToken('0xc7283b66eb1eb5fb86327f08e1b5816b0720212b', provider);
-    const fTribe8 = new StandardToken(fork.config.fuse.ftokens.ftribe8, whales.ftribe8);
+    const fTribe8 = new StandardToken(fork.config.fuse.ftokens.ftribe8, provider);
     const fuseComptroller8Address = '0xc54172e34046c1653d1920d40333Dd358c7a1aF4';
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -129,11 +133,10 @@ describe('claimComp', () => {
       signer: fundOwner,
     });
 
-    // Transfer fTribe to vault to start accruing rewards
-    await fTribe8.transfer(vaultProxy.address, utils.parseUnits('10000', 8));
-    expect(await fTribe8.balanceOf(vaultProxy)).toBeGtBigNumber(0);
+    // Seed vault with fTribe to start accruing rewards
+    await seedAccount({ provider, account: vaultProxy, amount: await getAssetUnit(fTribe8), token: fTribe8 });
 
-    await provider.send('evm_increaseTime', [60 * 60 * 24]);
+    await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
     await compoundClaim({

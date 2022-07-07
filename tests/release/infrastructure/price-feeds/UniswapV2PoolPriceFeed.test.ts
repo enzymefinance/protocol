@@ -1,7 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, deployProtocolFixture, uniswapV2Lend } from '@enzymefinance/testutils';
+import { buyShares, createNewFund, deployProtocolFixture, seedAccount, uniswapV2Lend } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -12,8 +12,8 @@ beforeEach(async () => {
 
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const mln = new StandardToken(fork.config.primitives.mln, provider);
     const denominationAsset = weth;
     const [fundOwner, investor] = fork.accounts;
 
@@ -28,6 +28,7 @@ describe('derivative gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -39,7 +40,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
-    await mln.transfer(vaultProxy, initialTokenAmount);
+    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: mln });
     await uniswapV2Lend({
       amountADesired: initialTokenAmount.div(2),
       amountAMin: 1,
@@ -51,6 +52,7 @@ describe('derivative gas costs', () => {
       minPoolTokenAmount: 1,
       tokenA: weth,
       tokenB: mln,
+      provider,
       uniswapV2LiquidityAdapter: fork.deployment.uniswapV2LiquidityAdapter,
       vaultProxy,
     });
@@ -182,7 +184,7 @@ describe('calcUnderlyingValues', () => {
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
       const dai = new StandardToken(fork.config.primitives.dai, provider);
-      const kncWeth = new StandardToken(fork.config.uniswap.pools.kncWeth, provider);
+      const kncWeth = new StandardToken(fork.config.uniswap.pools.batWeth, provider);
 
       const baseDecimals = await kncWeth.decimals();
       const quoteDecimals = await dai.decimals();
@@ -194,9 +196,9 @@ describe('calcUnderlyingValues', () => {
         .args(kncWeth, utils.parseUnits('1', baseDecimals), dai)
         .call();
 
-      // knc/weth on May 13, 2022 was worth about $173
-      // Source: <https://app.zerion.io/market/asset/UNI-V2-0xf49c43ae0faf37217bdcb00df478cf793edd6687>
-      expect(canonicalAssetValue).toEqBigNumber('173864588325883569183');
+      // bat/weth on May 13, 2022 was worth about $77
+      // Source: <https://app.zerion.io/explore/asset/UNI-V2-0xb6909b960dbbe7392d405429eb2b3649752b4838>
+      expect(canonicalAssetValue).toEqBigNumber('77393773990489130865');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

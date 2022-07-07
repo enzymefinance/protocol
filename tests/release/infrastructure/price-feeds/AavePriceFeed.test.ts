@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { aaveLend, buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import { aaveLend, buyShares, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -13,8 +13,8 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -29,6 +29,7 @@ describe('derivative gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -40,7 +41,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund and use max of the dai balance to get adai
-    await dai.transfer(vaultProxy, initialTokenAmount);
+    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await aaveLend({
       aToken: new StandardToken(fork.config.aave.atokens.adai[0], provider),
       aaveAdapter: fork.deployment.aaveAdapter,

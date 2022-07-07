@@ -1,7 +1,7 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { CompoundPriceFeed, ICERC20, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, compoundLend, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
+import { buyShares, compoundLend, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -13,8 +13,8 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -29,6 +29,7 @@ describe('derivative gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -40,7 +41,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Use max of the dai balance to get cDai
-    await dai.transfer(vaultProxy, initialTokenAmount);
+    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await compoundLend({
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
       cTokenAmount: BigNumber.from('1'),

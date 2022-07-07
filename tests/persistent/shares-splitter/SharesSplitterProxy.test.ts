@@ -59,7 +59,7 @@ describe('redeemShares', () => {
     sharesSplitterProxy = newSharesSplitterRes.sharesSplitterProxy;
 
     // Deploy a new fund
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, fundOwner);
     const newFundRes = await createNewFund({
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,
@@ -72,6 +72,7 @@ describe('redeemShares', () => {
 
     // Buy some shares of the fund and send them to the SharesSplitterProxy
     await buyShares({
+      provider,
       buyer: fundOwner,
       comptrollerProxy,
       denominationAsset,

@@ -493,7 +493,7 @@ describe('actions', () => {
     it('happy path (pool with CRV + pool rewards)', async () => {
       const pool = fork.config.curve.pools.steth.pool;
       const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
+      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
       const crv = new StandardToken(fork.config.primitives.crv, provider);
       const ldo = new StandardToken(fork.config.primitives.ldo, provider);
 
@@ -501,6 +501,7 @@ describe('actions', () => {
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethLendAmount],
         assets: [weth],
         comptrollerProxy,
@@ -564,19 +565,23 @@ describe('actions', () => {
       });
 
       it('works as expected (non-underlyings, 2 of 3 outgoing)', async () => {
-        const aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
-        const aUsdt = new StandardToken(fork.config.aave.atokens.ausdt[0], whales.ausdt);
+        const aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+        const aUsdt = new StandardToken(fork.config.aave.atokens.ausdt[0], provider);
         const aUsdcAmount = 123;
         const aUsdtAmount = 456;
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [aUsdcAmount, aUsdtAmount],
           assets: [aUsdc, aUsdt],
           comptrollerProxy,
           integrationManager,
           signer: fundOwner,
         });
+
+        const preaUsdcBalance = await aUsdc.balanceOf(vaultProxy);
+        const preaUsdtBalance = await aUsdt.balanceOf(vaultProxy);
 
         await curveLend({
           comptrollerProxy,
@@ -588,21 +593,25 @@ describe('actions', () => {
           useUnderlyings: false,
         });
 
+        const postaUsdcBalance = await aUsdc.balanceOf(vaultProxy);
+        const postaUsdtBalance = await aUsdt.balanceOf(vaultProxy);
+
         expect(await lpToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
-        // All of the outgoing assets should have been used; allow room for aToken rounding
-        expect(await aUsdc.balanceOf(vaultProxy)).toBeLteBigNumber(1);
-        expect(await aUsdt.balanceOf(vaultProxy)).toBeLteBigNumber(1);
+        // All of the outgoing assets should have been used; check diff since tokens are rebasing
+        expect(preaUsdcBalance.sub(postaUsdcBalance)).toBeAroundBigNumber(aUsdcAmount, 1);
+        expect(preaUsdtBalance.sub(postaUsdtBalance)).toBeAroundBigNumber(aUsdtAmount, 1);
       });
 
       it('works as expected (underlyings, 2 of 3 outgoing)', async () => {
-        const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-        const usdt = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+        const dai = new StandardToken(fork.config.primitives.dai, provider);
+        const usdt = new StandardToken(fork.config.primitives.usdt, provider);
         const daiAmount = 123;
         const usdtAmount = 456;
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [daiAmount, usdtAmount],
           assets: [dai, usdt],
           comptrollerProxy,
@@ -632,19 +641,22 @@ describe('actions', () => {
       it('works as expected (2 assets, incl eth)', async () => {
         const pool = fork.config.curve.pools.steth.pool;
         const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-        const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-        const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+        const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+        const steth = new StandardToken(fork.config.lido.steth, provider);
         const wethAmount = 123;
         const stethAmount = 456;
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [wethAmount, stethAmount],
           assets: [weth, steth],
           comptrollerProxy,
           integrationManager,
           signer: fundOwner,
         });
+
+        const preStethBalance = await steth.balanceOf(vaultProxy);
 
         await curveLend({
           comptrollerProxy,
@@ -656,24 +668,28 @@ describe('actions', () => {
           useUnderlyings: false,
         });
 
+        const postStethBalance = await steth.balanceOf(vaultProxy);
+
         expect(await lpToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
         // All of the outgoing assets should have been used
         expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-        expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
+        // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
+        expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
       });
     });
     describe('USDT pool (coins(int128) signature)', () => {
       it('works as expected', async () => {
         const pool = fork.config.curve.pools.usdt.pool;
         const lpToken = new StandardToken(fork.config.curve.pools.usdt.lpToken, provider);
-        const cDai = new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai);
-        const cUsdc = new StandardToken(fork.config.compound.ctokens.cusdc, whales.cusdc);
-        const usdt = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+        const cDai = new StandardToken(fork.config.compound.ctokens.cdai, provider);
+        const cUsdc = new StandardToken(fork.config.compound.ctokens.cusdc, provider);
+        const usdt = new StandardToken(fork.config.primitives.usdt, provider);
         const amount = 1000;
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [amount, amount, amount],
           assets: [cDai, cUsdc, usdt],
           comptrollerProxy,
@@ -703,19 +719,22 @@ describe('actions', () => {
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
       const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-      const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new StandardToken(fork.config.lido.steth, provider);
       const wethAmount = 123;
       const stethAmount = 456;
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethAmount, stethAmount],
         assets: [weth, steth],
         comptrollerProxy,
         integrationManager,
         signer: fundOwner,
       });
+
+      const preStethBalance = await steth.balanceOf(vaultProxy);
 
       await curveLendAndStake({
         comptrollerProxy,
@@ -728,11 +747,14 @@ describe('actions', () => {
         useUnderlyings: false,
       });
 
+      const postStethBalance = await steth.balanceOf(vaultProxy);
+
       expect(await gaugeToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
       // All of the outgoing assets should have been used
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-      expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
+      // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
+      expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
     });
   });
 
@@ -750,7 +772,7 @@ describe('actions', () => {
         pool = fork.config.curve.pools.aave.pool;
         lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
         aDai = new StandardToken(fork.config.aave.atokens.adai[0], provider);
-        aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+        aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
         aUsdt = new StandardToken(fork.config.aave.atokens.ausdt[0], provider);
         dai = new StandardToken(fork.config.primitives.dai, provider);
         usdc = new StandardToken(fork.config.primitives.usdc, provider);
@@ -760,6 +782,7 @@ describe('actions', () => {
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [aUsdcSeedAmount],
           assets: [aUsdc],
           comptrollerProxy,
@@ -940,13 +963,14 @@ describe('actions', () => {
       beforeEach(async () => {
         pool = fork.config.curve.pools.steth.pool;
         lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-        weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-        steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+        weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+        steth = new StandardToken(fork.config.lido.steth, provider);
 
         const wethSeedAmount = await getAssetUnit(weth);
 
         // Seed vault
         await addNewAssetsToFund({
+          provider,
           amounts: [wethSeedAmount],
           assets: [weth],
           comptrollerProxy,
@@ -1044,13 +1068,14 @@ describe('actions', () => {
       const pool = fork.config.curve.pools.steth.pool;
       const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
       const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-      const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new StandardToken(fork.config.lido.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethSeedAmount, stethSeedAmount],
         assets: [weth, steth],
         comptrollerProxy,
@@ -1094,13 +1119,14 @@ describe('actions', () => {
       const pool = fork.config.curve.pools.steth.pool;
       const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
       const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-      const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new StandardToken(fork.config.lido.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethSeedAmount, stethSeedAmount],
         assets: [weth, steth],
         comptrollerProxy,
@@ -1144,13 +1170,14 @@ describe('actions', () => {
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
       const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, whales.weth);
-      const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new StandardToken(fork.config.lido.steth, provider);
 
       const wethSeedAmount = await getAssetUnit(weth);
 
       // Seed vault
       await addNewAssetsToFund({
+        provider,
         amounts: [wethSeedAmount],
         assets: [weth],
         comptrollerProxy,

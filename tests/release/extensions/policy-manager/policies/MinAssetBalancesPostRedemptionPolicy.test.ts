@@ -120,7 +120,7 @@ describe('updateFundSettings', () => {
 describe('validateRule', () => {
   it('happy path', async () => {
     const [fundOwner] = fork.accounts;
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const denominationAssetUnit = await getAssetUnit(denominationAsset);
     const minDenominationAssetBalance = denominationAssetUnit.mul(2);
 
@@ -131,6 +131,7 @@ describe('validateRule', () => {
       investment: {
         buyer: fundOwner,
         investmentAmount: minDenominationAssetBalance.mul(4),
+        provider,
         seedBuyer: true,
       },
       policyManagerConfig: policyManagerConfigArgs({

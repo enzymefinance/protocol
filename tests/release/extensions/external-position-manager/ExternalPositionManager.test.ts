@@ -19,6 +19,7 @@ import {
   createExternalPosition,
   createNewFund,
   deployProtocolFixture,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
@@ -198,7 +199,7 @@ describe('receiveCallFromComptroller', () => {
       const [fundOwner] = fork.accounts;
       const externalPositionManager = fork.deployment.externalPositionManager;
       const policyManager = fork.deployment.policyManager;
-      const cdai = new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai);
+      const cdai = new StandardToken(fork.config.compound.ctokens.cdai, provider);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
@@ -208,7 +209,7 @@ describe('receiveCallFromComptroller', () => {
       });
 
       // Use CompoundDebtPosition as an example ExternalPosition to receive the Policy
-      await cdai.transfer(vaultProxy, 100);
+      await seedAccount({ provider, account: vaultProxy, amount: 100, token: cdai });
       const collateralAssets = [cdai.address];
       const randomCToken = randomAddress();
 

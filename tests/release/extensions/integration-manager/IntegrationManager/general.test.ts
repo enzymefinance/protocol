@@ -24,7 +24,7 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const denominationAsset = new WETH(config.weth, whales.weth);
+  const denominationAsset = new WETH(config.weth, provider);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     denominationAsset,
     fundDeployer: deployment.fundDeployer,
@@ -264,7 +264,7 @@ describe('callOnExtension actions', () => {
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
-      const assetsToRemove = [new StandardToken(mln, whales.mln), new StandardToken(dai, whales.dai)];
+      const assetsToRemove = [new StandardToken(mln, provider), new StandardToken(dai, provider)];
 
       // Add assets to the fund with no balances
       await addTrackedAssetsToVault({

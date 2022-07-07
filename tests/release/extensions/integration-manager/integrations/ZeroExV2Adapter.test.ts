@@ -1,6 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   createUnsignedZeroExV2Order,
+  ONE_DAY_IN_SECONDS,
   signZeroExV2Order,
   SpendAssetsHandleType,
   StandardToken,
@@ -8,7 +9,13 @@ import {
   zeroExV2TakeOrderArgs,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, getAssetBalances, zeroExV2TakeOrder } from '@enzymefinance/testutils';
+import {
+  createNewFund,
+  deployProtocolFixture,
+  getAssetBalances,
+  seedAccount,
+  zeroExV2TakeOrder,
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const erc20Proxy = '0x95e6f48254609a6ee006f7d493c8e5fb97094cef';
@@ -42,7 +49,7 @@ describe('constructor', () => {
 describe('parseAssetsForAction', () => {
   it('does not allow a maker which is not whitelisted', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
 
     const feeRecipientAddress = constants.AddressZero;
@@ -53,7 +60,7 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: fork.deployer,
       makerAsset: incomingAsset,
@@ -76,7 +83,7 @@ describe('parseAssetsForAction', () => {
   it('generates expected output without takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
@@ -93,7 +100,7 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
       makerAsset: incomingAsset,
@@ -123,7 +130,7 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFeeAsset that is the same as makerAsset', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.zrx, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
@@ -144,7 +151,7 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
       makerAsset: incomingAsset,
@@ -173,7 +180,7 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFeeAsset that is the same as takerAsset', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, whales.zrx);
+    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
@@ -191,7 +198,7 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
       makerAsset: incomingAsset,
@@ -220,7 +227,7 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
     const takerFeeAsset = new StandardToken(fork.config.primitives.zrx, provider);
 
@@ -239,7 +246,7 @@ describe('parseAssetsForAction', () => {
 
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
       makerAsset: incomingAsset,
@@ -317,8 +324,8 @@ describe('allowed makers', () => {
 describe('takeOrder', () => {
   it('works as expected without takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const outgoingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const incomingAsset = weth;
     const [fundOwner, maker] = fork.accounts;
 
@@ -338,11 +345,11 @@ describe('takeOrder', () => {
     const takerAssetFillAmount = takerAssetAmount;
 
     // Seed the maker and create a 0x order
-    await incomingAsset.transfer(maker, makerAssetAmount);
+    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: constants.AddressZero,
       maker,
       makerAsset: incomingAsset,
@@ -354,7 +361,7 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await outgoingAsset.transfer(vaultProxy, takerAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: takerAssetAmount, token: outgoingAsset });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -386,8 +393,8 @@ describe('takeOrder', () => {
   it('works as expected with takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const denominationAsset = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, whales.zrx);
-    const incomingAsset = new StandardToken(fork.config.primitives.knc, whales.knc);
+    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, provider);
+    const incomingAsset = new StandardToken(fork.config.primitives.bat, provider);
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -407,11 +414,11 @@ describe('takeOrder', () => {
     const takerAssetFillAmount = utils.parseEther('1');
 
     // Seed the maker and create a 0x order
-    await incomingAsset.transfer(maker, makerAssetAmount);
+    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: randomAddress(),
       maker,
       makerAsset: incomingAsset,
@@ -423,7 +430,7 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await outgoingAsset.transfer(vaultProxy, takerFee.add(takerAssetAmount));
+    await seedAccount({ provider, account: vaultProxy, amount: takerFee.add(takerAssetAmount), token: outgoingAsset });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -454,9 +461,9 @@ describe('takeOrder', () => {
 
   it('partially fill an order', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const outgoingAsset = weth;
-    const incomingAsset = new StandardToken(fork.config.primitives.knc, whales.knc);
+    const incomingAsset = new StandardToken(fork.config.primitives.bat, provider);
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -476,11 +483,11 @@ describe('takeOrder', () => {
     const expectedIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     // Seed the maker and create a 0x order
-    await incomingAsset.transfer(maker, makerAssetAmount);
+    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
-      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + 60 * 60 * 24,
+      expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: constants.AddressZero,
       maker,
       makerAsset: incomingAsset,
@@ -492,7 +499,7 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await outgoingAsset.transfer(vaultProxy, takerAssetFillAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: takerAssetFillAmount, token: outgoingAsset });
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],

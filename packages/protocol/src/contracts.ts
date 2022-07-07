@@ -150,6 +150,7 @@ export * from './codegen/ITestSolvV2ConvertibleVoucher';
 export * from './codegen/ITestSolvV2InitialConvertibleOfferingMarket';
 export * from './codegen/ITestSolvV2ManualPriceOracle';
 export * from './codegen/ITestSolvV2PriceOracleManager';
+export * from './codegen/ITestStethToken';
 export * from './codegen/ITestTheGraphEpochManager';
 export * from './codegen/ITestTheGraphStaking';
 export * from './codegen/ITestSolvV2ConvertibleMarket';

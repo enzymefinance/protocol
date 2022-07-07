@@ -1,7 +1,13 @@
 import type { AddressLike, MockContract } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import { calcProtocolFeeSharesDue, FundDeployer, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
+import {
+  calcProtocolFeeSharesDue,
+  FundDeployer,
+  ONE_YEAR_IN_SECONDS,
+  ProtocolFeeTracker,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture, transactionTimestamp } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
@@ -85,7 +91,7 @@ describe('payFee', () => {
 
       // Warp time so that a protocol fee will be due
       // Warp by 1 year for simple calcs
-      await provider.send('evm_increaseTime', [60 * 60 * 24 * 365.25]);
+      await provider.send('evm_increaseTime', [ONE_YEAR_IN_SECONDS]);
     });
 
     it('0 shares supply', async () => {

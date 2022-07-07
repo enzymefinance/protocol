@@ -9,7 +9,15 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { aaveLend, aaveRedeem, createNewFund, deployProtocolFixture, getAssetBalances } from '@enzymefinance/testutils';
+import {
+  aaveLend,
+  aaveRedeem,
+  createNewFund,
+  deployProtocolFixture,
+  getAssetBalances,
+  getAssetUnit,
+  seedAccount,
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 const roundingBuffer = BigNumber.from(2);
@@ -35,9 +43,9 @@ describe('constructor', () => {
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const args = aaveLendArgs({
       aToken,
@@ -53,9 +61,9 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for lending', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const args = aaveLendArgs({
       aToken,
@@ -79,7 +87,7 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for redeeming', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
     const amount = utils.parseUnits('1', await aToken.decimals());
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
@@ -111,11 +119,11 @@ describe('lend', () => {
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    const amount = utils.parseUnits('1', await token.decimals());
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const amount = await getAssetUnit(token);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
-    await token.transfer(vaultProxy, amount);
+    await seedAccount({ account: vaultProxy, amount, provider, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -154,11 +162,11 @@ describe('redeem', () => {
       signer: fundOwner,
     });
 
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
-    const amount = utils.parseUnits('1', await aToken.decimals());
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const amount = await getAssetUnit(aToken);
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
-    await aToken.transfer(vaultProxy, amount);
+    await seedAccount({ account: vaultProxy, amount, provider, token: aToken });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -183,6 +191,6 @@ describe('redeem', () => {
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
     // This can vary substantially for whatever reason
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`580210`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`560448`);
   });
 });

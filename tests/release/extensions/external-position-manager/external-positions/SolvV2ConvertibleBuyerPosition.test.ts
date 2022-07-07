@@ -23,6 +23,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   impersonateSigner,
+  seedAccount,
   solvV2ConvertibleBuyerPositionBuyOffering,
   solvV2ConvertibleBuyerPositionBuySaleByAmount,
   solvV2ConvertibleBuyerPositionBuySaleByUnits,
@@ -91,9 +92,9 @@ beforeEach(async () => {
   });
 
   // All tests use the USF convertible voucher
-  currencyToken = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+  currencyToken = new StandardToken(fork.config.primitives.usdt, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new StandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, whales.usf);
+  underlyingToken = new StandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvConvertibleBuyerPosition = new SolvV2ConvertibleBuyerPositionLib(externalPositionProxy, provider);
@@ -111,9 +112,9 @@ beforeEach(async () => {
   // Seed the vaultProxy with currency, and issuer with underlying and currency
   const underlyingAmount = underlyingUnit.mul(100_000);
   const currencyAmount = currencyUnit.mul(100_000);
-  await currencyToken.transfer(vaultProxy, currencyAmount);
-  await currencyToken.transfer(issuer, currencyAmount);
-  await underlyingToken.transfer(issuer, underlyingAmount);
+  await seedAccount({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
+  await seedAccount({ account: issuer, amount: currencyAmount, provider, token: currencyToken });
+  await seedAccount({ account: issuer, amount: underlyingAmount, provider, token: underlyingToken });
 
   // Approve issuer spend on solv markets
   await underlyingToken.connect(issuer).approve(initialConvertibleOfferingMarket, constants.MaxUint256);
@@ -858,7 +859,7 @@ describe('get managed assets', () => {
     });
 
     // Create a fixed price sale with tokenId2 using a different currency
-    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, provider);
     const currencyUnit2 = await getAssetUnit(currencyToken2);
     const nextSaleId = await convertibleMarket.nextSaleId.call();
     await solvV2ConvertibleBuyerPositionCreateSaleFixedPrice({
@@ -878,7 +879,7 @@ describe('get managed assets', () => {
 
     // Have a 3rd party partially take the sale created by the fund
     const boughtAmount = currencyUnit2.div(2);
-    await currencyToken2.transfer(issuer, boughtAmount);
+    await seedAccount({ account: issuer, amount: boughtAmount, provider, token: currencyToken2 });
     await currencyToken2.connect(issuer).approve(convertibleMarket, boughtAmount);
     await convertibleMarket.connect(issuer).buyByAmount(nextSaleId, boughtAmount);
 

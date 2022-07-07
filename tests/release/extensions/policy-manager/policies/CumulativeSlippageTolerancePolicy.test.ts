@@ -29,6 +29,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockGenericSwap,
+  seedAccount,
   transactionTimestamp,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
@@ -180,7 +181,7 @@ describe('validateRule', () => {
     mockGenericIntegratee = await MockGenericIntegratee.deploy(fork.deployer);
     mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -209,7 +210,7 @@ describe('validateRule', () => {
 
   it('happy path: simple, USD stables only, using human-readable numbers and calcs', async () => {
     const outgoingAsset = denominationAsset;
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
 
     const outgoingAssetUnit = await getAssetUnit(outgoingAsset);
 
@@ -221,10 +222,16 @@ describe('validateRule', () => {
       .call();
 
     // Seed mock generic integratee with incoming assets
-    await incomingAsset.transfer(mockGenericIntegratee, zeroSlippageIncomingAssetAmount.mul(10));
+    await seedAccount({
+      account: mockGenericIntegratee,
+      amount: zeroSlippageIncomingAssetAmount.mul(10),
+      provider,
+      token: incomingAsset,
+    });
 
     // Buy shares to seed fund with denomination asset
     await buyShares({
+      provider,
       buyer: fundOwner,
       comptrollerProxy,
       denominationAsset,
@@ -240,6 +247,7 @@ describe('validateRule', () => {
     // FIRST SWAP - Exact tolerance limit
     const firstSwapIncomingAssetAmount = zeroSlippageIncomingAssetAmount.mul(9).div(10).add(2); // exactly 10% slippage, after rounding up
     const firstSwapReceipt = await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: [firstSwapIncomingAssetAmount],
       actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
@@ -269,6 +277,7 @@ describe('validateRule', () => {
     // Executing immediately should fail
     await expect(
       mockGenericSwap({
+        provider,
         actualIncomingAssetAmounts: [secondSwapIncomingAssetAmount],
         actualSpendAssetAmounts: [outgoingAssetAmount],
         comptrollerProxy,
@@ -289,6 +298,7 @@ describe('validateRule', () => {
     ]);
 
     const secondSwapReceipt = await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: [secondSwapIncomingAssetAmount],
       actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
@@ -317,13 +327,13 @@ describe('validateRule', () => {
   });
 
   it('happy path: complex, multiple incoming and outgoing assets', async () => {
-    const secondSpendAsset = new StandardToken(fork.config.weth, whales.weth);
+    const secondSpendAsset = new StandardToken(fork.config.weth, provider);
     const secondSpendAssetUnit = await getAssetUnit(secondSpendAsset);
     const outgoingAssets = [denominationAsset, secondSpendAsset];
     const outgoingAssetUnits = [await getAssetUnit(denominationAsset), secondSpendAssetUnit];
     const incomingAssets = [
-      new StandardToken(fork.config.primitives.usdt, whales.usdt),
-      new StandardToken(fork.config.primitives.dai, whales.dai),
+      new StandardToken(fork.config.primitives.usdt, provider),
+      new StandardToken(fork.config.primitives.dai, provider),
     ];
 
     // Use same outgoingAssetAmounts throughout
@@ -331,6 +341,7 @@ describe('validateRule', () => {
 
     // Add outgoing assets to fund
     await addNewAssetsToFund({
+      provider,
       amounts: outgoingAssetAmounts.map((amount) => amount.mul(10)),
       assets: outgoingAssets,
       comptrollerProxy,
@@ -356,7 +367,12 @@ describe('validateRule', () => {
 
     // Seed mock generic integratee with incoming assets
     for (const i in incomingAssets) {
-      await incomingAssets[i].transfer(mockGenericIntegratee, zeroSlippageIncomingAssetAmounts[i].mul(10));
+      await seedAccount({
+        account: mockGenericIntegratee,
+        amount: zeroSlippageIncomingAssetAmounts[i].mul(10),
+        provider,
+        token: incomingAssets[i],
+      });
     }
 
     // FIRST SWAP - Approx tolerance limit (each rounded up)
@@ -364,6 +380,7 @@ describe('validateRule', () => {
       amount.mul(BigNumber.from(ONE_HUNDRED_PERCENT_IN_WEI).sub(tolerance)).div(ONE_HUNDRED_PERCENT_IN_WEI).add(2),
     );
     const firstSwapReceipt = await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: firstSwapIncomingAssetAmounts,
       actualSpendAssetAmounts: outgoingAssetAmounts,
       comptrollerProxy,
@@ -401,6 +418,7 @@ describe('validateRule', () => {
     );
 
     await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: secondSwapIncomingAssetAmounts,
       actualSpendAssetAmounts: outgoingAssetAmounts,
       comptrollerProxy,
@@ -428,6 +446,7 @@ describe('validateRule', () => {
     // Swap should fail as tolerance is exceeded
     await expect(
       mockGenericSwap({
+        provider,
         actualIncomingAssetAmounts: thirdSwapIncomingAssetAmounts,
         actualSpendAssetAmounts: outgoingAssetAmounts,
         comptrollerProxy,
@@ -444,10 +463,11 @@ describe('validateRule', () => {
   it('happy path: allows bypassing an adapter in the "bypassable adapters" registered list', async () => {
     const addressListRegistry = fork.deployment.addressListRegistry;
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
     await addNewAssetsToFund({
+      provider,
       amounts: [outgoingAssetAmount],
       assets: [outgoingAsset],
       comptrollerProxy,
@@ -457,6 +477,7 @@ describe('validateRule', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         actualSpendAssetAmounts: [outgoingAssetAmount],
         comptrollerProxy,
         signer: fundOwner,
@@ -474,6 +495,7 @@ describe('validateRule', () => {
 
     // Same swap should now work
     await mockGenericSwap({
+      provider,
       actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
       signer: fundOwner,
@@ -490,10 +512,11 @@ describe('validateRule', () => {
   });
 
   it('happy path: edge case: allows bypassing a properly-queued outgoing asset that does not have a valid price', async () => {
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
     await addNewAssetsToFund({
+      provider,
       amounts: [outgoingAssetAmount],
       assets: [outgoingAsset],
       comptrollerProxy,
@@ -505,6 +528,7 @@ describe('validateRule', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         actualSpendAssetAmounts: [outgoingAssetAmount],
         comptrollerProxy,
         signer: fundOwner,
@@ -527,6 +551,7 @@ describe('validateRule', () => {
     ]);
 
     await mockGenericSwap({
+      provider,
       actualSpendAssetAmounts: [outgoingAssetAmount],
       comptrollerProxy,
       signer: fundOwner,

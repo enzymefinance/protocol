@@ -141,7 +141,7 @@ describe('validateRule', () => {
       fork.accounts;
     allowedSharesTransferRecipientsPolicy = fork.deployment.allowedSharesTransferRecipientsPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -167,6 +167,7 @@ describe('validateRule', () => {
     vaultProxy = newFundRes.vaultProxy;
 
     await buyShares({
+      provider,
       buyer: sharesTransferSender,
       comptrollerProxy: newFundRes.comptrollerProxy,
       denominationAsset,

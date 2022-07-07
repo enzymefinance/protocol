@@ -17,6 +17,7 @@ import {
   getAssetUnit,
   olympusV2Stake,
   olympusV2Unstake,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -61,7 +62,7 @@ describe('parseAssetsForAction', () => {
   });
 
   it('generates expected output for staking', async () => {
-    // Arbirary value for testing
+    // Arbitrary value for testing
     const amount = utils.parseUnits('1', 18);
 
     const args = olympusV2StakeArgs({
@@ -80,7 +81,7 @@ describe('parseAssetsForAction', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    // Arbirary value for testing
+    // Arbitrary value for testing
     const amount = utils.parseUnits('1', 18);
 
     const args = olympusV2UnstakeArgs({
@@ -110,11 +111,11 @@ describe('stake', () => {
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.ohm, whales.ohm);
+    const token = new StandardToken(fork.config.primitives.ohm, provider);
     const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await token.transfer(vaultProxy, amount);
+    await seedAccount({ provider, account: vaultProxy, amount, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -153,10 +154,19 @@ describe('unstake', () => {
     });
 
     const token = new StandardToken(fork.config.primitives.ohm, provider);
-    const stakedToken = new StandardToken(fork.config.primitives.sohm, whales.sohm);
+    const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await stakedToken.transfer(vaultProxy, amount);
+    await seedAccount({ provider, account: vaultProxy, amount, token });
+
+    // Stake token to obtain stakedToken
+    await olympusV2Stake({
+      amount,
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      olympusV2Adapter: fork.deployment.olympusV2Adapter,
+      signer: fundOwner,
+    });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -193,10 +203,19 @@ describe('unstake', () => {
     });
 
     const token = new StandardToken(fork.config.primitives.ohm, provider);
-    const stakedToken = new StandardToken(fork.config.primitives.sohm, whales.sohm);
+    const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await stakedToken.transfer(vaultProxy, amount);
+    await seedAccount({ provider, account: vaultProxy, amount, token });
+
+    // Stake token to obtain stakedToken
+    await olympusV2Stake({
+      amount,
+      comptrollerProxy,
+      integrationManager: fork.deployment.integrationManager,
+      olympusV2Adapter: fork.deployment.olympusV2Adapter,
+      signer: fundOwner,
+    });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

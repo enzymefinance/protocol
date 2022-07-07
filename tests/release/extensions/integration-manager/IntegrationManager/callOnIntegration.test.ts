@@ -21,6 +21,7 @@ import {
   mockGenericSwapArgs,
   mockGenericSwapASelector,
   mockGenericSwapDirectFromVaultSelector,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -32,19 +33,19 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const weth = new WETH(config.weth, whales.weth);
-  const knc = new StandardToken(config.primitives.knc, whales.knc);
-  const dai = new StandardToken(config.primitives.dai, whales.dai);
-  const mln = new StandardToken(config.primitives.mln, whales.mln);
+  const bat = new StandardToken(config.primitives.bat, provider);
+  const dai = new StandardToken(config.primitives.dai, provider);
+  const mln = new StandardToken(config.primitives.mln, provider);
+  const weth = new WETH(config.weth, provider);
 
   const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
   const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
 
   await Promise.all([
-    knc.transfer(mockGenericIntegratee, utils.parseEther('1000')),
-    dai.transfer(mockGenericIntegratee, utils.parseEther('1000')),
-    mln.transfer(mockGenericIntegratee, utils.parseEther('1000')),
-    weth.transfer(mockGenericIntegratee, utils.parseEther('1000')),
+    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: bat }),
+    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: dai }),
+    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: mln }),
+    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: weth }),
   ]);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -66,7 +67,7 @@ async function snapshot() {
     },
     mockGenericAdapter,
     mockGenericIntegratee,
-    tokens: { dai, knc, mln, weth },
+    tokens: { bat, dai, mln, weth },
   };
 }
 
@@ -236,6 +237,7 @@ describe('callOnIntegration', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         actualSpendAssetAmounts: [utils.parseEther('1')],
         comptrollerProxy,
         signer: fundOwner,
@@ -261,8 +263,7 @@ describe('callOnIntegration', () => {
     const maxSpendAssetAmount = utils.parseEther('1');
     const actualSpendAssetAmount = maxSpendAssetAmount.add(1);
 
-    // Seed fund with actualSpendAssetAmount
-    await spendAsset.transfer(vaultProxy, actualSpendAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: actualSpendAssetAmount, token: spendAsset });
 
     // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
     // by registering the token's approve() function for use in vaultCallOnContract()
@@ -283,6 +284,7 @@ describe('callOnIntegration', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         actualSpendAssetAmounts: [actualSpendAssetAmount],
         comptrollerProxy,
         signer: fundOwner,
@@ -306,6 +308,7 @@ describe('callOnIntegration', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         actualIncomingAssetAmounts: [utils.parseEther('1')],
         actualSpendAssetAmounts: [utils.parseEther('1')],
         comptrollerProxy,
@@ -325,13 +328,13 @@ describe('callOnIntegration', () => {
 describe('valid calls', () => {
   it('handles multiple incoming assets and multiple spend assets', async () => {
     const {
-      tokens: { dai, knc, mln, weth },
+      tokens: { bat, dai, mln, weth },
       mockGenericAdapter,
       deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const spendAssets = [dai, knc];
+    const spendAssets = [bat, dai];
     const actualSpendAssetAmounts = Array(2).fill(utils.parseEther('1'));
     const incomingAssets = [mln, weth];
     const actualIncomingAssetAmounts = [utils.parseEther('1'), utils.parseEther('2')];
@@ -346,6 +349,7 @@ describe('valid calls', () => {
     };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -403,19 +407,17 @@ describe('valid calls', () => {
   it('handles untracked incoming asset with a non-zero starting balance', async () => {
     const {
       mockGenericAdapter,
-      tokens: { knc },
+      tokens: { bat },
       deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    // seed fund with incomingAsset
     const seedFundAmount = utils.parseEther('1');
-
-    await knc.transfer(vaultProxy, seedFundAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: seedFundAmount, token: bat });
 
     const spendAssets: [] = [];
     const actualSpendAssetAmounts: [] = [];
-    const incomingAssets = [knc];
+    const incomingAssets = [bat];
     const actualIncomingAssetAmounts = [utils.parseEther('2')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
 
@@ -430,6 +432,7 @@ describe('valid calls', () => {
     const swapArgs = { actualIncomingAssetAmounts, incomingAssets, minIncomingAssetAmounts };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -485,14 +488,14 @@ describe('valid calls', () => {
   it('handles untracked incoming asset with a zero starting balance', async () => {
     const {
       mockGenericAdapter,
-      tokens: { knc },
+      tokens: { bat },
       deployment: { integrationManager, policyManager },
       fund: { comptrollerProxy, denominationAsset, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
     const spendAssets: [] = [];
     const actualSpendAssetAmounts: [] = [];
-    const incomingAssets = [knc];
+    const incomingAssets = [bat];
     const actualIncomingAssetAmounts = [utils.parseEther('2')];
     const minIncomingAssetAmounts = [utils.parseEther('1')];
 
@@ -503,6 +506,7 @@ describe('valid calls', () => {
     const swapArgs = { actualIncomingAssetAmounts, incomingAssets, minIncomingAssetAmounts };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -583,6 +587,7 @@ describe('valid calls', () => {
     };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -641,7 +646,7 @@ describe('valid calls', () => {
 
     const spendAssetAmountOnAdapter = BigNumber.from(5);
 
-    await mln.transfer(mockGenericAdapter, spendAssetAmountOnAdapter);
+    await seedAccount({ provider, account: mockGenericAdapter, amount: spendAssetAmountOnAdapter, token: mln });
 
     const spendAssets = [mln];
     const actualSpendAssetAmounts = [BigNumber.from(1)];
@@ -652,6 +657,7 @@ describe('valid calls', () => {
     };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -714,6 +720,7 @@ describe('valid calls', () => {
 
     // Seed and track the spend asset in the VaultProxy
     await addNewAssetsToFund({
+      provider,
       amounts: [spendAssetAmount],
       assets: [spendAsset],
       comptrollerProxy,
@@ -722,7 +729,7 @@ describe('valid calls', () => {
     });
 
     // Seed the adapter with the spend asset amount to refund
-    await spendAsset.transfer(mockGenericAdapter, spendAssetRebate);
+    await seedAccount({ provider, account: mockGenericAdapter, amount: spendAssetRebate, token: spendAsset });
 
     // Define spend assets and actual incoming assets
     const spendAssets = [spendAsset];
@@ -731,6 +738,7 @@ describe('valid calls', () => {
 
     // Swap the spend assets and receive the rebate
     const receipt = await mockGenericSwap({
+      provider,
       actualSpendAssetAmounts,
       comptrollerProxy,
       signer: fundOwner,
@@ -790,6 +798,7 @@ describe('valid calls', () => {
     const swapArgs = { actualIncomingAssetAmounts, actualSpendAssetAmounts, incomingAssets, spendAssets };
 
     const receipt = await mockGenericSwap({
+      provider,
       comptrollerProxy,
       signer: fundOwner,
       integrationManager,
@@ -840,6 +849,7 @@ describe('valid calls', () => {
     expect(await vaultProxy.isTrackedAsset(mln)).toBe(false);
 
     await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: [1],
       comptrollerProxy,
       signer: fundOwner,

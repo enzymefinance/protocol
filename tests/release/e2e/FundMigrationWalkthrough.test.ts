@@ -9,14 +9,16 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import {
-  addTrackedAssetsToVault,
+  addNewAssetsToFund,
   buyShares,
   // createMigrationRequest,
   createNewFund,
+  getAssetUnit,
   // Deployment,
   // DeploymentHandlers,
   // deployRelease,
   redeemSharesInKind,
+  seedAccount,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
 } from '@enzymefinance/testutils';
@@ -42,12 +44,14 @@ describe('Walkthrough a fund migration', () => {
     manager = fork.accounts[1];
     investor = fork.accounts[2];
 
-    denominationAsset = new StandardToken(fork.config.weth, whales.weth);
+    denominationAsset = new StandardToken(fork.config.weth, provider);
 
-    // Seed investor with denomination asset
-    const denominationAssetSeedAmount = utils.parseUnits('100', await denominationAsset.decimals());
-
-    await denominationAsset.transfer(investor, denominationAssetSeedAmount);
+    await seedAccount({
+      account: investor,
+      amount: (await getAssetUnit(denominationAsset)).mul(100),
+      provider,
+      token: denominationAsset,
+    });
   });
 
   it('creates a fund', async () => {
@@ -84,6 +88,7 @@ describe('Walkthrough a fund migration', () => {
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
+      provider,
     });
 
     const rate = FIVE_PERCENT;
@@ -96,47 +101,36 @@ describe('Walkthrough a fund migration', () => {
   it('seeds the fund with more assets to bring trackedAssets to 20', async () => {
     const assets = [
       // primitives
-      new StandardToken(fork.config.primitives.bat, whales.bat),
-      new StandardToken(fork.config.primitives.bnb, whales.bnb),
-      new StandardToken(fork.config.primitives.bnt, whales.bnt),
-      new StandardToken(fork.config.primitives.comp, whales.comp),
-      new StandardToken(fork.config.primitives.dai, whales.dai),
-      new StandardToken(fork.config.primitives.link, whales.link),
-      new StandardToken(fork.config.primitives.mana, whales.mana),
-      new StandardToken(fork.config.primitives.mln, whales.mln),
-      new StandardToken(fork.config.primitives.ren, whales.ren),
-      new StandardToken(fork.config.primitives.rep, whales.rep),
-      new StandardToken(fork.config.primitives.susd, whales.susd),
-      new StandardToken(fork.config.primitives.uni, whales.uni),
-      new StandardToken(fork.config.primitives.usdt, whales.usdt),
-      new StandardToken(fork.config.primitives.zrx, whales.zrx),
+      new StandardToken(fork.config.primitives.bat, provider),
+      new StandardToken(fork.config.primitives.bnb, provider),
+      new StandardToken(fork.config.primitives.bnt, provider),
+      new StandardToken(fork.config.primitives.comp, provider),
+      new StandardToken(fork.config.primitives.dai, provider),
+      new StandardToken(fork.config.primitives.link, provider),
+      new StandardToken(fork.config.primitives.mana, provider),
+      new StandardToken(fork.config.primitives.mln, provider),
+      new StandardToken(fork.config.primitives.ren, provider),
+      new StandardToken(fork.config.primitives.rep, provider),
+      new StandardToken(fork.config.primitives.susd, provider),
+      new StandardToken(fork.config.primitives.uni, provider),
+      new StandardToken(fork.config.primitives.usdt, provider),
+      new StandardToken(fork.config.primitives.zrx, provider),
       // ctokens
-      new StandardToken(fork.config.compound.ctokens.ccomp, whales.ccomp),
-      new StandardToken(fork.config.compound.ctokens.cdai, whales.cdai),
-      new StandardToken(fork.config.compound.ceth, whales.ceth),
-      new StandardToken(fork.config.compound.ctokens.cusdc, whales.cusdc),
-      new StandardToken(fork.config.compound.ctokens.cuni, whales.cuni),
+      new StandardToken(fork.config.compound.ctokens.ccomp, provider),
+      new StandardToken(fork.config.compound.ctokens.cdai, provider),
+      new StandardToken(fork.config.compound.ceth, provider),
+      new StandardToken(fork.config.compound.ctokens.cusdc, provider),
+      new StandardToken(fork.config.compound.ctokens.cuni, provider),
     ];
 
-    await addTrackedAssetsToVault({
+    await addNewAssetsToFund({
+      provider,
       assets,
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
       signer: manager,
+      amounts: await Promise.all(assets.map((asset) => getAssetUnit(asset))),
     });
-
-    // Use this loop instead of addNewAssetsToFund() to make debugging easier
-    // when a whale changes.
-    for (const asset of assets) {
-      const decimals = await asset.decimals();
-      const transferAmount = utils.parseUnits('1', decimals);
-
-      await asset.transfer.args(vaultProxy, transferAmount).send();
-
-      const balance = await asset.balanceOf(vaultProxy);
-
-      expect(balance).toBeGteBigNumber(transferAmount);
-    }
 
     expect((await vaultProxy.getTrackedAssets()).length).toBe(20);
   });

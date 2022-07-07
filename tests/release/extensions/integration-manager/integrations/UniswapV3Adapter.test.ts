@@ -5,6 +5,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
+  seedAccount,
   uniswapV3TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
@@ -37,7 +38,7 @@ describe('takeOrder', () => {
       signer: fundOwner,
     });
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
     const incomingAsset = new StandardToken(fork.config.weth, provider);
 
     const takeOrderArgs = uniswapV3TakeOrderArgs({
@@ -59,8 +60,8 @@ describe('takeOrder', () => {
   });
 
   it('does not allow pathAddresses with less than 2 assets', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 
@@ -77,11 +78,11 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000')];
 
-    // Seed fund with outgoing asset
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     await expect(
       uniswapV3TakeOrder({
+        provider,
         comptrollerProxy,
         fundOwner,
         integrationManager,
@@ -95,8 +96,8 @@ describe('takeOrder', () => {
   });
 
   it('does not allow a path with incorrect pathFees and pathAddress length', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = usdc;
 
     const [fundOwner] = fork.accounts;
@@ -115,11 +116,11 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000'), BigNumber.from('3000')];
 
-    // Seed fund with outgoing asset
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     await expect(
       uniswapV3TakeOrder({
+        provider,
         comptrollerProxy,
         fundOwner,
         integrationManager,
@@ -133,9 +134,9 @@ describe('takeOrder', () => {
   });
 
   it('correctly swaps assets (no intermediary)', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
     const outgoingAsset = usdc;
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 
@@ -152,8 +153,7 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000')];
 
-    // Seed fund with outgoing asset
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     const [preTxOutgoingAssetBalance, preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -161,6 +161,7 @@ describe('takeOrder', () => {
     });
 
     await uniswapV3TakeOrder({
+      provider,
       comptrollerProxy,
       fundOwner,
       integrationManager,
@@ -184,8 +185,8 @@ describe('takeOrder', () => {
   });
 
   it('correctly swaps assets (with one intermediary)', async () => {
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
     const outgoingAsset = dai;
     const incomingAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const usdc = incomingAsset;
@@ -206,8 +207,7 @@ describe('takeOrder', () => {
     const pathAddresses = [outgoingAsset, weth, incomingAsset];
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
-    // Seed fund with outgoing asset
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     const [preTxOutgoingAssetBalance, preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -215,6 +215,7 @@ describe('takeOrder', () => {
     });
 
     await uniswapV3TakeOrder({
+      provider,
       comptrollerProxy,
       fundOwner,
       integrationManager,

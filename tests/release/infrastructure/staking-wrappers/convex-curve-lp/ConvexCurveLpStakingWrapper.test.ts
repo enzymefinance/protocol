@@ -1,9 +1,14 @@
 // import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { ConvexCurveLpStakingWrapperFactory } from '@enzymefinance/protocol';
-import { ConvexCurveLpStakingWrapperLib, IConvexBooster, StandardToken } from '@enzymefinance/protocol';
+import {
+  ConvexCurveLpStakingWrapperLib,
+  IConvexBooster,
+  ONE_DAY_IN_SECONDS,
+  StandardToken,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BigNumber } from 'ethers';
 
@@ -17,7 +22,7 @@ let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
-  curveLpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, whales.stecrv);
+  curveLpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
   factory = fork.deployment.convexCurveLpStakingWrapperFactory;
   await factory.deploy(pid);
@@ -82,8 +87,8 @@ describe('actions', () => {
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
-    await curveLpToken.transfer(depositor1, lpTokenStartingBalance);
-    await curveLpToken.transfer(depositor2, lpTokenStartingBalance);
+    await seedAccount({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
+    await seedAccount({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
   });
 
   describe('deposit', () => {
@@ -109,7 +114,7 @@ describe('actions', () => {
       });
 
       // Time passes
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Depositor 2 - deposits for third party
@@ -173,7 +178,7 @@ describe('actions', () => {
       });
 
       // Time passes
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Depositor 2 - redeems to third party
@@ -237,7 +242,7 @@ describe('actions', () => {
       await wrapper.connect(depositor1).deposit(depositAmount);
 
       // Time passes
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Get claimRewardsFor return values
@@ -285,7 +290,7 @@ describe('actions', () => {
       await wrapper.connect(depositor1).deposit(depositAmount);
 
       // Time passes
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Get claimRewardsFor return values
@@ -324,7 +329,7 @@ describe('actions', () => {
       await wrapper.connect(depositor2).deposit(depositAmount2);
 
       // Time passes
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Withdraw all to stop rewards accrual
@@ -333,7 +338,7 @@ describe('actions', () => {
       expect(await wrapper.totalSupply()).toEqBigNumber(0);
 
       // TODO: More time passes
-      // await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      // await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       // await provider.send('evm_mine', []);
 
       // Claim rewards for both depositors
@@ -380,8 +385,8 @@ describe('ERC20 calls', () => {
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
-    await curveLpToken.transfer(depositor1, lpTokenStartingBalance);
-    await curveLpToken.transfer(depositor2, lpTokenStartingBalance);
+    await seedAccount({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
+    await seedAccount({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
   });
 
   describe('transfer', () => {
@@ -393,7 +398,7 @@ describe('ERC20 calls', () => {
       await wrapper.connect(depositor1).deposit(depositAmount);
 
       // Time passes to accrue rewards
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Depositor1 transfers partial balance to randomRecipient
@@ -415,7 +420,7 @@ describe('ERC20 calls', () => {
       await wrapper.connect(depositor1).transfer(randomRecipient, depositAmount.div(2));
 
       // Time passes to accrue rewards
-      await provider.send('evm_increaseTime', [60 * 60 * 24]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
       await provider.send('evm_mine', []);
 
       // Depositor1 transfers one wei to randomRecipient

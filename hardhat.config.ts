@@ -80,6 +80,7 @@ const config: HardhatUserConfig = {
       'ITestMapleGlobals',
       'ITestMaplePool',
       'ITestNotionalV2Router',
+      'ITestStethToken',
       'ICurveAddressProvider',
       'ICurveLiquidityGaugeV2',
       'ICurveLiquidityPool',

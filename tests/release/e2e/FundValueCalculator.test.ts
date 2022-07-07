@@ -61,7 +61,7 @@ describe('calcs', () => {
     const fundValueCalculatorRouter = fork.deployment.fundValueCalculatorRouter;
     const fundValueCalculatorUsdWrapper = fork.deployment.fundValueCalculatorUsdWrapper;
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const weth = new StandardToken(fork.config.weth, provider);
 
     // Create a fund with a management fee and seeded with an initial investment, which mints shares supply and also starts the protocol fee
@@ -78,13 +78,14 @@ describe('calcs', () => {
       fundDeployer: fork.deployment.fundDeployer,
       investment: {
         buyer: sharesHolder,
+        provider,
         seedBuyer: true,
       },
       signer,
     });
 
     // Warp a year in the future to easily predict accrued management fee and protocol fee
-    await provider.send('evm_increaseTime', [60 * 60 * 24 * 365]);
+    await provider.send('evm_increaseTime', [ONE_YEAR_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
     // GROSS VALUE

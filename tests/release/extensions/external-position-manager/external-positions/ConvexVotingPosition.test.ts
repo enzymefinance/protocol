@@ -21,6 +21,7 @@ import {
   impersonateContractSigner,
   ISnapshotDelegateRegistry,
   IVotiumMultiMerkleStash,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -28,13 +29,13 @@ const convexCurveDepositorAddress = '0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae'
 const cvxCrvAddress = '0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7';
 const randomAccount = randomAddress();
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-let fundOwner: SignerWithAddress;
+let fundOwner: SignerWithAddress, userAddress: SignerWithAddress;
 
 let fork: ProtocolDeployment;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
-  [fundOwner] = fork.accounts;
+  [fundOwner, userAddress] = fork.accounts;
 
   const newFundRes = await createNewFund({
     denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
@@ -75,12 +76,12 @@ describe('actions', () => {
 
     convexVotingPosition = new ConvexVotingPositionLib(convexVotingPositionProxy, provider);
 
-    cvx = new StandardToken(fork.config.convex.cvxToken, whales.cvx);
+    cvx = new StandardToken(fork.config.convex.cvxToken, provider);
 
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);
 
-    await cvx.transfer(vaultProxy, cvxAssetUnit.mul(10));
+    await seedAccount({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
   });
 
   describe('Lock', () => {
@@ -270,7 +271,7 @@ describe('actions', () => {
         fork.config.convex.vlCvxExtraRewards,
         provider,
       );
-      const extraRewardToken = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+      const extraRewardToken = new StandardToken(fork.config.primitives.usdc, provider);
       const extraRewardTokenAmount = (await getAssetUnit(extraRewardToken)).mul(100000);
 
       // Warp two epochs and checkpoint, so vlCVX are eligible for extra rewards
@@ -279,8 +280,9 @@ describe('actions', () => {
       await vlCVX.connect(fork.deployer).checkpointEpoch();
 
       // Add extra reward token to current epoch
-      await extraRewardToken.approve(extraRewardTokenDistributor, extraRewardTokenAmount);
-      await extraRewardTokenDistributor.connect(whales.usdc).addReward(extraRewardToken, extraRewardTokenAmount);
+      await seedAccount({ account: userAddress, amount: extraRewardTokenAmount, provider, token: extraRewardToken });
+      await extraRewardToken.connect(userAddress).approve(extraRewardTokenDistributor, extraRewardTokenAmount);
+      await extraRewardTokenDistributor.connect(userAddress).addReward(extraRewardToken, extraRewardTokenAmount);
 
       // Warp one epoch and checkpoint so the extra rewards can be paid out
       await provider.send('evm_increaseTime', [ONE_WEEK_IN_SECONDS]);
@@ -331,7 +333,7 @@ describe('actions', () => {
       });
 
       await votiumMultiMerkleStash.connect(votiumMultiMerkleStashOwner).updateMerkleRoot(rewardToken, root);
-      await rewardToken.transfer(votiumMultiMerkleStash, claimAmount);
+      await seedAccount({ account: votiumMultiMerkleStash, amount: claimAmount, provider, token: rewardToken });
 
       const preTxRewardTokenBalance = await rewardToken.balanceOf(vaultProxy);
 
@@ -359,9 +361,11 @@ describe('actions', () => {
     });
 
     it('unstakeCvxCrv only: works as expected', async () => {
-      const crv = new StandardToken(fork.config.primitives.crv, whales.crv);
-      const convexCrvDepositor = new IConvexCrvDepositor(convexCurveDepositorAddress, whales.crv);
-      const convexCvxCrvStaking = new IConvexBaseRewardPool(fork.config.convex.cvxCrvStaking, whales.crv);
+      const crv = new StandardToken(fork.config.primitives.crv, userAddress);
+      const convexCrvDepositor = new IConvexCrvDepositor(convexCurveDepositorAddress, userAddress);
+      const convexCvxCrvStaking = new IConvexBaseRewardPool(fork.config.convex.cvxCrvStaking, userAddress);
+
+      await seedAccount({ provider, account: userAddress, amount: (await getAssetUnit(crv)).mul(100_000), token: crv });
 
       // Convert CRV to cvxCRV
       const stakedCvxCrvAmount = (await getAssetUnit(cvxCrv)).mul(3);
@@ -369,7 +373,7 @@ describe('actions', () => {
       await crv.approve(convexCrvDepositor, stakedCvxCrvAmount);
       await convexCrvDepositor.deposit(stakedCvxCrvAmount, true);
       // Stake cvxCRV on behalf of the convexVotingPosition
-      await cvxCrv.connect(whales.crv).approve(convexCvxCrvStaking, stakedCvxCrvAmount);
+      await cvxCrv.connect(userAddress).approve(convexCvxCrvStaking, stakedCvxCrvAmount);
       await convexCvxCrvStaking.stakeFor(convexVotingPosition, stakedCvxCrvAmount);
 
       // Claim staked cvxCRV only
@@ -405,12 +409,12 @@ describe('position value', () => {
 
     convexVotingPosition = new ConvexVotingPositionLib(convexVotingPositionProxy, provider);
 
-    cvx = new StandardToken(fork.config.convex.cvxToken, whales.cvx);
+    cvx = new StandardToken(fork.config.convex.cvxToken, provider);
 
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);
 
-    await cvx.transfer(vaultProxy, cvxAssetUnit.mul(10));
+    await seedAccount({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
   });
 
   describe('getManagedAssets', () => {
@@ -432,7 +436,7 @@ describe('position value', () => {
       // (simulates CVX being sent back to EP via kickExpiredLocks())
       const kickedCvxAmount = lockAmount.mul(3);
 
-      await cvx.transfer(convexVotingPosition, kickedCvxAmount);
+      await seedAccount({ provider, account: convexVotingPosition, amount: kickedCvxAmount, token: cvx });
 
       // Assert external position balance
       expect(await convexVotingPosition.getManagedAssets.call()).toMatchFunctionOutput(

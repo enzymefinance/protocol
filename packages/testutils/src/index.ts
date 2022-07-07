@@ -4,4 +4,3 @@ export * from './deployment';
 export * from './gasRelayer';
 export * from './helpers';
 export * from './scaffolding';
-export * from './whales';

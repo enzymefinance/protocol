@@ -31,6 +31,7 @@ import {
   getAssetUnit,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
+  seedAccount,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
@@ -44,7 +45,7 @@ async function snapshot() {
     accounts: [fundOwner, ...remainingAccounts],
   } = await deployProtocolFixture();
 
-  const weth = new WETH(config.weth, whales.weth);
+  const weth = new WETH(config.weth, provider);
   const fees = await generateMockFees({
     deployer,
   });
@@ -68,7 +69,7 @@ async function snapshot() {
   const seedAmount = utils.parseEther('100');
   const seedAccounts = [fundOwner, remainingAccounts[0], remainingAccounts[1]];
 
-  await Promise.all(seedAccounts.map((account) => weth.transfer(account.address, seedAmount)));
+  await Promise.all(seedAccounts.map((account) => seedAccount({ provider, account, amount: seedAmount, token: weth })));
 
   return {
     accounts: remainingAccounts,
@@ -111,6 +112,7 @@ describe('buyShares', () => {
         comptrollerProxy,
         denominationAsset,
         investmentAmount,
+        provider,
       }),
     ).rejects.toBeRevertedWith('Re-entrance');
   });
@@ -127,6 +129,7 @@ describe('buyShares', () => {
         comptrollerProxy,
         denominationAsset,
         minSharesQuantity: 0,
+        provider,
       }),
     ).rejects.toBeRevertedWith('_minSharesQuantity must be >0');
   });
@@ -175,6 +178,7 @@ describe('buyShares', () => {
         buyer,
         comptrollerProxy: prevComptrollerProxy,
         denominationAsset,
+        provider,
       }),
     ).rejects.toBeRevertedWith('Pending migration');
 
@@ -185,6 +189,7 @@ describe('buyShares', () => {
         buyer,
         comptrollerProxy: prevComptrollerProxy,
         denominationAsset,
+        provider,
       }),
     ).resolves.toBeReceipt();
   });
@@ -212,6 +217,7 @@ describe('buyShares', () => {
     const expectedGav = investmentAmount;
 
     const receipt = await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,
@@ -280,6 +286,7 @@ describe('buyShares', () => {
       investment: {
         buyer: fundOwner,
         investmentAmount,
+        provider,
       },
 
       signer: fundOwner,
@@ -296,6 +303,7 @@ describe('buyShares', () => {
       comptrollerProxy,
       denominationAsset,
       investmentAmount,
+      provider,
     });
 
     // Expected values
@@ -362,6 +370,7 @@ describe('buyShares', () => {
 
     // Buying shares should still work during a pending migration
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy: prevComptrollerProxy,
       denominationAsset,
@@ -386,8 +395,8 @@ describe('buySharesOnBehalf', () => {
     fundDeployer = fork.deployment.fundDeployer;
     policyManager = fork.deployment.policyManager;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    await denominationAsset.transfer(randomCaller, investmentAmount);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    await seedAccount({ account: randomCaller, amount: investmentAmount, provider, token: denominationAsset });
 
     // TODO: set protocol fee to 0 for simplicity/clarity
   });
@@ -399,7 +408,7 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         sharesActionTimelock: 1,
         signer: fundOwner,
@@ -461,7 +470,7 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         sharesActionTimelock: 0,
         signer: fundOwner, // Not necessary, but explicit
@@ -506,11 +515,13 @@ describe('redeem', () => {
         investment: {
           buyer: fundManager,
           investmentAmount,
+          provider,
         },
         signer: fundManager,
       });
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
@@ -600,15 +611,14 @@ describe('redeem', () => {
         fundOwner,
         investment: {
           buyer: investor,
+          provider,
         },
         signer: fundOwner,
       });
 
       // Send second asset to the fund
-      const secondAsset = new StandardToken(mln, whales.mln);
-      const secondAssetTransferAmount = await getAssetUnit(secondAsset);
-
-      await secondAsset.transfer(vaultProxy, secondAssetTransferAmount);
+      const secondAsset = new StandardToken(mln, provider);
+      await seedAccount({ provider, account: vaultProxy, amount: await getAssetUnit(secondAsset), token: secondAsset });
 
       await expect(
         redeemSharesForSpecificAssets({
@@ -648,6 +658,7 @@ describe('redeem', () => {
         investment: {
           buyer: fundOwner,
           investmentAmount: investorInvestmentAmount.mul(10),
+          provider,
         },
 
         signer: fundOwner,
@@ -655,13 +666,14 @@ describe('redeem', () => {
 
       // Buy a relatively small amount of shares for the investor to guarantee they can redeem one wei of shares with no owed value
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
         investmentAmount: investorInvestmentAmount,
       });
 
-      const zeroBalanceAsset = new StandardToken(mln, whales.mln);
+      const zeroBalanceAsset = new StandardToken(mln, provider);
 
       expect(await zeroBalanceAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
 
@@ -703,6 +715,7 @@ describe('redeem', () => {
         fundOwner,
         investment: {
           buyer: fundOwner,
+          provider,
         },
         signer: fundOwner,
       });
@@ -711,6 +724,7 @@ describe('redeem', () => {
       const investorInvestmentAmount = (await getAssetUnit(denominationAsset)).div(10);
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
@@ -719,7 +733,7 @@ describe('redeem', () => {
 
       // Define the redemption parameters
       const recipient = randomAddress();
-      const payoutAssets = [new StandardToken(mln, whales.mln), new StandardToken(dai, whales.dai)];
+      const payoutAssets = [new StandardToken(mln, provider), new StandardToken(dai, provider)];
       const oneHundredPercent = 10000;
       const payoutAssetPercentages = [3000, 7000]; // 30% and 70%
 
@@ -727,6 +741,7 @@ describe('redeem', () => {
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
 
       await addNewAssetsToFund({
+        provider,
         amounts: await Promise.all(
           payoutAssets.map(async (asset) =>
             valueInterpreter.calcCanonicalAssetValue
@@ -829,19 +844,21 @@ describe('redeem', () => {
       await protocolFeeTracker.setFeeBpsDefault(0);
 
       // Create a new fund, invested in by the fund manager and an investor
-      const denominationAsset = new StandardToken(usdc, whales.usdc);
+      const denominationAsset = new StandardToken(usdc, provider);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         denominationAsset,
         fundDeployer,
         fundOwner,
         investment: {
           buyer: fundOwner,
+          provider,
           seedBuyer: true,
         },
         signer: fundOwner,
       });
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
@@ -850,13 +867,14 @@ describe('redeem', () => {
 
       // Define the redemption parameters
       const recipient = randomAddress();
-      const payoutAsset = new StandardToken(cdai, whales.cdai);
+      const payoutAsset = new StandardToken(cdai, provider);
 
       // Send and track the redemption asset with the equivalent values as the denomination asset balance,
       // so that redeeming half the shares should result in withdrawing almost all of the payoutAsset
       const preTxVaultDenominationAssetBalance = await denominationAsset.balanceOf(vaultProxy);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [
           await valueInterpreter.calcCanonicalAssetValue
             .args(denominationAsset, preTxVaultDenominationAssetBalance, payoutAsset)
@@ -912,6 +930,7 @@ describe('redeem', () => {
         fundOwner,
         investment: {
           buyer: investor,
+          provider,
         },
         signer: fundOwner,
       });
@@ -985,11 +1004,13 @@ describe('redeem', () => {
         investment: {
           buyer: fundManager,
           investmentAmount,
+          provider,
         },
         signer: fundManager,
       });
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
@@ -1075,18 +1096,19 @@ describe('redeem', () => {
       });
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
       });
 
-      // Seed the vault with the denomination asset
-      await denominationAsset.transfer(vaultProxy, 1);
+      await seedAccount({ account: vaultProxy, amount: 1, provider, token: denominationAsset });
 
       // Send and track a second asset in the vault, but then allow it to be untracked
-      const secondAsset = new StandardToken(mln, whales.mln);
+      const secondAsset = new StandardToken(mln, provider);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [(await getAssetUnit(secondAsset)).mul(3)],
         assets: [secondAsset],
         comptrollerProxy,
@@ -1165,11 +1187,13 @@ describe('redeem', () => {
         investment: {
           buyer: fundManager,
           investmentAmount,
+          provider,
         },
         signer: fundManager,
       });
 
       await buyShares({
+        provider,
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
@@ -1180,10 +1204,9 @@ describe('redeem', () => {
       await provider.send('evm_increaseTime', [3600]);
 
       // Send untracked asset directly to fund
-      const untrackedAsset = new StandardToken(mln, whales.mln);
+      const untrackedAsset = new StandardToken(mln, provider);
       const untrackedAssetBalance = utils.parseEther('2');
-
-      await untrackedAsset.transfer(vaultProxy, untrackedAssetBalance);
+      await seedAccount({ provider, account: vaultProxy, amount: untrackedAssetBalance, token: untrackedAsset });
 
       // Assert the asset is not tracked
       const isTrackedAssetCall = await vaultProxy.isTrackedAsset(untrackedAsset);
@@ -1203,7 +1226,7 @@ describe('redeem', () => {
         account: recipient,
         assets: [expectedPayoutAsset, denominationAsset],
       });
-      const preTxVaultExpectedPayoutAssetBalance = await expectedPayoutAsset.balanceOf(vaultProxy);
+      const preTxVaultExpectedPayoutAssetBalance = await expectedPayoutAsset.balanceOf.args(vaultProxy).call();
       const preTxSharesSupply = await vaultProxy.totalSupply();
 
       // Redeem half of investor's shares
@@ -1286,6 +1309,7 @@ describe('redeem', () => {
         investment: {
           buyer: investor,
           investmentAmount,
+          provider,
         },
         signer: fundManager,
       });
@@ -1327,11 +1351,12 @@ describe('transfer shares', () => {
     // Spin up and invest in a fund to create shares
     sharesActionTimelock = 1000;
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, whales.usdc),
+      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       investment: {
         buyer: investor,
+        provider,
         seedBuyer: true,
       },
       sharesActionTimelock,
@@ -1432,6 +1457,7 @@ describe('sharesActionTimelock', () => {
 
     // Buy shares to start the timelock (though the timelock is 0)
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -1467,6 +1493,7 @@ describe('sharesActionTimelock', () => {
 
     // Buy shares to start the timelock
     const receipt = await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -1532,6 +1559,7 @@ describe('sharesActionTimelock', () => {
         buyer: investor,
         comptrollerProxy,
         denominationAsset,
+        provider,
       }),
     ).resolves.toBeReceipt();
 

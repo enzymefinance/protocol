@@ -1,4 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   IYearnVaultV2,
   lendSelector,
@@ -14,15 +15,18 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
+  seedAccount,
   yearnVaultV2Lend,
   yearnVaultV2Redeem,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
+let userAddress: SignerWithAddress;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+  [userAddress] = fork.accounts;
 });
 
 describe('constructor', () => {
@@ -139,7 +143,7 @@ describe('lend', () => {
     const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
     const [fundOwner] = fork.accounts;
     const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
     const outgoingToken = usdc;
     const assetUnit = await getAssetUnit(yVault);
 
@@ -152,15 +156,19 @@ describe('lend', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = assetUnit;
-
-    await outgoingToken.transfer(vaultProxy, outgoingUnderlyingAmount.mul(3));
+    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(3), provider, token: outgoingToken });
 
     // Since we can't easily test that an unused underlying amount from a deposit is returned
     // / to the vaultProxy, we seed the adapter with a small amount of the underlying, which will
     // / be returned to the vaultProxy upon running lend()
     const preTxAdapterUnderlyingBalance = assetUnit;
 
-    await outgoingToken.transfer(yearnVaultV2Adapter, preTxAdapterUnderlyingBalance);
+    await seedAccount({
+      account: yearnVaultV2Adapter,
+      amount: preTxAdapterUnderlyingBalance,
+      provider,
+      token: outgoingToken,
+    });
 
     const [preTxYVaultBalance, preTxUnderlyingBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -200,8 +208,8 @@ describe('redeem', () => {
     const integrationManager = fork.deployment.integrationManager;
     const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
     const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const yVaultContract = new IYearnVaultV2(yVault, whales.usdc);
-    const usdc = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const yVaultContract = new IYearnVaultV2(yVault, provider);
+    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
     const token = usdc;
     const assetUnit = await getAssetUnit(token);
 
@@ -215,7 +223,7 @@ describe('redeem', () => {
     // Seed the fund and acquire yVault shares while leaving some underlying in the vault
     const seedUnderlyingAmount = assetUnit.mul(4);
 
-    await token.transfer(vaultProxy, seedUnderlyingAmount);
+    await seedAccount({ account: vaultProxy, amount: seedUnderlyingAmount, provider, token });
     await yearnVaultV2Lend({
       comptrollerProxy,
       integrationManager,
@@ -228,8 +236,8 @@ describe('redeem', () => {
     // Since we can't easily test that unused shares are returned to the vaultProxy,
     // seed the adapter with a small amount of yVault shares, which will be returned to
     // the vaultProxy upon running redeem()
-    await token.approve(yVaultContract, constants.MaxUint256);
-    await yVaultContract.deposit(assetUnit, yearnVaultV2Adapter);
+    await token.connect(userAddress).approve(yVaultContract, constants.MaxUint256);
+    await yVaultContract.connect(userAddress).deposit(assetUnit, yearnVaultV2Adapter);
     const preTxAdapterYVaultBalance = await yVault.balanceOf(yearnVaultV2Adapter);
 
     expect(preTxAdapterYVaultBalance).toBeGtBigNumber(0);

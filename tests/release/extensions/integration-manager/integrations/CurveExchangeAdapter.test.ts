@@ -9,7 +9,13 @@ import {
   takeOrderSelector,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, CurveSwaps, curveTakeOrder, deployProtocolFixture } from '@enzymefinance/testutils';
+import {
+  createNewFund,
+  CurveSwaps,
+  curveTakeOrder,
+  deployProtocolFixture,
+  seedAccount,
+} from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 // There is variable small discrepancy between get_best_rate().maxAmountReceived and the actual amount received,
@@ -111,7 +117,7 @@ describe('parseAssetsForAction', () => {
 
 describe('takeOrder', () => {
   it('works as expected when called by a fund (ERC20 to ERC20)', async () => {
-    const outgoingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const outgoingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
@@ -131,8 +137,7 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    // seed fund
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
     // exchange
     await curveTakeOrder({
@@ -154,7 +159,7 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = new StandardToken(fork.config.lido.steth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
@@ -174,8 +179,7 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    // seed fund
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
     // exchange
     await curveTakeOrder({
@@ -197,7 +201,7 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (ERC20 to ETH)', async () => {
-    const outgoingAsset = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    const outgoingAsset = new StandardToken(fork.config.lido.steth, provider);
     const incomingAsset = new StandardToken(fork.config.weth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
@@ -217,8 +221,9 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    // seed fund
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+
+    const preTxOutgoingAssetBalance = await outgoingAsset.balanceOf(vaultProxy);
 
     // exchange
     await curveTakeOrder({
@@ -234,8 +239,10 @@ describe('takeOrder', () => {
     });
 
     const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
+    const postTxOutgoingAssetBalance = await outgoingAsset.balanceOf(vaultProxy);
 
     expect(postTxIncomingAssetBalance).toBeGteBigNumber(amountReceived.sub(curveRoundingBuffer));
-    await expect(outgoingAsset.balanceOf(vaultProxy)).resolves.toEqBigNumber(0);
+    // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
+    expect(preTxOutgoingAssetBalance.sub(postTxOutgoingAssetBalance)).toBeAroundBigNumber(outgoingAssetAmount, 1);
   });
 });

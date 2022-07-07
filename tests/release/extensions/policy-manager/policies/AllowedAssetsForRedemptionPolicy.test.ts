@@ -81,11 +81,11 @@ describe('validateRule', () => {
     integrationManager = fork.deployment.integrationManager;
 
     // Use all USD stable coins to have similar values held by the fund
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     allowedAsset1 = denominationAsset;
-    allowedAsset2 = new StandardToken(fork.config.primitives.dai, whales.dai);
-    notAllowedAsset = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+    allowedAsset2 = new StandardToken(fork.config.primitives.dai, provider);
+    notAllowedAsset = new StandardToken(fork.config.primitives.usdt, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -94,6 +94,7 @@ describe('validateRule', () => {
       investment: {
         buyer: investor,
         investmentAmount: await getAssetUnit(denominationAsset), // Just to be explicit
+        provider,
         seedBuyer: true,
       },
       policyManagerConfig: policyManagerConfigArgs({
@@ -121,6 +122,7 @@ describe('validateRule', () => {
 
     // Add 1 unit (1 USD) of all assets to the fund
     await addNewAssetsToFund({
+      provider,
       amounts: [
         await getAssetUnit(allowedAsset1),
         await getAssetUnit(allowedAsset2),

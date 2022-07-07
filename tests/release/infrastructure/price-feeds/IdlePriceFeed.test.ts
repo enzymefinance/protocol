@@ -2,7 +2,14 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import { IIdleTokenV4, StandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, deployProtocolFixture, idleLend } from '@enzymefinance/testutils';
+import {
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  getAssetUnit,
+  idleLend,
+  seedAccount,
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 const idleTokenUnit = utils.parseEther('1');
@@ -129,8 +136,8 @@ describe('expected values', () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const [fundOwner, investor] = fork.accounts;
 
@@ -143,6 +150,7 @@ describe('derivative gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -153,16 +161,16 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed the fund with dai and use to receive an idleToken balance
-    const daiAmount = utils.parseEther('1');
+    const amount = await getAssetUnit(dai);
 
-    await dai.transfer(vaultProxy, daiAmount);
+    await seedAccount({ account: vaultProxy, amount, provider, token: dai });
     await idleLend({
       comptrollerProxy,
       fundOwner,
       idleAdapter: fork.deployment.idleAdapter,
       idleToken,
       integrationManager: fork.deployment.integrationManager,
-      outgoingUnderlyingAmount: daiAmount,
+      outgoingUnderlyingAmount: amount,
     });
 
     // Get the calcGav() cost including the idleToken

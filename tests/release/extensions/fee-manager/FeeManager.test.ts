@@ -36,7 +36,7 @@ async function snapshot() {
     deployer,
   });
 
-  const denominationAsset = new WETH(config.weth, whales.weth);
+  const denominationAsset = new WETH(config.weth, provider);
 
   const createFund = () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), constants.HashZero];
@@ -110,6 +110,7 @@ describe('deactivateForFund', () => {
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,
@@ -208,6 +209,7 @@ describe('receiveCallFromComptroller', () => {
 
     // Buy shares of the fund so that fees accrue
     await buyShares({
+      provider,
       buyer: fundInvestor,
       comptrollerProxy,
       denominationAsset,
@@ -418,6 +420,7 @@ describe('invokeHook', () => {
 
     // Buy shares
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,
@@ -453,6 +456,7 @@ describe('invokeHook', () => {
 
         // Buying shares
         await buyShares({
+          provider,
           buyer,
           comptrollerProxy,
           denominationAsset,
@@ -521,6 +525,7 @@ describe('invokeHook', () => {
         // Buy shares with active fee
         const investmentAmount = await getAssetUnit(denominationAsset);
         const receipt = await buyShares({
+          provider,
           buyer,
           comptrollerProxy,
           denominationAsset,
@@ -577,6 +582,7 @@ describe('invokeHook', () => {
         const investmentAmount = await getAssetUnit(denominationAsset);
         const expectedSharesReceived = utils.parseEther('1').sub(feeAmount);
         const receipt = await buyShares({
+          provider,
           buyer,
           comptrollerProxy,
           denominationAsset,
@@ -627,6 +633,7 @@ describe('invokeHook', () => {
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
+          provider,
           buyer,
           comptrollerProxy,
           denominationAsset,
@@ -689,6 +696,7 @@ describe('invokeHook', () => {
         // Seed fund with initial fund shares,
         // to give a non-zero totalSupply (so that minting new shares is allowed)
         await buyShares({
+          provider,
           buyer,
           comptrollerProxy,
           denominationAsset,
@@ -768,6 +776,7 @@ describe('invokeHook', () => {
       // Seed fund with initial fund shares,
       // to give a non-zero totalSupply (so that minting new shares is allowed)
       await buyShares({
+        provider,
         buyer,
         comptrollerProxy,
         denominationAsset,
@@ -868,6 +877,7 @@ describe('invokeHook', () => {
     const { vaultProxy, comptrollerProxy } = await createFund();
 
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,
@@ -934,6 +944,7 @@ describe('__InvokeContinuousHook', () => {
 
     // Seed fund so it has a non-zero GAV
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,
@@ -994,6 +1005,7 @@ describe('__payoutSharesOutstandingForFees', () => {
     // Seed fund with initial fund shares,
     // to give a non-zero totalSupply (so that minting new shares is allowed)
     await buyShares({
+      provider,
       buyer,
       comptrollerProxy,
       denominationAsset,

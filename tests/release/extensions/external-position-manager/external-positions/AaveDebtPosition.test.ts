@@ -11,6 +11,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
@@ -53,14 +54,14 @@ beforeEach(async () => {
 
 describe('addCollateralAssets', () => {
   it('works as expected when called to addCollateral by a Fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     const externalPositionCollateralBalanceBefore = await aToken.balanceOf(aaveDebtPosition);
 
@@ -86,13 +87,13 @@ describe('addCollateralAssets', () => {
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(collateralAmounts[0]);
     expect(getManagedAssetsCall.assets_).toEqual(collateralAssets);
 
-    expect(addCollateralReceipt).toMatchInlineGasSnapshot(`395398`);
+    expect(addCollateralReceipt).toMatchInlineGasSnapshot(`368189`);
   });
 });
 
 describe('removeCollateralAssets', () => {
   it('works as expected when called to remove collateral by a Fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -102,7 +103,7 @@ describe('removeCollateralAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -150,7 +151,7 @@ describe('removeCollateralAssets', () => {
   });
 
   it('works as expected when called to remove collateral by a Fund (max amount)', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -160,7 +161,7 @@ describe('removeCollateralAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -207,7 +208,7 @@ describe('removeCollateralAssets', () => {
 
 describe('borrowAssets', () => {
   it('works as expected when called for borrowing by a fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
@@ -218,7 +219,7 @@ describe('borrowAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -258,7 +259,7 @@ describe('borrowAssets', () => {
 
 describe('repayBorrowedAssets', () => {
   it('works as expected when called to repay borrow by a fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
@@ -269,7 +270,7 @@ describe('repayBorrowedAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed.address, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -314,8 +315,8 @@ describe('repayBorrowedAssets', () => {
   });
 
   it('works as expected when called to repay borrow by a fund (more than full amount)', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
-    const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
@@ -324,8 +325,8 @@ describe('repayBorrowedAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed.address, seedAmount);
-    await token.transfer(vaultProxyUsed.address, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -375,7 +376,7 @@ describe('repayBorrowedAssets', () => {
       assets_: [],
     });
 
-    expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`442035`);
+    expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`442023`);
   });
 });
 
@@ -384,14 +385,14 @@ describe('claimRewards', () => {
     const stkAaveAddress = '0x4da27a545c0c5B758a6BA100e3a049001de870f5';
     const rewardToken = new StandardToken(stkAaveAddress, provider);
 
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], whales.ausdc);
+    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await aToken.transfer(vaultProxyUsed, seedAmount);
+    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,

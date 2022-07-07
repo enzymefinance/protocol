@@ -15,6 +15,7 @@ import {
   createTheGraphDelegationPosition,
   deployProtocolFixture,
   impersonateContractSigner,
+  seedAccount,
   theGraphDelegationPositionDelegate,
   theGraphDelegationPositionUndelegate,
   theGraphDelegationPositionWithdraw,
@@ -61,7 +62,7 @@ beforeEach(async () => {
     denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
-    signer: fundOwner as SignerWithAddress,
+    signer: fundOwner,
   });
 
   vaultProxy = fund.vaultProxy;
@@ -80,16 +81,14 @@ beforeEach(async () => {
   // Converting from 6 decimals to 4 decimals (bps)
   delegationFeeBps = BigNumber.from(delegationFee).div(100);
 
-  grt = new StandardToken(fork.config.theGraph.grt, whales.grt);
+  grt = new StandardToken(fork.config.theGraph.grt, provider);
+  await seedAccount({ provider, account: vaultProxy.address, amount: grtUnit.mul(100_000_000), token: grt });
 });
 
 describe('delegate', () => {
   it('works as expected when called to delegate', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
 
     const delegateReceipt = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -116,14 +115,11 @@ describe('delegate', () => {
     // Assert that the delegation to the indexer is worth the delegated amount
     expect(delegationGrtValue).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees));
 
-    expect(delegateReceipt).toMatchInlineGasSnapshot(`249317`);
+    expect(delegateReceipt).toMatchInlineGasSnapshot(`254117`);
   });
 
   it('works as expected when delegating to two indexers', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount.mul(2));
 
     const delegateReceipt1 = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -151,9 +147,6 @@ describe('delegate', () => {
   it('works as expected when delegating twice to the same indexer', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount.mul(2));
 
     const delegateReceipt1 = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -188,9 +181,6 @@ describe('undelegate', () => {
   it('works as expected when called to undelegate', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
 
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -235,9 +225,6 @@ describe('withdraw', () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
 
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
-
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -260,6 +247,8 @@ describe('withdraw', () => {
 
     await fastForwardEpoch();
 
+    const vaultProxyGrtBalanceBefore = await grt.balanceOf(vaultProxy);
+
     const withdrawReceipt = await theGraphDelegationPositionWithdraw({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -274,23 +263,19 @@ describe('withdraw', () => {
     // Assert that the external position is now worth the GRT delegation amount, net of fees
     expect(getManagedAssetsCall.amounts_[0]).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees).div(2));
 
-    const vaultProxyGrtBalance = await grt.balanceOf(vaultProxy);
+    const vaultProxyGrtBalanceAfter = await grt.balanceOf(vaultProxy);
 
-    // Assert that the vault proxy now holds the withdrawn GRT amount
-    expect(vaultProxyGrtBalance).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees).div(2));
+    // Assert that the vault proxy GRt balance has increased
+    expect(vaultProxyGrtBalanceAfter).toBeGtBigNumber(vaultProxyGrtBalanceBefore);
 
     // Assert that no IndexerRemoved event was emitted
     assertNoEvent(withdrawReceipt, theGraphDelegationPosition.abi.getEvent('IndexerRemoved'));
 
-    expect(withdrawReceipt).toMatchInlineGasSnapshot(`195460`);
+    expect(withdrawReceipt).toMatchInlineGasSnapshot(`178360`);
   });
 
   it('works as expected when called to fully withdraw', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
 
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -314,6 +299,8 @@ describe('withdraw', () => {
 
     await fastForwardEpoch();
 
+    const vaultProxyGrtBalanceBefore = await grt.balanceOf(vaultProxy);
+
     const withdrawReceipt = await theGraphDelegationPositionWithdraw({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -328,25 +315,22 @@ describe('withdraw', () => {
     // Assert that the external position is now worth 0
     expect(getManagedAssetsCall.amounts_.length).toEqual(0);
 
-    const vaultProxyGrtBalance = await grt.balanceOf(vaultProxy);
+    const vaultProxyGrtBalanceAfter = await grt.balanceOf(vaultProxy);
 
-    // Assert that the vault proxy now holds the withdrawn grt amount
-    expect(vaultProxyGrtBalance).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees));
+    // Assert that the vault proxy GRT balance has increased
+    expect(vaultProxyGrtBalanceAfter).toBeGtBigNumber(vaultProxyGrtBalanceBefore);
 
     // Assert the IndexerRemoved event was emitted
     assertEvent(withdrawReceipt, theGraphDelegationPosition.abi.getEvent('IndexerRemoved'), {
       indexer: indexers[0],
     });
 
-    expect(withdrawReceipt).toMatchInlineGasSnapshot(`197749`);
+    expect(withdrawReceipt).toMatchInlineGasSnapshot(`180649`);
   });
 
   it('works as expected when called to partially redelegate', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
 
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -369,6 +353,8 @@ describe('withdraw', () => {
     });
 
     await fastForwardEpoch();
+
+    const vaultProxyGrtBalanceBefore = await grt.balanceOf(vaultProxy);
 
     const withdrawReceipt = await theGraphDelegationPositionWithdraw({
       comptrollerProxy,
@@ -394,10 +380,10 @@ describe('withdraw', () => {
     // Assert that the redelegation is properly delegated to the second indexer
     expect(redelegationGrtValue).toEqBigNumber(redelegationAmount.sub(redelegationFees));
 
-    const vaultProxyGrtBalance = await grt.balanceOf(vaultProxy);
+    const vaultProxyGrtBalanceAfter = await grt.balanceOf(vaultProxy);
 
-    // Assert that the vault proxy does not hold any grt
-    expect(vaultProxyGrtBalance).toEqBigNumber(0);
+    // Assert that the vault proxy GRT balance has not changed
+    expect(vaultProxyGrtBalanceBefore).toEqBigNumber(vaultProxyGrtBalanceAfter);
 
     // Assert the IndexerRemoved event was not emitted
     assertNoEvent(withdrawReceipt, theGraphDelegationPosition.abi.getEvent('IndexerRemoved'));
@@ -407,15 +393,12 @@ describe('withdraw', () => {
       indexer: indexers[1],
     });
 
-    expect(withdrawReceipt).toMatchInlineGasSnapshot(`241980`);
+    expect(withdrawReceipt).toMatchInlineGasSnapshot(`241746`);
   });
 
   it('works as expected when called to fully redelegate', async () => {
     const grtDelegationAmount = grtUnit.mul(1000);
     const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
-    // Seed vault with GRT
-    await grt.transfer(vaultProxy, grtDelegationAmount);
 
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
@@ -467,6 +450,6 @@ describe('withdraw', () => {
       indexer: indexers[1],
     });
 
-    expect(withdrawReceipt).toMatchInlineGasSnapshot(`221970`);
+    expect(withdrawReceipt).toMatchInlineGasSnapshot(`221753`);
   });
 });

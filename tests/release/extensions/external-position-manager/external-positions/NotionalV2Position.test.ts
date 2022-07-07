@@ -24,6 +24,7 @@ import {
   notionalV2PositionBorrow,
   notionalV2PositionLend,
   notionalV2PositionRedeem,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -83,14 +84,19 @@ describe('init', () => {
 
 describe('addCollateral', () => {
   it('works as expected (erc20)', async () => {
-    const collateralAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const collateralAsset = new StandardToken(fork.config.primitives.usdc, provider);
     const collateralCurrencyId = NotionalV2CurrencyId.Usdc;
 
     const collateralAssetUnit = await getAssetUnit(collateralAsset);
     const collateralAssetRawAmount = BigNumber.from('1000');
     const collateralAssetAmount = collateralAssetRawAmount.mul(collateralAssetUnit);
 
-    await collateralAsset.transfer(vaultProxyUsed, collateralAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: collateralAssetAmount.mul(10),
+      provider,
+      token: collateralAsset,
+    });
 
     const addCollateralReceipt = await notionalV2PositionAddCollateral({
       comptrollerProxy: comptrollerProxyUsed,
@@ -111,14 +117,19 @@ describe('addCollateral', () => {
   });
 
   it('works as expected (weth)', async () => {
-    const collateralAsset = new StandardToken(fork.config.weth, whales.weth);
+    const collateralAsset = new StandardToken(fork.config.weth, provider);
     const collateralCurrencyId = NotionalV2CurrencyId.Eth;
 
     const collateralAssetUnit = await getAssetUnit(collateralAsset);
     const collateralAssetRawAmount = BigNumber.from('10');
     const collateralAssetAmount = collateralAssetRawAmount.mul(collateralAssetUnit);
 
-    await collateralAsset.transfer(vaultProxyUsed, collateralAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: collateralAssetAmount.mul(10),
+      provider,
+      token: collateralAsset,
+    });
 
     const addCollateralReceipt = await notionalV2PositionAddCollateral({
       comptrollerProxy: comptrollerProxyUsed,
@@ -160,7 +171,7 @@ describe('lend', () => {
   });
 
   it('works as expected (erc20)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('1000');
@@ -169,7 +180,12 @@ describe('lend', () => {
 
     const fCashAmount = underlyingAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     const vaultProxyUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(vaultProxyUsed);
     const externalPositionUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(notionalV2Position);
@@ -219,7 +235,7 @@ describe('lend', () => {
   });
 
   it('works as expected (weth)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const underlyingAsset = new StandardToken(fork.config.weth, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('100');
@@ -228,7 +244,12 @@ describe('lend', () => {
 
     const fCashAmount = underlyingAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     const vaultProxyUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(vaultProxyUsed);
     const externalPositionUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(notionalV2Position);
@@ -277,8 +298,8 @@ describe('lend', () => {
   });
 
   it('works as expected (repaying debt)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const lendCurrencyId = NotionalV2CurrencyId.Dai;
     const borrowCurrencyId = NotionalV2CurrencyId.Usdc;
@@ -299,8 +320,18 @@ describe('lend', () => {
     const borrowAmount = borrowedAssetRawAmount.mul(fCashUnit);
     const repayAmount = repaidAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
-    await borrowedAsset.transfer(vaultProxyUsed, borrowedAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: borrowedAssetAmount.mul(10),
+      provider,
+      token: borrowedAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,
@@ -398,8 +429,8 @@ describe('borrow', () => {
   });
 
   it('works as expected (erc20), posting fcash collateral', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const lendCurrencyId = NotionalV2CurrencyId.Dai;
     const borrowCurrencyId = NotionalV2CurrencyId.Usdc;
@@ -417,7 +448,12 @@ describe('borrow', () => {
     const lendAmount = underlyingAssetRawAmount.mul(fCashUnit);
     const borrowAmount = borrowedAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,
@@ -480,7 +516,7 @@ describe('borrow', () => {
   });
 
   it('works as expected (weth), posting erc20 collateral', async () => {
-    const collateralAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const collateralAsset = new StandardToken(fork.config.primitives.dai, provider);
 
     const collateralCurrencyId = NotionalV2CurrencyId.Dai;
     const borrowCurrencyId = NotionalV2CurrencyId.Eth;
@@ -494,7 +530,12 @@ describe('borrow', () => {
 
     const borrowAmount = borrowedAssetRawAmount.mul(fCashUnit);
 
-    await collateralAsset.transfer(vaultProxyUsed, collateralAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: collateralAssetAmount.mul(10),
+      provider,
+      token: collateralAsset,
+    });
 
     const borrowReceipt = await notionalV2PositionBorrow({
       comptrollerProxy: comptrollerProxyUsed,
@@ -536,7 +577,7 @@ describe('borrow', () => {
   // Posting weth collateral tested in AddCollateral tests
 
   it('works as expected (partially offsetting fCash loan)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const lendCurrencyId = NotionalV2CurrencyId.Dai;
@@ -549,7 +590,12 @@ describe('borrow', () => {
     const lendAmount = underlyingAssetRawAmount.mul(fCashUnit);
     const borrowAmount = lendAmount.add(10);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     const vaultProxyUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(vaultProxyUsed);
     const externalPositionUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(notionalV2Position);
@@ -615,7 +661,7 @@ describe('borrow', () => {
   });
 
   it('works as expected (fully offsetting fCash loan)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('1000');
@@ -628,7 +674,12 @@ describe('borrow', () => {
     const lendAmount = underlyingAssetRawAmount.mul(fCashUnit);
     const borrowAmount = lendAmount;
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     const vaultProxyUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(vaultProxyUsed);
     const externalPositionUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(notionalV2Position);
@@ -692,7 +743,7 @@ describe('borrow', () => {
 
 describe('redeem', () => {
   it('works as expected (partial redemption)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('1000');
@@ -703,7 +754,12 @@ describe('redeem', () => {
 
     const redeemCashAmount = 100;
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,
@@ -766,7 +822,7 @@ describe('redeem', () => {
   });
 
   it('works as expected (full redemption)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('1000');
@@ -775,7 +831,12 @@ describe('redeem', () => {
 
     const fCashAmount = underlyingAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,
@@ -837,7 +898,7 @@ describe('redeem', () => {
   });
 
   it('works as expected (weth)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const underlyingAsset = new StandardToken(fork.config.weth, provider);
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
 
     const underlyingAssetRawAmount = BigNumber.from('100');
@@ -848,7 +909,12 @@ describe('redeem', () => {
 
     const redeemCashAmount = 100;
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,
@@ -913,7 +979,7 @@ describe('redeem', () => {
 
 describe('getManagedAssets', () => {
   it('works as expected: one pre-settlement and one post-settlement loan of the same underlying asset (and one borrow to ignore)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const yieldAsset = fork.config.compound.ctokens.cdai;
 
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
@@ -924,7 +990,12 @@ describe('getManagedAssets', () => {
 
     const fCashAmount = BigNumber.from('10000');
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     const vaultProxyUnderlyingAssetBalanceBefore = await underlyingAsset.balanceOf(vaultProxyUsed);
 
@@ -993,8 +1064,8 @@ describe('getManagedAssets', () => {
 
 describe('getDebtAssets', () => {
   it('works as expected: one pre-settlement and one post-settlement borrow of the same underlying asset (and one lend to ignore)', async () => {
-    const underlyingAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const underlyingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const borrowedAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
     const borrowedAssetUnit = await getAssetUnit(borrowedAsset);
@@ -1012,7 +1083,12 @@ describe('getDebtAssets', () => {
     const lendAmount = underlyingAssetRawAmount.mul(fCashUnit);
     const borrowAmount = borrowedAssetRawAmount.mul(fCashUnit);
 
-    await underlyingAsset.transfer(vaultProxyUsed, underlyingAssetAmount.mul(10));
+    await seedAccount({
+      account: vaultProxyUsed,
+      amount: underlyingAssetAmount.mul(10),
+      provider,
+      token: underlyingAsset,
+    });
 
     await notionalV2PositionLend({
       comptrollerProxy: comptrollerProxyUsed,

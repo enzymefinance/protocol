@@ -17,6 +17,7 @@ import {
   getAssetBalances,
   poolTogetherV4Lend,
   poolTogetherV4Redeem,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -136,11 +137,11 @@ describe('lend', () => {
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await token.decimals());
     const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
-    await token.transfer(vaultProxy, amount);
+    await seedAccount({ provider, account: vaultProxy, amount, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -179,11 +180,11 @@ describe('redeem', () => {
       signer: fundOwner,
     });
 
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], whales.ptUsdc);
+    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
     const amount = utils.parseUnits('1', await ptToken.decimals());
     const token = new StandardToken(fork.config.primitives.usdc, provider);
 
-    await ptToken.transfer(vaultProxy, amount);
+    await seedAccount({ provider, account: vaultProxy, amount, token: ptToken });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

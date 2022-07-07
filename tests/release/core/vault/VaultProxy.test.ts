@@ -18,6 +18,7 @@ import {
   createVaultProxy,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -283,7 +284,7 @@ describe('buyBackProtocolFeeShares', () => {
     beforeEach(async () => {
       protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
       [fundOwner, fundAccessor] = fork.accounts;
-      mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+      mln = new StandardToken(fork.config.primitives.mln, provider);
 
       const vaultLib = await VaultLib.deploy(
         fork.deployer,
@@ -309,8 +310,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // Seed the fund with MLN so it can buy back shares
       const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
-
-      await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
+      await seedAccount({ account: vaultProxy, amount: protocolFeeRecipientMlnSeedAmount, provider, token: mln });
     });
 
     it('cannot be called by the fundOwner', async () => {
@@ -383,7 +383,7 @@ describe('buyBackProtocolFeeShares', () => {
     it('happy path', async () => {
       const protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
       const [fundOwner, fundAccessor] = fork.accounts;
-      const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+      const mln = new StandardToken(fork.config.primitives.mln, provider);
       const mlnBurner = randomAddress();
 
       const vaultLib = await VaultLib.deploy(
@@ -410,8 +410,7 @@ describe('buyBackProtocolFeeShares', () => {
 
       // Seed the fund with MLN so it can buy back shares
       const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
-
-      await mln.transfer(vaultProxy, protocolFeeRecipientMlnSeedAmount);
+      await seedAccount({ account: vaultProxy, amount: protocolFeeRecipientMlnSeedAmount, provider, token: mln });
 
       const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
       const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);

@@ -6,6 +6,7 @@ import {
   feeManagerConfigArgs,
   managementFeeConfigArgs,
   managementFeeConvertRateToScaledPerSecondRate,
+  ONE_DAY_IN_SECONDS,
   performanceFeeConfigArgs,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -43,10 +44,10 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       fundDeployer = fork.deployment.fundDeployer;
 
-      denominationAsset =
-        denominationAssetId === 'weth'
-          ? new StandardToken(fork.config.weth, whales.weth)
-          : new StandardToken(fork.config.primitives[denominationAssetId], whales[denominationAssetId]);
+      denominationAsset = new StandardToken(
+        denominationAssetId === 'weth' ? fork.config.weth : fork.config.primitives[denominationAssetId],
+        provider,
+      );
 
       // Create a fund with management and performance fee
       const managementFeeSettings = managementFeeConfigArgs({
@@ -70,6 +71,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         fundOwner,
         investment: {
           buyer: investor,
+          provider,
           seedBuyer: true,
         },
         signer: fundOwner,
@@ -79,17 +81,18 @@ describe.each([['weth' as const], ['usdc' as const]])(
       vaultProxy = createFundTx.vaultProxy;
 
       // Make both fees able to settle by adding free MLN (performance) and warping time (management)
-      const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+      const mln = new StandardToken(fork.config.primitives.mln, provider);
       const mlnUnit = await getAssetUnit(mln);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [mlnUnit],
         assets: [mln],
         comptrollerProxy,
         integrationManager: fork.deployment.integrationManager,
         signer: fundOwner,
       });
-      await provider.send('evm_increaseTime', [60 * 60 * 24 * 30]);
+      await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS * 30]);
 
       // Settle fees
       await callOnExtension({

@@ -32,7 +32,7 @@ beforeAll(async () => {
   valueInterpreter = fork.deployment.valueInterpreter;
 
   // Fund config and contracts
-  denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+  denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
@@ -55,6 +55,7 @@ beforeAll(async () => {
     investment: {
       buyer: fundOwner,
       seedBuyer: true,
+      provider,
     },
 
     signer: fundOwner,
@@ -79,6 +80,7 @@ describe('unsupported denomination asset', () => {
         buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
+        provider,
       }),
     ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
   });
@@ -91,6 +93,7 @@ describe('unsupported denomination asset', () => {
       minIncomingAssetAmount: 1,
       outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
       path: [denominationAsset, tradingAsset],
+      provider,
       uniswapV2ExchangeAdapter,
       vaultProxy,
     });
@@ -105,6 +108,7 @@ describe('unsupported denomination asset', () => {
         minIncomingAssetAmount: 1,
         outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
         path: [tradingAsset, denominationAsset],
+        provider,
         uniswapV2ExchangeAdapter,
         vaultProxy,
       }),
@@ -135,6 +139,7 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
         buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
+        provider,
       }),
     ).rejects.toBeRevertedWith('Unsupported _quoteAsset');
   });
@@ -147,6 +152,7 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
       minIncomingAssetAmount: 1,
       outgoingAssetAmount: (await denominationAsset.balanceOf(vaultProxy)).div(2),
       path: [denominationAsset, tradingAsset],
+      provider,
       uniswapV2ExchangeAdapter,
       vaultProxy,
     });
@@ -160,6 +166,7 @@ describe('denomination asset supported only via RevertingPriceFeed', () => {
       minIncomingAssetAmount: 1,
       outgoingAssetAmount: (await tradingAsset.balanceOf(vaultProxy)).div(2),
       path: [tradingAsset, denominationAsset],
+      provider,
       uniswapV2ExchangeAdapter,
       vaultProxy,
     });

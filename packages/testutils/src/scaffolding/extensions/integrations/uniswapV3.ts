@@ -1,5 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
@@ -9,6 +9,8 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumber, BigNumberish } from 'ethers';
 
+import { seedAccount } from '../../../accounts';
+
 export async function uniswapV3TakeOrder({
   comptrollerProxy,
   integrationManager,
@@ -17,6 +19,7 @@ export async function uniswapV3TakeOrder({
   pathAddresses,
   pathFees,
   outgoingAssetAmount,
+  provider,
   minIncomingAssetAmount = 1,
   seedFund = false,
 }: {
@@ -27,14 +30,13 @@ export async function uniswapV3TakeOrder({
   pathAddresses: StandardToken[];
   pathFees: BigNumber[];
   outgoingAssetAmount: BigNumberish;
+  provider: EthereumTestnetProvider;
   minIncomingAssetAmount?: BigNumberish;
   seedFund?: boolean;
 }) {
   if (seedFund) {
-    // Seed the VaultProxy with enough outgoingAsset for the tx
     const vaultProxy = await comptrollerProxy.getVaultProxy();
-
-    await pathAddresses[0].transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: pathAddresses[0] });
   }
 
   const takeOrderArgs = uniswapV3TakeOrderArgs({

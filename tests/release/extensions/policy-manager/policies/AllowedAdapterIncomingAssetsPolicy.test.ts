@@ -16,7 +16,7 @@ import {
   StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, mockGenericSwap, seedAccount } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 
@@ -78,11 +78,11 @@ describe('validateRule', () => {
     mockGenericIntegratee = await MockGenericIntegratee.deploy(fork.deployer);
     mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     allowedAsset1 = denominationAsset;
-    allowedAsset2 = new StandardToken(fork.config.primitives.mln, whales.mln);
-    notAllowedAsset = new StandardToken(fork.config.primitives.dai, whales.dai);
+    allowedAsset2 = new StandardToken(fork.config.primitives.mln, provider);
+    notAllowedAsset = new StandardToken(fork.config.primitives.dai, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -112,12 +112,18 @@ describe('validateRule', () => {
   it('does not allow an unlisted asset', async () => {
     const incomingAssetAmount = 123;
 
-    await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
-    await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
-    await notAllowedAsset.transfer(mockGenericIntegratee, incomingAssetAmount);
+    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset1 });
+    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset2 });
+    await seedAccount({
+      account: mockGenericIntegratee,
+      amount: incomingAssetAmount,
+      provider,
+      token: notAllowedAsset,
+    });
 
     await expect(
       mockGenericSwap({
+        provider,
         actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount, incomingAssetAmount],
         comptrollerProxy,
         signer: fundOwner,
@@ -132,10 +138,11 @@ describe('validateRule', () => {
   it('allows listed assets', async () => {
     const incomingAssetAmount = 123;
 
-    await allowedAsset1.transfer(mockGenericIntegratee, incomingAssetAmount);
-    await allowedAsset2.transfer(mockGenericIntegratee, incomingAssetAmount);
+    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset1 });
+    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset2 });
 
     await mockGenericSwap({
+      provider,
       actualIncomingAssetAmounts: [incomingAssetAmount, incomingAssetAmount],
       comptrollerProxy,
       signer: fundOwner,

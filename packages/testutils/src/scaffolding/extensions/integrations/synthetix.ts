@@ -1,4 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
+import type { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
@@ -18,6 +19,8 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumberish, Signer } from 'ethers';
 import { utils } from 'ethers';
+
+import { seedAccount } from '../../../accounts';
 
 export async function synthetixAssignExchangeDelegate({
   comptrollerProxy,
@@ -76,12 +79,14 @@ export async function synthetixTakeOrder({
   outgoingAsset,
   outgoingAssetAmount = utils.parseEther('1'),
   minIncomingSusdAmount = utils.parseEther('1'),
+  provider,
   seedFund = false,
 }: {
   comptrollerProxy: ComptrollerLib;
   vaultProxy: VaultLib;
   integrationManager: IntegrationManager;
   fundOwner: Signer;
+  provider: EthereumTestnetProvider;
   synthetixAdapter: SynthetixAdapter;
   outgoingAsset: StandardToken;
   outgoingAssetAmount?: BigNumberish;
@@ -89,8 +94,7 @@ export async function synthetixTakeOrder({
   seedFund?: boolean;
 }) {
   if (seedFund) {
-    // Seed the VaultProxy with enough outgoingAsset for the tx
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
   }
 
   const takeOrderArgs = synthetixTakeOrderArgs({

@@ -15,9 +15,11 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  getAssetUnit,
   idleClaimRewards,
   idleLend,
   idleRedeem,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -73,7 +75,7 @@ describe('parseAssetsForAction', () => {
       const [fundOwner] = fork.accounts;
       const idleAdapter = fork.deployment.idleAdapter;
       const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-      const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
+      const underlying = new StandardToken(fork.config.primitives.dai, provider);
 
       // Create fund and acquire idleTokens
       const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -82,9 +84,8 @@ describe('parseAssetsForAction', () => {
         fundOwner,
         signer: fundOwner,
       });
-      const outgoingUnderlyingAmount = utils.parseUnits('1', await underlying.decimals());
-
-      await underlying.transfer(vaultProxy, outgoingUnderlyingAmount);
+      const outgoingUnderlyingAmount = await getAssetUnit(underlying);
+      await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount, provider, token: underlying });
       await idleLend({
         comptrollerProxy,
         fundOwner,
@@ -202,7 +203,7 @@ describe('claimRewards', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const underlying = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
@@ -212,9 +213,8 @@ describe('claimRewards', () => {
     });
 
     // Seed the fund with idleTokens to start accruing rewards
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-
-    await underlying.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
+    const outgoingUnderlyingAmount = await getAssetUnit(underlying);
+    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token: underlying });
 
     await idleLend({
       comptrollerProxy,
@@ -277,7 +277,7 @@ describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const [fundOwner] = fork.accounts;
     const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const outgoingToken = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
@@ -287,9 +287,9 @@ describe('lend', () => {
     });
 
     // Seed the fund with more than the necessary amount of outgoing asset
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleToken.decimals());
+    const outgoingUnderlyingAmount = await getAssetUnit(outgoingToken);
 
-    await outgoingToken.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
+    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token: outgoingToken });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -326,7 +326,7 @@ describe('redeem', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
     const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const token = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const token = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
@@ -336,9 +336,8 @@ describe('redeem', () => {
     });
 
     // Seed the fund with more than the necessary amount of outgoing asset
-    const outgoingUnderlyingAmount = utils.parseUnits('1', await idleTokenERC20.decimals());
-
-    await token.transfer(vaultProxy, outgoingUnderlyingAmount.mul(2));
+    const outgoingUnderlyingAmount = await getAssetUnit(token);
+    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token });
 
     await idleLend({
       comptrollerProxy,
@@ -409,7 +408,7 @@ describe('rewards behavior', () => {
     const idleAdapter = fork.deployment.idleAdapter;
     const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
     const idleTokenERC20 = new StandardToken(idleToken, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.dai, whales.dai);
+    const outgoingToken = new StandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: new StandardToken(fork.config.weth, fundOwner),
@@ -419,9 +418,9 @@ describe('rewards behavior', () => {
     });
 
     // Lend for idleToken
-    const lendAmount = utils.parseUnits('2', await outgoingToken.decimals());
+    const lendAmount = (await getAssetUnit(outgoingToken)).mul(2);
+    await seedAccount({ account: vaultProxy, amount: lendAmount, provider, token: outgoingToken });
 
-    await outgoingToken.transfer(vaultProxy, lendAmount);
     await idleLend({
       comptrollerProxy,
       fundOwner,

@@ -10,6 +10,7 @@ import {
   GasRelayPaymasterLib,
   IGsnRelayHub,
   IntegrationManagerActionId,
+  ONE_YEAR_IN_SECONDS,
   sighash,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -29,6 +30,7 @@ import {
   getAssetUnit,
   redeemSharesInKind,
   relayTransaction,
+  seedAccount,
   setupGasRelayerPaymaster,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -42,7 +44,7 @@ beforeEach(async () => {
 describe('gas relayer', () => {
   it('should take deposit on deployment', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -55,6 +57,7 @@ describe('gas relayer', () => {
     await setupGasRelayerPaymaster({
       fundAccessor: comptrollerProxy,
       signer: fundOwner,
+      provider,
       startingBalance,
       vaultProxy,
       weth,
@@ -69,7 +72,7 @@ describe('gas relayer', () => {
 
   it('should not allow deployment if there is not enough weth in the fund', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -78,13 +81,13 @@ describe('gas relayer', () => {
     });
     const startingBalance = utils.parseUnits('0.09', 18);
 
-    await weth.transfer(vaultProxy, startingBalance);
+    await seedAccount({ account: vaultProxy, amount: startingBalance, provider, token: weth });
     await expect(comptrollerProxy.deployGasRelayPaymaster()).rejects.toBeReverted();
   });
 
   it('fund owner should be able to withdraw gas relayer deposit', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -96,6 +99,7 @@ describe('gas relayer', () => {
     const vaultPaymaster = await setupGasRelayerPaymaster({
       fundAccessor: comptrollerProxy,
       signer: fundOwner,
+      provider,
       startingBalance,
       vaultProxy,
       weth,
@@ -113,7 +117,7 @@ describe('gas relayer', () => {
 
   it('should relay and not pull from fund if flag set to false', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -127,6 +131,7 @@ describe('gas relayer', () => {
     const vaultPaymaster = await setupGasRelayerPaymaster({
       fundAccessor: comptrollerProxy,
       signer: fundOwner,
+      provider,
       vaultProxy,
       weth,
     });
@@ -174,7 +179,7 @@ describe('gas relayer', () => {
 
   it('should relay and pull funds to top up deposit', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -187,6 +192,7 @@ describe('gas relayer', () => {
     const vaultPaymaster = await setupGasRelayerPaymaster({
       fundAccessor: comptrollerProxy,
       signer: fundOwner,
+      provider,
       startingBalance,
       vaultProxy,
       weth,
@@ -250,8 +256,8 @@ describe('expected relayable txs', () => {
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-    weth = new StandardToken(fork.config.weth, whales.weth);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    weth = new StandardToken(fork.config.weth, provider);
 
     // relay args
     relayHub = fork.config.gsn.relayHub;
@@ -271,6 +277,7 @@ describe('expected relayable txs', () => {
     const wethUnit = await getAssetUnit(weth);
 
     await addNewAssetsToFund({
+      provider,
       amounts: [wethUnit],
       assets: [weth],
       comptrollerProxy,
@@ -289,6 +296,7 @@ describe('expected relayable txs', () => {
         buyer: fundOwner,
         comptrollerProxy,
         denominationAsset,
+        provider,
         seedBuyer: true,
       });
 
@@ -305,8 +313,8 @@ describe('expected relayable txs', () => {
     it('happy path: buyBackProtocolFeeShares', async () => {
       const protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
 
-      denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
-      const mln = new StandardToken(fork.config.primitives.mln, whales.mln);
+      denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+      const mln = new StandardToken(fork.config.primitives.mln, provider);
 
       const newFundRes = await createNewFund({
         denominationAsset,
@@ -317,6 +325,7 @@ describe('expected relayable txs', () => {
           buyer: fundOwner,
           investmentAmount: await getAssetUnit(denominationAsset),
           seedBuyer: true,
+          provider,
         },
 
         signer: fundOwner,
@@ -327,6 +336,7 @@ describe('expected relayable txs', () => {
       const wethUnit = await getAssetUnit(weth);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [wethUnit],
         assets: [weth],
         comptrollerProxy,
@@ -340,7 +350,7 @@ describe('expected relayable txs', () => {
 
       // Warp time to accrue protocol fee, then pay the protocol fee to issue shares to the ProtocolFeeReserveProxy
 
-      const halfYearInSeconds = (60 * 60 * 24 * 365.25) / 2;
+      const halfYearInSeconds = ONE_YEAR_IN_SECONDS / 2;
 
       await provider.send('evm_increaseTime', [halfYearInSeconds]);
 
@@ -358,6 +368,7 @@ describe('expected relayable txs', () => {
       // Seed the fund with more MLN than needed to buyback the target shares
       // 1 MLN : 1 USDC is more than enough
       await addNewAssetsToFund({
+        provider,
         amounts: [await getAssetUnit(mln)],
         assets: [mln],
         comptrollerProxy,
@@ -504,6 +515,7 @@ describe('expected relayable txs', () => {
       const wethUnit = await getAssetUnit(weth);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [wethUnit],
         assets: [weth],
         comptrollerProxy: newFund.comptrollerProxy,
@@ -600,6 +612,7 @@ describe('expected relayable txs', () => {
       const wethUnit = await getAssetUnit(weth);
 
       await addNewAssetsToFund({
+        provider,
         amounts: [wethUnit],
         assets: [weth],
         comptrollerProxy: newFund.comptrollerProxy,

@@ -3,7 +3,7 @@ import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ONE_HUNDRED_PERCENT_IN_BPS, StandardToken, TestTreasurySplitterMixin } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
@@ -93,11 +93,10 @@ describe('claimTokenAmountTo', () => {
 
     await testTreasurySplitterMixin.setSplitRatio([user, user2Address], [feePercent1, feePercent2]);
 
-    token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    token = new StandardToken(fork.config.primitives.usdc, provider);
 
-    // Seed the splitter with some of a token to claim
     initialSplitterTokenBal = await getAssetUnit(token);
-    await token.transfer(testTreasurySplitterMixin, initialSplitterTokenBal);
+    await seedAccount({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
   });
 
   it('does not allow an amount greater than claimable', async () => {
@@ -139,7 +138,7 @@ describe('Walkthrough', () => {
     const [user1, user2] = fork.accounts;
     const feePercent1 = 2500;
     const feePercent2 = 7500;
-    const token = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const token = new StandardToken(fork.config.primitives.usdc, provider);
     const tokenUnit = await getAssetUnit(token);
 
     // Set the desired split ratio
@@ -151,8 +150,7 @@ describe('Walkthrough', () => {
 
     // Seed the splitter with some of a token to claim
     const initialSplitterTokenBal = tokenUnit;
-
-    await token.transfer(testTreasurySplitterMixin, initialSplitterTokenBal);
+    await seedAccount({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
 
     // Validate the claimable amount for each user
     const user1ClaimableAmount = await testTreasurySplitterMixin.getTokenBalClaimableForUser(user1, token);
@@ -183,7 +181,13 @@ describe('Walkthrough', () => {
     );
 
     // Add the same amount of tokens to the splitter, doubling the cumulative total amount
-    await token.transfer(testTreasurySplitterMixin, initialSplitterTokenBal);
+    const testTreasurySplitterMixinBal = await token.balanceOf(testTreasurySplitterMixin);
+    await seedAccount({
+      account: testTreasurySplitterMixin,
+      amount: testTreasurySplitterMixinBal.add(initialSplitterTokenBal),
+      provider,
+      token,
+    });
     const cumulativeTotalBal = initialSplitterTokenBal.mul(2);
 
     // Validate that user1 and user2 are owed the correct amounts

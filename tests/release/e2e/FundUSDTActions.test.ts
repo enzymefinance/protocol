@@ -1,7 +1,14 @@
 import { StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, getAssetBalances, uniswapV2TakeOrder } from '@enzymefinance/testutils';
-import { BigNumber, utils } from 'ethers';
+import {
+  createNewFund,
+  deployProtocolFixture,
+  getAssetBalances,
+  getAssetUnit,
+  seedAccount,
+  uniswapV2TakeOrder,
+} from '@enzymefinance/testutils';
+import { BigNumber } from 'ethers';
 
 let fork: ProtocolDeployment;
 
@@ -13,7 +20,7 @@ describe('adapters', () => {
   // Confirms that approvals from adapters to external protocols work as expected
   it('can swap USDT for WETH via Uniswap', async () => {
     const weth = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.usdt, whales.usdt);
+    const outgoingAsset = new StandardToken(fork.config.primitives.usdt, provider);
     const incomingAsset = weth;
     const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
@@ -26,7 +33,7 @@ describe('adapters', () => {
     });
 
     const path = [outgoingAsset, incomingAsset];
-    const outgoingAssetAmount = utils.parseUnits('1', await outgoingAsset.decimals());
+    const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
 
     const [preTxIncomingAssetBalance] = await getAssetBalances({
@@ -34,8 +41,7 @@ describe('adapters', () => {
       assets: [incomingAsset],
     });
 
-    // Seed fund and take order
-    await outgoingAsset.transfer(vaultProxy, outgoingAssetAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
     await uniswapV2TakeOrder({
       comptrollerProxy,
       fundOwner,
@@ -43,6 +49,7 @@ describe('adapters', () => {
       minIncomingAssetAmount: amountsOut[1],
       outgoingAssetAmount,
       path,
+      provider,
       uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
       vaultProxy,
     });

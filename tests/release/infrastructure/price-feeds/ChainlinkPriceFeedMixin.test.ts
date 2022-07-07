@@ -64,8 +64,8 @@ async function swapDaiAggregatorForUsd({
 describe('primitives gas costs', () => {
   it('adds to calcGav for weth-denominated fund (same rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -80,6 +80,7 @@ describe('primitives gas costs', () => {
 
     // Seed investor and buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -92,6 +93,7 @@ describe('primitives gas costs', () => {
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
+      provider,
       amounts: [await getAssetUnit(dai)],
       assets: [dai],
       comptrollerProxy,
@@ -108,8 +110,8 @@ describe('primitives gas costs', () => {
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new StandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
     const valueInterpreter = fork.deployment.valueInterpreter;
@@ -131,6 +133,7 @@ describe('primitives gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -143,6 +146,7 @@ describe('primitives gas costs', () => {
 
     // Seed fund with dai and add it to tracked assets
     await addNewAssetsToFund({
+      provider,
       amounts: [await getAssetUnit(dai)],
       assets: [dai],
       comptrollerProxy,

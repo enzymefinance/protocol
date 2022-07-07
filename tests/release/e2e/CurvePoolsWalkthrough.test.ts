@@ -27,12 +27,12 @@ import {
   curveUnstake,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
 // When adding a new pool to this test suite, update both `poolInfo` and `poolKeys`
-
 let fork: ProtocolDeployment;
 let curveLiquidityAdapter: CurveLiquidityAdapter;
 let curveRegistry: CurveRegistry;
@@ -42,7 +42,6 @@ let poolInfo: Record<
     poolAddress: string;
     gaugeTokenAddress: string | null;
     assetToLendAddress: string;
-    assetToLendWhale: SignerWithAddress;
     supportsOneCoinRedeem: boolean;
     hasReentrantVirtualPrice: boolean;
   }
@@ -57,7 +56,6 @@ beforeAll(async () => {
     // old pool, pre-templates
     '3pool': {
       assetToLendAddress: fork.config.primitives.dai,
-      assetToLendWhale: whales.dai,
       gaugeTokenAddress: null,
       hasReentrantVirtualPrice: fork.config.curve.pools['3pool'].hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools['3pool'].pool,
@@ -65,7 +63,6 @@ beforeAll(async () => {
     },
     aave: {
       assetToLendAddress: fork.config.aave.atokens.ausdc[0],
-      assetToLendWhale: whales.ausdc,
       gaugeTokenAddress: fork.config.curve.pools.aave.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.aave.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.aave.pool,
@@ -75,7 +72,6 @@ beforeAll(async () => {
     // MIM-UST
     mim: {
       assetToLendAddress: fork.config.primitives.ust,
-      assetToLendWhale: whales.ust,
       gaugeTokenAddress: fork.config.curve.pools.mim.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.mim.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.mim.pool,
@@ -83,7 +79,6 @@ beforeAll(async () => {
     },
     seth: {
       assetToLendAddress: fork.config.weth,
-      assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.seth.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.seth.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.seth.pool,
@@ -91,7 +86,6 @@ beforeAll(async () => {
     },
     steth: {
       assetToLendAddress: fork.config.weth,
-      assetToLendWhale: whales.weth,
       gaugeTokenAddress: fork.config.curve.pools.steth.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.steth.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.steth.pool,
@@ -100,7 +94,6 @@ beforeAll(async () => {
     // coins(int128) signature, no one-coin-redeem
     usdt: {
       assetToLendAddress: fork.config.primitives.usdt,
-      assetToLendWhale: whales.usdt,
       gaugeTokenAddress: null,
       hasReentrantVirtualPrice: fork.config.curve.pools.usdt.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.usdt.pool,
@@ -109,7 +102,6 @@ beforeAll(async () => {
     // metapool (from main registry)
     ust: {
       assetToLendAddress: fork.config.primitives.ust,
-      assetToLendWhale: whales.ust,
       gaugeTokenAddress: fork.config.curve.pools.ust.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.ust.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.ust.pool,
@@ -132,7 +124,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     integrationManager = fork.deployment.integrationManager;
     valueInterpreter = fork.deployment.valueInterpreter;
 
-    assetToLend = new StandardToken(poolInfo[poolKey].assetToLendAddress, poolInfo[poolKey].assetToLendWhale);
+    assetToLend = new StandardToken(poolInfo[poolKey].assetToLendAddress, provider);
     assetToLendAmount = await getAssetUnit(assetToLend);
 
     // Parse pool info
@@ -245,7 +237,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
-    await assetToLend.transfer(vaultProxy, assetToLendAmount);
+    await seedAccount({ provider, account: vaultProxy, amount: assetToLendAmount, token: assetToLend });
   });
 
   it('can lend', async () => {

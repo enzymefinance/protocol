@@ -14,6 +14,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   removeTrackedAssetsFromVault,
+  seedAccount,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
@@ -93,8 +94,8 @@ describe('validateRule', () => {
     valueInterpreter = fork.deployment.valueInterpreter;
     weth = new StandardToken(fork.config.weth, provider);
     assetsToUntrack = [
-      new StandardToken(fork.config.primitives.dai, whales.dai),
-      new StandardToken(fork.config.primitives.usdt, whales.usdt),
+      new StandardToken(fork.config.primitives.dai, provider),
+      new StandardToken(fork.config.primitives.usdt, provider),
     ];
 
     const newFundRes = await createNewFund({
@@ -122,6 +123,7 @@ describe('validateRule', () => {
 
     // Add just under the allowed dust threshold of each asset to the fund
     await addNewAssetsToFund({
+      provider,
       amounts: dustToleranceInAssetsToRemove.map((dust) => dust.mul(99).div(100)),
       assets: assetsToUntrack,
       comptrollerProxy,
@@ -139,7 +141,13 @@ describe('validateRule', () => {
   it('does not allow any asset amount that is greater than the dust value', async () => {
     // Add enough of one of the assetsToUntrack to put it over the dust threshold.
     // Sending 2% of the threshold accomplishes this.
-    await assetsToUntrack[0].transfer(vaultProxy, dustToleranceInAssetsToRemove[0].mul(2).div(100));
+    const balance = await assetsToUntrack[0].balanceOf(vaultProxy);
+    await seedAccount({
+      account: vaultProxy,
+      amount: balance.add(dustToleranceInAssetsToRemove[0].mul(2).div(100)),
+      provider,
+      token: assetsToUntrack[0],
+    });
 
     await expect(
       removeTrackedAssetsFromVault({

@@ -45,7 +45,7 @@ async function snapshot() {
     settings: policiesSettingsData,
   });
 
-  const denominationAsset = new WETH(config.weth, whales.weth);
+  const denominationAsset = new WETH(config.weth, provider);
 
   return {
     accounts: remainingAccounts,
@@ -673,6 +673,7 @@ describe('validatePolicies', () => {
 
     await expect(
       mockGenericSwap({
+        provider,
         comptrollerProxy,
         signer: fundOwner,
         integrationManager,

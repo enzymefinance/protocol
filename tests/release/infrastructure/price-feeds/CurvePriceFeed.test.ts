@@ -4,6 +4,7 @@ import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   CurvePriceFeed,
   ICurveLiquidityPool,
+  ITestStethToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
   StandardToken,
 } from '@enzymefinance/protocol';
@@ -15,7 +16,7 @@ import {
   createNewFund,
   curveLend,
   deployProtocolFixture,
-  getAssetUnit,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -28,7 +29,7 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, whales.weth);
+    const weth = new StandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -43,6 +44,7 @@ describe('derivative gas costs', () => {
 
     // Buy shares to add denomination asset
     await buyShares({
+      provider,
       buyer: investor,
       comptrollerProxy,
       denominationAsset,
@@ -150,9 +152,9 @@ describe('calcUnderlyingValues', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
     const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    const steth = new StandardToken(fork.config.lido.steth, whales.lidoSteth);
+    const steth = new ITestStethToken(fork.config.lido.steth, provider);
 
-    const stethUnit = await getAssetUnit(steth);
+    const stethUnit = utils.parseUnits('1', await steth.decimals());
 
     const initialVirtualPrice = await curvePool.get_virtual_price();
 
@@ -161,8 +163,16 @@ describe('calcUnderlyingValues', () => {
 
     assertNoEvent(receipt1, 'ValidatedVirtualPriceForPoolUpdated');
 
-    // Send a small amount steth to NOT push the virtual price significantly
-    await steth.transfer(curvePool, stethUnit);
+    // Slightly increase steth balance to NOT push the virtual price significantly
+    const curvePoolBalance = await steth.balanceOf(curvePool);
+    const slightlyIncreasedBalance = curvePoolBalance;
+    const rebasingFactor = await steth.getPooledEthByShares(stethUnit);
+    await seedAccount({
+      provider,
+      account: curvePool,
+      amount: slightlyIncreasedBalance.mul(stethUnit).div(rebasingFactor),
+      token: steth,
+    });
 
     // The validated virtual price should NOT have been updated
     const receipt2 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);
@@ -172,7 +182,8 @@ describe('calcUnderlyingValues', () => {
 
     // Send enough steth to push the virtual price significantly.
     // At time of writing tests, boosts the virtual price by a little more than 1%.
-    await steth.transfer(curvePool, stethUnit.mul(20000));
+    const significantlyIncreasedBalance = curvePoolBalance.add(stethUnit.mul(20000));
+    await seedAccount({ provider, account: curvePool, amount: significantlyIncreasedBalance, token: steth });
 
     // The final virtual price should exceed the tolerance for a validated update
     const receipt3 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);

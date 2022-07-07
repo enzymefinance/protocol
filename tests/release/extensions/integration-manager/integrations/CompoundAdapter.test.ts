@@ -1,4 +1,6 @@
 import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
+import type { CompoundAdapter, ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   compoundArgs,
   ICERC20,
@@ -18,18 +20,28 @@ import {
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
-const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
-
+let compoundAdapter: CompoundAdapter;
+let comptrollerProxy: ComptrollerLib;
 let fork: ProtocolDeployment;
+let fundOwner: SignerWithAddress;
+let vaultProxy: VaultLib;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+  [fundOwner] = fork.accounts;
+  compoundAdapter = fork.deployment.compoundAdapter;
+  const newFund = await createNewFund({
+    denominationAsset: new StandardToken(fork.config.weth, provider),
+    fundDeployer: fork.deployment.fundDeployer,
+    fundOwner,
+    signer: fundOwner,
+  });
+  comptrollerProxy = newFund.comptrollerProxy;
+  vaultProxy = newFund.vaultProxy;
 });
 
 describe('constructor', () => {
   it('sets state vars', async () => {
-    const compoundAdapter = fork.deployment.compoundAdapter;
-
     const getCompoundPriceFeedCall = await compoundAdapter.getCompoundPriceFeed();
 
     expect(getCompoundPriceFeedCall).toMatchAddress(fork.deployment.compoundPriceFeed);
@@ -46,8 +58,6 @@ describe('constructor', () => {
 
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
-    const compoundAdapter = fork.deployment.compoundAdapter;
-
     const args = compoundArgs({
       cToken: fork.config.compound.ctokens.ccomp,
       minIncomingAssetAmount: utils.parseEther('1'),
@@ -62,8 +72,6 @@ describe('parseAssetsForAction', () => {
   });
 
   it('does not allow a bad cToken', async () => {
-    const compoundAdapter = fork.deployment.compoundAdapter;
-
     const badArgs = compoundArgs({
       cToken: randomAddress(),
       minIncomingAssetAmount: utils.parseEther('1'),
@@ -84,7 +92,6 @@ describe('parseAssetsForAction', () => {
   });
 
   it('generates expected output for lending', async () => {
-    const compoundAdapter = fork.deployment.compoundAdapter;
     const cToken = fork.config.compound.ctokens.ccomp;
     const token = fork.config.primitives.comp;
 
@@ -110,7 +117,6 @@ describe('parseAssetsForAction', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    const compoundAdapter = fork.deployment.compoundAdapter;
     const cToken = fork.config.compound.ctokens.ccomp;
     const token = fork.config.primitives.comp;
 
@@ -138,15 +144,6 @@ describe('parseAssetsForAction', () => {
 
 describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
     const lendReceipt = await assertCompoundLend({
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
@@ -154,8 +151,8 @@ describe('lend', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.dai,
       vaultProxy,
     });
 
@@ -163,15 +160,6 @@ describe('lend', () => {
   });
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
     const lendReceipt = await assertCompoundLend({
       cToken: new ICERC20(fork.config.compound.ceth, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
@@ -179,8 +167,8 @@ describe('lend', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.weth,
       vaultProxy,
     });
 
@@ -190,65 +178,40 @@ describe('lend', () => {
 
 describe('redeem', () => {
   it('works as expected when called for redeeming by a fund', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, whales.cdai),
+      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       vaultProxy,
     });
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`411524`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`428655`);
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
-    const [fundOwner] = fork.accounts;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.compound.ceth, whales.ceth),
+      cToken: new ICERC20(fork.config.compound.ceth, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       vaultProxy,
     });
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`341452`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`358583`);
   });
 });
 
 describe('claimComp', () => {
   it('should accrue COMP on the fund after lending', async () => {
-    const [fundOwner] = fork.accounts;
-    const compoundAdapter = fork.deployment.compoundAdapter;
-    const compoundComptroller = new ICompoundComptroller(compoundComptrollerAddress, fork.deployer);
+    const compoundComptroller = new ICompoundComptroller(fork.config.compound.comptroller, fork.deployer);
     const comp = new StandardToken(fork.config.primitives.comp, provider);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
 
     await assertCompoundLend({
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
@@ -257,8 +220,8 @@ describe('claimComp', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.dai,
       vaultProxy,
     });
 
@@ -278,16 +241,7 @@ describe('claimComp', () => {
   });
 
   it('should accrue COMP on the fund after lending, adapter', async () => {
-    const [fundOwner] = fork.accounts;
-    const compoundAdapter = fork.deployment.compoundAdapter;
     const comp = new StandardToken(fork.config.primitives.comp, provider);
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
 
     await assertCompoundLend({
       cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
@@ -296,8 +250,8 @@ describe('claimComp', () => {
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,
+      provider,
       tokenAmount: utils.parseEther('1'),
-      tokenWhale: whales.dai,
       vaultProxy,
     });
 
@@ -309,7 +263,7 @@ describe('claimComp', () => {
     await compoundClaim({
       cTokens: [fork.config.compound.ctokens.cdai],
       compoundAdapter,
-      compoundComptroller: compoundComptrollerAddress,
+      compoundComptroller: fork.config.compound.comptroller,
       comptrollerProxy,
       fundOwner,
       integrationManager: fork.deployment.integrationManager,

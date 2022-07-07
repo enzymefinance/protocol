@@ -17,6 +17,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   IUniswapV3NonFungibleTokenManager,
+  seedAccount,
   UniswapV3FeeAmount,
   uniswapV3LiquidityPositionAddLiquidity,
   uniswapV3LiquidityPositionCollect,
@@ -67,17 +68,16 @@ describe('init', () => {
       fork.config.uniswapV3.nonFungiblePositionManager,
       provider,
     );
-    const token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
-    const token1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    const token0 = new StandardToken(fork.config.primitives.dai, provider);
+    const token1 = new StandardToken(fork.config.primitives.usdc, provider);
     const fee = UniswapV3FeeAmount.LOW;
     const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
     const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
     const amount0Desired = await getAssetUnit(token0);
     const amount1Desired = await getAssetUnit(token1);
 
-    // Seed fund with tokens
-    await token0.transfer(vaultProxy, amount0Desired);
-    await token1.transfer(vaultProxy, amount1Desired);
+    await seedAccount({ provider, account: vaultProxy, amount: amount0Desired, token: token0 });
+    await seedAccount({ provider, account: vaultProxy, amount: amount1Desired, token: token1 });
 
     // Define Mint action calldata
     const actionArgs = uniswapV3LiquidityPositionMintArgs({
@@ -145,8 +145,8 @@ describe('receiveCallFromVault', () => {
 
   beforeEach(async () => {
     nftManager = new IUniswapV3NonFungibleTokenManager(fork.config.uniswapV3.nonFungiblePositionManager, provider);
-    token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
-    token1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    token0 = new StandardToken(fork.config.primitives.dai, provider);
+    token1 = new StandardToken(fork.config.primitives.usdc, provider);
 
     const uniswapV3LiquidityPositionAddress = (
       await createUniswapV3LiquidityPosition({
@@ -240,9 +240,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, amount0Desired);
-      await token1.transfer(vaultProxy, amount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: amount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: amount1Desired, token: token1 });
 
       const preTxNftsCount = (await uniswapV3LiquidityPosition.getNftIds()).length;
       const preVaultToken0Balance = await token0.balanceOf(vaultProxy);
@@ -332,9 +331,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.LOW);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.LOW);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -355,9 +353,8 @@ describe('receiveCallFromVault', () => {
 
       const positionsBefore = await nftManager.positions(nftId);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, addLiquidityAmount0Desired);
-      await token1.transfer(vaultProxy, addLiquidityAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: addLiquidityAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: addLiquidityAmount1Desired, token: token1 });
 
       const preVaultToken0Balance = await token0.balanceOf(vaultProxy);
       const preVaultToken1Balance = await token1.balanceOf(vaultProxy);
@@ -412,9 +409,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.LOW);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.LOW);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -467,9 +463,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.LOW);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.LOW);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       const { nftId } = await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -494,6 +489,7 @@ describe('receiveCallFromVault', () => {
         outgoingAssetAmount: utils.parseEther('10000'),
         pathAddresses: [token0, token1],
         pathFees: [BigNumber.from(UniswapV3FeeAmount.LOW)],
+        provider,
         seedFund: true,
         uniswapV3Adapter: fork.deployment.uniswapV3Adapter,
       });
@@ -503,9 +499,8 @@ describe('receiveCallFromVault', () => {
       const addLiquidityAmount0Desired = mintAmount0Desired;
       const addLiquidityAmount1Desired = mintAmount1Desired;
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, addLiquidityAmount0Desired);
-      await token1.transfer(vaultProxy, addLiquidityAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: addLiquidityAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: addLiquidityAmount1Desired, token: token1 });
 
       await uniswapV3LiquidityPositionAddLiquidity({
         amount0Desired: addLiquidityAmount0Desired,
@@ -553,9 +548,8 @@ describe('receiveCallFromVault', () => {
         const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.LOW);
         const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.LOW);
 
-        // Seed fund with tokens
-        await token0.transfer(vaultProxy, mintAmount0Desired);
-        await token1.transfer(vaultProxy, mintAmount1Desired);
+        await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+        await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
         // Mint
         const { nftId } = await uniswapV3LiquidityPositionMint({
@@ -603,9 +597,8 @@ describe('receiveCallFromVault', () => {
         const mintAmount0Desired = await getAssetUnit(token0);
         const mintAmount1Desired = await getAssetUnit(token1);
 
-        // Seed fund with tokens
-        await token0.transfer(vaultProxy, mintAmount0Desired);
-        await token1.transfer(vaultProxy, mintAmount1Desired);
+        await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+        await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
         // Mint
         const { nftId } = await uniswapV3LiquidityPositionMint({
@@ -644,10 +637,10 @@ describe('receiveCallFromVault', () => {
     it('works as expected (multiple nfts of same asset pair, and one nft of unique pool)', async () => {
       const [fundOwner] = fork.accounts;
       // Use all USD stables
-      const duplicatePairToken0 = new StandardToken(fork.config.primitives.dai, whales.dai);
-      const duplicatePairToken1 = new StandardToken(fork.config.primitives.usdt, whales.usdt);
-      const uniquePairToken0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const uniquePairToken1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+      const duplicatePairToken0 = new StandardToken(fork.config.primitives.dai, provider);
+      const duplicatePairToken1 = new StandardToken(fork.config.primitives.usdt, provider);
+      const uniquePairToken0 = new StandardToken(fork.config.primitives.busd, provider);
+      const uniquePairToken1 = new StandardToken(fork.config.primitives.usdc, provider);
 
       const duplicatePairAmount0Desired = await getAssetUnit(duplicatePairToken0);
       const duplicatePairAmount1Desired = await getAssetUnit(duplicatePairToken1);
@@ -657,11 +650,30 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.MEDIUM);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.MEDIUM);
 
-      // Seed fund with tokens
-      await duplicatePairToken0.transfer(vaultProxy, duplicatePairAmount0Desired.mul(2));
-      await duplicatePairToken1.transfer(vaultProxy, duplicatePairAmount1Desired.mul(2));
-      await uniquePairToken0.transfer(vaultProxy, uniquePairAmount0Desired);
-      await uniquePairToken1.transfer(vaultProxy, uniquePairAmount1Desired);
+      await seedAccount({
+        account: vaultProxy,
+        amount: duplicatePairAmount0Desired.mul(2),
+        provider,
+        token: duplicatePairToken0,
+      });
+      await seedAccount({
+        account: vaultProxy,
+        amount: duplicatePairAmount1Desired.mul(2),
+        provider,
+        token: duplicatePairToken1,
+      });
+      await seedAccount({
+        account: vaultProxy,
+        amount: uniquePairAmount0Desired,
+        provider,
+        token: uniquePairToken0,
+      });
+      await seedAccount({
+        account: vaultProxy,
+        amount: uniquePairAmount1Desired,
+        provider,
+        token: uniquePairToken1,
+      });
 
       // Duplicate pair #1
       await uniswapV3LiquidityPositionMint({
@@ -729,8 +741,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (wide range, different price)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.dai, whales.dai);
-      const token1 = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+      const token0 = new StandardToken(fork.config.primitives.dai, provider);
+      const token1 = new StandardToken(fork.config.primitives.usdc, provider);
 
       const mintAmount0Desired = await getAssetUnit(token0);
       const mintAmount1Desired = await getAssetUnit(token1);
@@ -738,9 +750,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = uniswapV3LiquidityPositionGetMinTick(UniswapV3FeeAmount.MEDIUM);
       const tickUpper = uniswapV3LiquidityPositionGetMaxTick(UniswapV3FeeAmount.MEDIUM);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -769,8 +780,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (wide range, same decimals, same price)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const token1 = new StandardToken(fork.config.primitives.dai, whales.dai);
+      const token0 = new StandardToken(fork.config.primitives.busd, provider);
+      const token1 = new StandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -788,9 +799,8 @@ describe('receiveCallFromVault', () => {
 
       const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -817,8 +827,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, in range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const token1 = new StandardToken(fork.config.primitives.dai, whales.dai);
+      const token0 = new StandardToken(fork.config.primitives.busd, provider);
+      const token1 = new StandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -836,9 +846,8 @@ describe('receiveCallFromVault', () => {
 
       const uniswapV3LiquidityPosition = new UniswapV3LiquidityPositionLib(uniswapV3LiquidityPositionAddress, provider);
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       await uniswapV3LiquidityPositionMint({
         amount0Desired: mintAmount0Desired,
@@ -864,8 +873,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, price above range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const token1 = new StandardToken(fork.config.primitives.dai, whales.dai);
+      const token0 = new StandardToken(fork.config.primitives.busd, provider);
+      const token1 = new StandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -873,9 +882,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = -5000;
       const tickUpper = -4000;
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       const uniswapV3LiquidityPositionAddress = (
         await createUniswapV3LiquidityPosition({
@@ -911,8 +919,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, price below range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, whales.busd);
-      const token1 = new StandardToken(fork.config.primitives.dai, whales.dai);
+      const token0 = new StandardToken(fork.config.primitives.busd, provider);
+      const token1 = new StandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -920,9 +928,8 @@ describe('receiveCallFromVault', () => {
       const tickLower = 4000;
       const tickUpper = 5000;
 
-      // Seed fund with tokens
-      await token0.transfer(vaultProxy, mintAmount0Desired);
-      await token1.transfer(vaultProxy, mintAmount1Desired);
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount0Desired, token: token0 });
+      await seedAccount({ provider, account: vaultProxy, amount: mintAmount1Desired, token: token1 });
 
       const uniswapV3LiquidityPositionAddress = (
         await createUniswapV3LiquidityPosition({

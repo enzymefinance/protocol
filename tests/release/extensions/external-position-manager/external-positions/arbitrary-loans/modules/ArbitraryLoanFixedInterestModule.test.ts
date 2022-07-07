@@ -24,6 +24,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  seedAccount,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
@@ -66,13 +67,13 @@ beforeEach(async () => {
   arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
   // Define common loan params
-  loanAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+  loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
   // Seed vault and borrower with asset
   loanAssetUnit = await getAssetUnit(loanAsset);
 
-  await loanAsset.transfer(vaultProxy, loanAssetUnit.mul(1000));
-  await loanAsset.transfer(borrower, loanAssetUnit.mul(1000));
+  await seedAccount({ account: vaultProxy, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
+  await seedAccount({ account: borrower, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
 });
 
 describe('configure', () => {

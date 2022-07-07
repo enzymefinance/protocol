@@ -22,6 +22,7 @@ import {
   liquityDebtPositionOpenTrove,
   liquityDebtPositionRemoveCollateral,
   liquityDebtPositionRepay,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -78,8 +79,8 @@ beforeEach(async () => {
 
   liquityDebtPosition = new LiquityDebtPositionLib(externalPositionProxy, provider);
 
-  weth = new StandardToken(fork.config.weth, whales.weth);
-  lusd = new StandardToken(fork.config.primitives.lusd, whales.lusd);
+  weth = new StandardToken(fork.config.weth, provider);
+  lusd = new StandardToken(fork.config.primitives.lusd, provider);
 
   liquityHintHelper = new ILiquityHintHelper(liquityHintHelperAddress, provider);
   liquitySortedTroves = new ILiquitySortedTroves(liquitySortedTrovesAddress, provider);
@@ -107,7 +108,7 @@ beforeEach(async () => {
   openTroveLowerHint = openTroveHintRes.lowerHint;
 
   // Seed vault with more than enough weth for many multiples of the desired collateral amount
-  await weth.transfer(vaultProxyUsed, wethBaseCollateralAmount.mul(10));
+  await seedAccount({ provider, account: vaultProxyUsed, amount: wethBaseCollateralAmount.mul(10), token: weth });
 });
 
 describe('openTrove', () => {
@@ -315,7 +316,7 @@ describe('borrowLusd', () => {
 describe('closeTrove', () => {
   it('works as expected', async () => {
     // Seed the vault with some LUSD in order to have enough to close trove
-    await lusd.transfer(vaultProxyUsed, lusdBaseBorrowAmount.mul(2));
+    await seedAccount({ provider, account: vaultProxyUsed, amount: lusdBaseBorrowAmount, token: lusd });
 
     await liquityDebtPositionOpenTrove({
       collateralAmount: wethBaseCollateralAmount,

@@ -70,7 +70,7 @@ describe('settle', () => {
     exitRateBurnFee = fork.deployment.exitRateBurnFee;
     protocolFeeTracker = fork.deployment.protocolFeeTracker;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, whales.usdc);
+    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -87,6 +87,7 @@ describe('settle', () => {
       fundOwner,
       investment: {
         buyer: investor,
+        provider,
         seedBuyer: true,
       },
       signer: fundOwner,

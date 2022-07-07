@@ -14,6 +14,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   ICompoundComptroller,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 import hre from 'hardhat';
@@ -56,16 +57,17 @@ beforeEach(async () => {
 
   const compoundDebtPositionProxyAddress = (await vaultUsed.getActiveExternalPositions.call())[0];
 
-  compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, whales.dai);
+  compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, provider);
 
-  cdai = new ICERC20(fork.config.compound.ctokens.cdai, whales.cdai);
-  ceth = new ICERC20(fork.config.compound.ceth, whales.ceth);
+  cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
+  ceth = new ICERC20(fork.config.compound.ceth, provider);
 
-  dai = new StandardToken(fork.config.primitives.dai, whales.dai);
-  weth = new StandardToken(fork.config.weth, whales.weth);
+  dai = new StandardToken(fork.config.primitives.dai, provider);
+  weth = new StandardToken(fork.config.weth, provider);
 
   // This will skip re-adding the denomination asset but will seed the vaultProxy
   await addNewAssetsToFund({
+    provider,
     amounts: [lentAmount, lentAmount],
     assets: [weth, dai],
     comptrollerProxy,
@@ -85,7 +87,7 @@ beforeEach(async () => {
   });
 
   await compoundLend({
-    cToken: new ICERC20(fork.config.compound.ceth, whales.weth),
+    cToken: new ICERC20(fork.config.compound.ceth, provider),
     cTokenAmount: 1,
     compoundAdapter: fork.deployment.compoundAdapter,
     comptrollerProxy,
@@ -97,7 +99,7 @@ beforeEach(async () => {
 
 describe('receiveCallFromVault', () => {
   it('reverts when it is called from an account different than vault', async () => {
-    await expect(compoundDebtPosition.receiveCallFromVault(utils.randomBytes(0))).rejects.toBeRevertedWith(
+    await expect(compoundDebtPosition.receiveCallFromVault.args(utils.randomBytes(0)).call()).rejects.toBeRevertedWith(
       'Only the vault can make this call',
     );
   });
@@ -714,7 +716,7 @@ describe('receiveCallFromVault', () => {
       });
 
       // Send some extra weth to pay interests
-      await weth.transfer(vaultProxyUsed, lentAmount);
+      await seedAccount({ provider, account: vaultProxyUsed, amount: lentAmount.mul(2), token: weth });
 
       const borrowedAssetsStoredBefore = await compoundDebtPosition.getDebtAssets.call();
       const repayAmounts = [constants.MaxUint256];

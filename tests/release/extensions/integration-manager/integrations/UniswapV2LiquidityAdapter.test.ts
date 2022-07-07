@@ -16,6 +16,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  seedAccount,
   uniswapV2Lend,
   uniswapV2Redeem,
 } from '@enzymefinance/testutils';
@@ -169,8 +170,8 @@ describe('lend', () => {
   });
 
   it('works as expected with exact amountADesired and amountBDesired amounts', async () => {
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const tokenA = new StandardToken(fork.config.primitives.mln, provider);
     const tokenB = weth;
     const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
     const uniswapPair = new IUniswapV2Pair(poolToken.address, provider);
@@ -209,9 +210,9 @@ describe('lend', () => {
 
     expect(expectedPoolTokens).toEqBigNumber('55323587704569840');
 
-    // Seed fund with tokens and lend
-    await tokenA.transfer(vaultProxy, amountADesired);
-    await tokenB.transfer(vaultProxy, amountBDesired);
+    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
+
     await uniswapV2Lend({
       amountADesired,
       amountAMin,
@@ -221,6 +222,7 @@ describe('lend', () => {
       fundOwner,
       integrationManager,
       minPoolTokenAmount,
+      provider,
       tokenA,
       tokenB,
       uniswapV2LiquidityAdapter,
@@ -272,8 +274,8 @@ describe('redeem', () => {
   });
 
   it('works as expected when called by a fund', async () => {
-    const weth = new StandardToken(fork.config.weth, whales.weth);
-    const tokenA = new StandardToken(fork.config.primitives.mln, whales.mln);
+    const weth = new StandardToken(fork.config.weth, provider);
+    const tokenA = new StandardToken(fork.config.primitives.mln, provider);
     const tokenB = weth;
     const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
     const [fundOwner] = fork.accounts;
@@ -291,8 +293,9 @@ describe('redeem', () => {
     const amountADesired = utils.parseEther('1');
     const amountBDesired = utils.parseEther('1');
 
-    await tokenA.transfer(vaultProxy, amountADesired);
-    await tokenB.transfer(vaultProxy, amountBDesired);
+    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
+
     await uniswapV2Lend({
       amountADesired,
       amountAMin: BigNumber.from(1),
@@ -302,6 +305,7 @@ describe('redeem', () => {
       fundOwner,
       integrationManager,
       minPoolTokenAmount: BigNumber.from(1),
+      provider,
       tokenA,
       tokenB,
       uniswapV2LiquidityAdapter,

@@ -16,6 +16,7 @@ import {
   getAssetBalances,
   paraSwapV5GenerateDummyPaths,
   paraSwapV5TakeOrder,
+  seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -128,7 +129,7 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (no network fees)', async () => {
-    const outgoingAsset = new StandardToken(fork.config.weth, whales.weth);
+    const outgoingAsset = new StandardToken(fork.config.weth, provider);
     const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
     const [fundOwner] = fork.accounts;
     const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
@@ -213,8 +214,7 @@ describe('takeOrder', () => {
 
     // Seed fund with more than what will be spent
     const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
-
-    await outgoingAsset.transfer(vaultProxy, initialOutgoingAssetBalance);
+    await seedAccount({ account: vaultProxy, amount: initialOutgoingAssetBalance, provider, token: outgoingAsset });
 
     // TODO: can call multiSwap() first to get the expected amount
 
