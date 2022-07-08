@@ -1,5 +1,11 @@
 # @enzymefinance/ethers
 
+## 4.0.5
+
+### Patch Changes
+
+- 8fe3d4a57: Publishing latest release
+
 ## 4.0.4
 
 ### Patch Changes

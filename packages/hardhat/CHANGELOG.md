@@ -1,5 +1,15 @@
 # @enzymefinance/hardhat
 
+## 4.0.5
+
+### Patch Changes
+
+- 8fe3d4a57: Publishing latest release
+- Updated dependencies [8fe3d4a57]
+  - @enzymefinance/codegen@4.0.5
+  - @enzymefinance/coverage@4.0.5
+  - @enzymefinance/ethers@4.0.5
+
 ## 4.0.4
 
 ### Patch Changes
