@@ -12,12 +12,16 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "../../../../core/fund/vault/VaultLib.sol";
 import "../utils/AddressListRegistryPerUserPolicyBase.sol";
 
 /// @title AllowedAdaptersPerManagerPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits which adapters an asset manager can use for a given fund
 contract AllowedAdaptersPerManagerPolicy is AddressListRegistryPerUserPolicyBase {
+    uint256 public constant BYPASS_FLAG = type(uint256).max;
+
     constructor(address _policyManager, address _addressListRegistry)
         public
         AddressListRegistryPerUserPolicyBase(_policyManager, _addressListRegistry)
@@ -92,10 +96,23 @@ contract AllowedAdaptersPerManagerPolicy is AddressListRegistryPerUserPolicyBase
         address _caller,
         address _adapter
     ) public view returns (bool isValid_) {
+        if (
+            _caller ==
+            VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner()
+        ) {
+            // fund owner passes rule by default
+            return true;
+        }
+
         uint256[] memory listIds = getListIdsForFundAndUser(_comptrollerProxy, _caller);
 
         if (listIds.length == 0) {
-            // A manager without any configured lists passes the rule
+            // A manager without any configured lists does not pass the rule
+            return false;
+        }
+
+        if (listIds[0] == BYPASS_FLAG) {
+            // The bypass flag is only accepted if in the first position in listIds
             return true;
         }
 

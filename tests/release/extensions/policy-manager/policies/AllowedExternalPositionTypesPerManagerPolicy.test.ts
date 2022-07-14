@@ -24,25 +24,28 @@ import {
   reactivateExternalPosition,
   removeExternalPosition,
 } from '@enzymefinance/testutils';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 
 let fork: ProtocolDeployment;
 let allowedExternalPositionTypesPerManagerPolicy: AllowedExternalPositionTypesPerManagerPolicy;
 let fundOwner: SignerWithAddress,
   validRestrictedManager: SignerWithAddress,
   invalidRestrictedManager: SignerWithAddress,
-  unrestrictedManager: SignerWithAddress;
+  unrestrictedManager: SignerWithAddress,
+  forbiddenManager: SignerWithAddress;
 let policyManager: PolicyManager;
 let externalPositionManager: ExternalPositionManager;
 let comptrollerProxy: ComptrollerLib;
 let vaultProxy: VaultLib;
+
+const bypassFlag: BigNumber = constants.MaxUint256;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
   allowedExternalPositionTypesPerManagerPolicy = fork.deployment.allowedExternalPositionTypesPerManagerPolicy;
 
-  [fundOwner, unrestrictedManager, validRestrictedManager, invalidRestrictedManager] = fork.accounts;
+  [fundOwner, unrestrictedManager, validRestrictedManager, invalidRestrictedManager, forbiddenManager] = fork.accounts;
   policyManager = fork.deployment.policyManager;
   externalPositionManager = fork.deployment.externalPositionManager;
 
@@ -54,7 +57,7 @@ beforeEach(async () => {
       policies: [allowedExternalPositionTypesPerManagerPolicy],
       settings: [
         uintListRegistryPerUserPolicyArgs({
-          users: [validRestrictedManager, invalidRestrictedManager],
+          users: [validRestrictedManager, invalidRestrictedManager, unrestrictedManager],
           listsData: [
             {
               // validRestrictedManager: listId = 0 AND new list with just CompoundDebtPosition (restricted to just CompoundDebtPosition)
@@ -70,6 +73,9 @@ beforeEach(async () => {
               // invalidRestrictedManager: listId = 0 (cannot use CompoundDebtPosition)
               existingListIds: [0],
             },
+            {
+              existingListIds: [bypassFlag],
+            },
           ],
         }),
       ],
@@ -82,7 +88,7 @@ beforeEach(async () => {
 
   await vaultProxy
     .connect(fundOwner)
-    .addAssetManagers([validRestrictedManager, invalidRestrictedManager, unrestrictedManager]);
+    .addAssetManagers([validRestrictedManager, invalidRestrictedManager, unrestrictedManager, forbiddenManager]);
 });
 
 describe('canDisable', () => {
@@ -154,10 +160,12 @@ describe('validateRule', () => {
   const revertMessage = 'Rule evaluated to false: ALLOWED_EXTERNAL_POSITION_TYPES_PER_MANAGER';
 
   /**
-   * For each of the PolicyHook's below, we are testing 3 conditions:
+   * For each of the PolicyHook's below, we are testing 5 conditions:
    * invalidRestrictedManager: Some lists are defined for a manager and EP type is in none of the lists = cannot use EP
+   * forbiddenManager: not lists are defined for a manager = cannot use EP
    * validRestrictedManager: some lists are defined for a manager and EP type is in any of the lists = can use EP
-   * unrestrictedManager: no lists are defined for a manager = can use EP
+   * unrestrictedManager: bypass_flag is set for a manager = can use EP
+   * fundOwner: enabled by default = can use EP
    */
 
   describe('PolicyHook.CreateExternalPosition', () => {
@@ -167,6 +175,16 @@ describe('validateRule', () => {
           comptrollerProxy,
           externalPositionManager,
           signer: invalidRestrictedManager,
+        }),
+      ).rejects.toBeRevertedWith(revertMessage);
+    });
+
+    it('unhappy path: forbidden manager', async () => {
+      await expect(
+        createCompoundDebtPosition({
+          comptrollerProxy,
+          externalPositionManager,
+          signer: forbiddenManager,
         }),
       ).rejects.toBeRevertedWith(revertMessage);
     });
@@ -184,6 +202,14 @@ describe('validateRule', () => {
         comptrollerProxy,
         externalPositionManager,
         signer: unrestrictedManager,
+      });
+    });
+
+    it('happy path: fund owner', async () => {
+      await createCompoundDebtPosition({
+        comptrollerProxy,
+        externalPositionManager,
+        signer: fundOwner,
       });
     });
   });
@@ -213,6 +239,18 @@ describe('validateRule', () => {
       ).rejects.toBeRevertedWith(revertMessage);
     });
 
+    it('unhappy path: forbidden manager', async () => {
+      await expect(
+        compoundDebtPositionClaimComp({
+          comptrollerProxy,
+          vaultProxy,
+          externalPositionManager: fork.deployment.externalPositionManager,
+          externalPositionProxy,
+          fundOwner: forbiddenManager,
+        }),
+      ).rejects.toBeRevertedWith(revertMessage);
+    });
+
     it('happy path: valid restricted manager', async () => {
       await compoundDebtPositionClaimComp({
         comptrollerProxy,
@@ -230,6 +268,16 @@ describe('validateRule', () => {
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy,
         fundOwner: unrestrictedManager,
+      });
+    });
+
+    it('happy path: fund owner', async () => {
+      await compoundDebtPositionClaimComp({
+        comptrollerProxy,
+        vaultProxy,
+        externalPositionManager: fork.deployment.externalPositionManager,
+        externalPositionProxy,
+        fundOwner,
       });
     });
   });
@@ -254,13 +302,24 @@ describe('validateRule', () => {
       });
     });
 
-    it('unhappy path: invalid resitricted manager', async () => {
+    it('unhappy path: invalid restricted manager', async () => {
       await expect(
         reactivateExternalPosition({
           comptrollerProxy,
           externalPositionManager,
           externalPositionProxy,
           signer: invalidRestrictedManager,
+        }),
+      ).rejects.toBeRevertedWith(revertMessage);
+    });
+
+    it('unhappy path: forbidden manager', async () => {
+      await expect(
+        reactivateExternalPosition({
+          comptrollerProxy,
+          externalPositionManager,
+          externalPositionProxy,
+          signer: forbiddenManager,
         }),
       ).rejects.toBeRevertedWith(revertMessage);
     });
@@ -280,6 +339,15 @@ describe('validateRule', () => {
         externalPositionManager,
         externalPositionProxy,
         signer: unrestrictedManager,
+      });
+    });
+
+    it('happy path: fund owner', async () => {
+      await reactivateExternalPosition({
+        comptrollerProxy,
+        externalPositionManager,
+        externalPositionProxy,
+        signer: fundOwner,
       });
     });
   });
@@ -308,6 +376,17 @@ describe('validateRule', () => {
       ).rejects.toBeRevertedWith(revertMessage);
     });
 
+    it('unhappy path: forbidden manager', async () => {
+      await expect(
+        removeExternalPosition({
+          comptrollerProxy,
+          externalPositionManager,
+          externalPositionProxy,
+          signer: forbiddenManager,
+        }),
+      ).rejects.toBeRevertedWith(revertMessage);
+    });
+
     it('happy path: valid restricted manager', async () => {
       await removeExternalPosition({
         comptrollerProxy,
@@ -323,6 +402,15 @@ describe('validateRule', () => {
         externalPositionManager,
         externalPositionProxy,
         signer: unrestrictedManager,
+      });
+    });
+
+    it('happy path: fund owner', async () => {
+      await removeExternalPosition({
+        comptrollerProxy,
+        externalPositionManager,
+        externalPositionProxy,
+        signer: fundOwner,
       });
     });
   });

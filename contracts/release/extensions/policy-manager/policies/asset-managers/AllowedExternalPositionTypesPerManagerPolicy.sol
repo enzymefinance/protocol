@@ -12,6 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
 import "../utils/UintListRegistryPerUserPolicyBase.sol";
 
@@ -19,6 +21,8 @@ import "../utils/UintListRegistryPerUserPolicyBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that limits which external position types an asset manager can use for a given fund
 contract AllowedExternalPositionTypesPerManagerPolicy is UintListRegistryPerUserPolicyBase {
+    uint256 public constant BYPASS_FLAG = type(uint256).max;
+
     constructor(address _policyManager, address _uintListRegistry)
         public
         UintListRegistryPerUserPolicyBase(_policyManager, _uintListRegistry)
@@ -123,10 +127,23 @@ contract AllowedExternalPositionTypesPerManagerPolicy is UintListRegistryPerUser
         address _caller,
         uint256 _externalPositionTypeId
     ) public view returns (bool isValid_) {
+        if (
+            _caller ==
+            VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner()
+        ) {
+            // fund owner passes rule by default
+            return true;
+        }
+
         uint256[] memory listIds = getListIdsForFundAndUser(_comptrollerProxy, _caller);
 
         if (listIds.length == 0) {
-            // A manager without any configured lists passes the rule
+            // A manager without any configured lists does not pass the rule
+            return false;
+        }
+
+        if (listIds[0] == BYPASS_FLAG) {
+            // The bypass flag is only accepted if in the first position in listIds
             return true;
         }
 

@@ -17,11 +17,14 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
-import { BigNumber } from 'ethers';
+import { BigNumber, constants } from 'ethers';
 
 let fork: ProtocolDeployment;
 let allowedAdaptersPerManagerPolicy: AllowedAdaptersPerManagerPolicy;
-let fundOwner: SignerWithAddress, restrictedManager: SignerWithAddress, unrestrictedManager: SignerWithAddress;
+let fundOwner: SignerWithAddress,
+  restrictedManager: SignerWithAddress,
+  unrestrictedManager: SignerWithAddress,
+  forbiddenManager: SignerWithAddress;
 let integrationManager: IntegrationManager;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let policyManager: PolicyManager;
@@ -29,11 +32,13 @@ let mockGenericIntegratee: MockGenericIntegratee,
   allowedMockGenericAdapter: MockGenericAdapter,
   unallowedMockGenericAdapter: MockGenericAdapter;
 
+const bypassFlag: BigNumber = constants.MaxUint256;
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   allowedAdaptersPerManagerPolicy = fork.deployment.allowedAdaptersPerManagerPolicy;
 
-  [fundOwner, restrictedManager, unrestrictedManager] = fork.accounts;
+  [fundOwner, restrictedManager, unrestrictedManager, forbiddenManager] = fork.accounts;
   integrationManager = fork.deployment.integrationManager;
   policyManager = fork.deployment.policyManager;
 
@@ -49,7 +54,7 @@ beforeEach(async () => {
       policies: [allowedAdaptersPerManagerPolicy],
       settings: [
         addressListRegistryPerUserPolicyArgs({
-          users: [restrictedManager.address],
+          users: [restrictedManager, unrestrictedManager],
           listsData: [
             {
               existingListIds: [0], // Include empty list to test inclusion in 1 list only
@@ -59,6 +64,10 @@ beforeEach(async () => {
                   updateType: AddressListUpdateType.None,
                 },
               ],
+            },
+            {
+              existingListIds: [bypassFlag],
+              newListsArgs: [],
             },
           ],
         }),
@@ -71,7 +80,7 @@ beforeEach(async () => {
   vaultProxy = newFundRes.vaultProxy;
 
   // add managers
-  await vaultProxy.connect(fundOwner).addAssetManagers([restrictedManager, unrestrictedManager]);
+  await vaultProxy.connect(fundOwner).addAssetManagers([restrictedManager, unrestrictedManager, forbiddenManager]);
 });
 
 describe('canDisable', () => {
@@ -104,6 +113,30 @@ describe('validateRule', () => {
     await expect(swapTx).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_ADAPTERS_PER_MANAGER');
   });
 
+  it('does not allow manager with empty list', async () => {
+    const swapTx = mockGenericSwap({
+      provider,
+      comptrollerProxy,
+      signer: forbiddenManager,
+      integrationManager,
+      mockGenericAdapter: unallowedMockGenericAdapter,
+      vaultProxy,
+    });
+
+    await expect(swapTx).rejects.toBeRevertedWith('Rule evaluated to false: ALLOWED_ADAPTERS_PER_MANAGER');
+  });
+
+  it('allows fund owner', async () => {
+    await mockGenericSwap({
+      provider,
+      comptrollerProxy,
+      signer: fundOwner,
+      integrationManager,
+      mockGenericAdapter: allowedMockGenericAdapter,
+      vaultProxy,
+    });
+  });
+
   it('allows listed adapter', async () => {
     await mockGenericSwap({
       provider,
@@ -115,7 +148,7 @@ describe('validateRule', () => {
     });
   });
 
-  it('allows adapter for manager with no list', async () => {
+  it('allows adapter for manager with bypass flag set', async () => {
     await mockGenericSwap({
       provider,
       comptrollerProxy,

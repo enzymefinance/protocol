@@ -117,7 +117,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: {
         accountsBalance: utils.parseUnits('1', 36).toString(),
-        count: 5,
+        count: 10,
         mnemonic,
       },
       blockGasLimit: gas,
