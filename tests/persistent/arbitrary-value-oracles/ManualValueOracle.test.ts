@@ -9,7 +9,7 @@ import {
   deployProtocolFixture,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 
 const randomAddress1 = randomAddress();
 let manualValueOracleFactory: ManualValueOracleFactory;
@@ -49,7 +49,7 @@ describe('factory: deploy', () => {
       proxy: oracle,
     });
 
-    expect(receipt).toMatchInlineGasSnapshot('158642');
+    expect(receipt).toMatchInlineGasSnapshot('157438');
   });
 });
 
@@ -66,7 +66,7 @@ describe('init', () => {
     });
 
     // Should fail since already initialized upon deployment
-    await expect(oracle.connect(owner).init(owner, updater, description)).rejects.toBeRevertedWith(
+    await expect(oracle.connect(owner).init(owner, updater, constants.HashZero)).rejects.toBeRevertedWith(
       'Already initialized',
     );
   });
@@ -100,7 +100,7 @@ describe('init', () => {
 
     // Assert events
     assertEvent(receipt, oracle.abi.getEvent('Initialized'), {
-      description,
+      description: utils.formatBytes32String(description),
     });
     assertEvent(receipt, oracle.abi.getEvent('UpdaterSet'), {
       updater,

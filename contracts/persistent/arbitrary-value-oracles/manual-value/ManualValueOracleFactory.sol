@@ -27,12 +27,12 @@ contract ManualValueOracleFactory {
     /// @notice Deploys a ManualValueOracleProxy instance
     /// @param _owner The owner of the oracle
     /// @param _updater The updater of the oracle
-    /// @param _description A description for the oracle
+    /// @param _description A short encoded description for the oracle
     /// @return proxy_ The deployed ManualValueOracleProxy address
     function deploy(
         address _owner,
         address _updater,
-        string calldata _description
+        bytes32 _description
     ) external returns (address proxy_) {
         bytes memory constructData = abi.encodeWithSelector(
             ManualValueOracleLib.init.selector,

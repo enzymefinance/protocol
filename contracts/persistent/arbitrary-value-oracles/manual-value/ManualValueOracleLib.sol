@@ -16,7 +16,7 @@ import "../IArbitraryValueOracle.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Library contract for ManualValueOracleProxy instances
 contract ManualValueOracleLib is IArbitraryValueOracle, NominatedOwnerMixin {
-    event Initialized(string description);
+    event Initialized(bytes32 description);
 
     event UpdaterSet(address updater);
 
@@ -30,10 +30,11 @@ contract ManualValueOracleLib is IArbitraryValueOracle, NominatedOwnerMixin {
     /// @notice Initializes the proxy
     /// @param _owner The owner of the oracle
     /// @param _updater The updater of the oracle value
+    /// @param _description A short encoded description for the oracle
     function init(
         address _owner,
         address _updater,
-        string calldata _description
+        bytes32 _description
     ) external {
         require(getOwner() == address(0), "init: Already initialized");
         require(_owner != address(0), "init: Empty _owner");
