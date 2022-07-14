@@ -403,10 +403,11 @@ describe('manager actions', () => {
     });
   });
 
-  // Mostly covered by CloseLoan tests, but can still test that encoded action args are handled correctly
+  // Mostly covered by CloseLoan tests, but can still test that encoded action args are handled correctly,
+  // and that only the non-borrowable loan asset amount is sent to the vault
   describe('Reconcile', () => {
     it('happy path', async () => {
-      // It is enough to just test that a specified extra asset was sent to the vault
+      const borrowableAmount = (await loanAsset.balanceOf(vaultProxy)).div(4);
 
       await arbitraryLoanPositionConfigureLoan({
         comptrollerProxy,
@@ -415,18 +416,27 @@ describe('manager actions', () => {
         externalPositionProxy: arbitraryLoanPosition,
         borrower,
         loanAsset,
-        amount: 0,
+        amount: borrowableAmount,
         accountingModule: constants.AddressZero,
         accountingModuleConfigData: '0x',
       });
 
       const extraAsset = new StandardToken(fork.config.primitives.mln, provider);
       const extraAssetAmount = 456;
+      const loanAssetSurplusAmount = 123;
 
-      // Transfer a misc asset to the EP
+      // Transfer the excess assets to the EP
       await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
+      const loanAssetNextAmount = (await loanAsset.balanceOf(arbitraryLoanPosition)).add(loanAssetSurplusAmount);
+      await seedAccount({
+        account: arbitraryLoanPosition,
+        amount: loanAssetNextAmount,
+        provider,
+        token: loanAsset,
+      });
 
       const preTxVaultExtraAssetBalance = await extraAsset.balanceOf(vaultProxy);
+      const preTxVaultLoanAssetBalance = await loanAsset.balanceOf(vaultProxy);
 
       await arbitraryLoanPositionReconcile({
         comptrollerProxy,
@@ -436,8 +446,13 @@ describe('manager actions', () => {
         extraAssetsToSweep: [extraAsset],
       });
 
-      // The extra asset should all have been sent to the vault (with the native asset wrapped)
+      // The exact excess asset amounts should have been sent to the vault,
+      // (but not the borrowable loan asset amount)
       expect(await extraAsset.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultExtraAssetBalance.add(extraAssetAmount));
+      expect(await loanAsset.balanceOf(vaultProxy)).toEqBigNumber(
+        preTxVaultLoanAssetBalance.add(loanAssetSurplusAmount),
+      );
+      expect(await loanAsset.balanceOf(arbitraryLoanPosition)).toEqBigNumber(borrowableAmount);
     });
   });
 });

@@ -86,7 +86,7 @@ contract ArbitraryLoanPositionLib is
     /// Accounting module can set the rules for when the loan can be considered closed.
     /// After closing a loan, its face value becomes 0 and no more borrowing is allowed.
     function __actionCloseLoan(bytes memory _actionArgs) private onlyNotClosed {
-        __reconcile(__decodeCloseLoanActionArgs(_actionArgs));
+        __reconcile(__decodeCloseLoanActionArgs(_actionArgs), true);
 
         address accountingModuleMem = getAccountingModule();
         if (accountingModuleMem != address(0)) {
@@ -140,7 +140,7 @@ contract ArbitraryLoanPositionLib is
     /// @dev Helper to execute Action.Reconcile.
     /// See notes for __reconcile().
     function __actionReconcile(bytes memory _actionArgs) private {
-        __reconcile(__decodeReconcileActionArgs(_actionArgs));
+        __reconcile(__decodeReconcileActionArgs(_actionArgs), false);
     }
 
     /// @dev Helper to execute Action.UpdateBorrowableAmount
@@ -162,7 +162,7 @@ contract ArbitraryLoanPositionLib is
     /// @dev Helper to reconcile tokens sent directly to the position.
     /// _extraAssetsToSweep could be - for example - a repayment or insurance payout
     /// that is transferred directly to this contract as a non-loan asset.
-    function __reconcile(address[] memory _extraAssetsToSweep) private {
+    function __reconcile(address[] memory _extraAssetsToSweep, bool _close) private {
         // If _extraAssetsToSweep contains the wrapped native asset (e.g., WETH),
         // wrap any balance of the native asset also
         if (_extraAssetsToSweep.contains(WRAPPED_NATIVE_ASSET)) {
@@ -176,11 +176,11 @@ contract ArbitraryLoanPositionLib is
         ERC20 loanAssetContract = ERC20(getLoanAsset());
         uint256 loanAssetBalance = loanAssetContract.balanceOf(address(this));
 
-        // Consider any surplus loan asset balance as a potential repayment
-        uint256 repayableAmount = __subOrZero(loanAssetBalance, getBorrowableAmount());
+        uint256 nonBorrowableLoanAssetBal = __subOrZero(loanAssetBalance, getBorrowableAmount());
 
-        // Calculate any repayment using the available balances of all assets
-        if (repayableAmount > 0) {
+        // Calculate any repayment using the available balances of all assets.
+        // Considers any surplus loan asset balance as a potential repayment.
+        if (nonBorrowableLoanAssetBal > 0) {
             uint256 repayAmount;
             uint256 totalRepaidMem = getTotalRepaid();
             address accountingModuleMem = getAccountingModule();
@@ -192,19 +192,27 @@ contract ArbitraryLoanPositionLib is
                 repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem).preReconcile(
                     getTotalBorrowed(),
                     totalRepaidMem,
-                    repayableAmount,
+                    nonBorrowableLoanAssetBal,
                     _extraAssetsToSweep
                 );
             } else {
-                repayAmount = repayableAmount;
+                repayAmount = nonBorrowableLoanAssetBal;
             }
 
             __updateTotalRepaid(totalRepaidMem.add(repayAmount));
         }
 
-        // Send loan asset balance to the VaultProxy
-        if (loanAssetBalance > 0) {
-            loanAssetContract.safeTransfer(msg.sender, loanAssetBalance);
+        // Transfer excess loan asset to the VaultProxy
+        uint256 loanAssetAmountToTransfer;
+        if (_close) {
+            // If closing the loan, transfer the full amount
+            loanAssetAmountToTransfer = loanAssetBalance;
+        } else {
+            // If not closing the loan, only transfer the amount exceeding the borrowable amount
+            loanAssetAmountToTransfer = nonBorrowableLoanAssetBal;
+        }
+        if (loanAssetAmountToTransfer > 0) {
+            loanAssetContract.safeTransfer(msg.sender, loanAssetAmountToTransfer);
         }
 
         // Sweep any extra specified assets into the VaultProxy
