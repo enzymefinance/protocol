@@ -43,13 +43,17 @@ interface ISolvV2ConvertiblePool {
 
     function getWithdrawableAmount(uint256 _slot)
         external
+        view
         returns (uint256 withdrawCurrencyAmount_, uint256 withdrawTokenAmount_);
 
     function refund(uint256 _slot) external;
 
-    function slotBalances(uint256 _slotId, address _currency) external returns (uint256 balance_);
+    function slotBalances(uint256 _slotId, address _currency)
+        external
+        view
+        returns (uint256 balance_);
 
-    function valueDecimals() external returns (uint8 decimals_);
+    function valueDecimals() external view returns (uint8 decimals_);
 
     function withdraw(uint256 _slot)
         external

@@ -55,11 +55,9 @@ interface ISolvV2ConvertibleMarket {
         payable
         returns (uint256 amount_, uint128 fee_);
 
-    function getPrice(uint24 _saleId) external returns (uint128 price_);
+    function getPrice(uint24 _saleId) external view returns (uint128 price_);
 
-    function markets(address _voucher) external returns (Market memory market_);
-
-    function price(PriceType _priceType, uint24 _saleId) external returns (uint128 price_);
+    function markets(address _voucher) external view returns (Market memory market_);
 
     function publishDecliningPrice(
         address _voucher,
@@ -86,7 +84,7 @@ interface ISolvV2ConvertibleMarket {
         uint128 _price
     ) external returns (uint24 saleId_);
 
-    function sales(uint24 _saleId) external returns (Sale memory sale_);
+    function sales(uint24 _saleId) external view returns (Sale memory sale_);
 
     function remove(uint24 _saleId) external;
 }

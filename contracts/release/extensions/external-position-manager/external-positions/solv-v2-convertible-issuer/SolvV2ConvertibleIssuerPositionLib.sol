@@ -103,20 +103,26 @@ contract SolvV2ConvertibleIssuerPositionLib is
             mintParameter
         );
 
-        offers.push(Offer({offerId: offerId, currency: currency}));
+        if (!issuedVouchers.storageArrayContains(voucher)) {
+            issuedVouchers.push(voucher);
+            emit IssuedVoucherAdded(voucher);
+        }
 
-        emit OfferAdded(offerId, currency);
+        offers.push(offerId);
+        emit OfferAdded(offerId);
     }
 
     /// @dev Helper to reconcile receivable currencies
     function __actionReconcile() private {
-        Offer[] memory offersMem = getOffers();
+        uint24[] memory offersMem = getOffers();
 
-        // Build an array of unique receivableCurrencies from existing offers
+        // Build an array of unique receivableCurrencies from created offers
         address[] memory receivableCurrencies;
         uint256 offersLength = offersMem.length;
         for (uint256 i; i < offersLength; i++) {
-            receivableCurrencies = receivableCurrencies.addUniqueItem(offersMem[i].currency);
+            receivableCurrencies = receivableCurrencies.addUniqueItem(
+                INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offersMem[i]).currency
+            );
         }
 
         __pushFullAssetBalances(msg.sender, receivableCurrencies);
@@ -144,26 +150,23 @@ contract SolvV2ConvertibleIssuerPositionLib is
     function __actionRemoveOffer(bytes memory _actionArgs) private {
         uint24 offerId = __decodeRemoveOfferActionArgs(_actionArgs);
 
-        // Retrieve underlying token from offerId before removal
-        ERC20 underlyingToken = ERC20(
-            ISolvV2ConvertibleVoucher(
-                INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT
-                    .offerings(offerId)
-                    .voucher
-            )
-                .underlying()
-        );
+        // Retrieve offer details before removal
+
+
+            ISolvV2InitialConvertibleOfferingMarket.Offering memory offer
+         = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+
+        ERC20 currencyToken = ERC20(offer.currency);
+        ERC20 underlyingToken = ERC20(ISolvV2ConvertibleVoucher(offer.voucher).underlying());
+
         INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.remove(offerId);
 
         uint256 offersLength = offers.length;
 
         // Remove the offerId from the offers array
         for (uint256 i; i < offersLength; i++) {
-            Offer memory offerMem = offers[i];
-
-            if (offerMem.offerId == offerId) {
+            if (offers[i] == offerId) {
                 // Reconcile offer currency before it is removed from storage
-                ERC20 currencyToken = ERC20(offerMem.currency);
                 uint256 currencyBalance = currencyToken.balanceOf(address(this));
                 if (currencyBalance > 0) {
                     currencyToken.safeTransfer(msg.sender, currencyBalance);
@@ -181,16 +184,17 @@ contract SolvV2ConvertibleIssuerPositionLib is
                 }
                 offers.pop();
 
-                emit OfferRemoved(offerId, address(currencyToken));
+                emit OfferRemoved(offerId);
 
                 break;
             }
         }
     }
 
-    /// @dev Helper to withdraw outstanding assets from an offered voucher
+    /// @dev Helper to withdraw outstanding assets from a post-maturity issued voucher
     function __actionWithdraw(bytes memory _actionArgs) private {
         (address voucher, uint256 slotId) = __decodeWithdrawActionArgs(_actionArgs);
+
         ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(voucher);
         ISolvV2ConvertiblePool.SlotDetail memory slotDetail = voucherContract.getSlotDetail(
             slotId
@@ -223,20 +227,20 @@ contract SolvV2ConvertibleIssuerPositionLib is
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
     /// @dev There are 3 types of assets that contribute value to this position:
-    /// 1. Underlying balance oustanding in IVO offers (collateral not yet used for minting)
+    /// 1. Underlying balance outstanding in IVO offers (collateral not yet used for minting)
     /// 2. Unreconciled assets received for an IVO sale
-    /// 3. Oustanding assets that are withdrawable from issued vouchers (post-maturity)
+    /// 3. Outstanding assets that are withdrawable from issued vouchers (post-maturity)
     function getManagedAssets()
         external
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
-        Offer[] memory offersMem = getOffers();
+        uint24[] memory offersMem = getOffers();
 
         // Balance of assets that are withdrawable from issued vouchers (post-maturity)
-        (assets_, amounts_) = __getWithdrawableAssetAmounts(offersMem);
+        (assets_, amounts_) = __getWithdrawableAssetAmountsAndRemoveWithdrawnVouchers();
 
-        // Underlying balance oustanding in non-closed IVO offers
+        // Underlying balance outstanding in non-closed IVO offers
         (
             address[] memory underlyingAssets,
             uint256[] memory underlyingAmounts
@@ -263,8 +267,9 @@ contract SolvV2ConvertibleIssuerPositionLib is
     }
 
     /// @dev Gets the outstanding underlying balances from unsold IVO vouchers on offer
-    function __getOffersUnderlyingBalance(Offer[] memory _offers)
+    function __getOffersUnderlyingBalance(uint24[] memory _offers)
         private
+        view
         returns (address[] memory underlyings_, uint256[] memory amounts_)
     {
         uint256 offersLength = _offers.length;
@@ -275,20 +280,15 @@ contract SolvV2ConvertibleIssuerPositionLib is
         for (uint256 i; i < offersLength; i++) {
 
                 ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(_offers[i].offerId);
+             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(_offers[i]);
 
 
                 ISolvV2InitialConvertibleOfferingMarket.MintParameter memory mintParameters
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.mintParameters(_offers[i].offerId);
+             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.mintParameters(_offers[i]);
 
             uint256 refundAmount = uint256(offering.units).div(mintParameters.lowestPrice);
 
-            underlyings_[i] = ISolvV2ConvertibleVoucher(
-                INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT
-                    .offerings(_offers[i].offerId)
-                    .voucher
-            )
-                .underlying();
+            underlyings_[i] = ISolvV2ConvertibleVoucher(offering.voucher).underlying();
             amounts_[i] = refundAmount;
         }
 
@@ -296,7 +296,7 @@ contract SolvV2ConvertibleIssuerPositionLib is
     }
 
     /// @dev Retrieves the receivable (proceeds from IVO sales) currencies balances of the external position
-    function __getReceivableCurrencyBalances(Offer[] memory _offers)
+    function __getReceivableCurrencyBalances(uint24[] memory _offers)
         private
         view
         returns (address[] memory currencies_, uint256[] memory balances_)
@@ -304,7 +304,9 @@ contract SolvV2ConvertibleIssuerPositionLib is
         uint256 offersLength = _offers.length;
 
         for (uint256 i; i < offersLength; i++) {
-            address currency = _offers[i].currency;
+            address currency = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT
+                .offerings(_offers[i])
+                .currency;
             // Go to next item if currency has already been checked
             if (currencies_.contains(currency)) {
                 continue;
@@ -320,34 +322,36 @@ contract SolvV2ConvertibleIssuerPositionLib is
     }
 
     /// @dev Retrieves the withdrawable assets by the issuer (post voucher maturity)
-    /// @dev Reverts if one of the issued vouchers has not reached maturity
-    function __getWithdrawableAssetAmounts(Offer[] memory _offers)
+    /// Reverts if one of the issued voucher slots has not reached maturity
+    /// Removes stored issued vouchers that have been fully withdrawn
+    function __getWithdrawableAssetAmountsAndRemoveWithdrawnVouchers()
         private
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
-        uint256 offersLength = _offers.length;
+        address[] memory vouchersMem = getIssuedVouchers();
+        uint256 vouchersLength = vouchersMem.length;
 
-        for (uint256 i; i < offersLength; i++) {
-            ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(
-                INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(_offers[i].offerId).voucher
-            );
+        for (uint256 i; i < vouchersLength; i++) {
+            uint256 preAssetsLength = assets_.length;
+
             ISolvV2ConvertiblePool voucherPoolContract = ISolvV2ConvertiblePool(
-                voucherContract.convertiblePool()
+                ISolvV2ConvertibleVoucher(vouchersMem[i]).convertiblePool()
             );
-
             uint256[] memory slots = voucherPoolContract.getIssuerSlots(address(this));
             uint256 slotsLength = slots.length;
 
             uint256 withdrawableUnderlying;
 
             for (uint256 j; j < slotsLength; j++) {
-                ISolvV2ConvertiblePool.SlotDetail memory slotDetail = voucherContract
+                ISolvV2ConvertiblePool.SlotDetail memory slotDetail = ISolvV2ConvertibleVoucher(
+                    vouchersMem[i]
+                )
                     .getSlotDetail(slots[j]);
 
                 // If the vault has issued at least one voucher that has not reached maturity, revert
                 require(
                     block.timestamp >= slotDetail.maturity,
-                    "__getWithdrawableAssetAmounts: pre-mature issued voucher slot"
+                    "__getWithdrawableAssetAmountsAndRemoveWithdrawnVouchers: pre-mature issued voucher slot"
                 );
                 (uint256 withdrawCurrencyAmount, uint256 withdrawTokenAmount) = voucherPoolContract
                     .getWithdrawableAmount(slots[j]);
@@ -363,8 +367,17 @@ contract SolvV2ConvertibleIssuerPositionLib is
             }
 
             if (withdrawableUnderlying > 0) {
-                assets_ = assets_.addItem(voucherContract.underlying());
+                assets_ = assets_.addItem(ISolvV2ConvertibleVoucher(vouchersMem[i]).underlying());
                 amounts_ = amounts_.addItem(withdrawableUnderlying);
+            }
+
+            // If assets length is the same as before iterating through the issued slots.
+            // All issued slots are withdrawn and the voucher can be removed from storage.
+            if (assets_.length == preAssetsLength) {
+                // Remove the voucher from the vouchers array
+                issuedVouchers.removeStorageItem(vouchersMem[i]);
+
+                emit IssuedVoucherRemoved(vouchersMem[i]);
             }
         }
         return (assets_, amounts_);
@@ -374,9 +387,15 @@ contract SolvV2ConvertibleIssuerPositionLib is
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets the Offer[] var
-    /// @return offers_ The Offer[] var
-    function getOffers() public view override returns (Offer[] memory offers_) {
+    /// @notice Gets the issued vouchers
+    /// @return vouchers_ The array of issued voucher addresses
+    function getIssuedVouchers() public view returns (address[] memory vouchers_) {
+        return issuedVouchers;
+    }
+
+    /// @notice Gets the created offers
+    /// @return offers_ The array of created offer ids
+    function getOffers() public view override returns (uint24[] memory offers_) {
         return offers;
     }
 }

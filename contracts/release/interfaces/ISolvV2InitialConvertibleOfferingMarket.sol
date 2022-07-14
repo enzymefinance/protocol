@@ -63,12 +63,13 @@ interface ISolvV2InitialConvertibleOfferingMarket {
         external
         returns (uint256 amount_, uint128 fee_);
 
-    function getPrice(uint24 _offeringId) external returns (uint256 price_);
+    function getPrice(uint24 _offeringId) external view returns (uint256 price_);
 
-    function markets(address _voucher) external returns (Market memory market_);
+    function markets(address _voucher) external view returns (Market memory market_);
 
     function mintParameters(uint24 _offeringId)
         external
+        view
         returns (MintParameter memory mintParameter_);
 
     function offer(
@@ -84,7 +85,7 @@ interface ISolvV2InitialConvertibleOfferingMarket {
         MintParameter calldata _mintParameter
     ) external returns (uint24 offeringId_);
 
-    function offerings(uint24 _offerId) external returns (Offering memory offering_);
+    function offerings(uint24 _offerId) external view returns (Offering memory offering_);
 
     function remove(uint24 _offeringId) external;
 }

@@ -2,6 +2,7 @@ import { sameAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
+  ETH_ADDRESS,
   ITestSolvV2ConvertiblePool,
   ITestSolvV2ConvertibleVoucher,
   ITestSolvV2InitialConvertibleOfferingMarket,
@@ -170,6 +171,12 @@ beforeEach(async () => {
 });
 
 describe('Actions.Offer', () => {
+  it('should revert when eth is specified as currency', async () => {
+    expect(
+      solvV2ConvertibleIssuerPositionCreateOffer({ ...createOfferArgs, currency: ETH_ADDRESS }),
+    ).rejects.toBeRevertedWith('__validateNotNativeToken: Native asset is unsupported');
+  });
+
   it('works as expected', async () => {
     // Set non-default min and max values to ensure that they are set properly
     const min = 1;
@@ -209,18 +216,24 @@ describe('Actions.Offer', () => {
     expect(solvMintParameter.maturity).toEqBigNumber(mintParameter.maturity);
     expect(solvMintParameter.tokenInAmount).toEqBigNumber(mintParameter.tokenInAmount);
 
-    // Check that the offer has been added to our contract's storage
+    // Check that the voucher has been added to the contract's storage
+    const vouchers = await solvV2ConvertibleIssuerPosition.getIssuedVouchers();
+    expect(vouchers.length).toBe(1);
+    expect(vouchers[0]).toMatchAddress(voucher);
+
+    // Check that the offer has been added to the contract's storage
     const offers = await solvV2ConvertibleIssuerPosition.getOffers();
     expect(offers.length).toBe(1);
-    expect(offers[0].currency).toMatchAddress(currencyToken);
-    expect(offers[0].offerId).toEqBigNumber(offerId);
+    expect(offers[0]).toEqBigNumber(offerId);
 
+    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
+      voucher,
+    });
     assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferAdded'), {
       offerId,
-      currency: currencyToken,
     });
 
-    expect(receipt).toMatchInlineGasSnapshot(`534113`);
+    expect(receipt).toMatchInlineGasSnapshot(`578889`);
   });
 });
 
@@ -253,10 +266,9 @@ describe('Actions.RemoveOffer', () => {
 
     assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferRemoved'), {
       offerId,
-      currency: currencyToken,
     });
 
-    expect(receipt).toMatchInlineGasSnapshot(`298258`);
+    expect(receipt).toMatchInlineGasSnapshot(`298120`);
   });
 
   it('works as expected - after buys and ivo end', async () => {
@@ -331,7 +343,7 @@ describe('Actions.RemoveOffer', () => {
       signer: fundOwner,
     });
 
-    expect(receipt).toMatchInlineGasSnapshot(`242492`);
+    expect(receipt).toMatchInlineGasSnapshot(`296548`);
   });
 });
 
@@ -359,7 +371,7 @@ describe('Actions.Reconcile', () => {
     // Check that the currency has been received by the vault
     expect(await currencyToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
-    expect(receipt).toMatchInlineGasSnapshot(`141556`);
+    expect(receipt).toMatchInlineGasSnapshot(`229132`);
   });
 });
 
@@ -403,7 +415,7 @@ describe('Actions.Refund', () => {
     const slotDetail = await voucher.getSlotDetail(slotId);
     expect(slotDetail.isIssuerRefunded).toBe(true);
 
-    expect(receipt).toMatchInlineGasSnapshot(`261114`);
+    expect(receipt).toMatchInlineGasSnapshot(`261139`);
   });
 });
 
@@ -458,6 +470,9 @@ describe('Actions.Withdraw', () => {
       voucher,
     });
 
+    // Send an getManagedAssets tx first to remove the issued voucher
+    const managedAssetsReceipt = await solvV2ConvertibleIssuerPosition.connect(fundOwner).getManagedAssets();
+    // Call getManagedAssets to retrieve return values (not affected by previous tx)
     const postManagedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
     expect(preManagedAssets.assets_.length).toBe(1);
     expect(postManagedAssets.assets_[0]).toMatchAddress(underlyingToken);
@@ -476,7 +491,14 @@ describe('Actions.Withdraw', () => {
     const slotDetail = await voucher.getSlotDetail(slotId);
     expect(slotDetail.isIssuerWithdrawn).toBe(true);
 
-    expect(receipt).toMatchInlineGasSnapshot(`344884`);
+    // Voucher should have been automatically removed on calling getManagedAssets when all issued vouchers are withdrawn
+    assertEvent(managedAssetsReceipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherRemoved'), {
+      voucher,
+    });
+
+    expect((await solvV2ConvertibleIssuerPosition.getIssuedVouchers()).length).toBe(0);
+
+    expect(receipt).toMatchInlineGasSnapshot(`291296`);
   });
 
   it('works as expected - with refund', async () => {
@@ -527,7 +549,7 @@ describe('Actions.Withdraw', () => {
     // Check that the cost of the refund has been withdrawn
     expect(withdrawalAmount).toEqBigNumber(refundCost);
 
-    expect(receipt).toMatchInlineGasSnapshot(`382612`);
+    expect(receipt).toMatchInlineGasSnapshot(`348631`);
   });
 });
 
@@ -572,16 +594,22 @@ describe('multiple voucher issuance', () => {
       voucher: voucher2,
     });
 
+    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
+      voucher: voucher2,
+    });
     assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferAdded'), {
       offerId: offerId2,
-      currency: currencyToken2,
     });
+
+    // Assert that the second voucher has been added
+    const vouchers = await solvV2ConvertibleIssuerPosition.getIssuedVouchers();
+    expect(vouchers.length).toBe(2);
+    expect(vouchers[1]).toMatchAddress(voucher2);
 
     // Assert that the second offer has been added
     const offers = await solvV2ConvertibleIssuerPosition.getOffers();
     expect(offers.length).toBe(2);
-    expect(offers[1].currency).toMatchAddress(currencyToken2);
-    expect(offers[1].offerId).toEqBigNumber(offerId2);
+    expect(offers[1]).toEqBigNumber(offerId2);
 
     // Warp time to post maturity
     await provider.send('evm_increaseTime', [timeToMaturity]);
@@ -597,6 +625,6 @@ describe('multiple voucher issuance', () => {
     expect(underlyingTokenIndex).not.toBe(-1);
     expect(underlyingToken2Index).not.toBe(-1);
 
-    expect(receipt).toMatchInlineGasSnapshot(`484187`);
+    expect(receipt).toMatchInlineGasSnapshot(`497195`);
   });
 });

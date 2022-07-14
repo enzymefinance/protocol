@@ -22,15 +22,17 @@ import "../../../release/interfaces/ISolvV2ConvertibleVoucher.sol";
 /// a numbered SolvV2ConvertibleIssuerPositionLibBaseXXX that inherits the previous base.
 /// e.g., `SolvV2ConvertibleIssuerPositionLibBase2 is SolvV2ConvertibleIssuerPositionLibBase1`
 contract SolvV2ConvertibleIssuerPositionLibBase1 {
-    struct Offer {
-        uint24 offerId;
-        address currency;
-    }
+    event IssuedVoucherAdded(address indexed voucher);
 
-    event OfferAdded(uint24 indexed offerId, address indexed currency);
+    event IssuedVoucherRemoved(address indexed voucher);
 
-    event OfferRemoved(uint24 indexed offerId, address indexed currency);
+    event OfferAdded(uint24 indexed offerId);
+
+    event OfferRemoved(uint24 indexed offerId);
+
+    // Issued vouchers
+    address[] internal issuedVouchers;
 
     // Created offers
-    Offer[] internal offers;
+    uint24[] internal offers;
 }

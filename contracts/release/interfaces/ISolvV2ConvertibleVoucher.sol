@@ -18,7 +18,7 @@ import "./ISolvV2ConvertiblePool.sol";
 interface ISolvV2ConvertibleVoucher {
     function approve(address _to, uint256 _tokenId) external;
 
-    function convertiblePool() external returns (address convertiblePool_);
+    function convertiblePool() external view returns (address convertiblePool_);
 
     function claimTo(
         uint256 _tokenId,
@@ -41,11 +41,11 @@ interface ISolvV2ConvertibleVoucher {
         view
         returns (ISolvV2ConvertiblePool.SlotDetail memory slotDetail_);
 
-    function nextTokenId() external returns (uint32 nextTokenId_);
+    function nextTokenId() external view returns (uint32 nextTokenId_);
 
     function ownerOf(uint256 _tokenId) external view returns (address owner_);
 
-    function voucherSlotMapping(uint256 _tokenId) external returns (uint256 slotId_);
+    function voucherSlotMapping(uint256 _tokenId) external view returns (uint256 slotId_);
 
     function underlying() external view returns (address underlying_);
 

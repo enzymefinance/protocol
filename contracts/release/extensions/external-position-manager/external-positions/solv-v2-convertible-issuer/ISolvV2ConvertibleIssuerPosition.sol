@@ -8,7 +8,6 @@
 */
 
 import "../../../../../persistent/external-positions/IExternalPosition.sol";
-import "../../../../../persistent/external-positions/solv-v2-convertible-issuer/SolvV2ConvertibleIssuerPositionLibBase1.sol";
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -18,8 +17,5 @@ pragma experimental ABIEncoderV2;
 interface ISolvV2ConvertibleIssuerPosition is IExternalPosition {
     enum Actions {CreateOffer, Reconcile, Refund, RemoveOffer, Withdraw}
 
-    function getOffers()
-        external
-        view
-        returns (SolvV2ConvertibleIssuerPositionLibBase1.Offer[] memory offers_);
+    function getOffers() external view returns (uint24[] memory offers_);
 }

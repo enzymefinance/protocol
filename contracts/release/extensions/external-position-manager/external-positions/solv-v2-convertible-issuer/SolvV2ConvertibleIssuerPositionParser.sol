@@ -29,6 +29,8 @@ contract SolvV2ConvertibleIssuerPositionParser is
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
+    address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     ISolvV2InitialConvertibleOfferingMarket
         private immutable INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT;
 
@@ -61,7 +63,7 @@ contract SolvV2ConvertibleIssuerPositionParser is
         if (_actionId == uint256(ISolvV2ConvertibleIssuerPosition.Actions.CreateOffer)) {
             (
                 address voucher,
-                ,
+                address currency,
                 ,
                 ,
                 ,
@@ -72,18 +74,22 @@ contract SolvV2ConvertibleIssuerPositionParser is
                 ISolvV2InitialConvertibleOfferingMarket.MintParameter memory mintParameter
             ) = __decodeCreateOfferActionArgs(_encodedActionArgs);
 
+            __validateNotNativeToken(currency);
+
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = ISolvV2ConvertibleVoucher(voucher).underlying();
             amountsToTransfer_ = new uint256[](1);
             amountsToTransfer_[0] = mintParameter.tokenInAmount;
         } else if (_actionId == uint256(ISolvV2ConvertibleIssuerPosition.Actions.Reconcile)) {
-
-                SolvV2ConvertibleIssuerPositionLib.Offer[] memory offersMem
-             = ISolvV2ConvertibleIssuerPosition(_externalPosition).getOffers();
+            uint24[] memory offersMem = ISolvV2ConvertibleIssuerPosition(_externalPosition)
+                .getOffers();
             uint256 offersLength = offersMem.length;
             for (uint256 i; i < offersLength; i++) {
-                if (ERC20(offersMem[i].currency).balanceOf(_externalPosition) > 0) {
-                    assetsToReceive_.addUniqueItem(offersMem[i].currency);
+                address currency = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT
+                    .offerings(offersMem[i])
+                    .currency;
+                if (ERC20(currency).balanceOf(_externalPosition) > 0) {
+                    assetsToReceive_ = assetsToReceive_.addUniqueItem(currency);
                 }
             }
         } else if (_actionId == uint256(ISolvV2ConvertibleIssuerPosition.Actions.Refund)) {
@@ -119,17 +125,27 @@ contract SolvV2ConvertibleIssuerPositionParser is
             }
 
             if (ERC20(offer.currency).balanceOf(_externalPosition) > 0) {
-                assetsToReceive_.addItem(offer.currency);
+                assetsToReceive_ = assetsToReceive_.addItem(offer.currency);
             }
         } else if (_actionId == uint256(ISolvV2ConvertibleIssuerPosition.Actions.Withdraw)) {
             (address voucher, uint256 slotId) = __decodeWithdrawActionArgs(_encodedActionArgs);
 
             ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(voucher);
+            ISolvV2ConvertiblePool voucherPoolContract = ISolvV2ConvertiblePool(
+                voucherContract.convertiblePool()
+            );
 
-            // Adding both assets since it is expensive to calculate which ones will be received
-            assetsToReceive_ = new address[](2);
-            assetsToReceive_[0] = voucherContract.underlying();
-            assetsToReceive_[1] = voucherContract.getSlotDetail(slotId).fundCurrency;
+            (uint256 withdrawCurrencyAmount, uint256 withdrawTokenAmount) = voucherPoolContract
+                .getWithdrawableAmount(slotId);
+
+            if (withdrawCurrencyAmount > 0) {
+                assetsToReceive_ = new address[](1);
+                assetsToReceive_[0] = voucherContract.getSlotDetail(slotId).fundCurrency;
+            }
+
+            if (withdrawTokenAmount > 0) {
+                assetsToReceive_ = assetsToReceive_.addItem(voucherContract.underlying());
+            }
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -138,4 +154,14 @@ contract SolvV2ConvertibleIssuerPositionParser is
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @dev Empty for this external position type
     function parseInitArgs(address, bytes memory) external override returns (bytes memory) {}
+
+    // PRIVATE FUNCTIONS
+
+    /// @dev Helper to validate that assets are not the NATIVE_TOKEN_ADDRESS
+    function __validateNotNativeToken(address _asset) private pure {
+        require(
+            _asset != NATIVE_TOKEN_ADDRESS,
+            "__validateNotNativeToken: Native asset is unsupported"
+        );
+    }
 }
