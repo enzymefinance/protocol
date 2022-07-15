@@ -79,7 +79,6 @@ const config: HardhatUserConfig = {
       'ITestGoldfinchSeniorPool',
       'ITestMapleGlobals',
       'ITestMaplePool',
-      'ITestNotionalV2Router',
       'ITestStethToken',
       'ICurveAddressProvider',
       'ICurveLiquidityGaugeV2',

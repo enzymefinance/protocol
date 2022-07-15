@@ -5,7 +5,6 @@ export * from './external-positions';
 export * from './fees';
 export * from './integrations';
 export * from './migrations';
-export * from './peripheral';
 export * from './policies';
 export * from './protocol-fees';
 export * from './rates';

@@ -4,7 +4,6 @@ export * from './common';
 export * from './core';
 export * from './extensions';
 export * from './external-interfaces';
-export * from './peripheral';
 export * from './persistent';
 export * from './setup';
 export * from './shares';

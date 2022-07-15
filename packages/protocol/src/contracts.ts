@@ -93,8 +93,6 @@ export * from './codegen/ConvexVotingPositionLib';
 export * from './codegen/IExternalPositionParser';
 export * from './codegen/MapleLiquidityPositionParser';
 export * from './codegen/MapleLiquidityPositionLib';
-export * from './codegen/NotionalV2PositionLib';
-export * from './codegen/NotionalV2PositionParser';
 export * from './codegen/LiquityDebtPositionLib';
 export * from './codegen/LiquityDebtPositionParser';
 export * from './codegen/SolvV2ConvertibleBuyerPositionLib';
@@ -133,8 +131,6 @@ export * from './codegen/OnlyRemoveDustExternalPositionPolicy';
 export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 
 // Peripheral
-export * from './codegen/ArbitraryTokenPhasedSharesWrapperFactory';
-export * from './codegen/ArbitraryTokenPhasedSharesWrapperLib';
 export * from './codegen/DepositWrapper';
 export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
@@ -144,7 +140,6 @@ export * from './codegen/ITestGoldfinchConfig';
 export * from './codegen/ITestGoldfinchSeniorPool';
 export * from './codegen/ITestMapleGlobals';
 export * from './codegen/ITestMaplePool';
-export * from './codegen/ITestNotionalV2Router';
 export * from './codegen/ITestSolvV2ConvertiblePool';
 export * from './codegen/ITestSolvV2ConvertibleVoucher';
 export * from './codegen/ITestSolvV2InitialConvertibleOfferingMarket';
