@@ -17,13 +17,9 @@ abstract contract SolvV2ConvertibleBuyerPositionDataDecoder {
     function __decodeBuyOfferingActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            address voucher_,
-            uint24 offeringId_,
-            uint128 units_
-        )
+        returns (uint24 offeringId_, uint128 units_)
     {
-        return abi.decode(_actionArgs, (address, uint24, uint128));
+        return abi.decode(_actionArgs, (uint24, uint128));
     }
 
     /// @dev Helper to decode args used during the BuySaleByAmount action

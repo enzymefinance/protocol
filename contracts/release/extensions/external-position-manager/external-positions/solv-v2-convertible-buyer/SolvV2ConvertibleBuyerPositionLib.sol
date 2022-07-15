@@ -82,16 +82,14 @@ contract SolvV2ConvertibleBuyerPositionLib is
 
     /// @dev Helper to buy a voucher through an Initial Voucher Offering (IVO)
     function __actionBuyOffering(bytes memory _actionArgs) private {
-        (address voucher, uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(
-            _actionArgs
-        );
-
-        ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(voucher);
-        uint32 nextTokenId = voucherContract.nextTokenId();
+        (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_actionArgs);
 
 
             ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
          = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+
+        ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(offering.voucher);
+        uint32 nextTokenId = voucherContract.nextTokenId();
 
         ERC20 currencyToken = ERC20(offering.currency);
         currencyToken.safeApprove(
@@ -104,7 +102,7 @@ contract SolvV2ConvertibleBuyerPositionLib is
         // Revoke the approval for safety
         currencyToken.safeApprove(address(INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT), 0);
 
-        __addVoucherTokenId(voucher, nextTokenId);
+        __addVoucherTokenId(offering.voucher, nextTokenId);
     }
 
     /// @dev Helper to buy a voucher through the marketplace for a specified amount of currency
@@ -113,8 +111,7 @@ contract SolvV2ConvertibleBuyerPositionLib is
 
         ISolvV2ConvertibleMarket.Sale memory sale = CONVERTIBLE_MARKET_CONTRACT.sales(saleId);
 
-        ERC20 currencyToken = ERC20(sale.currency);
-        currencyToken.safeApprove(address(CONVERTIBLE_MARKET_CONTRACT), amount);
+        ERC20(sale.currency).safeApprove(address(CONVERTIBLE_MARKET_CONTRACT), amount);
 
         CONVERTIBLE_MARKET_CONTRACT.buyByAmount(saleId, amount);
 
@@ -246,7 +243,9 @@ contract SolvV2ConvertibleBuyerPositionLib is
         uint256 salesLength = sales.length;
         for (uint256 i; i < salesLength; i++) {
             if (sales[i].saleId == saleId) {
-                // Reconcile sale currency since before it is removed from storage
+                // Reconcile sale currency before it is removed from storage
+                address saleCurrency = sales[i].currency;
+
                 ERC20 currencyContract = ERC20(sales[i].currency);
                 uint256 balance = currencyContract.balanceOf(address(this));
                 if (balance > 0) {
@@ -257,7 +256,7 @@ contract SolvV2ConvertibleBuyerPositionLib is
                     sales[i] = sales[salesLength - 1];
                 }
                 sales.pop();
-                emit SaleRemoved(saleId, address(currencyContract));
+                emit SaleRemoved(saleId, saleCurrency);
                 break;
             }
         }
@@ -402,6 +401,7 @@ contract SolvV2ConvertibleBuyerPositionLib is
             }
             // Add receivable currency to array so it does not get counted twice
             receivableCurrencies = receivableCurrencies.addItem(currency);
+
             uint256 balance = ERC20(currency).balanceOf(address(this));
 
             if (balance > 0) {
@@ -441,6 +441,7 @@ contract SolvV2ConvertibleBuyerPositionLib is
             );
 
             asset_ = slotDetail.fundCurrency;
+
             amount_ = tokenBalance.mul(10**uint256(ERC20(slotDetail.fundCurrency).decimals())).div(
                 10**uint256(poolContract.valueDecimals())
             );

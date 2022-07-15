@@ -9,6 +9,7 @@
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../../../interfaces/ISolvV2ConvertibleMarket.sol";
 import "../../../../interfaces/ISolvV2ConvertiblePool.sol";
 import "../../../../interfaces/ISolvV2ConvertibleVoucher.sol";
@@ -30,7 +31,12 @@ contract SolvV2ConvertibleBuyerPositionParser is
     SolvV2ConvertibleBuyerPositionDataDecoder
 {
     using AddressArrayLib for address[];
+    using SafeCast for uint256;
     using SafeMath for uint256;
+
+    address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    uint256 private constant SOLV_FEE_RATE_DIVISOR = 10000;
 
     ISolvV2ConvertibleMarket private immutable CONVERTIBLE_MARKET_CONTRACT;
     ISolvV2InitialConvertibleOfferingMarket
@@ -64,24 +70,21 @@ contract SolvV2ConvertibleBuyerPositionParser is
         )
     {
         if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.BuyOffering)) {
-            (address voucher, uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(
-                _encodedActionArgs
-            );
+            (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_encodedActionArgs);
 
 
                 ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
              = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
-            assetsToTransfer_ = new address[](1);
-            assetsToTransfer_[0] = offering.currency;
-
             uint256 voucherPrice = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.getPrice(offerId);
 
 
                 ISolvV2InitialConvertibleOfferingMarket.Market memory market
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.markets(voucher);
+             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.markets(offering.voucher);
             uint256 amount = uint256(units).mul(voucherPrice).div(10**uint256(market.decimals));
 
+            assetsToTransfer_ = new address[](1);
+            assetsToTransfer_[0] = offering.currency;
             amountsToTransfer_ = new uint256[](1);
             amountsToTransfer_[0] = amount;
         } else if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.BuySaleByAmount)) {
@@ -90,6 +93,9 @@ contract SolvV2ConvertibleBuyerPositionParser is
             );
 
             ISolvV2ConvertibleMarket.Sale memory sale = CONVERTIBLE_MARKET_CONTRACT.sales(saleId);
+
+            __validateNotNativeToken(__getVoucherCurrencyFromTokenId(sale.voucher, sale.tokenId));
+
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = sale.currency;
             amountsToTransfer_ = new uint256[](1);
@@ -99,11 +105,34 @@ contract SolvV2ConvertibleBuyerPositionParser is
 
             ISolvV2ConvertibleMarket.Sale memory sale = CONVERTIBLE_MARKET_CONTRACT.sales(saleId);
 
+            __validateNotNativeToken(__getVoucherCurrencyFromTokenId(sale.voucher, sale.tokenId));
+
             ISolvV2ConvertibleMarket.Market memory market = CONVERTIBLE_MARKET_CONTRACT.markets(
                 sale.voucher
             );
             uint128 price = CONVERTIBLE_MARKET_CONTRACT.getPrice(saleId);
             uint256 amount = uint256(units).mul(uint256(price)).div(uint256(market.precision));
+
+            // Fee logic copied from Solv's Convertible Marketplace internal _getFee helper
+            if (
+                CONVERTIBLE_MARKET_CONTRACT.markets(sale.voucher).feePayType ==
+                ISolvV2ConvertibleMarket.FeePayType.BUYER_PAY
+            ) {
+                uint128 fee;
+                if (market.feeType == ISolvV2ConvertibleMarket.FeeType.FIXED) {
+                    fee = market.feeAmount;
+                } else if (market.feeType == ISolvV2ConvertibleMarket.FeeType.BY_AMOUNT) {
+                    fee = amount
+                        .mul(uint256(market.feeRate))
+                        .div(SOLV_FEE_RATE_DIVISOR)
+                        .toUint128();
+                } else {
+                    revert("unsupported feeType");
+                }
+
+                // If buyer pays for fee, total amount is cost for units + fee
+                amount = amount.add(fee);
+            }
 
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = sale.currency;
@@ -129,10 +158,18 @@ contract SolvV2ConvertibleBuyerPositionParser is
 
             SolvV2ConvertibleBuyerPositionLib.Sale[] memory sales = externalPositionContract
                 .getSales();
+
             uint256 salesLength = sales.length;
             for (uint256 i; i < salesLength; i++) {
-                if (ERC20(sales[i].currency).balanceOf(_externalPosition) > 0) {
-                    assetsToReceive_.addUniqueItem(sales[i].currency);
+                address saleCurrency = sales[i].currency;
+                __validateNotNativeToken(saleCurrency);
+
+                if (assetsToReceive_.contains(saleCurrency)) {
+                    continue;
+                }
+
+                if (ERC20(saleCurrency).balanceOf(_externalPosition) > 0) {
+                    assetsToReceive_ = assetsToReceive_.addItem(saleCurrency);
                 }
             }
         } else if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.RemoveSale)) {
@@ -144,11 +181,14 @@ contract SolvV2ConvertibleBuyerPositionParser is
 
             SolvV2ConvertibleBuyerPositionLib.Sale[] memory sales = externalPositionContract
                 .getSales();
+
             uint256 salesLength = sales.length;
+
             for (uint256 i; i < salesLength; i++) {
                 if (sales[i].saleId == saleId) {
                     if (ERC20(sales[i].currency).balanceOf(_externalPosition) > 0) {
-                        assetsToReceive_.addUniqueItem(sales[i].currency);
+                        assetsToReceive_ = new address[](1);
+                        assetsToReceive_[0] = sales[i].currency;
                     }
                     break;
                 }
@@ -161,4 +201,27 @@ contract SolvV2ConvertibleBuyerPositionParser is
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @dev Empty for this external position type
     function parseInitArgs(address, bytes memory) external override returns (bytes memory) {}
+
+    // PRIVATE FUNCTIONS
+
+    function __getVoucherCurrencyFromTokenId(address _voucher, uint256 _tokenId)
+        private
+        view
+        returns (address currency_)
+    {
+        ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(_voucher);
+
+        return
+            ISolvV2ConvertiblePool(voucherContract.convertiblePool())
+                .getSlotDetail(voucherContract.slotOf(_tokenId))
+                .fundCurrency;
+    }
+
+    /// @dev Helper to validate that assets are not the NATIVE_TOKEN_ADDRESS
+    function __validateNotNativeToken(address _asset) private pure {
+        require(
+            _asset != NATIVE_TOKEN_ADDRESS,
+            "__validateNotNativeToken: Native asset is unsupported"
+        );
+    }
 }

@@ -26,7 +26,6 @@ export async function solvV2ConvertibleBuyerPositionBuyOffering({
   externalPositionProxy,
   offerId,
   units,
-  voucher,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
@@ -34,10 +33,8 @@ export async function solvV2ConvertibleBuyerPositionBuyOffering({
   externalPositionProxy: AddressLike;
   offerId: BigNumberish;
   units: BigNumberish;
-  voucher: AddressLike;
 }) {
   const actionArgs = solvV2ConvertibleBuyerPositionBuyOfferingArgs({
-    voucher,
     offerId,
     units,
   });

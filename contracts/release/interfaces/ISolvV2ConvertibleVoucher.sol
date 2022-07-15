@@ -45,9 +45,11 @@ interface ISolvV2ConvertibleVoucher {
 
     function ownerOf(uint256 _tokenId) external view returns (address owner_);
 
-    function voucherSlotMapping(uint256 _tokenId) external view returns (uint256 slotId_);
+    function slotOf(uint256 _tokenId) external view returns (uint256 slotId_);
 
     function underlying() external view returns (address underlying_);
 
     function unitsInToken(uint256 tokenId_) external view returns (uint256 units_);
+
+    function voucherSlotMapping(uint256 _tokenId) external returns (uint256 slotId_);
 }

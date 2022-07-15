@@ -166,7 +166,6 @@ describe('buy IVO action', () => {
       externalPositionManager,
       externalPositionProxy: solvConvertibleBuyerPosition,
       signer: fundOwner,
-      voucher,
     });
 
     // Check that the tokenId is owned by the EP
@@ -185,7 +184,7 @@ describe('buy IVO action', () => {
       voucher,
     });
 
-    expect(receipt).toMatchInlineGasSnapshot(`965850`);
+    expect(receipt).toMatchInlineGasSnapshot(`963889`);
   });
 });
 
@@ -240,7 +239,7 @@ describe('buy sale actions', () => {
     // Check that the EP does not hold currency
     expect(await currencyToken.balanceOf(solvConvertibleBuyerPosition)).toEqBigNumber(0);
 
-    expect(receipt).toMatchInlineGasSnapshot(`437869`);
+    expect(receipt).toMatchInlineGasSnapshot(`463651`);
   });
 
   it('works as expected - buy sales by units (partial sale units)', async () => {
@@ -270,7 +269,7 @@ describe('buy sale actions', () => {
     expect(voucherTokenIds[0].tokenId).toEqBigNumber(tokenId.add(1));
     expect(voucherTokenIds[0].voucher).toMatchAddress(voucher);
 
-    expect(receipt).toMatchInlineGasSnapshot(`630440`);
+    expect(receipt).toMatchInlineGasSnapshot(`657861`);
   });
 });
 
@@ -289,7 +288,6 @@ describe('claim voucher', () => {
         externalPositionManager,
         externalPositionProxy: solvConvertibleBuyerPosition,
         signer: fundOwner,
-        voucher,
       })
     ).tokenId;
 
@@ -409,7 +407,6 @@ describe('sales creation actions', () => {
         externalPositionManager,
         externalPositionProxy: solvConvertibleBuyerPosition,
         signer: fundOwner,
-        voucher,
       })
     ).tokenId;
   });
@@ -574,7 +571,7 @@ describe('sales creation actions', () => {
     const postVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
     expect(postVaultCurrencyBalance).toEqBigNumber(preVaultCurrencyBalance.add(valueToReconcile));
 
-    expect(receipt).toMatchInlineGasSnapshot(`141766`);
+    expect(receipt).toMatchInlineGasSnapshot(`195927`);
   });
 });
 
@@ -591,7 +588,6 @@ describe('remove sale action', () => {
         externalPositionManager,
         externalPositionProxy: solvConvertibleBuyerPosition,
         signer: fundOwner,
-        voucher,
       })
     ).tokenId;
 
@@ -653,7 +649,7 @@ describe('remove sale action', () => {
     // Should reconcile
     expect(postVaultCurrencyBalance).toBeGtBigNumber(preVaultCurrencyBalance);
 
-    expect(receipt).toMatchInlineGasSnapshot(`326330`);
+    expect(receipt).toMatchInlineGasSnapshot(`380594`);
   });
 
   it('works as expected - remove sale (fulfilled)', async () => {
@@ -671,7 +667,7 @@ describe('remove sale action', () => {
     // VoucherTokenId should not be added when sale has been fulfilled
     assertNoEvent(receipt, solvConvertibleBuyerPosition.abi.getEvent('VoucherTokenIdAdded'));
 
-    expect(receipt).toMatchInlineGasSnapshot(`165760`);
+    expect(receipt).toMatchInlineGasSnapshot(`220024`);
   });
 });
 
@@ -689,7 +685,6 @@ describe('get managed assets', () => {
         externalPositionManager,
         externalPositionProxy: solvConvertibleBuyerPosition,
         signer: fundOwner,
-        voucher,
       })
     ).tokenId;
   });
@@ -855,7 +850,6 @@ describe('get managed assets', () => {
       externalPositionManager,
       externalPositionProxy: solvConvertibleBuyerPosition,
       signer: fundOwner,
-      voucher,
     });
 
     // Create a fixed price sale with tokenId2 using a different currency

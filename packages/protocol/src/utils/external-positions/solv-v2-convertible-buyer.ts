@@ -22,13 +22,11 @@ export enum SolvV2SalePriceType {
 export function solvV2ConvertibleBuyerPositionBuyOfferingArgs({
   offerId,
   units,
-  voucher,
 }: {
   offerId: BigNumberish;
   units: BigNumberish;
-  voucher: AddressLike;
 }) {
-  return encodeArgs(['address', 'uint24', 'uint128'], [voucher, offerId, units]);
+  return encodeArgs(['uint24', 'uint128'], [offerId, units]);
 }
 
 export function solvV2ConvertibleBuyerPositionBuySaleByAmountArgs({

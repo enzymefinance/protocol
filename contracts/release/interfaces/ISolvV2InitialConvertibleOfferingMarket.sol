@@ -61,6 +61,7 @@ interface ISolvV2InitialConvertibleOfferingMarket {
 
     function buy(uint24 _offeringId, uint128 _units)
         external
+        payable
         returns (uint256 amount_, uint128 fee_);
 
     function getPrice(uint24 _offeringId) external view returns (uint256 price_);
