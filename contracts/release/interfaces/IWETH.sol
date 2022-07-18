@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-/// @title WETH Interface
+/// @title IWETH Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IWETH {
     function deposit() external payable;

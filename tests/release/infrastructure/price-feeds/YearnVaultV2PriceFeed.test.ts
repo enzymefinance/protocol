@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
-import { IYearnVaultV2, StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken, ITestYearnVaultV2 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
@@ -17,7 +17,7 @@ describe('constructor', () => {
 
     // Assert each derivative is properly registered
     for (const yVaultAddress of Object.values(fork.config.yearn.vaultV2.yVaults) as AddressLike[]) {
-      const yVault = new IYearnVaultV2(yVaultAddress, provider);
+      const yVault = new ITestYearnVaultV2(yVaultAddress, provider);
 
       expect(await yearnVaultV2PriceFeed.isSupportedAsset(yVault)).toBe(true);
       expect(await yearnVaultV2PriceFeed.getUnderlyingForDerivative(yVault)).toMatchAddress(await yVault.token());
@@ -35,7 +35,7 @@ describe('addDerivatives', () => {
 
   it('reverts when using an invalid underlying token for yVault', async () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
-    const yVault = new IYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+    const yVault = new ITestYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
 
     // De-register valid yVault
     await yearnVaultV2PriceFeed.removeDerivatives([yVault]);
@@ -56,8 +56,8 @@ describe('addDerivatives', () => {
 describe('calcUnderlyingValues', () => {
   it('returns the correct rate for underlying token (18-decimal underlying)', async () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
-    const yVault = new IYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yDai, provider);
-    const underlying = new StandardToken(await yVault.token(), provider);
+    const yVault = new ITestYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yDai, provider);
+    const underlying = new ITestStandardToken(await yVault.token(), provider);
 
     expect(await underlying.decimals()).toEqBigNumber(18);
 
@@ -69,8 +69,8 @@ describe('calcUnderlyingValues', () => {
 
   it('returns the correct rate for underlying token (non 18-decimal underlying)', async () => {
     const yearnVaultV2PriceFeed = fork.deployment.yearnVaultV2PriceFeed;
-    const yVault = new IYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const underlying = new StandardToken(await yVault.token(), provider);
+    const yVault = new ITestYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+    const underlying = new ITestStandardToken(await yVault.token(), provider);
 
     expect(await underlying.decimals()).not.toEqBigNumber(18);
 
@@ -100,8 +100,8 @@ describe('isSupportedAsset', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, provider);
+    const yVault = new ITestStandardToken(fork.config.yearn.vaultV2.yVaults.yDai, provider);
+    const underlying = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     expect(await underlying.decimals()).toEqBigNumber(18);
 
@@ -115,8 +115,8 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const underlying = new StandardToken(fork.config.primitives.usdc, provider);
+    const yVault = new ITestStandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+    const underlying = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     expect(await underlying.decimals()).not.toEqBigNumber(18);
 

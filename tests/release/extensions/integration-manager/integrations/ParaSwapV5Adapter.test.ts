@@ -2,11 +2,11 @@ import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
   encodeArgs,
-  IUniswapV2Pair,
+  ITestStandardToken,
+  ITestUniswapV2Pair,
   ONE_HUNDRED_PERCENT_IN_BPS,
   paraSwapV5TakeOrderArgs,
   SpendAssetsHandleType,
-  StandardToken,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -102,7 +102,7 @@ describe('takeOrder', () => {
     const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -129,14 +129,14 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (no network fees)', async () => {
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
     const [fundOwner] = fork.accounts;
     const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
     const integrationManager = fork.deployment.integrationManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -165,13 +165,13 @@ describe('takeOrder', () => {
     // e.g., hex((30 << 161) + (1 << 160) + 0xa478c2975ab1ea89e8196811f51a7b7ade33eb11)
 
     // UniV2 payload
-    const uniV2Pool = new IUniswapV2Pair(fork.config.uniswap.pools.daiWeth, provider);
+    const uniV2Pool = new ITestUniswapV2Pair(fork.config.uniswap.pools.daiWeth, provider);
     const uniV2ShiftedDirection = (await uniV2Pool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
     const uniV2PackedPool = shiftedFee.add(uniV2ShiftedDirection).add(uniV2Pool.address);
     const uniV2Payload = encodeArgs([uniswapV2DataStruct], [{ pools: [uniV2PackedPool], weth: constants.AddressZero }]);
 
     // Sushi payload
-    const sushiPool = new IUniswapV2Pair('0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f', provider);
+    const sushiPool = new ITestUniswapV2Pair('0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f', provider);
     const sushiShiftedDirection = (await sushiPool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
     const sushiPackedPool = shiftedFee.add(sushiShiftedDirection).add(sushiPool.address);
     const sushiPayload = encodeArgs([uniswapV2DataStruct], [{ pools: [sushiPackedPool], weth: constants.AddressZero }]);

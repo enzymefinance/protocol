@@ -1,10 +1,10 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   createUnsignedZeroExV2Order,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   signZeroExV2Order,
   SpendAssetsHandleType,
-  StandardToken,
   takeOrderSelector,
   zeroExV2TakeOrderArgs,
 } from '@enzymefinance/protocol';
@@ -49,8 +49,8 @@ describe('constructor', () => {
 describe('parseAssetsForAction', () => {
   it('does not allow a maker which is not whitelisted', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     const feeRecipientAddress = constants.AddressZero;
     const makerAssetAmount = BigNumber.from(3);
@@ -83,8 +83,8 @@ describe('parseAssetsForAction', () => {
   it('generates expected output without takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
@@ -130,8 +130,8 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFeeAsset that is the same as makerAsset', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.zrx, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.zrx, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
@@ -180,8 +180,8 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFeeAsset that is the same as takerAsset', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.zrx, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
@@ -227,9 +227,9 @@ describe('parseAssetsForAction', () => {
   it('generates expected output with takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
     const deployer = fork.deployer;
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.mln, provider);
-    const takerFeeAsset = new StandardToken(fork.config.primitives.zrx, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    const takerFeeAsset = new ITestStandardToken(fork.config.primitives.zrx, provider);
 
     const fundDeployerOwner = await fork.deployment.dispatcher.getOwner();
     const adapter = zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
@@ -284,7 +284,7 @@ describe('allowed makers', () => {
       const adapter = fork.deployment.zeroExV2Adapter.connect(await provider.getSignerWithAddress(fundDeployerOwner));
 
       await createNewFund({
-        denominationAsset: new StandardToken(fork.config.synthetix.susd, deployer),
+        denominationAsset: new ITestStandardToken(fork.config.synthetix.susd, deployer),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: deployer,
@@ -324,8 +324,8 @@ describe('allowed makers', () => {
 describe('takeOrder', () => {
   it('works as expected without takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const weth = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
     const incomingAsset = weth;
     const [fundOwner, maker] = fork.accounts;
 
@@ -392,9 +392,9 @@ describe('takeOrder', () => {
 
   it('works as expected with takerFee', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const denominationAsset = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.zrx, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.bat, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.zrx, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.bat, provider);
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -461,9 +461,9 @@ describe('takeOrder', () => {
 
   it('partially fill an order', async () => {
     const zeroExV2Adapter = fork.deployment.zeroExV2Adapter;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const outgoingAsset = weth;
-    const incomingAsset = new StandardToken(fork.config.primitives.bat, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.bat, provider);
     const [fundOwner, maker] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

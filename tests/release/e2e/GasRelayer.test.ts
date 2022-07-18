@@ -8,11 +8,11 @@ import {
   ComptrollerLib,
   encodeArgs,
   GasRelayPaymasterLib,
-  IGsnRelayHub,
   IntegrationManagerActionId,
+  ITestGsnRelayHub,
+  ITestStandardToken,
   ONE_YEAR_IN_SECONDS,
   sighash,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -44,7 +44,7 @@ beforeEach(async () => {
 describe('gas relayer', () => {
   it('should take deposit on deployment', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -72,7 +72,7 @@ describe('gas relayer', () => {
 
   it('should not allow deployment if there is not enough weth in the fund', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -87,7 +87,7 @@ describe('gas relayer', () => {
 
   it('fund owner should be able to withdraw gas relayer deposit', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -117,7 +117,7 @@ describe('gas relayer', () => {
 
   it('should relay and not pull from fund if flag set to false', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -179,7 +179,7 @@ describe('gas relayer', () => {
 
   it('should relay and pull funds to top up deposit', async () => {
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const { comptrollerProxy, vaultProxy } = await createNewFund({
       denominationAsset: weth,
       fundDeployer: fork.deployment.fundDeployer,
@@ -248,7 +248,7 @@ describe('gas relayer', () => {
 
 describe('expected relayable txs', () => {
   let fundOwner: SignerWithAddress;
-  let denominationAsset: StandardToken, weth: StandardToken;
+  let denominationAsset: ITestStandardToken, weth: ITestStandardToken;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let gasRelayPaymaster: GasRelayPaymasterLib;
   let relayHub: string, relayWorker: string;
@@ -256,8 +256,8 @@ describe('expected relayable txs', () => {
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-    weth = new StandardToken(fork.config.weth, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    weth = new ITestStandardToken(fork.config.weth, provider);
 
     // relay args
     relayHub = fork.config.gsn.relayHub;
@@ -313,8 +313,8 @@ describe('expected relayable txs', () => {
     it('happy path: buyBackProtocolFeeShares', async () => {
       const protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
 
-      denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-      const mln = new StandardToken(fork.config.primitives.mln, provider);
+      denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+      const mln = new ITestStandardToken(fork.config.primitives.mln, provider);
 
       const newFundRes = await createNewFund({
         denominationAsset,
@@ -796,7 +796,7 @@ describe('expected relayable txs', () => {
       await provider.send('evm_increaseTime', [migrationTimelock.toNumber()]);
       await nextFundDeployer.connect(fundOwner).executeMigration(vaultProxy, false);
 
-      const rHContract = new IGsnRelayHub(relayHub, fundOwner);
+      const rHContract = new ITestGsnRelayHub(relayHub, fundOwner);
       const deposit = await rHContract.balanceOf(gasRelayPaymaster.address);
 
       await gasRelayPaymaster.connect(fundOwner).withdrawBalance();
@@ -875,7 +875,7 @@ describe('expected relayable txs', () => {
           vaultPaymaster: gasRelayPaymaster.address,
         }),
       ).rejects.toBeRevertedWith('Paymaster balance too low');
-      const rHContract = new IGsnRelayHub(relayHub, fundOwner);
+      const rHContract = new ITestGsnRelayHub(relayHub, fundOwner);
 
       expect(await rHContract.balanceOf(gasRelayPaymaster.address)).toEqBigNumber(0);
     });

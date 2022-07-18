@@ -1,4 +1,4 @@
-import { ICERC20, ONE_DAY_IN_SECONDS, StandardToken } from '@enzymefinance/protocol';
+import { ITestCERC20, ITestStandardToken, ONE_DAY_IN_SECONDS } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertCompoundLend,
@@ -22,14 +22,14 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
     const lendReceipt = await assertCompoundLend({
-      cToken: new ICERC20(fork.config.fuse.ftokens.fdai7, provider),
+      cToken: new ITestCERC20(fork.config.fuse.ftokens.fdai7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
@@ -47,14 +47,14 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
     const lendReceipt = await assertCompoundLend({
-      cToken: new ICERC20(fork.config.fuse.fetherTokens.feth7, provider),
+      cToken: new ITestCERC20(fork.config.fuse.fetherTokens.feth7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
@@ -74,14 +74,14 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.fuse.ftokens.fdai7, provider),
+      cToken: new ITestCERC20(fork.config.fuse.ftokens.fdai7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
@@ -98,14 +98,14 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.fuse.fetherTokens.feth7, provider),
+      cToken: new ITestCERC20(fork.config.fuse.fetherTokens.feth7, provider),
       compoundAdapter: fork.deployment.fuseAdapter,
       compoundPriceFeed: fork.deployment.fusePriceFeed,
       comptrollerProxy,
@@ -122,12 +122,12 @@ describe('redeem', () => {
 describe('claimComp', () => {
   it('should accrue rewards on the fund after lending, adapter', async () => {
     const [fundOwner] = fork.accounts;
-    const tribe = new StandardToken('0xc7283b66eb1eb5fb86327f08e1b5816b0720212b', provider);
-    const fTribe8 = new StandardToken(fork.config.fuse.ftokens.ftribe8, provider);
+    const tribe = new ITestStandardToken('0xc7283b66eb1eb5fb86327f08e1b5816b0720212b', provider);
+    const fTribe8 = new ITestStandardToken(fork.config.fuse.ftokens.ftribe8, provider);
     const fuseComptroller8Address = '0xc54172e34046c1653d1920d40333Dd358c7a1aF4';
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,

@@ -8,12 +8,12 @@ import {
   ITestSolvV2InitialConvertibleOfferingMarket,
   ITestSolvV2ManualPriceOracle,
   ITestSolvV2PriceOracleManager,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
   ONE_WEEK_IN_SECONDS,
   SolvV2ConvertibleIssuerPositionLib,
   SolvV2SalePriceType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SolvV2ConvertibleIssuerPositionCreateOfferParams } from '@enzymefinance/testutils';
 import {
@@ -37,9 +37,9 @@ const voucherUnit = utils.parseUnits('1', 26);
 
 let fundOwner: SignerWithAddress;
 let buyer: SignerWithAddress;
-let currencyToken: StandardToken;
+let currencyToken: ITestStandardToken;
 let currencyUnit: BigNumber;
-let underlyingToken: StandardToken;
+let underlyingToken: ITestStandardToken;
 let underlyingUnit: BigNumber;
 
 let comptrollerProxy: ComptrollerLib;
@@ -71,7 +71,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const fund = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -90,9 +90,9 @@ beforeEach(async () => {
   solvV2ConvertibleIssuerPosition = new SolvV2ConvertibleIssuerPositionLib(externalPositionProxy, provider);
 
   // All tests use the USF convertible voucher (except the test for multiple voucher issuance)
-  currencyToken = new StandardToken(fork.config.primitives.usdt, provider);
+  currencyToken = new ITestStandardToken(fork.config.primitives.usdt, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new StandardToken(fork.config.unsupportedAssets.usf, provider);
+  underlyingToken = new ITestStandardToken(fork.config.unsupportedAssets.usf, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvDeployer = await impersonateSigner({ provider, signerAddress: fork.config.solvFinanceV2.deployer });
@@ -556,8 +556,8 @@ describe('Actions.Withdraw', () => {
 describe('multiple voucher issuance', () => {
   it('works as expected', async () => {
     // Seed underlying and currency
-    const underlyingToken2 = new StandardToken(fork.config.unsupportedAssets.perp, provider);
-    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, provider);
+    const underlyingToken2 = new ITestStandardToken(fork.config.unsupportedAssets.perp, provider);
+    const currencyToken2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const underlyingToken2Unit = await getAssetUnit(underlyingToken2);
     const currencyToken2Unit = await getAssetUnit(currencyToken2);

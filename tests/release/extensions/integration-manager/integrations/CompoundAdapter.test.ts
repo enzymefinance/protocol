@@ -3,11 +3,12 @@ import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { CompoundAdapter, ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   compoundArgs,
-  ICERC20,
+  ITestCERC20,
+  ITestCompoundComptroller,
+  ITestStandardToken,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -16,7 +17,6 @@ import {
   compoundClaim,
   createNewFund,
   deployProtocolFixture,
-  ICompoundComptroller,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -31,7 +31,7 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
   compoundAdapter = fork.deployment.compoundAdapter;
   const newFund = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.weth, provider),
+    denominationAsset: new ITestStandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -145,7 +145,7 @@ describe('parseAssetsForAction', () => {
 describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const lendReceipt = await assertCompoundLend({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
@@ -161,7 +161,7 @@ describe('lend', () => {
 
   it('works as expected when called for lending by a fund (ETH)', async () => {
     const lendReceipt = await assertCompoundLend({
-      cToken: new ICERC20(fork.config.compound.ceth, provider),
+      cToken: new ITestCERC20(fork.config.compound.ceth, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
@@ -179,7 +179,7 @@ describe('lend', () => {
 describe('redeem', () => {
   it('works as expected when called for redeeming by a fund', async () => {
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
@@ -194,7 +194,7 @@ describe('redeem', () => {
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
     const redeemReceipt = await assertCompoundRedeem({
-      cToken: new ICERC20(fork.config.compound.ceth, provider),
+      cToken: new ITestCERC20(fork.config.compound.ceth, provider),
       compoundAdapter: fork.deployment.compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
@@ -210,11 +210,11 @@ describe('redeem', () => {
 
 describe('claimComp', () => {
   it('should accrue COMP on the fund after lending', async () => {
-    const compoundComptroller = new ICompoundComptroller(fork.config.compound.comptroller, fork.deployer);
-    const comp = new StandardToken(fork.config.primitives.comp, provider);
+    const compoundComptroller = new ITestCompoundComptroller(fork.config.compound.comptroller, fork.deployer);
+    const comp = new ITestStandardToken(fork.config.primitives.comp, provider);
 
     await assertCompoundLend({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,
@@ -241,10 +241,10 @@ describe('claimComp', () => {
   });
 
   it('should accrue COMP on the fund after lending, adapter', async () => {
-    const comp = new StandardToken(fork.config.primitives.comp, provider);
+    const comp = new ITestStandardToken(fork.config.primitives.comp, provider);
 
     await assertCompoundLend({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       compoundAdapter,
       compoundPriceFeed: fork.deployment.compoundPriceFeed,
       comptrollerProxy,

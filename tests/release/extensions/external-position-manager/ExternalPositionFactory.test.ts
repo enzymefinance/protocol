@@ -4,8 +4,8 @@ import {
   encodeArgs,
   ExternalPositionFactory,
   ExternalPositionManager,
+  ITestStandardToken,
   sighash,
-  StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -36,7 +36,7 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner as SignerWithAddress,
@@ -68,7 +68,7 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner as SignerWithAddress,

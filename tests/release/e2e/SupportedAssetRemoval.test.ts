@@ -8,7 +8,7 @@ import type {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { feeManagerConfigArgs, performanceFeeConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import { feeManagerConfigArgs, ITestStandardToken, performanceFeeConfigArgs } from '@enzymefinance/protocol';
 import { buyShares, createNewFund, redeemSharesInKind, uniswapV2TakeOrder } from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
 
@@ -20,9 +20,9 @@ let integrationManager: IntegrationManager,
   revertingPriceFeed: RevertingPriceFeed,
   uniswapV2ExchangeAdapter: UniswapV2ExchangeAdapter,
   valueInterpreter: ValueInterpreter;
-let denominationAsset: StandardToken, fundOwner: SignerWithAddress;
+let denominationAsset: ITestStandardToken, fundOwner: SignerWithAddress;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-let tradingAsset: StandardToken;
+let tradingAsset: ITestStandardToken;
 
 beforeAll(async () => {
   // System contracts
@@ -32,7 +32,7 @@ beforeAll(async () => {
   valueInterpreter = fork.deployment.valueInterpreter;
 
   // Fund config and contracts
-  denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+  denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
@@ -65,7 +65,7 @@ beforeAll(async () => {
   vaultProxy = newFundRes.vaultProxy;
 
   // Misc vars
-  tradingAsset = new StandardToken(fork.config.weth, provider);
+  tradingAsset = new ITestStandardToken(fork.config.weth, provider);
 });
 
 describe('unsupported denomination asset', () => {

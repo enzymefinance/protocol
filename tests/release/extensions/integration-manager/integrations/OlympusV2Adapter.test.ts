@@ -1,12 +1,12 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import {
+  ITestStandardToken,
   OlympusV2Adapter,
   olympusV2StakeArgs,
   olympusV2UnstakeArgs,
   SpendAssetsHandleType,
   stakeSelector,
-  StandardToken,
   unstakeSelector,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -105,14 +105,14 @@ describe('stake', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.ohm, provider);
-    const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
+    const token = new ITestStandardToken(fork.config.primitives.ohm, provider);
+    const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
     await seedAccount({ provider, account: vaultProxy, amount, token });
@@ -147,14 +147,14 @@ describe('unstake', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.ohm, provider);
-    const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
+    const token = new ITestStandardToken(fork.config.primitives.ohm, provider);
+    const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
     await seedAccount({ provider, account: vaultProxy, amount, token });
@@ -196,14 +196,14 @@ describe('unstake', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.ohm, provider);
-    const stakedToken = new StandardToken(fork.config.primitives.sohm, provider);
+    const token = new ITestStandardToken(fork.config.primitives.ohm, provider);
+    const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
     await seedAccount({ provider, account: vaultProxy, amount, token });

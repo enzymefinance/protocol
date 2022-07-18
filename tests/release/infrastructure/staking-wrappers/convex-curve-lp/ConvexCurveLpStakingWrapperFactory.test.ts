@@ -1,6 +1,6 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ConvexCurveLpStakingWrapperFactory } from '@enzymefinance/protocol';
-import { ConvexCurveLpStakingWrapperLib, IConvexBooster, StandardToken } from '@enzymefinance/protocol';
+import { ConvexCurveLpStakingWrapperLib, ITestConvexBooster, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
@@ -35,7 +35,7 @@ describe('deploy', () => {
 
     const wrapperContract = new ConvexCurveLpStakingWrapperLib(wrapperAddress, provider);
 
-    const convexBooster = new IConvexBooster(fork.config.convex.booster, provider);
+    const convexBooster = new ITestConvexBooster(fork.config.convex.booster, provider);
     const poolInfo = await convexBooster.poolInfo(pid);
 
     expect(await wrapperContract.getConvexPool()).toMatchAddress(poolInfo.crvRewards);
@@ -54,7 +54,7 @@ describe('pause', () => {
   const depositAmount = 123;
   let wrapperContract: ConvexCurveLpStakingWrapperLib;
   let factoryOwner: SignerWithAddress, randomUser: SignerWithAddress;
-  let lpToken: StandardToken;
+  let lpToken: ITestStandardToken;
 
   beforeEach(async () => {
     [randomUser] = fork.accounts;
@@ -71,7 +71,7 @@ describe('pause', () => {
     wrapperContract = new ConvexCurveLpStakingWrapperLib(wrapperAddress, provider);
 
     // Seed LP tokens to randomUser and pre-approve deposit
-    lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
     await seedAccount({ provider, account: randomUser, amount: depositAmount, token: lpToken });
     await lpToken.connect(randomUser).approve(wrapperContract, depositAmount);
   });

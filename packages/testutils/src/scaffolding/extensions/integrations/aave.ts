@@ -1,5 +1,5 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { AaveAdapter, ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
+import type { AaveAdapter, ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import {
   aaveLendArgs,
   aaveRedeemArgs,
@@ -23,7 +23,7 @@ export async function aaveLend({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   aaveAdapter: AaveAdapter;
-  aToken: StandardToken;
+  aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
   const lendArgs = aaveLendArgs({
@@ -56,7 +56,7 @@ export async function aaveRedeem({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   aaveAdapter: AaveAdapter;
-  aToken: StandardToken;
+  aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
   const redeemArgs = aaveRedeemArgs({

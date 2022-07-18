@@ -2,10 +2,10 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ValueInterpreter } from '@enzymefinance/protocol';
 import {
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
   pricelessAssetBypassStartAssetBypassTimelockSelector,
-  StandardToken,
   TestPricelessAssetBypassMixin,
   vaultCallAnyDataHash,
 } from '@enzymefinance/protocol';
@@ -29,7 +29,7 @@ let fork: ProtocolDeployment;
 let testPricelessAssetBypassMixin: TestPricelessAssetBypassMixin;
 let comptrollerProxy: ComptrollerLib;
 let fundOwner: SignerWithAddress;
-let denominationAsset: StandardToken, assetToBypass: StandardToken;
+let denominationAsset: ITestStandardToken, assetToBypass: ITestStandardToken;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -49,8 +49,8 @@ beforeEach(async () => {
     [vaultCallAnyDataHash],
   );
 
-  denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-  assetToBypass = new StandardToken(fork.config.primitives.dai, provider);
+  denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+  assetToBypass = new ITestStandardToken(fork.config.primitives.dai, provider);
 
   const newFundRes = await createNewFund({
     denominationAsset,

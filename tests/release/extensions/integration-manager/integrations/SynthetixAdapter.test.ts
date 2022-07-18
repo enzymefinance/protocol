@@ -2,10 +2,10 @@ import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
   ChainlinkRateAsset,
-  ISynthetixExchanger,
+  ITestStandardToken,
+  ITestSynthetixExchanger,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
   synthetixRedeemArgs,
   synthetixTakeOrderArgs,
   takeOrderSelector,
@@ -102,7 +102,7 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for redeem', async () => {
     const [fundOwner] = fork.accounts;
-    const sxagSynth = new StandardToken(sxagAddress, provider);
+    const sxagSynth = new ITestStandardToken(sxagAddress, provider);
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const redeemArgs = synthetixRedeemArgs({
@@ -110,7 +110,7 @@ describe('parseAssetsForAction', () => {
     });
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.synthetix.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -140,7 +140,7 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = utils.parseEther('1');
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.synthetix.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -166,10 +166,10 @@ describe('takeOrder', () => {
   it('does not allow an outgoing asset in the asset universe', async () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
-    const seth = new StandardToken(fork.config.unsupportedAssets.seth, provider);
+    const seth = new ITestStandardToken(fork.config.unsupportedAssets.seth, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -200,18 +200,18 @@ describe('takeOrder', () => {
   it('works as expected when called by a fund (synth to synth)', async () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
-    const incomingAsset = new StandardToken(fork.config.primitives.susd, provider);
-    const outgoingAsset = new StandardToken(fork.config.unsupportedAssets.seth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.susd, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.unsupportedAssets.seth, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
     // Load the SynthetixExchange contract
-    const synthetixExchanger = new ISynthetixExchanger(synthetixExchangerAddress, provider);
+    const synthetixExchanger = new ITestSynthetixExchanger(synthetixExchangerAddress, provider);
 
     // Delegate SynthetixAdapter to exchangeOnBehalf of VaultProxy
     await synthetixAssignExchangeDelegate({
@@ -223,7 +223,7 @@ describe('takeOrder', () => {
 
     // Define order params
     const outgoingAssetAmount = utils.parseEther('100');
-    const { 0: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
+    const { amountReceived_: expectedIncomingAssetAmount } = await synthetixExchanger.getAmountsForExchange(
       outgoingAssetAmount,
       sethCurrencyKey,
       susdCurrencyKey,
@@ -269,7 +269,7 @@ describe('redeem', () => {
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.synthetix.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -294,12 +294,12 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
     const synthetixAdapter = fork.deployment.synthetixAdapter;
 
-    const sxagSynth = new StandardToken(sxagAddress, provider);
-    const sxauSynth = new StandardToken(sxauAddress, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.susd, provider);
+    const sxagSynth = new ITestStandardToken(sxagAddress, provider);
+    const sxauSynth = new ITestStandardToken(sxauAddress, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.susd, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.synthetix.susd, provider),
+      denominationAsset: new ITestStandardToken(fork.config.synthetix.susd, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,

@@ -1,5 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import { IUniswapV2Pair, StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken, ITestUniswapV2Pair } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { buyShares, createNewFund, deployProtocolFixture, seedAccount, uniswapV2Lend } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
@@ -12,8 +12,8 @@ beforeEach(async () => {
 
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const mln = new StandardToken(fork.config.primitives.mln, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const mln = new ITestStandardToken(fork.config.primitives.mln, provider);
     const denominationAsset = weth;
     const [fundOwner, investor] = fork.accounts;
 
@@ -73,7 +73,7 @@ describe('constructor', () => {
     expect(await uniswapV2PoolPriceFeed.getValueInterpreter()).toMatchAddress(fork.deployment.valueInterpreter);
 
     for (const poolToken of Object.values(fork.config.uniswap.pools) as AddressLike[]) {
-      const pairContract = new IUniswapV2Pair(poolToken, provider);
+      const pairContract = new ITestUniswapV2Pair(poolToken, provider);
       const token0 = await pairContract.token0();
       const token1 = await pairContract.token1();
 
@@ -81,9 +81,9 @@ describe('constructor', () => {
         uniswapV2PoolPriceFeed.getPoolTokenInfo,
         {
           token0,
-          token0Decimals: await new StandardToken(token0, provider).decimals(),
+          token0Decimals: await new ITestStandardToken(token0, provider).decimals(),
           token1,
-          token1Decimals: await new StandardToken(token1, provider).decimals(),
+          token1Decimals: await new ITestStandardToken(token1, provider).decimals(),
         },
       );
     }
@@ -97,7 +97,7 @@ describe('calcUnderlyingValues', () => {
   it('returns rate for non-18 decimals underlying assets', async () => {
     const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
 
-    const poolToken = new IUniswapV2Pair(fork.config.uniswap.pools.usdcWeth, provider);
+    const poolToken = new ITestUniswapV2Pair(fork.config.uniswap.pools.usdcWeth, provider);
     const token0Address = await poolToken.token0();
     const token1Address = await poolToken.token1();
 
@@ -114,7 +114,7 @@ describe('calcUnderlyingValues', () => {
   it('returns the correct rate for two 18-decimal primitive tokens', async () => {
     const uniswapV2PoolPriceFeed = fork.deployment.uniswapV2PoolPriceFeed;
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const uniswapPair = new IUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
+    const uniswapPair = new ITestUniswapV2Pair(fork.config.uniswap.pools.mlnWeth, provider);
 
     const token0Address = await uniswapPair.token0();
     const token0RatioAmount = utils.parseEther('1');
@@ -135,7 +135,7 @@ describe('calcUnderlyingValues', () => {
 
     // Get the rate ratio of the Uniswap pool
     const getReservesRes = await uniswapPair.getReserves();
-    const poolRateRatio = getReservesRes[0].mul(utils.parseEther('1')).div(getReservesRes[1]);
+    const poolRateRatio = getReservesRes.reserve0_.mul(utils.parseEther('1')).div(getReservesRes.reserve1_);
 
     // Get the trusted rate ratio based on trusted prices
     const token1RatioAmount = await valueInterpreter.calcCanonicalAssetValue
@@ -163,8 +163,8 @@ describe('calcUnderlyingValues', () => {
   describe('expected values', () => {
     it('returns the expected value from the valueInterpreter (different decimals pool)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const usdc = new StandardToken(fork.config.primitives.usdc, provider);
-      const usdcWeth = new StandardToken(fork.config.uniswap.pools.usdcWeth, provider);
+      const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
+      const usdcWeth = new ITestStandardToken(fork.config.uniswap.pools.usdcWeth, provider);
 
       const baseDecimals = await usdcWeth.decimals();
       const quoteDecimals = await usdc.decimals();
@@ -183,8 +183,8 @@ describe('calcUnderlyingValues', () => {
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, provider);
-      const kncWeth = new StandardToken(fork.config.uniswap.pools.batWeth, provider);
+      const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+      const kncWeth = new ITestStandardToken(fork.config.uniswap.pools.batWeth, provider);
 
       const baseDecimals = await kncWeth.decimals();
       const quoteDecimals = await dai.decimals();

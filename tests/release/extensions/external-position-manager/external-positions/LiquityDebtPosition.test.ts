@@ -2,19 +2,19 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
+  ITestLiquityHintHelper,
+  ITestLiquitySortedTroves,
+  ITestLiquityTroveManager,
+  ITestStandardToken,
   LiquityDebtPositionLib,
   ONE_HUNDRED_PERCENT_IN_BPS,
   ONE_PERCENT_IN_BPS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createLiquityDebtPosition,
   createNewFund,
   deployProtocolFixture,
-  ILiquityHintHelper,
-  ILiquitySortedTroves,
-  ILiquityTroveManager,
   liquityCalcHints,
   liquityDebtPositionAddCollateral,
   liquityDebtPositionBorrow,
@@ -49,12 +49,12 @@ let fundOwner: SignerWithAddress;
 
 let fork: ProtocolDeployment;
 
-let lusd: StandardToken, weth: StandardToken;
+let lusd: ITestStandardToken, weth: ITestStandardToken;
 let lusdBaseBorrowAmount: BigNumber, wethBaseCollateralAmount: BigNumber;
 let openTroveUpperHint: AddressLike, openTroveLowerHint: AddressLike;
-let liquityHintHelper: ILiquityHintHelper,
-  liquitySortedTroves: ILiquitySortedTroves,
-  liquityTroveManager: ILiquityTroveManager;
+let liquityHintHelper: ITestLiquityHintHelper,
+  liquitySortedTroves: ITestLiquitySortedTroves,
+  liquityTroveManager: ITestLiquityTroveManager;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -62,7 +62,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -79,12 +79,12 @@ beforeEach(async () => {
 
   liquityDebtPosition = new LiquityDebtPositionLib(externalPositionProxy, provider);
 
-  weth = new StandardToken(fork.config.weth, provider);
-  lusd = new StandardToken(fork.config.primitives.lusd, provider);
+  weth = new ITestStandardToken(fork.config.weth, provider);
+  lusd = new ITestStandardToken(fork.config.primitives.lusd, provider);
 
-  liquityHintHelper = new ILiquityHintHelper(liquityHintHelperAddress, provider);
-  liquitySortedTroves = new ILiquitySortedTroves(liquitySortedTrovesAddress, provider);
-  liquityTroveManager = new ILiquityTroveManager(fork.config.liquity.troveManager, provider);
+  liquityHintHelper = new ITestLiquityHintHelper(liquityHintHelperAddress, provider);
+  liquitySortedTroves = new ITestLiquitySortedTroves(liquitySortedTrovesAddress, provider);
+  liquityTroveManager = new ITestLiquityTroveManager(fork.config.liquity.troveManager, provider);
 
   // Currently, all troves in tests start with the same base borrow and collateral amounts,
   // in order to achieve a target starting collateralization ratio
@@ -104,8 +104,8 @@ beforeEach(async () => {
     liquitySortedTroves,
   });
 
-  openTroveUpperHint = openTroveHintRes.upperHint;
-  openTroveLowerHint = openTroveHintRes.lowerHint;
+  openTroveUpperHint = openTroveHintRes.upperHint_;
+  openTroveLowerHint = openTroveHintRes.lowerHint_;
 
   // Seed vault with more than enough weth for many multiples of the desired collateral amount
   await seedAccount({ provider, account: vaultProxyUsed, amount: wethBaseCollateralAmount.mul(10), token: weth });
@@ -171,7 +171,7 @@ describe('addCollateral', () => {
     const nextCollateralAmount = wethBaseCollateralAmount.add(collateralToAddAmount);
     const nextDebtAmount = openTroveDebtAmount;
 
-    const { upperHint, lowerHint } = await liquityCalcHints({
+    const { upperHint_, lowerHint_ } = await liquityCalcHints({
       collateralAmount: nextCollateralAmount,
       debtAmount: nextDebtAmount,
       liquityHintHelper,
@@ -183,9 +183,9 @@ describe('addCollateral', () => {
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
       externalPositionProxy: liquityDebtPosition,
-      lowerHint,
+      lowerHint: lowerHint_,
       signer: fundOwner,
-      upperHint,
+      upperHint: upperHint_,
     });
 
     const getManagedAssetsCall = await liquityDebtPosition.getManagedAssets.call();
@@ -225,7 +225,7 @@ describe('removeCollateral', () => {
 
     const wethBalanceBefore = await weth.balanceOf(vaultProxyUsed);
 
-    const { upperHint, lowerHint } = await liquityCalcHints({
+    const { upperHint_, lowerHint_ } = await liquityCalcHints({
       collateralAmount: nextCollateralAmount,
       debtAmount: nextDebtAmount,
       liquityHintHelper,
@@ -237,9 +237,9 @@ describe('removeCollateral', () => {
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
       externalPositionProxy: liquityDebtPosition,
-      lowerHint,
+      lowerHint: lowerHint_,
       signer: fundOwner,
-      upperHint,
+      upperHint: upperHint_,
     });
 
     const wethBalanceAfter = await weth.balanceOf(vaultProxyUsed);
@@ -281,7 +281,7 @@ describe('borrowLusd', () => {
     const nextCollateralAmount = wethBaseCollateralAmount;
     const newFeeAmountEstimate = await liquityTroveManager.getBorrowingFee.args(borrowedAmountToAdd).call();
 
-    const { upperHint, lowerHint } = await liquityCalcHints({
+    const { upperHint_, lowerHint_ } = await liquityCalcHints({
       collateralAmount: nextCollateralAmount,
       debtAmount: openTroveDebtAmount.add(borrowedAmountToAdd).add(newFeeAmountEstimate),
       liquityHintHelper,
@@ -292,11 +292,11 @@ describe('borrowLusd', () => {
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
       externalPositionProxy: liquityDebtPosition,
-      lowerHint,
+      lowerHint: lowerHint_,
       lusdAmount: borrowedAmountToAdd,
       maxFeePercentage,
       signer: fundOwner,
-      upperHint,
+      upperHint: upperHint_,
     });
 
     const newFeeAmount = await liquityTroveManager.getBorrowingFee.args(borrowedAmountToAdd).call();
@@ -391,7 +391,7 @@ describe('repayBorrow', () => {
     const nextCollateralAmount = wethBaseCollateralAmount;
     const nextDebtAmount = openTroveDebtAmount.sub(borrowedAmountToRepay);
 
-    const { upperHint, lowerHint } = await liquityCalcHints({
+    const { upperHint_, lowerHint_ } = await liquityCalcHints({
       collateralAmount: nextCollateralAmount,
       debtAmount: nextDebtAmount,
       liquityHintHelper,
@@ -402,10 +402,10 @@ describe('repayBorrow', () => {
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
       externalPositionProxy: liquityDebtPosition,
-      lowerHint,
+      lowerHint: lowerHint_,
       lusdAmount: borrowedAmountToRepay,
       signer: fundOwner,
-      upperHint,
+      upperHint: upperHint_,
     });
 
     const getDebtAssetsCall = await liquityDebtPosition.getDebtAssets.call();

@@ -2,7 +2,7 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ValueInterpreter } from '@enzymefinance/protocol';
-import { ChainlinkRateAsset, IChainlinkAggregator, MockToken, StandardToken } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset, ITestChainlinkAggregator, ITestStandardToken, MockToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -31,7 +31,7 @@ async function loadPrimitiveAggregator({
   valueInterpreter: ValueInterpreter;
   primitive: AddressLike;
 }) {
-  return new IChainlinkAggregator(await valueInterpreter.getAggregatorForPrimitive(primitive), provider);
+  return new ITestChainlinkAggregator(await valueInterpreter.getAggregatorForPrimitive(primitive), provider);
 }
 
 async function makeAllRatesStale({ valueInterpreter }: { valueInterpreter: ValueInterpreter }) {
@@ -54,7 +54,7 @@ async function swapDaiAggregatorForUsd({
   // which should always be nearly 1:1
   // See https://docs.chain.link/docs/using-chainlink-reference-contracts
   await valueInterpreter.removePrimitives([dai]);
-  const nextDaiAggregator = new IChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', provider);
+  const nextDaiAggregator = new ITestChainlinkAggregator('0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9', provider);
 
   await valueInterpreter.addPrimitives([dai], [nextDaiAggregator], [ChainlinkRateAsset.USD]);
 
@@ -64,8 +64,8 @@ async function swapDaiAggregatorForUsd({
 describe('primitives gas costs', () => {
   it('adds to calcGav for weth-denominated fund (same rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -110,8 +110,8 @@ describe('primitives gas costs', () => {
 
   it('adds to calcGav for weth-denominated fund (different rate assets)', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
     const valueInterpreter = fork.deployment.valueInterpreter;
@@ -230,7 +230,7 @@ describe('addPrimitives', () => {
   it('reverts when the primitive rate is stale', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const unregisteredMockToken = await MockToken.deploy(fork.deployer, 'Mock Token', 'MOCK', 6);
-    const unusedAggregator = new IChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
+    const unusedAggregator = new ITestChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
 
     await makeAllRatesStale({ valueInterpreter });
 
@@ -242,7 +242,7 @@ describe('addPrimitives', () => {
   it('works as expected when adding a primitive and emit an event', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
     const unregisteredMockToken = await MockToken.deploy(fork.deployer, 'Mock Token', 'MOCK', 6);
-    const unusedAggregator = new IChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
+    const unusedAggregator = new ITestChainlinkAggregator(unusedAggregatorAddress, fork.deployer);
 
     // Register the unregistered primitive with the unused aggregator
     const rateAsset = ChainlinkRateAsset.ETH;
@@ -272,7 +272,7 @@ describe('addPrimitives', () => {
 
   it('works as expected when adding a wrong primitive', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
     const renAggregator = await loadPrimitiveAggregator({
       primitive: fork.config.primitives.ren,
       valueInterpreter,
@@ -289,15 +289,17 @@ describe('addPrimitives', () => {
 describe('updatePrimitives', () => {
   let randomUser: SignerWithAddress;
   let valueInterpreter: ValueInterpreter;
-  let aggregatorsToUpdate: AddressLike[], primitivesToUpdate: StandardToken[], rateAssetsToUpdate: ChainlinkRateAsset[];
+  let aggregatorsToUpdate: AddressLike[],
+    primitivesToUpdate: ITestStandardToken[],
+    rateAssetsToUpdate: ChainlinkRateAsset[];
 
   beforeEach(async () => {
     [randomUser] = fork.accounts;
     valueInterpreter = fork.deployment.valueInterpreter;
 
     primitivesToUpdate = [
-      new StandardToken(fork.config.primitives.dai, provider),
-      new StandardToken(fork.config.primitives.usdc, provider),
+      new ITestStandardToken(fork.config.primitives.dai, provider),
+      new ITestStandardToken(fork.config.primitives.usdc, provider),
     ];
     // Just swapping aggregators will suffice for this test
     aggregatorsToUpdate = [fork.config.chainlink.aggregators.usdc[0], fork.config.chainlink.aggregators.dai[0]];
@@ -372,7 +374,7 @@ describe('removePrimitives', () => {
 
   it('works as expected when removing a primitive and emit an event', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
 
     const receipt = await valueInterpreter.removePrimitives([dai]);
 
@@ -434,8 +436,8 @@ describe('getCanonicalRate', () => {
 
   it('reverts when base asset rate is stale (no intermediary eth/usd)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
-    const weth = new StandardToken(fork.config.weth, fork.deployer);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new ITestStandardToken(fork.config.weth, fork.deployer);
 
     await makeAllRatesStale({ valueInterpreter });
 
@@ -446,8 +448,8 @@ describe('getCanonicalRate', () => {
 
   it('reverts when quote asset rate is stale (no intermediary eth/usd)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
-    const weth = new StandardToken(fork.config.weth, fork.deployer);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new ITestStandardToken(fork.config.weth, fork.deployer);
 
     await makeAllRatesStale({ valueInterpreter });
 
@@ -461,8 +463,8 @@ describe('getCanonicalRate', () => {
   // USDC/ETH and WETH/ETH
   it('works as expected when calling getCanonicalRate (equal rate asset)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
-    const weth = new StandardToken(fork.config.weth, fork.deployer);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
+    const weth = new ITestStandardToken(fork.config.weth, fork.deployer);
     const usdcAggregator = await loadPrimitiveAggregator({
       primitive: usdc,
       valueInterpreter,
@@ -474,7 +476,7 @@ describe('getCanonicalRate', () => {
 
     // Get rates
     const ethRate = utils.parseEther('1');
-    const usdcRate = (await usdcAggregator.latestRoundData())[1];
+    const usdcRate = (await usdcAggregator.latestRoundData()).answer_;
 
     // Base: weth |  Quote: usdc
     const expectedRate = wethUnit.mul(ethRate).div(wethUnit).mul(usdcUnit).div(usdcRate);
@@ -486,14 +488,14 @@ describe('getCanonicalRate', () => {
   // DAI/USD and USDC/ETH
   it('works as expected when calling getCanonicalRate (different rate assets)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
-    const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
     const daiAggregator = await swapDaiAggregatorForUsd({
       dai,
       signer: fork.deployer,
       valueInterpreter,
     });
-    const ethUSDAggregator = new IChainlinkAggregator(await valueInterpreter.getEthUsdAggregator(), provider);
+    const ethUSDAggregator = new ITestChainlinkAggregator(await valueInterpreter.getEthUsdAggregator(), provider);
     const usdcAggregator = await loadPrimitiveAggregator({
       primitive: usdc,
       valueInterpreter,
@@ -505,9 +507,9 @@ describe('getCanonicalRate', () => {
     const usdcUnit = utils.parseUnits('1', await usdc.decimals());
 
     // Calculate Rates
-    const ethRate = (await ethUSDAggregator.latestRoundData())[1];
-    const usdcRate = (await usdcAggregator.latestRoundData())[1];
-    const daiRate = (await daiAggregator.latestRoundData())[1];
+    const ethRate = (await ethUSDAggregator.latestRoundData()).answer_;
+    const usdcRate = (await usdcAggregator.latestRoundData()).answer_;
+    const daiRate = (await daiAggregator.latestRoundData()).answer_;
 
     // USD rate to ETH rate
     // Base: dai |  Quote: usdc
@@ -536,8 +538,8 @@ describe('expected values', () => {
     // USDC/ETH and USDT/ETH
     it('returns the expected value from the valueInterpreter (same decimals)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
-      const usdt = new StandardToken(fork.config.primitives.usdt, fork.deployer);
+      const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
+      const usdt = new ITestStandardToken(fork.config.primitives.usdt, fork.deployer);
 
       const baseDecimals = await usdc.decimals();
       const quoteDecimals = await usdt.decimals();
@@ -555,8 +557,8 @@ describe('expected values', () => {
     // SUSD/ETH and USDC/ETH
     it('returns the expected value from the valueInterpreter (different decimals)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
-      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
+      const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
+      const susd = new ITestStandardToken(fork.config.primitives.susd, fork.deployer);
 
       const baseDecimals = await susd.decimals();
       const quoteDecimals = await usdc.decimals();
@@ -578,8 +580,8 @@ describe('expected values', () => {
     // BNB/USD and REN/USD
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const bnb = new StandardToken(fork.config.primitives.bnb, fork.deployer);
-      const ren = new StandardToken(fork.config.primitives.ren, fork.deployer);
+      const bnb = new ITestStandardToken(fork.config.primitives.bnb, fork.deployer);
+      const ren = new ITestStandardToken(fork.config.primitives.ren, fork.deployer);
 
       const baseDecimals = await bnb.decimals();
       const quoteDecimals = await ren.decimals();
@@ -605,8 +607,8 @@ describe('expected values', () => {
     // SUSD/ETH and DAI/USD
     it('returns the expected value from the valueInterpreter (same decimals)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
-      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
+      const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
+      const susd = new ITestStandardToken(fork.config.primitives.susd, fork.deployer);
 
       await swapDaiAggregatorForUsd({
         dai,
@@ -630,8 +632,8 @@ describe('expected values', () => {
     // USDC/ETH and DAI/USD
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
-      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+      const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
+      const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
 
       await swapDaiAggregatorForUsd({
         dai,
@@ -657,8 +659,8 @@ describe('expected values', () => {
     // DAI/USD and SUSD/ETH
     it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
-      const susd = new StandardToken(fork.config.primitives.susd, fork.deployer);
+      const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
+      const susd = new ITestStandardToken(fork.config.primitives.susd, fork.deployer);
 
       await swapDaiAggregatorForUsd({
         dai,
@@ -682,8 +684,8 @@ describe('expected values', () => {
     // DAI/USD and USDC/ETH
     it('returns the expected value from the valueInterpreter (non 18 decimals primitives)', async () => {
       const valueInterpreter = fork.deployment.valueInterpreter;
-      const dai = new StandardToken(fork.config.primitives.dai, fork.deployer);
-      const usdc = new StandardToken(fork.config.primitives.usdc, fork.deployer);
+      const dai = new ITestStandardToken(fork.config.primitives.dai, fork.deployer);
+      const usdc = new ITestStandardToken(fork.config.primitives.usdc, fork.deployer);
 
       await swapDaiAggregatorForUsd({
         dai,

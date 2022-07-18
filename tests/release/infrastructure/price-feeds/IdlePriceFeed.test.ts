@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
-import { IIdleTokenV4, StandardToken } from '@enzymefinance/protocol';
+import { ITestIdleTokenV4, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   buyShares,
@@ -25,7 +25,7 @@ describe('constructor', () => {
 
     // Assert each derivative is properly registered
     for (const idleTokenAddress of Object.values(fork.config.idle) as AddressLike[]) {
-      const idleToken = new IIdleTokenV4(idleTokenAddress, provider);
+      const idleToken = new ITestIdleTokenV4(idleTokenAddress, provider);
 
       expect(await idlePriceFeed.isSupportedAsset(idleToken)).toBe(true);
       expect(await idlePriceFeed.getUnderlyingForDerivative(idleToken)).toMatchAddress(await idleToken.token());
@@ -41,7 +41,7 @@ describe('addDerivatives', () => {
 
   it('reverts when using an invalid underlying token', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
 
     // De-register valid idleToken
     await idlePriceFeed.removeDerivatives([idleToken]);
@@ -62,8 +62,8 @@ describe('addDerivatives', () => {
 describe('calcUnderlyingValues', () => {
   it('returns the correct rate for underlying token (18-decimal underlying)', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(await idleToken.token(), provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+    const underlying = new ITestStandardToken(await idleToken.token(), provider);
 
     expect(await underlying.decimals()).toEqBigNumber(18);
 
@@ -76,8 +76,8 @@ describe('calcUnderlyingValues', () => {
 
   it('returns the correct rate for underlying token (non 18-decimal underlying)', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleUsdt, provider);
-    const underlying = new StandardToken(await idleToken.token(), provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleUsdt, provider);
+    const underlying = new ITestStandardToken(await idleToken.token(), provider);
 
     expect(await underlying.decimals()).not.toEqBigNumber(18);
 
@@ -106,8 +106,8 @@ describe('isSupportedAsset', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const idleDai = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const idleDai = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     expect(await dai.decimals()).toEqBigNumber(18);
 
@@ -119,8 +119,8 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const idleUsdt = new StandardToken(fork.config.idle.bestYieldIdleUsdt, provider);
-    const usdt = new StandardToken(fork.config.primitives.usdt, provider);
+    const idleUsdt = new ITestStandardToken(fork.config.idle.bestYieldIdleUsdt, provider);
+    const usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
 
     expect(await usdt.decimals()).not.toEqBigNumber(18);
 
@@ -135,9 +135,9 @@ describe('expected values', () => {
 
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
-    const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const idleToken = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const [fundOwner, investor] = fork.accounts;
 

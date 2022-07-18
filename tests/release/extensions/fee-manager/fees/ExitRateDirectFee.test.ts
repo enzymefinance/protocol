@@ -9,7 +9,7 @@ import {
   FeeHook,
   feeManagerConfigArgs,
   FeeSettlementType,
-  StandardToken,
+  ITestStandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -57,7 +57,7 @@ describe('settle', () => {
   const specificAssetsRate = TEN_PERCENT;
   let exitRateDirectFee: ExitRateDirectFee;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
   let investor: SignerWithAddress, feeRecipient: SignerWithAddress;
   let preTxInvestorSharesBalance: BigNumber;
 
@@ -68,7 +68,7 @@ describe('settle', () => {
 
     exitRateDirectFee = fork.deployment.exitRateDirectFee;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

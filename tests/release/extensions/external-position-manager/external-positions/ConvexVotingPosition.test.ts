@@ -1,7 +1,17 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
-import { ConvexVotingPositionLib, ONE_WEEK_IN_SECONDS, StandardToken } from '@enzymefinance/protocol';
+import {
+  ConvexVotingPositionLib,
+  ITestConvexBaseRewardPool,
+  ITestConvexCrvDepositor,
+  ITestConvexCvxLocker,
+  ITestConvexVlCvxExtraRewardDistribution,
+  ITestSnapshotDelegateRegistry,
+  ITestStandardToken,
+  ITestVotiumMultiMerkleStash,
+  ONE_WEEK_IN_SECONDS,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   convexVotingPositionClaimRewards,
@@ -14,13 +24,7 @@ import {
   deployProtocolFixture,
   generateMerkleTreeForContractProof,
   getAssetUnit,
-  IConvexBaseRewardPool,
-  IConvexCrvDepositor,
-  IConvexCvxLocker,
-  IConvexVlCvxExtraRewardDistribution,
   impersonateContractSigner,
-  ISnapshotDelegateRegistry,
-  IVotiumMultiMerkleStash,
   seedAccount,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
@@ -38,7 +42,7 @@ beforeEach(async () => {
   [fundOwner, userAddress] = fork.accounts;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -63,7 +67,7 @@ describe('init', () => {
 // TODO: test spendRatio inputs?
 describe('actions', () => {
   let convexVotingPosition: ConvexVotingPositionLib;
-  let cvx: StandardToken;
+  let cvx: ITestStandardToken;
 
   beforeEach(async () => {
     const convexVotingPositionProxy = (
@@ -76,7 +80,7 @@ describe('actions', () => {
 
     convexVotingPosition = new ConvexVotingPositionLib(convexVotingPositionProxy, provider);
 
-    cvx = new StandardToken(fork.config.convex.cvxToken, provider);
+    cvx = new ITestStandardToken(fork.config.convex.cvxToken, provider);
 
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);
@@ -108,7 +112,7 @@ describe('actions', () => {
       );
 
       // Assert vlCVX balance
-      const vlCVX = new IConvexCvxLocker(fork.config.convex.vlCvx, provider);
+      const vlCVX = new ITestConvexCvxLocker(fork.config.convex.vlCvx, provider);
 
       expect(await vlCVX.lockedBalanceOf(convexVotingPosition)).toEqBigNumber(lockAmount);
 
@@ -118,7 +122,7 @@ describe('actions', () => {
 
   describe('Relock', () => {
     it('works as expected', async () => {
-      const vlCVX = new IConvexCvxLocker(fork.config.convex.vlCvx, provider);
+      const vlCVX = new ITestConvexCvxLocker(fork.config.convex.vlCvx, provider);
 
       const lockAmount = (await cvx.balanceOf(vaultProxy)).div(4);
 
@@ -204,7 +208,7 @@ describe('actions', () => {
 
   describe('Delegate', () => {
     it('works as expected', async () => {
-      const delegateRegistry = new ISnapshotDelegateRegistry(fork.config.snapshot.delegateRegistry, provider);
+      const delegateRegistry = new ITestSnapshotDelegateRegistry(fork.config.snapshot.delegateRegistry, provider);
       const convexSnapshotId = utils.formatBytes32String('cvx.eth');
 
       const delegatee = randomAccount;
@@ -225,10 +229,10 @@ describe('actions', () => {
   });
 
   describe('ClaimRewards', () => {
-    let cvxCrv: StandardToken;
+    let cvxCrv: ITestStandardToken;
 
     beforeEach(async () => {
-      cvxCrv = new StandardToken(cvxCrvAddress, provider);
+      cvxCrv = new ITestStandardToken(cvxCrvAddress, provider);
 
       const lockAmount = (await cvx.balanceOf(vaultProxy)).div(4);
 
@@ -266,12 +270,12 @@ describe('actions', () => {
     });
 
     it('extraRewardTokens only: works as expected', async () => {
-      const vlCVX = new IConvexCvxLocker(fork.config.convex.vlCvx, provider);
-      const extraRewardTokenDistributor = new IConvexVlCvxExtraRewardDistribution(
+      const vlCVX = new ITestConvexCvxLocker(fork.config.convex.vlCvx, provider);
+      const extraRewardTokenDistributor = new ITestConvexVlCvxExtraRewardDistribution(
         fork.config.convex.vlCvxExtraRewards,
         provider,
       );
-      const extraRewardToken = new StandardToken(fork.config.primitives.usdc, provider);
+      const extraRewardToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
       const extraRewardTokenAmount = (await getAssetUnit(extraRewardToken)).mul(100000);
 
       // Warp two epochs and checkpoint, so vlCVX are eligible for extra rewards
@@ -308,7 +312,10 @@ describe('actions', () => {
     });
 
     it('votiumClaims only: works as expected', async () => {
-      const votiumMultiMerkleStash = new IVotiumMultiMerkleStash(fork.config.convex.votiumMultiMerkleStash, provider);
+      const votiumMultiMerkleStash = new ITestVotiumMultiMerkleStash(
+        fork.config.convex.votiumMultiMerkleStash,
+        provider,
+      );
       const rewardToken = cvx;
       const claimAmount = (await getAssetUnit(rewardToken)).mul(3);
       const claimIndex = 123;
@@ -361,9 +368,9 @@ describe('actions', () => {
     });
 
     it('unstakeCvxCrv only: works as expected', async () => {
-      const crv = new StandardToken(fork.config.primitives.crv, userAddress);
-      const convexCrvDepositor = new IConvexCrvDepositor(convexCurveDepositorAddress, userAddress);
-      const convexCvxCrvStaking = new IConvexBaseRewardPool(fork.config.convex.cvxCrvStaking, userAddress);
+      const crv = new ITestStandardToken(fork.config.primitives.crv, userAddress);
+      const convexCrvDepositor = new ITestConvexCrvDepositor(convexCurveDepositorAddress, userAddress);
+      const convexCvxCrvStaking = new ITestConvexBaseRewardPool(fork.config.convex.cvxCrvStaking, userAddress);
 
       await seedAccount({ provider, account: userAddress, amount: (await getAssetUnit(crv)).mul(100_000), token: crv });
 
@@ -396,7 +403,7 @@ describe('actions', () => {
 
 describe('position value', () => {
   let convexVotingPosition: ConvexVotingPositionLib;
-  let cvx: StandardToken;
+  let cvx: ITestStandardToken;
 
   beforeEach(async () => {
     const convexVotingPositionProxy = (
@@ -409,7 +416,7 @@ describe('position value', () => {
 
     convexVotingPosition = new ConvexVotingPositionLib(convexVotingPositionProxy, provider);
 
-    cvx = new StandardToken(fork.config.convex.cvxToken, provider);
+    cvx = new ITestStandardToken(fork.config.convex.cvxToken, provider);
 
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);

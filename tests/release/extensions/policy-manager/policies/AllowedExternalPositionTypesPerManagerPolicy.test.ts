@@ -9,9 +9,9 @@ import type {
 } from '@enzymefinance/protocol';
 import {
   ExternalPositionType,
+  ITestStandardToken,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
   uintListRegistryPerUserPolicyArgs,
   UintListUpdateType,
 } from '@enzymefinance/protocol';
@@ -50,7 +50,7 @@ beforeEach(async () => {
   externalPositionManager = fork.deployment.externalPositionManager;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     policyManagerConfig: policyManagerConfigArgs({

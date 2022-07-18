@@ -9,11 +9,11 @@ import type {
 import {
   addressListRegistryPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, mockGenericSwap, seedAccount } from '@enzymefinance/testutils';
@@ -68,7 +68,7 @@ describe('validateRule', () => {
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let mockGenericAdapter: MockGenericAdapter, mockGenericIntegratee: MockGenericIntegratee;
   let allowedAdapterIncomingAssetsPolicy: AllowedAdapterIncomingAssetsPolicy, integrationManager: IntegrationManager;
-  let allowedAsset1: StandardToken, allowedAsset2: StandardToken, notAllowedAsset: StandardToken;
+  let allowedAsset1: ITestStandardToken, allowedAsset2: ITestStandardToken, notAllowedAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
@@ -78,11 +78,11 @@ describe('validateRule', () => {
     mockGenericIntegratee = await MockGenericIntegratee.deploy(fork.deployer);
     mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     allowedAsset1 = denominationAsset;
-    allowedAsset2 = new StandardToken(fork.config.primitives.mln, provider);
-    notAllowedAsset = new StandardToken(fork.config.primitives.dai, provider);
+    allowedAsset2 = new ITestStandardToken(fork.config.primitives.mln, provider);
+    notAllowedAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

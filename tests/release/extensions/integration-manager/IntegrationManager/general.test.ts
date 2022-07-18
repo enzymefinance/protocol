@@ -1,12 +1,12 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   ComptrollerLib,
+  ITestStandardToken,
+  ITestWETH,
   PolicyHook,
-  StandardToken,
   validateRuleAddTrackedAssetsArgs,
   validateRuleRemoveTrackedAssetsArgs,
   VaultLib,
-  WETH,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVault,
@@ -24,7 +24,7 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const denominationAsset = new WETH(config.weth, provider);
+  const denominationAsset = new ITestWETH(config.weth, provider);
   const { comptrollerProxy, vaultProxy } = await createNewFund({
     denominationAsset,
     fundDeployer: deployment.fundDeployer,
@@ -88,7 +88,7 @@ describe('setConfigForFund', () => {
     } = await provider.snapshot(snapshot);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(usdc, provider),
+      denominationAsset: new ITestStandardToken(usdc, provider),
       fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -264,7 +264,7 @@ describe('callOnExtension actions', () => {
         fund: { comptrollerProxy, fundOwner, vaultProxy },
       } = await provider.snapshot(snapshot);
 
-      const assetsToRemove = [new StandardToken(mln, provider), new StandardToken(dai, provider)];
+      const assetsToRemove = [new ITestStandardToken(mln, provider), new ITestStandardToken(dai, provider)];
 
       // Add assets to the fund with no balances
       await addTrackedAssetsToVault({

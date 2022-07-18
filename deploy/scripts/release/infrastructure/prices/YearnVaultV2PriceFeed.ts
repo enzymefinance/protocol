@@ -1,5 +1,5 @@
 import type { YearnVaultV2PriceFeedArgs } from '@enzymefinance/protocol';
-import { IYearnVaultV2, YearnVaultV2PriceFeed } from '@enzymefinance/protocol';
+import { ITestYearnVaultV2, YearnVaultV2PriceFeed } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -27,7 +27,7 @@ const fn: DeployFunction = async function (hre) {
     const yVaults = Object.values(config.yearn.vaultV2.yVaults);
     const underlyings = await Promise.all(
       yVaults.map((yVaultAddress) => {
-        const yVault = new IYearnVaultV2(yVaultAddress, deployer);
+        const yVault = new ITestYearnVaultV2(yVaultAddress, deployer);
 
         return yVault.token();
       }),

@@ -6,8 +6,8 @@ import type { AddressListRegistry, AllowedAdaptersPerManagerPolicy, PolicyManage
 import {
   addressListRegistryPerUserPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -24,14 +24,14 @@ beforeEach(async () => {
 describe('addFundSettings', () => {
   let fundOwner: SignerWithAddress;
   let addressListRegistry: AddressListRegistry, allowedAdaptersPerManagerPolicy: AllowedAdaptersPerManagerPolicy;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
     addressListRegistry = fork.deployment.addressListRegistry;
     allowedAdaptersPerManagerPolicy = fork.deployment.allowedAdaptersPerManagerPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   });
 
   it('unhappy path: cannot be called by a random user', async () => {

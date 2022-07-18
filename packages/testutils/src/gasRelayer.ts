@@ -1,6 +1,6 @@
 import type { ContractReceipt } from '@enzymefinance/ethers';
 import type { CreateSignedRelayRequestOptions } from '@enzymefinance/protocol';
-import { createSignedRelayRequest, IGsnRelayHub, isTypedDataSigner } from '@enzymefinance/protocol';
+import { createSignedRelayRequest, isTypedDataSigner, ITestGsnRelayHub } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
@@ -29,7 +29,7 @@ export async function relayTransaction(options: RelayTransactionOptions) {
     request: relayRequest,
   };
 
-  const relayHub = new IGsnRelayHub(options.relayHub, provider.getSigner(options.relayWorker));
+  const relayHub = new ITestGsnRelayHub(options.relayHub, provider.getSigner(options.relayWorker));
 
   return relayHub.relayCall
     .args(defaultMaxAcceptance, mergedRelayRequest, signedRelayRequest, '0x', defaultGasLimit)

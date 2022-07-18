@@ -1,5 +1,10 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, IntegrationManager, StandardToken, YearnVaultV2Adapter } from '@enzymefinance/protocol';
+import type {
+  ComptrollerLib,
+  IntegrationManager,
+  ITestStandardToken,
+  YearnVaultV2Adapter,
+} from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   IntegrationManagerActionId,
@@ -24,7 +29,7 @@ export async function yearnVaultV2Lend({
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   yearnVaultV2Adapter: YearnVaultV2Adapter;
-  yVault: StandardToken;
+  yVault: ITestStandardToken;
   outgoingUnderlyingAmount: BigNumberish;
   minIncomingYVaultSharesAmount?: BigNumberish;
 }) {
@@ -57,7 +62,7 @@ export async function yearnVaultV2Redeem({
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   yearnVaultV2Adapter: YearnVaultV2Adapter;
-  yVault: StandardToken;
+  yVault: ITestStandardToken;
   maxOutgoingYVaultSharesAmount: BigNumberish;
   minIncomingUnderlyingAmount?: BigNumberish;
   slippageToleranceBps?: BigNumberish;

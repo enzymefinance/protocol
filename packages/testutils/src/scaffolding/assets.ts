@@ -1,5 +1,5 @@
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
+import type { ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
 import { seedAccount } from '../accounts';
@@ -16,7 +16,7 @@ export async function addNewAssetsToFund({
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
-  assets: StandardToken[];
+  assets: ITestStandardToken[];
   amounts?: BigNumberish[];
   provider: EthereumTestnetProvider;
 }) {

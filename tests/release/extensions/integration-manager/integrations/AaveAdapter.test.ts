@@ -3,10 +3,10 @@ import {
   AaveAdapter,
   aaveLendArgs,
   aaveRedeemArgs,
+  ITestStandardToken,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -43,9 +43,9 @@ describe('constructor', () => {
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const args = aaveLendArgs({
       aToken,
@@ -61,9 +61,9 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for lending', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const args = aaveLendArgs({
       aToken,
@@ -87,9 +87,9 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for redeeming', async () => {
     const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
     const amount = utils.parseUnits('1', await aToken.decimals());
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const args = aaveRedeemArgs({
       aToken,
@@ -113,15 +113,15 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = await getAssetUnit(token);
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     await seedAccount({ account: vaultProxy, amount, provider, token });
 
@@ -156,15 +156,15 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
     const amount = await getAssetUnit(aToken);
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     await seedAccount({ account: vaultProxy, amount, provider, token: aToken });
 

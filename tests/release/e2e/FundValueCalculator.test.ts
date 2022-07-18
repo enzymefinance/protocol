@@ -2,14 +2,14 @@
 
 import {
   feeManagerConfigArgs,
-  IChainlinkAggregator,
+  ITestChainlinkAggregator,
+  ITestStandardToken,
   managementFeeConfigArgs,
   managementFeeConvertRateToScaledPerSecondRate,
   ONE_HUNDRED_PERCENT_IN_BPS,
   ONE_PERCENT_IN_BPS,
   ONE_YEAR_IN_SECONDS,
   SHARES_UNIT,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -61,8 +61,8 @@ describe('calcs', () => {
     const fundValueCalculatorRouter = fork.deployment.fundValueCalculatorRouter;
     const fundValueCalculatorUsdWrapper = fork.deployment.fundValueCalculatorUsdWrapper;
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
 
     // Create a fund with a management fee and seeded with an initial investment, which mints shares supply and also starts the protocol fee
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -190,8 +190,8 @@ describe('calcs', () => {
 
     // USD VALUES
 
-    const ethUsdAggregator = new IChainlinkAggregator(fork.config.chainlink.ethusd, provider);
-    const { 1: usdPerEthRate } = await ethUsdAggregator.latestRoundData();
+    const ethUsdAggregator = new ITestChainlinkAggregator(fork.config.chainlink.ethusd, provider);
+    const { answer_: usdPerEthRate } = await ethUsdAggregator.latestRoundData();
 
     const actualGavInUsd = convertEthToUsd({ ethAmount: actualGavInEth, usdPerEthRate });
 

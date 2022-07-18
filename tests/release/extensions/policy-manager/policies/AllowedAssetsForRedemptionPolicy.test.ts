@@ -9,9 +9,9 @@ import type {
 import {
   addressListRegistryPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -72,7 +72,7 @@ describe('validateRule', () => {
   let fundOwner: SignerWithAddress, investor: SignerWithAddress;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let allowedAssetsForRedemptionPolicy: AllowedAssetsForRedemptionPolicy, integrationManager: IntegrationManager;
-  let allowedAsset1: StandardToken, allowedAsset2: StandardToken, notAllowedAsset: StandardToken;
+  let allowedAsset1: ITestStandardToken, allowedAsset2: ITestStandardToken, notAllowedAsset: ITestStandardToken;
   let sharesToRedeem: BigNumberish;
 
   beforeEach(async () => {
@@ -81,11 +81,11 @@ describe('validateRule', () => {
     integrationManager = fork.deployment.integrationManager;
 
     // Use all USD stable coins to have similar values held by the fund
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     allowedAsset1 = denominationAsset;
-    allowedAsset2 = new StandardToken(fork.config.primitives.dai, provider);
-    notAllowedAsset = new StandardToken(fork.config.primitives.usdt, provider);
+    allowedAsset2 = new ITestStandardToken(fork.config.primitives.dai, provider);
+    notAllowedAsset = new ITestStandardToken(fork.config.primitives.usdt, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

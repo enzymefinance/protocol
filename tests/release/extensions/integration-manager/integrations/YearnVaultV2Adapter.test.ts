@@ -1,11 +1,11 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
-  IYearnVaultV2,
+  ITestStandardToken,
+  ITestYearnVaultV2,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
   yearnVaultV2LendArgs,
   yearnVaultV2RedeemArgs,
 } from '@enzymefinance/protocol';
@@ -69,7 +69,7 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
 
-      const yVault = new IYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+      const yVault = new ITestYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
       const outgoingUnderlyingAmount = utils.parseEther('2');
       const minIncomingYVaultSharesAmount = utils.parseEther('3');
 
@@ -112,7 +112,7 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
 
-      const yVault = new IYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+      const yVault = new ITestYearnVaultV2(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
       const maxOutgoingYVaultSharesAmount = utils.parseEther('2');
       const minIncomingUnderlyingAmount = utils.parseEther('3');
 
@@ -142,8 +142,8 @@ describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
     const [fundOwner] = fork.accounts;
-    const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const yVault = new ITestStandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const outgoingToken = usdc;
     const assetUnit = await getAssetUnit(yVault);
 
@@ -207,9 +207,9 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
     const integrationManager = fork.deployment.integrationManager;
     const yearnVaultV2Adapter = fork.deployment.yearnVaultV2Adapter;
-    const yVault = new StandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
-    const yVaultContract = new IYearnVaultV2(yVault, provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const yVault = new ITestStandardToken(fork.config.yearn.vaultV2.yVaults.yUsdc, provider);
+    const yVaultContract = new ITestYearnVaultV2(yVault, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const token = usdc;
     const assetUnit = await getAssetUnit(token);
 

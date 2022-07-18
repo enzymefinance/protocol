@@ -1,18 +1,10 @@
-import type { AddressLike, Call, Contract, SendFunction } from '@enzymefinance/ethers';
-import { contract, resolveArguments } from '@enzymefinance/ethers';
+import type { SendFunction } from '@enzymefinance/ethers';
+import { resolveArguments } from '@enzymefinance/ethers';
 import type { BigNumberish, BytesLike, providers } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
-import { GasRelayPaymasterLib } from '../../contracts';
+import { GasRelayPaymasterLib, ITestGsnForwarder } from '../../contracts';
 import { isTypedDataSigner } from '../signer';
-
-interface GsnForwarder extends Contract<GsnForwarder> {
-  getNonce: Call<(sender: AddressLike) => BigNumber>;
-}
-
-const GsnForwarder = contract<GsnForwarder>()`
-  function getNonce(address sender) view returns (uint256)
-`;
 
 export interface RelayRequest {
   from: string;
@@ -84,7 +76,7 @@ export async function createSignedRelayRequest({
   const to = sendFunction.contract.address.toLowerCase();
   const from = (await signer.getAddress()).toLowerCase();
   const forwarder = await new GasRelayPaymasterLib(vaultPaymaster, provider).trustedForwarder();
-  const nonce = await new GsnForwarder(forwarder, provider).getNonce(from);
+  const nonce = await new ITestGsnForwarder(forwarder, provider).getNonce(from);
 
   let gas: BigNumber;
 

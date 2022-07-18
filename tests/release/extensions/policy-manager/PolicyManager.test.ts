@@ -1,11 +1,11 @@
 import { extractEvent } from '@enzymefinance/ethers';
 import {
+  ITestWETH,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
   validateRuleAddTrackedAssetsArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import {
   addTrackedAssetsToVault,
@@ -45,7 +45,7 @@ async function snapshot() {
     settings: policiesSettingsData,
   });
 
-  const denominationAsset = new WETH(config.weth, provider);
+  const denominationAsset = new ITestWETH(config.weth, provider);
 
   return {
     accounts: remainingAccounts,

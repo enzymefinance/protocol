@@ -1,5 +1,5 @@
 import type { ValueInterpreter } from '@enzymefinance/protocol';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 
@@ -18,8 +18,8 @@ describe('calcCanonicalAssetValue', () => {
   it('happy path: primitive to derivative (different decimals)', async () => {
     // Use usd stablecoin pair for comprehensibility
     // Use aToken since it has same value as underlying
-    const derivative = new StandardToken(fork.config.aave.atokens.adai[0], provider);
-    const primitive = new StandardToken(fork.config.primitives.usdc, provider);
+    const derivative = new ITestStandardToken(fork.config.aave.atokens.adai[0], provider);
+    const primitive = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const derivativeUnit = await getAssetUnit(derivative);
     const primitiveUnit = await getAssetUnit(primitive);

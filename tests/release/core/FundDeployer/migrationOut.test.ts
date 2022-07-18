@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { IMigrationHookHandler, MigrationOutHook, MockVaultLib, StandardToken } from '@enzymefinance/protocol';
+import { IMigrationHookHandler, ITestStandardToken, MigrationOutHook, MockVaultLib } from '@enzymefinance/protocol';
 import {
   createNewFund,
   deployProtocolFixture,
@@ -16,7 +16,7 @@ async function snapshot() {
     deployment: { dispatcher, fundDeployer },
   } = await deployProtocolFixture();
 
-  const denominationAsset = new StandardToken(weth, deployer);
+  const denominationAsset = new ITestStandardToken(weth, deployer);
 
   // Get mock fees and mock policies data with which to configure fund
   const feeManagerConfig = await generateFeeManagerConfigWithMockFees({

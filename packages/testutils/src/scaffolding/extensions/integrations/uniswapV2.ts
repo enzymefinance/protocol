@@ -1,10 +1,9 @@
-import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
-import { contract } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
-  StandardToken,
+  ITestStandardToken,
   UniswapV2ExchangeAdapter,
   UniswapV2LiquidityAdapter,
   VaultLib,
@@ -22,16 +21,6 @@ import {
 import type { BigNumberish } from 'ethers';
 
 import { seedAccount } from '../../../accounts';
-
-export interface UniswapV2Factory extends Contract<UniswapV2Factory> {
-  createPair: Send<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
-  getPair: Call<(_token0: AddressLike, _token1: AddressLike) => AddressLike>;
-}
-
-export const UniswapV2Factory = contract<UniswapV2Factory>()`
-  function createPair(address,address) returns (address)
-  function getPair(address,address) view returns (address)
-`;
 
 export async function uniswapV2Lend({
   comptrollerProxy,
@@ -54,8 +43,8 @@ export async function uniswapV2Lend({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   uniswapV2LiquidityAdapter: UniswapV2LiquidityAdapter;
-  tokenA: StandardToken;
-  tokenB: StandardToken;
+  tokenA: ITestStandardToken;
+  tokenB: ITestStandardToken;
   amountADesired: BigNumberish;
   amountBDesired: BigNumberish;
   amountAMin: BigNumberish;
@@ -154,7 +143,7 @@ export async function uniswapV2TakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   uniswapV2ExchangeAdapter: UniswapV2ExchangeAdapter;
-  path: StandardToken[];
+  path: ITestStandardToken[];
   outgoingAssetAmount: BigNumberish;
   minIncomingAssetAmount: BigNumberish;
   seedFund?: boolean;

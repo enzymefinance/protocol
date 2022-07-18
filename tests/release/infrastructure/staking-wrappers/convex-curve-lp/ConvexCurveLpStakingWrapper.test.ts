@@ -3,9 +3,9 @@ import { randomAddress } from '@enzymefinance/ethers';
 import type { ConvexCurveLpStakingWrapperFactory } from '@enzymefinance/protocol';
 import {
   ConvexCurveLpStakingWrapperLib,
-  IConvexBooster,
+  ITestConvexBooster,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
@@ -14,7 +14,7 @@ import type { BigNumber } from 'ethers';
 
 const randomRecipient = randomAddress();
 const pid = 25; // steth
-let curveLpToken: StandardToken;
+let curveLpToken: ITestStandardToken;
 let factory: ConvexCurveLpStakingWrapperFactory;
 let wrapper: ConvexCurveLpStakingWrapperLib;
 let fork: ProtocolDeployment;
@@ -22,7 +22,7 @@ let fork: ProtocolDeployment;
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
-  curveLpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+  curveLpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
 
   factory = fork.deployment.convexCurveLpStakingWrapperFactory;
   await factory.deploy(pid);
@@ -36,7 +36,7 @@ describe('init', () => {
   });
 
   it('initializes values correctly', async () => {
-    const convexBooster = new IConvexBooster(fork.config.convex.booster, provider);
+    const convexBooster = new ITestConvexBooster(fork.config.convex.booster, provider);
     const poolInfo = await convexBooster.poolInfo(pid);
 
     // Assert state
@@ -260,7 +260,7 @@ describe('actions', () => {
       );
 
       for (const i in rewardTokens_) {
-        const token = new StandardToken(rewardTokens_[i], provider);
+        const token = new ITestStandardToken(rewardTokens_[i], provider);
         // Depositor should have positive balances that match the estimated return values
         const rewardBalance = await token.balanceOf(depositor1);
 
@@ -302,7 +302,7 @@ describe('actions', () => {
       await wrapper.connect(depositor1).claimRewardsFor(depositor1);
 
       for (const i in rewardTokens_) {
-        const token = new StandardToken(rewardTokens_[i], provider);
+        const token = new ITestStandardToken(rewardTokens_[i], provider);
         // Depositor should have positive balances that match the estimated return values
         const rewardBalance = await token.balanceOf(depositor1);
 
@@ -315,9 +315,9 @@ describe('actions', () => {
     });
 
     it('works as expected (2 depositors)', async () => {
-      const crvToken = new StandardToken(fork.config.convex.crvToken, provider);
-      const cvxToken = new StandardToken(fork.config.convex.cvxToken, provider);
-      const ldoToken = new StandardToken(fork.config.primitives.ldo, provider);
+      const crvToken = new ITestStandardToken(fork.config.convex.crvToken, provider);
+      const cvxToken = new ITestStandardToken(fork.config.convex.cvxToken, provider);
+      const ldoToken = new ITestStandardToken(fork.config.primitives.ldo, provider);
 
       // Deposit different amounts from both depositors
       const depositAmount1 = lpTokenStartingBalance.div(2);

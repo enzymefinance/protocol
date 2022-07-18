@@ -1,4 +1,9 @@
-import { assetTransferArgs, StandardToken, takeOrderSelector, uniswapV3TakeOrderArgs } from '@enzymefinance/protocol';
+import {
+  assetTransferArgs,
+  ITestStandardToken,
+  takeOrderSelector,
+  uniswapV3TakeOrderArgs,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
@@ -32,14 +37,14 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
-    const incomingAsset = new StandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.weth, provider);
 
     const takeOrderArgs = uniswapV3TakeOrderArgs({
       minIncomingAssetAmount: await getAssetUnit(incomingAsset),
@@ -60,8 +65,8 @@ describe('takeOrder', () => {
   });
 
   it('does not allow pathAddresses with less than 2 assets', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 
@@ -96,8 +101,8 @@ describe('takeOrder', () => {
   });
 
   it('does not allow a path with incorrect pathFees and pathAddress length', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
-    const outgoingAsset = new StandardToken(fork.config.weth, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
     const incomingAsset = usdc;
 
     const [fundOwner] = fork.accounts;
@@ -134,9 +139,9 @@ describe('takeOrder', () => {
   });
 
   it('correctly swaps assets (no intermediary)', async () => {
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const outgoingAsset = usdc;
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 
@@ -185,10 +190,10 @@ describe('takeOrder', () => {
   });
 
   it('correctly swaps assets (with one intermediary)', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
     const outgoingAsset = dai;
-    const incomingAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const usdc = incomingAsset;
     const uniswapV3Adapter = fork.deployment.uniswapV3Adapter;
 

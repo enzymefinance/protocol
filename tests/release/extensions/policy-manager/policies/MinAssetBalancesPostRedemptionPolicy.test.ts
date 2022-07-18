@@ -2,12 +2,12 @@ import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { MinAssetBalancesPostRedemptionPolicy } from '@enzymefinance/protocol';
 import {
+  ITestStandardToken,
   minAssetBalancesPostRedemptionPolicyArgs,
   ONE_HUNDRED_PERCENT_IN_BPS,
   PolicyHook,
   policyManagerConfigArgs,
   SHARES_UNIT,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -50,13 +50,13 @@ describe('addFundSettings', () => {
 
   it('happy path', async () => {
     const assets = [
-      new StandardToken(fork.config.weth, provider),
-      new StandardToken(fork.config.primitives.mln, provider),
+      new ITestStandardToken(fork.config.weth, provider),
+      new ITestStandardToken(fork.config.primitives.mln, provider),
     ];
     const minBalances = [123, 456];
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -120,7 +120,7 @@ describe('updateFundSettings', () => {
 describe('validateRule', () => {
   it('happy path', async () => {
     const [fundOwner] = fork.accounts;
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const denominationAssetUnit = await getAssetUnit(denominationAsset);
     const minDenominationAssetBalance = denominationAssetUnit.mul(2);
 

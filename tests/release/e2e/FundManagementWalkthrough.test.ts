@@ -6,10 +6,10 @@ import {
   AddressListUpdateType,
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
+  ITestStandardToken,
   managementFeeConfigArgs,
   managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -39,7 +39,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     let comptrollerProxy: ComptrollerLib;
     let vaultProxy: VaultLib;
-    let denominationAsset: StandardToken;
+    let denominationAsset: ITestStandardToken;
     let denominationAssetDecimals: BigNumberish;
 
     beforeAll(async () => {
@@ -49,7 +49,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       investor = fork.accounts[2];
       anotherInvestor = fork.accounts[3];
 
-      denominationAsset = new StandardToken(
+      denominationAsset = new ITestStandardToken(
         denominationAssetId === 'weth' ? fork.config.weth : fork.config.primitives[denominationAssetId],
         provider,
       );
@@ -160,20 +160,20 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('seeds the fund with all more assets', async () => {
       const assets = [
-        new StandardToken(fork.config.primitives.bat, provider),
-        new StandardToken(fork.config.primitives.bnb, provider),
-        new StandardToken(fork.config.primitives.bnt, provider),
-        new StandardToken(fork.config.primitives.comp, provider),
-        new StandardToken(fork.config.primitives.dai, provider),
-        new StandardToken(fork.config.primitives.link, provider),
-        new StandardToken(fork.config.primitives.mana, provider),
-        new StandardToken(fork.config.primitives.mln, provider),
-        new StandardToken(fork.config.primitives.ren, provider),
-        new StandardToken(fork.config.primitives.rep, provider),
-        new StandardToken(fork.config.primitives.susd, provider),
-        new StandardToken(fork.config.primitives.uni, provider),
-        new StandardToken(fork.config.primitives.usdt, provider),
-        new StandardToken(fork.config.primitives.zrx, provider),
+        new ITestStandardToken(fork.config.primitives.bat, provider),
+        new ITestStandardToken(fork.config.primitives.bnb, provider),
+        new ITestStandardToken(fork.config.primitives.bnt, provider),
+        new ITestStandardToken(fork.config.primitives.comp, provider),
+        new ITestStandardToken(fork.config.primitives.dai, provider),
+        new ITestStandardToken(fork.config.primitives.link, provider),
+        new ITestStandardToken(fork.config.primitives.mana, provider),
+        new ITestStandardToken(fork.config.primitives.mln, provider),
+        new ITestStandardToken(fork.config.primitives.ren, provider),
+        new ITestStandardToken(fork.config.primitives.rep, provider),
+        new ITestStandardToken(fork.config.primitives.susd, provider),
+        new ITestStandardToken(fork.config.primitives.uni, provider),
+        new ITestStandardToken(fork.config.primitives.usdt, provider),
+        new ITestStandardToken(fork.config.primitives.zrx, provider),
       ];
 
       await addNewAssetsToFund({
@@ -188,11 +188,11 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     it('seeds the fund with cTokens', async () => {
       const compoundAssets = [
-        new StandardToken(fork.config.compound.ctokens.ccomp, provider),
-        new StandardToken(fork.config.compound.ctokens.cdai, provider),
-        new StandardToken(fork.config.compound.ceth, provider),
-        new StandardToken(fork.config.compound.ctokens.cusdc, provider),
-        new StandardToken(fork.config.compound.ctokens.cuni, provider),
+        new ITestStandardToken(fork.config.compound.ctokens.ccomp, provider),
+        new ITestStandardToken(fork.config.compound.ctokens.cdai, provider),
+        new ITestStandardToken(fork.config.compound.ceth, provider),
+        new ITestStandardToken(fork.config.compound.ctokens.cusdc, provider),
+        new ITestStandardToken(fork.config.compound.ctokens.cuni, provider),
       ];
 
       await addNewAssetsToFund({
@@ -220,7 +220,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
         integrationManager: fork.deployment.integrationManager,
         minIncomingAssetAmount: BigNumber.from(1),
         outgoingAssetAmount: utils.parseUnits('0.1', denominationAssetDecimals),
-        path: [denominationAsset, new StandardToken(fork.config.primitives.dai, provider)],
+        path: [denominationAsset, new ITestStandardToken(fork.config.primitives.dai, provider)],
         provider,
         uniswapV2ExchangeAdapter: fork.deployment.uniswapV2ExchangeAdapter,
         vaultProxy,
@@ -233,7 +233,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const asset = new StandardToken(fork.config.primitives.dai, provider);
+      const asset = new ITestStandardToken(fork.config.primitives.dai, provider);
       const balance = await asset.balanceOf(vaultProxy);
       const amount = balance.add(utils.parseEther('1'));
 
@@ -269,7 +269,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       const gavBefore = await comptrollerProxy.calcGav.args().call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
-      const token = new StandardToken(fork.config.primitives.zrx, provider);
+      const token = new ITestStandardToken(fork.config.primitives.zrx, provider);
       const balance = await token.balanceOf(vaultProxy);
       const amount = balance.add(utils.parseEther('1'));
 

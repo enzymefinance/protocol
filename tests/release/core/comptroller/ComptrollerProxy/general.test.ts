@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { encodeArgs, sighash, StandardToken } from '@enzymefinance/protocol';
+import { encodeArgs, ITestStandardToken, sighash } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { callOnExtension, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -16,7 +16,7 @@ describe('callOnExtension', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -47,7 +47,7 @@ describe('vaultCallOnContract', () => {
     const [fundOwner, randomUser] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -61,7 +61,7 @@ describe('vaultCallOnContract', () => {
   it('correctly calls only an allowed vault call', async () => {
     const { fundDeployer } = fork.deployment;
     const [fundOwner] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const asset = weth;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

@@ -7,7 +7,7 @@ import type {
   OnlyRemoveDustExternalPositionPolicy,
   ValueInterpreter,
 } from '@enzymefinance/protocol';
-import { ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken, ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createMockExternalPosition,
@@ -85,7 +85,7 @@ describe('validateRule', () => {
     externalPositionManager: ExternalPositionManager,
     valueInterpreter: ValueInterpreter;
   let mockExternalPositionProxyAddress: AddressLike;
-  let weth: StandardToken;
+  let weth: ITestStandardToken;
   let dustToleranceInWeth: BigNumber;
 
   beforeEach(async () => {
@@ -93,10 +93,10 @@ describe('validateRule', () => {
     onlyRemoveDustExternalPositionPolicy = fork.deployment.onlyRemoveDustExternalPositionPolicy;
     externalPositionManager = fork.deployment.externalPositionManager;
     valueInterpreter = fork.deployment.valueInterpreter;
-    weth = new StandardToken(fork.config.weth, provider);
+    weth = new ITestStandardToken(fork.config.weth, provider);
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -211,7 +211,7 @@ describe('validateRule', () => {
   });
 
   it('happy path: external position with a priceless managed asset that has been properly queued', async () => {
-    const pricelessAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const pricelessAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     // Add a too-high amount of managed asset
     const dustThresholdInPricelessAsset = await valueInterpreter.calcCanonicalAssetValue

@@ -5,8 +5,8 @@ import {
   ExternalPositionManagerActionId,
   externalPositionReactivateArgs,
   externalPositionRemoveArgs,
+  ITestStandardToken,
   PolicyHook,
-  StandardToken,
   validateRuleCreateExternalPositionArgs,
   validateRulePostCallOnExternalPositionArgs,
   validateRuleReactivateExternalPositionArgs,
@@ -68,7 +68,7 @@ describe('setConfigForFund', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -85,7 +85,7 @@ describe('receiveCallFromComptroller', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -105,7 +105,7 @@ describe('receiveCallFromComptroller', () => {
     const externalPositionManager = fork.deployment.externalPositionManager;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -147,7 +147,7 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -169,7 +169,7 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -199,10 +199,10 @@ describe('receiveCallFromComptroller', () => {
       const [fundOwner] = fork.accounts;
       const externalPositionManager = fork.deployment.externalPositionManager;
       const policyManager = fork.deployment.policyManager;
-      const cdai = new StandardToken(fork.config.compound.ctokens.cdai, provider);
+      const cdai = new ITestStandardToken(fork.config.compound.ctokens.cdai, provider);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -265,7 +265,7 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -332,7 +332,7 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -358,7 +358,7 @@ describe('receiveCallFromComptroller', () => {
       const externalPositionManager = fork.deployment.externalPositionManager;
 
       const { comptrollerProxy: comptrollerProxy1, vaultProxy: vaultProxy1 } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -374,7 +374,7 @@ describe('receiveCallFromComptroller', () => {
 
       // Create a second vault to include the external position created for the first vault
       const { comptrollerProxy: comptrollerProxy2 } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -406,7 +406,7 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,
@@ -456,7 +456,7 @@ describe('receiveCallFromComptroller', () => {
       const policyManager = fork.deployment.policyManager;
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fork.deployer,

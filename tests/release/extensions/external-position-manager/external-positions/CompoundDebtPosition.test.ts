@@ -1,6 +1,13 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import { CompoundDebtPositionLib, ComptrollerLib, ICERC20, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import {
+  CompoundDebtPositionLib,
+  ComptrollerLib,
+  ITestCERC20,
+  ITestCompoundComptroller,
+  ITestStandardToken,
+  VaultLib,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -13,7 +20,6 @@ import {
   createCompoundDebtPosition,
   createNewFund,
   deployProtocolFixture,
-  ICompoundComptroller,
   seedAccount,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -22,10 +28,10 @@ import hre from 'hardhat';
 let vaultProxyUsed: VaultLib;
 let comptrollerProxyUsed: ComptrollerLib;
 let compoundDebtPosition: CompoundDebtPositionLib;
-let dai: StandardToken;
-let weth: StandardToken;
-let cdai: ICERC20;
-let ceth: ICERC20;
+let dai: ITestStandardToken;
+let weth: ITestStandardToken;
+let cdai: ITestCERC20;
+let ceth: ITestCERC20;
 
 const valueDeviationToleranceBps = BigNumber.from('1');
 const lentAmount = utils.parseEther('1');
@@ -38,7 +44,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.weth, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner as SignerWithAddress,
@@ -59,11 +65,11 @@ beforeEach(async () => {
 
   compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, provider);
 
-  cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
-  ceth = new ICERC20(fork.config.compound.ceth, provider);
+  cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
+  ceth = new ITestCERC20(fork.config.compound.ceth, provider);
 
-  dai = new StandardToken(fork.config.primitives.dai, provider);
-  weth = new StandardToken(fork.config.weth, provider);
+  dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+  weth = new ITestStandardToken(fork.config.weth, provider);
 
   // This will skip re-adding the denomination asset but will seed the vaultProxy
   await addNewAssetsToFund({
@@ -87,7 +93,7 @@ beforeEach(async () => {
   });
 
   await compoundLend({
-    cToken: new ICERC20(fork.config.compound.ceth, provider),
+    cToken: new ITestCERC20(fork.config.compound.ceth, provider),
     cTokenAmount: 1,
     compoundAdapter: fork.deployment.compoundAdapter,
     comptrollerProxy,
@@ -786,7 +792,7 @@ describe('receiveCallFromVault', () => {
     it('works as expected when called to claim existing unclaimed rewards', async () => {
       const [fundOwner] = fork.accounts;
 
-      const compToken = new StandardToken(fork.config.primitives.comp, provider);
+      const compToken = new ITestStandardToken(fork.config.primitives.comp, provider);
 
       const secondsToWarp = 100000000;
 
@@ -818,9 +824,9 @@ describe('receiveCallFromVault', () => {
 
       const compoundComptrollerAddress = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
-      const compoundComptroller = new ICompoundComptroller(compoundComptrollerAddress, fork.deployer);
+      const compoundComptroller = new ITestCompoundComptroller(compoundComptrollerAddress, fork.deployer);
 
-      const compToken = new StandardToken(fork.config.primitives.comp, provider);
+      const compToken = new ITestStandardToken(fork.config.primitives.comp, provider);
 
       const secondsToWarp = 100000000;
 

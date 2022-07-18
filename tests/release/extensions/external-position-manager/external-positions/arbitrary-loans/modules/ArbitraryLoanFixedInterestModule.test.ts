@@ -11,10 +11,10 @@ import {
   arbitraryLoanInterestConvertRateToScaledPerSecondRate,
   ArbitraryLoanPositionLib,
   arbitraryLoanScaledPerSecondInterestDue,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_PERCENT_IN_WEI,
   ONE_YEAR_IN_SECONDS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -34,7 +34,7 @@ let arbitraryLoanPosition: ArbitraryLoanPositionLib,
   externalPositionManager: ExternalPositionManager;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let fundOwner: SignerWithAddress, borrower: SignerWithAddress;
-let loanAsset: StandardToken, loanAssetUnit: BigNumber;
+let loanAsset: ITestStandardToken, loanAssetUnit: BigNumber;
 
 let fork: ProtocolDeployment;
 
@@ -46,7 +46,7 @@ beforeEach(async () => {
   externalPositionManager = fork.deployment.externalPositionManager;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -67,7 +67,7 @@ beforeEach(async () => {
   arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
   // Define common loan params
-  loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
+  loanAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
   // Seed vault and borrower with asset
   loanAssetUnit = await getAssetUnit(loanAsset);

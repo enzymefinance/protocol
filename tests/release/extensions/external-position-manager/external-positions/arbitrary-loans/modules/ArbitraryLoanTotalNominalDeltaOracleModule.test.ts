@@ -9,7 +9,7 @@ import type {
 import {
   ArbitraryLoanPositionLib,
   arbitraryLoanTotalNominalDeltaOracleModuleConfigArgs,
-  StandardToken,
+  ITestStandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -30,7 +30,7 @@ let arbitraryLoanPosition: ArbitraryLoanPositionLib,
 let manualValueOracle: ManualValueOracleLib;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let fundOwner: SignerWithAddress, borrower: SignerWithAddress, oracleUpdater: SignerWithAddress;
-let loanAsset: StandardToken;
+let loanAsset: ITestStandardToken;
 
 let fork: ProtocolDeployment;
 
@@ -42,7 +42,7 @@ beforeEach(async () => {
   externalPositionManager = fork.deployment.externalPositionManager;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -72,7 +72,7 @@ beforeEach(async () => {
   arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
   // Define common loan params
-  loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
+  loanAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
   // Seed vault and borrower with asset
   const assetUnit = await getAssetUnit(loanAsset);

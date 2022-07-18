@@ -1,7 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress, resolveAddress } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 import fs from 'fs-extra';
@@ -94,7 +94,7 @@ export async function findTokenBalanceStorageSlot(
     return storedTokenSlotInfo[resolvedToken];
   }
 
-  const tokenContract = new StandardToken(resolvedToken, provider);
+  const tokenContract = new ITestStandardToken(resolvedToken, provider);
   const address = randomAddress();
 
   const probeValue = BigNumber.from('1234512345');

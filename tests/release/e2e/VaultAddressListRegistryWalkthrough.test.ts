@@ -9,7 +9,7 @@ import {
   addressListRegistrySetListUpdateTypeSelector,
   AddressListUpdateType,
   encodeArgs,
-  StandardToken,
+  ITestStandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, createNewFund, deployProtocolFixture, vaultCallCreateNewList } from '@enzymefinance/testutils';
@@ -28,7 +28,7 @@ beforeAll(async () => {
 
   [fundOwner] = fork.accounts;
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,

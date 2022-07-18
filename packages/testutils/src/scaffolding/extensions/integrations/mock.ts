@@ -3,8 +3,8 @@ import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/
 import type {
   ComptrollerLib,
   IntegrationManager,
+  ITestStandardToken,
   MockGenericAdapter,
-  StandardToken,
   VaultLib,
 } from '@enzymefinance/protocol';
 import { callOnIntegrationArgs, encodeArgs, IntegrationManagerActionId, sighash } from '@enzymefinance/protocol';
@@ -80,10 +80,10 @@ export async function mockGenericSwap({
   mockGenericAdapter: MockGenericAdapter;
   provider: EthereumTestnetProvider;
   selector?: BytesLike;
-  spendAssets?: StandardToken[];
+  spendAssets?: ITestStandardToken[];
   maxSpendAssetAmounts?: BigNumberish[];
   actualSpendAssetAmounts?: BigNumberish[];
-  incomingAssets?: StandardToken[];
+  incomingAssets?: ITestStandardToken[];
   minIncomingAssetAmounts?: BigNumberish[];
   actualIncomingAssetAmounts?: BigNumberish[];
   seedFund?: boolean;

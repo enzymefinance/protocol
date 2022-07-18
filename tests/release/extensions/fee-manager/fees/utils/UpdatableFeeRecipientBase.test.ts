@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib } from '@enzymefinance/protocol';
-import { StandardToken, TestUpdatableFeeRecipientBase } from '@enzymefinance/protocol';
+import { ITestStandardToken, TestUpdatableFeeRecipientBase } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
@@ -22,7 +22,7 @@ describe('setRecipientForFund', () => {
     [fundOwner] = fork.accounts;
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,

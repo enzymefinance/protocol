@@ -1,6 +1,6 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
-import { ArbitraryLoanPositionLib, StandardToken } from '@enzymefinance/protocol';
+import { ArbitraryLoanPositionLib, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   arbitraryLoanPositionCloseLoan,
@@ -29,7 +29,7 @@ beforeEach(async () => {
   externalPositionManager = fork.deployment.externalPositionManager;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -53,7 +53,7 @@ describe('init', () => {
 
 describe('manager actions', () => {
   let arbitraryLoanPosition: ArbitraryLoanPositionLib;
-  let loanAsset: StandardToken;
+  let loanAsset: ITestStandardToken;
 
   beforeEach(async () => {
     const arbitraryLoanPositionProxy = (
@@ -66,7 +66,7 @@ describe('manager actions', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    loanAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
@@ -326,8 +326,8 @@ describe('manager actions', () => {
     });
 
     it('happy path', async () => {
-      const extraAsset = new StandardToken(fork.config.primitives.mln, provider);
-      const wrappedNativeAsset = new StandardToken(fork.config.wrappedNativeAsset, provider);
+      const extraAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+      const wrappedNativeAsset = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
 
       const totalBorrowed = await arbitraryLoanPosition.getTotalBorrowed();
       const totalRepaid = await arbitraryLoanPosition.getTotalRepaid();
@@ -421,7 +421,7 @@ describe('manager actions', () => {
         accountingModuleConfigData: '0x',
       });
 
-      const extraAsset = new StandardToken(fork.config.primitives.mln, provider);
+      const extraAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
       const extraAssetAmount = 456;
       const loanAssetSurplusAmount = 123;
 
@@ -459,7 +459,7 @@ describe('manager actions', () => {
 
 describe('borrower actions', () => {
   let arbitraryLoanPosition: ArbitraryLoanPositionLib;
-  let loanAsset: StandardToken;
+  let loanAsset: ITestStandardToken;
 
   beforeEach(async () => {
     const arbitraryLoanPositionProxy = (
@@ -472,7 +472,7 @@ describe('borrower actions', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    loanAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
@@ -607,7 +607,7 @@ describe('borrower actions', () => {
 
 describe('position value', () => {
   let arbitraryLoanPosition: ArbitraryLoanPositionLib;
-  let loanAsset: StandardToken;
+  let loanAsset: ITestStandardToken;
 
   beforeEach(async () => {
     const arbitraryLoanPositionProxy = (
@@ -620,7 +620,7 @@ describe('position value', () => {
 
     arbitraryLoanPosition = new ArbitraryLoanPositionLib(arbitraryLoanPositionProxy, provider);
 
-    loanAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    loanAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);

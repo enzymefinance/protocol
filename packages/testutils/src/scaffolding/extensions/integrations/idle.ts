@@ -1,5 +1,5 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, IdleAdapter, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
+import type { ComptrollerLib, IdleAdapter, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   claimRewardsSelector,
@@ -24,7 +24,7 @@ export async function idleClaimRewards({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
+  idleToken: ITestStandardToken;
 }) {
   const callArgs = callOnIntegrationArgs({
     adapter: idleAdapter,
@@ -52,7 +52,7 @@ export async function idleLend({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
+  idleToken: ITestStandardToken;
   outgoingUnderlyingAmount: BigNumberish;
   minIncomingIdleTokenAmount?: BigNumberish;
 }) {
@@ -84,7 +84,7 @@ export async function idleRedeem({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   idleAdapter: IdleAdapter;
-  idleToken: StandardToken;
+  idleToken: ITestStandardToken;
   outgoingIdleTokenAmount: BigNumberish;
   minIncomingUnderlyingAmount?: BigNumberish;
 }) {

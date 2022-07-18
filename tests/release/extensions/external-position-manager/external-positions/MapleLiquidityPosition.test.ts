@@ -4,9 +4,9 @@ import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   ITestMapleGlobals,
   ITestMaplePool,
+  ITestStandardToken,
   MapleLiquidityPositionLib,
   ONE_DAY_IN_SECONDS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -45,8 +45,8 @@ let comptrollerProxyUsed: ComptrollerLib;
 let vaultProxyUsed: VaultLib;
 
 let lendAmount: BigNumber;
-let liquidityAsset: StandardToken;
-let poolToken: StandardToken;
+let liquidityAsset: ITestStandardToken;
+let poolToken: ITestStandardToken;
 let seedAmount: BigNumber;
 let liquidityAssetUnit: BigNumber;
 
@@ -60,7 +60,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -69,8 +69,8 @@ beforeEach(async () => {
   vaultProxyUsed = vaultProxy;
   comptrollerProxyUsed = comptrollerProxy;
 
-  liquidityAsset = new StandardToken(fork.config.primitives.usdc, provider);
-  poolToken = new StandardToken(poolAddress, provider);
+  liquidityAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+  poolToken = new ITestStandardToken(poolAddress, provider);
 
   liquidityAssetUnit = await getAssetUnit(liquidityAsset);
 
@@ -623,7 +623,7 @@ describe('claimInterest', () => {
 
 describe('claimRewards', () => {
   it('works as expected', async () => {
-    const mplToken = new StandardToken(mplTokenAddress, provider);
+    const mplToken = new ITestStandardToken(mplTokenAddress, provider);
 
     await mapleLiquidityPositionLend({
       comptrollerProxy: comptrollerProxyUsed,

@@ -11,9 +11,8 @@ pragma solidity 0.6.12;
 
 /// @title ITestTheGraphEpochManager Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A test interface for TheGraph Epoch Manager contract
 interface ITestTheGraphEpochManager {
-    function currentEpoch() external view returns (uint256);
+    function currentEpoch() external view returns (uint256 epoch_);
 
     function runEpoch() external;
 

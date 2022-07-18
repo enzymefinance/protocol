@@ -3,10 +3,10 @@ import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   entranceRateBurnFeeConfigArgs,
   feeManagerConfigArgs,
+  ITestStandardToken,
   managementFeeConfigArgs,
   managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -33,7 +33,7 @@ describe('Walkthrough a fund migration', () => {
   let investor: SignerWithAddress;
   let comptrollerProxy: ComptrollerLib;
   let vaultProxy: VaultLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   let preMigrationShareBalance: BigNumber;
   // let newComptrollerProxy: ComptrollerLib;
@@ -44,7 +44,7 @@ describe('Walkthrough a fund migration', () => {
     manager = fork.accounts[1];
     investor = fork.accounts[2];
 
-    denominationAsset = new StandardToken(fork.config.weth, provider);
+    denominationAsset = new ITestStandardToken(fork.config.weth, provider);
 
     await seedAccount({
       account: investor,
@@ -101,26 +101,26 @@ describe('Walkthrough a fund migration', () => {
   it('seeds the fund with more assets to bring trackedAssets to 20', async () => {
     const assets = [
       // primitives
-      new StandardToken(fork.config.primitives.bat, provider),
-      new StandardToken(fork.config.primitives.bnb, provider),
-      new StandardToken(fork.config.primitives.bnt, provider),
-      new StandardToken(fork.config.primitives.comp, provider),
-      new StandardToken(fork.config.primitives.dai, provider),
-      new StandardToken(fork.config.primitives.link, provider),
-      new StandardToken(fork.config.primitives.mana, provider),
-      new StandardToken(fork.config.primitives.mln, provider),
-      new StandardToken(fork.config.primitives.ren, provider),
-      new StandardToken(fork.config.primitives.rep, provider),
-      new StandardToken(fork.config.primitives.susd, provider),
-      new StandardToken(fork.config.primitives.uni, provider),
-      new StandardToken(fork.config.primitives.usdt, provider),
-      new StandardToken(fork.config.primitives.zrx, provider),
+      new ITestStandardToken(fork.config.primitives.bat, provider),
+      new ITestStandardToken(fork.config.primitives.bnb, provider),
+      new ITestStandardToken(fork.config.primitives.bnt, provider),
+      new ITestStandardToken(fork.config.primitives.comp, provider),
+      new ITestStandardToken(fork.config.primitives.dai, provider),
+      new ITestStandardToken(fork.config.primitives.link, provider),
+      new ITestStandardToken(fork.config.primitives.mana, provider),
+      new ITestStandardToken(fork.config.primitives.mln, provider),
+      new ITestStandardToken(fork.config.primitives.ren, provider),
+      new ITestStandardToken(fork.config.primitives.rep, provider),
+      new ITestStandardToken(fork.config.primitives.susd, provider),
+      new ITestStandardToken(fork.config.primitives.uni, provider),
+      new ITestStandardToken(fork.config.primitives.usdt, provider),
+      new ITestStandardToken(fork.config.primitives.zrx, provider),
       // ctokens
-      new StandardToken(fork.config.compound.ctokens.ccomp, provider),
-      new StandardToken(fork.config.compound.ctokens.cdai, provider),
-      new StandardToken(fork.config.compound.ceth, provider),
-      new StandardToken(fork.config.compound.ctokens.cusdc, provider),
-      new StandardToken(fork.config.compound.ctokens.cuni, provider),
+      new ITestStandardToken(fork.config.compound.ctokens.ccomp, provider),
+      new ITestStandardToken(fork.config.compound.ctokens.cdai, provider),
+      new ITestStandardToken(fork.config.compound.ceth, provider),
+      new ITestStandardToken(fork.config.compound.ctokens.cusdc, provider),
+      new ITestStandardToken(fork.config.compound.ctokens.cuni, provider),
     ];
 
     await addNewAssetsToFund({

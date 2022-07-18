@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, PerformanceFee, VaultLib } from '@enzymefinance/protocol';
-import { FeeHook, feeManagerConfigArgs, performanceFeeConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import { FeeHook, feeManagerConfigArgs, ITestStandardToken, performanceFeeConfigArgs } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -45,13 +45,13 @@ describe('addFundSettings', () => {
   const feeRecipient = randomAddress();
   const rate = TEN_PERCENT;
   let comptrollerProxy: ComptrollerLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
   let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
   let receipt: any;
 
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -112,13 +112,13 @@ describe('activateForFund', () => {
   const feeRecipient = randomAddress();
   const rate = TEN_PERCENT;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
   let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
   let receipt: any;
 
   beforeEach(async () => {
     [fundOwner, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -174,12 +174,12 @@ describe('settle', () => {
   const feeRecipient = randomAddress();
   const rate = TEN_PERCENT;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
   let fundOwner: SignerWithAddress, investor: SignerWithAddress, randomUser: SignerWithAddress;
 
   beforeEach(async () => {
     [fundOwner, investor, randomUser] = fork.accounts;
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

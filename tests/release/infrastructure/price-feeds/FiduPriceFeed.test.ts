@@ -1,20 +1,20 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { FiduPriceFeed } from '@enzymefinance/protocol';
-import { ITestGoldfinchConfig, ITestGoldfinchSeniorPool, StandardToken } from '@enzymefinance/protocol';
+import { ITestGoldfinchConfig, ITestGoldfinchSeniorPool, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 let fiduPriceFeed: FiduPriceFeed;
-let fidu: StandardToken, usdc: StandardToken;
+let fidu: ITestStandardToken, usdc: ITestStandardToken;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
   fiduPriceFeed = fork.deployment.fiduPriceFeed;
 
-  fidu = new StandardToken(fork.config.goldfinch.fidu, provider);
-  usdc = new StandardToken(fork.config.primitives.usdc, provider);
+  fidu = new ITestStandardToken(fork.config.goldfinch.fidu, provider);
+  usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
 });
 
 describe('calcUnderlyingValues', () => {

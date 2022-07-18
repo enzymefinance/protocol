@@ -1,10 +1,10 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
+  ITestStandardToken,
   ITestTheGraphEpochManager,
   ITestTheGraphStaking,
   ONE_HUNDRED_PERCENT_IN_BPS,
-  StandardToken,
   TheGraphDelegationPositionLib,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -25,7 +25,7 @@ import { BigNumber, constants, utils } from 'ethers';
 // Sources: https://thegraph.com/explorer and https://graphscan.io/#indexers
 const indexers = ['0xe992d67d0632027166140128f28eea9b4ca00f12', '0xe6368e677871b288294536c8fe6cb1bbeb19f7a2'];
 
-let grt: StandardToken;
+let grt: ITestStandardToken;
 let fundOwner: SignerWithAddress;
 let delegationFeeBps: BigNumber;
 
@@ -59,7 +59,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const fund = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -81,7 +81,7 @@ beforeEach(async () => {
   // Converting from 6 decimals to 4 decimals (bps)
   delegationFeeBps = BigNumber.from(delegationFee).div(100);
 
-  grt = new StandardToken(fork.config.theGraph.grt, provider);
+  grt = new ITestStandardToken(fork.config.theGraph.grt, provider);
   await seedAccount({ provider, account: vaultProxy.address, amount: grtUnit.mul(100_000_000), token: grt });
 });
 
@@ -211,7 +211,8 @@ describe('undelegate', () => {
     // Assert that the delegation to the indexer is still worth the delegated amount
     expect(delegationGrtValue).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees));
 
-    const lockedGrtTokens = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))[1];
+    const lockedGrtTokens = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))
+      .tokensLocked_;
 
     // Assert that the GRT is locked
     expect(lockedGrtTokens).toEqBigNumber(1);
@@ -234,7 +235,8 @@ describe('withdraw', () => {
       tokens: grtDelegationAmount,
     });
 
-    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))[0];
+    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))
+      .shares_;
 
     await theGraphDelegationPositionUndelegate({
       comptrollerProxy,
@@ -286,7 +288,8 @@ describe('withdraw', () => {
       tokens: grtDelegationAmount,
     });
 
-    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))[0];
+    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))
+      .shares_;
 
     await theGraphDelegationPositionUndelegate({
       comptrollerProxy,
@@ -341,7 +344,8 @@ describe('withdraw', () => {
       tokens: grtDelegationAmount,
     });
 
-    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))[0];
+    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))
+      .shares_;
 
     await theGraphDelegationPositionUndelegate({
       comptrollerProxy,
@@ -409,7 +413,8 @@ describe('withdraw', () => {
       tokens: grtDelegationAmount,
     });
 
-    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))[0];
+    const delegationShares = (await theGraphStakingContract.getDelegation(indexers[0], theGraphDelegationPosition))
+      .shares_;
 
     await theGraphDelegationPositionUndelegate({
       comptrollerProxy,

@@ -6,8 +6,8 @@ import type { AddressListRegistry, AllowedDepositRecipientsPolicy } from '@enzym
 import {
   addressListRegistryPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -22,14 +22,14 @@ beforeEach(async () => {
 describe('addFundSettings', () => {
   let fundOwner: SignerWithAddress;
   let addressListRegistry: AddressListRegistry, allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
     addressListRegistry = fork.deployment.addressListRegistry;
     allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   });
 
   it('cannot be called by a random user', async () => {

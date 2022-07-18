@@ -11,16 +11,15 @@ pragma solidity 0.6.12;
 
 /// @title ITestTheGraphStaking Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A test interface for The Graph Staking contract
 interface ITestTheGraphStaking {
-    function delegationTaxPercentage() external view returns (uint32);
+    function delegationTaxPercentage() external view returns (uint32 taxPercentage_);
 
-    function getDelegation(address, address)
+    function getDelegation(address _indexer, address _delegator)
         external
         view
         returns (
-            uint256,
-            uint256,
-            uint256
+            uint256 shares_,
+            uint256 tokensLocked_,
+            uint256 tokensLockedUntil_
         );
 }

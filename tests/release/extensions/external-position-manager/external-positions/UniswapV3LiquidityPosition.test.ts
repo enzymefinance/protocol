@@ -3,8 +3,9 @@ import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   callOnExternalPositionArgs,
+  ITestStandardToken,
+  ITestUniswapV3NonFungibleTokenManager,
   MAX_UINT128,
-  StandardToken,
   UniswapV3LiquidityPositionActionId,
   UniswapV3LiquidityPositionLib,
   uniswapV3LiquidityPositionMintArgs,
@@ -16,7 +17,6 @@ import {
   createUniswapV3LiquidityPosition,
   deployProtocolFixture,
   getAssetUnit,
-  IUniswapV3NonFungibleTokenManager,
   seedAccount,
   UniswapV3FeeAmount,
   uniswapV3LiquidityPositionAddLiquidity,
@@ -42,7 +42,7 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, hre.ethers.provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -64,12 +64,12 @@ describe('init', () => {
   });
 
   it('can create and Mint in same tx', async () => {
-    const nftManager = new IUniswapV3NonFungibleTokenManager(
+    const nftManager = new ITestUniswapV3NonFungibleTokenManager(
       fork.config.uniswapV3.nonFungiblePositionManager,
       provider,
     );
-    const token0 = new StandardToken(fork.config.primitives.dai, provider);
-    const token1 = new StandardToken(fork.config.primitives.usdc, provider);
+    const token0 = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const token1 = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const fee = UniswapV3FeeAmount.LOW;
     const tickLower = uniswapV3LiquidityPositionGetMinTick(fee);
     const tickUpper = uniswapV3LiquidityPositionGetMaxTick(fee);
@@ -120,33 +120,33 @@ describe('init', () => {
     const positions = await nftManager.positions(nftId);
 
     expect(positions).toMatchFunctionOutput(nftManager.positions, {
-      fee,
-      feeGrowthInside0LastX128: 0,
-      feeGrowthInside1LastX128: 0,
-      liquidity: expect.anything(),
-      nonce: expect.anything(),
-      operator: constants.AddressZero,
-      tickLower,
-      tickUpper,
-      token0,
-      token1,
-      tokensOwed0: 0,
-      tokensOwed1: 0,
+      fee_: fee,
+      feeGrowthInside0LastX128_: 0,
+      feeGrowthInside1LastX128_: 0,
+      liquidity_: expect.anything(),
+      nonce_: expect.anything(),
+      operator_: constants.AddressZero,
+      tickLower_: tickLower,
+      tickUpper_: tickUpper,
+      token0_: token0,
+      token1_: token1,
+      tokensOwed0_: 0,
+      tokensOwed1_: 0,
     });
-    expect(positions.liquidity).toBeGtBigNumber(0);
+    expect(positions.liquidity_).toBeGtBigNumber(0);
   });
 });
 
 describe('receiveCallFromVault', () => {
   let uniswapV3LiquidityPosition: UniswapV3LiquidityPositionLib;
 
-  let nftManager: IUniswapV3NonFungibleTokenManager;
-  let token0: StandardToken, token1: StandardToken;
+  let nftManager: ITestUniswapV3NonFungibleTokenManager;
+  let token0: ITestStandardToken, token1: ITestStandardToken;
 
   beforeEach(async () => {
-    nftManager = new IUniswapV3NonFungibleTokenManager(fork.config.uniswapV3.nonFungiblePositionManager, provider);
-    token0 = new StandardToken(fork.config.primitives.dai, provider);
-    token1 = new StandardToken(fork.config.primitives.usdc, provider);
+    nftManager = new ITestUniswapV3NonFungibleTokenManager(fork.config.uniswapV3.nonFungiblePositionManager, provider);
+    token0 = new ITestStandardToken(fork.config.primitives.dai, provider);
+    token1 = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const uniswapV3LiquidityPositionAddress = (
       await createUniswapV3LiquidityPosition({
@@ -268,20 +268,20 @@ describe('receiveCallFromVault', () => {
       const positions = await nftManager.positions(nftId);
 
       expect(positions).toMatchFunctionOutput(nftManager.positions, {
-        fee,
-        feeGrowthInside0LastX128: 0,
-        feeGrowthInside1LastX128: 0,
-        liquidity: expect.anything(),
-        nonce: expect.anything(),
-        operator: constants.AddressZero,
-        tickLower,
-        tickUpper,
-        token0,
-        token1,
-        tokensOwed0: 0,
-        tokensOwed1: 0,
+        fee_: fee,
+        feeGrowthInside0LastX128_: 0,
+        feeGrowthInside1LastX128_: 0,
+        liquidity_: expect.anything(),
+        nonce_: expect.anything(),
+        operator_: constants.AddressZero,
+        tickLower_: tickLower,
+        tickUpper_: tickUpper,
+        token0_: token0,
+        token1_: token1,
+        tokensOwed0_: 0,
+        tokensOwed1_: 0,
       });
-      expect(positions.liquidity).toBeGtBigNumber(0);
+      expect(positions.liquidity_).toBeGtBigNumber(0);
 
       // Assert correct local state change and event
       const postTxNftIds = await uniswapV3LiquidityPosition.getNftIds();
@@ -375,7 +375,7 @@ describe('receiveCallFromVault', () => {
       // Liquidity should have increased
       const positionsAfter = await nftManager.positions(nftId);
 
-      expect(positionsAfter.liquidity).toBeGteBigNumber(positionsBefore.liquidity);
+      expect(positionsAfter.liquidity_).toBeGteBigNumber(positionsBefore.liquidity_);
 
       // Assert expected token balance changes
 
@@ -428,7 +428,7 @@ describe('receiveCallFromVault', () => {
 
       // Remove half of liquidity
       const positionsBefore = await nftManager.positions(nftId);
-      const liquidityRemoved = positionsBefore.liquidity.div(2);
+      const liquidityRemoved = positionsBefore.liquidity_.div(2);
 
       const preVaultToken0Balance = await token0.balanceOf(vaultProxy);
       const preVaultToken1Balance = await token1.balanceOf(vaultProxy);
@@ -445,7 +445,7 @@ describe('receiveCallFromVault', () => {
       // Assert desired liquidity was removed
       const positionsAfter = await nftManager.positions(nftId);
 
-      expect(positionsAfter.liquidity).toEqBigNumber(positionsBefore.liquidity.sub(liquidityRemoved));
+      expect(positionsAfter.liquidity_).toEqBigNumber(positionsBefore.liquidity_.sub(liquidityRemoved));
 
       // Vault balances of both tokens should have increased (no need to assert exact amounts, i.e., test that UniV3 works)
       expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
@@ -531,10 +531,10 @@ describe('receiveCallFromVault', () => {
       const positionsAfter = await nftManager.positions(nftId);
 
       expect(postCollectVaultToken0Balance.sub(preCollectVaultToken0Balance)).toEqBigNumber(
-        positionsBefore.tokensOwed0.sub(positionsAfter.tokensOwed0),
+        positionsBefore.tokensOwed0_.sub(positionsAfter.tokensOwed0_),
       );
       expect(postCollectVaultToken1Balance.sub(preCollectVaultToken1Balance)).toEqBigNumber(
-        positionsBefore.tokensOwed1.sub(positionsAfter.tokensOwed1),
+        positionsBefore.tokensOwed1_.sub(positionsAfter.tokensOwed1_),
       );
 
       expect(receipt).toMatchInlineGasSnapshot(`252742`);
@@ -576,7 +576,7 @@ describe('receiveCallFromVault', () => {
           comptrollerProxy,
           externalPositionManager: fork.deployment.externalPositionManager,
           externalPositionProxy: uniswapV3LiquidityPosition,
-          liquidity: nftInfo.liquidity,
+          liquidity: nftInfo.liquidity_,
           nftId,
           signer: fundOwner,
         });
@@ -637,10 +637,10 @@ describe('receiveCallFromVault', () => {
     it('works as expected (multiple nfts of same asset pair, and one nft of unique pool)', async () => {
       const [fundOwner] = fork.accounts;
       // Use all USD stables
-      const duplicatePairToken0 = new StandardToken(fork.config.primitives.dai, provider);
-      const duplicatePairToken1 = new StandardToken(fork.config.primitives.usdt, provider);
-      const uniquePairToken0 = new StandardToken(fork.config.primitives.busd, provider);
-      const uniquePairToken1 = new StandardToken(fork.config.primitives.usdc, provider);
+      const duplicatePairToken0 = new ITestStandardToken(fork.config.primitives.dai, provider);
+      const duplicatePairToken1 = new ITestStandardToken(fork.config.primitives.usdt, provider);
+      const uniquePairToken0 = new ITestStandardToken(fork.config.primitives.busd, provider);
+      const uniquePairToken1 = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
       const duplicatePairAmount0Desired = await getAssetUnit(duplicatePairToken0);
       const duplicatePairAmount1Desired = await getAssetUnit(duplicatePairToken1);
@@ -741,8 +741,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (wide range, different price)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.dai, provider);
-      const token1 = new StandardToken(fork.config.primitives.usdc, provider);
+      const token0 = new ITestStandardToken(fork.config.primitives.dai, provider);
+      const token1 = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
       const mintAmount0Desired = await getAssetUnit(token0);
       const mintAmount1Desired = await getAssetUnit(token1);
@@ -780,8 +780,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (wide range, same decimals, same price)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, provider);
-      const token1 = new StandardToken(fork.config.primitives.dai, provider);
+      const token0 = new ITestStandardToken(fork.config.primitives.busd, provider);
+      const token1 = new ITestStandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -827,8 +827,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, in range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, provider);
-      const token1 = new StandardToken(fork.config.primitives.dai, provider);
+      const token0 = new ITestStandardToken(fork.config.primitives.busd, provider);
+      const token1 = new ITestStandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -873,8 +873,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, price above range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, provider);
-      const token1 = new StandardToken(fork.config.primitives.dai, provider);
+      const token0 = new ITestStandardToken(fork.config.primitives.busd, provider);
+      const token1 = new ITestStandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);
@@ -919,8 +919,8 @@ describe('receiveCallFromVault', () => {
 
     it('works as expected (small range, same price, price below range)', async () => {
       const [fundOwner] = fork.accounts;
-      const token0 = new StandardToken(fork.config.primitives.busd, provider);
-      const token1 = new StandardToken(fork.config.primitives.dai, provider);
+      const token0 = new ITestStandardToken(fork.config.primitives.busd, provider);
+      const token1 = new ITestStandardToken(fork.config.primitives.dai, provider);
 
       const mintAmount0Desired = utils.parseUnits('1', 18);
       const mintAmount1Desired = utils.parseUnits('1', 18);

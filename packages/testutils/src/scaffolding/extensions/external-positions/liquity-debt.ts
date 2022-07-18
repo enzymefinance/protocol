@@ -1,7 +1,11 @@
-import type { AddressLike, Call, Contract } from '@enzymefinance/ethers';
-import { contract } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
+import type {
+  ComptrollerLib,
+  ExternalPositionManager,
+  ITestLiquityHintHelper,
+  ITestLiquitySortedTroves,
+} from '@enzymefinance/protocol';
 import {
   ExternalPositionType,
   LiquityDebtPositionActionId,
@@ -15,38 +19,6 @@ import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
 import { callOnExternalPosition, createExternalPosition } from './actions';
-
-export interface ILiquityTroveManager extends Contract<ILiquityTroveManager> {
-  getBorrowingFee: Call<(_LUSDDebt: BigNumberish) => BigNumber>;
-}
-
-export const ILiquityTroveManager = contract<ILiquityTroveManager>()`
-  function getBorrowingFee(uint256) external returns (uint256)
-`;
-
-export interface ILiquityHintHelper extends Contract<ILiquityHintHelper> {
-  getApproxHint: Call<
-    (
-      _cr: BigNumberish,
-      _numTrials: BigNumberish,
-      _inputRandomSeed: BigNumberish,
-    ) => [hintAddress_: AddressLike, diff_: BigNumber, latestRandomSeed_: BigNumber]
-  >;
-}
-
-export const ILiquityHintHelper = contract<ILiquityHintHelper>()`
-  function getApproxHint(uint256, uint256, uint256) external returns (address, uint256, uint256)
-`;
-
-export interface ILiquitySortedTroves extends Contract<ILiquitySortedTroves> {
-  findInsertPosition: Call<
-    (_icr: BigNumberish, _prevId: AddressLike, _nextId: AddressLike) => [prevId_: AddressLike, nextId_: AddressLike]
-  >;
-}
-
-export const ILiquitySortedTroves = contract<ILiquitySortedTroves>()`
-  function findInsertPosition(uint256, address, address) external view returns (address, address)
-`;
 
 export async function createLiquityDebtPosition({
   signer,
@@ -80,19 +52,19 @@ export async function liquityCalcHints({
   collateralAmount: BigNumber;
   debtAmount: BigNumber;
   numTrials?: BigNumber;
-  liquitySortedTroves: ILiquitySortedTroves;
-  liquityHintHelper: ILiquityHintHelper;
+  liquitySortedTroves: ITestLiquitySortedTroves;
+  liquityHintHelper: ITestLiquityHintHelper;
   inputRandomSeed?: BigNumber;
 }) {
   const nicr = collateralAmount.mul(utils.parseEther('100')).div(debtAmount);
 
-  const approxHint = await liquityHintHelper.getApproxHint.args(nicr, numTrials, inputRandomSeed).call();
+  const { hintAddress_ } = await liquityHintHelper.getApproxHint.args(nicr, numTrials, inputRandomSeed).call();
 
-  const [upperHint, lowerHint] = await liquitySortedTroves.findInsertPosition
-    .args(nicr, approxHint[0], approxHint[0])
+  const { upperHint_, lowerHint_ } = await liquitySortedTroves.findInsertPosition
+    .args(nicr, hintAddress_, hintAddress_)
     .call();
 
-  return { lowerHint, upperHint };
+  return { lowerHint_, upperHint_ };
 }
 
 export async function liquityDebtPositionAddCollateral({

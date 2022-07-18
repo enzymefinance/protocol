@@ -1,7 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
-import type { FundDeployer, StandardToken } from '@enzymefinance/protocol';
+import type { FundDeployer, ITestStandardToken } from '@enzymefinance/protocol';
 import {
   ComptrollerLib,
   ComptrollerProxy,
@@ -34,7 +34,7 @@ export interface CreateMigrationRequestParams {
 export interface CreateNewFundParams {
   signer: SignerWithAddress;
   fundDeployer: FundDeployer;
-  denominationAsset: StandardToken;
+  denominationAsset: ITestStandardToken;
   sharesActionTimelock?: BigNumberish;
   fundOwner?: AddressLike;
   fundName?: string;
@@ -232,7 +232,7 @@ export async function setupGasRelayerPaymaster({
   vaultProxy: AddressLike;
   fundAccessor: AddressLike;
   provider: EthereumTestnetProvider;
-  weth: StandardToken;
+  weth: ITestStandardToken;
   startingBalance?: BigNumberish;
 }) {
   if (startingBalance) {

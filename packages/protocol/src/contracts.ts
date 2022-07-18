@@ -1,7 +1,3 @@
-import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
-import { contract } from '@enzymefinance/ethers';
-import type { BigNumber, BigNumberish } from 'ethers';
-
 // Persistent core
 export * from './codegen/Dispatcher';
 export * from './codegen/VaultProxy';
@@ -136,24 +132,46 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestCERC20';
+export * from './codegen/ITestChainlinkAggregator';
+export * from './codegen/ITestCompoundComptroller';
+export * from './codegen/ITestConvexBaseRewardPool';
+export * from './codegen/ITestConvexBooster';
+export * from './codegen/ITestConvexCrvDepositor';
+export * from './codegen/ITestConvexCvxLocker';
+export * from './codegen/ITestConvexVlCvxExtraRewardDistribution';
+export * from './codegen/ITestCurveAddressProvider';
+export * from './codegen/ITestCurveLiquidityPool';
+export * from './codegen/ITestCurveRegistry';
+export * from './codegen/ITestCurveSwaps';
+export * from './codegen/ITestIdleTokenV4';
+export * from './codegen/ITestLiquityHintHelper';
+export * from './codegen/ITestLiquitySortedTroves';
+export * from './codegen/ITestLiquityTroveManager';
 export * from './codegen/ITestGoldfinchConfig';
 export * from './codegen/ITestGoldfinchSeniorPool';
+export * from './codegen/ITestGsnForwarder';
+export * from './codegen/ITestGsnRelayHub';
 export * from './codegen/ITestMapleGlobals';
 export * from './codegen/ITestMaplePool';
-export * from './codegen/ITestSolvV2ConvertiblePool';
-export * from './codegen/ITestSolvV2ConvertibleVoucher';
-export * from './codegen/ITestSolvV2InitialConvertibleOfferingMarket';
-export * from './codegen/ITestSolvV2ManualPriceOracle';
-export * from './codegen/ITestSolvV2PriceOracleManager';
-export * from './codegen/ITestStethToken';
-export * from './codegen/ITestTheGraphEpochManager';
-export * from './codegen/ITestTheGraphStaking';
+export * from './codegen/ITestSnapshotDelegateRegistry';
 export * from './codegen/ITestSolvV2ConvertibleMarket';
 export * from './codegen/ITestSolvV2ConvertiblePool';
 export * from './codegen/ITestSolvV2ConvertibleVoucher';
 export * from './codegen/ITestSolvV2InitialConvertibleOfferingMarket';
 export * from './codegen/ITestSolvV2ManualPriceOracle';
 export * from './codegen/ITestSolvV2PriceOracleManager';
+export * from './codegen/ITestStandardToken';
+export * from './codegen/ITestStethToken';
+export * from './codegen/ITestSynthetixExchanger';
+export * from './codegen/ITestTheGraphEpochManager';
+export * from './codegen/ITestTheGraphStaking';
+export * from './codegen/ITestUniswapV2Pair';
+export * from './codegen/ITestUniswapV2Router';
+export * from './codegen/ITestUniswapV3NonFungibleTokenManager';
+export * from './codegen/ITestVotiumMultiMerkleStash';
+export * from './codegen/ITestWETH';
+export * from './codegen/ITestYearnVaultV2';
 export * from './codegen/SelfDestructEthPayer';
 export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestNominatedOwnerMixin';
@@ -177,95 +195,3 @@ export * from './codegen/MockChainlinkPriceSource';
 // Gas relayer
 export * from './codegen/GasRelayPaymasterFactory';
 export * from './codegen/GasRelayPaymasterLib';
-
-// External interfaces
-export * from './codegen/ICERC20';
-export * from './codegen/ICEther';
-export * from './codegen/IChainlinkAggregator';
-export * from './codegen/IConvexBooster';
-export * from './codegen/ICurveAddressProvider';
-export * from './codegen/ICurveLiquidityGaugeV2';
-export * from './codegen/ICurveLiquidityPool';
-export * from './codegen/IGsnRelayHub';
-export * from './codegen/IIdleTokenV4';
-export * from './codegen/ISynthetixExchanger';
-export * from './codegen/ISynthetixProxyERC20';
-export * from './codegen/ISynthetixSynth';
-export * from './codegen/IUniswapV2Factory';
-export * from './codegen/IUniswapV2Pair';
-export * from './codegen/IUniswapV2Router2';
-export * from './codegen/IYearnVaultV2';
-
-export interface StandardToken extends Contract<StandardToken> {
-  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber>;
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean>;
-  balanceOf: Call<(account: AddressLike) => BigNumber>;
-  decimals: Call<() => BigNumber>;
-  symbol: Call<() => string>;
-  totalSupply: Call<() => BigNumber>;
-  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean>;
-  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean>;
-}
-
-export const StandardToken = contract<StandardToken>()`
-  event Approval(address indexed owner, address indexed spender, uint256 value)
-  event Transfer(address indexed from, address indexed to, uint256 value)
-  function allowance(address owner, address spender) view returns (uint256)
-  function approve(address spender, uint256 amount) returns (bool)
-  function balanceOf(address account) view returns (uint256)
-  function decimals() view returns (uint8)
-  function symbol() view returns (string)
-  function totalSupply() view returns (uint256)
-  function transfer(address recipient, uint256 amount) returns (bool)
-  function transferFrom(address sender, address recipient, uint256 amount) returns (bool)
-`;
-
-export interface WETH extends Contract<WETH> {
-  allowance: Call<(owner: AddressLike, spender: AddressLike) => BigNumber>;
-  approve: Send<(spender: AddressLike, amount: BigNumberish) => boolean>;
-  balanceOf: Call<(account: AddressLike) => BigNumber>;
-  decimals: Call<() => BigNumber>;
-  symbol: Call<() => string>;
-  totalSupply: Call<() => BigNumber>;
-  transfer: Send<(recipient: AddressLike, amount: BigNumberish) => boolean>;
-  transferFrom: Send<(sender: AddressLike, recipient: AddressLike, amount: BigNumberish) => boolean>;
-  deposit: Send<() => void>;
-  withdraw: Send<(amount: BigNumberish) => void>;
-}
-
-export const WETH = contract<WETH>()`
-  event Approval(address indexed owner, address indexed spender, uint256 value)
-  event Transfer(address indexed from, address indexed to, uint256 value)
-  event Deposit(address indexed destination, uint256 value)
-  event Withdrawal(address indexed source, uint256 value)
-  function allowance(address owner, address spender) view returns (uint256)
-  function approve(address spender, uint256 amount) returns (bool)
-  function balanceOf(address account) view returns (uint256)
-  function decimals() view returns (uint8)
-  function symbol() view returns (string)
-  function totalSupply() view returns (uint256)
-  function transfer(address recipient, uint256 amount) returns (bool)
-  function transferFrom(address sender, address recipient, uint256 amount) returns (bool)
-  function deposit()
-  function withdraw(uint256 amount)
-`;
-
-export interface UniswapV2Router extends Contract<UniswapV2Router> {
-  getAmountsOut: Call<(amountIn: BigNumberish, path: AddressLike[]) => BigNumber[]>;
-  quote: Call<(amountA: BigNumberish, reserveA: BigNumberish, reserveB: BigNumberish) => BigNumber>;
-  swapExactTokensForTokens: Send<
-    (
-      amountIn: BigNumberish,
-      amountOutMin: BigNumberish,
-      path: AddressLike[],
-      to: AddressLike,
-      deadline: BigNumberish,
-    ) => BigNumber[]
-  >;
-}
-
-export const UniswapV2Router = contract<UniswapV2Router>()`
-  function getAmountsOut(uint256 amountIn, address[] path) view returns (uint256[])
-  function quote(uint256 amountA, uint256 reserveA, uint256 reserveB) pure returns (uint256)
-  function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, address[] path, address to, uint256 deadline) returns (uint256[])
-`;

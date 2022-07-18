@@ -1,15 +1,15 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
-  IUniswapV2Pair,
+  ITestStandardToken,
+  ITestUniswapV2Pair,
+  ITestUniswapV2Router,
   lendSelector,
   min,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
   uniswapV2LendArgs,
   uniswapV2RedeemArgs,
-  UniswapV2Router,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -142,7 +142,7 @@ describe('lend', () => {
     const tokenB = fork.config.weth;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fork.deployer),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fork.deployer),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fork.deployer,
@@ -170,12 +170,12 @@ describe('lend', () => {
   });
 
   it('works as expected with exact amountADesired and amountBDesired amounts', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const tokenA = new StandardToken(fork.config.primitives.mln, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const tokenA = new ITestStandardToken(fork.config.primitives.mln, provider);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
-    const uniswapPair = new IUniswapV2Pair(poolToken.address, provider);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+    const poolToken = new ITestStandardToken(fork.config.uniswap.pools.mlnWeth, provider);
+    const uniswapPair = new ITestUniswapV2Pair(poolToken.address, provider);
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
     const integrationManager = fork.deployment.integrationManager;
     const uniswapV2LiquidityAdapter = fork.deployment.uniswapV2LiquidityAdapter;
     const [fundOwner] = fork.accounts;
@@ -197,8 +197,8 @@ describe('lend', () => {
     const getReservesRes = await uniswapPair.getReserves();
     const [tokenAReserve, tokenBReserve] =
       (await uniswapPair.token0()) === tokenA.address
-        ? [getReservesRes[0], getReservesRes[1]]
-        : [getReservesRes[1], getReservesRes[0]];
+        ? [getReservesRes.reserve0_, getReservesRes.reserve1_]
+        : [getReservesRes.reserve1_, getReservesRes.reserve0_];
     const amountBDesired = await uniswapRouter.quote(amountADesired, tokenAReserve, tokenBReserve);
 
     // Calc expected pool tokens to receive
@@ -248,7 +248,7 @@ describe('redeem', () => {
     const uniswapV2LiquidityAdapter = fork.deployment.uniswapV2LiquidityAdapter;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -274,10 +274,10 @@ describe('redeem', () => {
   });
 
   it('works as expected when called by a fund', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const tokenA = new StandardToken(fork.config.primitives.mln, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const tokenA = new ITestStandardToken(fork.config.primitives.mln, provider);
     const tokenB = weth;
-    const poolToken = new StandardToken(fork.config.uniswap.pools.mlnWeth, provider);
+    const poolToken = new ITestStandardToken(fork.config.uniswap.pools.mlnWeth, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV2LiquidityAdapter = fork.deployment.uniswapV2LiquidityAdapter;
     const integrationManager = fork.deployment.integrationManager;

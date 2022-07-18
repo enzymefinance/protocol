@@ -1,10 +1,10 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   assetTransferArgs,
-  StandardToken,
+  ITestStandardToken,
+  ITestUniswapV2Router,
   takeOrderSelector,
   uniswapV2LendArgs,
-  UniswapV2Router,
   uniswapV2TakeOrderArgs,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -69,14 +69,14 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
-    const incomingAsset = new StandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.weth, provider);
 
     const takeOrderArgs = uniswapV2TakeOrderArgs({
       minIncomingAssetAmount: utils.parseEther('1'),
@@ -98,13 +98,13 @@ describe('takeOrder', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     await expect(
       uniswapV2TakeOrder({
@@ -122,10 +122,10 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund and swap assets directly', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
     const incomingAsset = weth;
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV2ExchangeAdapter = fork.deployment.uniswapV2ExchangeAdapter;
     const integrationManager = fork.deployment.integrationManager;
@@ -172,10 +172,10 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund and swap assets via an intermediary', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
-    const incomingAsset = new StandardToken(fork.config.primitives.crv, provider);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.crv, provider);
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
     const uniswapV2ExchangeAdapter = fork.deployment.uniswapV2ExchangeAdapter;
     const integrationManager = fork.deployment.integrationManager;

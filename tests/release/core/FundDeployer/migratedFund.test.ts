@@ -2,7 +2,7 @@ import type { ContractReceipt } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -39,7 +39,7 @@ async function createNewFundOnPrevRelease({
 
   // Create fund on old release
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: prevFundDeployer,
     fundName: 'My Fund',
     fundOwner,
@@ -70,7 +70,7 @@ describe('createMigrationRequest', () => {
 
       await expect(
         createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: randomUser,
           vaultProxy,
@@ -124,7 +124,7 @@ describe('createMigrationRequest', () => {
       const { vaultProxy } = await createNewFundOnPrevRelease({ fork, fundOwner });
 
       await createMigrationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -133,7 +133,7 @@ describe('createMigrationRequest', () => {
       // The second request should fail as the first request is already created and pending
       await expect(
         createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,
@@ -146,7 +146,7 @@ describe('createMigrationRequest', () => {
     describe('fund owner as caller, no failure bypass', () => {
       let fundOwner: SignerWithAddress;
       let nextComptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-      let denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
+      let denominationAsset: ITestStandardToken, sharesActionTimelock: BigNumber;
       let createMigrationRequestReceipt: ContractReceipt<any>;
 
       beforeAll(async () => {
@@ -159,7 +159,7 @@ describe('createMigrationRequest', () => {
 
         vaultProxy = newFundRes.vaultProxy;
 
-        denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+        denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
         sharesActionTimelock = BigNumber.from(123);
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
@@ -226,7 +226,7 @@ describe('createMigrationRequest', () => {
 
         const migratedFundRes = await createMigrationRequest({
           bypassPrevReleaseFailure: true,
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: migrator,
           vaultProxy,
@@ -264,7 +264,7 @@ describe('executeMigration', () => {
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -293,7 +293,7 @@ describe('executeMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,
@@ -340,7 +340,7 @@ describe('executeMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,
@@ -381,7 +381,7 @@ describe('cancelMigration', () => {
       vaultProxy = newFundRes.vaultProxy;
 
       await createMigrationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -410,7 +410,7 @@ describe('cancelMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const migratedFundRes = await createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,
@@ -444,7 +444,7 @@ describe('cancelMigration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         await createMigrationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,

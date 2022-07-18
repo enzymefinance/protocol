@@ -1,7 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { ComptrollerLib, FundDeployer, ProtocolFeeTracker, VaultLib } from '@enzymefinance/protocol';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createFundDeployer, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
@@ -64,7 +64,7 @@ describe('happy paths', () => {
     let fundName: string,
       fundSymbol: string,
       fundOwner: AddressLike,
-      denominationAsset: StandardToken,
+      denominationAsset: ITestStandardToken,
       sharesActionTimelock: BigNumber;
 
     beforeAll(async () => {
@@ -78,7 +78,7 @@ describe('happy paths', () => {
       fundOwner = randomAddress();
       fundName = 'My Fund';
       fundSymbol = 'ABC';
-      denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+      denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
       sharesActionTimelock = BigNumber.from(123);
 
       // Note that events are asserted within helper

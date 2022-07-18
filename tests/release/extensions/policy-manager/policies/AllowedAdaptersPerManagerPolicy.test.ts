@@ -9,11 +9,11 @@ import type {
 import {
   addressListRegistryPerUserPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, mockGenericSwap } from '@enzymefinance/testutils';
@@ -47,7 +47,7 @@ beforeEach(async () => {
   unallowedMockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
   const newFundRes = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     policyManagerConfig: policyManagerConfigArgs({

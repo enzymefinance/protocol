@@ -8,11 +8,11 @@ import {
   ITestSolvV2InitialConvertibleOfferingMarket,
   ITestSolvV2ManualPriceOracle,
   ITestSolvV2PriceOracleManager,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_WEEK_IN_SECONDS,
   SolvV2ConvertibleBuyerPositionLib,
   SolvV2SalePriceType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -40,9 +40,9 @@ const voucherUnit = utils.parseUnits('1', 26);
 
 let fundOwner: SignerWithAddress;
 let issuer: SignerWithAddress;
-let currencyToken: StandardToken;
+let currencyToken: ITestStandardToken;
 let currencyUnit: BigNumber;
-let underlyingToken: StandardToken;
+let underlyingToken: ITestStandardToken;
 let underlyingUnit: BigNumber;
 
 let comptrollerProxy: ComptrollerLib;
@@ -74,7 +74,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const fund = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -92,9 +92,9 @@ beforeEach(async () => {
   });
 
   // All tests use the USF convertible voucher
-  currencyToken = new StandardToken(fork.config.primitives.usdt, provider);
+  currencyToken = new ITestStandardToken(fork.config.primitives.usdt, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new StandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, provider);
+  underlyingToken = new ITestStandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvConvertibleBuyerPosition = new SolvV2ConvertibleBuyerPositionLib(externalPositionProxy, provider);
@@ -853,7 +853,7 @@ describe('get managed assets', () => {
     });
 
     // Create a fixed price sale with tokenId2 using a different currency
-    const currencyToken2 = new StandardToken(fork.config.primitives.usdc, provider);
+    const currencyToken2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const currencyUnit2 = await getAssetUnit(currencyToken2);
     const nextSaleId = await convertibleMarket.nextSaleId.call();
     await solvV2ConvertibleBuyerPositionCreateSaleFixedPrice({

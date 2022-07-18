@@ -10,9 +10,9 @@ import type {
 import {
   allowedExternalPositionTypesPolicyArgs,
   ExternalPositionType,
+  ITestStandardToken,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -66,7 +66,7 @@ describe('addFundSettings', () => {
     const externalPositionTypeIds = [0, 2, 5];
 
     const { comptrollerProxy, receipt } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -105,7 +105,7 @@ describe('addFundSettings', () => {
   it('happy path: no external position types', async () => {
     // Just confirm that the policy can be added without any config
     await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -161,7 +161,7 @@ describe('validateRule', () => {
     it('does not allow creating an external position of unallowed type', async () => {
       // Add policy without any allowed external position types
       const { comptrollerProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
@@ -186,7 +186,7 @@ describe('validateRule', () => {
 
     it('allows creating an external position of an allowed type', async () => {
       const { comptrollerProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
@@ -217,7 +217,7 @@ describe('validateRule', () => {
       policyManager = fork.deployment.policyManager;
 
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fundOwner,

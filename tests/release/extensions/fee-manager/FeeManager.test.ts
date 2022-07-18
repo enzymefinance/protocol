@@ -6,11 +6,11 @@ import {
   FeeSettlementType,
   IFee,
   IMigrationHookHandler,
+  ITestWETH,
   MockVaultLib,
   payoutSharesOutstandingForFeesArgs,
   settlePostBuySharesArgs,
   settlePreBuySharesArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import {
   assertEvent,
@@ -36,7 +36,7 @@ async function snapshot() {
     deployer,
   });
 
-  const denominationAsset = new WETH(config.weth, provider);
+  const denominationAsset = new ITestWETH(config.weth, provider);
 
   const createFund = () => {
     const feesSettingsData = [utils.randomBytes(10), utils.randomBytes(2), constants.HashZero];

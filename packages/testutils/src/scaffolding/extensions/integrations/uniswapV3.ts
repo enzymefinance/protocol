@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, IntegrationManager, StandardToken } from '@enzymefinance/protocol';
+import type { ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   IntegrationManagerActionId,
@@ -27,7 +27,7 @@ export async function uniswapV3TakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   uniswapV3Adapter: AddressLike;
-  pathAddresses: StandardToken[];
+  pathAddresses: ITestStandardToken[];
   pathFees: BigNumber[];
   outgoingAssetAmount: BigNumberish;
   provider: EthereumTestnetProvider;

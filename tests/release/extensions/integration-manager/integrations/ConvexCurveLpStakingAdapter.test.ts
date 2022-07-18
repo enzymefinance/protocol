@@ -9,8 +9,8 @@ import type {
 import {
   curveIncomingAssetsDataRedeemStandardArgs,
   CurveRedeemType,
+  ITestStandardToken,
   ONE_DAY_IN_SECONDS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -46,15 +46,15 @@ describe('actions', () => {
   let integrationManager: IntegrationManager;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let fundOwner: SignerWithAddress;
-  let pool: AddressLike, lpToken: StandardToken, stakingWrapperToken: StandardToken;
-  let weth: StandardToken, steth: StandardToken;
+  let pool: AddressLike, lpToken: ITestStandardToken, stakingWrapperToken: ITestStandardToken;
+  let weth: ITestStandardToken, steth: ITestStandardToken;
 
   beforeEach(async () => {
     integrationManager = fork.deployment.integrationManager;
     [fundOwner] = fork.accounts;
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -64,9 +64,9 @@ describe('actions', () => {
     vaultProxy = newFundRes.vaultProxy;
 
     pool = fork.config.curve.pools.steth.pool;
-    lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-    steth = new StandardToken(fork.config.lido.steth, provider);
+    lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+    steth = new ITestStandardToken(fork.config.lido.steth, provider);
 
     // TODO: make distinction between valid and invalid cases?
     // Deploy wrapper
@@ -75,7 +75,7 @@ describe('actions', () => {
 
     await convexCurveLpStakingWrapperFactory.deploy(pid);
 
-    stakingWrapperToken = new StandardToken(
+    stakingWrapperToken = new ITestStandardToken(
       await convexCurveLpStakingWrapperFactory.getWrapperForConvexPool(pid),
       provider,
     );
@@ -89,9 +89,9 @@ describe('actions', () => {
 
   describe('claimRewards', () => {
     it('happy path (pool with CRV + pool rewards)', async () => {
-      const crvToken = new StandardToken(fork.config.convex.crvToken, provider);
-      const cvxToken = new StandardToken(fork.config.convex.cvxToken, provider);
-      const ldoToken = new StandardToken(fork.config.primitives.ldo, provider);
+      const crvToken = new ITestStandardToken(fork.config.convex.crvToken, provider);
+      const cvxToken = new ITestStandardToken(fork.config.convex.cvxToken, provider);
+      const ldoToken = new ITestStandardToken(fork.config.primitives.ldo, provider);
 
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);

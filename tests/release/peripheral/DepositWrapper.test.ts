@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { encodeFunctionData, StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
+import { encodeFunctionData, ITestStandardToken, ITestUniswapV2Router } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -23,7 +23,7 @@ describe('constructor', () => {
 describe('exchangeEthAndBuyShares', () => {
   it('does not allow arbitrary call to buySharesOnBehalf', async () => {
     const depositWrapper = fork.deployment.depositWrapper;
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
@@ -58,7 +58,7 @@ describe('exchangeEthAndBuyShares', () => {
 
   it('handles a WETH denominationAsset', async () => {
     const depositWrapper = fork.deployment.depositWrapper;
-    const denominationAsset = new StandardToken(fork.config.weth, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.weth, provider);
     const [fundOwner, buyer] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -90,11 +90,11 @@ describe('exchangeEthAndBuyShares', () => {
 
   it('handles a mon-WETH, non-18 decimal denominationAsset', async () => {
     const depositWrapper = fork.deployment.depositWrapper;
-    const weth = new StandardToken(fork.config.weth, provider);
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner, buyer] = fork.accounts;
 
-    const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const denominationAssetUnit = utils.parseUnits('1', await denominationAsset.decimals());
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

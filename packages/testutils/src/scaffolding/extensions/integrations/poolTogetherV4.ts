@@ -1,6 +1,11 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, IntegrationManager, PoolTogetherV4Adapter, StandardToken } from '@enzymefinance/protocol';
+import type {
+  ComptrollerLib,
+  IntegrationManager,
+  ITestStandardToken,
+  PoolTogetherV4Adapter,
+} from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
   claimRewardsSelector,
@@ -26,7 +31,7 @@ export async function poolTogetherV4Lend({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   poolTogetherV4Adapter: PoolTogetherV4Adapter;
-  ptToken: StandardToken;
+  ptToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
   const lendArgs = poolTogetherV4LendArgs({
@@ -59,7 +64,7 @@ export async function poolTogetherV4Redeem({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   poolTogetherV4Adapter: PoolTogetherV4Adapter;
-  ptToken: StandardToken;
+  ptToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
   const redeemArgs = poolTogetherV4RedeemArgs({

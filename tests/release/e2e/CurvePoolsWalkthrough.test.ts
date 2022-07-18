@@ -13,8 +13,9 @@ import {
   curveIncomingAssetsDataRedeemStandardArgs,
   CurveRedeemType,
   ETH_ADDRESS,
-  ICurveLiquidityPool,
-  StandardToken,
+  ITestCurveLiquidityPool,
+  ITestCurveRegistry,
+  ITestStandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -22,7 +23,6 @@ import {
   curveClaimRewards,
   curveLend,
   curveRedeem,
-  CurveRegistry,
   curveStake,
   curveUnstake,
   deployProtocolFixture,
@@ -35,7 +35,7 @@ import { constants } from 'ethers';
 // When adding a new pool to this test suite, update both `poolInfo` and `poolKeys`
 let fork: ProtocolDeployment;
 let curveLiquidityAdapter: CurveLiquidityAdapter;
-let curveRegistry: CurveRegistry;
+let curveRegistry: ITestCurveRegistry;
 let poolInfo: Record<
   string,
   {
@@ -50,7 +50,7 @@ let poolInfo: Record<
 beforeAll(async () => {
   fork = await deployProtocolFixture();
   curveLiquidityAdapter = fork.deployment.curveLiquidityAdapter;
-  curveRegistry = new CurveRegistry('0x90e00ace148ca3b23ac1bc8c240c2a7dd9c2d7f5', provider);
+  curveRegistry = new ITestCurveRegistry('0x90e00ace148ca3b23ac1bc8c240c2a7dd9c2d7f5', provider);
 
   poolInfo = {
     // old pool, pre-templates
@@ -116,29 +116,29 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
   let integrationManager: IntegrationManager;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let fundOwner: SignerWithAddress;
-  let nTokens: number, lpToken: StandardToken, pool: ICurveLiquidityPool;
-  let assetToLend: StandardToken, assetToLendIndex: number, assetToLendAmount: BigNumber;
+  let nTokens: number, lpToken: ITestStandardToken, pool: ITestCurveLiquidityPool;
+  let assetToLend: ITestStandardToken, assetToLendIndex: number, assetToLendAmount: BigNumber;
   let valueInterpreter: ValueInterpreter;
 
   beforeAll(async () => {
     integrationManager = fork.deployment.integrationManager;
     valueInterpreter = fork.deployment.valueInterpreter;
 
-    assetToLend = new StandardToken(poolInfo[poolKey].assetToLendAddress, provider);
+    assetToLend = new ITestStandardToken(poolInfo[poolKey].assetToLendAddress, provider);
     assetToLendAmount = await getAssetUnit(assetToLend);
 
     // Parse pool info
-    pool = new ICurveLiquidityPool(poolInfo[poolKey].poolAddress, provider);
+    pool = new ITestCurveLiquidityPool(poolInfo[poolKey].poolAddress, provider);
 
     // If pool is not on the main registry, assume it is a new metapool factory,
     // in which case poolAddress === lpTokenAddress
     let lpTokenAddress = await curveRegistry.get_lp_token(pool);
 
     if (lpTokenAddress === constants.AddressZero) {
-      lpTokenAddress = pool;
+      lpTokenAddress = pool.address;
     }
 
-    lpToken = new StandardToken(lpTokenAddress, provider);
+    lpToken = new ITestStandardToken(lpTokenAddress, provider);
 
     nTokens = 0;
     const poolTokens = [] as string[];
@@ -228,7 +228,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     // Deploy fund
     [fundOwner] = fork.accounts;
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,

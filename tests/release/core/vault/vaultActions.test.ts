@@ -1,8 +1,8 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import {
   encodeArgs,
+  ITestStandardToken,
   MockGenericExternalPositionLib,
-  StandardToken,
   VaultAction,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -274,7 +274,7 @@ describe('ApproveAssetSpender', () => {
     });
 
     const spender = randomAddress();
-    const asset = new StandardToken(fork.config.primitives.usdt, provider);
+    const asset = new ITestStandardToken(fork.config.primitives.usdt, provider);
     const amount = utils.parseEther('1');
 
     const receipt = await vaultProxy.receiveValidatedVaultAction(
@@ -362,14 +362,14 @@ describe('CallOnExternalPosition', () => {
     const seedAmount = utils.parseEther('1');
 
     const { vaultProxy, comptrollerProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const assetsToTransfer = [new StandardToken(fork.config.primitives.dai, provider)];
-    const assetsToReceive = [new StandardToken(fork.config.primitives.mln, provider)];
+    const assetsToTransfer = [new ITestStandardToken(fork.config.primitives.dai, provider)];
+    const assetsToReceive = [new ITestStandardToken(fork.config.primitives.mln, provider)];
     const amountsToTransfer = [1];
 
     await seedAccount({ provider, account: vaultProxy, amount: seedAmount, token: assetsToTransfer[0] });
@@ -654,7 +654,7 @@ describe('WithdrawAssetTo', () => {
       fork.config.weth,
       fork.config.positionsLimit,
     );
-    const asset = new StandardToken(fork.config.weth, provider);
+    const asset = new ITestStandardToken(fork.config.weth, provider);
 
     const vaultProxy = await createVaultProxy({
       fundAccessor,

@@ -1,7 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
-import { ONE_HUNDRED_PERCENT_IN_BPS, StandardToken, TestTreasurySplitterMixin } from '@enzymefinance/protocol';
+import { ITestStandardToken, ONE_HUNDRED_PERCENT_IN_BPS, TestTreasurySplitterMixin } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
@@ -85,7 +85,7 @@ describe('claimTokenAmountTo', () => {
   const feePercent1 = 2500;
   const feePercent2 = 7500;
   let user: SignerWithAddress;
-  let token: StandardToken;
+  let token: ITestStandardToken;
   let initialSplitterTokenBal: BigNumber;
 
   beforeEach(async () => {
@@ -93,7 +93,7 @@ describe('claimTokenAmountTo', () => {
 
     await testTreasurySplitterMixin.setSplitRatio([user, user2Address], [feePercent1, feePercent2]);
 
-    token = new StandardToken(fork.config.primitives.usdc, provider);
+    token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     initialSplitterTokenBal = await getAssetUnit(token);
     await seedAccount({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
@@ -138,7 +138,7 @@ describe('Walkthrough', () => {
     const [user1, user2] = fork.accounts;
     const feePercent1 = 2500;
     const feePercent2 = 7500;
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const tokenUnit = await getAssetUnit(token);
 
     // Set the desired split ratio

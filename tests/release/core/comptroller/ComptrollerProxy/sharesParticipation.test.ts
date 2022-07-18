@@ -6,6 +6,8 @@ import {
   encodeArgs,
   FeeHook,
   feeManagerConfigArgs,
+  ITestStandardToken,
+  ITestWETH,
   MockReentrancyToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
   PolicyHook,
@@ -13,10 +15,8 @@ import {
   settlePreBuySharesArgs,
   settlePreRedeemSharesArgs,
   SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS,
-  StandardToken,
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -45,7 +45,7 @@ async function snapshot() {
     accounts: [fundOwner, ...remainingAccounts],
   } = await deployProtocolFixture();
 
-  const weth = new WETH(config.weth, provider);
+  const weth = new ITestWETH(config.weth, provider);
   const fees = await generateMockFees({
     deployer,
   });
@@ -385,7 +385,7 @@ describe('buySharesOnBehalf', () => {
   const minSharesQuantity = '1';
   let fundDeployer: FundDeployer, policyManager: PolicyManager;
   let fundOwner: SignerWithAddress, buyer: SignerWithAddress, randomCaller: SignerWithAddress;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     fork = await deployProtocolFixture();
@@ -395,7 +395,7 @@ describe('buySharesOnBehalf', () => {
     fundDeployer = fork.deployment.fundDeployer;
     policyManager = fork.deployment.policyManager;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     await seedAccount({ account: randomCaller, amount: investmentAmount, provider, token: denominationAsset });
 
     // TODO: set protocol fee to 0 for simplicity/clarity
@@ -408,7 +408,7 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         sharesActionTimelock: 1,
         signer: fundOwner,
@@ -470,7 +470,7 @@ describe('buySharesOnBehalf', () => {
 
     beforeEach(async () => {
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         sharesActionTimelock: 0,
         signer: fundOwner, // Not necessary, but explicit
@@ -617,7 +617,7 @@ describe('redeem', () => {
       });
 
       // Send second asset to the fund
-      const secondAsset = new StandardToken(mln, provider);
+      const secondAsset = new ITestStandardToken(mln, provider);
       await seedAccount({ provider, account: vaultProxy, amount: await getAssetUnit(secondAsset), token: secondAsset });
 
       await expect(
@@ -673,7 +673,7 @@ describe('redeem', () => {
         investmentAmount: investorInvestmentAmount,
       });
 
-      const zeroBalanceAsset = new StandardToken(mln, provider);
+      const zeroBalanceAsset = new ITestStandardToken(mln, provider);
 
       expect(await zeroBalanceAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
 
@@ -733,7 +733,7 @@ describe('redeem', () => {
 
       // Define the redemption parameters
       const recipient = randomAddress();
-      const payoutAssets = [new StandardToken(mln, provider), new StandardToken(dai, provider)];
+      const payoutAssets = [new ITestStandardToken(mln, provider), new ITestStandardToken(dai, provider)];
       const oneHundredPercent = 10000;
       const payoutAssetPercentages = [3000, 7000]; // 30% and 70%
 
@@ -844,7 +844,7 @@ describe('redeem', () => {
       await protocolFeeTracker.setFeeBpsDefault(0);
 
       // Create a new fund, invested in by the fund manager and an investor
-      const denominationAsset = new StandardToken(usdc, provider);
+      const denominationAsset = new ITestStandardToken(usdc, provider);
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         denominationAsset,
         fundDeployer,
@@ -867,7 +867,7 @@ describe('redeem', () => {
 
       // Define the redemption parameters
       const recipient = randomAddress();
-      const payoutAsset = new StandardToken(cdai, provider);
+      const payoutAsset = new ITestStandardToken(cdai, provider);
 
       // Send and track the redemption asset with the equivalent values as the denomination asset balance,
       // so that redeeming half the shares should result in withdrawing almost all of the payoutAsset
@@ -1105,7 +1105,7 @@ describe('redeem', () => {
       await seedAccount({ account: vaultProxy, amount: 1, provider, token: denominationAsset });
 
       // Send and track a second asset in the vault, but then allow it to be untracked
-      const secondAsset = new StandardToken(mln, provider);
+      const secondAsset = new ITestStandardToken(mln, provider);
 
       await addNewAssetsToFund({
         provider,
@@ -1204,7 +1204,7 @@ describe('redeem', () => {
       await provider.send('evm_increaseTime', [3600]);
 
       // Send untracked asset directly to fund
-      const untrackedAsset = new StandardToken(mln, provider);
+      const untrackedAsset = new ITestStandardToken(mln, provider);
       const untrackedAssetBalance = utils.parseEther('2');
       await seedAccount({ provider, account: vaultProxy, amount: untrackedAssetBalance, token: untrackedAsset });
 
@@ -1351,7 +1351,7 @@ describe('transfer shares', () => {
     // Spin up and invest in a fund to create shares
     sharesActionTimelock = 1000;
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       investment: {

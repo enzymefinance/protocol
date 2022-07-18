@@ -13,12 +13,12 @@ import {
   curveStakeArgs,
   curveUnstakeAndRedeemArgs,
   curveUnstakeArgs,
+  ITestStandardToken,
   lendAndStakeSelector,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
   stakeSelector,
-  StandardToken,
   unstakeAndRedeemSelector,
   unstakeSelector,
 } from '@enzymefinance/protocol';
@@ -479,7 +479,7 @@ describe('actions', () => {
     [fundOwner] = fork.accounts;
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -492,10 +492,10 @@ describe('actions', () => {
   describe('claimRewards', () => {
     it('happy path (pool with CRV + pool rewards)', async () => {
       const pool = fork.config.curve.pools.steth.pool;
-      const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-      const crv = new StandardToken(fork.config.primitives.crv, provider);
-      const ldo = new StandardToken(fork.config.primitives.ldo, provider);
+      const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+      const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+      const crv = new ITestStandardToken(fork.config.primitives.crv, provider);
+      const ldo = new ITestStandardToken(fork.config.primitives.ldo, provider);
 
       const wethLendAmount = utils.parseEther('100');
 
@@ -557,16 +557,16 @@ describe('actions', () => {
 
     describe('aave pool: 3 assets, underlyings', () => {
       let pool: AddressLike;
-      let lpToken: StandardToken;
+      let lpToken: ITestStandardToken;
 
       beforeEach(async () => {
         pool = fork.config.curve.pools.aave.pool;
-        lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
+        lpToken = new ITestStandardToken(fork.config.curve.pools.aave.lpToken, provider);
       });
 
       it('works as expected (non-underlyings, 2 of 3 outgoing)', async () => {
-        const aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-        const aUsdt = new StandardToken(fork.config.aave.atokens.ausdt[0], provider);
+        const aUsdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+        const aUsdt = new ITestStandardToken(fork.config.aave.atokens.ausdt[0], provider);
         const aUsdcAmount = 123;
         const aUsdtAmount = 456;
 
@@ -604,8 +604,8 @@ describe('actions', () => {
       });
 
       it('works as expected (underlyings, 2 of 3 outgoing)', async () => {
-        const dai = new StandardToken(fork.config.primitives.dai, provider);
-        const usdt = new StandardToken(fork.config.primitives.usdt, provider);
+        const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+        const usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
         const daiAmount = 123;
         const usdtAmount = 456;
 
@@ -640,9 +640,9 @@ describe('actions', () => {
     describe('steth pool: 2 assets, eth', () => {
       it('works as expected (2 assets, incl eth)', async () => {
         const pool = fork.config.curve.pools.steth.pool;
-        const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-        const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-        const steth = new StandardToken(fork.config.lido.steth, provider);
+        const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+        const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+        const steth = new ITestStandardToken(fork.config.lido.steth, provider);
         const wethAmount = 123;
         const stethAmount = 456;
 
@@ -681,10 +681,10 @@ describe('actions', () => {
     describe('USDT pool (coins(int128) signature)', () => {
       it('works as expected', async () => {
         const pool = fork.config.curve.pools.usdt.pool;
-        const lpToken = new StandardToken(fork.config.curve.pools.usdt.lpToken, provider);
-        const cDai = new StandardToken(fork.config.compound.ctokens.cdai, provider);
-        const cUsdc = new StandardToken(fork.config.compound.ctokens.cusdc, provider);
-        const usdt = new StandardToken(fork.config.primitives.usdt, provider);
+        const lpToken = new ITestStandardToken(fork.config.curve.pools.usdt.lpToken, provider);
+        const cDai = new ITestStandardToken(fork.config.compound.ctokens.cdai, provider);
+        const cUsdc = new ITestStandardToken(fork.config.compound.ctokens.cusdc, provider);
+        const usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
         const amount = 1000;
 
         // Seed vault
@@ -718,9 +718,9 @@ describe('actions', () => {
 
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
-      const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new StandardToken(fork.config.lido.steth, provider);
+      const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+      const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
       const wethAmount = 123;
       const stethAmount = 456;
 
@@ -763,20 +763,20 @@ describe('actions', () => {
 
     describe('aave pool: 3 assets, underlyings', () => {
       let pool: AddressLike;
-      let lpToken: StandardToken;
-      let dai: StandardToken, usdc: StandardToken, usdt: StandardToken;
-      let aDai: StandardToken, aUsdc: StandardToken, aUsdt: StandardToken;
+      let lpToken: ITestStandardToken;
+      let dai: ITestStandardToken, usdc: ITestStandardToken, usdt: ITestStandardToken;
+      let aDai: ITestStandardToken, aUsdc: ITestStandardToken, aUsdt: ITestStandardToken;
       let preTxLpTokenBalance: BigNumber, outgoingLpTokenAmount: BigNumber;
 
       beforeEach(async () => {
         pool = fork.config.curve.pools.aave.pool;
-        lpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
-        aDai = new StandardToken(fork.config.aave.atokens.adai[0], provider);
-        aUsdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-        aUsdt = new StandardToken(fork.config.aave.atokens.ausdt[0], provider);
-        dai = new StandardToken(fork.config.primitives.dai, provider);
-        usdc = new StandardToken(fork.config.primitives.usdc, provider);
-        usdt = new StandardToken(fork.config.primitives.usdt, provider);
+        lpToken = new ITestStandardToken(fork.config.curve.pools.aave.lpToken, provider);
+        aDai = new ITestStandardToken(fork.config.aave.atokens.adai[0], provider);
+        aUsdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+        aUsdt = new ITestStandardToken(fork.config.aave.atokens.ausdt[0], provider);
+        dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+        usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
+        usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
 
         const aUsdcSeedAmount = await getAssetUnit(aUsdc);
 
@@ -953,8 +953,8 @@ describe('actions', () => {
 
     describe('steth pool: 2 assets, eth', () => {
       let pool: AddressLike;
-      let lpToken: StandardToken;
-      let weth: StandardToken, steth: StandardToken;
+      let lpToken: ITestStandardToken;
+      let weth: ITestStandardToken, steth: ITestStandardToken;
       let preTxLpTokenBalance: BigNumber,
         preTxWethBalance: BigNumber,
         preTxStethBalance: BigNumber,
@@ -962,9 +962,9 @@ describe('actions', () => {
 
       beforeEach(async () => {
         pool = fork.config.curve.pools.steth.pool;
-        lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-        weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-        steth = new StandardToken(fork.config.lido.steth, provider);
+        lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+        weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+        steth = new ITestStandardToken(fork.config.lido.steth, provider);
 
         const wethSeedAmount = await getAssetUnit(weth);
 
@@ -1066,10 +1066,10 @@ describe('actions', () => {
 
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
-      const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-      const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new StandardToken(fork.config.lido.steth, provider);
+      const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+      const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+      const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
@@ -1117,10 +1117,10 @@ describe('actions', () => {
 
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
-      const lpToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-      const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new StandardToken(fork.config.lido.steth, provider);
+      const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+      const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+      const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
@@ -1169,9 +1169,9 @@ describe('actions', () => {
 
     it('works as expected', async () => {
       const pool = fork.config.curve.pools.steth.pool;
-      const gaugeToken = new StandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
-      const weth = new StandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new StandardToken(fork.config.lido.steth, provider);
+      const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
+      const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
 
       const wethSeedAmount = await getAssetUnit(weth);
 

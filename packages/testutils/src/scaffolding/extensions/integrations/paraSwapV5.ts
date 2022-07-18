@@ -3,9 +3,9 @@ import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
+  ITestStandardToken,
   ParaSwapV5Adapter,
   ParaSwapV5Path,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
@@ -45,7 +45,7 @@ export async function paraSwapV5TakeOrder({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   paraSwapV5Adapter: ParaSwapV5Adapter;
-  outgoingAsset: StandardToken;
+  outgoingAsset: ITestStandardToken;
   outgoingAssetAmount: BigNumberish;
   minIncomingAssetAmount?: BigNumberish;
   expectedIncomingAssetAmount?: BigNumberish;

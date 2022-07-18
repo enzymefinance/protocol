@@ -1,7 +1,7 @@
 import type { ContractReceipt } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, FundDeployer, VaultLib } from '@enzymefinance/protocol';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -58,7 +58,7 @@ describe('createReconfigurationRequest', () => {
     let fundDeployer: FundDeployer;
     let fundOwner: SignerWithAddress, randomUser: SignerWithAddress;
     let vaultProxy: VaultLib;
-    let denominationAsset: StandardToken;
+    let denominationAsset: ITestStandardToken;
 
     beforeEach(async () => {
       fork = await deployProtocolFixture();
@@ -66,14 +66,14 @@ describe('createReconfigurationRequest', () => {
       fundDeployer = fork.deployment.fundDeployer;
 
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
         signer: fundOwner,
       });
 
       vaultProxy = newFundRes.vaultProxy;
-      denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+      denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
     });
 
     // Other validations covered by common logic in createNewFund() tests
@@ -81,7 +81,7 @@ describe('createReconfigurationRequest', () => {
     it('cannot be called by a random user', async () => {
       await expect(
         createReconfigurationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: randomUser,
           vaultProxy,
@@ -134,7 +134,7 @@ describe('createReconfigurationRequest', () => {
       const [fundOwner, migrator] = fork.accounts;
       const fundDeployer = fork.deployment.fundDeployer;
 
-      const denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+      const denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
       const { vaultProxy } = await createNewFund({
         denominationAsset,
@@ -159,7 +159,7 @@ describe('createReconfigurationRequest', () => {
       let fundDeployer: FundDeployer;
       let fundOwner: SignerWithAddress;
       let nextComptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-      let denominationAsset: StandardToken, sharesActionTimelock: BigNumber;
+      let denominationAsset: ITestStandardToken, sharesActionTimelock: BigNumber;
       let createReconfigurationRequestReceipt: ContractReceipt<any>;
       let expectedExecutableTimestamp: BigNumber;
 
@@ -170,7 +170,7 @@ describe('createReconfigurationRequest', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
           signer: fundOwner,
@@ -178,7 +178,7 @@ describe('createReconfigurationRequest', () => {
 
         vaultProxy = newFundRes.vaultProxy;
 
-        denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+        denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
         sharesActionTimelock = BigNumber.from(123);
 
         // Note that ComptrollerProxyDeployed event is asserted within helper
@@ -250,7 +250,7 @@ describe('executeReconfiguration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
         signer: fundOwner,
@@ -261,7 +261,7 @@ describe('executeReconfiguration', () => {
 
     it('cannot be called by a random user', async () => {
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -280,7 +280,7 @@ describe('executeReconfiguration', () => {
 
     it('cannot be called before the timelock expires', async () => {
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -294,7 +294,7 @@ describe('executeReconfiguration', () => {
     it('does not allow a VaultProxy that is not on the same release as the FundDeployer', async () => {
       // Create the reconfigured ComptrollerProxy prior to migrating to a new release
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -316,7 +316,7 @@ describe('executeReconfiguration', () => {
       });
 
       await createMigrationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: nextFundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -350,14 +350,14 @@ describe('executeReconfiguration', () => {
       const fundDeployer = fork.deployment.fundDeployer;
 
       const { vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
         signer: fundOwner,
       });
 
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -388,7 +388,7 @@ describe('executeReconfiguration', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
           signer: fundOwner,
@@ -398,7 +398,7 @@ describe('executeReconfiguration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const reconfiguredFundRes = await createReconfigurationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,
@@ -467,7 +467,7 @@ describe('cancelReconfiguration', () => {
       [fundOwner, randomUser] = fork.accounts;
 
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
         signer: fundOwner,
@@ -478,7 +478,7 @@ describe('cancelReconfiguration', () => {
 
     it('cannot be called by a random user', async () => {
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -504,14 +504,14 @@ describe('cancelReconfiguration', () => {
       const fundDeployer = fork.deployment.fundDeployer;
 
       const { vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         fundOwner,
         signer: fundOwner,
       });
 
       await createReconfigurationRequest({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer,
         signer: fundOwner,
         vaultProxy,
@@ -537,7 +537,7 @@ describe('cancelReconfiguration', () => {
         fundDeployer = fork.deployment.fundDeployer;
 
         const newFundRes = await createNewFund({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           fundOwner,
           signer: fundOwner,
@@ -546,7 +546,7 @@ describe('cancelReconfiguration', () => {
         vaultProxy = newFundRes.vaultProxy;
 
         const reconfiguredFundRes = await createReconfigurationRequest({
-          denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+          denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
           fundDeployer,
           signer: fundOwner,
           vaultProxy,

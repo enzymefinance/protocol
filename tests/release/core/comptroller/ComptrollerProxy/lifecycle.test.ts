@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { ComptrollerLib, FundDeployer, IExtension, StandardToken, VaultLib } from '@enzymefinance/protocol';
+import { ComptrollerLib, FundDeployer, IExtension, ITestStandardToken, VaultLib } from '@enzymefinance/protocol';
 import { assertEvent, createComptrollerProxy, deployProtocolFixture } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -11,7 +11,7 @@ async function snapshot() {
     deployment,
   } = await deployProtocolFixture();
 
-  const denominationAsset = new StandardToken(config.weth, deployer);
+  const denominationAsset = new ITestStandardToken(config.weth, deployer);
 
   // Deploy a mock FundDeployer
   const mockFundDeployer = await FundDeployer.mock(deployer);

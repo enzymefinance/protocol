@@ -3,9 +3,9 @@ import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   encodeArgs,
   GlobalConfigLib,
+  ITestStandardToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
   sighash,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -71,7 +71,7 @@ describe('isValidRedeemSharesCall', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -99,7 +99,7 @@ describe('isValidRedeemSharesCall', () => {
     beforeEach(async () => {
       const [fundOwner] = fork.accounts;
       const newFundRes = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fundOwner,

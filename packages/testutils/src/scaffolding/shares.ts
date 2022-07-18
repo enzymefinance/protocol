@@ -1,6 +1,6 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
-import type { ComptrollerLib, StandardToken } from '@enzymefinance/protocol';
+import type { ComptrollerLib, ITestStandardToken } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { constants, utils } from 'ethers';
 
@@ -8,7 +8,7 @@ import { seedAccount } from '../accounts';
 
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;
-  denominationAsset: StandardToken;
+  denominationAsset: ITestStandardToken;
   buyer: SignerWithAddress;
   investmentAmount?: BigNumberish;
   minSharesQuantity?: BigNumberish;

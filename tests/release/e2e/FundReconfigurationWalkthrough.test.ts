@@ -4,11 +4,11 @@ import {
   entranceRateBurnFeeConfigArgs,
   FeeManagerActionId,
   feeManagerConfigArgs,
+  ITestStandardToken,
   managementFeeConfigArgs,
   managementFeeConvertRateToScaledPerSecondRate,
   ONE_DAY_IN_SECONDS,
   performanceFeeConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -35,7 +35,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
     let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
     let feeManagerConfig: any;
-    let denominationAsset: StandardToken;
+    let denominationAsset: ITestStandardToken;
 
     beforeAll(async () => {
       fork = await deployProtocolFixture();
@@ -44,7 +44,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       fundDeployer = fork.deployment.fundDeployer;
 
-      denominationAsset = new StandardToken(
+      denominationAsset = new ITestStandardToken(
         denominationAssetId === 'weth' ? fork.config.weth : fork.config.primitives[denominationAssetId],
         provider,
       );
@@ -81,7 +81,7 @@ describe.each([['weth' as const], ['usdc' as const]])(
       vaultProxy = createFundTx.vaultProxy;
 
       // Make both fees able to settle by adding free MLN (performance) and warping time (management)
-      const mln = new StandardToken(fork.config.primitives.mln, provider);
+      const mln = new ITestStandardToken(fork.config.primitives.mln, provider);
       const mlnUnit = await getAssetUnit(mln);
 
       await addNewAssetsToFund({

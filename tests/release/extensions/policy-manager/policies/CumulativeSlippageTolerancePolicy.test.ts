@@ -10,6 +10,7 @@ import type {
 import {
   cumulativeSlippageTolerancePolicyArgs,
   FIVE_PERCENT_IN_WEI,
+  ITestStandardToken,
   MockGenericAdapter,
   MockGenericIntegratee,
   ONE_DAY_IN_SECONDS,
@@ -17,7 +18,6 @@ import {
   ONE_ONE_HUNDREDTH_PERCENT_IN_WEI,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
   TEN_PERCENT_IN_WEI,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -87,7 +87,7 @@ describe('addFundSettings', () => {
   it('does not allow a tolerance >= max value', async () => {
     await expect(
       createNewFund({
-        denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         policyManagerConfig: policyManagerConfigArgs({
@@ -106,7 +106,7 @@ describe('addFundSettings', () => {
   it('happy path', async () => {
     const tolerance = 9999;
     const { comptrollerProxy, receipt } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -170,7 +170,7 @@ describe('validateRule', () => {
   let integrationManager: IntegrationManager, valueInterpreter: ValueInterpreter;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let cumulativeSlippageTolerancePolicy: CumulativeSlippageTolerancePolicy;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
@@ -181,7 +181,7 @@ describe('validateRule', () => {
     mockGenericIntegratee = await MockGenericIntegratee.deploy(fork.deployer);
     mockGenericAdapter = await MockGenericAdapter.deploy(fork.deployer, mockGenericIntegratee);
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -210,7 +210,7 @@ describe('validateRule', () => {
 
   it('happy path: simple, USD stables only, using human-readable numbers and calcs', async () => {
     const outgoingAsset = denominationAsset;
-    const incomingAsset = new StandardToken(fork.config.primitives.dai, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const outgoingAssetUnit = await getAssetUnit(outgoingAsset);
 
@@ -327,13 +327,13 @@ describe('validateRule', () => {
   });
 
   it('happy path: complex, multiple incoming and outgoing assets', async () => {
-    const secondSpendAsset = new StandardToken(fork.config.weth, provider);
+    const secondSpendAsset = new ITestStandardToken(fork.config.weth, provider);
     const secondSpendAssetUnit = await getAssetUnit(secondSpendAsset);
     const outgoingAssets = [denominationAsset, secondSpendAsset];
     const outgoingAssetUnits = [await getAssetUnit(denominationAsset), secondSpendAssetUnit];
     const incomingAssets = [
-      new StandardToken(fork.config.primitives.usdt, provider),
-      new StandardToken(fork.config.primitives.dai, provider),
+      new ITestStandardToken(fork.config.primitives.usdt, provider),
+      new ITestStandardToken(fork.config.primitives.dai, provider),
     ];
 
     // Use same outgoingAssetAmounts throughout
@@ -463,7 +463,7 @@ describe('validateRule', () => {
   it('happy path: allows bypassing an adapter in the "bypassable adapters" registered list', async () => {
     const addressListRegistry = fork.deployment.addressListRegistry;
 
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
     await addNewAssetsToFund({
@@ -512,7 +512,7 @@ describe('validateRule', () => {
   });
 
   it('happy path: edge case: allows bypassing a properly-queued outgoing asset that does not have a valid price', async () => {
-    const outgoingAsset = new StandardToken(fork.config.primitives.mln, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
     await addNewAssetsToFund({

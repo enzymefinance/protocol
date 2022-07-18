@@ -1,5 +1,5 @@
 import type { UsdEthSimulatedAggregator, ValueInterpreter } from '@enzymefinance/protocol';
-import { ChainlinkRateAsset, IChainlinkAggregator, StandardToken } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset, ITestChainlinkAggregator, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { deployProtocolFixture, getAssetUnit } from '@enzymefinance/testutils';
 
@@ -23,14 +23,14 @@ describe('latestRoundData', () => {
   it('happy path', async () => {
     const latestRoundDataRes = await usdEthSimulatedAggregator.latestRoundData();
 
-    const chainlinkEthUsdAggregator = new IChainlinkAggregator(fork.config.chainlink.ethusd, provider);
+    const chainlinkEthUsdAggregator = new ITestChainlinkAggregator(fork.config.chainlink.ethusd, provider);
     const chainlinkLatestRoundDataRes = await chainlinkEthUsdAggregator.latestRoundData();
 
     // Everything should be returned exactly as it is in Chainlink other than the rate
-    expect(latestRoundDataRes.roundId_).toEqBigNumber(chainlinkLatestRoundDataRes[0]);
-    expect(latestRoundDataRes.startedAt_).toEqBigNumber(chainlinkLatestRoundDataRes[2]);
-    expect(latestRoundDataRes.updatedAt_).toEqBigNumber(chainlinkLatestRoundDataRes[3]);
-    expect(latestRoundDataRes.answeredInRound_).toEqBigNumber(chainlinkLatestRoundDataRes[4]);
+    expect(latestRoundDataRes.roundId_).toEqBigNumber(chainlinkLatestRoundDataRes.roundId_);
+    expect(latestRoundDataRes.startedAt_).toEqBigNumber(chainlinkLatestRoundDataRes.startedAt_);
+    expect(latestRoundDataRes.updatedAt_).toEqBigNumber(chainlinkLatestRoundDataRes.updatedAt_);
+    expect(latestRoundDataRes.answeredInRound_).toEqBigNumber(chainlinkLatestRoundDataRes.answeredInRound_);
 
     // Rate should be inverse ETH/USD price with the target precision (1/price * 1e18).
     // On May 13, 2022 ETH/USD was around $2000.
@@ -43,7 +43,7 @@ describe('e2e', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     // Use a pool with USD as the invariant
     const curvePool = fork.config.curve.pools.aave.pool;
-    const curveLpToken = new StandardToken(fork.config.curve.pools.aave.lpToken, provider);
+    const curveLpToken = new ITestStandardToken(fork.config.curve.pools.aave.lpToken, provider);
     const curveLpTokenUnit = await getAssetUnit(curveLpToken);
     const curvePoolHasReentrantVirtualPrice = fork.config.curve.pools.aave.hasReentrantVirtualPrice;
 

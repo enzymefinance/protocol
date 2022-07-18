@@ -1,6 +1,12 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, MinSharesSupplyFee, VaultLib } from '@enzymefinance/protocol';
-import { FeeHook, feeManagerConfigArgs, NULL_ADDRESS_ALT, SHARES_UNIT, StandardToken } from '@enzymefinance/protocol';
+import {
+  FeeHook,
+  feeManagerConfigArgs,
+  ITestStandardToken,
+  NULL_ADDRESS_ALT,
+  SHARES_UNIT,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -18,7 +24,7 @@ const minSharesSupply = utils.parseUnits('1', 6);
 
 let minSharesSupplyFee: MinSharesSupplyFee;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-let denominationAsset: StandardToken;
+let denominationAsset: ITestStandardToken;
 let fundOwner: SignerWithAddress;
 
 let fork: ProtocolDeployment;
@@ -31,7 +37,7 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
   // We use WETH for the denominationAsset here to make it is possible to buy
   // a shares quantity less than the min shares supply
-  denominationAsset = new StandardToken(fork.config.weth, provider);
+  denominationAsset = new ITestStandardToken(fork.config.weth, provider);
 
   const newFundRes = await createNewFund({
     denominationAsset,

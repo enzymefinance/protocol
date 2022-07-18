@@ -7,7 +7,7 @@ import type {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs, StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken, ONE_DAY_IN_SECONDS, PolicyHook, policyManagerConfigArgs } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -84,7 +84,7 @@ describe('validateRule', () => {
   let onlyUntrackDustOrPricelessAssetsPolicy: OnlyUntrackDustOrPricelessAssetsPolicy,
     integrationManager: IntegrationManager,
     valueInterpreter: ValueInterpreter;
-  let weth: StandardToken, assetsToUntrack: StandardToken[];
+  let weth: ITestStandardToken, assetsToUntrack: ITestStandardToken[];
   let dustToleranceInAssetsToRemove: BigNumber[];
 
   beforeEach(async () => {
@@ -92,14 +92,14 @@ describe('validateRule', () => {
     onlyUntrackDustOrPricelessAssetsPolicy = fork.deployment.onlyUntrackDustOrPricelessAssetsPolicy;
     integrationManager = fork.deployment.integrationManager;
     valueInterpreter = fork.deployment.valueInterpreter;
-    weth = new StandardToken(fork.config.weth, provider);
+    weth = new ITestStandardToken(fork.config.weth, provider);
     assetsToUntrack = [
-      new StandardToken(fork.config.primitives.dai, provider),
-      new StandardToken(fork.config.primitives.usdt, provider),
+      new ITestStandardToken(fork.config.primitives.dai, provider),
+      new ITestStandardToken(fork.config.primitives.usdt, provider),
     ];
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({

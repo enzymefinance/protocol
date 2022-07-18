@@ -1,4 +1,4 @@
-import { StandardToken, UniswapV2Router } from '@enzymefinance/protocol';
+import { ITestStandardToken, ITestUniswapV2Router } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   createNewFund,
@@ -19,10 +19,10 @@ beforeEach(async () => {
 describe('adapters', () => {
   // Confirms that approvals from adapters to external protocols work as expected
   it('can swap USDT for WETH via Uniswap', async () => {
-    const weth = new StandardToken(fork.config.weth, provider);
-    const outgoingAsset = new StandardToken(fork.config.primitives.usdt, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.usdt, provider);
     const incomingAsset = weth;
-    const uniswapRouter = new UniswapV2Router(fork.config.uniswap.router, provider);
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({

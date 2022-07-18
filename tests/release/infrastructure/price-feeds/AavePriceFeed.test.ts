@@ -1,5 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
-import { StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { aaveLend, buyShares, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
@@ -13,8 +13,8 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -43,7 +43,7 @@ describe('derivative gas costs', () => {
     // Seed fund and use max of the dai balance to get adai
     await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await aaveLend({
-      aToken: new StandardToken(fork.config.aave.atokens.adai[0], provider),
+      aToken: new ITestStandardToken(fork.config.aave.atokens.adai[0], provider),
       aaveAdapter: fork.deployment.aaveAdapter,
       amount: initialTokenAmount,
       comptrollerProxy,
@@ -97,7 +97,7 @@ describe('addDerivatives', () => {
 
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token USDC', async () => {
-    const ausdc = new StandardToken(fork.config.aave.atokens.ausdc[0], fork.deployer);
+    const ausdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], fork.deployer);
     const oneUnit = utils.parseUnits('1', await ausdc.decimals());
 
     const aavePriceFeed = fork.deployment.aavePriceFeed;
@@ -123,8 +123,8 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const adai = new StandardToken(fork.config.aave.atokens.adai[0], provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const adai = new ITestStandardToken(fork.config.aave.atokens.adai[0], provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await adai.decimals();
     const quoteDecimals = await dai.decimals();
@@ -142,8 +142,8 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const ausdc = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const ausdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await ausdc.decimals();
     const quoteDecimals = await usdc.decimals();

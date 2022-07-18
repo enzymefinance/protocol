@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, SharesSplitterFactory, SharesSplitterLib, VaultLib } from '@enzymefinance/protocol';
-import { encodeArgs, ONE_HUNDRED_PERCENT_IN_BPS, sighash, StandardToken } from '@enzymefinance/protocol';
+import { encodeArgs, ITestStandardToken, ONE_HUNDRED_PERCENT_IN_BPS, sighash } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { buyShares, createNewFund, deployProtocolFixture, deploySharesSplitter } from '@enzymefinance/testutils';
 import type { BigNumber, BigNumberish } from 'ethers';
@@ -38,7 +38,7 @@ describe('init', () => {
 describe('redeemShares', () => {
   let sharesSplitterProxy: SharesSplitterLib;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
   let fundOwner: SignerWithAddress, user1: SignerWithAddress;
   let feePercent1: BigNumberish;
   let initialSharesSplitterSharesBal: BigNumber, user1ClaimableSharesAmount: BigNumber;
@@ -59,7 +59,7 @@ describe('redeemShares', () => {
     sharesSplitterProxy = newSharesSplitterRes.sharesSplitterProxy;
 
     // Deploy a new fund
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, fundOwner);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, fundOwner);
     const newFundRes = await createNewFund({
       denominationAsset,
       fundDeployer: fork.deployment.fundDeployer,

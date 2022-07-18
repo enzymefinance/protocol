@@ -1,5 +1,4 @@
-import type { AddressLike, Call, Contract, Send } from '@enzymefinance/ethers';
-import { contract } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
@@ -7,7 +6,7 @@ import type {
   CurveLiquidityAdapter,
   CurveRedeemType,
   IntegrationManager,
-  StandardToken,
+  ITestStandardToken,
 } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
@@ -32,43 +31,6 @@ import {
 import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
-export interface CurveLiquidityGaugeV2 extends Contract<CurveLiquidityGaugeV2> {
-  claim_rewards: Send<(_addr: AddressLike) => void>;
-  integrate_fraction: Call<(_for: AddressLike) => BigNumber>;
-}
-
-export const CurveLiquidityGaugeV2 = contract<CurveLiquidityGaugeV2>()`
-  function claim_rewards(address)
-  function integrate_fraction(address) view returns (uint256)
-`;
-
-export interface CurveRegistry extends Contract<CurveRegistry> {
-  get_coins: Call<(_pool: AddressLike) => AddressLike[]>;
-  get_lp_token: Call<(_pool: AddressLike) => AddressLike>;
-}
-
-export const CurveRegistry = contract<CurveRegistry>()`
-  function get_coins(address) view returns (address[8])
-  function get_lp_token(address) view returns (address)
-`;
-
-// prettier-ignore
-export interface CurveSwaps extends Contract<CurveSwaps> {
-  get_best_rate: Call<(_from: AddressLike, to: AddressLike, amount: BigNumberish) => { bestPool: AddressLike, amountReceived: BigNumber }, CurveSwaps>
-}
-
-export const CurveSwaps = contract<CurveSwaps>()`
-  function get_best_rate(address _from, address to, uint256 amount) view returns (address bestPool, uint256 amountReceived)
-`;
-
-export interface CurveMinter extends Contract<CurveMinter> {
-  mint_for: Send<(_gauge_address: AddressLike, _for: AddressLike) => void>;
-}
-
-export const CurveMinter = contract<CurveMinter>()`
-  function mint_for(address,address)
-`;
-
 // exchanges
 
 export async function curveTakeOrder({
@@ -87,9 +49,9 @@ export async function curveTakeOrder({
   fundOwner: SignerWithAddress;
   curveExchangeAdapter: CurveExchangeAdapter;
   pool: AddressLike;
-  outgoingAsset: StandardToken;
+  outgoingAsset: ITestStandardToken;
   outgoingAssetAmount?: BigNumberish;
-  incomingAsset: StandardToken;
+  incomingAsset: ITestStandardToken;
   minIncomingAssetAmount?: BigNumberish;
 }) {
   const takeOrderArgs = curveTakeOrderArgs({
@@ -329,7 +291,7 @@ export async function curveUnstakeAndRedeem({
   signer: SignerWithAddress;
   curveLiquidityAdapter: CurveLiquidityAdapter;
   pool: AddressLike;
-  outgoingStakingToken: StandardToken;
+  outgoingStakingToken: ITestStandardToken;
   outgoingStakingTokenAmount: BigNumberish;
   useUnderlyings: boolean;
   redeemType: CurveRedeemType;

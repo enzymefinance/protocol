@@ -1,5 +1,5 @@
 import type { IdlePriceFeedArgs } from '@enzymefinance/protocol';
-import { IdlePriceFeed, IIdleTokenV4 } from '@enzymefinance/protocol';
+import { IdlePriceFeed, ITestIdleTokenV4 } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -27,7 +27,7 @@ const fn: DeployFunction = async function (hre) {
     const idleTokens = Object.values(config.idle);
     const underlyings = await Promise.all(
       idleTokens.map((idleTokenAddress) => {
-        const idleToken = new IIdleTokenV4(idleTokenAddress, deployer);
+        const idleToken = new ITestIdleTokenV4(idleTokenAddress, deployer);
 
         return idleToken.token();
       }),

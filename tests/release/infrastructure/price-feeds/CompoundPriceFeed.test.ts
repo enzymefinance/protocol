@@ -1,5 +1,5 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import { CompoundPriceFeed, ICERC20, StandardToken } from '@enzymefinance/protocol';
+import { CompoundPriceFeed, ITestCERC20, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { buyShares, compoundLend, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
@@ -13,8 +13,8 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -43,7 +43,7 @@ describe('derivative gas costs', () => {
     // Use max of the dai balance to get cDai
     await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await compoundLend({
-      cToken: new ICERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       cTokenAmount: BigNumber.from('1'),
       compoundAdapter: fork.deployment.compoundAdapter,
       comptrollerProxy,
@@ -154,8 +154,8 @@ describe('addCTokens', () => {
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
-    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
     const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(cdai, cTokenUnit);
@@ -173,8 +173,8 @@ describe('calcUnderlyingValues', () => {
 
   it('returns rate for underlying token (cETH)', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
-    const ceth = new ICERC20(fork.config.compound.ceth, provider);
-    const weth = new StandardToken(fork.config.weth, provider);
+    const ceth = new ITestCERC20(fork.config.compound.ceth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
     const getRatesReceipt = await compoundPriceFeed.calcUnderlyingValues(ceth, cTokenUnit);
@@ -194,8 +194,8 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const cdai = new ICERC20(fork.config.compound.ctokens.cdai, provider);
-    const dai = new StandardToken(fork.config.primitives.dai, provider);
+    const cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
+    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await cdai.decimals();
     const quoteDecimals = await dai.decimals();
@@ -215,8 +215,8 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const cusdc = new ICERC20(fork.config.compound.ctokens.cusdc, provider);
-    const usdc = new StandardToken(fork.config.primitives.usdc, provider);
+    const cusdc = new ITestCERC20(fork.config.compound.ctokens.cusdc, provider);
+    const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await cusdc.decimals();
     const quoteDecimals = await usdc.decimals();

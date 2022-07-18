@@ -3,7 +3,7 @@ import type { EthereumTestnetProvider } from '@enzymefinance/hardhat';
 import type {
   ComptrollerLib,
   IntegrationManager,
-  StandardToken,
+  ITestStandardToken,
   SynthetixAdapter,
   VaultLib,
 } from '@enzymefinance/protocol';
@@ -88,7 +88,7 @@ export async function synthetixTakeOrder({
   fundOwner: Signer;
   provider: EthereumTestnetProvider;
   synthetixAdapter: SynthetixAdapter;
-  outgoingAsset: StandardToken;
+  outgoingAsset: ITestStandardToken;
   outgoingAssetAmount?: BigNumberish;
   minIncomingSusdAmount?: BigNumberish;
   seedFund?: boolean;

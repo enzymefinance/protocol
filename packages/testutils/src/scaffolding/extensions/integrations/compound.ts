@@ -1,12 +1,12 @@
-import type { AddressLike, Contract, Send } from '@enzymefinance/ethers';
-import { contract, resolveAddress } from '@enzymefinance/ethers';
+import type { AddressLike } from '@enzymefinance/ethers';
+import { resolveAddress } from '@enzymefinance/ethers';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/hardhat';
 import type {
   CompoundAdapter,
   CompoundPriceFeed,
   ComptrollerLib,
-  ICERC20,
   IntegrationManager,
+  ITestCERC20,
   VaultLib,
 } from '@enzymefinance/protocol';
 import {
@@ -15,23 +15,15 @@ import {
   compoundArgs,
   compoundClaimRewardsArgs,
   IntegrationManagerActionId,
+  ITestStandardToken,
   lendSelector,
   redeemSelector,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
 import { seedAccount } from '../../../accounts';
 import { getAssetBalances } from '../../common';
-
-export interface ICompoundComptroller extends Contract<ICompoundComptroller> {
-  claimComp: Send<(_account: AddressLike) => void>;
-}
-
-export const ICompoundComptroller = contract<ICompoundComptroller>()`
-  function claimComp(address)
-`;
 
 export async function assertCompoundLend({
   comptrollerProxy,
@@ -50,11 +42,11 @@ export async function assertCompoundLend({
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
   tokenAmount?: BigNumber;
-  cToken: ICERC20;
+  cToken: ITestCERC20;
   compoundPriceFeed: CompoundPriceFeed;
   provider: EthereumTestnetProvider;
 }) {
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken(cToken), provider);
+  const token = new ITestStandardToken(await compoundPriceFeed.getTokenFromCToken(cToken), provider);
 
   await seedAccount({ account: vaultProxy, amount: tokenAmount, provider, token });
 
@@ -112,7 +104,7 @@ export async function assertCompoundRedeem({
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
   compoundAdapter: CompoundAdapter;
-  cToken: ICERC20;
+  cToken: ITestCERC20;
   compoundPriceFeed: CompoundPriceFeed;
   provider: EthereumTestnetProvider;
 }) {
@@ -120,7 +112,7 @@ export async function assertCompoundRedeem({
 
   await seedAccount({ account: vaultProxy, amount: cTokenAmount, provider, token: cToken });
 
-  const token = new StandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
+  const token = new ITestStandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
     account: vaultProxy,
     assets: [token, cToken],

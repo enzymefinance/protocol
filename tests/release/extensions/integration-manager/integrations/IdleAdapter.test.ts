@@ -4,11 +4,11 @@ import {
   idleClaimRewardsArgs,
   idleLendArgs,
   idleRedeemArgs,
-  IIdleTokenV4,
+  ITestIdleTokenV4,
+  ITestStandardToken,
   lendSelector,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -53,7 +53,7 @@ describe('parseAssetsForAction', () => {
 
       // Create fund to have a valid vaultProxy
       const { vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+        denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fundOwner,
@@ -74,12 +74,12 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const [fundOwner] = fork.accounts;
       const idleAdapter = fork.deployment.idleAdapter;
-      const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-      const underlying = new StandardToken(fork.config.primitives.dai, provider);
+      const idleToken = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+      const underlying = new ITestStandardToken(fork.config.primitives.dai, provider);
 
       // Create fund and acquire idleTokens
       const { comptrollerProxy, vaultProxy } = await createNewFund({
-        denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+        denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
         fundDeployer: fork.deployment.fundDeployer,
         fundOwner,
         signer: fundOwner,
@@ -129,7 +129,7 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const idleAdapter = fork.deployment.idleAdapter;
 
-      const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+      const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
       const outgoingUnderlyingAmount = utils.parseEther('2');
       const minIncomingIdleTokenAmount = utils.parseEther('3');
 
@@ -171,7 +171,7 @@ describe('parseAssetsForAction', () => {
     it('generates expected output', async () => {
       const idleAdapter = fork.deployment.idleAdapter;
 
-      const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+      const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
       const outgoingIdleTokenAmount = utils.parseEther('2');
       const minIncomingUnderlyingAmount = utils.parseEther('3');
 
@@ -201,12 +201,12 @@ describe('claimRewards', () => {
     const [fundOwner] = fork.accounts;
     const integrationManager = fork.deployment.integrationManager;
     const idleAdapter = fork.deployment.idleAdapter;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const underlying = new StandardToken(fork.config.primitives.dai, provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+    const idleTokenERC20 = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+    const underlying = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -260,7 +260,7 @@ describe('claimRewards', () => {
     let totalGovTokenVaultBalances = BigNumber.from('0');
 
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
-      const govToken = new StandardToken(await idleToken.govTokens(i), provider);
+      const govToken = new ITestStandardToken(await idleToken.govTokens(i), provider);
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);
@@ -276,11 +276,11 @@ describe('claimRewards', () => {
 describe('lend', () => {
   it('works as expected when called for lending by a fund', async () => {
     const [fundOwner] = fork.accounts;
-    const idleToken = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.dai, provider);
+    const idleToken = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -324,12 +324,12 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
     const integrationManager = fork.deployment.integrationManager;
     const idleAdapter = fork.deployment.idleAdapter;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
-    const idleTokenERC20 = new StandardToken(fork.config.idle.bestYieldIdleDai, provider);
-    const token = new StandardToken(fork.config.primitives.dai, provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+    const idleTokenERC20 = new ITestStandardToken(fork.config.idle.bestYieldIdleDai, provider);
+    const token = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -387,7 +387,7 @@ describe('redeem', () => {
     let totalGovTokenVaultBalances = BigNumber.from('0');
 
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
-      const govToken = new StandardToken(await idleToken.govTokens(i), provider);
+      const govToken = new ITestStandardToken(await idleToken.govTokens(i), provider);
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);
@@ -406,12 +406,12 @@ describe('rewards behavior', () => {
   it('accrues rewards to the vaultProxy and pays out rewards upon redemption', async () => {
     const [fundOwner, randomIdleTokenCaller] = fork.accounts;
     const idleAdapter = fork.deployment.idleAdapter;
-    const idleToken = new IIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
-    const idleTokenERC20 = new StandardToken(idleToken, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.dai, provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleDai, provider);
+    const idleTokenERC20 = new ITestStandardToken(idleToken, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.weth, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
@@ -496,7 +496,7 @@ describe('rewards behavior', () => {
     expect(govTokensLength).toBeGreaterThan(0);
 
     for (const i in await idleToken.getGovTokensAmounts(idleAdapter)) {
-      const govToken = new StandardToken(await idleToken.govTokens(i), provider);
+      const govToken = new ITestStandardToken(await idleToken.govTokens(i), provider);
 
       // The adapter should have no reward token balances
       expect(await govToken.balanceOf(idleAdapter)).toEqBigNumber(0);

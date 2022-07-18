@@ -1,6 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
   claimRewardsSelector,
+  ITestStandardToken,
   lendSelector,
   PoolTogetherV4Adapter,
   poolTogetherV4ClaimRewardsArgs,
@@ -8,7 +9,6 @@ import {
   poolTogetherV4RedeemArgs,
   redeemSelector,
   SpendAssetsHandleType,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -42,9 +42,9 @@ describe('constructor', () => {
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
     const poolTogetherV4Adapter = new PoolTogetherV4Adapter(fork.deployment.poolTogetherV4Adapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
+    const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
     const args = poolTogetherV4LendArgs({
       amount,
@@ -60,9 +60,9 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for lending', async () => {
     const poolTogetherV4Adapter = new PoolTogetherV4Adapter(fork.deployment.poolTogetherV4Adapter, provider);
-    const outgoingToken = new StandardToken(fork.config.primitives.usdc, provider);
+    const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
+    const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
     const args = poolTogetherV4LendArgs({
       amount,
@@ -82,9 +82,9 @@ describe('parseAssetsForAction', () => {
 
   it('generates expected output for redeeming', async () => {
     const poolTogetherV4Adapter = new PoolTogetherV4Adapter(fork.deployment.poolTogetherV4Adapter, provider);
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
+    const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
     const amount = utils.parseUnits('1', await ptToken.decimals());
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const args = poolTogetherV4RedeemArgs({
       amount,
@@ -131,15 +131,15 @@ describe('lend', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await token.decimals());
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
+    const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
     await seedAccount({ provider, account: vaultProxy, amount, token });
 
@@ -174,15 +174,15 @@ describe('redeem', () => {
     const [fundOwner] = fork.accounts;
 
     const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, fundOwner),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const ptToken = new StandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
+    const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
     const amount = utils.parseUnits('1', await ptToken.decimals());
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     await seedAccount({ provider, account: vaultProxy, amount, token: ptToken });
 

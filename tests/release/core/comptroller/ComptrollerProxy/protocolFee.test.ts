@@ -7,7 +7,7 @@ import type {
   ValueInterpreter,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { ONE_YEAR_IN_SECONDS, StandardToken } from '@enzymefinance/protocol';
+import { ITestStandardToken, ONE_YEAR_IN_SECONDS } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
@@ -35,7 +35,7 @@ beforeEach(async () => {
 describe('buyBackProtocolFeeShares', () => {
   let protocolFeeReserveProxy: ProtocolFeeReserveLib;
   let fundOwner: SignerWithAddress, remainingAccounts: SignerWithAddress[];
-  let denominationAsset: StandardToken, mln: StandardToken;
+  let denominationAsset: ITestStandardToken, mln: ITestStandardToken;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let preTxGav: BigNumberish, preTxSharesSupply: BigNumberish;
   let feeSharesCollected: BigNumberish;
@@ -45,8 +45,8 @@ describe('buyBackProtocolFeeShares', () => {
 
     protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-    mln = new StandardToken(fork.config.primitives.mln, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    mln = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,
@@ -169,7 +169,7 @@ describe('auto-buybacks', () => {
     protocolFeeTracker: ProtocolFeeTracker,
     valueInterpreter: ValueInterpreter;
   let fundOwner: SignerWithAddress;
-  let denominationAsset: StandardToken, mln: StandardToken;
+  let denominationAsset: ITestStandardToken, mln: ITestStandardToken;
   let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
   let preTxSharesSupply: BigNumberish;
 
@@ -180,8 +180,8 @@ describe('auto-buybacks', () => {
     protocolFeeTracker = fork.deployment.protocolFeeTracker;
     valueInterpreter = fork.deployment.valueInterpreter;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
-    mln = new StandardToken(fork.config.primitives.mln, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    mln = new ITestStandardToken(fork.config.primitives.mln, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

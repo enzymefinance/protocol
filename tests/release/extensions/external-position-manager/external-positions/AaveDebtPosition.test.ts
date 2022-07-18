@@ -1,5 +1,5 @@
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
-import { AaveDebtPositionLib, StandardToken } from '@enzymefinance/protocol';
+import { AaveDebtPositionLib, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   aaveDebtPositionAddCollateral,
@@ -34,7 +34,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new StandardToken(fork.config.primitives.usdc, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, hre.ethers.provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,
@@ -54,7 +54,7 @@ beforeEach(async () => {
 
 describe('addCollateralAssets', () => {
   it('works as expected when called to addCollateral by a Fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -93,7 +93,7 @@ describe('addCollateralAssets', () => {
 
 describe('removeCollateralAssets', () => {
   it('works as expected when called to remove collateral by a Fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -151,7 +151,7 @@ describe('removeCollateralAssets', () => {
   });
 
   it('works as expected when called to remove collateral by a Fund (max amount)', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -208,8 +208,8 @@ describe('removeCollateralAssets', () => {
 
 describe('borrowAssets', () => {
   it('works as expected when called for borrowing by a fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
@@ -259,8 +259,8 @@ describe('borrowAssets', () => {
 
 describe('repayBorrowedAssets', () => {
   it('works as expected when called to repay borrow by a fund', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
@@ -315,8 +315,8 @@ describe('repayBorrowedAssets', () => {
   });
 
   it('works as expected when called to repay borrow by a fund (more than full amount)', async () => {
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
-    const token = new StandardToken(fork.config.primitives.usdc, provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
@@ -383,9 +383,9 @@ describe('repayBorrowedAssets', () => {
 describe('claimRewards', () => {
   it('works as expected when called for borrowing by a fund', async () => {
     const stkAaveAddress = '0x4da27a545c0c5B758a6BA100e3a049001de870f5';
-    const rewardToken = new StandardToken(stkAaveAddress, provider);
+    const rewardToken = new ITestStandardToken(stkAaveAddress, provider);
 
-    const aToken = new StandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];

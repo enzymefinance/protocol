@@ -3,13 +3,13 @@ import {
   callOnIntegrationArgs,
   encodeArgs,
   IntegrationManagerActionId,
+  ITestStandardToken,
+  ITestWETH,
   MockGenericAdapter,
   MockGenericIntegratee,
   PolicyHook,
   sighash,
-  StandardToken,
   validateRulePostCoIArgs,
-  WETH,
 } from '@enzymefinance/protocol';
 import {
   addNewAssetsToFund,
@@ -33,10 +33,10 @@ async function snapshot() {
     deployer,
   } = await deployProtocolFixture();
 
-  const bat = new StandardToken(config.primitives.bat, provider);
-  const dai = new StandardToken(config.primitives.dai, provider);
-  const mln = new StandardToken(config.primitives.mln, provider);
-  const weth = new WETH(config.weth, provider);
+  const bat = new ITestStandardToken(config.primitives.bat, provider);
+  const dai = new ITestStandardToken(config.primitives.dai, provider);
+  const mln = new ITestStandardToken(config.primitives.mln, provider);
+  const weth = new ITestWETH(config.weth, provider);
 
   const mockGenericIntegratee = await MockGenericIntegratee.deploy(deployer);
   const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
@@ -233,7 +233,7 @@ describe('callOnIntegration', () => {
       fund: { comptrollerProxy, fundOwner, vaultProxy },
     } = await provider.snapshot(snapshot);
 
-    const nonReceivableToken = new StandardToken(randomAddress(), provider);
+    const nonReceivableToken = new ITestStandardToken(randomAddress(), provider);
 
     await expect(
       mockGenericSwap({

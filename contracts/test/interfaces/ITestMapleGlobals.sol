@@ -14,5 +14,5 @@ pragma solidity 0.6.12;
 /// @title ITestMapleGlobals Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ITestMapleGlobals {
-    function lpCooldownPeriod() external view returns (uint256);
+    function lpCooldownPeriod() external view returns (uint256 period_);
 }

@@ -8,8 +8,8 @@ import type {
   UintListRegistry,
 } from '@enzymefinance/protocol';
 import {
+  ITestStandardToken,
   policyManagerConfigArgs,
-  StandardToken,
   uintListRegistryPerUserPolicyArgs,
   UintListUpdateType,
 } from '@enzymefinance/protocol';
@@ -29,14 +29,14 @@ describe('addFundSettings', () => {
   let fundOwner: SignerWithAddress;
   let uintListRegistry: UintListRegistry,
     allowedExternalPositionTypesPerManagerPolicy: AllowedExternalPositionTypesPerManagerPolicy;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner] = fork.accounts;
     uintListRegistry = fork.deployment.uintListRegistry;
     allowedExternalPositionTypesPerManagerPolicy = fork.deployment.allowedExternalPositionTypesPerManagerPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   });
 
   it('unhappy path: cannot be called by a random user', async () => {

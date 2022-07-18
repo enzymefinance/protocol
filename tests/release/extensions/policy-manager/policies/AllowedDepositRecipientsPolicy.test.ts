@@ -4,9 +4,9 @@ import type { AllowedDepositRecipientsPolicy, ComptrollerLib, PolicyManager } fr
 import {
   addressListRegistryPolicyArgs,
   AddressListUpdateType,
+  ITestStandardToken,
   PolicyHook,
   policyManagerConfigArgs,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { buyShares, createNewFund, deployProtocolFixture } from '@enzymefinance/testutils';
@@ -59,7 +59,7 @@ describe('updateFundSettings', () => {
     policyManager = fork.deployment.policyManager;
 
     const newFundRes = await createNewFund({
-      denominationAsset: new StandardToken(fork.config.primitives.usdc, provider),
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       policyManagerConfig: policyManagerConfigArgs({
@@ -124,13 +124,13 @@ describe('validateRule', () => {
     nonAllowedDepositRecipient: SignerWithAddress;
   let allowedDepositRecipientsPolicy: AllowedDepositRecipientsPolicy;
   let comptrollerProxy: ComptrollerLib;
-  let denominationAsset: StandardToken;
+  let denominationAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [fundOwner, allowedDepositRecipient, nonAllowedDepositRecipient] = fork.accounts;
     allowedDepositRecipientsPolicy = fork.deployment.allowedDepositRecipientsPolicy;
 
-    denominationAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const newFundRes = await createNewFund({
       denominationAsset,

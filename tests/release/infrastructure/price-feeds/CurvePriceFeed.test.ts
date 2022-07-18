@@ -3,10 +3,10 @@ import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   CurvePriceFeed,
-  ICurveLiquidityPool,
+  ITestCurveLiquidityPool,
+  ITestStandardToken,
   ITestStethToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
-  StandardToken,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -29,7 +29,7 @@ beforeEach(async () => {
 describe('derivative gas costs', () => {
   it('adds to calcGav for weth-denominated fund', async () => {
     const [fundOwner, investor] = fork.accounts;
-    const weth = new StandardToken(fork.config.weth, provider);
+    const weth = new ITestStandardToken(fork.config.weth, provider);
     const denominationAsset = weth;
     const integrationManager = fork.deployment.integrationManager;
 
@@ -94,9 +94,9 @@ describe('calcUnderlyingValues', () => {
 
   it('returns correct values (18-decimal invariant asset proxy)', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
-    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
-    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
+    const curvePool = new ITestCurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
+    const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const invariantProxyAsset = new ITestStandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
 
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
@@ -120,11 +120,11 @@ describe('calcUnderlyingValues', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
 
     // Curve pool: 3pool
-    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools['3pool'].pool, provider);
-    const curveLPToken = new StandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
+    const curvePool = new ITestCurveLiquidityPool(fork.config.curve.pools['3pool'].pool, provider);
+    const curveLPToken = new ITestStandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
 
     // USDC as invariant asset proxy
-    const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const invariantProxyAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
 
@@ -150,8 +150,8 @@ describe('calcUnderlyingValues', () => {
   // Uses steth pool, a pool with a reentrant price
   it('respects the tolerance for updating the lastValidatedVirtualPrice', async () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
-    const curvePool = new ICurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
-    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const curvePool = new ITestCurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
+    const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const steth = new ITestStethToken(fork.config.lido.steth, provider);
 
     const stethUnit = utils.parseUnits('1', await steth.decimals());
@@ -207,8 +207,8 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18-decimal invariant asset proxy)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const curveLPToken = new StandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    const invariantProxyAsset = new StandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
+    const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
+    const invariantProxyAsset = new ITestStandardToken(fork.config.curve.pools.steth.invariantProxyAsset, provider);
 
     expect(await invariantProxyAsset.decimals()).toEqBigNumber(18);
 
@@ -225,8 +225,8 @@ describe('expected values', () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
 
     // Curve pool: 3pool
-    const curveLPToken = new StandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
-    const invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    const curveLPToken = new ITestStandardToken(fork.config.curve.pools['3pool'].lpToken, provider);
+    const invariantProxyAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     expect(await invariantProxyAsset.decimals()).not.toEqBigNumber(18);
 
@@ -278,7 +278,7 @@ describe('derivatives registry', () => {
   let validPoolMetapoolFactoryRegistry: AddressLike,
     validPoolMetapoolFactoryRegistryLpToken: AddressLike,
     validPoolMetapoolFactoryRegistryGauge: AddressLike;
-  let invariantProxyAsset: StandardToken;
+  let invariantProxyAsset: ITestStandardToken;
 
   beforeEach(async () => {
     [randomUser] = fork.accounts;
@@ -303,7 +303,7 @@ describe('derivatives registry', () => {
     validPoolMetapoolFactoryRegistryGauge = fork.config.curve.pools.mim.liquidityGaugeToken;
 
     // Arbitrary invariant proxy asset to use
-    invariantProxyAsset = new StandardToken(fork.config.primitives.usdc, provider);
+    invariantProxyAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   });
 
   // This is the primary action for registering pool info (invariant proxy asset and lpToken),
@@ -507,8 +507,8 @@ describe('derivatives registry', () => {
     });
 
     it('works as expected (main and metapool factory registries, with reentrant virtual prices)', async () => {
-      const mainRegistryPool = new ICurveLiquidityPool(validPoolMainRegistry, provider);
-      const metapoolFactoryRegistryPool = new ICurveLiquidityPool(validPoolMetapoolFactoryRegistry, provider);
+      const mainRegistryPool = new ITestCurveLiquidityPool(validPoolMainRegistry, provider);
+      const metapoolFactoryRegistryPool = new ITestCurveLiquidityPool(validPoolMetapoolFactoryRegistry, provider);
 
       const invariantProxyAssetDecimals = await invariantProxyAsset.decimals();
 
@@ -794,7 +794,7 @@ describe('derivatives registry', () => {
     });
 
     it('works as expected', async () => {
-      const mainRegistryPool = new ICurveLiquidityPool(validPoolMainRegistry, provider);
+      const mainRegistryPool = new ITestCurveLiquidityPool(validPoolMainRegistry, provider);
 
       // First add the pool
       await curvePriceFeed.addPools(
@@ -806,7 +806,7 @@ describe('derivatives registry', () => {
       );
 
       // Update the pool with an invariant asset proxy of different decimals
-      const nextInvariantAssetProxy = new StandardToken(fork.config.primitives.mln, provider);
+      const nextInvariantAssetProxy = new ITestStandardToken(fork.config.primitives.mln, provider);
       const nextInvariantAssetProxyDecimals = await nextInvariantAssetProxy.decimals();
 
       expect(nextInvariantAssetProxyDecimals).not.toEqBigNumber(await invariantProxyAsset.decimals());
