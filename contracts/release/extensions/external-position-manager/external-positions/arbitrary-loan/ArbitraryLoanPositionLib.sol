@@ -163,9 +163,8 @@ contract ArbitraryLoanPositionLib is
     /// _extraAssetsToSweep could be - for example - a repayment or insurance payout
     /// that is transferred directly to this contract as a non-loan asset.
     function __reconcile(address[] memory _extraAssetsToSweep, bool _close) private {
-        // If _extraAssetsToSweep contains the wrapped native asset (e.g., WETH),
-        // wrap any balance of the native asset also
-        if (_extraAssetsToSweep.contains(WRAPPED_NATIVE_ASSET)) {
+        // Wrap the native asset (e.g., WETH) if there is any balance
+        if (WRAPPED_NATIVE_ASSET != address(0)) {
             uint256 nativeAssetBalance = address(this).balance;
 
             if (nativeAssetBalance > 0) {
@@ -174,6 +173,12 @@ contract ArbitraryLoanPositionLib is
         }
 
         ERC20 loanAssetContract = ERC20(getLoanAsset());
+
+        require(
+            !_extraAssetsToSweep.contains(address(loanAssetContract)),
+            "__reconcile: Extra assets contains loan asset"
+        );
+
         uint256 loanAssetBalance = loanAssetContract.balanceOf(address(this));
 
         uint256 nonBorrowableLoanAssetBal = __subOrZero(loanAssetBalance, getBorrowableAmount());

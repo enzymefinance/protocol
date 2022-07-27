@@ -403,10 +403,10 @@ describe('manager actions', () => {
     });
   });
 
-  // Mostly covered by CloseLoan tests, but can still test that encoded action args are handled correctly,
-  // and that only the non-borrowable loan asset amount is sent to the vault
   describe('Reconcile', () => {
-    it('happy path', async () => {
+    let extraAsset: ITestStandardToken;
+
+    beforeEach(async () => {
       const borrowableAmount = (await loanAsset.balanceOf(vaultProxy)).div(4);
 
       await arbitraryLoanPositionConfigureLoan({
@@ -421,7 +421,24 @@ describe('manager actions', () => {
         accountingModuleConfigData: '0x',
       });
 
-      const extraAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+      extraAsset = new ITestStandardToken(fork.config.primitives.mln, provider);
+    });
+
+    it('does not allow specifying the loan asset as an extra asset to sweep', async () => {
+      await expect(
+        arbitraryLoanPositionReconcile({
+          comptrollerProxy,
+          externalPositionManager,
+          signer: fundOwner,
+          externalPositionProxy: arbitraryLoanPosition,
+          extraAssetsToSweep: [extraAsset, loanAsset],
+        }),
+      ).rejects.toBeRevertedWith('Extra assets contains loan asset');
+    });
+
+    // Mostly covered by CloseLoan tests, but can still test that encoded action args are handled correctly,
+    // and that only the non-borrowable loan asset amount is sent to the vault
+    it('happy path', async () => {
       const extraAssetAmount = 456;
       const loanAssetSurplusAmount = 123;
 
@@ -452,7 +469,9 @@ describe('manager actions', () => {
       expect(await loanAsset.balanceOf(vaultProxy)).toEqBigNumber(
         preTxVaultLoanAssetBalance.add(loanAssetSurplusAmount),
       );
-      expect(await loanAsset.balanceOf(arbitraryLoanPosition)).toEqBigNumber(borrowableAmount);
+      expect(await loanAsset.balanceOf(arbitraryLoanPosition)).toEqBigNumber(
+        await arbitraryLoanPosition.getBorrowableAmount(),
+      );
     });
   });
 });
