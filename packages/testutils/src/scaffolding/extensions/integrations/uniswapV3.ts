@@ -9,7 +9,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumber, BigNumberish } from 'ethers';
 
-import { seedAccount } from '../../../accounts';
+import { setAccountBalance } from '../../../accounts';
 
 export async function uniswapV3TakeOrder({
   comptrollerProxy,
@@ -36,7 +36,7 @@ export async function uniswapV3TakeOrder({
 }) {
   if (seedFund) {
     const vaultProxy = await comptrollerProxy.getVaultProxy();
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: pathAddresses[0] });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: pathAddresses[0] });
   }
 
   const takeOrderArgs = uniswapV3TakeOrderArgs({

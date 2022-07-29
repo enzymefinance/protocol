@@ -38,14 +38,16 @@ export async function impersonateSigner({
   return provider.getSignerWithAddress(resolveAddress(signerAddress));
 }
 
-export async function seedAccount({
+export async function setAccountBalance({
   account,
   amount,
+  overwrite = true,
   provider,
   token,
 }: {
   account: AddressLike;
   amount: BigNumberish;
+  overwrite?: boolean;
   provider: EthereumTestnetProvider;
   token: AddressLike;
 }) {
@@ -66,10 +68,17 @@ export async function seedAccount({
           utils.keccak256(utils.defaultAbiCoder.encode(['address', 'uint256'], [resolvedAccount, slotInfo.slot])),
         );
 
-    const encodedBalance = utils.defaultAbiCoder.encode(['uint256'], [amount]);
-
+    let encodedBalance: string;
     // Some tokens store their state on a different contract
     const address = slotInfo.storageAddress ?? resolveAddress(token);
+
+    if (overwrite) {
+      encodedBalance = utils.defaultAbiCoder.encode(['uint256'], [amount]);
+    } else {
+      // Get raw balance instead of balanceOf for a more accurate end result with rebasing tokens
+      const balance = BigNumber.from(await provider.send('eth_getStorageAt', [address, balanceSlot]));
+      encodedBalance = utils.defaultAbiCoder.encode(['uint256'], [balance.add(amount)]);
+    }
 
     await provider.send('hardhat_setStorageAt', [address, balanceSlot, encodedBalance]);
     await provider.send('evm_mine', []);

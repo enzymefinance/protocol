@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { encodeFunctionData, ITestStandardToken, ITestUniswapV2Router } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, setAccountBalance } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 const randomAddress1 = randomAddress();
@@ -109,7 +109,7 @@ describe('exchangeEthAndBuyShares', () => {
     // Seed depositWrapper contract with WETH that will not be used in the tx,
     // to test refund
     const unusedWethSeedAmount = utils.parseEther('10');
-    await seedAccount({ account: depositWrapper, amount: unusedWethSeedAmount, provider, token: weth });
+    await setAccountBalance({ account: depositWrapper, amount: unusedWethSeedAmount, provider, token: weth });
 
     const investmentEth = utils.parseEther('2');
     const uniswapPath = [fork.config.weth, denominationAsset];

@@ -23,7 +23,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   impersonateSigner,
-  seedAccount,
+  setAccountBalance,
   solvV2ConvertibleBuyerPositionBuyOffering,
   solvV2ConvertibleBuyerPositionBuySaleByAmount,
   solvV2ConvertibleBuyerPositionBuySaleByUnits,
@@ -112,9 +112,9 @@ beforeEach(async () => {
   // Seed the vaultProxy with currency, and issuer with underlying and currency
   const underlyingAmount = underlyingUnit.mul(100_000);
   const currencyAmount = currencyUnit.mul(100_000);
-  await seedAccount({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
-  await seedAccount({ account: issuer, amount: currencyAmount, provider, token: currencyToken });
-  await seedAccount({ account: issuer, amount: underlyingAmount, provider, token: underlyingToken });
+  await setAccountBalance({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
+  await setAccountBalance({ account: issuer, amount: currencyAmount, provider, token: currencyToken });
+  await setAccountBalance({ account: issuer, amount: underlyingAmount, provider, token: underlyingToken });
 
   // Approve issuer spend on solv markets
   await underlyingToken.connect(issuer).approve(initialConvertibleOfferingMarket, constants.MaxUint256);
@@ -873,7 +873,7 @@ describe('get managed assets', () => {
 
     // Have a 3rd party partially take the sale created by the fund
     const boughtAmount = currencyUnit2.div(2);
-    await seedAccount({ account: issuer, amount: boughtAmount, provider, token: currencyToken2 });
+    await setAccountBalance({ account: issuer, amount: boughtAmount, provider, token: currencyToken2 });
     await currencyToken2.connect(issuer).approve(convertibleMarket, boughtAmount);
     await convertibleMarket.connect(issuer).buyByAmount(nextSaleId, boughtAmount);
 

@@ -20,7 +20,7 @@ import {
   deployManualValueOracle,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
@@ -77,8 +77,8 @@ beforeEach(async () => {
   // Seed vault and borrower with asset
   const assetUnit = await getAssetUnit(loanAsset);
 
-  await seedAccount({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
-  await seedAccount({ account: borrower, amount: assetUnit.mul(1000), provider, token: loanAsset });
+  await setAccountBalance({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
+  await setAccountBalance({ account: borrower, amount: assetUnit.mul(1000), provider, token: loanAsset });
 });
 
 describe('configure', () => {

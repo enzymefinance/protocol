@@ -27,7 +27,7 @@ import {
   curveUnstake,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
@@ -237,7 +237,7 @@ describe.each(poolKeys)('Walkthrough for %s as pool', (poolKey) => {
     comptrollerProxy = newFundRes.comptrollerProxy;
     vaultProxy = newFundRes.vaultProxy;
 
-    await seedAccount({ provider, account: vaultProxy, amount: assetToLendAmount, token: assetToLend });
+    await setAccountBalance({ provider, account: vaultProxy, amount: assetToLendAmount, token: assetToLend });
   });
 
   it('can lend', async () => {

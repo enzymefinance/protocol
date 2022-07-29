@@ -16,7 +16,8 @@ import {
   createNewFund,
   curveLend,
   deployProtocolFixture,
-  seedAccount,
+  getAssetUnit,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -154,7 +155,7 @@ describe('calcUnderlyingValues', () => {
     const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
     const steth = new ITestStethToken(fork.config.lido.steth, provider);
 
-    const stethUnit = utils.parseUnits('1', await steth.decimals());
+    const stethUnit = await getAssetUnit(steth as unknown as ITestStandardToken);
 
     const initialVirtualPrice = await curvePool.get_virtual_price();
 
@@ -164,13 +165,14 @@ describe('calcUnderlyingValues', () => {
     assertNoEvent(receipt1, 'ValidatedVirtualPriceForPoolUpdated');
 
     // Slightly increase steth balance to NOT push the virtual price significantly
+    // We need to account for the rebasing factor because the balance slot is the unrebased amount
     const curvePoolBalance = await steth.balanceOf(curvePool);
-    const slightlyIncreasedBalance = curvePoolBalance;
     const rebasingFactor = await steth.getPooledEthByShares(stethUnit);
-    await seedAccount({
-      provider,
+    await setAccountBalance({
       account: curvePool,
-      amount: slightlyIncreasedBalance.mul(stethUnit).div(rebasingFactor),
+      amount: curvePoolBalance.mul(stethUnit).div(rebasingFactor),
+      overwrite: true,
+      provider,
       token: steth,
     });
 
@@ -182,8 +184,13 @@ describe('calcUnderlyingValues', () => {
 
     // Send enough steth to push the virtual price significantly.
     // At time of writing tests, boosts the virtual price by a little more than 1%.
-    const significantlyIncreasedBalance = curvePoolBalance.add(stethUnit.mul(20000));
-    await seedAccount({ provider, account: curvePool, amount: significantlyIncreasedBalance, token: steth });
+    await setAccountBalance({
+      account: curvePool,
+      amount: stethUnit.mul(20000),
+      overwrite: false,
+      provider,
+      token: steth,
+    });
 
     // The final virtual price should exceed the tolerance for a validated update
     const receipt3 = await curvePriceFeed.calcUnderlyingValues(curveLPToken, 1);

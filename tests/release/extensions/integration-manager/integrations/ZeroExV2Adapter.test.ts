@@ -13,7 +13,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
-  seedAccount,
+  setAccountBalance,
   zeroExV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -345,7 +345,7 @@ describe('takeOrder', () => {
     const takerAssetFillAmount = takerAssetAmount;
 
     // Seed the maker and create a 0x order
-    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
+    await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
@@ -361,7 +361,7 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await seedAccount({ provider, account: vaultProxy, amount: takerAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: takerAssetAmount, token: outgoingAsset });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -414,7 +414,7 @@ describe('takeOrder', () => {
     const takerAssetFillAmount = utils.parseEther('1');
 
     // Seed the maker and create a 0x order
-    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
+    await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
@@ -430,7 +430,12 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await seedAccount({ provider, account: vaultProxy, amount: takerFee.add(takerAssetAmount), token: outgoingAsset });
+    await setAccountBalance({
+      provider,
+      account: vaultProxy,
+      amount: takerFee.add(takerAssetAmount),
+      token: outgoingAsset,
+    });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -483,7 +488,7 @@ describe('takeOrder', () => {
     const expectedIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     // Seed the maker and create a 0x order
-    await seedAccount({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
+    await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
       exchange: fork.config.zeroex.exchange,
@@ -499,7 +504,7 @@ describe('takeOrder', () => {
     const signedOrder = await signZeroExV2Order(unsignedOrder, maker);
 
     // Seed the fund
-    await seedAccount({ provider, account: vaultProxy, amount: takerAssetFillAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: takerAssetFillAmount, token: outgoingAsset });
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
       assets: [incomingAsset, outgoingAsset],

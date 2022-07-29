@@ -22,7 +22,7 @@ import {
   liquityDebtPositionOpenTrove,
   liquityDebtPositionRemoveCollateral,
   liquityDebtPositionRepay,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -108,7 +108,7 @@ beforeEach(async () => {
   openTroveLowerHint = openTroveHintRes.lowerHint_;
 
   // Seed vault with more than enough weth for many multiples of the desired collateral amount
-  await seedAccount({ provider, account: vaultProxyUsed, amount: wethBaseCollateralAmount.mul(10), token: weth });
+  await setAccountBalance({ provider, account: vaultProxyUsed, amount: wethBaseCollateralAmount.mul(10), token: weth });
 });
 
 describe('openTrove', () => {
@@ -316,7 +316,7 @@ describe('borrowLusd', () => {
 describe('closeTrove', () => {
   it('works as expected', async () => {
     // Seed the vault with some LUSD in order to have enough to close trove
-    await seedAccount({ provider, account: vaultProxyUsed, amount: lusdBaseBorrowAmount, token: lusd });
+    await setAccountBalance({ provider, account: vaultProxyUsed, amount: lusdBaseBorrowAmount, token: lusd });
 
     await liquityDebtPositionOpenTrove({
       collateralAmount: wethBaseCollateralAmount,

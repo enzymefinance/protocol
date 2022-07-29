@@ -19,7 +19,7 @@ import {
   createExternalPosition,
   createNewFund,
   deployProtocolFixture,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
@@ -209,7 +209,7 @@ describe('receiveCallFromComptroller', () => {
       });
 
       // Use CompoundDebtPosition as an example ExternalPosition to receive the Policy
-      await seedAccount({ provider, account: vaultProxy, amount: 100, token: cdai });
+      await setAccountBalance({ provider, account: vaultProxy, amount: 100, token: cdai });
       const collateralAssets = [cdai.address];
       const randomCToken = randomAddress();
 

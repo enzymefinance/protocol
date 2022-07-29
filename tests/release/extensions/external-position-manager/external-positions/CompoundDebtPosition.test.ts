@@ -20,7 +20,7 @@ import {
   createCompoundDebtPosition,
   createNewFund,
   deployProtocolFixture,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 import hre from 'hardhat';
@@ -722,7 +722,7 @@ describe('receiveCallFromVault', () => {
       });
 
       // Send some extra weth to pay interests
-      await seedAccount({ provider, account: vaultProxyUsed, amount: lentAmount.mul(2), token: weth });
+      await setAccountBalance({ account: vaultProxyUsed, amount: lentAmount, overwrite: false, provider, token: weth });
 
       const borrowedAssetsStoredBefore = await compoundDebtPosition.getDebtAssets.call();
       const repayAmounts = [constants.MaxUint256];

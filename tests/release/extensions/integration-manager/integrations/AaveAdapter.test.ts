@@ -16,7 +16,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -123,7 +123,7 @@ describe('lend', () => {
     const amount = await getAssetUnit(token);
     const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
 
-    await seedAccount({ account: vaultProxy, amount, provider, token });
+    await setAccountBalance({ account: vaultProxy, amount, provider, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -166,7 +166,7 @@ describe('redeem', () => {
     const amount = await getAssetUnit(aToken);
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
-    await seedAccount({ account: vaultProxy, amount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxy, amount, provider, token: aToken });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

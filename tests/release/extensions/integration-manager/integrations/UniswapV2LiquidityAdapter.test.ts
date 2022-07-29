@@ -16,7 +16,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
-  seedAccount,
+  setAccountBalance,
   uniswapV2Lend,
   uniswapV2Redeem,
 } from '@enzymefinance/testutils';
@@ -210,8 +210,8 @@ describe('lend', () => {
 
     expect(expectedPoolTokens).toEqBigNumber('55323587704569840');
 
-    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
-    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
+    await setAccountBalance({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await setAccountBalance({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
 
     await uniswapV2Lend({
       amountADesired,
@@ -293,8 +293,8 @@ describe('redeem', () => {
     const amountADesired = utils.parseEther('1');
     const amountBDesired = utils.parseEther('1');
 
-    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
-    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
+    await setAccountBalance({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await setAccountBalance({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
 
     await uniswapV2Lend({
       amountADesired,

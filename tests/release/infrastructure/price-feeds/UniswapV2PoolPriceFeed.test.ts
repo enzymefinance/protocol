@@ -1,7 +1,13 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import { ITestStandardToken, ITestUniswapV2Pair } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, createNewFund, deployProtocolFixture, seedAccount, uniswapV2Lend } from '@enzymefinance/testutils';
+import {
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  setAccountBalance,
+  uniswapV2Lend,
+} from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -40,7 +46,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund with 2nd asset and use max of half the asset balances to get MLN-WETH pool tokens
-    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: mln });
+    await setAccountBalance({ account: vaultProxy, amount: initialTokenAmount, provider, token: mln });
     await uniswapV2Lend({
       amountADesired: initialTokenAmount.div(2),
       amountAMin: 1,

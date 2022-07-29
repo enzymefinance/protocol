@@ -4,7 +4,7 @@ import type { ComptrollerLib, ITestStandardToken } from '@enzymefinance/protocol
 import type { BigNumberish } from 'ethers';
 import { constants, utils } from 'ethers';
 
-import { seedAccount } from '../accounts';
+import { setAccountBalance } from '../accounts';
 
 export interface BuySharesParams {
   comptrollerProxy: ComptrollerLib;
@@ -47,13 +47,12 @@ export async function buySharesFunction({
   seedBuyer = false,
   provider,
 }: BuySharesParams) {
-  // eslint-disable-next-line
-  if (investmentAmount == null) {
+  if (typeof investmentAmount === 'undefined') {
     investmentAmount = utils.parseUnits('1', await denominationAsset.decimals());
   }
 
   if (seedBuyer) {
-    await seedAccount({ account: buyer, amount: investmentAmount, provider, token: denominationAsset });
+    await setAccountBalance({ account: buyer, amount: investmentAmount, provider, token: denominationAsset });
   }
 
   await denominationAsset.connect(buyer).approve(comptrollerProxy, investmentAmount);

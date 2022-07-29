@@ -19,7 +19,7 @@ import {
   idleClaimRewards,
   idleLend,
   idleRedeem,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -85,7 +85,7 @@ describe('parseAssetsForAction', () => {
         signer: fundOwner,
       });
       const outgoingUnderlyingAmount = await getAssetUnit(underlying);
-      await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount, provider, token: underlying });
+      await setAccountBalance({ account: vaultProxy, amount: outgoingUnderlyingAmount, provider, token: underlying });
       await idleLend({
         comptrollerProxy,
         fundOwner,
@@ -214,7 +214,12 @@ describe('claimRewards', () => {
 
     // Seed the fund with idleTokens to start accruing rewards
     const outgoingUnderlyingAmount = await getAssetUnit(underlying);
-    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token: underlying });
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: outgoingUnderlyingAmount.mul(2),
+      provider,
+      token: underlying,
+    });
 
     await idleLend({
       comptrollerProxy,
@@ -289,7 +294,12 @@ describe('lend', () => {
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = await getAssetUnit(outgoingToken);
 
-    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token: outgoingToken });
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: outgoingUnderlyingAmount.mul(2),
+      provider,
+      token: outgoingToken,
+    });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -337,7 +347,7 @@ describe('redeem', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = await getAssetUnit(token);
-    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(2), provider, token });
 
     await idleLend({
       comptrollerProxy,
@@ -419,7 +429,7 @@ describe('rewards behavior', () => {
 
     // Lend for idleToken
     const lendAmount = (await getAssetUnit(outgoingToken)).mul(2);
-    await seedAccount({ account: vaultProxy, amount: lendAmount, provider, token: outgoingToken });
+    await setAccountBalance({ account: vaultProxy, amount: lendAmount, provider, token: outgoingToken });
 
     await idleLend({
       comptrollerProxy,

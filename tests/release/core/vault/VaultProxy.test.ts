@@ -18,7 +18,7 @@ import {
   createVaultProxy,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -309,8 +309,7 @@ describe('buyBackProtocolFeeShares', () => {
       await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
 
       // Seed the fund with MLN so it can buy back shares
-      const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
-      await seedAccount({ account: vaultProxy, amount: protocolFeeRecipientMlnSeedAmount, provider, token: mln });
+      await setAccountBalance({ account: vaultProxy, amount: await getAssetUnit(mln), provider, token: mln });
     });
 
     it('cannot be called by the fundOwner', async () => {
@@ -409,8 +408,7 @@ describe('buyBackProtocolFeeShares', () => {
       await vaultProxy.connect(fundAccessor).mintShares(protocolFeeReserveProxy, utils.parseEther('1'));
 
       // Seed the fund with MLN so it can buy back shares
-      const protocolFeeRecipientMlnSeedAmount = await getAssetUnit(mln);
-      await seedAccount({ account: vaultProxy, amount: protocolFeeRecipientMlnSeedAmount, provider, token: mln });
+      await setAccountBalance({ account: vaultProxy, amount: await getAssetUnit(mln), provider, token: mln });
 
       const preTxVaultMlnBalance = await mln.balanceOf(vaultProxy);
       const preTxProtocolFeeRecipientSharesBalance = await vaultProxy.balanceOf(protocolFeeReserveProxy);

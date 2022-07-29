@@ -11,7 +11,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
@@ -61,7 +61,7 @@ describe('addCollateralAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     const externalPositionCollateralBalanceBefore = await aToken.balanceOf(aaveDebtPosition);
 
@@ -103,7 +103,7 @@ describe('removeCollateralAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -161,7 +161,7 @@ describe('removeCollateralAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -219,7 +219,7 @@ describe('borrowAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -270,7 +270,7 @@ describe('repayBorrowedAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -325,8 +325,8 @@ describe('repayBorrowedAssets', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,
@@ -392,7 +392,7 @@ describe('claimRewards', () => {
 
     const seedAmount = (await getAssetUnit(aToken)).mul(100);
 
-    await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
+    await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
     await aaveDebtPositionAddCollateral({
       aTokens: collateralAssets,

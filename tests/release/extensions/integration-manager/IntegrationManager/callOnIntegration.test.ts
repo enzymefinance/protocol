@@ -21,7 +21,7 @@ import {
   mockGenericSwapArgs,
   mockGenericSwapASelector,
   mockGenericSwapDirectFromVaultSelector,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -42,10 +42,10 @@ async function snapshot() {
   const mockGenericAdapter = await MockGenericAdapter.deploy(deployer, mockGenericIntegratee);
 
   await Promise.all([
-    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: bat }),
-    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: dai }),
-    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: mln }),
-    seedAccount({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: weth }),
+    setAccountBalance({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: bat }),
+    setAccountBalance({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: dai }),
+    setAccountBalance({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: mln }),
+    setAccountBalance({ provider, account: mockGenericIntegratee, amount: utils.parseEther('1000'), token: weth }),
   ]);
 
   const { comptrollerProxy, vaultProxy } = await createNewFund({
@@ -263,7 +263,7 @@ describe('callOnIntegration', () => {
     const maxSpendAssetAmount = utils.parseEther('1');
     const actualSpendAssetAmount = maxSpendAssetAmount.add(1);
 
-    await seedAccount({ provider, account: vaultProxy, amount: actualSpendAssetAmount, token: spendAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: actualSpendAssetAmount, token: spendAsset });
 
     // Approve the adapter's integratee to directly use a VaultProxy's balance of the spendAsset,
     // by registering the token's approve() function for use in vaultCallOnContract()
@@ -413,7 +413,7 @@ describe('valid calls', () => {
     } = await provider.snapshot(snapshot);
 
     const seedFundAmount = utils.parseEther('1');
-    await seedAccount({ provider, account: vaultProxy, amount: seedFundAmount, token: bat });
+    await setAccountBalance({ provider, account: vaultProxy, amount: seedFundAmount, token: bat });
 
     const spendAssets: [] = [];
     const actualSpendAssetAmounts: [] = [];
@@ -646,7 +646,7 @@ describe('valid calls', () => {
 
     const spendAssetAmountOnAdapter = BigNumber.from(5);
 
-    await seedAccount({ provider, account: mockGenericAdapter, amount: spendAssetAmountOnAdapter, token: mln });
+    await setAccountBalance({ provider, account: mockGenericAdapter, amount: spendAssetAmountOnAdapter, token: mln });
 
     const spendAssets = [mln];
     const actualSpendAssetAmounts = [BigNumber.from(1)];
@@ -729,7 +729,7 @@ describe('valid calls', () => {
     });
 
     // Seed the adapter with the spend asset amount to refund
-    await seedAccount({ provider, account: mockGenericAdapter, amount: spendAssetRebate, token: spendAsset });
+    await setAccountBalance({ provider, account: mockGenericAdapter, amount: spendAssetRebate, token: spendAsset });
 
     // Define spend assets and actual incoming assets
     const spendAssets = [spendAsset];

@@ -11,7 +11,7 @@ import { callOnIntegrationArgs, encodeArgs, IntegrationManagerActionId, sighash 
 import type { BigNumberish, BytesLike } from 'ethers';
 import { utils } from 'ethers';
 
-import { seedAccount } from '../../../accounts';
+import { setAccountBalance } from '../../../accounts';
 
 export const mockGenericRemoveOnlySelector = sighash(
   utils.FunctionFragment.fromString('removeOnly(address,bytes,bytes)'),
@@ -91,7 +91,12 @@ export async function mockGenericSwap({
   // Seed the VaultProxy with enough spendAssets for the tx
   if (seedFund) {
     for (const key in spendAssets) {
-      await seedAccount({ account: vaultProxy, amount: maxSpendAssetAmounts[key], provider, token: spendAssets[key] });
+      await setAccountBalance({
+        account: vaultProxy,
+        amount: maxSpendAssetAmounts[key],
+        provider,
+        token: spendAssets[key],
+      });
     }
   }
 

@@ -24,7 +24,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
@@ -72,8 +72,8 @@ beforeEach(async () => {
   // Seed vault and borrower with asset
   loanAssetUnit = await getAssetUnit(loanAsset);
 
-  await seedAccount({ account: vaultProxy, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
-  await seedAccount({ account: borrower, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
+  await setAccountBalance({ account: vaultProxy, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
+  await setAccountBalance({ account: borrower, amount: loanAssetUnit.mul(1000), provider, token: loanAsset });
 });
 
 describe('configure', () => {

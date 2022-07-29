@@ -23,7 +23,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   impersonateSigner,
-  seedAccount,
+  setAccountBalance,
   solvV2ConvertibleIssuerPositionCreateOffer,
   solvV2ConvertibleIssuerPositionReconcile,
   solvV2ConvertibleIssuerPositionRefund,
@@ -106,9 +106,9 @@ beforeEach(async () => {
   // Seed the vaultProxy with underlying and currency, and buyer with currency
   const underlyingAmount = underlyingUnit.mul(100_000);
   const currencyAmount = currencyUnit.mul(100_000);
-  await seedAccount({ account: buyer, amount: currencyAmount, provider, token: currencyToken });
-  await seedAccount({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
-  await seedAccount({ account: vaultProxy, amount: underlyingAmount, provider, token: underlyingToken });
+  await setAccountBalance({ account: buyer, amount: currencyAmount, provider, token: currencyToken });
+  await setAccountBalance({ account: vaultProxy, amount: currencyAmount, provider, token: currencyToken });
+  await setAccountBalance({ account: vaultProxy, amount: underlyingAmount, provider, token: underlyingToken });
 
   // Approve buyer spend on solv offering market
   await currencyToken.connect(buyer).approve(initialConvertibleOfferingMarket, constants.MaxUint256);
@@ -562,13 +562,13 @@ describe('multiple voucher issuance', () => {
     const underlyingToken2Unit = await getAssetUnit(underlyingToken2);
     const currencyToken2Unit = await getAssetUnit(currencyToken2);
 
-    await seedAccount({
+    await setAccountBalance({
       account: vaultProxy,
       amount: underlyingToken2Unit.mul(100_000),
       provider,
       token: underlyingToken2,
     });
-    await seedAccount({
+    await setAccountBalance({
       account: vaultProxy,
       amount: currencyToken2Unit.mul(100_000),
       provider,

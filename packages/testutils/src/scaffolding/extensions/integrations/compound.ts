@@ -22,7 +22,7 @@ import {
 import type { BigNumberish } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
-import { seedAccount } from '../../../accounts';
+import { setAccountBalance } from '../../../accounts';
 import { getAssetBalances } from '../../common';
 
 export async function assertCompoundLend({
@@ -48,7 +48,7 @@ export async function assertCompoundLend({
 }) {
   const token = new ITestStandardToken(await compoundPriceFeed.getTokenFromCToken(cToken), provider);
 
-  await seedAccount({ account: vaultProxy, amount: tokenAmount, provider, token });
+  await setAccountBalance({ account: vaultProxy, amount: tokenAmount, provider, token });
 
   const rateBefore = await cToken.exchangeRateStored.call();
 
@@ -110,7 +110,7 @@ export async function assertCompoundRedeem({
 }) {
   const cTokenAmount = utils.parseUnits('1', await cToken.decimals());
 
-  await seedAccount({ account: vaultProxy, amount: cTokenAmount, provider, token: cToken });
+  await setAccountBalance({ account: vaultProxy, amount: cTokenAmount, provider, token: cToken });
 
   const token = new ITestStandardToken(await compoundPriceFeed.getTokenFromCToken.args(cToken).call(), provider);
   const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({

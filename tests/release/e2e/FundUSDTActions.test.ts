@@ -5,7 +5,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
@@ -41,7 +41,7 @@ describe('adapters', () => {
       assets: [incomingAsset],
     });
 
-    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
     await uniswapV2TakeOrder({
       comptrollerProxy,
       fundOwner,

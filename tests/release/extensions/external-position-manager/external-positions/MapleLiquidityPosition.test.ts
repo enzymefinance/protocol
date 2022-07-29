@@ -24,7 +24,7 @@ import {
   mapleLiquidityPositionStake,
   mapleLiquidityPositionUnstake,
   mapleLiquidityPositionUnstakeAndRedeem,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { utils } from 'ethers';
@@ -77,7 +77,7 @@ beforeEach(async () => {
   lendAmount = liquidityAssetUnit.mul(10);
   seedAmount = liquidityAssetUnit.mul(100);
 
-  await seedAccount({ account: vaultProxyUsed, amount: seedAmount, provider, token: liquidityAsset });
+  await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: liquidityAsset });
 
   const { externalPositionProxy } = await createMapleLiquidityPosition({
     comptrollerProxy,

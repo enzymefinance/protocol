@@ -19,7 +19,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   redeemSharesInKind,
-  seedAccount,
+  setAccountBalance,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
@@ -58,8 +58,14 @@ describe.each([['weth' as const], ['usdc' as const]])(
       // Seed investors with denomination asset
       const denominationAssetSeedAmount = (await getAssetUnit(denominationAsset)).mul(100);
 
-      await seedAccount({ account: investor, amount: denominationAssetSeedAmount, provider, token: denominationAsset });
-      await seedAccount({
+      await setAccountBalance({
+        account: investor,
+        amount: denominationAssetSeedAmount,
+        provider,
+        token: denominationAsset,
+      });
+
+      await setAccountBalance({
         account: anotherInvestor,
         amount: denominationAssetSeedAmount,
         provider,
@@ -230,16 +236,20 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it("sends an asset amount to the fund's vault", async () => {
-      const gavBefore = await comptrollerProxy.calcGav.args().call();
+      const gavBefore = await comptrollerProxy.calcGav.call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
       const asset = new ITestStandardToken(fork.config.primitives.dai, provider);
-      const balance = await asset.balanceOf(vaultProxy);
-      const amount = balance.add(utils.parseEther('1'));
 
-      await seedAccount({ provider, account: vaultProxy, amount, token: fork.config.primitives.dai });
+      await setAccountBalance({
+        account: vaultProxy,
+        amount: await getAssetUnit(asset),
+        overwrite: false,
+        provider,
+        token: asset,
+      });
 
-      const gavAfter = await comptrollerProxy.calcGav.args().call();
+      const gavAfter = await comptrollerProxy.calcGav.call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
       expect(gavAfter).toBeGtBigNumber(gavBefore);
@@ -266,16 +276,20 @@ describe.each([['weth' as const], ['usdc' as const]])(
     });
 
     it("sends an asset amount to the fund's vault again", async () => {
-      const gavBefore = await comptrollerProxy.calcGav.args().call();
+      const gavBefore = await comptrollerProxy.calcGav.call();
       const grossShareValueBefore = await comptrollerProxy.calcGrossShareValue.call();
 
       const token = new ITestStandardToken(fork.config.primitives.zrx, provider);
-      const balance = await token.balanceOf(vaultProxy);
-      const amount = balance.add(utils.parseEther('1'));
 
-      await seedAccount({ provider, account: vaultProxy, amount, token: fork.config.primitives.zrx });
+      await setAccountBalance({
+        account: vaultProxy,
+        amount: await getAssetUnit(token),
+        overwrite: false,
+        provider,
+        token,
+      });
 
-      const gavAfter = await comptrollerProxy.calcGav.args().call();
+      const gavAfter = await comptrollerProxy.calcGav.call();
       const grossShareValueAfter = await comptrollerProxy.calcGrossShareValue.call();
 
       expect(gavAfter).toBeGtBigNumber(gavBefore);

@@ -17,7 +17,7 @@ import {
   getAssetBalances,
   poolTogetherV4Lend,
   poolTogetherV4Redeem,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -141,7 +141,7 @@ describe('lend', () => {
     const amount = utils.parseUnits('1', await token.decimals());
     const ptToken = new ITestStandardToken(fork.config.poolTogetherV4.ptTokens.ptUsdc[0], provider);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -184,7 +184,7 @@ describe('redeem', () => {
     const amount = utils.parseUnits('1', await ptToken.decimals());
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token: ptToken });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token: ptToken });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

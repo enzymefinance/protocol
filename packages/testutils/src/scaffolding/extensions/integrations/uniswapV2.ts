@@ -20,7 +20,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
-import { seedAccount } from '../../../accounts';
+import { setAccountBalance } from '../../../accounts';
 
 export async function uniswapV2Lend({
   comptrollerProxy,
@@ -54,8 +54,8 @@ export async function uniswapV2Lend({
   seedFund?: boolean;
 }) {
   if (seedFund) {
-    await seedAccount({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
-    await seedAccount({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
+    await setAccountBalance({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
+    await setAccountBalance({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });
   }
 
   const lendArgs = uniswapV2LendArgs({
@@ -150,7 +150,7 @@ export async function uniswapV2TakeOrder({
   provider: EthereumTestnetProvider;
 }) {
   if (seedFund) {
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: path[0] });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: path[0] });
   }
 
   const takeOrderArgs = uniswapV2TakeOrderArgs({

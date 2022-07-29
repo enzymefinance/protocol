@@ -16,7 +16,7 @@ import {
   getAssetBalances,
   paraSwapV5GenerateDummyPaths,
   paraSwapV5TakeOrder,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -214,7 +214,12 @@ describe('takeOrder', () => {
 
     // Seed fund with more than what will be spent
     const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
-    await seedAccount({ account: vaultProxy, amount: initialOutgoingAssetBalance, provider, token: outgoingAsset });
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAssetBalance,
+      provider,
+      token: outgoingAsset,
+    });
 
     // TODO: can call multiSwap() first to get the expected amount
 

@@ -26,7 +26,7 @@ import {
   generateMerkleTreeForContractProof,
   getAssetUnit,
   impersonateContractSigner,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -86,7 +86,7 @@ describe('actions', () => {
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);
 
-    await seedAccount({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
+    await setAccountBalance({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
   });
 
   describe('Lock', () => {
@@ -311,7 +311,12 @@ describe('actions', () => {
       await vlCVX.connect(fork.deployer).checkpointEpoch();
 
       // Add extra reward token to current epoch
-      await seedAccount({ account: userAddress, amount: extraRewardTokenAmount, provider, token: extraRewardToken });
+      await setAccountBalance({
+        account: userAddress,
+        amount: extraRewardTokenAmount,
+        provider,
+        token: extraRewardToken,
+      });
       await extraRewardToken.connect(userAddress).approve(extraRewardTokenDistributor, extraRewardTokenAmount);
       await extraRewardTokenDistributor.connect(userAddress).addReward(extraRewardToken, extraRewardTokenAmount);
 
@@ -373,7 +378,7 @@ describe('actions', () => {
       });
 
       await votiumMultiMerkleStash.connect(votiumMultiMerkleStashOwner).updateMerkleRoot(rewardToken, root);
-      await seedAccount({ account: votiumMultiMerkleStash, amount: claimAmount, provider, token: rewardToken });
+      await setAccountBalance({ account: votiumMultiMerkleStash, amount: claimAmount, provider, token: rewardToken });
 
       const preTxRewardTokenBalance = await rewardToken.balanceOf(vaultProxy);
 
@@ -411,7 +416,12 @@ describe('actions', () => {
       const convexCrvDepositor = new ITestConvexCrvDepositor(convexCurveDepositorAddress, userAddress);
       const convexCvxCrvStaking = new ITestConvexBaseRewardPool(fork.config.convex.cvxCrvStaking, userAddress);
 
-      await seedAccount({ provider, account: userAddress, amount: (await getAssetUnit(crv)).mul(100_000), token: crv });
+      await setAccountBalance({
+        provider,
+        account: userAddress,
+        amount: (await getAssetUnit(crv)).mul(100_000),
+        token: crv,
+      });
 
       // Convert CRV to cvxCRV
       const stakedCvxCrvAmount = (await getAssetUnit(cvxCrv)).mul(3);
@@ -466,7 +476,7 @@ describe('position value', () => {
     // Seed vaults with CVX
     const cvxAssetUnit = await getAssetUnit(cvx);
 
-    await seedAccount({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
+    await setAccountBalance({ provider, account: vaultProxy, amount: cvxAssetUnit.mul(10), token: cvx });
   });
 
   describe('getManagedAssets', () => {
@@ -488,7 +498,7 @@ describe('position value', () => {
       // (simulates CVX being sent back to EP via kickExpiredLocks())
       const kickedCvxAmount = lockAmount.mul(3);
 
-      await seedAccount({ provider, account: convexVotingPosition, amount: kickedCvxAmount, token: cvx });
+      await setAccountBalance({ provider, account: convexVotingPosition, amount: kickedCvxAmount, token: cvx });
 
       // Assert external position balance
       expect(await convexVotingPosition.getManagedAssets.call()).toMatchFunctionOutput(

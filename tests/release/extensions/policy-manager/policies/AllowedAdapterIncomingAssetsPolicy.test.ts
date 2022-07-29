@@ -16,7 +16,7 @@ import {
   policyManagerConfigArgs,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, deployProtocolFixture, mockGenericSwap, seedAccount } from '@enzymefinance/testutils';
+import { createNewFund, deployProtocolFixture, mockGenericSwap, setAccountBalance } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
 
@@ -112,9 +112,19 @@ describe('validateRule', () => {
   it('does not allow an unlisted asset', async () => {
     const incomingAssetAmount = 123;
 
-    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset1 });
-    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset2 });
-    await seedAccount({
+    await setAccountBalance({
+      account: mockGenericIntegratee,
+      amount: incomingAssetAmount,
+      provider,
+      token: allowedAsset1,
+    });
+    await setAccountBalance({
+      account: mockGenericIntegratee,
+      amount: incomingAssetAmount,
+      provider,
+      token: allowedAsset2,
+    });
+    await setAccountBalance({
       account: mockGenericIntegratee,
       amount: incomingAssetAmount,
       provider,
@@ -138,8 +148,18 @@ describe('validateRule', () => {
   it('allows listed assets', async () => {
     const incomingAssetAmount = 123;
 
-    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset1 });
-    await seedAccount({ account: mockGenericIntegratee, amount: incomingAssetAmount, provider, token: allowedAsset2 });
+    await setAccountBalance({
+      account: mockGenericIntegratee,
+      amount: incomingAssetAmount,
+      provider,
+      token: allowedAsset1,
+    });
+    await setAccountBalance({
+      account: mockGenericIntegratee,
+      amount: incomingAssetAmount,
+      provider,
+      token: allowedAsset2,
+    });
 
     await mockGenericSwap({
       provider,

@@ -13,7 +13,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -72,7 +72,7 @@ describe('manager actions', () => {
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
 
-    await seedAccount({ account: vaultProxy, amount: assetUnit.mul(10), provider, token: loanAsset });
+    await setAccountBalance({ account: vaultProxy, amount: assetUnit.mul(10), provider, token: loanAsset });
   });
 
   describe('ConfigureLoan', () => {
@@ -171,7 +171,7 @@ describe('manager actions', () => {
       expect(await arbitraryLoanPosition.getTotalRepaid()).toEqBigNumber(0);
 
       // Position value should be the borrowable amount only
-      expect(await arbitraryLoanPosition.getManagedAssets.args().call()).toMatchFunctionOutput(
+      expect(await arbitraryLoanPosition.getManagedAssets.call()).toMatchFunctionOutput(
         arbitraryLoanPosition.getManagedAssets,
         {
           assets_: [loanAsset],
@@ -354,10 +354,10 @@ describe('manager actions', () => {
       const extraAssetAmount = 456;
 
       // Transfer some of the borrowed amount back to the EP
-      const loanAssetNextAmount = (await loanAsset.balanceOf(arbitraryLoanPosition)).add(loanAssetAmount);
-      await seedAccount({
+      await setAccountBalance({
         account: arbitraryLoanPosition,
-        amount: loanAssetNextAmount,
+        amount: loanAssetAmount,
+        overwrite: false,
         provider,
         token: loanAsset,
       });
@@ -368,8 +368,13 @@ describe('manager actions', () => {
         value: nativeAssetAmount,
       });
 
-      // Transfer another misc asset to the EP
-      await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
+      // Add another misc asset to the EP
+      await setAccountBalance({
+        account: arbitraryLoanPosition,
+        amount: extraAssetAmount,
+        provider,
+        token: extraAsset,
+      });
       const extraAssetsToSweep = [wrappedNativeAsset, extraAsset];
 
       // The loan should not yet be marked as closed
@@ -465,11 +470,16 @@ describe('manager actions', () => {
       const loanAssetSurplusAmount = 123;
 
       // Transfer the excess assets to the EP
-      await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
-      const loanAssetNextAmount = (await loanAsset.balanceOf(arbitraryLoanPosition)).add(loanAssetSurplusAmount);
-      await seedAccount({
+      await setAccountBalance({
         account: arbitraryLoanPosition,
-        amount: loanAssetNextAmount,
+        amount: extraAssetAmount,
+        provider,
+        token: extraAsset,
+      });
+      await setAccountBalance({
+        account: arbitraryLoanPosition,
+        amount: loanAssetSurplusAmount,
+        overwrite: false,
         provider,
         token: loanAsset,
       });
@@ -525,7 +535,7 @@ describe('borrower actions', () => {
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
     const seedAmount = assetUnit.mul(1000);
-    await seedAccount({ account: vaultProxy, amount: seedAmount, provider, token: loanAsset });
+    await setAccountBalance({ account: vaultProxy, amount: seedAmount, provider, token: loanAsset });
 
     // Configure a loan
     const borrowableAmount = seedAmount.div(4);
@@ -672,7 +682,7 @@ describe('position value', () => {
 
     // Seed vaults with asset
     const assetUnit = await getAssetUnit(loanAsset);
-    await seedAccount({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
+    await setAccountBalance({ account: vaultProxy, amount: assetUnit.mul(1000), provider, token: loanAsset });
   });
 
   describe('getManagedAssets', () => {
@@ -706,7 +716,7 @@ describe('position value', () => {
       await arbitraryLoanPosition.connect(borrower).repay(partialRepayAmount);
 
       // Value should be original borrowable amount (amount borrowed + amount remaining) net repaid amount
-      expect(await arbitraryLoanPosition.getManagedAssets.args().call()).toMatchFunctionOutput(
+      expect(await arbitraryLoanPosition.getManagedAssets.call()).toMatchFunctionOutput(
         arbitraryLoanPosition.getManagedAssets,
         {
           assets_: [loanAsset],
@@ -731,7 +741,7 @@ describe('position value', () => {
         description: '',
       });
 
-      expect(await arbitraryLoanPosition.getManagedAssets.args().call()).toMatchFunctionOutput(
+      expect(await arbitraryLoanPosition.getManagedAssets.call()).toMatchFunctionOutput(
         arbitraryLoanPosition.getManagedAssets,
         {
           assets_: [],
@@ -756,11 +766,11 @@ describe('position value', () => {
 
       // Repay without borrowing anything (i.e., repay > borrowed)
       const repayAmount = 123;
-      await seedAccount({ account: borrower, amount: repayAmount, provider, token: loanAsset });
+      await setAccountBalance({ account: borrower, amount: repayAmount, provider, token: loanAsset });
       await loanAsset.connect(borrower).approve(arbitraryLoanPosition, repayAmount);
       await arbitraryLoanPosition.connect(borrower).repay(repayAmount);
 
-      expect(await arbitraryLoanPosition.getManagedAssets.args().call()).toMatchFunctionOutput(
+      expect(await arbitraryLoanPosition.getManagedAssets.call()).toMatchFunctionOutput(
         arbitraryLoanPosition.getManagedAssets,
         {
           assets_: [],

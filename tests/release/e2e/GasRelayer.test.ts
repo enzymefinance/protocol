@@ -30,7 +30,7 @@ import {
   getAssetUnit,
   redeemSharesInKind,
   relayTransaction,
-  seedAccount,
+  setAccountBalance,
   setupGasRelayerPaymaster,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
@@ -81,7 +81,7 @@ describe('gas relayer', () => {
     });
     const startingBalance = utils.parseUnits('0.09', 18);
 
-    await seedAccount({ account: vaultProxy, amount: startingBalance, provider, token: weth });
+    await setAccountBalance({ account: vaultProxy, amount: startingBalance, provider, token: weth });
     await expect(comptrollerProxy.deployGasRelayPaymaster()).rejects.toBeReverted();
   });
 

@@ -31,7 +31,7 @@ import {
   getAssetUnit,
   redeemSharesForSpecificAssets,
   redeemSharesInKind,
-  seedAccount,
+  setAccountBalance,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
@@ -69,7 +69,9 @@ async function snapshot() {
   const seedAmount = utils.parseEther('100');
   const seedAccounts = [fundOwner, remainingAccounts[0], remainingAccounts[1]];
 
-  await Promise.all(seedAccounts.map((account) => seedAccount({ provider, account, amount: seedAmount, token: weth })));
+  await Promise.all(
+    seedAccounts.map((account) => setAccountBalance({ provider, account, amount: seedAmount, token: weth })),
+  );
 
   return {
     accounts: remainingAccounts,
@@ -396,7 +398,7 @@ describe('buySharesOnBehalf', () => {
     policyManager = fork.deployment.policyManager;
 
     denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
-    await seedAccount({ account: randomCaller, amount: investmentAmount, provider, token: denominationAsset });
+    await setAccountBalance({ account: randomCaller, amount: investmentAmount, provider, token: denominationAsset });
 
     // TODO: set protocol fee to 0 for simplicity/clarity
   });
@@ -618,7 +620,12 @@ describe('redeem', () => {
 
       // Send second asset to the fund
       const secondAsset = new ITestStandardToken(mln, provider);
-      await seedAccount({ provider, account: vaultProxy, amount: await getAssetUnit(secondAsset), token: secondAsset });
+      await setAccountBalance({
+        provider,
+        account: vaultProxy,
+        amount: await getAssetUnit(secondAsset),
+        token: secondAsset,
+      });
 
       await expect(
         redeemSharesForSpecificAssets({
@@ -1102,7 +1109,7 @@ describe('redeem', () => {
         denominationAsset,
       });
 
-      await seedAccount({ account: vaultProxy, amount: 1, provider, token: denominationAsset });
+      await setAccountBalance({ account: vaultProxy, amount: 1, provider, token: denominationAsset });
 
       // Send and track a second asset in the vault, but then allow it to be untracked
       const secondAsset = new ITestStandardToken(mln, provider);
@@ -1206,7 +1213,7 @@ describe('redeem', () => {
       // Send untracked asset directly to fund
       const untrackedAsset = new ITestStandardToken(mln, provider);
       const untrackedAssetBalance = utils.parseEther('2');
-      await seedAccount({ provider, account: vaultProxy, amount: untrackedAssetBalance, token: untrackedAsset });
+      await setAccountBalance({ provider, account: vaultProxy, amount: untrackedAssetBalance, token: untrackedAsset });
 
       // Assert the asset is not tracked
       const isTrackedAssetCall = await vaultProxy.isTrackedAsset(untrackedAsset);

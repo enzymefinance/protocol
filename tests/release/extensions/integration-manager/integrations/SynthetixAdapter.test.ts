@@ -16,7 +16,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   synthetixAssignExchangeDelegate,
   synthetixRedeem,
   synthetixTakeOrder,
@@ -118,7 +118,7 @@ describe('parseAssetsForAction', () => {
 
     const amount = await getAssetUnit(sxagSynth);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token: sxagSynth });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token: sxagSynth });
 
     const result = await synthetixAdapter.parseAssetsForAction(vaultProxy, redeemSelector, redeemArgs);
 
@@ -236,7 +236,7 @@ describe('takeOrder', () => {
     });
 
     // Seed fund and execute Synthetix order
-    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
     await synthetixTakeOrder({
       comptrollerProxy,
       fundOwner,
@@ -308,8 +308,8 @@ describe('redeem', () => {
     const sxagAmount = await getAssetUnit(sxagSynth);
     const sxauAmount = await getAssetUnit(sxauSynth);
 
-    await seedAccount({ provider, account: vaultProxy, amount: sxagAmount, token: sxagSynth });
-    await seedAccount({ provider, account: vaultProxy, amount: sxauAmount, token: sxauSynth });
+    await setAccountBalance({ provider, account: vaultProxy, amount: sxagAmount, token: sxagSynth });
+    await setAccountBalance({ provider, account: vaultProxy, amount: sxauAmount, token: sxauSynth });
 
     // Get incoming asset balance prior to tx
     const [preTxIncomingAssetBalance, preTxSxagAssetBalance, preTxSxauAssetBalance] = await getAssetBalances({

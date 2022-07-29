@@ -10,7 +10,7 @@ import {
   takeOrderSelector,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { createNewFund, curveTakeOrder, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
+import { createNewFund, curveTakeOrder, deployProtocolFixture, setAccountBalance } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
 // There is variable small discrepancy between get_best_rate().maxAmountReceived and the actual amount received,
@@ -132,7 +132,7 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
     // exchange
     await curveTakeOrder({
@@ -174,7 +174,7 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
     // exchange
     await curveTakeOrder({
@@ -216,7 +216,7 @@ describe('takeOrder', () => {
       outgoingAssetAmount,
     );
 
-    await seedAccount({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
+    await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
     const preTxOutgoingAssetBalance = await outgoingAsset.balanceOf(vaultProxy);
 

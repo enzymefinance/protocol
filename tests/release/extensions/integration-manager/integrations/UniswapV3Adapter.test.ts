@@ -10,7 +10,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   uniswapV3TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
@@ -83,7 +83,7 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000')];
 
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     await expect(
       uniswapV3TakeOrder({
@@ -121,7 +121,7 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000'), BigNumber.from('3000')];
 
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     await expect(
       uniswapV3TakeOrder({
@@ -158,7 +158,7 @@ describe('takeOrder', () => {
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
     const pathFees = [BigNumber.from('3000')];
 
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     const [preTxOutgoingAssetBalance, preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -212,7 +212,7 @@ describe('takeOrder', () => {
     const pathAddresses = [outgoingAsset, weth, incomingAsset];
     const outgoingAssetAmount = await getAssetUnit(outgoingAsset);
 
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
 
     const [preTxOutgoingAssetBalance, preTxIncomingAssetBalance] = await getAssetBalances({
       account: vaultProxy,

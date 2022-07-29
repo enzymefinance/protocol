@@ -3,7 +3,7 @@ import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { ITestStandardToken, ONE_HUNDRED_PERCENT_IN_BPS, TestTreasurySplitterMixin } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, getAssetUnit, setAccountBalance } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
@@ -96,7 +96,7 @@ describe('claimTokenAmountTo', () => {
     token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     initialSplitterTokenBal = await getAssetUnit(token);
-    await seedAccount({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
+    await setAccountBalance({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
   });
 
   it('does not allow an amount greater than claimable', async () => {
@@ -150,7 +150,7 @@ describe('Walkthrough', () => {
 
     // Seed the splitter with some of a token to claim
     const initialSplitterTokenBal = tokenUnit;
-    await seedAccount({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
+    await setAccountBalance({ account: testTreasurySplitterMixin, amount: initialSplitterTokenBal, provider, token });
 
     // Validate the claimable amount for each user
     const user1ClaimableAmount = await testTreasurySplitterMixin.getTokenBalClaimableForUser(user1, token);
@@ -181,10 +181,10 @@ describe('Walkthrough', () => {
     );
 
     // Add the same amount of tokens to the splitter, doubling the cumulative total amount
-    const testTreasurySplitterMixinBal = await token.balanceOf(testTreasurySplitterMixin);
-    await seedAccount({
+    await setAccountBalance({
       account: testTreasurySplitterMixin,
-      amount: testTreasurySplitterMixinBal.add(initialSplitterTokenBal),
+      amount: initialSplitterTokenBal,
+      overwrite: false,
       provider,
       token,
     });

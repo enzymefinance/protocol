@@ -15,7 +15,7 @@ import {
   createTheGraphDelegationPosition,
   deployProtocolFixture,
   impersonateContractSigner,
-  seedAccount,
+  setAccountBalance,
   theGraphDelegationPositionDelegate,
   theGraphDelegationPositionUndelegate,
   theGraphDelegationPositionWithdraw,
@@ -82,7 +82,7 @@ beforeEach(async () => {
   delegationFeeBps = BigNumber.from(delegationFee).div(100);
 
   grt = new ITestStandardToken(fork.config.theGraph.grt, provider);
-  await seedAccount({ provider, account: vaultProxy.address, amount: grtUnit.mul(100_000_000), token: grt });
+  await setAccountBalance({ provider, account: vaultProxy.address, amount: grtUnit.mul(100_000_000), token: grt });
 });
 
 describe('delegate', () => {

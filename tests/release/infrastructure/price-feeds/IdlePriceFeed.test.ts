@@ -8,7 +8,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   idleLend,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -163,7 +163,7 @@ describe('derivative gas costs', () => {
     // Seed the fund with dai and use to receive an idleToken balance
     const amount = await getAssetUnit(dai);
 
-    await seedAccount({ account: vaultProxy, amount, provider, token: dai });
+    await setAccountBalance({ account: vaultProxy, amount, provider, token: dai });
     await idleLend({
       comptrollerProxy,
       fundOwner,

@@ -1,7 +1,13 @@
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { CompoundPriceFeed, ITestCERC20, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { buyShares, compoundLend, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
+import {
+  buyShares,
+  compoundLend,
+  createNewFund,
+  deployProtocolFixture,
+  setAccountBalance,
+} from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -41,7 +47,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Use max of the dai balance to get cDai
-    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
+    await setAccountBalance({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await compoundLend({
       cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
       cTokenAmount: BigNumber.from('1'),

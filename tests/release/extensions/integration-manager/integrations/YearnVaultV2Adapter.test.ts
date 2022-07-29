@@ -15,7 +15,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
   yearnVaultV2Lend,
   yearnVaultV2Redeem,
 } from '@enzymefinance/testutils';
@@ -156,14 +156,19 @@ describe('lend', () => {
 
     // Seed the fund with more than the necessary amount of outgoing asset
     const outgoingUnderlyingAmount = assetUnit;
-    await seedAccount({ account: vaultProxy, amount: outgoingUnderlyingAmount.mul(3), provider, token: outgoingToken });
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: outgoingUnderlyingAmount.mul(3),
+      provider,
+      token: outgoingToken,
+    });
 
     // Since we can't easily test that an unused underlying amount from a deposit is returned
     // / to the vaultProxy, we seed the adapter with a small amount of the underlying, which will
     // / be returned to the vaultProxy upon running lend()
     const preTxAdapterUnderlyingBalance = assetUnit;
 
-    await seedAccount({
+    await setAccountBalance({
       account: yearnVaultV2Adapter,
       amount: preTxAdapterUnderlyingBalance,
       provider,
@@ -223,7 +228,7 @@ describe('redeem', () => {
     // Seed the fund and acquire yVault shares while leaving some underlying in the vault
     const seedUnderlyingAmount = assetUnit.mul(4);
 
-    await seedAccount({ account: vaultProxy, amount: seedUnderlyingAmount, provider, token });
+    await setAccountBalance({ account: vaultProxy, amount: seedUnderlyingAmount, provider, token });
     await yearnVaultV2Lend({
       comptrollerProxy,
       integrationManager,

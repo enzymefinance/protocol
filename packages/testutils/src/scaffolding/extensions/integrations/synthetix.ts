@@ -20,7 +20,7 @@ import {
 import type { BigNumberish, Signer } from 'ethers';
 import { utils } from 'ethers';
 
-import { seedAccount } from '../../../accounts';
+import { setAccountBalance } from '../../../accounts';
 
 export async function synthetixAssignExchangeDelegate({
   comptrollerProxy,
@@ -94,7 +94,7 @@ export async function synthetixTakeOrder({
   seedFund?: boolean;
 }) {
   if (seedFund) {
-    await seedAccount({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
+    await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
   }
 
   const takeOrderArgs = synthetixTakeOrderArgs({

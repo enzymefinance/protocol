@@ -8,7 +8,7 @@ import {
   ONE_DAY_IN_SECONDS,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture, getAssetUnit, seedAccount } from '@enzymefinance/testutils';
+import { assertEvent, deployProtocolFixture, getAssetUnit, setAccountBalance } from '@enzymefinance/testutils';
 import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BigNumber } from 'ethers';
 
@@ -87,8 +87,8 @@ describe('actions', () => {
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
-    await seedAccount({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
-    await seedAccount({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
+    await setAccountBalance({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
+    await setAccountBalance({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
   });
 
   describe('deposit', () => {
@@ -385,8 +385,8 @@ describe('ERC20 calls', () => {
   beforeEach(async () => {
     lpTokenStartingBalance = await getAssetUnit(curveLpToken);
     [depositor1, depositor2] = fork.accounts;
-    await seedAccount({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
-    await seedAccount({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
+    await setAccountBalance({ provider, account: depositor1, amount: lpTokenStartingBalance, token: curveLpToken });
+    await setAccountBalance({ provider, account: depositor2, amount: lpTokenStartingBalance, token: curveLpToken });
   });
 
   describe('transfer', () => {

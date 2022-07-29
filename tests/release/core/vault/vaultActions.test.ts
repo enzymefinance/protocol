@@ -15,7 +15,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockExternalPositionAddManagedAssets,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -372,7 +372,7 @@ describe('CallOnExternalPosition', () => {
     const assetsToReceive = [new ITestStandardToken(fork.config.primitives.mln, provider)];
     const amountsToTransfer = [1];
 
-    await seedAccount({ provider, account: vaultProxy, amount: seedAmount, token: assetsToTransfer[0] });
+    await setAccountBalance({ provider, account: vaultProxy, amount: seedAmount, token: assetsToTransfer[0] });
 
     const { externalPositionProxy } = await createMockExternalPosition({
       comptrollerProxy,
@@ -663,8 +663,7 @@ describe('WithdrawAssetTo', () => {
       vaultLib,
     });
 
-    const amountToTransfer = await getAssetUnit(asset);
-    await seedAccount({ account: vaultProxy, amount: amountToTransfer, provider, token: asset });
+    await setAccountBalance({ account: vaultProxy, amount: await getAssetUnit(asset), provider, token: asset });
 
     await vaultProxy.receiveValidatedVaultAction(VaultAction.AddTrackedAsset, encodeArgs(['address'], [asset]));
 

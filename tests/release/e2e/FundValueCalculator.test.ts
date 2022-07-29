@@ -91,7 +91,7 @@ describe('calcs', () => {
     // GROSS VALUE
 
     // calcGav
-    const actualGav = await comptrollerProxy.calcGav.args().call();
+    const actualGav = await comptrollerProxy.calcGav.call();
 
     expect(await fundValueCalculatorRouter.calcGav.args(vaultProxy).call()).toMatchFunctionOutput(
       fundValueCalculatorRouter.calcGav,

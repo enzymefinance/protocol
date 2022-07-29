@@ -18,7 +18,7 @@ import {
   // DeploymentHandlers,
   // deployRelease,
   redeemSharesInKind,
-  seedAccount,
+  setAccountBalance,
   // ReleaseDeploymentConfig,
   // ReleaseDeploymentOutput,
 } from '@enzymefinance/testutils';
@@ -46,7 +46,7 @@ describe('Walkthrough a fund migration', () => {
 
     denominationAsset = new ITestStandardToken(fork.config.weth, provider);
 
-    await seedAccount({
+    await setAccountBalance({
       account: investor,
       amount: (await getAssetUnit(denominationAsset)).mul(100),
       provider,

@@ -24,7 +24,7 @@ import {
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 
 let fork: ProtocolDeployment;
@@ -96,7 +96,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
+      await setAccountBalance({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,
@@ -177,7 +177,7 @@ describe('actions', () => {
     it('works as expected', async () => {
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
+      await setAccountBalance({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
 
       const receipt = await curveStake({
         amount: lpTokenAmount,
@@ -203,7 +203,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
+      await setAccountBalance({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,
@@ -244,7 +244,7 @@ describe('actions', () => {
       // Stake
       const lpTokenAmount = (await getAssetUnit(lpToken)).mul(10);
 
-      await seedAccount({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
+      await setAccountBalance({ provider, account: vaultProxy, amount: lpTokenAmount, token: lpToken });
       await curveStake({
         amount: lpTokenAmount,
         comptrollerProxy,

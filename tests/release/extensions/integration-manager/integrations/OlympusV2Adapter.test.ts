@@ -17,7 +17,7 @@ import {
   getAssetUnit,
   olympusV2Stake,
   olympusV2Unstake,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -115,7 +115,7 @@ describe('stake', () => {
     const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token });
 
     const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
       account: vaultProxy,
@@ -157,7 +157,7 @@ describe('unstake', () => {
     const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token });
 
     // Stake token to obtain stakedToken
     await olympusV2Stake({
@@ -206,7 +206,7 @@ describe('unstake', () => {
     const stakedToken = new ITestStandardToken(fork.config.primitives.sohm, provider);
     const amount = await getAssetUnit(token);
 
-    await seedAccount({ provider, account: vaultProxy, amount, token });
+    await setAccountBalance({ provider, account: vaultProxy, amount, token });
 
     // Stake token to obtain stakedToken
     await olympusV2Stake({

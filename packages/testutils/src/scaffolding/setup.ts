@@ -13,7 +13,7 @@ import {
 import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
-import { seedAccount } from '../accounts';
+import { setAccountBalance } from '../accounts';
 import { assertEvent } from '../assertions';
 import type { BuySharesParams } from './shares';
 import { buyShares } from './shares';
@@ -236,7 +236,7 @@ export async function setupGasRelayerPaymaster({
   startingBalance?: BigNumberish;
 }) {
   if (startingBalance) {
-    await seedAccount({ account: vaultProxy, amount: startingBalance, provider, token: weth });
+    await setAccountBalance({ account: vaultProxy, amount: startingBalance, provider, token: weth });
   }
 
   const comptrollerProxy = new ComptrollerLib(fundAccessor, signer);

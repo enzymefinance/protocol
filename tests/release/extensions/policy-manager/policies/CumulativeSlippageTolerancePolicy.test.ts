@@ -29,7 +29,7 @@ import {
   deployProtocolFixture,
   getAssetUnit,
   mockGenericSwap,
-  seedAccount,
+  setAccountBalance,
   transactionTimestamp,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
@@ -222,7 +222,7 @@ describe('validateRule', () => {
       .call();
 
     // Seed mock generic integratee with incoming assets
-    await seedAccount({
+    await setAccountBalance({
       account: mockGenericIntegratee,
       amount: zeroSlippageIncomingAssetAmount.mul(10),
       provider,
@@ -367,7 +367,7 @@ describe('validateRule', () => {
 
     // Seed mock generic integratee with incoming assets
     for (const i in incomingAssets) {
-      await seedAccount({
+      await setAccountBalance({
         account: mockGenericIntegratee,
         amount: zeroSlippageIncomingAssetAmounts[i].mul(10),
         provider,

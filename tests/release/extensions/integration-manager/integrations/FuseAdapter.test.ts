@@ -7,7 +7,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
-  seedAccount,
+  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
@@ -134,7 +134,7 @@ describe('claimComp', () => {
     });
 
     // Seed vault with fTribe to start accruing rewards
-    await seedAccount({ provider, account: vaultProxy, amount: await getAssetUnit(fTribe8), token: fTribe8 });
+    await setAccountBalance({ provider, account: vaultProxy, amount: await getAssetUnit(fTribe8), token: fTribe8 });
 
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS]);
     await provider.send('evm_mine', []);

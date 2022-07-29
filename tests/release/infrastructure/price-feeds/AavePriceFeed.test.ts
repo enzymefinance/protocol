@@ -1,7 +1,7 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { aaveLend, buyShares, createNewFund, deployProtocolFixture, seedAccount } from '@enzymefinance/testutils';
+import { aaveLend, buyShares, createNewFund, deployProtocolFixture, setAccountBalance } from '@enzymefinance/testutils';
 import { utils } from 'ethers';
 
 let fork: ProtocolDeployment;
@@ -41,7 +41,7 @@ describe('derivative gas costs', () => {
     const calcGavBaseGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Seed fund and use max of the dai balance to get adai
-    await seedAccount({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
+    await setAccountBalance({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await aaveLend({
       aToken: new ITestStandardToken(fork.config.aave.atokens.adai[0], provider),
       aaveAdapter: fork.deployment.aaveAdapter,

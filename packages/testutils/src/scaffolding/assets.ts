@@ -2,7 +2,7 @@ import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/
 import type { ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import type { BigNumberish } from 'ethers';
 
-import { seedAccount } from '../accounts';
+import { setAccountBalance } from '../accounts';
 import { addTrackedAssetsToVault } from './extensions/integrations/trackedAssets';
 
 export async function addNewAssetsToFund({
@@ -32,7 +32,7 @@ export async function addNewAssetsToFund({
   const vaultProxy = await comptrollerProxy.getVaultProxy();
 
   await Promise.all(
-    assets.map((asset, i) => seedAccount({ account: vaultProxy, amount: amounts[i], provider, token: asset })),
+    assets.map((asset, i) => setAccountBalance({ account: vaultProxy, amount: amounts[i], provider, token: asset })),
   );
 
   return receipt;
