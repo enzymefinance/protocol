@@ -14,6 +14,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
+  assertExternalPositionAssetsToReceive,
   convexVotingPositionClaimRewards,
   convexVotingPositionDelegate,
   convexVotingPositionLock,
@@ -114,6 +115,11 @@ describe('actions', () => {
       // Assert vlCVX balance
       const vlCVX = new ITestConvexCvxLocker(fork.config.convex.vlCvx, provider);
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       expect(await vlCVX.lockedBalanceOf(convexVotingPosition)).toEqBigNumber(lockAmount);
 
       expect(receipt).toMatchInlineGasSnapshot('318591');
@@ -159,6 +165,11 @@ describe('actions', () => {
       expect(await vlCVX.lockedBalanceOf(convexVotingPosition)).toEqBigNumber(lockAmount);
       expect(await vlCVX.balanceOf(convexVotingPosition)).toEqBigNumber(lockAmount);
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       expect(receipt).toMatchInlineGasSnapshot('656758');
     });
   });
@@ -202,6 +213,11 @@ describe('actions', () => {
       // Assert lockAmount has returned to the vault
       expect(await cvx.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultCvxBalance.add(lockAmount));
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [cvx],
+      });
+
       expect(receipt).toMatchInlineGasSnapshot('362084');
     });
   });
@@ -223,6 +239,11 @@ describe('actions', () => {
 
       // Assert that the delegatee has been set
       expect(await delegateRegistry.delegation(convexVotingPosition, convexSnapshotId)).toMatchAddress(delegatee);
+
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
 
       expect(receipt).toMatchInlineGasSnapshot('131254');
     });
@@ -253,7 +274,7 @@ describe('actions', () => {
       const initialVaultCvxCrv = await cvxCrv.balanceOf(vaultProxy);
 
       // Claim vlCVX rewards only
-      await convexVotingPositionClaimRewards({
+      const receipt = await convexVotingPositionClaimRewards({
         allTokensToTransfer: [cvxCrv],
         claimLockerRewards: true,
         comptrollerProxy,
@@ -267,6 +288,12 @@ describe('actions', () => {
 
       // Vault balance of cvxCRV should have increased
       expect(await cvxCrv.balanceOf(vaultProxy)).toBeGtBigNumber(initialVaultCvxCrv);
+
+      // Rewards tokens are not included in assetsToReceive
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
     });
 
     it('extraRewardTokens only: works as expected', async () => {
@@ -296,7 +323,7 @@ describe('actions', () => {
       const initialVaultExtraRewardTokenBalance = await extraRewardToken.balanceOf(vaultProxy);
 
       // Claim extra reward tokens only
-      await convexVotingPositionClaimRewards({
+      const receipt = await convexVotingPositionClaimRewards({
         allTokensToTransfer: [extraRewardToken],
         claimLockerRewards: false, // no claim
         comptrollerProxy,
@@ -309,6 +336,12 @@ describe('actions', () => {
       });
 
       expect(await extraRewardToken.balanceOf(vaultProxy)).toBeGtBigNumber(initialVaultExtraRewardTokenBalance);
+
+      // Rewards tokens are not included in assetsToReceive
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
     });
 
     it('votiumClaims only: works as expected', async () => {
@@ -345,7 +378,7 @@ describe('actions', () => {
       const preTxRewardTokenBalance = await rewardToken.balanceOf(vaultProxy);
 
       // Claim Votium rewards only
-      await convexVotingPositionClaimRewards({
+      const receipt = await convexVotingPositionClaimRewards({
         allTokensToTransfer: [rewardToken],
         claimLockerRewards: false, // no claim
         comptrollerProxy,
@@ -365,6 +398,12 @@ describe('actions', () => {
       });
 
       expect(await rewardToken.balanceOf(vaultProxy)).toEqBigNumber(preTxRewardTokenBalance.add(claimAmount));
+
+      // Rewards tokens are not included in assetsToReceive
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
     });
 
     it('unstakeCvxCrv only: works as expected', async () => {
@@ -384,7 +423,7 @@ describe('actions', () => {
       await convexCvxCrvStaking.stakeFor(convexVotingPosition, stakedCvxCrvAmount);
 
       // Claim staked cvxCRV only
-      await convexVotingPositionClaimRewards({
+      const receipt = await convexVotingPositionClaimRewards({
         allTokensToTransfer: [cvxCrv],
         claimLockerRewards: false, // no claim
         comptrollerProxy,
@@ -397,6 +436,12 @@ describe('actions', () => {
       });
 
       expect(await cvxCrv.balanceOf(vaultProxy)).toEqBigNumber(stakedCvxCrvAmount);
+
+      // Rewards tokens are not included in assetsToReceive
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
     });
   });
 });

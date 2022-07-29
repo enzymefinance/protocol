@@ -8,6 +8,7 @@ import {
   arbitraryLoanPositionReconcile,
   arbitraryLoanPositionUpdateBorrowableAmount,
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   createArbitraryLoanPosition,
   createNewFund,
   deployProtocolFixture,
@@ -178,6 +179,11 @@ describe('manager actions', () => {
         },
       );
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       // Assert events
       assertEvent(receipt, arbitraryLoanPosition.abi.getEvent('LoanConfigured'), {
         borrower,
@@ -249,6 +255,11 @@ describe('manager actions', () => {
       expect(await arbitraryLoanPosition.getBorrowableAmount()).toEqBigNumber(nextBorrowableAmount);
       expect(await loanAsset.balanceOf(arbitraryLoanPosition)).toEqBigNumber(nextBorrowableAmount);
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       // Assert event
       assertEvent(receipt, arbitraryLoanPosition.abi.getEvent('BorrowableAmountUpdated'), {
         borrowableAmount: nextBorrowableAmount,
@@ -277,6 +288,11 @@ describe('manager actions', () => {
 
       // Removed amount should be sent to the VaultProxy
       expect(await loanAsset.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultBalance.add(amountToRemove));
+
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [loanAsset],
+      });
 
       // Assert event
       assertEvent(receipt, arbitraryLoanPosition.abi.getEvent('BorrowableAmountUpdated'), {
@@ -354,6 +370,7 @@ describe('manager actions', () => {
 
       // Transfer another misc asset to the EP
       await seedAccount({ account: arbitraryLoanPosition, amount: extraAssetAmount, provider, token: extraAsset });
+      const extraAssetsToSweep = [wrappedNativeAsset, extraAsset];
 
       // The loan should not yet be marked as closed
       expect(await arbitraryLoanPosition.loanIsClosed()).toBe(false);
@@ -367,12 +384,17 @@ describe('manager actions', () => {
         externalPositionManager,
         signer: fundOwner,
         externalPositionProxy: arbitraryLoanPosition,
-        extraAssetsToSweep: [wrappedNativeAsset, extraAsset],
+        extraAssetsToSweep,
       });
 
       // Assert local storage and events
       expect(await arbitraryLoanPosition.loanIsClosed()).toBe(true);
       expect(await arbitraryLoanPosition.getBorrowableAmount()).toEqBigNumber(0);
+
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [...extraAssetsToSweep, loanAsset],
+      });
 
       assertEvent(receipt, arbitraryLoanPosition.abi.getEvent('LoanClosed'));
 
@@ -452,15 +474,22 @@ describe('manager actions', () => {
         token: loanAsset,
       });
 
+      const extraAssetsToSweep = [extraAsset];
+
       const preTxVaultExtraAssetBalance = await extraAsset.balanceOf(vaultProxy);
       const preTxVaultLoanAssetBalance = await loanAsset.balanceOf(vaultProxy);
 
-      await arbitraryLoanPositionReconcile({
+      const receipt = await arbitraryLoanPositionReconcile({
         comptrollerProxy,
         externalPositionManager,
         signer: fundOwner,
         externalPositionProxy: arbitraryLoanPosition,
-        extraAssetsToSweep: [extraAsset],
+        extraAssetsToSweep,
+      });
+
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [...extraAssetsToSweep, loanAsset],
       });
 
       // The exact excess asset amounts should have been sent to the vault,
