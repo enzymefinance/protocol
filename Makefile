@@ -1,2 +1,2 @@
 clean:
-	git clean -dfX --exclude !**/.env* --exclude !**/cache/**
+	git clean -dfX --exclude !**/.env* --exclude !cache/
