@@ -11,6 +11,7 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }
@@ -39,7 +40,6 @@
   ],
   "scripts": {
     "build": "tsup",
-    "clean": "rimraf .turbo .eslintcache node_modules dist artifacts src/codegen",
     "lint": "eslint \"src/**/*.{js,ts}\" --cache",
     "format": "yarn lint --fix",
     "typecheck": "tsc --noEmit"
@@ -51,7 +51,6 @@
   },
   "devDependencies": {
     "eslint": "^8.12.0",
-    "rimraf": "^3.0.2",
     "tsup": "^5.11.13",
     "typescript": "^4.5.5"
   },

@@ -10,9 +10,7 @@ import type { HardhatUserConfig } from 'hardhat/types';
 function node(networkName: string) {
   const fallback = 'http://localhost:8545';
   const uppercase = networkName.toUpperCase();
-  const uri = process.env[`ETHEREUM_NODE_${uppercase}`] || process.env.ETHEREUM_NODE || fallback;
-
-  return uri.replace('{{NETWORK}}', networkName);
+  return process.env[`ETHEREUM_NODE_${uppercase}`] || process.env.ETHEREUM_NODE || fallback;
 }
 
 function accounts(networkName: string) {
@@ -27,16 +25,7 @@ function accounts(networkName: string) {
 
 const mnemonic = 'test test test test test test test test test test test junk';
 
-// Set the block gas limit and default gas. When testing with code coverage reporting,
-// we double the gas limit & default gas to allow for large contracts with instrumentalisation
-// injected.
-const coverage = JSON.parse(process.env.COVERAGE || 'false');
-const gas = 12450000 * (coverage ? 2 : 1);
-
 const config: HardhatUserConfig = {
-  codeCoverage: {
-    exclude: ['/mock/i'], // Ignore anything with the word "mock" in it.
-  },
   codeGenerator: {
     abi: {
       path: './packages/protocol/artifacts',
@@ -124,7 +113,7 @@ const config: HardhatUserConfig = {
         count: 10,
         mnemonic,
       },
-      blockGasLimit: gas,
+      blockGasLimit: 12450000,
       chainId: 1,
       forking: {
         blockNumber: 14770000, // May 13, 2022

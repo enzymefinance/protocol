@@ -24,13 +24,13 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsup",
-    "clean": "rimraf .turbo .eslintcache node_modules dist",
     "lint": "eslint \"src/**/*.{js,ts}\" --cache",
     "format": "yarn lint --fix",
     "typecheck": "tsc --noEmit"

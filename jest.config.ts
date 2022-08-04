@@ -1,10 +1,6 @@
-const coverage = JSON.parse(process.env.COVERAGE || 'false');
 const common = {
   preset: '@enzymefinance/hardhat',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  testEnvironmentOptions: {
-    coverage,
-  },
 };
 
 function project(name: string, roots: string[]) {

@@ -1,5 +1,5 @@
 {
-  "name": "@enzymefinance/monorepo",
+  "name": "monorepo",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -10,16 +10,14 @@
     "postcompile": "yarn build:packages --output-logs=new-only",
     "test": "NODE_OPTIONS=--max_old_space_size=4096 jest",
     "build": "yarn compile",
-    "build:common": "turbo run build --cache-dir=.turbo/cache",
+    "build:common": "turbo run build",
     "build:utils": "yarn build:common --no-deps --include-dependencies --scope=@enzymefinance/hardhat",
     "build:packages": "yarn build:common --no-deps --scope=@enzymefinance/protocol --scope=@enzymefinance/testutils",
-    "clean": "turbo run clean --no-cache && rimraf -rf node_modules .turbo artifacts cache/solidity-files-cache.json",
     "prettier": "prettier --list-different --ignore-path .gitignore \"**/*.{js,ts,json,md,yml,sol}\"",
-    "format": "yarn prettier --write && eslint --fix \"{tests,deploy,tasks}/**/*.{js,ts}\" && solhint --fix --max-warnings 0 \"contracts/**/*.sol\" && turbo run format --cache-dir=.turbo/cache",
-    "lint": "manypkg check && yarn prettier && eslint \"{tests,deploy,tasks}/**/*.{js,ts}\" && solhint --max-warnings 0 \"contracts/**/*.sol\" && turbo run lint --cache-dir=.turbo/cache",
-    "typecheck": "tsc --noEmit && turbo run typecheck --cache-dir=.turbo/cache",
+    "format": "yarn prettier --write && eslint --fix \"{tests,deploy,tasks}/**/*.{js,ts}\" && solhint --fix --max-warnings 0 \"contracts/**/*.sol\" && turbo run format",
+    "lint": "yarn prettier && eslint \"{tests,deploy,tasks}/**/*.{js,ts}\" && solhint --max-warnings 0 \"contracts/**/*.sol\" && turbo run lint",
+    "typecheck": "tsc --noEmit && turbo run typecheck",
     "release": "yarn compile && yarn build && changeset publish",
-    "prepare": "is-ci || husky install",
     "deploy:testnet": "hardhat deploy --network testnet",
     "export:testnet": "hardhat export --network testnet --export deployments/testnet.json",
     "verify:testnet": "hardhat etherscan-verify --network testnet",
@@ -32,12 +30,9 @@
   },
   "dependencies": {
     "@changesets/cli": "^2.22.0",
-    "@commitlint/cli": "^16.2.3",
-    "@commitlint/config-conventional": "^16.2.1",
     "@enzymefinance/babel-config": "^1.0.19",
     "@enzymefinance/eslint-config": "^1.0.25",
     "@enzymefinance/prettier-config": "^1.0.9",
-    "@manypkg/cli": "^0.19.1",
     "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@openzeppelin-solc-0.7/contracts": "npm:@openzeppelin/contracts@3.4.2-solc-0.7",
     "@openzeppelin/contracts": "^3.4.1",
@@ -47,21 +42,13 @@
     "dotenv": "^16.0.0",
     "eslint": "^8.12.0",
     "hardhat": "^2.9.2",
-    "husky": "^7.0.4",
-    "is-ci": "^3.0.1",
     "jest": "^27.4.7",
-    "lint-staged": "^12.3.7",
     "prettier": "^2.6.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
-    "rimraf": "^3.0.2",
     "solhint": "^3.3.7",
     "tsup": "^5.11.13",
     "turbo": "^1.1.10",
     "typescript": "^4.5.5"
-  },
-  "resolutions": {
-    "bn.js": "^5.2.1",
-    "ethers": "5.6.8"
   },
   "eslintConfig": {
     "extends": "@enzymefinance/eslint-config",
@@ -73,8 +60,5 @@
         "./tsconfig.json"
       ]
     }
-  },
-  "lint-staged": {
-    "*.{js,ts,json,md,yml,sol}": "prettier --write"
   }
 }

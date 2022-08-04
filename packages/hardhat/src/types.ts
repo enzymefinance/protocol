@@ -15,8 +15,6 @@ declare global {
     var hre: HardhatRuntimeEnvironment;
     // eslint-disable-next-line no-var
     var provider: EthereumTestnetProvider;
-    // eslint-disable-next-line no-var
-    var coverage: boolean;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-namespace

@@ -1,7 +1,5 @@
-import { createCoverageCollector } from '@enzymefinance/coverage';
 import deepmerge from 'deepmerge';
 import type { EventEmitter } from 'events';
-import fs from 'fs-extra';
 import { HARDHAT_NETWORK_NAME } from 'hardhat/internal/constants';
 import { HardhatContext } from 'hardhat/internal/context';
 import { loadConfigAndTasks } from 'hardhat/internal/core/config/config-loading';
@@ -11,48 +9,30 @@ import { Environment } from 'hardhat/internal/core/runtime-environment';
 import { loadTsNode, willRunWithTypescript } from 'hardhat/internal/core/typescript-support';
 import type { EthereumProvider, HardhatArguments, HardhatRuntimeEnvironment } from 'hardhat/types';
 import NodeEnvironment from 'jest-environment-node';
-import path from 'path';
-import { v4 as uuid } from 'uuid';
 
 import { EthereumTestnetProvider } from '../../provider';
 
 export interface EnzymeHardhatEnvironmentOptions {
   history: boolean;
-  coverage: boolean;
 }
 
 const defaults = {
-  coverage: false,
   history: true,
 };
 
 export default class EnzymeHardhatEnvironment extends NodeEnvironment {
-  private metadataFilePath = '';
-  private tempDir = '';
-  private codeCoverageRuntimeRecording: Record<string, number> = {};
-  private recordCodeCoverage = false;
   private recordCallHistory = true;
   private runtimeEnvironment: HardhatRuntimeEnvironment;
 
   private removeCallHistoryListener?: () => void;
-  private removeCodeCoverageListener?: () => void;
 
   constructor(config: any) {
     super(config);
 
     const options: EnzymeHardhatEnvironmentOptions = deepmerge(defaults, config.testEnvironmentOptions);
 
-    this.recordCodeCoverage = options.coverage;
     this.recordCallHistory = options.history;
-
-    this.tempDir = process.env.__HARDHAT_COVERAGE_TEMPDIR__ ?? '';
-
-    if (this.recordCodeCoverage && !this.tempDir) {
-      throw new Error('Missing shared temporary directory for code coverage data collection');
-    }
-
-    this.runtimeEnvironment = getRuntimeEnvironment(this.recordCodeCoverage);
-    this.metadataFilePath = path.join((this.runtimeEnvironment.config as any).codeCoverage.path, 'metadata.json');
+    this.runtimeEnvironment = getRuntimeEnvironment();
   }
 
   async setup() {
@@ -63,7 +43,6 @@ export default class EnzymeHardhatEnvironment extends NodeEnvironment {
 
     this.global.hre = env;
     this.global.provider = provider;
-    this.global.coverage = !!this.recordCodeCoverage;
 
     // Re-route call history recording to whatever is the currently
     // active history object. Required for making history and snapshoting
@@ -73,30 +52,10 @@ export default class EnzymeHardhatEnvironment extends NodeEnvironment {
         provider.history.record(message);
       });
     }
-
-    if (this.recordCodeCoverage) {
-      const metadata = await fs.readJson(this.metadataFilePath);
-      const collector = createCoverageCollector(metadata, this.codeCoverageRuntimeRecording);
-
-      this.removeCodeCoverageListener = addListener(env.network.provider, 'step', collector);
-    }
   }
 
   async teardown() {
-    this.removeCodeCoverageListener?.();
     this.removeCallHistoryListener?.();
-
-    if (this.recordCodeCoverage && Object.keys(this.codeCoverageRuntimeRecording).length) {
-      const file = path.join(this.tempDir, `${uuid()}.json`);
-      const output = {
-        hits: this.codeCoverageRuntimeRecording,
-        metadata: this.metadataFilePath,
-      };
-
-      await fs.outputJson(file, output, {
-        spaces: 2,
-      });
-    }
 
     await super.teardown();
   }
@@ -104,7 +63,7 @@ export default class EnzymeHardhatEnvironment extends NodeEnvironment {
 
 let environment: HardhatRuntimeEnvironment;
 
-export function getRuntimeEnvironment(coverage = false) {
+export function getRuntimeEnvironment() {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition,eqeqeq
   if (environment != null) {
     return environment;
@@ -127,12 +86,6 @@ export function getRuntimeEnvironment(coverage = false) {
   }
 
   const config = loadConfigAndTasks(args);
-
-  if (coverage) {
-    // Allow contracts of any size during code coverage reporting.
-    config.networks[HARDHAT_NETWORK_NAME].allowUnlimitedContractSize = true;
-  }
-
   const extenders = context.extendersManager.getExtenders();
 
   environment = new Environment(config, args, {}, extenders) as unknown as HardhatRuntimeEnvironment;

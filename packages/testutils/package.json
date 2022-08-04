@@ -1,45 +1,15 @@
 {
   "name": "@enzymefinance/testutils",
   "version": "4.0.5",
-  "description": "Technology Regulated and Operated Investment Funds",
-  "author": "Enzyme Council DAO <council@enzyme.finance>",
-  "license": "GPL-3.0",
-  "homepage": "https://enzyme.finance",
+  "private": true,
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "sideEffects": false,
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "artifacts"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/enzymefinance/protocol.git"
-  },
-  "bugs": {
-    "url": "https://github.com/enzymefinance/protocol/issues"
-  },
-  "keywords": [
-    "DeFi",
-    "Ethereum",
-    "Enzyme",
-    "Enzyme Finance",
-    "Smart Contracts",
-    "Solidity"
-  ],
   "scripts": {
     "build": "tsup",
-    "clean": "rimraf .turbo .eslintcache node_modules dist",
     "lint": "eslint \"src/**/*.{js,ts}\" --cache",
     "format": "yarn lint --fix",
     "typecheck": "tsc --noEmit"
@@ -53,7 +23,6 @@
   },
   "devDependencies": {
     "eslint": "^8.12.0",
-    "rimraf": "^3.0.2",
     "tsup": "^5.11.13",
     "typescript": "^4.5.5"
   },
@@ -62,10 +31,9 @@
       "src/index.ts"
     ],
     "format": [
-      "esm",
       "cjs"
     ],
-    "dts": true,
+    "dts": false,
     "splitting": true,
     "clean": true
   },

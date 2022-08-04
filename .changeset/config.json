@@ -5,5 +5,5 @@
   "access": "public",
   "baseBranch": "v4",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": ["@enzymefinance/hardhat", "@enzymefinance/codegen", "@enzymefinance/testutils"]
 }

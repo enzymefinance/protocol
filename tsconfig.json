@@ -68,10 +68,10 @@
       "@enzymefinance/testutils": ["./packages/testutils/src"],
       "@enzymefinance/protocol": ["./packages/protocol/src"],
       "@enzymefinance/codegen": ["./packages/codegen/src"],
-      "@enzymefinance/coverage": ["./packages/coverage/src"],
       "@enzymefinance/ethers": ["./packages/ethers/src"],
       "@enzymefinance/hardhat": ["./packages/hardhat/src"],
-      "@enzymefinance/hardhat/*": ["./packages/hardhat/src/*"]
+      "@enzymefinance/hardhat/types": ["./packages/hardhat/src/types"],
+      "@enzymefinance/hardhat/plugin": ["./packages/hardhat/src/plugin"]
     }
   },
   "files": ["hardhat.config.ts", "jest.config.ts", "jest.setup.ts"],

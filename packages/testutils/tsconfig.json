@@ -1,13 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src"],
-  "files": [],
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@enzymefinance/protocol": ["../protocol/src"],
-      "@enzymefinance/ethers": ["../ethers/src"],
-      "@enzymefinance/hardhat": ["../hardhat/src"]
-    }
-  }
+  "files": []
 }

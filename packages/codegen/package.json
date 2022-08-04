@@ -1,35 +1,15 @@
 {
   "name": "@enzymefinance/codegen",
   "version": "4.0.5",
-  "description": "Technology Regulated and Operated Investment Funds",
-  "author": "Enzyme Council DAO <council@enzyme.finance>",
-  "license": "MIT",
-  "homepage": "https://enzyme.finance",
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/avantgardefinance/ethereum-devtools.git"
-  },
-  "bugs": {
-    "url": "https://github.com/avantgardefinance/ethereum-devtools/issues"
-  },
+  "private": true,
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     }
   },
   "scripts": {
     "build": "tsup",
-    "clean": "rimraf .turbo .eslintcache node_modules dist",
     "lint": "eslint \"src/**/*.{js,ts}\" --cache",
     "format": "yarn lint --fix",
     "typecheck": "tsc --noEmit"
@@ -51,10 +31,9 @@
       "src/index.ts"
     ],
     "format": [
-      "esm",
       "cjs"
     ],
-    "dts": true,
+    "dts": false,
     "splitting": true,
     "clean": true
   },
