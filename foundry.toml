@@ -1,0 +1,9 @@
+[profile.default]
+src = "contracts"
+out = "foundry/artifacts"
+test = "foundry/tests"
+cache_path = "foundry/cache"
+optimizer = false
+remappings = [
+  "@openzeppelin/=node_modules/@openzeppelin/",
+]
