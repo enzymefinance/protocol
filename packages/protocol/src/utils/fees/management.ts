@@ -1,5 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import type { BigNumberish } from 'ethers';
+import type { BigNumber, BigNumberish } from 'ethers';
 import { constants } from 'ethers';
 
 import { encodeArgs } from '../encoding';
@@ -15,7 +15,7 @@ export function managementFeeConfigArgs({
   return encodeArgs(['uint256', 'address'], [scaledPerSecondRate, recipient]);
 }
 
-export function managementFeeConvertRateToScaledPerSecondRate(rate: BigNumberish) {
+export function managementFeeConvertRateToScaledPerSecondRate(rate: BigNumberish): BigNumber {
   return convertRateToScaledPerSecondRate({ rate, adjustInflation: true });
 }
 
@@ -27,7 +27,7 @@ export function managementFeeSharesDue({
   scaledPerSecondRate: BigNumberish;
   sharesSupply: BigNumberish;
   secondsSinceLastSettled: BigNumberish;
-}) {
+}): BigNumber {
   return calcAmountDueForScaledPerSecondRate({
     scaledPerSecondRate,
     totalAmount: sharesSupply,

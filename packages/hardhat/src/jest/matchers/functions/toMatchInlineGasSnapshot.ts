@@ -1,12 +1,8 @@
 import { BigNumber } from 'ethers';
 import { toMatchInlineSnapshot } from 'jest-snapshot';
 
-import { forcePass, isTransactionReceipt } from '../../utils';
+import { isTransactionReceipt } from '../../utils';
 import { ensureBigNumbers } from '../bn/utils';
-import { ignoreGasMatchers } from './common/ignoreGasMatchers';
-
-// Dirty hack to extract the context type from jest-snapshot types.
-type Context = typeof toMatchInlineSnapshot extends (this: infer TArg, ...args: any) => any ? TArg : never;
 
 export function toMatchInlineGasSnapshot(
   this: jest.MatcherContext,
@@ -14,14 +10,10 @@ export function toMatchInlineGasSnapshot(
   expected?: string,
   tolerance = 1000,
 ) {
-  if (ignoreGasMatchers) {
-    return forcePass(this.isNot);
-  }
-
   return ensureBigNumbers([isTransactionReceipt(received) ? received.gasUsed : received], this.isNot, ([gas]) => {
     let value = expected;
 
-    const state = (this as Context).snapshotState as any;
+    const state = this.snapshotState;
     const update = state._updateSnapshot === 'all';
 
     if (!update && value !== undefined) {
@@ -35,8 +27,8 @@ export function toMatchInlineGasSnapshot(
       }
     }
 
-    const args = [gas, ...(value === undefined ? [] : [value])] as const;
+    const args = [gas, ...(value === undefined ? [] : [value])];
 
-    return toMatchInlineSnapshot.call(this as Context, ...args);
+    return toMatchInlineSnapshot.call<any, any, any>(this, ...args);
   });
 }

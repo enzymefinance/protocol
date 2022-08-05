@@ -1,21 +1,20 @@
-# ignore log output
+# Ignore log output.
 *.log
 
-# ignore all dotfiles except the whitelisted ones
+# Ignore all dotfiles except the whitelisted ones.
 .*
 !.env.example
 !.changeset
-!.husky
 !.github
 !.gitignore
 !.gitattributes
-!.prettierignore
 !.prettierrc.js
 !.eslintignore
 !.solhint.json
-!.chainId
+!.vscode
+!.npmrc
 
-# ignore build output and dependencies
+# Ignore build output and dependencies.
 codegen/
 dist/
 cache/
@@ -23,5 +22,5 @@ artifacts/
 deployments/
 node_modules/
 
-# allow previously ignored directories in special locations
+# Allow previously ignored directories in special locations.
 !packages/codegen

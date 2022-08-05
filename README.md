@@ -9,18 +9,18 @@ Enzyme is an Ethereum-based protocol for decentralized on-chain asset management
 ### Prerequisites
 
 - [node](https://www.nodejs.org)
-- [yarn](https://www.yarnpkg.com)
+- [pnpm](https://pnpm.io)
 
 ```sh
 git clone [GIT_REPOSITORY_URL]
 cd protocol
-yarn install
+pnpm install
 ```
 
 ## Compile contracts
 
 ```sh
-yarn compile
+pnpm compile
 ```
 
 ## Test
@@ -30,7 +30,7 @@ First, create a `.env` file by copying `.env.example`. Input your Ethereum node 
 Then, you can run tests. The full test suite can be run with:
 
 ```sh
-yarn test
+pnpm test
 ```
 
 Note that tests might fail on the first runs while building a cache for the fork block, due to timeout. Continue to run tests as-needed, which will build the cache.

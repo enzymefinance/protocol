@@ -39,6 +39,7 @@ let fork: ProtocolDeployment;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+  await global.provider.send('hardhat_impersonateAccount', [fork.config.gsn.relayWorker]);
 });
 
 describe('gas relayer', () => {

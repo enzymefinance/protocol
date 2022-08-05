@@ -23,7 +23,6 @@ import {
   setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-import hre from 'hardhat';
 
 let vaultProxyUsed: VaultLib;
 let comptrollerProxyUsed: ComptrollerLib;
@@ -44,16 +43,16 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.weth, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner as SignerWithAddress,
   });
 
   vaultProxyUsed = vaultProxy;
-  comptrollerProxyUsed = new ComptrollerLib(comptrollerProxy.address, hre.ethers.provider);
+  comptrollerProxyUsed = new ComptrollerLib(comptrollerProxy.address, provider);
 
-  const vaultUsed = new VaultLib(vaultProxy.address, hre.ethers.provider);
+  const vaultUsed = new VaultLib(vaultProxy.address, provider);
 
   await createCompoundDebtPosition({
     comptrollerProxy,
@@ -61,7 +60,7 @@ beforeEach(async () => {
     signer: fundOwner,
   });
 
-  const compoundDebtPositionProxyAddress = (await vaultUsed.getActiveExternalPositions.call())[0];
+  const compoundDebtPositionProxyAddress = (await vaultUsed.getActiveExternalPositions())[0];
 
   compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, provider);
 

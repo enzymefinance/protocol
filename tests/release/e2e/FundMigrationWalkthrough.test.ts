@@ -8,11 +8,13 @@ import {
   managementFeeConvertRateToScaledPerSecondRate,
   performanceFeeConfigArgs,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   buyShares,
   // createMigrationRequest,
   createNewFund,
+  deployProtocolFixture,
   getAssetUnit,
   // Deployment,
   // DeploymentHandlers,
@@ -23,6 +25,8 @@ import {
   // ReleaseDeploymentOutput,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
+
+let fork: ProtocolDeployment;
 
 const FIVE_PERCENT = BigNumber.from(500);
 const TEN_PERCENT = BigNumber.from(1000);
@@ -41,6 +45,8 @@ describe('Walkthrough a fund migration', () => {
   // let newRelease: Deployment<DeploymentHandlers<ReleaseDeploymentConfig, ReleaseDeploymentOutput>>;
 
   beforeAll(async () => {
+    fork = await deployProtocolFixture();
+
     manager = fork.accounts[1];
     investor = fork.accounts[2];
 

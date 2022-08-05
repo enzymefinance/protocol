@@ -1,48 +1,45 @@
-name: Publish
-
+name: Changeset
 on:
   push:
     branches:
-      - v4
+      - main
+
+env:
+  NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
   publish:
     if: github.repository == 'avantgardefinance/protocol'
-    name: Publish
+    name: Publish packages
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.8.0
+
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          cache: yarn
-          cache-dependency-path: yarn.lock
+          cache: pnpm
           node-version: 16
 
-      - name: Hardhat artifact cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            artifacts
-            cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-${{ hashFiles('contracts/**/*.sol') }}
-          restore-keys: |
-            ${{ runner.os }}-artifacts-
-
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: Create release pull request or publish
-        id: changesets
-        uses: changesets/action@master
+        uses: changesets/action@v1
         with:
-          publish: yarn release
-          title: 'chore: publish packages'
+          version: pnpm changeset:version
+          publish: pnpm changeset:publish
           commit: 'chore: publish packages'
+          title: 'chore: publish packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

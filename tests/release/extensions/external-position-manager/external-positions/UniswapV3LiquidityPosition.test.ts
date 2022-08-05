@@ -30,7 +30,6 @@ import {
   uniswapV3TakeOrder,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
-import hre from 'hardhat';
 
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let fundOwner: SignerWithAddress;
@@ -42,7 +41,7 @@ beforeEach(async () => {
   [fundOwner] = fork.accounts;
 
   const newFundRes = await createNewFund({
-    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,

@@ -1,4 +1,5 @@
-export * from '@nomiclabs/hardhat-ethers';
-export * from 'hardhat-deploy';
-export * from 'hardhat-contract-sizer';
-export * from './compile';
+import '@nomiclabs/hardhat-etherscan';
+import '@nomiclabs/hardhat-ethers';
+import 'hardhat-deploy';
+import 'hardhat-contract-sizer';
+import './compile';

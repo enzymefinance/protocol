@@ -9,35 +9,32 @@ on:
       - v[1-9]*
       - audit/*
 
+env:
+  CACHE_VERSION: '1'
+  NODE_OPTIONS: '--max-old-space-size=4096'
+
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        project:
-          [
-            'persistent',
-            'core',
-            'infrastructure',
-            'fee',
-            'policy',
-            'integration',
-            'external',
-            'peripheral',
-            'utils',
-            'e2e',
-          ]
+        shard: [1/10, 2/10, 3/10, 4/10, 5/10, 6/10, 7/10, 8/10, 9/10, 10/10]
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.8.0
+
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          cache: yarn
-          cache-dependency-path: yarn.lock
+          cache: pnpm
           node-version: 16
 
       - name: Hardhat artifact cache
@@ -46,27 +43,27 @@ jobs:
           path: |
             artifacts
             cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-3-${{ hashFiles('contracts/**/*.sol') }}
+          key: artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ hashFiles('contracts/**/*.sol') }}
           restore-keys: |
-            ${{ runner.os }}-artifacts-3-
+            artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Hardhat fork cache
         uses: actions/cache@v2
         with:
           path: cache/hardhat-network-fork
-          key: fork-2-${{ matrix.project }}-${{ github.sha }}
+          key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-${{ github.sha }}
           restore-keys: |
-            fork-2-${{ matrix.project }}-
-            fork-2-
+            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-
+            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: Compile contracts
-        run: yarn compile
+        run: pnpm build
 
       - name: Run tests
-        run: yarn test --selectProjects ${{ matrix.project }}
+        run: pnpm jest --shard ${{ matrix.shard }}
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
 
@@ -77,31 +74,34 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.8.0
+
       - name: Set up node
         uses: actions/setup-node@v2
         with:
-          cache: yarn
-          cache-dependency-path: yarn.lock
+          cache: pnpm
           node-version: 16
 
-      - name: Hardhat artifact cache
+      - name: Hardhat fork cache
         uses: actions/cache@v2
         with:
-          path: |
-            artifacts
-            cache/solidity-files-cache.json
-          key: ${{ runner.os }}-artifacts-3-${{ hashFiles('contracts/**/*.sol') }}
+          path: cache/hardhat-network-fork
+          key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.project }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-artifacts-3-
+            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.project }}-
+            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: Compile contracts
-        run: yarn compile
+        run: pnpm build
 
       - name: Check types
-        run: yarn typecheck
+        run: pnpm typecheck
 
       - name: Check linting
-        run: yarn lint
+        run: pnpm lint

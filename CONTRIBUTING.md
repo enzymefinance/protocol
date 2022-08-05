@@ -40,8 +40,8 @@ When making a pull request (PR), please:
 - Follow the "Git Branching Model" outlined in this document
 - Follow the "Style Guide" outlined in this document
 - Add tests that cover newly introduced code
-- Format your code (using prettier) by running `yarn format`
-- Lint your code (using solhint) by running `yarn lint`
+- Format your code (using prettier) by running `pnpm format`
+- Lint your code (using solhint) by running `pnpm lint`
 - Write a thorough description about the purpose and implementation of the PR
 - Make a comment in the PR that includes any breaking changes to solidity code
 

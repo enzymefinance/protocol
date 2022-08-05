@@ -1,19 +1,17 @@
 import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import { TestNominatedOwnerMixin } from '@enzymefinance/protocol';
-import type { ProtocolDeployment } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
+import { assertEvent, getNamedSigner, getUnnamedSigners } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 
 let testNominatedOwnerMixin: TestNominatedOwnerMixin;
-let nominatedOwner: SignerWithAddress, owner: SignerWithAddress, randomUser: SignerWithAddress;
-
-let fork: ProtocolDeployment;
+let nominatedOwner: SignerWithAddress;
+let owner: SignerWithAddress;
+let randomUser: SignerWithAddress;
 
 beforeEach(async () => {
-  fork = await deployProtocolFixture();
-  [owner, nominatedOwner, randomUser] = fork.accounts;
+  [nominatedOwner, owner, randomUser] = await getUnnamedSigners();
 
-  testNominatedOwnerMixin = await TestNominatedOwnerMixin.deploy(fork.deployer);
+  testNominatedOwnerMixin = await TestNominatedOwnerMixin.deploy(await getNamedSigner('deployer'));
 });
 
 describe('__setOwner', () => {

@@ -1,3 +1,4 @@
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import { AaveDebtPositionLib, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
@@ -13,9 +14,7 @@ import {
   getAssetUnit,
   setAccountBalance,
 } from '@enzymefinance/testutils';
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, constants } from 'ethers';
-import hre from 'hardhat';
 
 let aaveDebtPosition: AaveDebtPositionLib;
 
@@ -34,7 +33,7 @@ beforeEach(async () => {
 
   // Initialize fund and external position
   const { comptrollerProxy, vaultProxy } = await createNewFund({
-    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, hre.ethers.provider),
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
     fundDeployer: fork.deployment.fundDeployer,
     fundOwner,
     signer: fundOwner,

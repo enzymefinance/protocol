@@ -1,4 +1,4 @@
-import deepmerge from 'deepmerge';
+import type { EnvironmentContext, JestEnvironmentConfig } from '@jest/environment';
 import type { EventEmitter } from 'events';
 import { HARDHAT_NETWORK_NAME } from 'hardhat/internal/constants';
 import { HardhatContext } from 'hardhat/internal/context';
@@ -12,26 +12,13 @@ import NodeEnvironment from 'jest-environment-node';
 
 import { EthereumTestnetProvider } from '../../provider';
 
-export interface EnzymeHardhatEnvironmentOptions {
-  history: boolean;
-}
-
-const defaults = {
-  history: true,
-};
-
 export default class EnzymeHardhatEnvironment extends NodeEnvironment {
-  private recordCallHistory = true;
   private runtimeEnvironment: HardhatRuntimeEnvironment;
-
   private removeCallHistoryListener?: () => void;
 
-  constructor(config: any) {
-    super(config);
+  constructor(config: JestEnvironmentConfig, context: EnvironmentContext) {
+    super(config, context);
 
-    const options: EnzymeHardhatEnvironmentOptions = deepmerge(defaults, config.testEnvironmentOptions);
-
-    this.recordCallHistory = options.history;
     this.runtimeEnvironment = getRuntimeEnvironment();
   }
 
@@ -47,11 +34,9 @@ export default class EnzymeHardhatEnvironment extends NodeEnvironment {
     // Re-route call history recording to whatever is the currently
     // active history object. Required for making history and snapshoting
     // work nicely together.
-    if (this.recordCallHistory) {
-      this.removeCallHistoryListener = addListener(env.network.provider, 'beforeMessage', (message) => {
-        provider.history.record(message);
-      });
-    }
+    this.removeCallHistoryListener = addListener(env.network.provider, 'beforeMessage', (message) => {
+      provider.history.record(message);
+    });
   }
 
   async teardown() {
@@ -74,7 +59,8 @@ export function getRuntimeEnvironment() {
   }
 
   const context = HardhatContext.createHardhatContext();
-  const args = deepmerge<HardhatArguments>(getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env), {
+  const args = <HardhatArguments>(getEnvHardhatArguments(HARDHAT_PARAM_DEFINITIONS, process.env),
+  {
     emoji: false,
     help: false,
     network: HARDHAT_NETWORK_NAME,
@@ -88,7 +74,7 @@ export function getRuntimeEnvironment() {
   const config = loadConfigAndTasks(args);
   const extenders = context.extendersManager.getExtenders();
 
-  environment = new Environment(config, args, {}, extenders) as unknown as HardhatRuntimeEnvironment;
+  environment = new Environment(config.resolvedConfig, args, {}, extenders) as unknown as HardhatRuntimeEnvironment;
   context.setHardhatRuntimeEnvironment(environment);
 
   return environment;

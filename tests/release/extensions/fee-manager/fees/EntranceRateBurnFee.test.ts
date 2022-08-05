@@ -17,6 +17,7 @@ const TEN_PERCENT = BigNumber.from(1000);
 
 describe('config', () => {
   it('has correct config', async () => {
+    const fork = await deployProtocolFixture();
     const entranceRateBurnFee = fork.deployment.entranceRateBurnFee;
 
     for (const hook of Object.values(FeeHook)) {

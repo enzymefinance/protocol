@@ -18,6 +18,7 @@ import {
   validateRulePostBuySharesArgs,
   validateRuleRedeemSharesForSpecificAssetsArgs,
 } from '@enzymefinance/protocol';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
   assertEvent,
@@ -36,6 +37,8 @@ import {
 } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
 import { BigNumber, constants, utils } from 'ethers';
+
+let fork: ProtocolDeployment;
 
 async function snapshot() {
   const {

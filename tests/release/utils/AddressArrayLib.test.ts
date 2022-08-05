@@ -1,10 +1,11 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import { TestAddressArrayLib } from '@enzymefinance/protocol';
+import { getNamedSigner } from '@enzymefinance/testutils';
 
 let testAddressArrayLib: TestAddressArrayLib;
 
 beforeAll(async () => {
-  testAddressArrayLib = await TestAddressArrayLib.deploy(fork.deployer);
+  testAddressArrayLib = await TestAddressArrayLib.deploy(await getNamedSigner('deployer'));
 });
 
 describe('mergeArray', () => {

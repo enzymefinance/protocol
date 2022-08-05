@@ -65,6 +65,7 @@ async function snapshot() {
 
 describe('constructor', () => {
   it('sets state vars', async () => {
+    const fork = await deployProtocolFixture();
     const {
       deployment: { fundDeployer, policyManager },
     } = await provider.snapshot(snapshot);

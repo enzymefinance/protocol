@@ -2,6 +2,7 @@
 // the EntranceRateFeeBase tests
 
 import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import {
   EntranceRateDirectFee,
   entranceRateDirectFeeConfigArgs,
@@ -12,7 +13,6 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture } from '@enzymefinance/testutils';
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, utils } from 'ethers';
 
 const TEN_PERCENT = BigNumber.from(1000);

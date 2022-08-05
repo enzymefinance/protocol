@@ -11,19 +11,21 @@
   "scripts": {
     "build": "tsup",
     "lint": "eslint \"src/**/*.{js,ts}\" --cache",
-    "format": "yarn lint --fix",
+    "format": "pnpm lint --fix",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@enzymefinance/ethers": "^4.0.5",
-    "@enzymefinance/hardhat": "^4.0.5",
-    "@enzymefinance/protocol": "^4.0.5",
+    "@enzymefinance/ethers": "workspace:4.0.5",
+    "@enzymefinance/hardhat": "workspace:4.0.5",
+    "@enzymefinance/protocol": "workspace:4.0.5",
     "ethers": "^5.6.8",
+    "fs-extra": "^10.1.0",
     "merkletreejs": "^0.2.31"
   },
   "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
     "eslint": "^8.12.0",
-    "tsup": "^5.11.13",
+    "tsup": "^6.2.1",
     "typescript": "^4.5.5"
   },
   "tsup": {
@@ -35,7 +37,8 @@
     ],
     "dts": false,
     "splitting": true,
-    "clean": true
+    "clean": true,
+    "silent": true
   },
   "eslintConfig": {
     "extends": "@enzymefinance/eslint-config",

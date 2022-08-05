@@ -1,5 +1,6 @@
 // import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
+import type { SignerWithAddress } from '@enzymefinance/hardhat';
 import type { ConvexCurveLpStakingWrapperFactory } from '@enzymefinance/protocol';
 import {
   ConvexCurveLpStakingWrapperLib,
@@ -9,7 +10,6 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import { assertEvent, deployProtocolFixture, getAssetUnit, setAccountBalance } from '@enzymefinance/testutils';
-import type { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import type { BigNumber } from 'ethers';
 
 const randomRecipient = randomAddress();

@@ -59,6 +59,7 @@ async function deployAndConfigureStandaloneManagementFee(
 }
 
 it('has correct config', async () => {
+  const fork = await deployProtocolFixture();
   const managementFee = fork.deployment.managementFee;
 
   for (const hook of Object.values(FeeHook)) {

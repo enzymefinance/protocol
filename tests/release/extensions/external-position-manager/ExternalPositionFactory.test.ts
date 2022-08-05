@@ -36,7 +36,7 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner as SignerWithAddress,
@@ -68,7 +68,7 @@ describe('deploy', () => {
 
     // Initialize fund and external position
     const { vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, hre.ethers.provider),
+      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner as SignerWithAddress,

@@ -81,6 +81,7 @@ async function deployAndConfigureStandaloneMinMaxInvestmentPolicy(
 
 describe('constructor', () => {
   it('sets state vars', async () => {
+    const fork = await deployProtocolFixture();
     const minMaxInvestmentPolicy = fork.deployment.minMaxInvestmentPolicy;
 
     const getPolicyManagerCall = await minMaxInvestmentPolicy.getPolicyManager();

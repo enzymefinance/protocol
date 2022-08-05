@@ -1,5 +1,6 @@
 module.exports = {
   ...require('@enzymefinance/prettier-config'),
+  plugins: [require.resolve('prettier-plugin-solidity')],
   overrides: [
     {
       files: '*.sol',

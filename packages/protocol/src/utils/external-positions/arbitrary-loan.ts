@@ -1,5 +1,5 @@
 import type { AddressLike } from '@enzymefinance/ethers';
-import type { BigNumberish, BytesLike } from 'ethers';
+import type { BigNumber, BigNumberish, BytesLike } from 'ethers';
 import { utils } from 'ethers';
 
 import { encodeArgs } from '../encoding';
@@ -48,7 +48,7 @@ export function arbitraryLoanPositionUpdateBorrowableAmountArgs({ amountDelta }:
 
 // ACCOUNTING MODULES
 
-export function arbitraryLoanInterestConvertRateToScaledPerSecondRate(rate: BigNumberish) {
+export function arbitraryLoanInterestConvertRateToScaledPerSecondRate(rate: BigNumberish): BigNumber {
   return convertRateToScaledPerSecondRate({ rate, adjustInflation: false });
 }
 

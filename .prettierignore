@@ -1,6 +1,12 @@
-# Ignore generated output
-artifacts/
+# Ignore the pnpm lock file.
+pnpm-lock.yaml
+
+# Ignore generated changelog.
+CHANGELOG.md
+
+# Ignore build output.
 codegen/
-cache/
 dist/
+cache/
+artifacts/
 deployments/

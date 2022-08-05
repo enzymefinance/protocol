@@ -9,10 +9,19 @@ import type {
   VaultLib,
 } from '@enzymefinance/protocol';
 import { feeManagerConfigArgs, ITestStandardToken, performanceFeeConfigArgs } from '@enzymefinance/protocol';
-import { buyShares, createNewFund, redeemSharesInKind, uniswapV2TakeOrder } from '@enzymefinance/testutils';
+import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import {
+  buyShares,
+  createNewFund,
+  deployProtocolFixture,
+  redeemSharesInKind,
+  uniswapV2TakeOrder,
+} from '@enzymefinance/testutils';
 import { BigNumber } from 'ethers';
 
 // Note: One fork is used for the entire test suite, so test ordering is important
+
+let fork: ProtocolDeployment;
 
 const FIVE_PERCENT = BigNumber.from(500);
 
@@ -23,8 +32,9 @@ let integrationManager: IntegrationManager,
 let denominationAsset: ITestStandardToken, fundOwner: SignerWithAddress;
 let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let tradingAsset: ITestStandardToken;
-
 beforeAll(async () => {
+  fork = await deployProtocolFixture();
+
   // System contracts
   integrationManager = fork.deployment.integrationManager;
   revertingPriceFeed = fork.deployment.revertingPriceFeed;
