@@ -1,9 +1,15 @@
 [profile.default]
+libs = ["lib"]
 src = "contracts"
 out = "foundry/artifacts"
 test = "foundry/tests"
 cache_path = "foundry/cache"
 optimizer = false
+verbosity = 2
 remappings = [
+  "@enzymefinance/=./",
+  "@uniswap/=node_modules/@uniswap/",
   "@openzeppelin/=node_modules/@openzeppelin/",
+  "@openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/",
+  "forge-std/=lib/forge-std/src/"
 ]

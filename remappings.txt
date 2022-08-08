@@ -1,0 +1,6 @@
+@enzymefinance/=./
+@openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/
+@openzeppelin/=node_modules/@openzeppelin/
+@uniswap/=node_modules/@uniswap/
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
