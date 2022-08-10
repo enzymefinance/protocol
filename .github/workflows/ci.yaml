@@ -60,10 +60,10 @@ jobs:
         run: pnpm install
 
       - name: Compile contracts
-        run: pnpm build
+        run: pnpm compile
 
       - name: Run tests
-        run: pnpm jest --shard ${{ matrix.shard }}
+        run: pnpm run --filter @enzymefinance/protocol -- test --shard ${{ matrix.shard }} --runInBand
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
 
@@ -89,16 +89,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: cache/hardhat-network-fork
-          key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.project }}-${{ github.sha }}
+          key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.project }}-
             fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install
 
       - name: Compile contracts
-        run: pnpm build
+        run: pnpm compile
 
       - name: Check types
         run: pnpm typecheck

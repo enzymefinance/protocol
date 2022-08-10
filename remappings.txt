@@ -1,4 +1,4 @@
-@enzymefinance/=./
+@enzyme/=contracts/
 @openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/
 @openzeppelin/=node_modules/@openzeppelin/
 @uniswap/=node_modules/@uniswap/

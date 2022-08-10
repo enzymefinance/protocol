@@ -1,9 +1,0 @@
-# Ignore generated output.
-artifacts/
-codegen/
-cache/
-dist/
-deployments/
-
-# Ignore dependencies.
-lib/

@@ -1,5 +1,15 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src"],
-  "files": []
+  "include": ["src", "tasks", "deploy", "tests"],
+  "files": ["hardhat.config.ts", "jest.config.ts", "jest.environment.ts", "jest.setup.ts"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@enzymefinance/protocol": ["./src"],
+      "@enzymefinance/testutils": ["./tests/utils"],
+      "@enzymefinance/testutils/jest/matchers": ["./tests/utils/jest/matchers"],
+      "@enzymefinance/testutils/jest/environment": ["./tests/utils/jest/environment"],
+      "@enzymefinance/ethers": ["../ethers/src"]
+    }
+  }
 }

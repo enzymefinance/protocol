@@ -1,20 +1,4 @@
 {
   "extends": "@tsconfig/node16/tsconfig.json",
-  "compilerOptions": {
-    "strictFunctionTypes": true /* Enable strict checking of function types. */,
-    "noImplicitAny": true,
-    "baseUrl": ".",
-    "paths": {
-      "@enzymefinance/testutils": ["./packages/testutils/src"],
-      "@enzymefinance/protocol": ["./packages/protocol/src"],
-      "@enzymefinance/codegen": ["./packages/codegen/src"],
-      "@enzymefinance/ethers": ["./packages/ethers/src"],
-      "@enzymefinance/hardhat": ["./packages/hardhat/src"],
-      "@enzymefinance/hardhat/types": ["./packages/hardhat/src/types"],
-      "@enzymefinance/hardhat/plugin": ["./packages/hardhat/src/plugin"]
-    }
-  },
-  "files": ["hardhat.config.ts", "jest.config.ts"],
-  "include": ["deploy", "tasks", "tests"],
   "exclude": ["**/node_modules/**", "**/dist/**"]
 }

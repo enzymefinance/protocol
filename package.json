@@ -3,67 +3,26 @@
   "private": true,
   "packageManager": "pnpm@7.8.0",
   "scripts": {
-    "test": "jest",
-    "build": "pnpm build:utils && pnpm build:compile && pnpm build:packages",
-    "build:compile": "hardhat compile",
-    "build:utils": "turbo run build --no-deps --scope=@enzymefinance/hardhat --output-logs=new-only",
-    "build:packages": "turbo run build --no-deps --scope=@enzymefinance/protocol --scope=@enzymefinance/testutils --output-logs=new-only",
-    "changeset:version": "changeset version && pnpm install --lockfile-only",
-    "changeset:publish": "pnpm build && changeset publish",
-    "prettier": "prettier --list-different \"**/*.{js,ts,json,md,yml,sol}\"",
-    "eslint": "eslint --ignore-path .gitignore --fix \"{tests,deploy,tasks}/**/*.{js,ts}\"",
-    "solhint": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "format": "pnpm prettier --write && pnpm eslint --fix && pnpm solhint --fix && turbo run format",
-    "lint": "pnpm prettier && pnpm eslint && pnpm solhint && turbo run lint",
-    "typecheck": "tsc --noEmit && turbo run typecheck",
+    "build": "pnpm run --recursive -- build",
+    "compile": "pnpm run --filter @enzymefinance/protocol -- compile",
+    "test": "pnpm run --filter @enzymefinance/protocol -- test --maxWorkers 50%",
+    "prettier": "prettier --cache --check \"**/*.{js,ts,json,md,yml,sol}\"",
+    "eslint": "eslint --cache \"**/*.{js,ts}\"",
+    "solhint": "solhint --max-warnings 0 \"**/*.sol\"",
+    "format": "pnpm prettier --write && pnpm solhint --fix && pnpm run --recursive format",
+    "lint": "pnpm prettier && pnpm solhint && pnpm run --recursive lint",
+    "typecheck": "pnpm run --recursive typecheck",
     "release": "pnpm build && changeset publish",
-    "deploy:testnet": "hardhat deploy --network testnet",
-    "export:testnet": "hardhat export --network testnet --export deployments/testnet.json",
-    "verify:testnet": "hardhat etherscan-verify --network testnet",
-    "deploy:mainnet": "hardhat deploy --network mainnet",
-    "export:mainnet": "hardhat export --network mainnet --export deployments/mainnet.json",
-    "verify:mainnet": "hardhat etherscan-verify --network mainnet",
-    "deploy:matic": "hardhat deploy --network matic",
-    "export:matic": "hardhat export --network matic --export deployments/matic.json",
-    "verify:matic": "hardhat etherscan-verify --network matic"
+    "changeset:version": "changeset version && pnpm install --lockfile-only",
+    "changeset:publish": "pnpm build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.24.1",
-    "@enzymefinance/babel-config": "^1.0.20",
-    "@enzymefinance/eslint-config": "1.0.26",
-    "@enzymefinance/ethers": "workspace:4.0.5",
-    "@enzymefinance/hardhat": "workspace:4.0.5",
     "@enzymefinance/prettier-config": "^1.0.10",
-    "@enzymefinance/protocol": "workspace:4.0.5",
-    "@enzymefinance/testutils": "workspace:4.0.5",
-    "@openzeppelin-solc-0.7/contracts": "npm:@openzeppelin/contracts@3.4.2-solc-0.7",
-    "@openzeppelin/contracts": "3.4.1",
     "@tsconfig/node16": "^1.0.3",
-    "@types/jest": "^28.1.6",
-    "@types/node": "^18.6.4",
-    "@uniswap/v3-periphery": "github:uniswap/v3-periphery#80f26c86c57b8a5e4b913f42844d4c8bd274d058",
-    "babel-jest": "^28.1.3",
-    "dotenv": "^16.0.1",
-    "eslint": "^8.21.0",
-    "ethers": "^5.6.8",
-    "hardhat": "2.9.4",
-    "hardhat-deploy": "^0.11.4",
-    "jest": "^28.1.3",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "1.0.0-alpha.59",
     "solhint": "3.3.7",
-    "turbo": "^1.4.2",
     "typescript": "^4.7.4"
-  },
-  "eslintConfig": {
-    "extends": "@enzymefinance/eslint-config",
-    "rules": {
-      "@typescript-eslint/no-shadow": "off"
-    },
-    "parserOptions": {
-      "project": [
-        "./tsconfig.json"
-      ]
-    }
   }
 }
