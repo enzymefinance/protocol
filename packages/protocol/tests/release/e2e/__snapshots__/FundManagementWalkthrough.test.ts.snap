@@ -14,7 +14,7 @@ exports[`Walkthrough for usdc as denomination asset creates a new fund: usdc 1`]
 
 exports[`Walkthrough for usdc as denomination asset redeems all remaining shares of the first investor (without fees failure): usdc 1`] = `1861916`;
 
-exports[`Walkthrough for usdc as denomination asset redeems some shares of the investor (without fees failure): usdc 1`] = `2389904`;
+exports[`Walkthrough for usdc as denomination asset redeems some shares of the investor (without fees failure): usdc 1`] = `2304308`;
 
 exports[`Walkthrough for usdc as denomination asset trades on Uniswap: usdc 1`] = `255609`;
 
@@ -32,6 +32,6 @@ exports[`Walkthrough for weth as denomination asset creates a new fund: weth 1`]
 
 exports[`Walkthrough for weth as denomination asset redeems all remaining shares of the first investor (without fees failure): weth 1`] = `1767389`;
 
-exports[`Walkthrough for weth as denomination asset redeems some shares of the investor (without fees failure): weth 1`] = `2295490`;
+exports[`Walkthrough for weth as denomination asset redeems some shares of the investor (without fees failure): weth 1`] = `2210223`;
 
 exports[`Walkthrough for weth as denomination asset trades on Uniswap: weth 1`] = `229815`;

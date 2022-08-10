@@ -17,6 +17,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  increaseAccountBalance,
   redeemSharesInKind,
   setAccountBalance,
   uniswapV2TakeOrder,
@@ -240,10 +241,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const asset = new ITestStandardToken(fork.config.primitives.dai, provider);
 
-      await setAccountBalance({
+      await increaseAccountBalance({
         account: vaultProxy,
         amount: await getAssetUnit(asset),
-        overwrite: false,
         provider,
         token: asset,
       });
@@ -280,10 +280,9 @@ describe.each([['weth' as const], ['usdc' as const]])(
 
       const token = new ITestStandardToken(fork.config.primitives.zrx, provider);
 
-      await setAccountBalance({
+      await increaseAccountBalance({
         account: vaultProxy,
         amount: await getAssetUnit(token),
-        overwrite: false,
         provider,
         token,
       });

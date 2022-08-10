@@ -4,7 +4,6 @@ import {
   CurvePriceFeed,
   ITestCurveLiquidityPool,
   ITestStandardToken,
-  ITestStethToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
@@ -16,7 +15,7 @@ import {
   curveLend,
   deployProtocolFixture,
   getAssetUnit,
-  setAccountBalance,
+  increaseAccountBalance,
 } from '@enzymefinance/testutils';
 import { constants, utils } from 'ethers';
 
@@ -152,9 +151,8 @@ describe('calcUnderlyingValues', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     const curvePool = new ITestCurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
     const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    const steth = new ITestStethToken(fork.config.lido.steth, provider);
-
-    const stethUnit = await getAssetUnit(steth as unknown as ITestStandardToken);
+    const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+    const stethUnit = await getAssetUnit(steth);
 
     const initialVirtualPrice = await curvePool.get_virtual_price();
 
@@ -164,13 +162,9 @@ describe('calcUnderlyingValues', () => {
     assertNoEvent(receipt1, 'ValidatedVirtualPriceForPoolUpdated');
 
     // Slightly increase steth balance to NOT push the virtual price significantly
-    // We need to account for the rebasing factor because the balance slot is the unrebased amount
-    const curvePoolBalance = await steth.balanceOf(curvePool);
-    const rebasingFactor = await steth.getPooledEthByShares(stethUnit);
-    await setAccountBalance({
+    await increaseAccountBalance({
       account: curvePool,
-      amount: curvePoolBalance.mul(stethUnit).div(rebasingFactor),
-      overwrite: true,
+      amount: stethUnit,
       provider,
       token: steth,
     });
@@ -183,10 +177,9 @@ describe('calcUnderlyingValues', () => {
 
     // Send enough steth to push the virtual price significantly.
     // At time of writing tests, boosts the virtual price by a little more than 1%.
-    await setAccountBalance({
+    await increaseAccountBalance({
       account: curvePool,
       amount: stethUnit.mul(20000),
-      overwrite: false,
       provider,
       token: steth,
     });

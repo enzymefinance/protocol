@@ -2,7 +2,13 @@ import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import { ITestStandardToken, ONE_HUNDRED_PERCENT_IN_BPS, TestTreasurySplitterMixin } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
-import { assertEvent, deployProtocolFixture, getAssetUnit, setAccountBalance } from '@enzymefinance/testutils';
+import {
+  assertEvent,
+  deployProtocolFixture,
+  getAssetUnit,
+  increaseAccountBalance,
+  setAccountBalance,
+} from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 import { constants } from 'ethers';
 
@@ -180,10 +186,9 @@ describe('Walkthrough', () => {
     );
 
     // Add the same amount of tokens to the splitter, doubling the cumulative total amount
-    await setAccountBalance({
+    await increaseAccountBalance({
       account: testTreasurySplitterMixin,
       amount: initialSplitterTokenBal,
-      overwrite: false,
       provider,
       token,
     });

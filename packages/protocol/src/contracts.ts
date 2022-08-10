@@ -162,7 +162,6 @@ export * from './codegen/ITestSolvV2InitialConvertibleOfferingMarket';
 export * from './codegen/ITestSolvV2ManualPriceOracle';
 export * from './codegen/ITestSolvV2PriceOracleManager';
 export * from './codegen/ITestStandardToken';
-export * from './codegen/ITestStethToken';
 export * from './codegen/ITestSynthetixExchanger';
 export * from './codegen/ITestTheGraphEpochManager';
 export * from './codegen/ITestTheGraphStaking';

@@ -147,10 +147,8 @@ describe('takeOrder', () => {
       pool: bestPool_,
     });
 
-    const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
-
-    expect(postTxIncomingAssetBalance).toBeGteBigNumber(amountReceived_.sub(curveRoundingBuffer));
-    await expect(outgoingAsset.balanceOf(vaultProxy)).resolves.toEqBigNumber(0);
+    expect(await incomingAsset.balanceOf(vaultProxy)).toBeAroundBigNumber(amountReceived_, curveRoundingBuffer);
+    expect(await outgoingAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
   });
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {
@@ -189,10 +187,8 @@ describe('takeOrder', () => {
       pool: bestPool_,
     });
 
-    const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
-
-    expect(postTxIncomingAssetBalance).toBeGteBigNumber(amountReceived_.sub(curveRoundingBuffer));
-    await expect(outgoingAsset.balanceOf(vaultProxy)).resolves.toEqBigNumber(0);
+    expect(await incomingAsset.balanceOf(vaultProxy)).toBeAroundBigNumber(amountReceived_, curveRoundingBuffer);
+    expect(await outgoingAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
   });
 
   it('works as expected when called by a fund (ERC20 to ETH)', async () => {
@@ -218,8 +214,6 @@ describe('takeOrder', () => {
 
     await setAccountBalance({ provider, account: vaultProxy, amount: outgoingAssetAmount, token: outgoingAsset });
 
-    const preTxOutgoingAssetBalance = await outgoingAsset.balanceOf(vaultProxy);
-
     // exchange
     await curveTakeOrder({
       comptrollerProxy,
@@ -233,11 +227,7 @@ describe('takeOrder', () => {
       pool: bestPool_,
     });
 
-    const postTxIncomingAssetBalance = await incomingAsset.balanceOf(vaultProxy);
-    const postTxOutgoingAssetBalance = await outgoingAsset.balanceOf(vaultProxy);
-
-    expect(postTxIncomingAssetBalance).toBeGteBigNumber(amountReceived_.sub(curveRoundingBuffer));
-    // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
-    expect(preTxOutgoingAssetBalance.sub(postTxOutgoingAssetBalance)).toBeAroundBigNumber(outgoingAssetAmount, 1);
+    expect(await incomingAsset.balanceOf(vaultProxy)).toBeAroundBigNumber(amountReceived_, curveRoundingBuffer);
+    expect(await outgoingAsset.balanceOf(vaultProxy)).toEqBigNumber(0);
   });
 });

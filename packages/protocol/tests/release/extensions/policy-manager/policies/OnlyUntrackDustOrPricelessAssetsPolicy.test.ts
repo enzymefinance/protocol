@@ -12,8 +12,8 @@ import {
   addNewAssetsToFund,
   createNewFund,
   deployProtocolFixture,
+  increaseAccountBalance,
   removeTrackedAssetsFromVault,
-  setAccountBalance,
   vaultCallStartAssetBypassTimelock,
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
@@ -140,10 +140,9 @@ describe('validateRule', () => {
   it('does not allow any asset amount that is greater than the dust value', async () => {
     // Add enough of one of the assetsToUntrack to put it over the dust threshold.
     // Sending 2% of the threshold accomplishes this.
-    await setAccountBalance({
+    await increaseAccountBalance({
       account: vaultProxy,
       amount: dustToleranceInAssetsToRemove[0].mul(2).div(100),
-      overwrite: false,
       provider,
       token: assetsToUntrack[0],
     });

@@ -188,7 +188,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`428655`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`411524`);
   });
 
   it('works as expected when called for redeeming by a fund (ETH)', async () => {
@@ -203,7 +203,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`358583`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`341452`);
   });
 });
 

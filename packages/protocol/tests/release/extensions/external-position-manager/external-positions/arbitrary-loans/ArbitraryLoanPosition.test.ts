@@ -12,6 +12,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  increaseAccountBalance,
   setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
@@ -353,10 +354,9 @@ describe('manager actions', () => {
       const extraAssetAmount = 456;
 
       // Transfer some of the borrowed amount back to the EP
-      await setAccountBalance({
+      await increaseAccountBalance({
         account: arbitraryLoanPosition,
         amount: loanAssetAmount,
-        overwrite: false,
         provider,
         token: loanAsset,
       });
@@ -475,10 +475,9 @@ describe('manager actions', () => {
         provider,
         token: extraAsset,
       });
-      await setAccountBalance({
+      await increaseAccountBalance({
         account: arbitraryLoanPosition,
         amount: loanAssetSurplusAmount,
-        overwrite: false,
         provider,
         token: loanAsset,
       });

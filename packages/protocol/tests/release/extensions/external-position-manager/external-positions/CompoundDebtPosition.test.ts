@@ -19,7 +19,7 @@ import {
   createCompoundDebtPosition,
   createNewFund,
   deployProtocolFixture,
-  setAccountBalance,
+  increaseAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, constants, utils } from 'ethers';
 
@@ -720,7 +720,7 @@ describe('receiveCallFromVault', () => {
       });
 
       // Send some extra weth to pay interests
-      await setAccountBalance({ account: vaultProxyUsed, amount: lentAmount, overwrite: false, provider, token: weth });
+      await increaseAccountBalance({ account: vaultProxyUsed, amount: lentAmount, provider, token: weth });
 
       const borrowedAssetsStoredBefore = await compoundDebtPosition.getDebtAssets.call();
       const repayAmounts = [constants.MaxUint256];

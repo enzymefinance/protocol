@@ -8,8 +8,8 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  increaseAccountBalance,
   redeemSharesInKind,
-  setAccountBalance,
 } from '@enzymefinance/testutils';
 import { BigNumber, utils } from 'ethers';
 
@@ -244,10 +244,9 @@ describe('settle', () => {
     // Bump performance by sending denomination asset to the vault
     const gavIncreaseAmount = denominationAssetUnit;
 
-    await setAccountBalance({
+    await increaseAccountBalance({
       account: vaultProxy,
       amount: gavIncreaseAmount,
-      overwrite: false,
       provider,
       token: denominationAsset,
     });

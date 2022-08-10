@@ -579,9 +579,6 @@ describe('actions', () => {
           signer: fundOwner,
         });
 
-        const preaUsdcBalance = await aUsdc.balanceOf(vaultProxy);
-        const preaUsdtBalance = await aUsdt.balanceOf(vaultProxy);
-
         await curveLend({
           comptrollerProxy,
           curveLiquidityAdapter,
@@ -592,14 +589,11 @@ describe('actions', () => {
           useUnderlyings: false,
         });
 
-        const postaUsdcBalance = await aUsdc.balanceOf(vaultProxy);
-        const postaUsdtBalance = await aUsdt.balanceOf(vaultProxy);
-
         expect(await lpToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
-        // All of the outgoing assets should have been used; check diff since tokens are rebasing
-        expect(preaUsdcBalance.sub(postaUsdcBalance)).toBeAroundBigNumber(aUsdcAmount, 1);
-        expect(preaUsdtBalance.sub(postaUsdtBalance)).toBeAroundBigNumber(aUsdtAmount, 1);
+        // All of the outgoing assets should have been used
+        expect(await aUsdc.balanceOf(vaultProxy)).toEqBigNumber(0);
+        expect(await aUsdt.balanceOf(vaultProxy)).toEqBigNumber(0);
       });
 
       it('works as expected (underlyings, 2 of 3 outgoing)', async () => {
@@ -655,8 +649,6 @@ describe('actions', () => {
           signer: fundOwner,
         });
 
-        const preStethBalance = await steth.balanceOf(vaultProxy);
-
         await curveLend({
           comptrollerProxy,
           curveLiquidityAdapter,
@@ -667,14 +659,11 @@ describe('actions', () => {
           useUnderlyings: false,
         });
 
-        const postStethBalance = await steth.balanceOf(vaultProxy);
-
         expect(await lpToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
         // All of the outgoing assets should have been used
         expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-        // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
-        expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
+        expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
       });
     });
     describe('USDT pool (coins(int128) signature)', () => {
@@ -733,8 +722,6 @@ describe('actions', () => {
         signer: fundOwner,
       });
 
-      const preStethBalance = await steth.balanceOf(vaultProxy);
-
       await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter,
@@ -746,14 +733,11 @@ describe('actions', () => {
         useUnderlyings: false,
       });
 
-      const postStethBalance = await steth.balanceOf(vaultProxy);
-
       expect(await gaugeToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
       // All of the outgoing assets should have been used
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-      // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
-      expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
+      expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
     });
   });
 

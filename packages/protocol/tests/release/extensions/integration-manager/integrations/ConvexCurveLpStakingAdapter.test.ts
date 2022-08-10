@@ -144,8 +144,6 @@ describe('actions', () => {
         signer: fundOwner,
       });
 
-      const preStethBalance = await steth.balanceOf(vaultProxy);
-
       const receipt = await curveLendAndStake({
         comptrollerProxy,
         curveLiquidityAdapter: convexCurveLpStakingAdapter as any,
@@ -157,16 +155,13 @@ describe('actions', () => {
         useUnderlyings: false,
       });
 
-      const postStethBalance = await steth.balanceOf(vaultProxy);
-
       expect(await stakingWrapperToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
       // All of the outgoing assets should have been used
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
-      // Since steth is rebasing, seeding increases the balance too much, so we compare pre/post balances
-      expect(preStethBalance.sub(postStethBalance)).toBeAroundBigNumber(stethAmount, 1);
+      expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1512442`);
+      expect(receipt).toMatchInlineGasSnapshot(`1507526`);
     });
   });
 

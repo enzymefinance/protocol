@@ -82,7 +82,6 @@ const config: HardhatUserConfig = {
       'ITestSolvV2PriceOracleManager',
       'ITestSolvV2ManualPriceOracle',
       'ITestStandardToken',
-      'ITestStethToken',
       'ITestSynthetixExchanger',
       'ITestTheGraphEpochManager',
       'ITestTheGraphStaking',

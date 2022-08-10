@@ -191,6 +191,6 @@ describe('redeem', () => {
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
     // This can vary substantially for whatever reason
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`560448`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`580210`);
   });
 });
