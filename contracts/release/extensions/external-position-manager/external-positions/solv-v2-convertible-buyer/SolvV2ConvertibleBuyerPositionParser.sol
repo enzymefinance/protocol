@@ -172,6 +172,20 @@ contract SolvV2ConvertibleBuyerPositionParser is
                     assetsToReceive_ = assetsToReceive_.addItem(saleCurrency);
                 }
             }
+        } else if (
+            _actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.CreateSaleDecliningPrice)
+        ) {
+            (, , address currency, , , , , , , , ) = __decodeCreateSaleDecliningPriceActionArgs(
+                _encodedActionArgs
+            );
+            __validateNotNativeToken(currency);
+        } else if (
+            _actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.CreateSaleFixedPrice)
+        ) {
+            (, , address currency, , , , , ) = __decodeCreateSaleFixedPriceActionArgs(
+                _encodedActionArgs
+            );
+            __validateNotNativeToken(currency);
         } else if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.RemoveSale)) {
             uint24 saleId = __decodeRemoveSaleActionArgs(_encodedActionArgs);
 

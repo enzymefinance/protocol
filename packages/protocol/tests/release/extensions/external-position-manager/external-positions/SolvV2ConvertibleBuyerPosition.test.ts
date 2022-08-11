@@ -1,6 +1,7 @@
 import { extractEvent } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
+  ETH_ADDRESS,
   ITestSolvV2ConvertibleMarket,
   ITestSolvV2ConvertiblePool,
   ITestSolvV2ConvertibleVoucher,
@@ -491,7 +492,7 @@ describe('sales creation actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`516303`);
+    expect(receipt).toMatchInlineGasSnapshot(`518495`);
   });
 
   it('works as expected - fixed price', async () => {
@@ -547,7 +548,7 @@ describe('sales creation actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`487477`);
+    expect(receipt).toMatchInlineGasSnapshot(`489182`);
   });
 
   it('works as expected - reconcile', async () => {
@@ -588,6 +589,47 @@ describe('sales creation actions', () => {
     assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
     expect(receipt).toMatchInlineGasSnapshot(`195927`);
+  });
+
+  it('reverts with native asset currency - declining price', async () => {
+    expect(
+      solvV2ConvertibleBuyerPositionCreateSaleDecliningPrice({
+        comptrollerProxy,
+        currency: ETH_ADDRESS,
+        duration: 0,
+        externalPositionManager,
+        externalPositionProxy: solvConvertibleBuyerPosition,
+        highest: 0,
+        interval: 0,
+        lowest: 0,
+        max: voucherUnit,
+        min: '0',
+        signer: fundOwner,
+        startTime,
+        tokenId,
+        useAllowList: false,
+        voucher,
+      }),
+    ).rejects.toBeRevertedWith('Native asset is unsupported');
+  });
+
+  it('reverts with native asset currency - fixed price', async () => {
+    expect(
+      solvV2ConvertibleBuyerPositionCreateSaleFixedPrice({
+        comptrollerProxy,
+        currency: ETH_ADDRESS,
+        externalPositionManager,
+        externalPositionProxy: solvConvertibleBuyerPosition,
+        max: voucherUnit,
+        min: '0',
+        price: 0,
+        signer: fundOwner,
+        startTime,
+        tokenId,
+        useAllowList: false,
+        voucher,
+      }),
+    ).rejects.toBeRevertedWith('Native asset is unsupported');
   });
 });
 
