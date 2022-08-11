@@ -44,12 +44,12 @@ contract BeaconProxy {
             let retSz := returndatasize()
             returndatacopy(0, 0, retSz)
             switch success
-                case 0 {
-                    revert(0, retSz)
-                }
-                default {
-                    return(0, retSz)
-                }
+            case 0 {
+                revert(0, retSz)
+            }
+            default {
+                return(0, retSz)
+            }
         }
     }
 

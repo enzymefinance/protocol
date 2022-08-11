@@ -92,10 +92,9 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
 
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
-
-                bool disabled
-             = comptrollerProxyToHookToPolicies[_comptrollerProxy][implementedHooks[i]]
-                .removeStorageItem(_policy);
+            bool disabled = comptrollerProxyToHookToPolicies[_comptrollerProxy][
+                implementedHooks[i]
+            ].removeStorageItem(_policy);
             if (disabled) {
                 emit PolicyDisabledOnHookForFund(_comptrollerProxy, _policy, implementedHooks[i]);
             }

@@ -21,8 +21,11 @@
     "@enzymefinance/prettier-config": "^1.0.10",
     "@tsconfig/node16": "^1.0.3",
     "prettier": "^2.7.1",
-    "prettier-plugin-solidity": "1.0.0-alpha.59",
+    "prettier-plugin-solidity": "1.0.0-dev.23",
     "solhint": "3.3.7",
     "typescript": "^4.7.4"
+  },
+  "resolutions": {
+    "antlr4": "4.9.0"
   }
 }

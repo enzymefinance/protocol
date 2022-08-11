@@ -32,7 +32,10 @@ abstract contract ChainlinkPriceFeedMixin {
 
     event PrimitiveRemoved(address indexed primitive);
 
-    enum RateAsset {ETH, USD}
+    enum RateAsset {
+        ETH,
+        USD
+    }
 
     struct AggregatorInfo {
         address aggregator;
@@ -127,8 +130,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
         (, int256 ethPerUsdRate, , uint256 ethPerUsdRateLastUpdatedAt, ) = IChainlinkAggregator(
             getEthUsdAggregator()
-        )
-            .latestRoundData();
+        ).latestRoundData();
         require(ethPerUsdRate > 0, "__calcConversionAmount: Bad ethUsd rate");
         __validateRateIsNotStale(ethPerUsdRateLastUpdatedAt);
 

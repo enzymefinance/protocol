@@ -114,9 +114,8 @@ contract SolvV2ConvertibleIssuerPositionParser is
         } else if (_actionId == uint256(ISolvV2ConvertibleIssuerPosition.Actions.RemoveOffer)) {
             uint24 offerId = __decodeRemoveOfferActionArgs(_encodedActionArgs);
 
-
-                ISolvV2InitialConvertibleOfferingMarket.Offering memory offer
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+            ISolvV2InitialConvertibleOfferingMarket.Offering
+                memory offer = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
             // If offer has remaining unsold units, some underlying is refunded
             if (offer.units > 0) {

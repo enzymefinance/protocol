@@ -152,9 +152,8 @@ contract SolvV2ConvertibleIssuerPositionLib is
 
         // Retrieve offer details before removal
 
-
-            ISolvV2InitialConvertibleOfferingMarket.Offering memory offer
-         = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+        ISolvV2InitialConvertibleOfferingMarket.Offering
+            memory offer = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
         ERC20 currencyToken = ERC20(offer.currency);
         ERC20 underlyingToken = ERC20(ISolvV2ConvertibleVoucher(offer.voucher).underlying());
@@ -278,13 +277,14 @@ contract SolvV2ConvertibleIssuerPositionLib is
         amounts_ = new uint256[](offersLength);
 
         for (uint256 i; i < offersLength; i++) {
+            ISolvV2InitialConvertibleOfferingMarket.Offering
+                memory offering = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(
+                    _offers[i]
+                );
 
-                ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(_offers[i]);
-
-
-                ISolvV2InitialConvertibleOfferingMarket.MintParameter memory mintParameters
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.mintParameters(_offers[i]);
+            ISolvV2InitialConvertibleOfferingMarket.MintParameter
+                memory mintParameters = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT
+                    .mintParameters(_offers[i]);
 
             uint256 refundAmount = uint256(offering.units).div(mintParameters.lowestPrice);
 
@@ -345,8 +345,7 @@ contract SolvV2ConvertibleIssuerPositionLib is
             for (uint256 j; j < slotsLength; j++) {
                 ISolvV2ConvertiblePool.SlotDetail memory slotDetail = ISolvV2ConvertibleVoucher(
                     vouchersMem[i]
-                )
-                    .getSlotDetail(slots[j]);
+                ).getSlotDetail(slots[j]);
 
                 // If the vault has issued at least one voucher that has not reached maturity, revert
                 require(

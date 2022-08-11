@@ -35,8 +35,7 @@ contract AllowedExternalPositionTypesPolicy is PolicyBase {
     function activateForFund(address _comptrollerProxy) external override onlyPolicyManager {
         address[] memory activeExternalPositions = VaultLib(
             payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())
-        )
-            .getActiveExternalPositions();
+        ).getActiveExternalPositions();
         for (uint256 i; i < activeExternalPositions.length; i++) {
             require(
                 externalPositionTypeIsAllowedForFund(
@@ -63,7 +62,9 @@ contract AllowedExternalPositionTypesPolicy is PolicyBase {
             (uint256[])
         );
         for (uint256 i; i < allowedExternalPositionTypeIds.length; i++) {
-            comptrollerProxyToExternalPositionTypeToIsAllowed[_comptrollerProxy][allowedExternalPositionTypeIds[i]] = true;
+            comptrollerProxyToExternalPositionTypeToIsAllowed[_comptrollerProxy][
+                allowedExternalPositionTypeIds[i]
+            ] = true;
 
             emit AllowedExternalPositionTypeAddedForFund(
                 _comptrollerProxy,
@@ -134,6 +135,8 @@ contract AllowedExternalPositionTypesPolicy is PolicyBase {
         uint256 _externalPositionTypeId
     ) public view returns (bool isAllowed_) {
         return
-            comptrollerProxyToExternalPositionTypeToIsAllowed[_comptrollerProxy][_externalPositionTypeId];
+            comptrollerProxyToExternalPositionTypeToIsAllowed[_comptrollerProxy][
+                _externalPositionTypeId
+            ];
     }
 }

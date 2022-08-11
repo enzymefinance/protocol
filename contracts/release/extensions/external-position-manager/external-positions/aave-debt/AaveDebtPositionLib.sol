@@ -93,8 +93,7 @@ contract AaveDebtPositionLib is
 
         address lendingPoolAddress = IAaveLendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        )
-            .getLendingPool();
+        ).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
             IAaveLendingPool(lendingPoolAddress).borrow(
@@ -166,8 +165,7 @@ contract AaveDebtPositionLib is
 
         address lendingPoolAddress = IAaveLendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        )
-            .getLendingPool();
+        ).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
             require(assetIsBorrowed(tokens[i]), "__repayBorrowedAssets: Invalid borrowed asset");

@@ -108,8 +108,7 @@ contract OnlyRemoveDustExternalPositionPolicy is
 
         (address[] memory debtAssets, uint256[] memory debtAssetBalances) = IExternalPosition(
             _externalPosition
-        )
-            .getDebtAssets();
+        ).getDebtAssets();
 
         uint256 debtAssetsValue = __calcTotalValueExlcudingBypassablePricelessAssets(
             _comptrollerProxy,

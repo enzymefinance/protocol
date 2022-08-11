@@ -14,11 +14,20 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A test interface for Solv V2 Initial Convertible Offering Market
 interface ITestSolvV2ConvertibleMarket {
-    enum FeeType {BY_AMOUNT, FIXED}
+    enum FeeType {
+        BY_AMOUNT,
+        FIXED
+    }
 
-    enum FeePayType {SELLER_PAY, BUYER_PAY}
+    enum FeePayType {
+        SELLER_PAY,
+        BUYER_PAY
+    }
 
-    enum PriceType {FIXED, DECLIINING_BY_TIME}
+    enum PriceType {
+        FIXED,
+        DECLIINING_BY_TIME
+    }
 
     struct Market {
         bool isValid;

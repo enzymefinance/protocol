@@ -48,7 +48,7 @@ contract ArbitraryLoanPositionLib is
         WRAPPED_NATIVE_ASSET = _wrappedNativeAsset;
     }
 
-    modifier onlyNotClosed {
+    modifier onlyNotClosed() {
         require(!loanIsClosed(), "onlyNotClosed: Loan closed");
         _;
     }

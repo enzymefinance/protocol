@@ -292,14 +292,16 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         } else if (settlementType == SettlementType.Burn) {
             __burnShares(_comptrollerProxy, payer, sharesDue);
         } else if (settlementType == SettlementType.MintSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee]
-                .add(sharesDue);
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][
+                _fee
+            ] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee].add(sharesDue);
 
             payee = _vaultProxy;
             __mintShares(_comptrollerProxy, payee, sharesDue);
         } else if (settlementType == SettlementType.BurnSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee]
-                .sub(sharesDue);
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][
+                _fee
+            ] = comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee].sub(sharesDue);
 
             payer = _vaultProxy;
             __burnShares(_comptrollerProxy, payer, sharesDue);

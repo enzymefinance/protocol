@@ -155,8 +155,7 @@ contract UniswapV3LiquidityPositionLib is
 
         (, uint256 amount0, uint256 amount1) = INonfungiblePositionManager(
             getNonFungibleTokenManager()
-        )
-            .increaseLiquidity(_params);
+        ).increaseLiquidity(_params);
 
         if (amount0 < _params.amount0Desired) {
             address token0 = getToken0ForNft(_params.tokenId);
@@ -230,8 +229,7 @@ contract UniswapV3LiquidityPositionLib is
         // Mint the nft
         (uint256 tokenId, , uint256 amount0, uint256 amount1) = INonfungiblePositionManager(
             getNonFungibleTokenManager()
-        )
-            .mint(_params);
+        ).mint(_params);
 
         // Update local storage
         nftIds.push(tokenId);
@@ -374,8 +372,7 @@ contract UniswapV3LiquidityPositionLib is
             if (sqrtPriceX96 == 0) {
                 uint256 token0VirtualReserves = IValueInterpreterUniswapV3LiquidityPosition(
                     VALUE_INTERPRETER
-                )
-                    .calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
+                ).calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
 
                 // Adapted from UniswapV3 white paper formula 6.4 <https://uniswap.org/whitepaper-v3.pdf>
                 sqrtPriceX96 = uint160(

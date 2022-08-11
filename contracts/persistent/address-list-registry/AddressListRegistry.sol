@@ -18,7 +18,12 @@ import "../dispatcher/IDispatcher.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract for creating and updating lists of addresses
 contract AddressListRegistry {
-    enum UpdateType {None, AddOnly, RemoveOnly, AddAndRemove}
+    enum UpdateType {
+        None,
+        AddOnly,
+        RemoveOnly,
+        AddAndRemove
+    }
 
     event ItemAddedToList(uint256 indexed id, address item);
 

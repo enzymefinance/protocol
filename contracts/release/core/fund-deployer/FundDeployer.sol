@@ -96,8 +96,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     // Constants
     // keccak256(abi.encodePacked("mln.vaultCall.any")
-    bytes32
-        private constant ANY_VAULT_CALL = 0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
+    bytes32 private constant ANY_VAULT_CALL =
+        0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
 
     address private immutable CREATOR;
     address private immutable DISPATCHER;
@@ -743,9 +743,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
                 "deregisterVaultCalls: Call not registered"
             );
 
-            vaultCallToPayloadToIsAllowed[keccak256(
-                abi.encodePacked(_contracts[i], _selectors[i])
-            )][_dataHashes[i]] = false;
+            vaultCallToPayloadToIsAllowed[
+                keccak256(abi.encodePacked(_contracts[i], _selectors[i]))
+            ][_dataHashes[i]] = false;
 
             emit VaultCallDeregistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
@@ -773,9 +773,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
                 "registerVaultCalls: Call already registered"
             );
 
-            vaultCallToPayloadToIsAllowed[keccak256(
-                abi.encodePacked(_contracts[i], _selectors[i])
-            )][_dataHashes[i]] = true;
+            vaultCallToPayloadToIsAllowed[
+                keccak256(abi.encodePacked(_contracts[i], _selectors[i]))
+            ][_dataHashes[i]] = true;
 
             emit VaultCallRegistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
@@ -904,9 +904,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         bytes32 _dataHash
     ) public view returns (bool isRegistered_) {
         return
-            vaultCallToPayloadToIsAllowed[keccak256(
-                abi.encodePacked(_contract, _selector)
-            )][_dataHash];
+            vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contract, _selector))][
+                _dataHash
+            ];
     }
 
     /// @notice Gets the `isLive` variable value

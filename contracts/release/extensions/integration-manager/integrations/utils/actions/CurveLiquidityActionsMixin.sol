@@ -52,8 +52,8 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
                 // It is never the case that a pool has multiple slots for the same native asset,
                 // so this is not additive
                 outgoingNativeAssetAmount = ERC20(getCurveLiquidityWrappedNativeAsset()).balanceOf(
-                    address(this)
-                );
+                        address(this)
+                    );
                 IWETH(getCurveLiquidityWrappedNativeAsset()).withdraw(outgoingNativeAssetAmount);
             } else {
                 // Once an asset it approved for a given pool, it will almost definitely

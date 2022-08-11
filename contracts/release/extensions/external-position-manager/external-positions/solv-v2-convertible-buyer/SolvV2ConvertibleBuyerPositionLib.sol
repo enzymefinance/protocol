@@ -84,9 +84,8 @@ contract SolvV2ConvertibleBuyerPositionLib is
     function __actionBuyOffering(bytes memory _actionArgs) private {
         (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_actionArgs);
 
-
-            ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
-         = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+        ISolvV2InitialConvertibleOfferingMarket.Offering
+            memory offering = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
         ISolvV2ConvertibleVoucher voucherContract = ISolvV2ConvertibleVoucher(offering.voucher);
         uint32 nextTokenId = voucherContract.nextTokenId();
@@ -443,8 +442,8 @@ contract SolvV2ConvertibleBuyerPositionLib is
             asset_ = slotDetail.fundCurrency;
 
             amount_ = tokenBalance.mul(10**uint256(ERC20(slotDetail.fundCurrency).decimals())).div(
-                10**uint256(poolContract.valueDecimals())
-            );
+                    10**uint256(poolContract.valueDecimals())
+                );
 
             if (amount_ > reservedCurrencyAmount) {
                 amount_ = reservedCurrencyAmount;

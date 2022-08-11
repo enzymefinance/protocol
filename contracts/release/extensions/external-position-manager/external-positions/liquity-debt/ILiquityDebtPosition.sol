@@ -14,5 +14,12 @@ pragma solidity 0.6.12;
 /// @title ILiquityDebtPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ILiquityDebtPosition is IExternalPosition {
-    enum Actions {OpenTrove, AddCollateral, RemoveCollateral, Borrow, RepayBorrow, CloseTrove}
+    enum Actions {
+        OpenTrove,
+        AddCollateral,
+        RemoveCollateral,
+        Borrow,
+        RepayBorrow,
+        CloseTrove
+    }
 }

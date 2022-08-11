@@ -135,9 +135,12 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
             if (netSharesSupply > 0) {
                 sharesDue_ = netSharesSupply
                     .mul(
-                    __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE)
-                        .sub(RATE_SCALE_BASE)
-                )
+                        __rpow(
+                            feeInfo.scaledPerSecondRate,
+                            secondsSinceSettlement,
+                            RATE_SCALE_BASE
+                        ).sub(RATE_SCALE_BASE)
+                    )
                     .div(RATE_SCALE_BASE);
             }
         }

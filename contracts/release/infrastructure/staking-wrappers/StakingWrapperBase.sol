@@ -337,9 +337,9 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
             // skip address(0), passed in upon mint and burn
             if (_accounts[i] == address(0)) continue;
 
-
-                UserHarvestData storage userHarvestData
-             = rewardTokenToUserToHarvestData[_rewardToken][_accounts[i]];
+            UserHarvestData storage userHarvestData = rewardTokenToUserToHarvestData[_rewardToken][
+                _accounts[i]
+            ];
 
             uint256 userIntegral = userHarvestData.integral;
             if (userIntegral < totalIntegral) {
@@ -381,9 +381,9 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
             emit TotalHarvestIntegralUpdated(_rewardToken, totalIntegral);
         }
 
-
-            UserHarvestData storage userHarvestData
-         = rewardTokenToUserToHarvestData[_rewardToken][_account];
+        UserHarvestData storage userHarvestData = rewardTokenToUserToHarvestData[_rewardToken][
+            _account
+        ];
 
         uint256 userIntegral = userHarvestData.integral;
         claimedAmount_ = userHarvestData.claimableReward;

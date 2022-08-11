@@ -14,7 +14,11 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @dev Source: https://github.com/solv-finance/solv-v2-ivo/blob/main/markets/convertible-offering-market/contracts/InitialConvertibleOfferingMarket.sol
 interface ISolvV2InitialConvertibleOfferingMarket {
-    enum VoucherType {STANDARD_VESTING, FLEXIBLE_DATE_VESTING, BOUNDING}
+    enum VoucherType {
+        STANDARD_VESTING,
+        FLEXIBLE_DATE_VESTING,
+        BOUNDING
+    }
 
     struct Market {
         VoucherType voucherType;
@@ -41,7 +45,10 @@ interface ISolvV2InitialConvertibleOfferingMarket {
         uint64 maturity;
     }
 
-    enum PriceType {FIXED, DECLIINING_BY_TIME}
+    enum PriceType {
+        FIXED,
+        DECLIINING_BY_TIME
+    }
 
     struct Offering {
         uint24 offeringId;

@@ -15,7 +15,13 @@ pragma experimental ABIEncoderV2;
 /// @title ISolvV2ConvertibleIssuerPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ISolvV2ConvertibleIssuerPosition is IExternalPosition {
-    enum Actions {CreateOffer, Reconcile, Refund, RemoveOffer, Withdraw}
+    enum Actions {
+        CreateOffer,
+        Reconcile,
+        Refund,
+        RemoveOffer,
+        Withdraw
+    }
 
     function getOffers() external view returns (uint24[] memory offers_);
 }

@@ -59,7 +59,6 @@ abstract contract GasRelayRecipientMixin {
         return
             IGasRelayPaymaster(
                 IBeaconProxyFactory(getGasRelayPaymasterFactory()).getCanonicalLib()
-            )
-                .trustedForwarder();
+            ).trustedForwarder();
     }
 }

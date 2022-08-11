@@ -11,7 +11,10 @@ import "../AdapterBase.sol";
 /// as well as some old pools that have almost the same required interface (e.g., 3pool).
 /// Implementing contracts can allow staking via Curve gauges, Convex, etc.
 abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityActionsMixin {
-    enum RedeemType {Standard, OneCoin}
+    enum RedeemType {
+        Standard,
+        OneCoin
+    }
 
     address private immutable CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS;
 

@@ -14,5 +14,11 @@ pragma solidity 0.6.12;
 /// @title IConvexVotingPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IConvexVotingPosition is IExternalPosition {
-    enum Actions {Lock, Relock, Withdraw, ClaimRewards, Delegate}
+    enum Actions {
+        Lock,
+        Relock,
+        Withdraw,
+        ClaimRewards,
+        Delegate
+    }
 }

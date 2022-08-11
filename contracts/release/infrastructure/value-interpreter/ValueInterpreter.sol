@@ -153,8 +153,7 @@ contract ValueInterpreter is
     ) private returns (uint256 value_) {
         (address[] memory underlyings, uint256[] memory underlyingAmounts) = IDerivativePriceFeed(
             _derivativePriceFeed
-        )
-            .calcUnderlyingValues(_derivative, _amount);
+        ).calcUnderlyingValues(_derivative, _amount);
 
         require(underlyings.length > 0, "__calcDerivativeValue: No underlyings");
         require(

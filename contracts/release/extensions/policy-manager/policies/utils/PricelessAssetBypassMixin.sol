@@ -67,7 +67,7 @@ abstract contract PricelessAssetBypassMixin {
                 1, // Any value >0 will attempt to retrieve a rate
                 getPricelessAssetBypassWethToken() // Any valid asset would do
             )
-         {
+        {
             revert("startAssetBypassTimelock: Asset has a price");
         } catch {
             comptrollerProxyToAssetToBypassWindowStart[comptrollerProxy][_asset] = block

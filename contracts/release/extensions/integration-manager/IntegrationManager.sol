@@ -201,12 +201,12 @@ contract IntegrationManager is
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts
         ) = __callOnIntegrationInner(
-            _comptrollerProxy,
-            _vaultProxy,
-            adapter,
-            selector,
-            integrationData
-        );
+                _comptrollerProxy,
+                _vaultProxy,
+                adapter,
+                selector,
+                integrationData
+            );
 
         IPolicyManager(getPolicyManager()).validatePolicies(
             _comptrollerProxy,

@@ -35,8 +35,7 @@ abstract contract AaveActionsMixin is AssetHelpers {
     ) internal {
         address lendingPoolAddress = IAaveLendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        )
-            .getLendingPool();
+        ).getLendingPool();
 
         __approveAssetMaxAsNeeded(_outgoingAsset, lendingPoolAddress, _outgoingAssetAmount);
 
@@ -57,8 +56,7 @@ abstract contract AaveActionsMixin is AssetHelpers {
     ) internal {
         address lendingPoolAddress = IAaveLendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        )
-            .getLendingPool();
+        ).getLendingPool();
 
         __approveAssetMaxAsNeeded(_outgoingAsset, lendingPoolAddress, _outgoingAssetAmount);
 

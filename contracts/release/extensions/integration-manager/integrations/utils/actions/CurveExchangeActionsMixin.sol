@@ -22,8 +22,8 @@ import "../../../../../utils/AssetHelpers.sol";
 /// @notice Mixin contract for interacting with the Curve exchange functions
 /// @dev Inheriting contract must have a receive() function
 abstract contract CurveExchangeActionsMixin is AssetHelpers {
-    address
-        private constant CURVE_EXCHANGE_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address private constant CURVE_EXCHANGE_ETH_ADDRESS =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address private immutable CURVE_EXCHANGE_ADDRESS_PROVIDER;
     address private immutable CURVE_EXCHANGE_WETH_TOKEN;

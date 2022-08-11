@@ -14,7 +14,10 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @dev Source: https://github.com/solv-finance/solv-v2-ivo/blob/main/vouchers/convertible-voucher/contracts/ConvertiblePool.sol
 interface ISolvV2ConvertiblePool {
-    enum CollateralType {ERC20, VESTING_VOUCHER}
+    enum CollateralType {
+        ERC20,
+        VESTING_VOUCHER
+    }
 
     struct SlotDetail {
         address issuer;

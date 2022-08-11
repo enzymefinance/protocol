@@ -72,15 +72,15 @@ contract SolvV2ConvertibleBuyerPositionParser is
         if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.BuyOffering)) {
             (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_encodedActionArgs);
 
-
-                ISolvV2InitialConvertibleOfferingMarket.Offering memory offering
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
+            ISolvV2InitialConvertibleOfferingMarket.Offering
+                memory offering = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
             uint256 voucherPrice = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.getPrice(offerId);
 
-
-                ISolvV2InitialConvertibleOfferingMarket.Market memory market
-             = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.markets(offering.voucher);
+            ISolvV2InitialConvertibleOfferingMarket.Market
+                memory market = INITIAL_CONVERTIBLE_OFFERING_MARKET_CONTRACT.markets(
+                    offering.voucher
+                );
             uint256 amount = uint256(units).mul(voucherPrice).div(10**uint256(market.decimals));
 
             assetsToTransfer_ = new address[](1);
@@ -152,9 +152,9 @@ contract SolvV2ConvertibleBuyerPositionParser is
             assetsToReceive_[0] = voucherContract.underlying();
             assetsToReceive_[1] = slotDetail.fundCurrency;
         } else if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.Reconcile)) {
-
-                ISolvV2ConvertibleBuyerPosition externalPositionContract
-             = ISolvV2ConvertibleBuyerPosition(_externalPosition);
+            ISolvV2ConvertibleBuyerPosition externalPositionContract = ISolvV2ConvertibleBuyerPosition(
+                    _externalPosition
+                );
 
             SolvV2ConvertibleBuyerPositionLib.Sale[] memory sales = externalPositionContract
                 .getSales();
@@ -189,9 +189,9 @@ contract SolvV2ConvertibleBuyerPositionParser is
         } else if (_actionId == uint256(ISolvV2ConvertibleBuyerPosition.Actions.RemoveSale)) {
             uint24 saleId = __decodeRemoveSaleActionArgs(_encodedActionArgs);
 
-
-                ISolvV2ConvertibleBuyerPosition externalPositionContract
-             = ISolvV2ConvertibleBuyerPosition(_externalPosition);
+            ISolvV2ConvertibleBuyerPosition externalPositionContract = ISolvV2ConvertibleBuyerPosition(
+                    _externalPosition
+                );
 
             SolvV2ConvertibleBuyerPositionLib.Sale[] memory sales = externalPositionContract
                 .getSales();

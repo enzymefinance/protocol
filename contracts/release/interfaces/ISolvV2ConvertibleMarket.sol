@@ -14,11 +14,20 @@ pragma experimental ABIEncoderV2;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @dev Source: https://github.com/solv-finance/solv-v2-ivo/blob/main/markets/convertible-marketplace/contracts/SolvConvertibleMarket.sol
 interface ISolvV2ConvertibleMarket {
-    enum FeeType {BY_AMOUNT, FIXED}
+    enum FeeType {
+        BY_AMOUNT,
+        FIXED
+    }
 
-    enum FeePayType {SELLER_PAY, BUYER_PAY}
+    enum FeePayType {
+        SELLER_PAY,
+        BUYER_PAY
+    }
 
-    enum PriceType {FIXED, DECLIINING_BY_TIME}
+    enum PriceType {
+        FIXED,
+        DECLIINING_BY_TIME
+    }
 
     struct Market {
         bool isValid;

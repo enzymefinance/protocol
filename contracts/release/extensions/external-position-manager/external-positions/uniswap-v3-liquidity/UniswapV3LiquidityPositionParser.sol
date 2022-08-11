@@ -104,8 +104,7 @@ contract UniswapV3LiquidityPositionParser is
 
             (assetsToTransfer_[0], assetsToTransfer_[1]) = IUniswapV3LiquidityPosition(
                 _externalPosition
-            )
-                .getPairForNft(nftId);
+            ).getPairForNft(nftId);
 
             amountsToTransfer_[0] = amount0Desired;
             amountsToTransfer_[1] = amount1Desired;
@@ -118,8 +117,7 @@ contract UniswapV3LiquidityPositionParser is
             assetsToReceive_ = new address[](2);
             (assetsToReceive_[0], assetsToReceive_[1]) = IUniswapV3LiquidityPosition(
                 _externalPosition
-            )
-                .getPairForNft(nftId);
+            ).getPairForNft(nftId);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -139,9 +137,9 @@ contract UniswapV3LiquidityPositionParser is
         view
         returns (bool isSupportable_)
     {
-
-            IValueInterpreterUniswapV3LiquidityPosition valueInterpreterContract
-         = IValueInterpreterUniswapV3LiquidityPosition(getValueInterpreter());
+        IValueInterpreterUniswapV3LiquidityPosition valueInterpreterContract = IValueInterpreterUniswapV3LiquidityPosition(
+                getValueInterpreter()
+            );
 
         if (valueInterpreterContract.isSupportedPrimitiveAsset(_tokenA)) {
             if (valueInterpreterContract.isSupportedAsset(_tokenB)) {

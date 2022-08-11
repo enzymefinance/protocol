@@ -29,7 +29,11 @@ contract ArbitraryLoanFixedInterestModule is
     using SafeCast for uint256;
     using SafeMath for uint256;
 
-    enum RepaymentTrackingType {None, PrincipalFirst, InterestFirst}
+    enum RepaymentTrackingType {
+        None,
+        PrincipalFirst,
+        InterestFirst
+    }
 
     event ConfigSetForLoan(
         address indexed loan,
@@ -350,13 +354,12 @@ contract ArbitraryLoanFixedInterestModule is
         return
             _loanBalance
                 .mul(
-                __rpow(
-                    _scaledPerSecondRate,
-                    _secondsSinceCheckpoint,
-                    INTEREST_SCALED_PER_SECOND_RATE_BASE
+                    __rpow(
+                        _scaledPerSecondRate,
+                        _secondsSinceCheckpoint,
+                        INTEREST_SCALED_PER_SECOND_RATE_BASE
+                    ).sub(INTEREST_SCALED_PER_SECOND_RATE_BASE)
                 )
-                    .sub(INTEREST_SCALED_PER_SECOND_RATE_BASE)
-            )
                 .div(INTEREST_SCALED_PER_SECOND_RATE_BASE);
     }
 

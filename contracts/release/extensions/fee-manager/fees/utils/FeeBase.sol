@@ -19,7 +19,7 @@ import "../../IFee.sol";
 abstract contract FeeBase is IFee {
     address internal immutable FEE_MANAGER;
 
-    modifier onlyFeeManager {
+    modifier onlyFeeManager() {
         require(msg.sender == FEE_MANAGER, "Only the FeeManger can make this call");
         _;
     }

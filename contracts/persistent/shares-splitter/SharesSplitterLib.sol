@@ -19,8 +19,8 @@ import "./TreasurySplitterMixin.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Library contract for a SharesSplitter
 contract SharesSplitterLib is TreasurySplitterMixin {
-    address
-        internal constant NO_VALIDATION_DUMMY_ADDRESS = 0x000000000000000000000000000000000000aaaa;
+    address internal constant NO_VALIDATION_DUMMY_ADDRESS =
+        0x000000000000000000000000000000000000aaaa;
 
     IGlobalConfig1 private immutable GLOBAL_CONFIG_CONTRACT;
     address private immutable INITIALIZER;

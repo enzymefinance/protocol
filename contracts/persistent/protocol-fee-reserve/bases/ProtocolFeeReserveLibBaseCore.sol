@@ -24,7 +24,7 @@ abstract contract ProtocolFeeReserveLibBaseCore is ProxiableProtocolFeeReserveLi
 
     address private dispatcher;
 
-    modifier onlyDispatcherOwner {
+    modifier onlyDispatcherOwner() {
         require(
             msg.sender == IDispatcher(getDispatcher()).getOwner(),
             "Only the Dispatcher owner can call this function"

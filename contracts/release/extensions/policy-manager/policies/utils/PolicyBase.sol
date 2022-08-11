@@ -19,7 +19,7 @@ import "../../IPolicy.sol";
 abstract contract PolicyBase is IPolicy {
     address internal immutable POLICY_MANAGER;
 
-    modifier onlyPolicyManager {
+    modifier onlyPolicyManager() {
         require(msg.sender == POLICY_MANAGER, "Only the PolicyManager can make this call");
         _;
     }

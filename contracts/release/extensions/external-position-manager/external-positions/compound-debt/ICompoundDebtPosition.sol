@@ -14,5 +14,11 @@ pragma solidity 0.6.12;
 /// @title ICompoundDebtPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ICompoundDebtPosition is IExternalPosition {
-    enum ExternalPositionActions {AddCollateral, RemoveCollateral, Borrow, RepayBorrow, ClaimComp}
+    enum ExternalPositionActions {
+        AddCollateral,
+        RemoveCollateral,
+        Borrow,
+        RepayBorrow,
+        ClaimComp
+    }
 }

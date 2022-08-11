@@ -48,7 +48,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
         __pushFullAssetBalances(_vaultProxy, spendAssets);
     }
 
-    modifier onlyIntegrationManager {
+    modifier onlyIntegrationManager() {
         require(
             msg.sender == INTEGRATION_MANAGER,
             "Only the IntegrationManager can call this function"

@@ -81,11 +81,11 @@ contract UniswapV2PoolPriceFeed is
             uint256 token0DenormalizedRate,
             uint256 token1DenormalizedRate
         ) = __calcTrustedPoolTokenValue(
-            FACTORY,
-            _derivative,
-            token0TrustedRateAmount,
-            token1TrustedRateAmount
-        );
+                FACTORY,
+                _derivative,
+                token0TrustedRateAmount,
+                token1TrustedRateAmount
+            );
 
         // Define normalized rates for each underlying
         underlyingAmounts_ = new uint256[](2);

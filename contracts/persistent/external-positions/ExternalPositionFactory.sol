@@ -39,7 +39,7 @@ contract ExternalPositionFactory {
     mapping(address => bool) private accountToIsExternalPositionProxy;
     mapping(address => bool) private accountToIsPositionDeployer;
 
-    modifier onlyDispatcherOwner {
+    modifier onlyDispatcherOwner() {
         require(
             msg.sender == IDispatcher(getDispatcher()).getOwner(),
             "Only the Dispatcher owner can call this function"

@@ -53,7 +53,10 @@ interface ITestSolvV2InitialConvertibleOfferingMarket {
         bool isValid;
     }
 
-    enum PriceType {FIXED, DECLIINING_BY_TIME}
+    enum PriceType {
+        FIXED,
+        DECLIINING_BY_TIME
+    }
 
     function addAllowAddress(
         address _voucher,

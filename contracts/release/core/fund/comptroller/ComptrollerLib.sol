@@ -81,8 +81,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     // Constants and immutables - shared by all proxies
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant SHARES_UNIT = 10**18;
-    address
-        private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS = 0x000000000000000000000000000000000000aaaa;
+    address private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS =
+        0x000000000000000000000000000000000000aaaa;
     address private immutable DISPATCHER;
     address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable FUND_DEPLOYER;
@@ -120,7 +120,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     // MODIFIERS //
     ///////////////
 
-    modifier allowsPermissionedVaultAction {
+    modifier allowsPermissionedVaultAction() {
         __assertPermissionedVaultActionNotAllowed();
         permissionedVaultActionAllowed = true;
         _;
@@ -322,7 +322,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         try
             IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav)
-         {} catch (bytes memory reason) {
+        {} catch (bytes memory reason) {
             emit BuyBackMaxProtocolFeeSharesFailed(reason, sharesAmount, buybackValueInMln, _gav);
         }
     }
@@ -493,7 +493,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     ) external override onlyFundDeployer allowsPermissionedVaultAction {
         // Forwarding limited gas here also protects fee recipients by guaranteeing that fee payout logic
         // will run in the next function call
-        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}()  {} catch {
+        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}() {} catch {
             emit PayProtocolFeeDuringDestructFailed();
         }
 
@@ -505,7 +505,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // Pays out shares outstanding for fees
         try
             IExtension(getFeeManager()).deactivateForFund{gas: _deactivateFeeManagerGasLimit}()
-         {} catch {
+        {} catch {
             emit DeactivateFeeManagerFailed();
         }
 
@@ -587,16 +587,14 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     {
         (address[] memory managedAssets, uint256[] memory managedAmounts) = IExternalPosition(
             _externalPosition
-        )
-            .getManagedAssets();
+        ).getManagedAssets();
 
         uint256 managedValue = IValueInterpreter(getValueInterpreter())
             .calcCanonicalAssetsTotalValue(managedAssets, managedAmounts, getDenominationAsset());
 
         (address[] memory debtAssets, uint256[] memory debtAmounts) = IExternalPosition(
             _externalPosition
-        )
-            .getDebtAssets();
+        ).getDebtAssets();
 
         uint256 debtValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
             debtAssets,
@@ -1074,7 +1072,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
                 abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
                 _gavIfCalculated
             )
-         {} catch (bytes memory reason) {
+        {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
         }
     }

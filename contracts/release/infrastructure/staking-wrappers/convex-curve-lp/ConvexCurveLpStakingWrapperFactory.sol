@@ -26,7 +26,7 @@ contract ConvexCurveLpStakingWrapperFactory is BeaconProxyFactory {
     // Handy cache for interacting contracts
     mapping(address => address) private wrapperToCurveLpToken;
 
-    modifier onlyOwner {
+    modifier onlyOwner() {
         require(msg.sender == getOwner(), "Only the owner can call this function");
         _;
     }
