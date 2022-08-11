@@ -21,6 +21,7 @@ import type {
 } from '@enzymefinance/testutils';
 import {
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   createNewFund,
   createSolvV2ConvertibleIssuerPosition,
   deployProtocolFixture,
@@ -236,6 +237,8 @@ describe('Actions.Offer', () => {
       offerId,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
+
     expect(receipt).toMatchInlineGasSnapshot(`578889`);
   });
 });
@@ -271,6 +274,8 @@ describe('Actions.RemoveOffer', () => {
       offerId,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken] });
+
     expect(receipt).toMatchInlineGasSnapshot(`298120`);
   });
 
@@ -302,7 +307,7 @@ describe('Actions.RemoveOffer', () => {
     const vaultUnderlyingBalanceBefore = await underlyingToken.balanceOf(vaultProxy);
     const vaultCurrencyBalanceBefore = await currencyToken.balanceOf(vaultProxy);
 
-    await solvV2ConvertibleIssuerPositionRemoveOffer({
+    const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2ConvertibleIssuerPosition,
@@ -317,6 +322,8 @@ describe('Actions.RemoveOffer', () => {
     // Receivable currency received should have been reconciled back to the vault
     const vaultCurrencyBalanceDelta = (await currencyToken.balanceOf(vaultProxy)).sub(vaultCurrencyBalanceBefore);
     expect(vaultCurrencyBalanceDelta).toEqBigNumber(expectedReceivableCurrency);
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken, currencyToken] });
   });
 
   it('works as expected - fulfilled ivo', async () => {
@@ -346,6 +353,8 @@ describe('Actions.RemoveOffer', () => {
       signer: fundOwner,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
+
     expect(receipt).toMatchInlineGasSnapshot(`296548`);
   });
 });
@@ -370,6 +379,8 @@ describe('Actions.Reconcile', () => {
       externalPositionProxy: solvV2ConvertibleIssuerPosition,
       signer: fundOwner,
     });
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
     // Check that the currency has been received by the vault
     expect(await currencyToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
@@ -417,6 +428,8 @@ describe('Actions.Refund', () => {
     // Check that slot is marked as refunded
     const slotDetail = await voucher.getSlotDetail(slotId);
     expect(slotDetail.isIssuerRefunded).toBe(true);
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
     expect(receipt).toMatchInlineGasSnapshot(`261139`);
   });
@@ -481,6 +494,8 @@ describe('Actions.Withdraw', () => {
     expect(postManagedAssets.assets_[0]).toMatchAddress(underlyingToken);
     const postManagedUnderlying = postManagedAssets.amounts_[0];
     const postVaultUnderlyingBalance = await underlyingToken.balanceOf(vaultProxy);
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken] });
 
     // Check that underlying balance has increased
     expect(postVaultUnderlyingBalance).toBeGtBigNumber(preVaultUnderlyingBalance);
@@ -549,6 +564,8 @@ describe('Actions.Withdraw', () => {
     const postWithdrawVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
     const withdrawalAmount = postWithdrawVaultCurrencyBalance.sub(preWithdrawVaultCurrencyBalance);
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken, underlyingToken] });
+
     // Check that the cost of the refund has been withdrawn
     expect(withdrawalAmount).toEqBigNumber(refundCost);
 
@@ -603,6 +620,8 @@ describe('multiple voucher issuance', () => {
     assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferAdded'), {
       offerId: offerId2,
     });
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
     // Assert that the second voucher has been added
     const vouchers = await solvV2ConvertibleIssuerPosition.getIssuedVouchers();

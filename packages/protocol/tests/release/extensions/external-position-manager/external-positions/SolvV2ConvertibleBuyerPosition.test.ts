@@ -16,6 +16,7 @@ import {
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   assertNoEvent,
   createNewFund,
   createSolvV2ConvertibleBuyerPosition,
@@ -183,6 +184,8 @@ describe('buy IVO action', () => {
       voucher,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
+
     expect(receipt).toMatchInlineGasSnapshot(`963889`);
   });
 });
@@ -238,6 +241,8 @@ describe('buy sale actions', () => {
     // Check that the EP does not hold currency
     expect(await currencyToken.balanceOf(solvConvertibleBuyerPosition)).toEqBigNumber(0);
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
+
     expect(receipt).toMatchInlineGasSnapshot(`463651`);
   });
 
@@ -267,6 +272,8 @@ describe('buy sale actions', () => {
     // When buying a partial sale, a new tokenId gets generated
     expect(voucherTokenIds[0].tokenId).toEqBigNumber(tokenId.add(1));
     expect(voucherTokenIds[0].voucher).toMatchAddress(voucher);
+
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
     expect(receipt).toMatchInlineGasSnapshot(`657861`);
   });
@@ -329,6 +336,9 @@ describe('claim voucher', () => {
     expect(voucherTokenId.voucher).toMatchAddress(voucher);
 
     assertNoEvent(receipt, solvConvertibleBuyerPosition.abi.getEvent('VoucherTokenIdRemoved'));
+
+    // Should receive underlying and currency tokens
+    assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken, currencyToken] });
 
     expect(receipt).toMatchInlineGasSnapshot(`371410`);
   });
@@ -479,6 +489,8 @@ describe('sales creation actions', () => {
       voucher,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
+
     expect(receipt).toMatchInlineGasSnapshot(`516303`);
   });
 
@@ -533,6 +545,8 @@ describe('sales creation actions', () => {
       voucher,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt, assets: [] });
+
     expect(receipt).toMatchInlineGasSnapshot(`487477`);
   });
 
@@ -569,6 +583,9 @@ describe('sales creation actions', () => {
     const valueToReconcile = currencyUnit.sub(currencyUnit.mul(15).div(1000));
     const postVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
     expect(postVaultCurrencyBalance).toEqBigNumber(preVaultCurrencyBalance.add(valueToReconcile));
+
+    // Should receive currency token
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
     expect(receipt).toMatchInlineGasSnapshot(`195927`);
   });
@@ -648,6 +665,9 @@ describe('remove sale action', () => {
     // Should reconcile
     expect(postVaultCurrencyBalance).toBeGtBigNumber(preVaultCurrencyBalance);
 
+    // Should receive currency token
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
+
     expect(receipt).toMatchInlineGasSnapshot(`380594`);
   });
 
@@ -665,6 +685,9 @@ describe('remove sale action', () => {
     assertEvent(receipt, solvConvertibleBuyerPosition.abi.getEvent('SaleRemoved'), { saleId, currency: currencyToken });
     // VoucherTokenId should not be added when sale has been fulfilled
     assertNoEvent(receipt, solvConvertibleBuyerPosition.abi.getEvent('VoucherTokenIdAdded'));
+
+    // Should receive currency token
+    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
     expect(receipt).toMatchInlineGasSnapshot(`220024`);
   });

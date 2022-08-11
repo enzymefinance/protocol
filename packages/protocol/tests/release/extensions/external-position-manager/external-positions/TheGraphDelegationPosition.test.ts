@@ -9,6 +9,7 @@ import {
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   assertNoEvent,
   createNewFund,
   createTheGraphDelegationPosition,
@@ -109,6 +110,8 @@ describe('delegate', () => {
       indexer: indexers[0],
     });
 
+    assertExternalPositionAssetsToReceive({ receipt: delegateReceipt, assets: [] });
+
     const delegationGrtValue = await theGraphDelegationPosition.getDelegationGrtValue(indexers[0]);
 
     // Assert that the delegation to the indexer is worth the delegated amount
@@ -199,6 +202,8 @@ describe('undelegate', () => {
       signer: fundOwner,
     });
 
+    assertExternalPositionAssetsToReceive({ receipt: undelegateReceipt, assets: [grt] });
+
     const getManagedAssetsCall = await theGraphDelegationPosition.getManagedAssets.call();
 
     // Assert that the external position is now worth the GRT delegation amount, net of fees
@@ -258,6 +263,8 @@ describe('withdraw', () => {
       nextIndexer: constants.AddressZero,
       signer: fundOwner,
     });
+
+    assertExternalPositionAssetsToReceive({ receipt: withdrawReceipt, assets: [grt] });
 
     const getManagedAssetsCall = await theGraphDelegationPosition.getManagedAssets.call();
 
