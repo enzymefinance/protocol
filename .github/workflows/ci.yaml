@@ -14,6 +14,36 @@ env:
   NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
+  foundry:
+    name: Foundry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.8.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Set up node
+        uses: actions/setup-node@v2
+        with:
+          cache: pnpm
+          node-version: 16
+
+      - name: Run tests
+        run: forge test
+
   test:
     name: Test
     runs-on: ubuntu-latest
