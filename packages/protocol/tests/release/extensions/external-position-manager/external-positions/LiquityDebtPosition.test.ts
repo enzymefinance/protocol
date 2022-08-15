@@ -11,6 +11,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
+  assertExternalPositionAssetsToReceive,
   createLiquityDebtPosition,
   createNewFund,
   deployProtocolFixture,
@@ -142,6 +143,11 @@ describe('openTrove', () => {
       assets_: [lusd],
     });
 
+    assertExternalPositionAssetsToReceive({
+      receipt: openTroveReceipt,
+      assets: [lusd],
+    });
+
     // Actual gas spent varies based on the accuracy of the hint values
     expect(openTroveReceipt).toMatchInlineGasSnapshot('693923', gasAssertionTolerance);
   });
@@ -192,6 +198,11 @@ describe('addCollateral', () => {
     expect(getManagedAssetsCall).toMatchFunctionOutput(liquityDebtPosition.getManagedAssets.fragment, {
       amounts_: [nextCollateralAmount],
       assets_: [weth],
+    });
+
+    assertExternalPositionAssetsToReceive({
+      receipt: addCollateralReceipt,
+      assets: [],
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
@@ -252,6 +263,11 @@ describe('removeCollateral', () => {
 
     expect(wethBalanceAfter).toEqBigNumber(wethBalanceBefore.add(collateralToRemoveAmount));
 
+    assertExternalPositionAssetsToReceive({
+      receipt: removeCollateralReceipt,
+      assets: [weth],
+    });
+
     // Actual gas spent varies based on the accuracy of the hint values
     expect(removeCollateralReceipt).toMatchInlineGasSnapshot('462406', gasAssertionTolerance);
   });
@@ -305,6 +321,11 @@ describe('borrowLusd', () => {
     expect(getDebtAssetsCall).toMatchFunctionOutput(liquityDebtPosition.getDebtAssets.fragment, {
       amounts_: [openTroveDebtAmount.add(borrowedAmountToAdd).add(newFeeAmount)],
       assets_: [lusd],
+    });
+
+    assertExternalPositionAssetsToReceive({
+      receipt: borrowLusdReceipt,
+      assets: [lusd],
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
@@ -362,6 +383,11 @@ describe('closeTrove', () => {
       assets_: [],
     });
 
+    assertExternalPositionAssetsToReceive({
+      receipt: closeTroveReceipt,
+      assets: [weth],
+    });
+
     // Actual gas spent varies based on the accuracy of the hint values
     expect(closeTroveReceipt).toMatchInlineGasSnapshot('438847', gasAssertionTolerance);
   });
@@ -412,6 +438,11 @@ describe('repayBorrow', () => {
     expect(getDebtAssetsCall).toMatchFunctionOutput(liquityDebtPosition.getDebtAssets.fragment, {
       amounts_: [nextDebtAmount],
       assets_: [lusd],
+    });
+
+    assertExternalPositionAssetsToReceive({
+      receipt: repayBorrowReceipt,
+      assets: [],
     });
 
     // Actual gas spent varies based on the accuracy of the hint values

@@ -12,6 +12,7 @@ import {
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   createNewFund,
   createUniswapV3LiquidityPosition,
   deployProtocolFixture,
@@ -316,6 +317,11 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(amount0Desired);
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(amount1Desired);
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       expect(receipt).toMatchInlineGasSnapshot(`782567`);
     });
   });
@@ -395,6 +401,11 @@ describe('receiveCallFromVault', () => {
       expect(managedAssets.amounts_[0]).toBeAroundBigNumber(addLiquidityAmount0Desired.add(mintAmount0Desired));
       expect(managedAssets.amounts_[1]).toBeAroundBigNumber(addLiquidityAmount1Desired.add(mintAmount1Desired));
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [],
+      });
+
       expect(receipt).toMatchInlineGasSnapshot(`324660`);
     });
   });
@@ -448,6 +459,11 @@ describe('receiveCallFromVault', () => {
       // Vault balances of both tokens should have increased (no need to assert exact amounts, i.e., test that UniV3 works)
       expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
       expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
+
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [token0, token1],
+      });
 
       expect(receipt).toMatchInlineGasSnapshot(`370072`);
     });
@@ -535,6 +551,11 @@ describe('receiveCallFromVault', () => {
         positionsBefore.tokensOwed1_.sub(positionsAfter.tokensOwed1_),
       );
 
+      assertExternalPositionAssetsToReceive({
+        receipt,
+        assets: [token0, token1],
+      });
+
       expect(receipt).toMatchInlineGasSnapshot(`252742`);
     });
 
@@ -587,6 +608,11 @@ describe('receiveCallFromVault', () => {
         // Vault balances of both tokens should have increased (no need to assert exact amounts, i.e., test that UniV3 works)
         expect(await token0.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken0Balance);
         expect(await token1.balanceOf(vaultProxy)).toBeGtBigNumber(preVaultToken1Balance);
+
+        assertExternalPositionAssetsToReceive({
+          receipt,
+          assets: [token0, token1],
+        });
 
         expect(receipt).toMatchInlineGasSnapshot(`392121`);
       });

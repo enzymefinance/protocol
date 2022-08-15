@@ -10,6 +10,7 @@ import {
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
+  assertExternalPositionAssetsToReceive,
   createMapleLiquidityPosition,
   createNewFund,
   deployProtocolFixture,
@@ -133,6 +134,11 @@ describe('lend', () => {
       lendingPool: poolAddress,
     });
 
+    assertExternalPositionAssetsToReceive({
+      receipt: lendReceipt,
+      assets: [],
+    });
+
     expect(lendReceipt).toMatchInlineGasSnapshot('351087');
   });
 
@@ -182,6 +188,11 @@ describe('lendAndStake', () => {
     expect(await poolToken.balanceOf(mapleLiquidityPosition)).toEqBigNumber(stakeAmount);
 
     expect(custodyAllowanceAfter.sub(custodyAllowanceBefore)).toEqBigNumber(stakeAmount);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: lendAndStakeReceipt,
+      assets: [],
+    });
 
     expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('491241');
   });
@@ -274,6 +285,16 @@ describe('redeem', () => {
       [poolAddress],
     );
     expect(await mapleLiquidityPosition.isUsedLendingPool(poolAddress)).toBe(true);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: intendToRedeemReceipt,
+      assets: [],
+    });
+
+    assertExternalPositionAssetsToReceive({
+      receipt: redeemReceipt,
+      assets: [liquidityAsset],
+    });
 
     expect(intendToRedeemReceipt).toMatchInlineGasSnapshot('136982');
     expect(redeemReceipt).toMatchInlineGasSnapshot('238144');
@@ -396,6 +417,11 @@ describe('stake', () => {
     // Pool token balance should not change
     expect(externalPositionPoolBalanceAfter).toEqBigNumber(externalPositionPoolBalanceBefore);
 
+    assertExternalPositionAssetsToReceive({
+      receipt: stakeReceipt,
+      assets: [],
+    });
+
     expect(stakeReceipt).toMatchInlineGasSnapshot('251372');
   });
 
@@ -469,6 +495,11 @@ describe('unstake', () => {
     // Pool token balance should not change
     expect(externalPositionPoolBalanceAfter).toEqBigNumber(externalPositionPoolBalanceBefore);
     expect(custodyAllowanceBefore.sub(custodyAllowanceAfter)).toEqBigNumber(stakeAmount);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: unstakeReceipt,
+      assets: [],
+    });
 
     expect(unstakeReceipt).toMatchInlineGasSnapshot('161137');
   });
@@ -549,6 +580,11 @@ describe('unstakeAndRedeem', () => {
     );
     expect(custodyAllowanceBefore.sub(custodyAllowanceAfter)).toEqBigNumber(unstakeAndRedeemAmount);
 
+    assertExternalPositionAssetsToReceive({
+      receipt: unstakeAndRedeemReceipt,
+      assets: [liquidityAsset],
+    });
+
     expect(unstakeAndRedeemReceipt).toMatchInlineGasSnapshot('330709');
   });
 
@@ -599,6 +635,11 @@ describe('claimInterest', () => {
     });
 
     const maplePool = new ITestMaplePool(poolAddress, provider);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: claimInterestReceipt,
+      assets: [liquidityAsset],
+    });
 
     // Assert that expected external contract function was called
     expect(maplePool.withdrawFunds).toHaveBeenCalledOnContract();
@@ -658,6 +699,12 @@ describe('claimRewards', () => {
     const mplBalanceAfter = await mplToken.balanceOf.args(vaultProxyUsed).call();
 
     expect(mplBalanceAfter).toBeGtBigNumber(mplBalanceBefore);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: claimReceipt,
+      assets: [],
+    });
+
     expect(claimReceipt).toMatchInlineGasSnapshot('204160');
   });
 

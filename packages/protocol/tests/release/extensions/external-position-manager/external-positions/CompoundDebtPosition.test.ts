@@ -10,6 +10,7 @@ import {
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   addNewAssetsToFund,
+  assertExternalPositionAssetsToReceive,
   compoundDebtPositionAddCollateral,
   compoundDebtPositionBorrow,
   compoundDebtPositionClaimComp,
@@ -150,6 +151,11 @@ describe('receiveCallFromVault', () => {
         collateralAmounts[0],
       );
 
+      assertExternalPositionAssetsToReceive({
+        receipt: addCollateralReceipt,
+        assets: [],
+      });
+
       expect(addCollateralReceipt).toMatchInlineGasSnapshot(`242238`);
 
       const getManagedAssetsCall = await compoundDebtPosition.getManagedAssets.call();
@@ -238,6 +244,11 @@ describe('receiveCallFromVault', () => {
         collateralAmountsToBeRemoved[0],
       );
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(collateralAmountsToBeRemoved[0]);
+
+      assertExternalPositionAssetsToReceive({
+        receipt: removeCollateralReceipt,
+        assets: collateralAssetsToBeRemoved,
+      });
 
       expect(removeCollateralReceipt).toMatchInlineGasSnapshot(`283390`);
 
@@ -424,6 +435,11 @@ describe('receiveCallFromVault', () => {
 
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
+
+      assertExternalPositionAssetsToReceive({
+        receipt: borrowReceipt,
+        assets: borrowedAssets,
+      });
 
       expect(borrowReceipt).toMatchInlineGasSnapshot(`447519`);
 
@@ -618,6 +634,11 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
+      assertExternalPositionAssetsToReceive({
+        receipt: repayBorrowReceipt,
+        assets: [],
+      });
+
       expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`302718`);
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
@@ -800,7 +821,7 @@ describe('receiveCallFromVault', () => {
       const compVaultBalanceBefore = await compToken.balanceOf(vaultProxyUsed);
       const compExternalPositionBalanceBefore = await compToken.balanceOf(compoundDebtPosition.address);
 
-      await compoundDebtPositionClaimComp({
+      const claimReceipt = await compoundDebtPositionClaimComp({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: compoundDebtPosition.address,
@@ -810,6 +831,11 @@ describe('receiveCallFromVault', () => {
 
       const compVaultBalanceAfter = await compToken.balanceOf(vaultProxyUsed);
       const compExternalPositionBalanceAfter = await compToken.balanceOf(compoundDebtPosition.address);
+
+      assertExternalPositionAssetsToReceive({
+        receipt: claimReceipt,
+        assets: [compToken.address],
+      });
 
       expect(compVaultBalanceBefore).toEqBigNumber(0);
       expect(compExternalPositionBalanceBefore).toEqBigNumber(0);

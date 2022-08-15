@@ -7,6 +7,7 @@ import {
   aaveDebtPositionClaimRewards,
   aaveDebtPositionRemoveCollateral,
   aaveDebtPositionRepayBorrow,
+  assertExternalPositionAssetsToReceive,
   createAaveDebtPosition,
   createNewFund,
   deployProtocolFixture,
@@ -80,6 +81,11 @@ describe('addCollateralAssets', () => {
       roundingBuffer,
     );
 
+    assertExternalPositionAssetsToReceive({
+      receipt: addCollateralReceipt,
+      assets: [],
+    });
+
     const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
 
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(collateralAmounts[0]);
@@ -132,6 +138,11 @@ describe('removeCollateralAssets', () => {
       collateralAmountsToBeRemoved[0],
       roundingBuffer,
     );
+
+    assertExternalPositionAssetsToReceive({
+      receipt: removeCollateralReceipt,
+      assets: collateralAssetsToBeRemoved,
+    });
 
     expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toBeAroundBigNumber(
       collateralAmountsToBeRemoved[0],
@@ -244,6 +255,11 @@ describe('borrowAssets', () => {
     // Assert the correct balance of asset was received at the vaultProxy
     expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
+    assertExternalPositionAssetsToReceive({
+      receipt: borrowReceipt,
+      assets: borrowedAssets,
+    });
+
     const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
 
     expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
@@ -306,6 +322,11 @@ describe('repayBorrowedAssets', () => {
     });
 
     const borrowedBalancesAfter = (await aaveDebtPosition.getDebtAssets.call()).amounts_[0];
+
+    assertExternalPositionAssetsToReceive({
+      receipt: repayBorrowReceipt,
+      assets: [],
+    });
 
     expect(borrowedBalancesAfter).toBeAroundBigNumber(borrowedBalancesBefore.sub(borrowedAmountsToBeRepaid[0]));
 
@@ -408,7 +429,7 @@ describe('claimRewards', () => {
 
     const stkAaveBalanceBefore = await rewardToken.balanceOf(vaultProxyUsed);
 
-    await aaveDebtPositionClaimRewards({
+    const claimRewardsReceipt = await aaveDebtPositionClaimRewards({
       assets: collateralAssets,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -417,6 +438,11 @@ describe('claimRewards', () => {
     });
 
     const stkAaveBalanceAfter = await rewardToken.balanceOf(vaultProxyUsed);
+
+    assertExternalPositionAssetsToReceive({
+      receipt: claimRewardsReceipt,
+      assets: [],
+    });
 
     expect(stkAaveBalanceAfter.sub(stkAaveBalanceBefore)).toBeGtBigNumber(0);
   });
