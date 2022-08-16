@@ -9,5 +9,10 @@
   },
   "solidity.packageDefaultDependenciesContractsDirectory": "src",
   "solidity.packageDefaultDependenciesDirectory": "lib",
-  "solidity.compileUsingRemoteVersion": "v0.6.12"
+  "solidity.compileUsingRemoteVersion": "v0.6.12",
+  "solidity.formatter": "prettier",
+  "solidity.linter": "solhint",
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity"
+  }
 }

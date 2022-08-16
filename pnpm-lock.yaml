@@ -8,7 +8,6 @@ importers:
   .:
     specifiers:
       '@changesets/cli': ^2.24.1
-      '@enzymefinance/prettier-config': ^1.0.10
       '@tsconfig/node16': ^1.0.3
       prettier: ^2.7.1
       prettier-plugin-solidity: 1.0.0-dev.23
@@ -16,7 +15,6 @@ importers:
       typescript: ^4.7.4
     devDependencies:
       '@changesets/cli': 2.24.1
-      '@enzymefinance/prettier-config': 1.0.10_prettier@2.7.1
       '@tsconfig/node16': 1.0.3
       prettier: 2.7.1
       prettier-plugin-solidity: 1.0.0-dev.23_prettier@2.7.1
@@ -679,15 +677,6 @@ packages:
       - supports-color
       - ts-node
       - typescript
-    dev: true
-
-  /@enzymefinance/prettier-config/1.0.10_prettier@2.7.1:
-    resolution: {integrity: sha512-D9sO4vP2261yUlGbvVhA4kKPxY1f7pXIW5RfFXi5WwGl6vwv+DDNGUAZ8AN6KQnrxi+7HjiG2YbPVqsysvRjrA==}
-    peerDependencies:
-      prettier: ^2.5.1
-    dependencies:
-      prettier: 2.7.1
-      prettier-plugin-tailwindcss: 0.1.13_prettier@2.7.1
     dev: true
 
   /@esbuild/linux-loong64/0.14.53:
@@ -6203,15 +6192,6 @@ packages:
       semver: 7.3.7
       solidity-comments-extractor: 0.0.7
       string-width: 4.2.3
-    dev: true
-
-  /prettier-plugin-tailwindcss/0.1.13_prettier@2.7.1:
-    resolution: {integrity: sha512-/EKQURUrxLu66CMUg4+1LwGdxnz8of7IDvrSLqEtDqhLH61SAlNNUSr90UTvZaemujgl3OH/VHg+fyGltrNixw==}
-    engines: {node: '>=12.17.0'}
-    peerDependencies:
-      prettier: '>=2.2.0'
-    dependencies:
-      prettier: 2.7.1
     dev: true
 
   /prettier/1.19.1:

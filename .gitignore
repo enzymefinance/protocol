@@ -8,7 +8,7 @@
 !.github
 !.gitignore
 !.gitattributes
-!.prettierrc.js
+!.prettierrc
 !.eslintignore
 !.solhint.json
 !.solhintignore
