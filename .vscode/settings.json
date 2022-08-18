@@ -13,6 +13,6 @@
   "solidity.formatter": "prettier",
   "solidity.linter": "solhint",
   "[solidity]": {
-    "editor.defaultFormatter": "JuanBlanco.solidity"
+    "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
   }
 }
