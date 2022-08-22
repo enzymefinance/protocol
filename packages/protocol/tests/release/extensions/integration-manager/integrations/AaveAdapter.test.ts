@@ -147,7 +147,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`499347`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`485321`);
   });
 });
 
@@ -191,6 +191,6 @@ describe('redeem', () => {
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
     // This can vary substantially for whatever reason
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`580210`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`537751`);
   });
 });

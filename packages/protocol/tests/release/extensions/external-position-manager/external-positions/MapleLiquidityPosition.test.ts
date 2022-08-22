@@ -139,7 +139,7 @@ describe('lend', () => {
       assets: [],
     });
 
-    expect(lendReceipt).toMatchInlineGasSnapshot('351087');
+    expect(lendReceipt).toMatchInlineGasSnapshot('367760');
   });
 
   it('reverts if the pool is not deployed from Maple factory ', async () => {
@@ -194,7 +194,7 @@ describe('lendAndStake', () => {
       assets: [],
     });
 
-    expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('491241');
+    expect(lendAndStakeReceipt).toMatchInlineGasSnapshot('501743');
   });
 
   it('reverts if the pool or rewards contract is not deployed from a Maple factory ', async () => {
@@ -422,7 +422,7 @@ describe('stake', () => {
       assets: [],
     });
 
-    expect(stakeReceipt).toMatchInlineGasSnapshot('251372');
+    expect(stakeReceipt).toMatchInlineGasSnapshot('245973');
   });
 
   it('reverts if the pool or rewardsContract is not deployed from Maple factory ', async () => {
@@ -501,7 +501,7 @@ describe('unstake', () => {
       assets: [],
     });
 
-    expect(unstakeReceipt).toMatchInlineGasSnapshot('161137');
+    expect(unstakeReceipt).toMatchInlineGasSnapshot('152843');
   });
 
   it('reverts if the rewardsContract is not deployed from Maple factory', async () => {
@@ -585,7 +585,7 @@ describe('unstakeAndRedeem', () => {
       assets: [liquidityAsset],
     });
 
-    expect(unstakeAndRedeemReceipt).toMatchInlineGasSnapshot('330709');
+    expect(unstakeAndRedeemReceipt).toMatchInlineGasSnapshot('302341');
   });
 
   it('reverts if the pool or rewardsContract is not deployed from Maple factory', async () => {
@@ -662,7 +662,9 @@ describe('claimInterest', () => {
 });
 
 describe('claimRewards', () => {
-  it('works as expected', async () => {
+  // As of August 1st, MPL accrue directly to the EP. https://intercom.help/maplefinance/en/articles/6404750-changes-to-mpl-lending-rewards
+  // TODO: Find an alternative way to test this?
+  xit('works as expected', async () => {
     const mplToken = new ITestStandardToken(mplTokenAddress, provider);
 
     await mapleLiquidityPositionLend({

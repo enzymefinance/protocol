@@ -161,7 +161,7 @@ describe('actions', () => {
       expect(await weth.balanceOf(vaultProxy)).toEqBigNumber(0);
       expect(await steth.balanceOf(vaultProxy)).toEqBigNumber(0);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1507526`);
+      expect(receipt).toMatchInlineGasSnapshot(`1512787`);
     });
   });
 
@@ -281,7 +281,7 @@ describe('actions', () => {
       expect(postTxWethBalance).toBeGtBigNumber(preTxWethBalance);
       expect(postTxStethBalance).toBeGtBigNumber(preTxStethBalance);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1702368`);
+      expect(receipt).toMatchInlineGasSnapshot(`1707536`);
     });
   });
 });

@@ -65,6 +65,6 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(fidu, fiduAmount, usdc).call();
 
     // Should be slightly more than 1 unit of USDC (10^6)
-    expect(canonicalAssetValue).toEqBigNumber('1056950');
+    expect(canonicalAssetValue).toEqBigNumber('1076031');
   });
 });

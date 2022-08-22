@@ -142,7 +142,7 @@ describe('calcUnderlyingValues', () => {
 
     const calcUnderlyingValuesTx = await curvePriceFeed.calcUnderlyingValues(curveLPToken, lpTokenUnit);
 
-    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`62581`);
+    expect(calcUnderlyingValuesTx).toMatchInlineGasSnapshot(`60952`);
   });
 
   // TODO: can make this better / more accurate

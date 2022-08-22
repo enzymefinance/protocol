@@ -177,6 +177,6 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`147236`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`146196`);
   });
 });

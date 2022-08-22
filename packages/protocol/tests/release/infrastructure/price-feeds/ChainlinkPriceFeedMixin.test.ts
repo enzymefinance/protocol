@@ -587,18 +587,16 @@ describe('expected values', () => {
 
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // Mar 22, 2022
-      // bnb/usd was about $400
-      // ren/usd was about $0.36
-      // Source (bnb): <https://www.coingecko.com/en/coins/binance-coin/historical_data/usd?start_date=2022-03-22&end_date=2022-03-22>
-      // Source (ren): <https://www.coingecko.com/en/coins/ren/historical_data/usd?start_date=2022-03-22&end_date=2022-03-22>
-      // 1 bnb was about 1111 ren
+      // Aug 8, 2022
+      // bnb/usd was about $324
+      // ren/usd was about $0.16
+      // 1 bnb was about 2025 ren
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('1850930596717258220921');
+      expect(canonicalAssetValue).toEqBigNumber('2056546990919683971090');
     });
   });
 

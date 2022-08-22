@@ -202,7 +202,7 @@ describe('lend', () => {
       preTxUnderlyingBalance.sub(outgoingUnderlyingAmount).add(preTxAdapterUnderlyingBalance),
     );
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`313978`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`311705`);
   });
 });
 
@@ -286,6 +286,6 @@ describe('redeem', () => {
       slippageToleranceBps,
     );
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`206033`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`203760`);
   });
 });
