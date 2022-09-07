@@ -30,7 +30,7 @@ function accounts(networkName: string) {
 
 const mnemonic = 'test test test test test test test test test test test junk';
 
-const config: HardhatUserConfig = {
+export const config: HardhatUserConfig = {
   codeGenerator: {
     abi: {
       enabled: false,
@@ -138,7 +138,6 @@ const config: HardhatUserConfig = {
     },
   },
   paths: {
-    root: '../../',
     artifacts: './packages/protocol/artifacts',
     cache: './packages/protocol/cache',
     deployments: './packages/protocol/deployments',
@@ -173,5 +172,3 @@ const config: HardhatUserConfig = {
     ],
   },
 };
-
-export default config;

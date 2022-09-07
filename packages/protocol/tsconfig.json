@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "include": ["src", "tasks", "deploy", "tests"],
-  "files": ["hardhat.config.ts", "jest.config.ts", "jest.environment.ts", "jest.setup.ts"],
+  "files": ["jest.config.ts", "jest.environment.ts", "jest.setup.ts", "hardhat.import.ts"],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

@@ -93,7 +93,8 @@ jobs:
         run: pnpm compile
 
       - name: Run tests
-        run: pnpm run --filter @enzymefinance/protocol -- test --shard ${{ matrix.shard }} --runInBand
+        working-directory: ./packages/protocol
+        run: pnpm jest --shard ${{ matrix.shard }} --runInBand
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
 

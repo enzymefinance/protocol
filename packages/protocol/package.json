@@ -38,21 +38,11 @@
     "Solidity"
   ],
   "scripts": {
-    "test": "pnpm compile && TS_NODE_TRANSPILE_ONLY=1 jest",
-    "compile": "TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
     "build": "tsup",
+    "test": "jest --maxWorkers 50%",
     "lint": "eslint \"{deploy,tasks,tests,src}/**/*.{js,ts}\" --cache",
     "format": "pnpm lint --fix",
-    "typecheck": "tsc --noEmit",
-    "deploy:testnet": "hardhat deploy --network testnet",
-    "export:testnet": "hardhat export --network testnet --export deployments/testnet.json",
-    "verify:testnet": "hardhat etherscan-verify --network testnet",
-    "deploy:mainnet": "hardhat deploy --network mainnet",
-    "export:mainnet": "hardhat export --network mainnet --export deployments/mainnet.json",
-    "verify:mainnet": "hardhat etherscan-verify --network mainnet",
-    "deploy:matic": "hardhat deploy --network matic",
-    "export:matic": "hardhat export --network matic --export deployments/matic.json",
-    "verify:matic": "hardhat etherscan-verify --network matic"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@enzymefinance/ethers": "workspace:4.0.5",
