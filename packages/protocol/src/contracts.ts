@@ -127,6 +127,8 @@ export * from './codegen/OnlyRemoveDustExternalPositionPolicy';
 export * from './codegen/OnlyUntrackDustOrPricelessAssetsPolicy';
 
 // Peripheral
+export * from './codegen/ArbitraryTokenPhasedSharesWrapperFactory';
+export * from './codegen/ArbitraryTokenPhasedSharesWrapperLib';
 export * from './codegen/DepositWrapper';
 export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
