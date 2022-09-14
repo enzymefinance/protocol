@@ -114,16 +114,6 @@ const ctokens = {
 
 const compoundComptroller = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
 
-const ftokens = {
-  fdai7: '0x989273ec41274C4227bCB878C2c26fdd3afbE70d',
-  fdai8: '0x7e9cE3CAa9910cc048590801e64174957Ed41d43',
-  ftribe8: '0xFd3300A9a74b3250F1b2AbC12B47611171910b07',
-} as const;
-
-const fetherTokens = {
-  feth7: '0x7c3D310c41e68ed7d636e97055E92d526F3849c1',
-} as const;
-
 const atokens = {
   aaave: ['0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B', primitives.aave] as [string, string],
   abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
@@ -292,10 +282,6 @@ const mainnetConfig: DeploymentConfig = {
     burnFromVault: true,
     externalBurnerAddress: constants.AddressZero,
     sendToProtocolFeeReserve: false,
-  },
-  fuse: {
-    fetherTokens,
-    ftokens
   },
   goldfinch: {
     fidu: '0x6a445E9F40e0b97c92d0b8a3366cEF1d67F700BF',

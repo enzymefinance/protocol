@@ -17,7 +17,7 @@ import "../AdapterBase.sol";
 
 /// @title CompoundAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Adapter base for Compound and Fuse <https://compound.finance/>
+/// @notice Adapter base for Compound v2 and its forks <https://compound.finance/>
 abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     address private immutable COMPOUND_PRICE_FEED;
 
