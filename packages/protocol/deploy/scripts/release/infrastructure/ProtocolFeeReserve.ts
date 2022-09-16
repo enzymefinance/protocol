@@ -1,5 +1,5 @@
 import { sameAddress } from '@enzymefinance/ethers';
-import type { ProtocolFeeReserveLibArgs, ProtocolFeeReserveProxyArgs } from '@enzymefinance/protocol';
+import type { ProtocolFeeReserveProxyArgs } from '@enzymefinance/protocol';
 import {
   encodeFunctionData,
   LIB_INIT_GENERIC_DUMMY_ADDRESS,
@@ -8,20 +8,16 @@ import {
 } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
-import { loadConfig } from '../../../utils/config';
-
 const fn: DeployFunction = async function (hre) {
   const {
     deployments: { deploy, get, log },
     ethers: { getSigners },
   } = hre;
 
-  const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
   const dispatcher = await get('Dispatcher');
 
   const protocolFeeReserveLib = await deploy('ProtocolFeeReserveLib', {
-    args: [dispatcher.address, config.feeToken] as ProtocolFeeReserveLibArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -56,6 +52,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Release', 'ProtocolFeeReserve'];
-fn.dependencies = ['Config', 'Dispatcher'];
+fn.dependencies = ['Dispatcher'];
 
 export default fn;

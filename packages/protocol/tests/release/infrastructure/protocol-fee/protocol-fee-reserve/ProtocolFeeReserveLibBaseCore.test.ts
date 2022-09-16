@@ -75,11 +75,7 @@ describe('ProtocolFeeReserveLibBaseCore', () => {
     beforeEach(async () => {
       protocolFeeReserveProxy = fork.deployment.protocolFeeReserveProxy;
 
-      nextProtocolFeeReserveLib = await ProtocolFeeReserveLib.deploy(
-        fork.deployer,
-        fork.deployment.dispatcher,
-        fork.config.feeToken,
-      );
+      nextProtocolFeeReserveLib = await ProtocolFeeReserveLib.deploy(fork.deployer);
     });
 
     it('cannot be called by a random user', async () => {

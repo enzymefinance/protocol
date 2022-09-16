@@ -12,9 +12,6 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../dispatcher/IDispatcher.sol";
 import "./bases/ProtocolFeeReserveLibBase1.sol";
 import "./interfaces/IProtocolFeeReserve1.sol";
 
@@ -23,18 +20,9 @@ import "./interfaces/IProtocolFeeReserve1.sol";
 /// @notice The proxiable library contract for ProtocolFeeReserveProxy
 contract ProtocolFeeReserveLib is IProtocolFeeReserve1, ProtocolFeeReserveLibBase1 {
     using SafeMath for uint256;
-    using SafeERC20 for ERC20;
 
     // Equates to a 50% discount
     uint256 private constant BUYBACK_DISCOUNT_DIVISOR = 2;
-
-    IDispatcher private immutable DISPATCHER_CONTRACT;
-    ERC20 private immutable MLN_TOKEN_CONTRACT;
-
-    constructor(address _dispatcher, address _mlnToken) public {
-        DISPATCHER_CONTRACT = IDispatcher(_dispatcher);
-        MLN_TOKEN_CONTRACT = ERC20(_mlnToken);
-    }
 
     /// @notice Indicates that the calling VaultProxy is buying back shares collected as protocol fee,
     /// and returns the amount of MLN that should be burned for the buyback
@@ -62,20 +50,18 @@ contract ProtocolFeeReserveLib is IProtocolFeeReserve1, ProtocolFeeReserveLibBas
         return mlnAmountToBurn_;
     }
 
-    /// @notice Withdraws the full MLN token balance to the given address
-    /// @param _to The address to which to send the MLN token balance
-    /// @dev Used in the case that MLN tokens are sent to this contract rather than being burned,
-    /// which will be the case on networks where MLN does not implement a burn function in the desired manner.
-    /// The Enzyme Council will periodically withdraw the MLN, bridge to Ethereum mainnet, and burn.
-    function withdrawMlnTokenBalanceTo(address _to) external {
-        require(
-            msg.sender == DISPATCHER_CONTRACT.getOwner(),
-            "withdrawMlnTokenBalance: Unauthorized"
-        );
+    /////////////
+    // COUNCIL //
+    /////////////
 
-        uint256 balance = MLN_TOKEN_CONTRACT.balanceOf(address(this));
-        MLN_TOKEN_CONTRACT.safeTransfer(_to, balance);
-
-        emit MlnTokenBalanceWithdrawn(_to, balance);
+    /// @notice Makes an arbitrary call with this contract as the sender
+    /// @param _contract The contract to call
+    /// @param _callData The call data for the call
+    function callOnContract(address _contract, bytes calldata _callData)
+        external
+        onlyDispatcherOwner
+    {
+        (bool success, bytes memory returnData) = _contract.call(_callData);
+        require(success, string(returnData));
     }
 }
