@@ -17,6 +17,8 @@ pragma solidity 0.6.12;
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 abstract contract IntegrationSelectors {
     // Trading
+    bytes4 public constant TAKE_MULTIPLE_ORDERS_SELECTOR =
+        bytes4(keccak256("takeMultipleOrders(address,bytes,bytes)"));
     bytes4 public constant TAKE_ORDER_SELECTOR =
         bytes4(keccak256("takeOrder(address,bytes,bytes)"));
 

@@ -1,54 +1,58 @@
 import { randomAddress } from '@enzymefinance/ethers';
+import type { ComptrollerLib, IntegrationManager, ParaSwapV5Adapter, VaultLib } from '@enzymefinance/protocol';
 import {
-  assetTransferArgs,
-  encodeArgs,
   ITestStandardToken,
-  ITestUniswapV2Pair,
   ONE_HUNDRED_PERCENT_IN_BPS,
+  paraSwapV5TakeMultipleOrdersArgs,
   paraSwapV5TakeOrderArgs,
   SpendAssetsHandleType,
+  takeMultipleOrdersSelector,
   takeOrderSelector,
 } from '@enzymefinance/protocol';
-import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
+  assertEvent,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  getAssetUnit,
+  paraSwapV5ConstructUniV2ForkPaths,
+  paraSwapV5ConstructUniV2ForkPayload,
   paraSwapV5GenerateDummyPaths,
+  paraSwapV5TakeMultipleOrders,
   paraSwapV5TakeOrder,
   setAccountBalance,
 } from '@enzymefinance/testutils';
-import { BigNumber, constants, utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
+
+const sushiDaiWethPoolAddress = '0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f';
+
+let integrationManager: IntegrationManager, paraSwapV5Adapter: ParaSwapV5Adapter;
+let fundOwner: SignerWithAddress;
+let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 
 let fork: ProtocolDeployment;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
-});
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
+  [fundOwner] = fork.accounts;
+  paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
+  integrationManager = fork.deployment.integrationManager;
 
-    // AdapterBase
-    const integrationManagerResult = await paraSwapV5Adapter.getIntegrationManager();
-
-    expect(integrationManagerResult).toMatchAddress(fork.deployment.integrationManager);
-
-    // ParaSwapV5ActionsMixin
-    expect(await paraSwapV5Adapter.getParaSwapV5AugustusSwapper()).toMatchAddress(
-      fork.config.paraSwapV5.augustusSwapper,
-    );
-    expect(await paraSwapV5Adapter.getParaSwapV5TokenTransferProxy()).toMatchAddress(
-      fork.config.paraSwapV5.tokenTransferProxy,
-    );
+  const newFundRes = await createNewFund({
+    denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
+    fundDeployer: fork.deployment.fundDeployer,
+    fundOwner,
+    signer: fundOwner,
   });
+
+  comptrollerProxy = newFundRes.comptrollerProxy;
+  vaultProxy = newFundRes.vaultProxy;
 });
 
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
-    const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
-
     const args = paraSwapV5TakeOrderArgs({
       expectedIncomingAssetAmount: 123,
       minIncomingAssetAmount: 1,
@@ -67,9 +71,7 @@ describe('parseAssetsForAction', () => {
     ).resolves.toBeTruthy();
   });
 
-  it('generates expected output', async () => {
-    const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
-
+  it('takeOrder: happy path', async () => {
     const incomingAsset = randomAddress();
     const minIncomingAssetAmount = utils.parseEther('1');
     const outgoingAsset = randomAddress();
@@ -94,123 +96,98 @@ describe('parseAssetsForAction', () => {
       spendAssets_: [outgoingAsset],
     });
   });
+
+  it('takeMultipleOrders: happy path (unique and non-unique assets)', async () => {
+    const pool1Address = fork.config.uniswap.pools.daiWeth;
+    const outgoingAsset1 = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset1 = new ITestStandardToken(fork.config.primitives.dai, provider);
+
+    const pool2Address = fork.config.uniswap.pools.usdcUsdt;
+    const outgoingAsset2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const incomingAsset2 = new ITestStandardToken(fork.config.primitives.usdt, provider);
+
+    const outgoingAsset1Amount = await getAssetUnit(outgoingAsset1);
+    const outgoingAsset2Amount = await getAssetUnit(outgoingAsset2);
+
+    const uniV2Payload1 = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: pool1Address,
+      incomingAsset: incomingAsset1,
+    });
+    const uniV2Payload2 = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: pool2Address,
+      incomingAsset: incomingAsset2,
+    });
+
+    const paths1 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset1,
+      payloads: [uniV2Payload1],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+    const paths2 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset2,
+      payloads: [uniV2Payload2],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+
+    const ordersData = [
+      { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
+      { outgoingAsset: outgoingAsset2, outgoingAssetAmount: outgoingAsset2Amount, paths: paths2 },
+    ].map((order) =>
+      paraSwapV5TakeOrderArgs({
+        expectedIncomingAssetAmount: 1,
+        minIncomingAssetAmount: 1,
+        outgoingAsset: order.outgoingAsset,
+        outgoingAssetAmount: order.outgoingAssetAmount,
+        paths: order.paths,
+        uuid: utils.randomBytes(16),
+      }),
+    );
+
+    const takeMultipleOrderArgs = paraSwapV5TakeMultipleOrdersArgs({ ordersData, allowOrdersToFail: false });
+
+    const result = await paraSwapV5Adapter.parseAssetsForAction(
+      randomAddress(),
+      takeMultipleOrdersSelector,
+      takeMultipleOrderArgs,
+    );
+
+    expect(result).toMatchFunctionOutput(paraSwapV5Adapter.parseAssetsForAction, {
+      incomingAssets_: [incomingAsset1, incomingAsset2],
+      minIncomingAssetAmounts_: [0, 0], // We rely on validation in takeMultipleOrders() for this action
+      spendAssetAmounts_: [outgoingAsset1Amount, outgoingAsset2Amount],
+      spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
+      spendAssets_: [outgoingAsset1, outgoingAsset2],
+    });
+  });
 });
 
 describe('takeOrder', () => {
-  it('can only be called via the IntegrationManager', async () => {
-    const [fundOwner] = fork.accounts;
-    const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
-
-    const { vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fork.deployer,
-    });
-
-    const takeOrderArgs = paraSwapV5TakeOrderArgs({
-      expectedIncomingAssetAmount: 1,
-      minIncomingAssetAmount: 1,
-      outgoingAsset: randomAddress(),
-      outgoingAssetAmount: 1,
-      paths: paraSwapV5GenerateDummyPaths({ toTokens: [randomAddress()] }),
-      uuid: utils.randomBytes(16),
-    });
-
-    const transferArgs = await assetTransferArgs({
-      adapter: paraSwapV5Adapter,
-      encodedCallArgs: takeOrderArgs,
-      selector: takeOrderSelector,
-    });
-
-    await expect(paraSwapV5Adapter.takeOrder(vaultProxy, takeOrderSelector, transferArgs)).rejects.toBeRevertedWith(
-      'Only the IntegrationManager can call this function',
-    );
-  });
-
-  it('works as expected when called by a fund (no network fees)', async () => {
+  it('happy path', async () => {
     const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
     const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
-    const [fundOwner] = fork.accounts;
-    const paraSwapV5Adapter = fork.deployment.paraSwapV5Adapter;
-    const integrationManager = fork.deployment.integrationManager;
-
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, provider),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
 
     const outgoingAssetAmount = utils.parseEther('1');
     const minIncomingAssetAmount = '1';
 
-    // UniV2 and Sushi have the same adapter and index, and same fee
-    const adapter = '0x3A0430bF7cd2633af111ce3204DB4b0990857a6F';
-    const index = 4;
-    const shiftedFee = BigNumber.from(30).shl(161);
+    const uniV2Payload = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: fork.config.uniswap.pools.daiWeth,
+      incomingAsset,
+    });
+    const sushiPayload = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: sushiDaiWethPoolAddress,
+      incomingAsset,
+    });
+
     const fiftyPercent = BigNumber.from(ONE_HUNDRED_PERCENT_IN_BPS).div(2);
-
-    // Construct the payload for both UniswapV2 forks in the same way
-    // struct UniswapV2Data {
-    //   address weth;
-    //   uint256[] pools;
-    // }
-    const uniswapV2DataStruct = utils.ParamType.fromString('tuple(address weth, uint256[] pools)');
-
-    // Construct each `pools` value by packing a BN so that:
-    // pool address = bits 1-159
-    // direction (`1` if the incoming token is `token0` on the pool) = bit 160
-    // fee (`30` for all Uni forks) = bits 161+
-    // e.g., hex((30 << 161) + (1 << 160) + 0xa478c2975ab1ea89e8196811f51a7b7ade33eb11)
-
-    // UniV2 payload
-    const uniV2Pool = new ITestUniswapV2Pair(fork.config.uniswap.pools.daiWeth, provider);
-    const uniV2ShiftedDirection = (await uniV2Pool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
-    const uniV2PackedPool = shiftedFee.add(uniV2ShiftedDirection).add(uniV2Pool.address);
-    const uniV2Payload = encodeArgs([uniswapV2DataStruct], [{ pools: [uniV2PackedPool], weth: constants.AddressZero }]);
-
-    // Sushi payload
-    const sushiPool = new ITestUniswapV2Pair('0xc3d03e4f041fd4cd388c549ee2a29a9e5075882f', provider);
-    const sushiShiftedDirection = (await sushiPool.token0()) === incomingAsset.address ? BigNumber.from(1).shl(160) : 0;
-    const sushiPackedPool = shiftedFee.add(sushiShiftedDirection).add(sushiPool.address);
-    const sushiPayload = encodeArgs([uniswapV2DataStruct], [{ pools: [sushiPackedPool], weth: constants.AddressZero }]);
-
-    // Define the ParaSwap Paths
-    const paths = [
-      {
-        adapters: [
-          {
-            adapter,
-            networkFee: 0,
-            percent: ONE_HUNDRED_PERCENT_IN_BPS,
-            route: [
-              // UniswapV2
-              {
-                index,
-                networkFee: 0,
-                payload: uniV2Payload,
-                percent: fiftyPercent,
-                // Unused
-                targetExchange: constants.AddressZero,
-              },
-              // Sushi
-              {
-                index,
-                networkFee: 0,
-                payload: sushiPayload,
-                percent: fiftyPercent,
-                // Unused
-                targetExchange: constants.AddressZero,
-              },
-            ],
-          },
-        ],
-        to: incomingAsset.address,
-        // dest token or intermediary (i.e., dai)
-        totalNetworkFee: 0,
-      },
-    ];
+    const paths = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset,
+      payloads: [uniV2Payload, sushiPayload],
+      percents: [fiftyPercent, fiftyPercent],
+    });
 
     // Seed fund with more than what will be spent
     const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
@@ -226,7 +203,7 @@ describe('takeOrder', () => {
     // Trade on ParaSwap
     await paraSwapV5TakeOrder({
       comptrollerProxy,
-      fundOwner,
+      signer: fundOwner,
       integrationManager,
       minIncomingAssetAmount,
       outgoingAsset,
@@ -243,5 +220,183 @@ describe('takeOrder', () => {
 
     expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
+  });
+});
+
+describe('takeMultipleOrders', () => {
+  // Uses the first payload twice to test non-unique assets
+  it('happy path: unique and non-unique outgoing and incoming assets', async () => {
+    const outgoingAsset1 = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset1 = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const outgoingAsset2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const incomingAsset2 = new ITestStandardToken(fork.config.primitives.usdt, provider);
+
+    const outgoingAsset1Amount = await getAssetUnit(outgoingAsset1);
+    const outgoingAsset2Amount = await getAssetUnit(outgoingAsset2);
+
+    const uniV2Payload1 = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: fork.config.uniswap.pools.daiWeth,
+      incomingAsset: incomingAsset1,
+    });
+    const uniV2Payload2 = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: fork.config.uniswap.pools.usdcUsdt,
+      incomingAsset: incomingAsset2,
+    });
+
+    // Define the ParaSwap Paths
+    const paths1 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset1,
+      payloads: [uniV2Payload1],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+    const paths2 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset2,
+      payloads: [uniV2Payload2],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+
+    // Seed fund with more than what will be spent
+    const initialOutgoingAsset1Balance = outgoingAsset1Amount.mul(4);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAsset1Balance,
+      provider,
+      token: outgoingAsset1,
+    });
+    const initialOutgoingAsset2Balance = outgoingAsset2Amount.mul(4);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAsset2Balance,
+      provider,
+      token: outgoingAsset2,
+    });
+
+    // Trade on ParaSwap
+    // Uses default values for all unnecessary order params
+    await paraSwapV5TakeMultipleOrders({
+      comptrollerProxy,
+      integrationManager,
+      signer: fundOwner,
+      paraSwapV5Adapter,
+      orders: [
+        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
+        { outgoingAsset: outgoingAsset2, outgoingAssetAmount: outgoingAsset2Amount, paths: paths2 },
+        // Uses the first payload twice to test non-unique assets
+        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
+      ],
+      allowOrdersToFail: false,
+    });
+
+    // Calculate the fund balances after the tx and assert the correct final token balances
+    const [
+      postTxIncomingAsset1Balance,
+      postTxOutgoingAsset1Balance,
+      postTxIncomingAsset2Balance,
+      postTxOutgoingAsset2Balance,
+    ] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset1, outgoingAsset1, incomingAsset2, outgoingAsset2],
+    });
+
+    expect(postTxOutgoingAsset1Balance).toEqBigNumber(initialOutgoingAsset1Balance.sub(outgoingAsset1Amount.mul(2)));
+    expect(postTxOutgoingAsset2Balance).toEqBigNumber(initialOutgoingAsset2Balance.sub(outgoingAsset2Amount));
+    // TODO: better assertion here
+    expect(postTxIncomingAsset1Balance).toBeGtBigNumber(0);
+    expect(postTxIncomingAsset2Balance).toBeGtBigNumber(0);
+  });
+
+  it('happy path: one order passes, one order fails', async () => {
+    const outgoingAsset1 = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset1 = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const outgoingAsset2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const incomingAsset2 = new ITestStandardToken(fork.config.primitives.usdt, provider);
+
+    const outgoingAsset1Amount = await getAssetUnit(outgoingAsset1);
+    const outgoingAsset2Amount = await getAssetUnit(outgoingAsset2);
+
+    const uniV2Payload1 = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: fork.config.uniswap.pools.daiWeth,
+      incomingAsset: incomingAsset1,
+    });
+    const uniV2Payload2 = '0x';
+
+    // Define the ParaSwap Paths
+    const paths1 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset1,
+      payloads: [uniV2Payload1],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+    const paths2 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset: incomingAsset2,
+      payloads: [uniV2Payload2],
+      percents: [ONE_HUNDRED_PERCENT_IN_BPS],
+    });
+
+    // Seed fund with more than what will be spent
+    const initialOutgoingAsset1Balance = outgoingAsset1Amount.mul(4);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAsset1Balance,
+      provider,
+      token: outgoingAsset1,
+    });
+    const initialOutgoingAsset2Balance = outgoingAsset2Amount.mul(4);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAsset2Balance,
+      provider,
+      token: outgoingAsset2,
+    });
+
+    const paraSwapV5TakeMultipleOrdersArgs = {
+      comptrollerProxy,
+      integrationManager,
+      signer: fundOwner,
+      paraSwapV5Adapter,
+      orders: [
+        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
+        { outgoingAsset: outgoingAsset2, outgoingAssetAmount: outgoingAsset2Amount, paths: paths2 },
+      ],
+    };
+
+    // Trade on ParaSwap
+    // Should fail if allowOrdersToFail is false
+    await expect(
+      paraSwapV5TakeMultipleOrders({ ...paraSwapV5TakeMultipleOrdersArgs, allowOrdersToFail: false }),
+    ).rejects.toBeRevertedWith('Call to adapter failed');
+
+    // Should succeed if allowOrdersToFail is true
+    const receipt = await paraSwapV5TakeMultipleOrders({
+      ...paraSwapV5TakeMultipleOrdersArgs,
+      allowOrdersToFail: true,
+    });
+
+    assertEvent(receipt, paraSwapV5Adapter.abi.getEvent('MultipleOrdersItemFailed'), {
+      index: 1,
+      reason: 'Call to adapter failed',
+    });
+
+    // Calculate the fund balances after the tx and assert the correct final token balances
+    const [
+      postTxIncomingAsset1Balance,
+      postTxOutgoingAsset1Balance,
+      postTxIncomingAsset2Balance,
+      postTxOutgoingAsset2Balance,
+    ] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset1, outgoingAsset1, incomingAsset2, outgoingAsset2],
+    });
+
+    expect(postTxOutgoingAsset1Balance).toEqBigNumber(initialOutgoingAsset1Balance.sub(outgoingAsset1Amount));
+
+    // Assets from tx 2 should not have changed since tx failed
+    expect(postTxOutgoingAsset2Balance).toEqBigNumber(initialOutgoingAsset2Balance);
+    expect(postTxIncomingAsset2Balance).toEqBigNumber(0);
+
+    // TODO: better assertion here
+    expect(postTxIncomingAsset1Balance).toBeGtBigNumber(0);
   });
 });

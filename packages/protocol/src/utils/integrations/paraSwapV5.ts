@@ -50,6 +50,16 @@ export const paraSwapV5PathTuple = utils.ParamType.fromString(
 );
 export const paraSwapV5PathTupleArray = `${paraSwapV5PathTuple.format('full')}[]`;
 
+export function paraSwapV5TakeMultipleOrdersArgs({
+  ordersData,
+  allowOrdersToFail,
+}: {
+  ordersData: BytesLike[];
+  allowOrdersToFail: boolean;
+}) {
+  return encodeArgs(['bytes[]', 'bool'], [ordersData, allowOrdersToFail]);
+}
+
 export function paraSwapV5TakeOrderArgs({
   minIncomingAssetAmount,
   expectedIncomingAssetAmount, // Passed as a courtesy to ParaSwap for analytics
