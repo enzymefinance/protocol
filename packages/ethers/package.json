@@ -36,9 +36,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ethersproject/abi": "^5.6.4",
-    "@ethersproject/abstract-signer": "^5.6.2",
-    "ethers": "^5.6.8"
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/abstract-signer": "^5.7.0",
+    "ethers": "^5.7.1"
   },
   "devDependencies": {
     "eslint": "^8.12.0",

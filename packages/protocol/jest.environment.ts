@@ -97,23 +97,16 @@ export function addListener(provider: EthereumProvider, event: string, handler: 
 
     if (!subscribed && !removed) {
       subscribed = true;
-      const vm = inner._node._vm as EventEmitter;
-
-      vm.on(event, handler);
+      const events = inner._node._vm.evm.events as EventEmitter;
+      events.on(event, handler);
     }
   };
 
   return () => {
-    if (removed) {
-      return;
-    }
-
-    removed = true;
-    const vm = (inner as any)._node?._vm as EventEmitter;
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition,eqeqeq
-    if (vm != null) {
-      vm.off(event, handler);
+    if (subscribed && !removed) {
+      removed = true;
+      const events = inner._node._vm.evm.events as EventEmitter;
+      events.off(event, handler);
     }
   };
 }

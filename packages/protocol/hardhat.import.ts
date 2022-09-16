@@ -74,6 +74,7 @@ export const config: HardhatUserConfig = {
       'ITestGsnRelayHub',
       'ITestMapleGlobals',
       'ITestMaplePool',
+      'ITestNotionalV2Router',
       'ITestSnapshotDelegateRegistry',
       'ITestSolvV2ConvertibleMarket',
       'ITestSolvV2ConvertiblePool',

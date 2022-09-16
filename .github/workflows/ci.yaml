@@ -10,7 +10,7 @@ on:
       - audit/*
 
 env:
-  CACHE_VERSION: '1'
+  CACHE_VERSION: '4'
   NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
@@ -84,7 +84,6 @@ jobs:
           key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-${{ github.sha }}
           restore-keys: |
             fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-
-            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install
@@ -94,7 +93,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./packages/protocol
-        run: pnpm jest --shard ${{ matrix.shard }} --runInBand
+        run: pnpm jest --shard ${{ matrix.shard }} --testPathIgnorePatterns=/tests/ci-excluded/
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
 

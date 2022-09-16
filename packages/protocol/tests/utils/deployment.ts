@@ -60,6 +60,8 @@ import {
   MinAssetBalancesPostRedemptionPolicy,
   MinMaxInvestmentPolicy,
   MinSharesSupplyFee,
+  NotionalV2PositionLib,
+  NotionalV2PositionParser,
   OlympusV2Adapter,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
@@ -172,6 +174,8 @@ export async function deployProtocolFixture() {
     mapleLiquidityPositionParser: new MapleLiquidityPositionParser(fixture.MapleLiquidityPositionParser.address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture.MinAssetBalancesPostRedemptionPolicy.address, deployer),
     minMaxInvestmentPolicy: new MinMaxInvestmentPolicy(fixture.MinMaxInvestmentPolicy.address, deployer),
+    notionalV2Position: new NotionalV2PositionLib(fixture.NotionalV2PositionLib.address, deployer),
+    notionalV2PositionParser: new NotionalV2PositionParser(fixture.NotionalV2PositionParser.address, deployer),
     minSharesSupplyFee: new MinSharesSupplyFee(fixture.MinSharesSupplyFee.address, deployer),
     olympusV2Adapter: new OlympusV2Adapter(fixture.OlympusV2Adapter.address, deployer),
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture.OnlyRemoveDustExternalPositionPolicy.address, deployer),
@@ -305,6 +309,9 @@ export interface DeploymentConfig {
   maple: {
     mplRewardsFactory: string;
     poolFactory: string;
+  };
+  notional: {
+    notionalContract: string;
   };
   olympusV2: {
     stakingContract: string;
