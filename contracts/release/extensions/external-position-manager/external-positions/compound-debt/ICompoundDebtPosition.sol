@@ -21,4 +21,9 @@ interface ICompoundDebtPosition is IExternalPosition {
         RepayBorrow,
         ClaimComp
     }
+
+    function getCTokenFromBorrowedAsset(address _borrowedAsset)
+        external
+        view
+        returns (address cToken_);
 }

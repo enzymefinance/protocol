@@ -211,7 +211,6 @@ describe('receiveCallFromComptroller', () => {
       // Use CompoundDebtPosition as an example ExternalPosition to receive the Policy
       await setAccountBalance({ provider, account: vaultProxy, amount: 100, token: cdai });
       const collateralAssets = [cdai.address];
-      const randomCToken = randomAddress();
 
       await createExternalPosition({
         comptrollerProxy,
@@ -226,7 +225,6 @@ describe('receiveCallFromComptroller', () => {
       await compoundDebtPositionAddCollateral({
         amounts: [1],
         assets: collateralAssets,
-        cTokens: [randomCToken],
         comptrollerProxy,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: activeExternalPosition,
@@ -234,10 +232,7 @@ describe('receiveCallFromComptroller', () => {
       });
 
       // actionArgs include assets[] amounts[] and extra data encoded
-      const actionArgs = encodeArgs(
-        ['address[]', 'uint256[]', 'bytes'],
-        [collateralAssets, [1], encodeArgs(['address[]'], [[randomCToken]])],
-      );
+      const actionArgs = encodeArgs(['address[]', 'uint256[]', 'bytes'], [collateralAssets, [1], '0x']);
 
       const compoundActionId = 0;
       const encodedActionData = encodeArgs(['uint256', 'bytes'], [compoundActionId, actionArgs]);

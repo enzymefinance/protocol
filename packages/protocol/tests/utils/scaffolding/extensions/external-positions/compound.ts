@@ -18,20 +18,18 @@ export async function compoundDebtPositionAddCollateral({
   assets,
   amounts,
   externalPositionProxy,
-  cTokens,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   fundOwner: SignerWithAddress;
   assets: AddressLike[];
-  cTokens: AddressLike[];
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
     amounts,
     assets,
-    data: encodeArgs(['address[]'], [cTokens]),
+    data: '0x',
   });
 
   return callOnExternalPosition({
@@ -113,7 +111,6 @@ export async function compoundDebtPositionRemoveCollateral({
   assets,
   amounts,
   externalPositionProxy,
-  cTokens,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
@@ -121,12 +118,11 @@ export async function compoundDebtPositionRemoveCollateral({
   assets: AddressLike[];
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
-  cTokens: AddressLike[];
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
     amounts,
     assets,
-    data: encodeArgs(['address[]'], [cTokens]),
+    data: '0x',
   });
 
   return callOnExternalPosition({
@@ -146,7 +142,6 @@ export async function compoundDebtPositionRepayBorrow({
   assets,
   amounts,
   externalPositionProxy,
-  cTokens,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
@@ -154,12 +149,11 @@ export async function compoundDebtPositionRepayBorrow({
   assets: AddressLike[];
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
-  cTokens: AddressLike[];
 }) {
   const actionArgs = compoundExternalPositionActionArgs({
     amounts,
     assets,
-    data: encodeArgs(['address[]'], [cTokens]),
+    data: '0x',
   });
 
   return callOnExternalPosition({

@@ -63,7 +63,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         } else if (actionId == uint256(ExternalPositionActions.Borrow)) {
             __borrowAssets(assets, amounts, data);
         } else if (actionId == uint256(ExternalPositionActions.RepayBorrow)) {
-            __repayBorrowedAssets(assets, amounts, data);
+            __repayBorrowedAssets(assets, amounts);
         } else if (actionId == uint256(ExternalPositionActions.ClaimComp)) {
             __claimComp();
         } else {
@@ -154,28 +154,19 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     }
 
     /// @notice Repays borrowed assets, reducing the borrow balance
-    function __repayBorrowedAssets(
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) private {
-        address[] memory cTokens = abi.decode(_data, (address[]));
-
+    function __repayBorrowedAssets(address[] memory _assets, uint256[] memory _amounts) private {
         for (uint256 i; i < _assets.length; i++) {
-            require(
-                getCTokenFromBorrowedAsset(_assets[i]) != address(0),
-                "__repayBorrowedAssets: Asset has not been borrowed"
-            );
+            address cToken = getCTokenFromBorrowedAsset(_assets[i]);
 
             // Format max repay amount
             if (_amounts[i] == type(uint256).max) {
-                _amounts[i] = ICERC20(cTokens[i]).borrowBalanceStored(address(this));
+                _amounts[i] = ICERC20(cToken).borrowBalanceStored(address(this));
             }
 
-            __repayBorrowedAsset(cTokens[i], _assets[i], _amounts[i]);
+            __repayBorrowedAsset(cToken, _assets[i], _amounts[i]);
 
             // Remove borrowed asset state from storage, if there is no remaining borrowed balance,
-            if (ICERC20(cTokens[i]).borrowBalanceStored(address(this)) == 0) {
+            if (ICERC20(cToken).borrowBalanceStored(address(this)) == 0) {
                 delete borrowedAssetToCToken[_assets[i]];
                 borrowedAssets.removeStorageItem(_assets[i]);
             }
@@ -275,6 +266,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     function getCTokenFromBorrowedAsset(address _borrowedAsset)
         public
         view
+        override
         returns (address cToken_)
     {
         return borrowedAssetToCToken[_borrowedAsset];

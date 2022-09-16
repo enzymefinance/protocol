@@ -109,6 +109,7 @@ const ctokens = {
   cusdc: '0x39aa39c021dfbae8fac545936693ac917d5e7563',
   cusdt: '0xf650c3d88d12db855b8bf7d11be6c55a4e07dcc9',
   cwbtc: '0xc11b1268c1a384e55c48c2391d8d480264a3a7f4',
+  cwbtc2: '0xccF4429DB6322D5C611ee964527D42E5d685DD6a',
   czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
 } as const;
 

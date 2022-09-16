@@ -60,32 +60,56 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
             bytes memory data
         ) = __decodeEncodedActionArgs(_encodedActionArgs);
 
-        __validateActionData(_actionId, assets, data);
-
         if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.AddCollateral)) {
             assetsToTransfer_ = assets;
             amountsToTransfer_ = amounts;
         } else if (
             _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RepayBorrow)
         ) {
-            address[] memory cTokens = abi.decode(data, (address[]));
-
             for (uint256 i; i < assets.length; i++) {
+                address cToken = ICompoundDebtPosition(_externalPosition)
+                    .getCTokenFromBorrowedAsset(assets[i]);
                 // Format max repay amount
                 if (amounts[i] == type(uint256).max) {
                     require(
-                        ICERC20(cTokens[i]).accrueInterest() == 0,
+                        ICERC20(cToken).accrueInterest() == 0,
                         "parseAssetsForAction: Error while calling accrueInterest"
                     );
 
-                    amounts[i] = ICERC20(cTokens[i]).borrowBalanceStored(_externalPosition);
+                    amounts[i] = ICERC20(cToken).borrowBalanceStored(_externalPosition);
                 }
             }
 
             assetsToTransfer_ = assets;
             amountsToTransfer_ = amounts;
+        } else if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.Borrow)) {
+            address[] memory cTokens = abi.decode(data, (address[]));
+            for (uint256 i; i < assets.length; i++) {
+                require(
+                    IValueInterpreter(getValueInterpreter()).isSupportedAsset(assets[i]),
+                    "parseAssetsForAction: Unsupported asset"
+                );
+            }
+
+            for (uint256 i; i < cTokens.length; i++) {
+                address cTokenStored = ICompoundDebtPosition(_externalPosition)
+                    .getCTokenFromBorrowedAsset(assets[i]);
+
+                if (cTokenStored == address(0)) {
+                    require(
+                        CompoundPriceFeed(getCompoundPriceFeed()).getTokenFromCToken(cTokens[i]) ==
+                            assets[i],
+                        "parseAssetsForAction: Bad token cToken pair"
+                    );
+                } else {
+                    require(
+                        cTokenStored == cTokens[i],
+                        "parseAssetsForAction: Assets can only be borrowed from one cToken"
+                    );
+                }
+            }
+            assetsToReceive_ = assets;
         } else if (
-            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.Borrow) ||
             _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RemoveCollateral)
         ) {
             assetsToReceive_ = assets;
@@ -122,44 +146,6 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
         (assets_, amounts_, data_) = abi.decode(_encodeActionArgs, (address[], uint256[], bytes));
 
         return (assets_, amounts_, data_);
-    }
-
-    /// @dev Runs validations before running a callOnExternalPosition.
-    function __validateActionData(
-        uint256 _actionId,
-        address[] memory _assets,
-        bytes memory _data
-    ) private view {
-        // Borrow and RepayBorrow actions make use of cTokens, that also need to be validated
-        if (_actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.Borrow)) {
-            for (uint256 i; i < _assets.length; i++) {
-                require(
-                    IValueInterpreter(getValueInterpreter()).isSupportedAsset(_assets[i]),
-                    "__validateActionData: Unsupported asset"
-                );
-            }
-            __validateCTokens(abi.decode(_data, (address[])), _assets);
-        } else if (
-            _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RepayBorrow)
-        ) {
-            __validateCTokens(abi.decode(_data, (address[])), _assets);
-        }
-    }
-
-    /// @dev Validates a set of cTokens and the underlying tokens
-    function __validateCTokens(address[] memory _cTokens, address[] memory _tokens) private view {
-        require(
-            _cTokens.length == _tokens.length,
-            "__validateCTokens: Unequal assets and cTokens length"
-        );
-
-        for (uint256 i; i < _cTokens.length; i++) {
-            require(
-                CompoundPriceFeed(getCompoundPriceFeed()).getTokenFromCToken(_cTokens[i]) ==
-                    _tokens[i],
-                "__validateCTokens: Bad token cToken pair"
-            );
-        }
     }
 
     ///////////////////
