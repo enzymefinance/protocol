@@ -1,5 +1,6 @@
 export * from './aave';
 export * from './actions';
+export * from './balancerV2';
 export * from './common';
 export * from './compound';
 export * from './curve';

@@ -45,6 +45,7 @@ export * from './codegen/PolicyManager';
 // Derivative price feeds
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
+export * from './codegen/BalancerV2WeightedPoolPriceFeed';
 export * from './codegen/CompoundPriceFeed';
 export * from './codegen/ConvexCurveLpStakingWrapperPriceFeed';
 export * from './codegen/CurvePriceFeed';
@@ -58,6 +59,7 @@ export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
 export * from './codegen/AaveAdapter';
+export * from './codegen/BalancerV2LiquidityAdapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/ConvexCurveLpStakingAdapter';
 export * from './codegen/CurveExchangeAdapter';
@@ -134,6 +136,8 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestBalancerV2Helpers';
+export * from './codegen/ITestBalancerV2Vault';
 export * from './codegen/ITestCERC20';
 export * from './codegen/ITestChainlinkAggregator';
 export * from './codegen/ITestCompoundComptroller';

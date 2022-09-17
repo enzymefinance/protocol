@@ -1,4 +1,5 @@
 export * from './aave';
+export * from './balancerV2';
 export * from './compound';
 export * from './curve';
 export * from './idle';

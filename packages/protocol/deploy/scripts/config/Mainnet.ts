@@ -1,4 +1,4 @@
-import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import { BalancerV2PoolType, ChainlinkRateAsset } from '@enzymefinance/protocol';
 import type { DeploymentConfig } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
@@ -200,6 +200,17 @@ const mainnetConfig: DeploymentConfig = {
     incentivesController: '0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5',
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
+  },
+  balancer: {
+    vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    helpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
+    poolFactories: ["0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9", "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0"],
+    pools: {
+      bal80Weth20: {
+        id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
+        type: BalancerV2PoolType.Weighted
+      },
+    }
   },
   chainlink: {
     aggregators,
