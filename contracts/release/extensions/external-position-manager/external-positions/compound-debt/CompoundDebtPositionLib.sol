@@ -100,16 +100,22 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         address[] memory cTokens = abi.decode(_data, (address[]));
 
         for (uint256 i; i < _assets.length; i++) {
+            // Validate that no other cToken is being borrowed from for the same underlying
+            address cTokenStored = getCTokenFromBorrowedAsset(_assets[i]);
+            if (cTokenStored == address(0)) {
+                borrowedAssetToCToken[_assets[i]] = cTokens[i];
+                borrowedAssets.push(_assets[i]);
+            } else {
+                require(
+                    cTokenStored == cTokens[i],
+                    "__borrowAssets: Can only borrow from one cToken for a given underlying"
+                );
+            }
+
             require(
                 ICERC20(cTokens[i]).borrow(_amounts[i]) == 0,
                 "__borrowAssets: Problem while borrowing from Compound"
             );
-
-            // The cToken-token pair is already validated by the parser
-            if (getCTokenFromBorrowedAsset(_assets[i]) == address(0)) {
-                borrowedAssetToCToken[_assets[i]] = cTokens[i];
-                borrowedAssets.push(_assets[i]);
-            }
 
             if (_assets[i] == getWethToken()) {
                 IWETH(payable(getWethToken())).deposit{value: _amounts[i]}();

@@ -89,25 +89,13 @@ contract CompoundDebtPositionParser is IExternalPositionParser {
                     IValueInterpreter(getValueInterpreter()).isSupportedAsset(assets[i]),
                     "parseAssetsForAction: Unsupported asset"
                 );
+                require(
+                    CompoundPriceFeed(getCompoundPriceFeed()).getTokenFromCToken(cTokens[i]) ==
+                        assets[i],
+                    "parseAssetsForAction: Bad token cToken pair"
+                );
             }
 
-            for (uint256 i; i < cTokens.length; i++) {
-                address cTokenStored = ICompoundDebtPosition(_externalPosition)
-                    .getCTokenFromBorrowedAsset(assets[i]);
-
-                if (cTokenStored == address(0)) {
-                    require(
-                        CompoundPriceFeed(getCompoundPriceFeed()).getTokenFromCToken(cTokens[i]) ==
-                            assets[i],
-                        "parseAssetsForAction: Bad token cToken pair"
-                    );
-                } else {
-                    require(
-                        cTokenStored == cTokens[i],
-                        "parseAssetsForAction: Assets can only be borrowed from one cToken"
-                    );
-                }
-            }
             assetsToReceive_ = assets;
         } else if (
             _actionId == uint256(ICompoundDebtPosition.ExternalPositionActions.RemoveCollateral)

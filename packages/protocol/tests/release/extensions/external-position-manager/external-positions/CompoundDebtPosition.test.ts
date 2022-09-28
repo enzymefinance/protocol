@@ -429,7 +429,7 @@ describe('receiveCallFromVault', () => {
         assets: borrowedAssets,
       });
 
-      expect(borrowReceipt).toMatchInlineGasSnapshot(`450832`);
+      expect(borrowReceipt).toMatchInlineGasSnapshot(`447295`);
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
 
@@ -475,7 +475,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toMatchInlineGasSnapshot(`444642`);
+      expect(borrowReceipt).toMatchInlineGasSnapshot(`441105`);
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
 
@@ -552,49 +552,45 @@ describe('receiveCallFromVault', () => {
       await expect(borrowTx).rejects.toBeRevertedWith('Bad token cToken pair');
     });
 
-    it('does not allow a new cToken for an asset', async () => {
+    it('does not allow a new cToken for an already-borrowed asset', async () => {
       const [fundOwner] = fork.accounts;
 
-      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
-      const collateralAssets = [cdai.address];
+      const collateralAmount = await cdai.balanceOf.args(vaultProxyUsed).call();
+      const collateralAsset = cdai;
 
-      const borrowedAssets = [dai.address];
+      const borrowedAsset = fork.config.primitives.wbtc;
+      const borrowCTokens = [fork.config.compound.ctokens.cwbtc2, fork.config.compound.ctokens.cwbtc];
+      const borrowedAssets = borrowCTokens.map(() => borrowedAsset);
 
       // Ensure the amount borrowed is much lower than collateral
-      const borrowedAmounts = [lentAmount.div(10)];
+      const borrowedAmount = (
+        await fork.deployment.valueInterpreter.calcCanonicalAssetValue
+          .args(collateralAsset, collateralAmount, borrowedAsset)
+          .call()
+      ).div(10);
+      const borrowedAmounts = borrowedAssets.map(() => borrowedAmount);
 
       await compoundDebtPositionAddCollateral({
-        amounts: collateralAmounts,
-        assets: collateralAssets,
+        amounts: [collateralAmount],
+        assets: [collateralAsset],
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager: fork.deployment.externalPositionManager,
         externalPositionProxy: compoundDebtPosition.address,
         fundOwner,
       });
 
-      await compoundDebtPositionBorrow({
-        amounts: borrowedAmounts,
-        assets: borrowedAssets,
-        cTokens: collateralAssets,
-        comptrollerProxy: comptrollerProxyUsed,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        externalPositionProxy: compoundDebtPosition.address,
-        fundOwner,
-        vaultProxy: vaultProxyUsed,
-      });
-
-      const borrowTx = compoundDebtPositionBorrow({
-        amounts: borrowedAmounts,
-        assets: borrowedAssets,
-        cTokens: [randomAddress()],
-        comptrollerProxy: comptrollerProxyUsed,
-        externalPositionManager: fork.deployment.externalPositionManager,
-        externalPositionProxy: compoundDebtPosition.address,
-        fundOwner,
-        vaultProxy: vaultProxyUsed,
-      });
-
-      await expect(borrowTx).rejects.toBeRevertedWith('Assets can only be borrowed from one cToken');
+      await expect(
+        compoundDebtPositionBorrow({
+          amounts: borrowedAmounts,
+          assets: borrowedAssets,
+          cTokens: borrowCTokens,
+          comptrollerProxy: comptrollerProxyUsed,
+          externalPositionManager: fork.deployment.externalPositionManager,
+          externalPositionProxy: compoundDebtPosition.address,
+          fundOwner,
+          vaultProxy: vaultProxyUsed,
+        }),
+      ).rejects.toBeRevertedWith('Can only borrow from one cToken for a given underlying');
     });
   });
 
