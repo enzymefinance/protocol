@@ -14,8 +14,10 @@
 
 pragma solidity 0.6.12;
 
-// Verbatim code, adapted to our style guide for variable naming only, see:
-// https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/LogExpMath.sol
+// Verbatim code, adapted to our style guide only.
+// All comments are original and have not been reviewed for correctness.
+// See original:
+// https://github.com/balancer-labs/balancer-v2-monorepo/blob/9ff3512b6418dc3ccf5d8661c84df0ec20b51ee7/pkg/solidity-utils/contracts/math/LogExpMath.sol
 library BalancerV2LogExpMath {
     // All fixed point multiplications and divisions are inlined. This means we need to divide by ONE when multiplying
     // two numbers, and multiply by ONE when dividing them.

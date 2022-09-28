@@ -14,8 +14,10 @@
 
 pragma solidity 0.6.12;
 
-// Verbatim code, adapted to our style guide for variable naming only, see:
-// https://github.com/balancer-labs/balancer-v2-monorepo/blob/master/pkg/solidity-utils/contracts/math/FixedPoint.sol
+// Verbatim code, adapted to our style guide only.
+// All comments are original and have not been reviewed for correctness.
+// See original:
+// https://github.com/balancer-labs/balancer-v2-monorepo/blob/8ac66717502b00122a3fcdf78e6d555c54528c3c/pkg/solidity-utils/contracts/math/FixedPoint.sol
 library BalancerV2FixedPoint {
     uint256 internal constant ONE = 1e18; // 18 decimal places
 
