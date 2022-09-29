@@ -2,8 +2,12 @@ import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { BalancerV2WeightedPoolPriceFeed } from '@enzymefinance/protocol';
 import {
   balancerV2GetPoolFromId,
+  balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut,
   balancerV2WeightedPoolsUserDataTokenInForExactBptOut,
+  encodeFunctionData,
+  ITestBalancerV2Vault,
   ITestStandardToken,
+  Reenterer,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
@@ -11,15 +15,71 @@ import {
   balancerV2Lend,
   buyShares,
   createNewFund,
+  decodeRevertReason,
   deployProtocolFixture,
   getAssetUnit,
 } from '@enzymefinance/testutils';
 import type { EventFragment } from '@ethersproject/abi';
+import { constants, utils } from 'ethers';
 
 let fork: ProtocolDeployment;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
+});
+
+describe('calcUnderlyingValues', () => {
+  it('does not allow a Balancer pool to be reentered', async () => {
+    const [buyer] = fork.accounts;
+    const balancerV2WeightedPoolPriceFeed = fork.deployment.balancerV2WeightedPoolPriceFeed;
+
+    const balancerVault = new ITestBalancerV2Vault(fork.config.balancer.vault, provider);
+    const poolId = fork.config.balancer.pools.bal80Weth20.id;
+    const bpt = new ITestStandardToken(balancerV2GetPoolFromId(poolId), provider);
+    const balAddress = fork.config.primitives.bal;
+    const ethAddress = constants.AddressZero;
+
+    const reenterer = await Reenterer.deploy(fork.deployer);
+
+    // Set payload for reenterer to call this price feed when ETH is received
+    await reenterer.setReceiveReentrantPayload(
+      balancerV2WeightedPoolPriceFeed,
+      encodeFunctionData(balancerV2WeightedPoolPriceFeed.calcUnderlyingValues.fragment, [bpt, 1]),
+      0,
+    );
+
+    // Join pool from an arbitrary account
+    const maxEthToBuy = utils.parseEther('10');
+    const joinUserData = balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
+      bptAmountOut: utils.parseEther('1'),
+      tokenIndex: 1, // ETH
+    });
+    const joinRequest = {
+      assets: [balAddress, ethAddress], // ETH instead of WETH
+      limits: [0, maxEthToBuy],
+      userData: joinUserData,
+      useInternalBalance: false,
+    };
+    await balancerVault.connect(buyer).joinPool.args(poolId, buyer, buyer, joinRequest).value(maxEthToBuy).send();
+
+    // Exit the pool, with ETH sent to the reentrant contract
+    const bptToRedeem = await bpt.balanceOf(buyer);
+    const exitUserData = balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut({
+      bptAmountIn: bptToRedeem,
+      tokenIndex: 1, // ETH
+    });
+    const exitRequest = {
+      assets: [balAddress, ethAddress], // ETH instead of WETH
+      limits: [0, 1], // Require at least 1 wei received
+      userData: exitUserData,
+      useInternalBalance: false,
+    };
+    await balancerVault.connect(buyer).exitPool(poolId, buyer, reenterer, exitRequest);
+
+    // The reentrant callback should have failed due to reentrancy
+    // https://github.com/balancer-labs/balancer-v2-monorepo/blob/736d1d98a8dbf5400202ff5f09626619c9118910/pkg/interfaces/contracts/solidity-utils/helpers/BalancerErrors.sol#L199
+    expect(decodeRevertReason(await reenterer.receiveReentrantReturnData())).toBe('BAL#400');
+  });
 });
 
 describe('derivative gas costs', () => {
@@ -85,7 +145,7 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`113697`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`122081`);
   });
 });
 

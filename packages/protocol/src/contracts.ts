@@ -178,6 +178,7 @@ export * from './codegen/ITestUniswapV3NonFungibleTokenManager';
 export * from './codegen/ITestVotiumMultiMerkleStash';
 export * from './codegen/ITestWETH';
 export * from './codegen/ITestYearnVaultV2';
+export * from './codegen/Reenterer';
 export * from './codegen/SelfDestructEthPayer';
 export * from './codegen/TestAddressArrayLib';
 export * from './codegen/TestNominatedOwnerMixin';

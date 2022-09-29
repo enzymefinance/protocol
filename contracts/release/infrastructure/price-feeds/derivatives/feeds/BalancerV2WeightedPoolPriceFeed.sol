@@ -69,6 +69,10 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
+        // This is a non-reentrant call that has no state-changing effects given the params used.
+        // It prevents important pricing functions from being called during a Balancer pool join/exit.
+        BALANCER_VAULT_CONTRACT.setRelayerApproval(address(this), address(0), false);
+
         (address[] memory poolTokens, , ) = BALANCER_VAULT_CONTRACT.getPoolTokens(
             IBalancerV2WeightedPool(_derivative).getPoolId()
         );

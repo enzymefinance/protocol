@@ -44,4 +44,10 @@ interface IBalancerV2Vault {
         address _recipient,
         PoolBalanceChange memory _request
     ) external payable;
+
+    function setRelayerApproval(
+        address _sender,
+        address _relayer,
+        bool _approved
+    ) external;
 }

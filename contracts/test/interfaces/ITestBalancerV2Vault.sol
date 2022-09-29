@@ -10,6 +10,7 @@
 */
 
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 /// @title ITestBalancerV2Vault Interface
 /// @author Enzyme Council <security@enzyme.finance>
@@ -21,6 +22,13 @@ interface ITestBalancerV2Vault {
         bool useInternalBalance;
     }
 
+    function exitPool(
+        bytes32 _poolId,
+        address _sender,
+        address payable _recipient,
+        PoolBalanceChange memory _request
+    ) external;
+
     function getPoolTokens(bytes32 _poolId)
         external
         view
@@ -29,4 +37,11 @@ interface ITestBalancerV2Vault {
             uint256[] memory balances_,
             uint256 lastChangeBlock_
         );
+
+    function joinPool(
+        bytes32 _poolId,
+        address _sender,
+        address _recipient,
+        PoolBalanceChange memory _request
+    ) external payable;
 }
