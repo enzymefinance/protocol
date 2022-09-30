@@ -150,20 +150,21 @@ describe('derivative gas costs', () => {
 });
 
 describe('expected values', () => {
-  it('returns the expected value from the valueInterpreter', async () => {
+  fit('returns the expected value from the valueInterpreter', async () => {
+    // Use a 3-token pool to test accuracy of weighted token formula
+
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
-    const balWeth = new ITestStandardToken(
-      balancerV2GetPoolFromId(fork.config.balancer.pools.bal80Weth20.id),
+    const bpt = new ITestStandardToken(
+      balancerV2GetPoolFromId(fork.config.balancer.pools.ohm50Dai25Weth25.id),
       provider,
     );
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-      .args(balWeth, await getAssetUnit(balWeth), dai)
+      .args(bpt, await getAssetUnit(bpt), fork.config.primitives.dai)
       .call();
 
-    // B-80BAL-20WETH on August 8th, 2022 was worth about $16.46
-    // Source: <https://app.zerion.io/explore/asset/B-80BAL-20WETH-0x5c6ee304399dbdb9c8ef030ab642b10820db8f56>
-    expect(canonicalAssetValue).toEqBigNumber('16287555601410149496');
+    // 50OHM-25DAI-25WETH on Sept 29th, 2022 was worth about $19.30
+    // Source: <https://app.zerion.io/explore/asset/50OHM-25DAI-25WETH-0xc45d42f801105e861e86658648e3678ad7aa70f9>
+    expect(canonicalAssetValue).toEqBigNumber('19161100488450964324');
   });
 });
 

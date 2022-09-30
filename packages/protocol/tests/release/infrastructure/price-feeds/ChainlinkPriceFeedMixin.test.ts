@@ -569,7 +569,7 @@ describe('expected values', () => {
         .call();
 
       // Should be near 1000000 (10^6)
-      expect(canonicalAssetValue).toBeAroundBigNumber('1000000', 0.01);
+      expect(canonicalAssetValue).toBeAroundBigNumber('1000000', 0.02);
     });
   });
 
@@ -587,16 +587,16 @@ describe('expected values', () => {
 
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // Aug 8, 2022
-      // bnb/usd was about $324
-      // ren/usd was about $0.16
-      // 1 bnb was about 2025 ren
+      // Sept 29, 2022
+      // bnb/usd was about $282
+      // ren/usd was about $0.115
+      // 1 bnb was about 2450 ren
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('2056546990919683971090');
+      expect(canonicalAssetValue).toEqBigNumber('2459084759462903173352');
     });
   });
 

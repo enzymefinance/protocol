@@ -325,7 +325,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`766687`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`764699`);
   });
 });
 

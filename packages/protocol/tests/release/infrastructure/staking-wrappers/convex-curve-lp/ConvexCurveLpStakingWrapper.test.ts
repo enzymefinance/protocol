@@ -136,7 +136,7 @@ describe('actions', () => {
       });
 
       // 2nd tx after time passes should be more expensive because rewards would have accrued
-      expect(receipt2).toMatchInlineGasSnapshot(`1308208`);
+      expect(receipt2).toMatchInlineGasSnapshot(`1320682`);
     });
   });
 
@@ -203,7 +203,7 @@ describe('actions', () => {
       });
 
       // 2nd tx after time passes should be more expensive because rewards would have accrued
-      expect(receipt2).toMatchInlineGasSnapshot(`1119361`);
+      expect(receipt2).toMatchInlineGasSnapshot(`1131835`);
     });
 
     it('withdrawOnBehalf: works as expected', async () => {
@@ -270,7 +270,7 @@ describe('actions', () => {
         expect(await token.balanceOf(wrapper)).toEqBigNumber(0);
       }
 
-      expect(receipt).toMatchInlineGasSnapshot(`1344983`);
+      expect(receipt).toMatchInlineGasSnapshot(`1357457`);
     });
   });
 

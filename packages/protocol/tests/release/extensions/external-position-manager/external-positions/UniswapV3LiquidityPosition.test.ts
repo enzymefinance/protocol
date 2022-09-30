@@ -322,7 +322,7 @@ describe('receiveCallFromVault', () => {
         assets: [],
       });
 
-      expect(receipt).toMatchInlineGasSnapshot(`782567`);
+      expect(receipt).toMatchInlineGasSnapshot(`795749`);
     });
   });
 
@@ -406,7 +406,7 @@ describe('receiveCallFromVault', () => {
         assets: [],
       });
 
-      expect(receipt).toMatchInlineGasSnapshot(`324660`);
+      expect(receipt).toMatchInlineGasSnapshot(`338066`);
     });
   });
 
@@ -465,7 +465,7 @@ describe('receiveCallFromVault', () => {
         assets: [token0, token1],
       });
 
-      expect(receipt).toMatchInlineGasSnapshot(`370072`);
+      expect(receipt).toMatchInlineGasSnapshot(`352972`);
     });
   });
 
@@ -614,7 +614,7 @@ describe('receiveCallFromVault', () => {
           assets: [token0, token1],
         });
 
-        expect(receipt).toMatchInlineGasSnapshot(`392121`);
+        expect(receipt).toMatchInlineGasSnapshot(`378441`);
       });
 
       it('works as expected (max liquidity specified)', async () => {
@@ -652,7 +652,7 @@ describe('receiveCallFromVault', () => {
         // Assert the old nft was removed from the external position
         expect(await uniswapV3LiquidityPosition.getNftIds()).not.toContain(nftId);
 
-        expect(receipt).toMatchInlineGasSnapshot(`396627`);
+        expect(receipt).toMatchInlineGasSnapshot(`382947`);
       });
     });
   });

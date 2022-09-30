@@ -214,7 +214,7 @@ describe('expected values', () => {
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('22045279796090871');
+    expect(canonicalAssetValue).toEqBigNumber('22072067696578990');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
@@ -233,6 +233,6 @@ describe('expected values', () => {
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('22630');
+    expect(canonicalAssetValue).toEqBigNumber('22652');
   });
 });

@@ -82,13 +82,13 @@ const aggregators = {
   mkr: ['0x24551a8fb2a7211a25a17b1481f043a8a8adc7f2', ChainlinkRateAsset.ETH],
   mln: ['0xdaea8386611a157b08829ed4997a8a62b557014c', ChainlinkRateAsset.ETH],
   nmr: ['0x9cb2a01a7e64992d32a34db7ceea4c919c391f6a', ChainlinkRateAsset.ETH],
-  ohm: ['0x90c2098473852e2f07678fe1b6d595b1bd9b16ed', ChainlinkRateAsset.ETH],
+  ohm: ['0x9a72298ae3886221820b1c878d12d872087d3a23', ChainlinkRateAsset.ETH],
   oxt: ['0xd75AAaE4AF0c398ca13e2667Be57AF2ccA8B5de6', ChainlinkRateAsset.USD],
   ren: ['0x3147d7203354dc06d9fd350c7a2437bca92387a4', ChainlinkRateAsset.ETH],
   rep: ['0xd4ce430c3b67b3e2f7026d86e7128588629e2455', ChainlinkRateAsset.ETH],
   rlc: ['0x4cba1e1fdc738d0fe8db3ee07728e2bc4da676c6', ChainlinkRateAsset.ETH],
   snx: ['0x79291a9d692df95334b1a0b3b4ae6bc606782f8c', ChainlinkRateAsset.ETH],
-  sohm: ['0x90c2098473852e2f07678fe1b6d595b1bd9b16ed', ChainlinkRateAsset.ETH],
+  sohm: ['0x9a72298ae3886221820b1c878d12d872087d3a23', ChainlinkRateAsset.ETH],
   susd: ['0x8e0b7e6062272B5eF4524250bFFF8e5Bd3497757', ChainlinkRateAsset.ETH],
   sxp: ['0xFb0CfD6c19e25DB4a08D8a204a387cEa48Cc138f', ChainlinkRateAsset.USD],
   uni: ['0xd6aa3d25116d8da79ea0246c4826eb951872e02e', ChainlinkRateAsset.ETH],
@@ -209,6 +209,10 @@ const mainnetConfig: DeploymentConfig = {
       bal80Weth20: {
         id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
         type: BalancerV2PoolType.Weighted
+      },
+      ohm50Dai25Weth25: {
+        id: '0xc45d42f801105e861e86658648e3678ad7aa70f900010000000000000000011e',
+        type: BalancerV2PoolType.Weighted,
       },
     }
   },

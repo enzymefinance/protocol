@@ -32,16 +32,24 @@ import { BigNumber, utils } from 'ethers';
 let fork: ProtocolDeployment;
 let balancerV2LiquidityAdapter: BalancerV2LiquidityAdapter;
 let balancerVaultAddress: AddressLike;
-let poolId: BytesLike, bpt: AddressLike;
+let poolId: BytesLike, bpt: ITestStandardToken;
+let ohm: ITestStandardToken, dai: ITestStandardToken, weth: ITestStandardToken;
+
+// const poolIndexOhm = 0;
+const poolIndexDai = 1;
+const poolIndexWeth = 2;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   balancerV2LiquidityAdapter = fork.deployment.balancerV2LiquidityAdapter;
   balancerVaultAddress = fork.config.balancer.vault;
 
-  // weighted pool: [BAL, WETH]
-  poolId = fork.config.balancer.pools.bal80Weth20.id;
-  bpt = balancerV2GetPoolFromId(poolId);
+  // weighted pool: [OHM, DAI, WETH]
+  poolId = fork.config.balancer.pools.ohm50Dai25Weth25.id;
+  bpt = new ITestStandardToken(balancerV2GetPoolFromId(poolId), provider);
+  ohm = new ITestStandardToken(fork.config.primitives.ohm, provider);
+  dai = new ITestStandardToken(fork.config.primitives.dai, provider);
+  weth = new ITestStandardToken(fork.config.weth, provider);
 });
 
 describe('parseAssetsForAction', () => {
@@ -53,16 +61,16 @@ describe('parseAssetsForAction', () => {
 
   describe('lend', () => {
     // Use "one token in" option to validate that not all tokens in pool are used
-    const maxSpendAssetAmounts = [123, 0]; // [BAL, WETH]
+    const maxSpendAssetAmounts = [0, 123, 0]; // [OHM, DAI, WETH]
     const incomingBptAmount = 456;
     const userData = balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
       bptAmountOut: incomingBptAmount,
-      tokenIndex: 0, // BAL
+      tokenIndex: poolIndexDai,
     });
     let spendAssets: AddressLike[];
 
     beforeEach(() => {
-      spendAssets = [fork.config.primitives.bal];
+      spendAssets = [dai];
     });
 
     it('does not allow useInternalBalances = true', async () => {
@@ -119,16 +127,16 @@ describe('parseAssetsForAction', () => {
 
   describe('redeem', () => {
     // Use "one token out" option to validate that not all tokens in pool are used
-    const minIncomingAssetAmounts = [123, 0]; // [BAL, WETH]
+    const minIncomingAssetAmounts = [0, 0, 123]; // [OHM, DAI, WETH]
     const maxSpendBptAmount = 456;
     const userData = balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut({
       bptAmountIn: maxSpendBptAmount,
-      tokenIndex: 0, // BAL
+      tokenIndex: poolIndexWeth,
     });
     let incomingAssets: AddressLike[];
 
     beforeEach(() => {
-      incomingAssets = [fork.config.primitives.bal];
+      incomingAssets = [weth];
     });
 
     it('does not allow useInternalBalances = true', async () => {
@@ -209,7 +217,7 @@ describe('actions', () => {
 
   describe('lend', () => {
     it('happy path: Weighted Pool: EXACT_TOKENS_IN_FOR_BPT_OUT', async () => {
-      const spendAssets = [fork.config.primitives.bal, fork.config.weth];
+      const spendAssets = [ohm, dai, weth];
       const spendAssetAmounts = await Promise.all(
         spendAssets.map(async (asset) => (await getAssetUnit(new ITestStandardToken(asset, provider))).mul(3)),
       );
@@ -258,12 +266,12 @@ describe('actions', () => {
       expect(postTxToken1Balance).toEqBigNumber(0);
       expect(postTxToken2Balance).toEqBigNumber(0);
 
-      expect(lendReceipt).toMatchInlineGasSnapshot(`489880`);
+      expect(lendReceipt).toMatchInlineGasSnapshot(`557078`);
     });
 
     it('happy path: Weighted Pool: TOKEN_IN_FOR_EXACT_BPT_OUT', async () => {
-      const spendAsset = new ITestStandardToken(fork.config.weth, provider);
-      const spendAssetIndex = 1; // WETH
+      const spendAsset = weth;
+      const spendAssetIndex = poolIndexWeth;
       const maxSpendAssetAmount = await getAssetUnit(spendAsset);
 
       // Must be small relative to maxSpendAssetAmount value
@@ -278,7 +286,7 @@ describe('actions', () => {
         provider,
         balancerVaultAddress,
         poolId,
-        limits: [0, maxSpendAssetAmount], // [BAL, WETH]
+        limits: [0, 0, maxSpendAssetAmount], // [OHM, DAI, WETH]
         userData,
       });
 
@@ -286,7 +294,8 @@ describe('actions', () => {
         .args(poolId, balancerV2LiquidityAdapter, vaultProxy, request)
         .call();
       expect(amountsIn_[0]).toEqBigNumber(0);
-      expect(amountsIn_[1]).toBeBetweenBigNumber(1, maxSpendAssetAmount);
+      expect(amountsIn_[1]).toEqBigNumber(0);
+      expect(amountsIn_[2]).toBeBetweenBigNumber(1, maxSpendAssetAmount);
 
       // Seed fund with spendAsset
       const preTxSpendAssetBalance = maxSpendAssetAmount;
@@ -319,7 +328,7 @@ describe('actions', () => {
       expect(postTxPoolTokenBalance).toEqBigNumber(incomingBptAmount);
       expect(postTxSpendAssetBalance).toEqBigNumber(preTxSpendAssetBalance.sub(amountsIn_[spendAssetIndex]));
 
-      expect(lendReceipt).toMatchInlineGasSnapshot(`420540`);
+      expect(lendReceipt).toMatchInlineGasSnapshot(`422817`);
     });
   });
 
@@ -327,7 +336,7 @@ describe('actions', () => {
     beforeEach(async () => {
       // Acquire some BPT to later redeem
 
-      const spendAsset = new ITestStandardToken(fork.config.weth, provider);
+      const spendAsset = weth;
       const maxSpendAssetAmount = (await getAssetUnit(spendAsset)).mul(1000);
 
       // Must be small relative to maxSpendAssetAmount value
@@ -335,14 +344,14 @@ describe('actions', () => {
 
       const userData = balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
         bptAmountOut: incomingBptAmount,
-        tokenIndex: 1, // WETH
+        tokenIndex: poolIndexWeth,
       });
 
       const request = await balancerV2ConstructRequest({
         provider,
         balancerVaultAddress,
         poolId,
-        limits: [0, maxSpendAssetAmount], // [BAL, WETH]
+        limits: [0, 0, maxSpendAssetAmount], // [OHM, DAI, WETH]
         userData,
       });
 
@@ -375,7 +384,7 @@ describe('actions', () => {
         provider,
         balancerVaultAddress,
         poolId,
-        limits: [1, 1], // Use >0 limits to we receive at least 1 of each token
+        limits: [1, 1, 1], // Use >0 limits to we receive at least 1 of each token
         userData,
       });
 
@@ -387,7 +396,7 @@ describe('actions', () => {
           balancerV2LiquidityAdapter,
           poolId,
           bptAmount: redeemBptAmount,
-          incomingAssets: [fork.config.weth],
+          incomingAssets: [weth],
           minIncomingAssetAmounts: [0],
           request,
         }),
@@ -395,13 +404,14 @@ describe('actions', () => {
     });
 
     it('happy path: Weighted Pool: EXACT_BPT_IN_FOR_TOKENS_OUT', async () => {
-      const incomingAssets = [fork.config.primitives.bal, fork.config.weth];
+      const incomingAssets = [ohm, dai, weth];
 
       // Get pre-redeem balances of all tokens
-      const [preRedeemToken1Balance, preRedeemToken2Balance, preRedeemBptBalance] = await getAssetBalances({
-        account: vaultProxy,
-        assets: [incomingAssets[0], incomingAssets[1], bpt],
-      });
+      const [preRedeemToken1Balance, preRedeemToken2Balance, preRedeemToken3Balance, preRedeemBptBalance] =
+        await getAssetBalances({
+          account: vaultProxy,
+          assets: [incomingAssets[0], incomingAssets[1], incomingAssets[2], bpt],
+        });
 
       // Only partially redeem BPT
       const redeemBptAmount = preRedeemBptBalance.div(3);
@@ -415,7 +425,7 @@ describe('actions', () => {
         provider,
         balancerVaultAddress,
         poolId,
-        limits: [0, 0],
+        limits: [0, 0, 0],
         userData,
       });
 
@@ -432,26 +442,29 @@ describe('actions', () => {
         poolId,
         bptAmount: redeemBptAmount,
         incomingAssets,
-        minIncomingAssetAmounts: [0, 0],
+        minIncomingAssetAmounts: incomingAssets.map(() => 0),
         request,
       });
 
       // Get post-redeem balances of all tokens
-      const [postRedeemToken1Balance, postRedeemToken2Balance, postRedeemBptBalance] = await getAssetBalances({
-        account: vaultProxy,
-        assets: [incomingAssets[0], incomingAssets[1], bpt],
-      });
+      const [postRedeemToken1Balance, postRedeemToken2Balance, postRedeemToken3Balance, postRedeemBptBalance] =
+        await getAssetBalances({
+          account: vaultProxy,
+          assets: [incomingAssets[0], incomingAssets[1], incomingAssets[2], bpt],
+        });
 
       // Assert the exact amounts of tokens expected
       expect(postRedeemBptBalance).toEqBigNumber(preRedeemBptBalance.sub(redeemBptAmount));
       expect(postRedeemToken1Balance).toEqBigNumber(preRedeemToken1Balance.add(amountsOut_[0]));
       expect(postRedeemToken2Balance).toEqBigNumber(preRedeemToken2Balance.add(amountsOut_[1]));
+      expect(postRedeemToken3Balance).toEqBigNumber(preRedeemToken3Balance.add(amountsOut_[2]));
 
-      expect(redeemReceipt).toMatchInlineGasSnapshot(`453574`);
+      expect(redeemReceipt).toMatchInlineGasSnapshot(`558512`);
     });
 
     it('happy path: Weighted Pool: EXACT_BPT_IN_FOR_ONE_TOKEN_OUT', async () => {
-      const incomingAsset = fork.config.weth;
+      const incomingAsset = dai;
+      const tokenIndex = poolIndexDai;
 
       // Get pre-redeem balances of all tokens
       const [preRedeemIncomingAssetBalance, preRedeemBptBalance] = await getAssetBalances({
@@ -460,19 +473,19 @@ describe('actions', () => {
       });
 
       // Only partially redeem BPT
-      const redeemBptAmount = preRedeemBptBalance.div(3);
+      const redeemBptAmount = preRedeemBptBalance.div(5);
       expect(redeemBptAmount).not.toEqBigNumber(BigNumber.from(0));
 
       const userData = balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut({
         bptAmountIn: redeemBptAmount,
-        tokenIndex: 1, // WETH
+        tokenIndex,
       });
 
       const request = await balancerV2ConstructRequest({
         provider,
         balancerVaultAddress,
         poolId,
-        limits: [0, 0],
+        limits: [0, 0, 0],
         userData,
       });
 
@@ -480,8 +493,9 @@ describe('actions', () => {
       const { amountsOut_ } = await balancerHelpers.queryExit
         .args(poolId, balancerV2LiquidityAdapter, vaultProxy, request)
         .call();
-      expect(amountsOut_[0]).toEqBigNumber(0);
-      expect(amountsOut_[1]).toBeGtBigNumber(0);
+      expect(amountsOut_[0]).toEqBigNumber(0); // OHM
+      expect(amountsOut_[1]).toBeGtBigNumber(0); // DAI
+      expect(amountsOut_[2]).toEqBigNumber(0); // WETH
 
       const redeemReceipt = await balancerV2Redeem({
         comptrollerProxy,
@@ -505,7 +519,7 @@ describe('actions', () => {
       expect(postRedeemBptBalance).toEqBigNumber(preRedeemBptBalance.sub(redeemBptAmount));
       expect(postRedeemIncomingAssetBalance).toEqBigNumber(preRedeemIncomingAssetBalance.add(amountsOut_[1]));
 
-      expect(redeemReceipt).toMatchInlineGasSnapshot(`364096`);
+      expect(redeemReceipt).toMatchInlineGasSnapshot(`411464`);
     });
   });
 });

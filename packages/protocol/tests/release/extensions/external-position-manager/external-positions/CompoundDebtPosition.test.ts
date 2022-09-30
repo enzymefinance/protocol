@@ -475,7 +475,7 @@ describe('receiveCallFromVault', () => {
       // Assert the correct balance of asset was received at the vaultProxy
       expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toEqBigNumber(borrowedAmounts[0]);
 
-      expect(borrowReceipt).toMatchInlineGasSnapshot(`441105`);
+      expect(borrowReceipt).toMatchInlineGasSnapshot(`439041`);
 
       const getDebtAssetsCall = await compoundDebtPosition.getDebtAssets.call();
 
@@ -726,7 +726,7 @@ describe('receiveCallFromVault', () => {
         .mul(BigNumber.from('10000').add(valueDeviationToleranceBps))
         .div(BigNumber.from('10000'));
 
-      expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`282543`);
+      expect(repayBorrowReceipt).toMatchInlineGasSnapshot(`256658`);
 
       expect(borrowedBalancesAfter).toBeGteBigNumber(minBorrowedExpectedValue);
       expect(borrowedBalancesAfter).toBeLteBigNumber(maxBorrowedExpectedValue);

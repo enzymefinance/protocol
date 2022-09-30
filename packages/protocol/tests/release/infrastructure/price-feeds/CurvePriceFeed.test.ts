@@ -217,7 +217,8 @@ describe('expected values', () => {
       .call();
 
     // Should be slightly more than 1 unit of WETH (10^18)
-    expect(canonicalAssetValue).toBeBetweenBigNumber('1000000000000000000', '1050000000000000000');
+    // Was 1.052e18 on Sept 29, 2022
+    expect(canonicalAssetValue).toBeBetweenBigNumber('1050000000000000000', '1100000000000000000');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal invariant asset proxy)', async () => {
