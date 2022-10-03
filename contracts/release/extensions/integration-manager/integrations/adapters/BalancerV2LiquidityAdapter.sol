@@ -31,19 +31,11 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
     /// @notice Lends assets for pool tokens on BalancerV2
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    /// @param _assetData Parsed spend assets and incoming assets data for this action
-    /// @dev Because there can be different join/exit options per Balancer pool type,
-    /// some of which involve spending only up-to-max amounts, we must include
-    /// postActionSpendAssetsTransferHandler.
     function lend(
         address _vaultProxy,
         bytes calldata _actionData,
-        bytes calldata _assetData
-    )
-        external
-        onlyIntegrationManager
-        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
-    {
+        bytes calldata
+    ) external onlyIntegrationManager {
         (
             bytes32 poolId,
             ,
@@ -61,6 +53,10 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
         }
 
         __balancerV2Lend(poolId, address(this), _vaultProxy, request);
+
+        // There can be different join/exit options per Balancer pool type,
+        // some of which involve spending only up-to-max amounts
+        __pushFullAssetBalances(_vaultProxy, spendAssets);
     }
 
     /// @notice Redeems pool tokens on BalancerV2
@@ -79,11 +75,9 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             IBalancerV2Vault.PoolBalanceChange memory request
         ) = __decodeCallArgs(_actionData);
 
-        __approveAssetMaxAsNeeded(
-            __parseBalancerPoolAddress(poolId),
-            address(BALANCER_VAULT_CONTRACT),
-            spendBptAmount
-        );
+        address bpt = __parseBalancerPoolAddress(poolId);
+
+        __approveAssetMaxAsNeeded(bpt, address(BALANCER_VAULT_CONTRACT), spendBptAmount);
 
         // Since we are not parsing request.userData, we do not know with certainty which tokens
         // will be received. We are relying on the user-input expectedIncomingTokens up to this point.
@@ -117,6 +111,10 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
                 }
             }
         }
+
+        // There can be different join/exit options per Balancer pool type,
+        // some of which involve spending only up-to-max amounts
+        __pushFullAssetBalance(_vaultProxy, bpt);
     }
 
     /////////////////////////////

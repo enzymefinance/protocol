@@ -87,6 +87,19 @@ abstract contract AssetHelpers {
         }
     }
 
+    /// @dev Helper to transfer full asset balance from the current contract to a target
+    function __pushFullAssetBalance(address _target, address _asset)
+        internal
+        returns (uint256 amountTransferred_)
+    {
+        amountTransferred_ = ERC20(_asset).balanceOf(address(this));
+        if (amountTransferred_ > 0) {
+            ERC20(_asset).safeTransfer(_target, amountTransferred_);
+        }
+
+        return amountTransferred_;
+    }
+
     /// @dev Helper to transfer full asset balances from the current contract to a target
     function __pushFullAssetBalances(address _target, address[] memory _assets)
         internal

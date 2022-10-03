@@ -266,7 +266,7 @@ describe('actions', () => {
       expect(postTxToken1Balance).toEqBigNumber(0);
       expect(postTxToken2Balance).toEqBigNumber(0);
 
-      expect(lendReceipt).toMatchInlineGasSnapshot(`557078`);
+      expect(lendReceipt).toMatchInlineGasSnapshot(`553580`);
     });
 
     it('happy path: Weighted Pool: TOKEN_IN_FOR_EXACT_BPT_OUT', async () => {
@@ -328,7 +328,7 @@ describe('actions', () => {
       expect(postTxPoolTokenBalance).toEqBigNumber(incomingBptAmount);
       expect(postTxSpendAssetBalance).toEqBigNumber(preTxSpendAssetBalance.sub(amountsIn_[spendAssetIndex]));
 
-      expect(lendReceipt).toMatchInlineGasSnapshot(`422817`);
+      expect(lendReceipt).toMatchInlineGasSnapshot(`420299`);
     });
   });
 
@@ -459,7 +459,7 @@ describe('actions', () => {
       expect(postRedeemToken2Balance).toEqBigNumber(preRedeemToken2Balance.add(amountsOut_[1]));
       expect(postRedeemToken3Balance).toEqBigNumber(preRedeemToken3Balance.add(amountsOut_[2]));
 
-      expect(redeemReceipt).toMatchInlineGasSnapshot(`558512`);
+      expect(redeemReceipt).toMatchInlineGasSnapshot(`560043`);
     });
 
     it('happy path: Weighted Pool: EXACT_BPT_IN_FOR_ONE_TOKEN_OUT', async () => {
@@ -519,7 +519,7 @@ describe('actions', () => {
       expect(postRedeemBptBalance).toEqBigNumber(preRedeemBptBalance.sub(redeemBptAmount));
       expect(postRedeemIncomingAssetBalance).toEqBigNumber(preRedeemIncomingAssetBalance.add(amountsOut_[1]));
 
-      expect(redeemReceipt).toMatchInlineGasSnapshot(`411464`);
+      expect(redeemReceipt).toMatchInlineGasSnapshot(`412995`);
     });
   });
 });
