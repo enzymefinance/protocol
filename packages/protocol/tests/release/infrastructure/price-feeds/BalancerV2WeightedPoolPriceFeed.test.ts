@@ -1,7 +1,9 @@
+import type { AddressLike } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
-import type { BalancerV2WeightedPoolPriceFeed } from '@enzymefinance/protocol';
+import type { ValueInterpreter } from '@enzymefinance/protocol';
 import {
   balancerV2GetPoolFromId,
+  BalancerV2WeightedPoolPriceFeed,
   balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut,
   balancerV2WeightedPoolsUserDataTokenInForExactBptOut,
   encodeFunctionData,
@@ -150,21 +152,51 @@ describe('derivative gas costs', () => {
 });
 
 describe('expected values', () => {
-  fit('returns the expected value from the valueInterpreter', async () => {
-    // Use a 3-token pool to test accuracy of weighted token formula
+  let valueInterpreter: ValueInterpreter;
+  let bpt: ITestStandardToken;
+  let quoteAsset: AddressLike;
 
-    const valueInterpreter = fork.deployment.valueInterpreter;
-    const bpt = new ITestStandardToken(
-      balancerV2GetPoolFromId(fork.config.balancer.pools.ohm50Dai25Weth25.id),
-      provider,
-    );
+  beforeEach(async () => {
+    valueInterpreter = fork.deployment.valueInterpreter;
+    quoteAsset = fork.config.primitives.dai;
+
+    // Use a 3-token pool to test accuracy of weighted token formula
+    bpt = new ITestStandardToken(balancerV2GetPoolFromId(fork.config.balancer.pools.ohm50Dai25Weth25.id), provider);
+  });
+
+  it('18-decimal intermediary asset: returns the expected value from the valueInterpreter', async () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
-      .args(bpt, await getAssetUnit(bpt), fork.config.primitives.dai)
+      .args(bpt, await getAssetUnit(bpt), quoteAsset)
       .call();
 
     // 50OHM-25DAI-25WETH on Sept 29th, 2022 was worth about $19.30
     // Source: <https://app.zerion.io/explore/asset/50OHM-25DAI-25WETH-0xc45d42f801105e861e86658648e3678ad7aa70f9>
     expect(canonicalAssetValue).toEqBigNumber('19161158680891160321');
+  });
+
+  it('sub-18 decimal intermediary asset: returns the expected value from the valueInterpreter', async () => {
+    // Deploy a price feed with an intermediary asset with < 18 decimals
+    const sub18DecimalAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    expect(await sub18DecimalAsset.decimals()).toBeLtBigNumber(18);
+    const altPriceFeed = await BalancerV2WeightedPoolPriceFeed.deploy(
+      fork.deployer,
+      fork.deployment.fundDeployer,
+      valueInterpreter,
+      sub18DecimalAsset,
+      fork.config.balancer.vault,
+      fork.config.balancer.poolFactories,
+    );
+
+    // Move the BPT price to the new price feed
+    await valueInterpreter.removeDerivatives([bpt]);
+    await valueInterpreter.addDerivatives([bpt], [altPriceFeed]);
+
+    const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
+      .args(bpt, await getAssetUnit(bpt), quoteAsset)
+      .call();
+
+    // See ref rate in prev test case
+    expect(canonicalAssetValue).toEqBigNumber('19161156556414239575');
   });
 });
 
