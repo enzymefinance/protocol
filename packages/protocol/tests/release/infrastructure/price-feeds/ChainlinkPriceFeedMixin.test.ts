@@ -596,7 +596,7 @@ describe('expected values', () => {
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('2459084759462903173352');
+      expect(canonicalAssetValue).toEqBigNumber('2457345968198470605686');
     });
   });
 

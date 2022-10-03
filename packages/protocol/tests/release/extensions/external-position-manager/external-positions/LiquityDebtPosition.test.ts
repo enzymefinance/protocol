@@ -149,7 +149,7 @@ describe('openTrove', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(openTroveReceipt).toMatchInlineGasSnapshot('693923', gasAssertionTolerance);
+    expect(openTroveReceipt).toMatchInlineGasSnapshot('704127', gasAssertionTolerance);
   });
 });
 

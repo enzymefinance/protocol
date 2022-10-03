@@ -164,7 +164,7 @@ describe('expected values', () => {
 
     // 50OHM-25DAI-25WETH on Sept 29th, 2022 was worth about $19.30
     // Source: <https://app.zerion.io/explore/asset/50OHM-25DAI-25WETH-0xc45d42f801105e861e86658648e3678ad7aa70f9>
-    expect(canonicalAssetValue).toEqBigNumber('19161100488450964324');
+    expect(canonicalAssetValue).toEqBigNumber('19161158680891160321');
   });
 });
 

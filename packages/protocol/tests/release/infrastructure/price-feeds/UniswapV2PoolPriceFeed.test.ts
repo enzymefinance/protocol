@@ -112,7 +112,7 @@ describe('calcUnderlyingValues', () => {
       .call();
 
     expect(calcUnderlyingValues).toMatchFunctionOutput(uniswapV2PoolPriceFeed.calcUnderlyingValues, {
-      underlyingAmounts_: ['75662956670340', '56687523061500990288435'],
+      underlyingAmounts_: ['75745135355046', '56627188777581644123755'],
       underlyings_: [token0Address, token1Address],
     });
   });
@@ -184,7 +184,7 @@ describe('calcUnderlyingValues', () => {
 
       // usdc/weth on Sept 29, 2022 was worth about $151M
       // Source: <https://app.zerion.io/market/asset/UNI-V2-0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc>
-      expect(canonicalAssetValue).toEqBigNumber('151553399476874');
+      expect(canonicalAssetValue).toEqBigNumber('151554805616305');
     });
 
     it('returns the expected value from the valueInterpreter (18 decimals pool)', async () => {
@@ -204,7 +204,7 @@ describe('calcUnderlyingValues', () => {
 
       // bat/weth on Sept 29, 2022 was worth about $54
       // Source: <https://app.zerion.io/explore/asset/UNI-V2-0xb6909b960dbbe7392d405429eb2b3649752b4838>
-      expect(canonicalAssetValue).toEqBigNumber('54678239263610194412');
+      expect(canonicalAssetValue).toEqBigNumber('54678440927007916377');
     });
 
     it.todo('returns the correct rate for a non-18 decimal primitive and a derivative');

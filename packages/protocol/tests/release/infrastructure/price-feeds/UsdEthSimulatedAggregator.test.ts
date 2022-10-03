@@ -34,7 +34,7 @@ describe('latestRoundData', () => {
 
     // Rate should be inverse ETH/USD price with the target precision (1/price * 1e18).
     // On Sept 29th, 2022 ETH/USD was around $1335.
-    expect(latestRoundDataRes.answer_).toEqBigNumber(749293790602357);
+    expect(latestRoundDataRes.answer_).toEqBigNumber(748763973363411);
   });
 });
 
@@ -63,6 +63,6 @@ describe('e2e', () => {
       await valueInterpreter.calcCanonicalAssetValue
         .args(curveLpToken, curveLpTokenUnit, fork.config.primitives.usdc)
         .call(),
-    ).toEqBigNumber(1099627);
+    ).toEqBigNumber(1098850);
   });
 });
