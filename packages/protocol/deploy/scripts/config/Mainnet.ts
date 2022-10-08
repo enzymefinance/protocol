@@ -318,6 +318,9 @@ const mainnetConfig: DeploymentConfig = {
     riskAdjustedIdleUsdc: '0x3391bc034f2935ef0e1e41619445f998b2680d35',
     riskAdjustedIdleUsdt: '0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5',
   },
+  kiln: {
+    stakingContract: '0x746d8A8FCAB7f829Fa500504f60D89C5CC1EA973'
+  },
   lido: {
     steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
   },

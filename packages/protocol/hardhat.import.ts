@@ -68,6 +68,7 @@ export const config: HardhatUserConfig = {
       'ITestCurveRegistry',
       'ITestCurveSwaps',
       'ITestIdleTokenV4',
+      'ITestKilnStakingContract',
       'ITestLiquityHintHelper',
       'ITestLiquitySortedTroves',
       'ITestLiquityTroveManager',

@@ -52,6 +52,8 @@ import {
   IdleAdapter,
   IdlePriceFeed,
   IntegrationManager,
+  KilnStakingPositionLib,
+  KilnStakingPositionParser,
   LidoStethPriceFeed,
   LiquityDebtPositionLib,
   LiquityDebtPositionParser,
@@ -169,6 +171,8 @@ export async function deployProtocolFixture() {
     idleAdapter: new IdleAdapter(fixture.IdleAdapter.address, deployer),
     idlePriceFeed: new IdlePriceFeed(fixture.IdlePriceFeed.address, deployer),
     integrationManager: new IntegrationManager(fixture.IntegrationManager.address, deployer),
+    kilnStakingPositionLib: new KilnStakingPositionLib(fixture.KilnStakingPositionLib.address, deployer),
+    KilnStakingPositionParser: new KilnStakingPositionParser(fixture.KilnStakingPositionParser.address, deployer),
     lidoStethPriceFeed: new LidoStethPriceFeed(fixture.LidoStethPriceFeed.address, deployer),
     liquityDebtPositionLib: new LiquityDebtPositionLib(fixture.LiquityDebtPositionLib.address, deployer),
     liquityDebtPositionParser: new LiquityDebtPositionParser(fixture.LiquityDebtPositionParser.address, deployer),
@@ -314,6 +318,9 @@ export interface DeploymentConfig {
     riskAdjustedIdleDai: string;
     riskAdjustedIdleUsdc: string;
     riskAdjustedIdleUsdt: string;
+  };
+  kiln: {
+    stakingContract: string;
   };
   lido: {
     steth: string;

@@ -10,4 +10,5 @@ export enum ExternalPositionType {
   ArbitraryLoanPosition = '8',
   SolvV2ConvertibleIssuerPosition = '9',
   NotionalV2Position = '10',
+  KilnStakingPosition = '11',
 }

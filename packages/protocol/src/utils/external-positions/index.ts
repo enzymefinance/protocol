@@ -2,6 +2,7 @@ export * from './aave-debt';
 export * from './actions';
 export * from './arbitrary-loan';
 export * from './convex-voting';
+export * from './kiln-staking';
 export * from './liquity-debt';
 export * from './maple-liquidity';
 export * from './notional-v2';

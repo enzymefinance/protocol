@@ -24,6 +24,8 @@ const fn: DeployFunction = async function (hre) {
   const convexVotingPositionLib = await getOrNull('ConvexVotingPositionLib');
   const convexVotingPositionParser = await getOrNull('ConvexVotingPositionParser');
   const dispatcher = await get('Dispatcher');
+  const kilnStakingPositionLib = await getOrNull('KilnStakingPositionLib');
+  const kilnStakingPositionParser = await getOrNull('KilnStakingPositionParser');
   const externalPositionFactory = await get('ExternalPositionFactory');
   const externalPositionManager = await get('ExternalPositionManager');
   const fundDeployer = await get('FundDeployer');
@@ -67,6 +69,7 @@ const fn: DeployFunction = async function (hre) {
       ? ['SOLV_V2_CONVERTIBLE_ISSUER']
       : []),
     ...(notionalV2PositionLib && notionalV2PositionParser ? ['NOTIONAL_V2'] : []),
+    ...(kilnStakingPositionLib && kilnStakingPositionParser ? ['KILN_STAKING'] : []),
   ];
 
   if (positionTypes.length) {
@@ -156,6 +159,14 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.SolvV2ConvertibleIssuerPosition],
       [solvV2ConvertibleIssuerPositionLib],
       [solvV2ConvertibleIssuerPositionParser],
+    );
+  }
+
+  if (kilnStakingPositionLib && kilnStakingPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.KilnStakingPosition],
+      [kilnStakingPositionLib],
+      [kilnStakingPositionParser],
     );
   }
 

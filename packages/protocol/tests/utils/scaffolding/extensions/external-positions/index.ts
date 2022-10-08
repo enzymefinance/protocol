@@ -4,6 +4,7 @@ export * from './arbitrary-loan';
 export * from './common';
 export * from './compound';
 export * from './convex-voting';
+export * from './kiln-staking';
 export * from './liquity-debt';
 export * from './maple-liquidity';
 export * from './mocks';
