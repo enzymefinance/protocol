@@ -16,7 +16,7 @@ import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../../../../utils/BalancerV2LogExpMath.sol";
 import "../../../../utils/BalancerV2FixedPoint.sol";
 import "../../../../interfaces/IBalancerV2WeightedPool.sol";
-import "../../../../interfaces/IBalancerV2WeightedPoolFactory.sol";
+import "../../../../interfaces/IBalancerV2PoolFactory.sol";
 import "../../../../interfaces/IBalancerV2Vault.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
 import "../IDerivativePriceFeed.sol";
@@ -112,7 +112,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
     /// @return isSupported_ True if the asset is supported
     function isSupportedAsset(address _asset) external view override returns (bool isSupported_) {
         for (uint256 i; i < poolFactories.length; i++) {
-            if (IBalancerV2WeightedPoolFactory(poolFactories[i]).isPoolFromFactory(_asset)) {
+            if (IBalancerV2PoolFactory(poolFactories[i]).isPoolFromFactory(_asset)) {
                 return true;
             }
         }

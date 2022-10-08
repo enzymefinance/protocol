@@ -1,4 +1,4 @@
-import { balancerV2GetPoolFromId, BalancerV2PoolType, ValueInterpreter } from '@enzymefinance/protocol';
+import { balancerV2GetPoolFromId, ValueInterpreter } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -21,7 +21,7 @@ const fn: DeployFunction = async function (hre) {
       valueInterpreter.address,
       config.weth,
       config.balancer.vault,
-      config.balancer.poolFactories,
+      config.balancer.poolsWeighted.poolFactories,
     ],
     from: deployer.address,
     log: true,
@@ -30,7 +30,7 @@ const fn: DeployFunction = async function (hre) {
 
   // Register all weighted pool BPTs with the derivative price feed
   if (balancerV2WeightedPoolPriceFeed.newlyDeployed) {
-    const pools = Object.values(config.balancer.pools).filter((item) => item.type === BalancerV2PoolType.Weighted);
+    const pools = Object.values(config.balancer.poolsWeighted.pools);
 
     if (pools.length) {
       const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);

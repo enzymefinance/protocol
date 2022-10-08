@@ -75,5 +75,6 @@
     "slot": 3,
     "storageAddress": "0x20569b49d74c1ede765382574f7f3fdc2a078a4f",
     "isVyper": false
-  }
+  },
+  "0x06df3b2bbb68adc8b0e302443692037ed9f91b42": { "slot": 0, "isVyper": false }
 }

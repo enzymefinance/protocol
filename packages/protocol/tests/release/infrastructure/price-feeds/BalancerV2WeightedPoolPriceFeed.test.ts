@@ -36,7 +36,7 @@ describe('calcUnderlyingValues', () => {
     const balancerV2WeightedPoolPriceFeed = fork.deployment.balancerV2WeightedPoolPriceFeed;
 
     const balancerVault = new ITestBalancerV2Vault(fork.config.balancer.vault, provider);
-    const poolId = fork.config.balancer.pools.bal80Weth20.id;
+    const poolId = fork.config.balancer.poolsWeighted.pools.bal80Weth20.id;
     const bpt = new ITestStandardToken(balancerV2GetPoolFromId(poolId), provider);
     const balAddress = fork.config.primitives.bal;
     const ethAddress = constants.AddressZero;
@@ -91,7 +91,7 @@ describe('derivative gas costs', () => {
     const investmentAmount = await getAssetUnit(denominationAsset);
 
     // weighted pool: [BAL, WETH]
-    const poolId = fork.config.balancer.pools.bal80Weth20.id;
+    const poolId = fork.config.balancer.poolsWeighted.pools.bal80Weth20.id;
     // Use partial denomination asset balance to acquire BPT
     const spendAsset = denominationAsset; // WETH
     const spendAssetIndex = 1; // WETH
@@ -161,7 +161,10 @@ describe('expected values', () => {
     quoteAsset = fork.config.primitives.dai;
 
     // Use a 3-token pool to test accuracy of weighted token formula
-    bpt = new ITestStandardToken(balancerV2GetPoolFromId(fork.config.balancer.pools.ohm50Dai25Weth25.id), provider);
+    bpt = new ITestStandardToken(
+      balancerV2GetPoolFromId(fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.id),
+      provider,
+    );
   });
 
   it('18-decimal intermediary asset: returns the expected value from the valueInterpreter', async () => {
@@ -184,7 +187,7 @@ describe('expected values', () => {
       valueInterpreter,
       sub18DecimalAsset,
       fork.config.balancer.vault,
-      fork.config.balancer.poolFactories,
+      fork.config.balancer.poolsWeighted.poolFactories,
     );
 
     // Move the BPT price to the new price feed
@@ -212,21 +215,23 @@ describe('add/remove pool factory', () => {
   });
 
   it('can add/remove a factory', async () => {
-    const balWeth = balancerV2GetPoolFromId(fork.config.balancer.pools.bal80Weth20.id);
+    const balWeth = balancerV2GetPoolFromId(fork.config.balancer.poolsWeighted.pools.bal80Weth20.id);
 
     expect(await balancerV2WeightedPoolPriceFeed.isSupportedAsset(balWeth)).toBe(true);
     expect((await balancerV2WeightedPoolPriceFeed.getPoolFactories()).length).toBe(
-      fork.config.balancer.poolFactories.length,
+      fork.config.balancer.poolsWeighted.poolFactories.length,
     );
 
     // remove the current factories first
-    const removeReceipt = await balancerV2WeightedPoolPriceFeed.removePoolFactories(fork.config.balancer.poolFactories);
+    const removeReceipt = await balancerV2WeightedPoolPriceFeed.removePoolFactories(
+      fork.config.balancer.poolsWeighted.poolFactories,
+    );
     const removeEvents = extractEvent(removeReceipt, poolFactoryRemovedEvent);
-    expect(removeEvents.length).toBe(fork.config.balancer.poolFactories.length);
+    expect(removeEvents.length).toBe(fork.config.balancer.poolsWeighted.poolFactories.length);
 
     for (const i in removeEvents) {
       expect(removeEvents[i].args).toMatchObject({
-        poolFactory: fork.config.balancer.poolFactories[i],
+        poolFactory: fork.config.balancer.poolsWeighted.poolFactories[i],
       });
     }
 
@@ -235,28 +240,32 @@ describe('add/remove pool factory', () => {
     expect((await balancerV2WeightedPoolPriceFeed.getPoolFactories()).length).toBe(0);
 
     // add factories back
-    const addReceipt = await balancerV2WeightedPoolPriceFeed.addPoolFactories(fork.config.balancer.poolFactories);
+    const addReceipt = await balancerV2WeightedPoolPriceFeed.addPoolFactories(
+      fork.config.balancer.poolsWeighted.poolFactories,
+    );
     const addEvents = extractEvent(addReceipt, poolFactoryAddedEvent);
-    expect(addEvents.length).toBe(fork.config.balancer.poolFactories.length);
+    expect(addEvents.length).toBe(fork.config.balancer.poolsWeighted.poolFactories.length);
 
     for (const i in addEvents) {
       expect(addEvents[i].args).toMatchObject({
-        poolFactory: fork.config.balancer.poolFactories[i],
+        poolFactory: fork.config.balancer.poolsWeighted.poolFactories[i],
       });
     }
 
     // should be supported again
     expect(await balancerV2WeightedPoolPriceFeed.isSupportedAsset(balWeth)).toBe(true);
     expect((await balancerV2WeightedPoolPriceFeed.getPoolFactories()).length).toBe(
-      fork.config.balancer.poolFactories.length,
+      fork.config.balancer.poolsWeighted.poolFactories.length,
     );
   });
 
   it('wont add duplicate entries', async () => {
-    const receipt = await balancerV2WeightedPoolPriceFeed.addPoolFactories(fork.config.balancer.poolFactories);
+    const receipt = await balancerV2WeightedPoolPriceFeed.addPoolFactories(
+      fork.config.balancer.poolsWeighted.poolFactories,
+    );
     expect(extractEvent(receipt, poolFactoryAddedEvent).length).toBe(0);
     expect((await balancerV2WeightedPoolPriceFeed.getPoolFactories()).length).toBe(
-      fork.config.balancer.poolFactories.length,
+      fork.config.balancer.poolsWeighted.poolFactories.length,
     );
   });
 
@@ -264,7 +273,7 @@ describe('add/remove pool factory', () => {
     const receipt = await balancerV2WeightedPoolPriceFeed.removePoolFactories([randomAddress()]);
     expect(extractEvent(receipt, poolFactoryRemovedEvent).length).toBe(0);
     expect((await balancerV2WeightedPoolPriceFeed.getPoolFactories()).length).toBe(
-      fork.config.balancer.poolFactories.length,
+      fork.config.balancer.poolsWeighted.poolFactories.length,
     );
   });
 });

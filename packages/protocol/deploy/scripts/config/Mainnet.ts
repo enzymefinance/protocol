@@ -1,4 +1,4 @@
-import { BalancerV2PoolType, ChainlinkRateAsset } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset } from '@enzymefinance/protocol';
 import type { DeploymentConfig } from '@enzymefinance/testutils';
 import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
@@ -204,16 +204,31 @@ const mainnetConfig: DeploymentConfig = {
   balancer: {
     vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     helpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
-    poolFactories: ["0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9", "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0"],
-    pools: {
-      bal80Weth20: {
-        id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
-        type: BalancerV2PoolType.Weighted
-      },
-      ohm50Dai25Weth25: {
-        id: '0xc45d42f801105e861e86658648e3678ad7aa70f900010000000000000000011e',
-        type: BalancerV2PoolType.Weighted,
-      },
+    poolsWeighted: {
+      poolFactories: ["0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9", "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0"],
+      pools: {
+        bal80Weth20: {
+          id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
+        },
+        ohm50Dai25Weth25: {
+          id: '0xc45d42f801105e861e86658648e3678ad7aa70f900010000000000000000011e',
+        },
+      }
+    },
+    poolsStable: {
+      // TODO: 2nd item is metastable pool factory, unsure if we can support with price feed
+      poolFactories: ["0xc66Ba2B6595D3613CCab350C886aCE23866EDe24", "0x67d27634E44793fE63c467035E31ea8635117cd4"],
+      pools: {
+        // Balancer USD stable pool
+        staBAL3: {
+          id: '0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063',
+          invariantProxyAsset: primitives.usdc
+        },
+        steth: {
+          id: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080',
+          invariantProxyAsset: weth
+        }
+      }
     }
   },
   chainlink: {

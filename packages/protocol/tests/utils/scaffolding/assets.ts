@@ -1,5 +1,8 @@
-import type { ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { ComptrollerLib, IntegrationManager } from '@enzymefinance/protocol';
+import { ITestStandardToken } from '@enzymefinance/protocol';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/testutils';
+import { getAssetUnit } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
 
 import { setAccountBalance } from '../accounts';
@@ -10,16 +13,20 @@ export async function addNewAssetsToFund({
   comptrollerProxy,
   integrationManager,
   assets,
-  amounts = new Array(assets.length).fill(1),
+  amounts,
   provider,
 }: {
   signer: SignerWithAddress;
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
-  assets: ITestStandardToken[];
+  assets: AddressLike[];
   amounts?: BigNumberish[];
   provider: EthereumTestnetProvider;
 }) {
+  if (amounts === undefined) {
+    amounts = await Promise.all(assets.map(async (asset) => getAssetUnit(new ITestStandardToken(asset, provider))));
+  }
+
   // First, add tracked assets
   const receipt = addTrackedAssetsToVault({
     assets,
@@ -32,7 +39,7 @@ export async function addNewAssetsToFund({
   const vaultProxy = await comptrollerProxy.getVaultProxy();
 
   await Promise.all(
-    assets.map((asset, i) => setAccountBalance({ account: vaultProxy, amount: amounts[i], provider, token: asset })),
+    amounts.map((amount, i) => setAccountBalance({ account: vaultProxy, amount, provider, token: assets[i] })),
   );
 
   return receipt;

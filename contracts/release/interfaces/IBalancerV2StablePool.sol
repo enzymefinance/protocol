@@ -9,8 +9,10 @@
 
 pragma solidity 0.6.12;
 
-/// @title IBalancerV2WeightedPoolFactory interface
+/// @title IBalancerV2StablePool interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IBalancerV2WeightedPoolFactory {
-    function isPoolFromFactory(address _pool) external view returns (bool success_);
+interface IBalancerV2StablePool {
+    function getPoolId() external view returns (bytes32 poolId_);
+
+    function getRate() external view returns (uint256 rate_);
 }

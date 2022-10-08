@@ -45,7 +45,7 @@ beforeEach(async () => {
   balancerVaultAddress = fork.config.balancer.vault;
 
   // weighted pool: [OHM, DAI, WETH]
-  poolId = fork.config.balancer.pools.ohm50Dai25Weth25.id;
+  poolId = fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.id;
   bpt = new ITestStandardToken(balancerV2GetPoolFromId(poolId), provider);
   ohm = new ITestStandardToken(fork.config.primitives.ohm, provider);
   dai = new ITestStandardToken(fork.config.primitives.dai, provider);

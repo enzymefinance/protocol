@@ -4,9 +4,12 @@ import { BigNumber, utils } from 'ethers';
 
 import { encodeArgs } from '../encoding';
 
-export enum BalancerV2PoolType {
-  Weighted = 0,
-  Stable,
+export enum BalancerV2StablePoolJoinKind {
+  INIT = 0,
+  EXACT_TOKENS_IN_FOR_BPT_OUT,
+  TOKEN_IN_FOR_EXACT_BPT_OUT,
+  ALL_TOKENS_IN_FOR_EXACT_BPT_OUT,
+  ADD_TOKEN,
 }
 
 export enum BalancerV2WeightedPoolJoinKind {
@@ -119,5 +122,20 @@ export function balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
   return encodeArgs(
     ['uint8', 'uint256', 'uint256'],
     [BalancerV2WeightedPoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, tokenIndex],
+  );
+}
+
+// Stable pools
+
+export function balancerV2StablePoolsUserDataTokenInForExactBptOut({
+  bptAmountOut,
+  tokenIndex,
+}: {
+  bptAmountOut: BigNumberish;
+  tokenIndex: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint8', 'uint256', 'uint256'],
+    [BalancerV2StablePoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT, bptAmountOut, tokenIndex],
   );
 }

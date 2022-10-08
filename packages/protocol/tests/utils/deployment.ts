@@ -18,6 +18,7 @@ import {
   ArbitraryLoanTotalNominalDeltaOracleModule,
   ArbitraryTokenPhasedSharesWrapperFactory,
   BalancerV2LiquidityAdapter,
+  BalancerV2StablePoolPriceFeed,
   BalancerV2WeightedPoolPriceFeed,
   CompoundAdapter,
   CompoundDebtPositionLib,
@@ -136,6 +137,7 @@ export async function deployProtocolFixture() {
     arbitraryLoanTotalNominalDeltaOracleModule: new ArbitraryLoanTotalNominalDeltaOracleModule(fixture.ArbitraryLoanTotalNominalDeltaOracleModule.address, deployer),
     arbitraryTokenPhasedSharesWrapperFactory: new ArbitraryTokenPhasedSharesWrapperFactory(fixture.ArbitraryTokenPhasedSharesWrapperFactory.address, deployer),
     balancerV2LiquidityAdapter: new BalancerV2LiquidityAdapter(fixture.BalancerV2LiquidityAdapter, deployer),
+    balancerV2StablePoolPriceFeed: new BalancerV2StablePoolPriceFeed(fixture.BalancerV2StablePoolPriceFeed, deployer),
     balancerV2WeightedPoolPriceFeed: new BalancerV2WeightedPoolPriceFeed(fixture.BalancerV2WeightedPoolPriceFeed, deployer),
     compoundAdapter: new CompoundAdapter(fixture.CompoundAdapter.address, deployer),
     compoundDebtPositionLib: new CompoundDebtPositionLib(fixture.CompoundDebtPositionLib.address, deployer),
@@ -226,7 +228,7 @@ type Resolve<T extends () => any> = ReturnType<T> extends Promise<infer U> ? U :
 
 export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
 
-import type { BalancerV2PoolType, ChainlinkRateAsset } from '@enzymefinance/protocol';
+import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
 
 export interface DeploymentConfig {
   feeBps: number;
@@ -247,14 +249,25 @@ export interface DeploymentConfig {
   balancer: {
     vault: string;
     helpers: string;
-    poolFactories: string[];
-    pools: Record<
-      string,
-      {
-        id: string;
-        type: BalancerV2PoolType;
-      }
-    >;
+    poolsWeighted: {
+      poolFactories: string[];
+      pools: Record<
+        string,
+        {
+          id: string;
+        }
+      >;
+    };
+    poolsStable: {
+      poolFactories: string[];
+      pools: Record<
+        string,
+        {
+          id: string;
+          invariantProxyAsset: string;
+        }
+      >;
+    };
   };
   chainlink: {
     ethusd: string;
