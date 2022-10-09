@@ -13,7 +13,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../../persistent/arbitrary-value-oracles/IArbitraryValueOracle.sol";
 import "../../../../../persistent/external-positions/kiln-staking/KilnStakingPositionLibBase1.sol";
 import "../../../../interfaces/IKilnDepositContract.sol";
 import "../../../../interfaces/IWETH.sol";
