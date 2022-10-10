@@ -62,6 +62,7 @@ export const config: HardhatUserConfig = {
       'ITestConvexBooster',
       'ITestConvexCrvDepositor',
       'ITestConvexCvxLocker',
+      'ITestConvexVirtualBalanceRewardPool',
       'ITestConvexVlCvxExtraRewardDistribution',
       'ITestCurveAddressProvider',
       'ITestCurveLiquidityPool',

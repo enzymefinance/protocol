@@ -201,6 +201,10 @@ const mainnetConfig: DeploymentConfig = {
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
   },
+  aura: {
+    booster: '0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10',
+    auraToken: '0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF',
+  },
   balancer: {
     balToken: primitives.bal,
     vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",

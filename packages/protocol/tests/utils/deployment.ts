@@ -17,6 +17,9 @@ import {
   ArbitraryLoanPositionParser,
   ArbitraryLoanTotalNominalDeltaOracleModule,
   ArbitraryTokenPhasedSharesWrapperFactory,
+  AuraBalancerV2LpStakingAdapter,
+  AuraBalancerV2LpStakingWrapperFactory,
+  AuraBalancerV2LpStakingWrapperPriceFeed,
   BalancerV2GaugeTokenPriceFeed,
   BalancerV2LiquidityAdapter,
   BalancerV2StablePoolPriceFeed,
@@ -137,6 +140,9 @@ export async function deployProtocolFixture() {
     arbitraryLoanPositionParser: new ArbitraryLoanPositionParser(fixture.ArbitraryLoanPositionParser.address, deployer),
     arbitraryLoanTotalNominalDeltaOracleModule: new ArbitraryLoanTotalNominalDeltaOracleModule(fixture.ArbitraryLoanTotalNominalDeltaOracleModule.address, deployer),
     arbitraryTokenPhasedSharesWrapperFactory: new ArbitraryTokenPhasedSharesWrapperFactory(fixture.ArbitraryTokenPhasedSharesWrapperFactory.address, deployer),
+    auraBalancerV2LpStakingAdapter: new AuraBalancerV2LpStakingAdapter(fixture.AuraBalancerV2LpStakingAdapter, deployer),
+    auraBalancerV2LpStakingWrapperFactory: new AuraBalancerV2LpStakingWrapperFactory(fixture.AuraBalancerV2LpStakingWrapperFactory, deployer),
+    auraBalancerV2LpStakingWrapperPriceFeed: new AuraBalancerV2LpStakingWrapperPriceFeed(fixture.AuraBalancerV2LpStakingWrapperPriceFeed, deployer),
     balancerV2GaugeTokenPriceFeed: new BalancerV2GaugeTokenPriceFeed(fixture.BalancerV2GaugeTokenPriceFeed, deployer),
     balancerV2LiquidityAdapter: new BalancerV2LiquidityAdapter(fixture.BalancerV2LiquidityAdapter, deployer),
     balancerV2StablePoolPriceFeed: new BalancerV2StablePoolPriceFeed(fixture.BalancerV2StablePoolPriceFeed, deployer),
@@ -247,6 +253,10 @@ export interface DeploymentConfig {
     relayHub: string;
     relayWorker: string;
     trustedForwarder: string;
+  };
+  aura: {
+    booster: string;
+    auraToken: string;
   };
   balancer: {
     balToken: string;

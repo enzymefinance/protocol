@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`aura as adapter ERC20 calls transfer happy path: 1 staker, 1 non-staker: aura 1`] = `618184`;
+
+exports[`aura as adapter ERC20 calls transfer happy path: 2 stakers: aura 1`] = `464347`;
+
+exports[`aura as adapter actions deposit works as expected: aura 1`] = `787249`;
+
+exports[`aura as adapter actions withdraw withdraw: allows claiming rewards: aura 1`] = `1007242`;
+
+exports[`aura as adapter actions withdraw withdrawTo: works as expected: aura 1`] = `645082`;
+
+exports[`convex as adapter ERC20 calls transfer happy path: 1 staker, 1 non-staker: convex 1`] = `624656`;
+
+exports[`convex as adapter ERC20 calls transfer happy path: 2 stakers: convex 1`] = `405125`;
+
+exports[`convex as adapter actions deposit works as expected: convex 1`] = `1320682`;
+
+exports[`convex as adapter actions withdraw withdraw: allows claiming rewards: convex 1`] = `1357457`;
+
+exports[`convex as adapter actions withdraw withdrawTo: works as expected: convex 1`] = `1131835`;

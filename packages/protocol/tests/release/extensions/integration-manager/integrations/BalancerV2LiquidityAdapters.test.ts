@@ -57,7 +57,7 @@ let poolAssets: ITestStandardToken[];
 const poolIndexDai = 1;
 const poolIndexWeth = 2;
 
-const adapterKeys = ['balancer'];
+const adapterKeys = ['balancer', 'aura'];
 describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
   beforeEach(async () => {
     fork = await deployProtocolFixture();
@@ -80,6 +80,22 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.gauge,
           provider,
         );
+        break;
+      case 'aura':
+        balancerV2LiquidityAdapter = fork.deployment.auraBalancerV2LpStakingAdapter as BalancerV2LiquidityAdapter;
+
+        // Deploy a staking wrapper for the Aura pool
+        const pid = 30; // [OHM, DAI, WETH]
+        const factory = fork.deployment.auraBalancerV2LpStakingWrapperFactory;
+        await factory.deploy(pid);
+        stakingToken = new ITestStandardToken(await factory.getWrapperForConvexPool(pid), provider);
+
+        // Add the staking token to the asset universe
+        await valueInterpreter.addDerivatives(
+          [stakingToken],
+          [fork.deployment.auraBalancerV2LpStakingWrapperPriceFeed],
+        );
+
         break;
     }
   });

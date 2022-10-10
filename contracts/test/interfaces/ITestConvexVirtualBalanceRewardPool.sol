@@ -9,10 +9,10 @@
 
 pragma solidity 0.6.12;
 
-/// @title ITestConvexBaseRewardPool Interface
+/// @title ITestConvexVirtualBalanceRewardPool Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface ITestConvexBaseRewardPool {
-    function extraRewards(uint256 _index) external view returns (address rewardToken_);
+interface ITestConvexVirtualBalanceRewardPool {
+    function operator() external view returns (address);
 
-    function stakeFor(address _for, uint256 _amount) external returns (bool success_);
+    function queueNewRewards(uint256 _rewards) external;
 }

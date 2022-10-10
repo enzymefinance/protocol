@@ -24,6 +24,7 @@ export * from './codegen/ComptrollerProxy';
 export * from './codegen/VaultLib';
 
 // Infrastructure
+export * from './codegen/AuraBalancerV2LpStakingWrapperFactory';
 export * from './codegen/ConvexCurveLpStakingWrapperFactory';
 export * from './codegen/ConvexCurveLpStakingWrapperLib';
 export * from './codegen/ProtocolFeeReserveLib';
@@ -45,6 +46,7 @@ export * from './codegen/PolicyManager';
 // Derivative price feeds
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
+export * from './codegen/AuraBalancerV2LpStakingWrapperPriceFeed';
 export * from './codegen/BalancerV2GaugeTokenPriceFeed';
 export * from './codegen/BalancerV2StablePoolPriceFeed';
 export * from './codegen/BalancerV2WeightedPoolPriceFeed';
@@ -61,6 +63,7 @@ export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
 export * from './codegen/AaveAdapter';
+export * from './codegen/AuraBalancerV2LpStakingAdapter';
 export * from './codegen/BalancerV2LiquidityAdapter';
 export * from './codegen/CompoundAdapter';
 export * from './codegen/ConvexCurveLpStakingAdapter';
@@ -149,6 +152,7 @@ export * from './codegen/ITestConvexBaseRewardPool';
 export * from './codegen/ITestConvexBooster';
 export * from './codegen/ITestConvexCrvDepositor';
 export * from './codegen/ITestConvexCvxLocker';
+export * from './codegen/ITestConvexVirtualBalanceRewardPool';
 export * from './codegen/ITestConvexVlCvxExtraRewardDistribution';
 export * from './codegen/ITestCurveAddressProvider';
 export * from './codegen/ITestCurveLiquidityPool';
