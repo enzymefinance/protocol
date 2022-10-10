@@ -202,16 +202,20 @@ const mainnetConfig: DeploymentConfig = {
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
   },
   balancer: {
+    balToken: primitives.bal,
     vault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     helpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
+    minter: '0x239e55F427D44C3cc793f49bFB507ebe76638a2b',
     poolsWeighted: {
       poolFactories: ["0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9", "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0"],
       pools: {
         bal80Weth20: {
           id: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014',
+          gauge: constants.AddressZero // bal80-weth20 does not have a gauge
         },
         ohm50Dai25Weth25: {
           id: '0xc45d42f801105e861e86658648e3678ad7aa70f900010000000000000000011e',
+          gauge: '0x852CF729dEF9beB9De2f18c97a0ea6bf93a7dF8B'
         },
       }
     },
@@ -222,11 +226,13 @@ const mainnetConfig: DeploymentConfig = {
         // Balancer USD stable pool
         staBAL3: {
           id: '0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063',
-          invariantProxyAsset: primitives.usdc
+          invariantProxyAsset: primitives.usdc,
+          gauge: '0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac'
         },
         steth: {
           id: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080',
-          invariantProxyAsset: weth
+          invariantProxyAsset: weth,
+          gauge: '0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE'
         }
       }
     }

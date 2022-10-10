@@ -17,6 +17,7 @@ import {
   ArbitraryLoanPositionParser,
   ArbitraryLoanTotalNominalDeltaOracleModule,
   ArbitraryTokenPhasedSharesWrapperFactory,
+  BalancerV2GaugeTokenPriceFeed,
   BalancerV2LiquidityAdapter,
   BalancerV2StablePoolPriceFeed,
   BalancerV2WeightedPoolPriceFeed,
@@ -136,6 +137,7 @@ export async function deployProtocolFixture() {
     arbitraryLoanPositionParser: new ArbitraryLoanPositionParser(fixture.ArbitraryLoanPositionParser.address, deployer),
     arbitraryLoanTotalNominalDeltaOracleModule: new ArbitraryLoanTotalNominalDeltaOracleModule(fixture.ArbitraryLoanTotalNominalDeltaOracleModule.address, deployer),
     arbitraryTokenPhasedSharesWrapperFactory: new ArbitraryTokenPhasedSharesWrapperFactory(fixture.ArbitraryTokenPhasedSharesWrapperFactory.address, deployer),
+    balancerV2GaugeTokenPriceFeed: new BalancerV2GaugeTokenPriceFeed(fixture.BalancerV2GaugeTokenPriceFeed, deployer),
     balancerV2LiquidityAdapter: new BalancerV2LiquidityAdapter(fixture.BalancerV2LiquidityAdapter, deployer),
     balancerV2StablePoolPriceFeed: new BalancerV2StablePoolPriceFeed(fixture.BalancerV2StablePoolPriceFeed, deployer),
     balancerV2WeightedPoolPriceFeed: new BalancerV2WeightedPoolPriceFeed(fixture.BalancerV2WeightedPoolPriceFeed, deployer),
@@ -247,14 +249,17 @@ export interface DeploymentConfig {
     trustedForwarder: string;
   };
   balancer: {
-    vault: string;
+    balToken: string;
     helpers: string;
+    minter: string;
+    vault: string;
     poolsWeighted: {
       poolFactories: string[];
       pools: Record<
         string,
         {
           id: string;
+          gauge: string;
         }
       >;
     };
@@ -264,6 +269,7 @@ export interface DeploymentConfig {
         string,
         {
           id: string;
+          gauge: string;
           invariantProxyAsset: string;
         }
       >;

@@ -79,7 +79,7 @@ const fn: DeployFunction = async function (hre) {
     vaultCalls.push([config.aave.incentivesController, aaveClaimRewardsToSelfSelector, vaultCallAnyDataHash]);
   }
 
-  // Calls to allow claiming rewards from Curve's Minter.
+  // Calls to allow claiming rewards from Curve's Minter (and veToken forks like Balancer)
   // Only applicable to Ethereum mainnet.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (config.curve && isHomestead(chainId)) {
@@ -87,6 +87,9 @@ const fn: DeployFunction = async function (hre) {
       [config.curve.minter, curveMinterMintSelector, vaultCallAnyDataHash],
       [config.curve.minter, curveMinterMintManySelector, vaultCallAnyDataHash],
       [config.curve.minter, curveMinterToggleApproveMintSelector, vaultCallAnyDataHash],
+      [config.balancer.minter, curveMinterMintSelector, vaultCallAnyDataHash],
+      [config.balancer.minter, curveMinterMintManySelector, vaultCallAnyDataHash],
+      [config.balancer.minter, curveMinterToggleApproveMintSelector, vaultCallAnyDataHash],
     );
   }
 

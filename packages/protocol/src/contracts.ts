@@ -45,6 +45,7 @@ export * from './codegen/PolicyManager';
 // Derivative price feeds
 export * from './codegen/IDerivativePriceFeed';
 export * from './codegen/AavePriceFeed';
+export * from './codegen/BalancerV2GaugeTokenPriceFeed';
 export * from './codegen/BalancerV2StablePoolPriceFeed';
 export * from './codegen/BalancerV2WeightedPoolPriceFeed';
 export * from './codegen/CompoundPriceFeed';

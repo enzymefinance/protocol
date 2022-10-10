@@ -15,7 +15,12 @@ const fn: DeployFunction = async function (hre) {
   const integrationManager = await get('IntegrationManager');
 
   await deploy('BalancerV2LiquidityAdapter', {
-    args: [integrationManager.address, config.balancer.vault] as BalancerV2LiquidityAdapterArgs,
+    args: [
+      integrationManager.address,
+      config.balancer.vault,
+      config.balancer.minter,
+      config.balancer.balToken,
+    ] as BalancerV2LiquidityAdapterArgs,
     from: deployer.address,
     linkedData: {
       nonSlippageAdapter: true,
@@ -32,7 +37,7 @@ fn.dependencies = ['Config', 'IntegrationManager'];
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();
 
-  return !isOneOfNetworks(chain, [Network.HOMESTEAD]);
+  return !isOneOfNetworks(chain, [Network.HOMESTEAD, Network.MATIC]);
 };
 
 export default fn;

@@ -42,6 +42,12 @@ export function balancerV2GetPoolFromId(id: BytesLike) {
   return utils.hexlify(BigNumber.from(id).shr(12 * 8));
 }
 
+// Individual actions
+
+export function balancerV2ClaimRewardsArgs({ stakingToken }: { stakingToken: AddressLike }) {
+  return encodeArgs(['address'], [stakingToken]);
+}
+
 export function balancerV2LendArgs({
   poolId,
   minIncomingBptAmount,
@@ -58,6 +64,27 @@ export function balancerV2LendArgs({
   return encodeArgs(
     ['bytes32', 'uint256', 'address[]', 'uint256[]', balancerV2PoolBalanceChangeTuple],
     [poolId, minIncomingBptAmount, spendAssets, spendAssetAmounts, request],
+  );
+}
+
+export function balancerV2LendAndStakeArgs({
+  stakingToken,
+  poolId,
+  minIncomingBptAmount,
+  spendAssets,
+  spendAssetAmounts,
+  request,
+}: {
+  stakingToken: AddressLike;
+  poolId: BytesLike;
+  minIncomingBptAmount: BigNumberish;
+  spendAssets: AddressLike[];
+  spendAssetAmounts: BigNumberish[];
+  request: BalancerV2PoolBalanceChange;
+}) {
+  return encodeArgs(
+    ['address', 'bytes32', 'uint256', 'address[]', 'uint256[]', balancerV2PoolBalanceChangeTuple],
+    [stakingToken, poolId, minIncomingBptAmount, spendAssets, spendAssetAmounts, request],
   );
 }
 
@@ -80,7 +107,63 @@ export function balancerV2RedeemArgs({
   );
 }
 
+export function balancerV2StakeArgs({
+  stakingToken,
+  bptAmount,
+}: {
+  stakingToken: AddressLike;
+  bptAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [stakingToken, bptAmount]);
+}
+
+export function balancerV2UnstakeArgs({
+  stakingToken,
+  bptAmount,
+}: {
+  stakingToken: AddressLike;
+  bptAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [stakingToken, bptAmount]);
+}
+
+export function balancerV2UnstakeAndRedeemArgs({
+  stakingToken,
+  poolId,
+  bptAmount,
+  incomingAssets,
+  minIncomingAssetAmounts,
+  request,
+}: {
+  stakingToken: AddressLike;
+  poolId: BytesLike;
+  bptAmount: BigNumberish;
+  incomingAssets: AddressLike[];
+  minIncomingAssetAmounts: BigNumberish[];
+  request: BalancerV2PoolBalanceChange;
+}) {
+  return encodeArgs(
+    ['address', 'bytes32', 'uint256', 'address[]', 'uint256[]', balancerV2PoolBalanceChangeTuple],
+    [stakingToken, poolId, bptAmount, incomingAssets, minIncomingAssetAmounts, request],
+  );
+}
+
 // Weighted pools
+
+// exits
+
+export function balancerV2WeightedPoolsUserDataBptInForExactTokensOut({
+  amountsOut,
+  maxBPTAmountIn,
+}: {
+  amountsOut: BigNumberish[];
+  maxBPTAmountIn: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint8', 'uint256[]', 'uint256'],
+    [BalancerV2WeightedPoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT, amountsOut, maxBPTAmountIn],
+  );
+}
 
 export function balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut({
   bptAmountIn,
@@ -98,6 +181,8 @@ export function balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut({
 export function balancerV2WeightedPoolsUserDataExactBptInForTokensOut({ bptAmountIn }: { bptAmountIn: BigNumberish }) {
   return encodeArgs(['uint8', 'uint256'], [BalancerV2WeightedPoolExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, bptAmountIn]);
 }
+
+// joins
 
 export function balancerV2WeightedPoolsUserDataExactTokensInForBptOut({
   amountsIn,

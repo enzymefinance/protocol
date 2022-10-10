@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`balancer as adapter actions lendAndStake happy path: Weighted pool: TOKEN_IN_FOR_EXACT_BPT_OUT: balancer 1`] = `949060`;
+
+exports[`balancer as adapter actions stake happy path: balancer 1`] = `727963`;
+
+exports[`balancer as adapter actions unstake happy path: balancer 1`] = `614322`;
+
+exports[`balancer as adapter actions unstakeAndRedeem happy path: Weighted Pool: BPT_IN_FOR_EXACT_TOKENS_OUT: balancer 1`] = `1226213`;

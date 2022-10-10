@@ -1,4 +1,5 @@
-import { balancerV2GetPoolFromId, ValueInterpreter } from '@enzymefinance/protocol';
+import { ValueInterpreter } from '@enzymefinance/protocol';
+import { constants } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -12,38 +13,33 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
-  const fundDeployer = await get('FundDeployer');
   const valueInterpreter = await get('ValueInterpreter');
 
-  const balancerV2WeightedPoolPriceFeed = await deploy('BalancerV2WeightedPoolPriceFeed', {
-    args: [
-      fundDeployer.address,
-      valueInterpreter.address,
-      config.weth,
-      config.balancer.vault,
-      config.balancer.poolsWeighted.poolFactories,
-    ],
+  const balancerV2GaugeTokenPriceFeed = await deploy('BalancerV2GaugeTokenPriceFeed', {
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
 
-  // Register all weighted pool BPTs with the derivative price feed
-  if (balancerV2WeightedPoolPriceFeed.newlyDeployed) {
-    const pools = Object.values(config.balancer.poolsWeighted.pools);
+  // Register all tokens with the derivative price feed
+  if (balancerV2GaugeTokenPriceFeed.newlyDeployed) {
+    const pools = [
+      ...Object.values(config.balancer.poolsWeighted.pools).filter((item) => item.gauge !== constants.AddressZero),
+      ...Object.values(config.balancer.poolsStable.pools).filter((item) => item.gauge !== constants.AddressZero),
+    ];
 
     if (pools.length) {
       const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
 
       await valueInterpreterInstance.addDerivatives(
-        pools.map((pool) => balancerV2GetPoolFromId(pool.id)),
-        pools.map(() => balancerV2WeightedPoolPriceFeed.address),
+        pools.map((pool) => pool.gauge as string),
+        pools.map(() => balancerV2GaugeTokenPriceFeed.address),
       );
     }
   }
 };
 
-fn.tags = ['Release', 'BalancerV2WeightedPoolPriceFeed'];
+fn.tags = ['Release', 'BalancerV2GaugeTokenPriceFeed'];
 fn.dependencies = ['Config', 'FundDeployer', 'ValueInterpreter'];
 
 fn.skip = async (hre) => {

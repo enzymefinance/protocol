@@ -10,22 +10,89 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../interfaces/IBalancerV2Vault.sol";
-import "../../../../utils/AddressArrayLib.sol";
-import "../utils/actions/BalancerV2ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../../../../interfaces/IBalancerV2LiquidityGauge.sol";
+import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
+import "../utils/bases/BalancerV2LiquidityAdapterBase.sol";
 
 /// @title BalancerV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Adapter for Balancer V2 pool liquidity provision
-contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
-    using AddressArrayLib for address[];
-
-    constructor(address _integrationManager, address _balancerVault)
+/// @notice Adapter for Balancer V2 pool liquidity provision and native staking
+contract BalancerV2LiquidityAdapter is
+    BalancerV2LiquidityAdapterBase,
+    CurveGaugeV2RewardsHandlerMixin
+{
+    constructor(
+        address _integrationManager,
+        address _balancerVault,
+        address _balancerMinter,
+        address _balToken
+    )
         public
-        AdapterBase(_integrationManager)
-        BalancerV2ActionsMixin(_balancerVault)
+        BalancerV2LiquidityAdapterBase(_integrationManager, _balancerVault)
+        CurveGaugeV2RewardsHandlerMixin(_balancerMinter, _balToken)
     {}
+
+    ////////////////////////////////
+    // REQUIRED VIRTUAL FUNCTIONS //
+    ////////////////////////////////
+
+    /// @dev Logic to claim rewards for a given staking token
+    function __claimRewards(address _vaultProxy, address _stakingToken) internal override {
+        __curveGaugeV2ClaimAllRewards(_stakingToken, _vaultProxy);
+    }
+
+    /// @dev Logic to get the BPT address for a given staking token
+    function __getBptForStakingToken(address _stakingToken)
+        internal
+        view
+        override
+        returns (address bpt_)
+    {
+        return IBalancerV2LiquidityGauge(_stakingToken).lp_token();
+    }
+
+    /// @dev Logic to check whether a given BPT is valid for the given staking token.
+    /// For this adapter, it only validates that the staking token refers to the expected BPT,
+    /// not that it is a real Balancer gauge.
+    function __isValidBptForStakingToken(address _stakingToken, address _bpt)
+        internal
+        view
+        override
+        returns (bool isValid_)
+    {
+        return _bpt == IBalancerV2LiquidityGauge(_stakingToken).lp_token();
+    }
+
+    /// @dev Logic to stake BPT to a given staking token.
+    /// Staking is always the last action and thus always sent to the _vaultProxy
+    /// (rather than a more generically-named `_recipient`).
+    function __stake(
+        address _vaultProxy,
+        address _stakingToken,
+        uint256 _bptAmount
+    ) internal override {
+        __curveGaugeV2Stake(_stakingToken, __getBptForStakingToken(_stakingToken), _bptAmount);
+
+        ERC20(_stakingToken).safeTransfer(_vaultProxy, _bptAmount);
+    }
+
+    /// @dev Logic to unstake BPT from a given staking token
+    function __unstake(
+        address,
+        address _recipient,
+        address _stakingToken,
+        uint256 _bptAmount
+    ) internal override {
+        __curveGaugeV2Unstake(_stakingToken, _bptAmount);
+
+        if (_recipient != address(this)) {
+            ERC20(__getBptForStakingToken(_stakingToken)).safeTransfer(_recipient, _bptAmount);
+        }
+    }
+
+    ///////////////////
+    // EXTRA ACTIONS //
+    ///////////////////
 
     /// @notice Lends assets for pool tokens on BalancerV2
     /// @param _vaultProxy The VaultProxy of the calling fund
@@ -41,17 +108,9 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             IBalancerV2Vault.PoolBalanceChange memory request
-        ) = __decodeCallArgs(_actionData);
+        ) = __decodeLpActionCallArgs(_actionData);
 
-        for (uint256 i; i < spendAssets.length; i++) {
-            __approveAssetMaxAsNeeded(
-                spendAssets[i],
-                address(BALANCER_VAULT_CONTRACT),
-                spendAssetAmounts[i]
-            );
-        }
-
-        __balancerV2Lend(poolId, address(this), _vaultProxy, request);
+        __lend(_vaultProxy, poolId, spendAssets, spendAssetAmounts, request);
 
         // There can be different join/exit options per Balancer pool type,
         // some of which involve spending only up-to-max amounts
@@ -72,55 +131,21 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             address[] memory expectedIncomingTokens,
             ,
             IBalancerV2Vault.PoolBalanceChange memory request
-        ) = __decodeCallArgs(_actionData);
+        ) = __decodeLpActionCallArgs(_actionData);
 
-        address bpt = __parseBalancerPoolAddress(poolId);
-
-        __approveAssetMaxAsNeeded(bpt, address(BALANCER_VAULT_CONTRACT), spendBptAmount);
-
-        // Since we are not parsing request.userData, we do not know with certainty which tokens
-        // will be received. We are relying on the user-input expectedIncomingTokens up to this point.
-        // But, to guarantee that no unexpected tokens are received, we need to monitor those balances.
-        uint256 unusedTokensCount = request.assets.length - expectedIncomingTokens.length;
-        uint256[] memory preTxTokenBalancesIfUnused;
-        if (unusedTokensCount > 0) {
-            preTxTokenBalancesIfUnused = new uint256[](request.assets.length);
-            uint256 remainingCount = unusedTokensCount;
-            for (uint256 i; remainingCount > 0; i++) {
-                if (!expectedIncomingTokens.contains(request.assets[i])) {
-                    preTxTokenBalancesIfUnused[i] = ERC20(request.assets[i]).balanceOf(
-                        _vaultProxy
-                    );
-                    remainingCount--;
-                }
-            }
-        }
-
-        __balancerV2Redeem(poolId, address(this), payable(_vaultProxy), request);
-
-        if (unusedTokensCount > 0) {
-            for (uint256 i; unusedTokensCount > 0; i++) {
-                if (!expectedIncomingTokens.contains(request.assets[i])) {
-                    require(
-                        ERC20(request.assets[i]).balanceOf(_vaultProxy) ==
-                            preTxTokenBalancesIfUnused[i],
-                        "redeem: Unexpected asset received"
-                    );
-                    unusedTokensCount--;
-                }
-            }
-        }
+        __redeem(_vaultProxy, poolId, spendBptAmount, expectedIncomingTokens, request);
 
         // There can be different join/exit options per Balancer pool type,
         // some of which involve spending only up-to-max amounts
-        __pushFullAssetBalance(_vaultProxy, bpt);
+        __pushFullAssetBalance(_vaultProxy, __parseBalancerPoolAddress(poolId));
     }
 
     /////////////////////////////
-    // PARSE ASSETS FOR METHOD //
+    // PARSE ASSETS FOR ACTION //
     /////////////////////////////
 
     /// @notice Parses the expected assets to receive from a call on integration
+    /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _selector The function selector for the callOnIntegration
     /// @param _actionData The encoded parameters for the callOnIntegration
     /// @return spendAssetsHandleType_ A type that dictates how to handle granting
@@ -130,11 +155,11 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
     function parseAssetsForAction(
-        address,
+        address _vaultProxy,
         bytes4 _selector,
         bytes calldata _actionData
     )
-        external
+        public
         view
         override
         returns (
@@ -151,7 +176,7 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             return __parseAssetsForRedeem(_actionData);
         }
 
-        revert("parseAssetsForAction: _selector invalid");
+        return super.parseAssetsForAction(_vaultProxy, _selector, _actionData);
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
@@ -178,12 +203,9 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             spendAssets_,
             spendAssetAmounts_,
             request
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeLpActionCallArgs(_encodedCallArgs);
 
-        require(
-            !request.useInternalBalance,
-            "__parseAssetsForLend: Internal balances not supported"
-        );
+        __validateNoInternalBalances(request.useInternalBalance);
 
         incomingAssets_[0] = __parseBalancerPoolAddress(poolId);
 
@@ -220,12 +242,9 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
             incomingAssets_,
             minIncomingAssetAmounts_,
             request
-        ) = __decodeCallArgs(_encodedCallArgs);
+        ) = __decodeLpActionCallArgs(_encodedCallArgs);
 
-        require(
-            !request.useInternalBalance,
-            "__parseAssetsForRedeem: Internal balances not supported"
-        );
+        __validateNoInternalBalances(request.useInternalBalance);
 
         spendAssets_[0] = __parseBalancerPoolAddress(poolId);
 
@@ -238,22 +257,12 @@ contract BalancerV2LiquidityAdapter is AdapterBase, BalancerV2ActionsMixin {
         );
     }
 
-    /// @dev Helper to get a Balancer pool address (i.e., Balancer Pool Token) for a given id.
-    /// See: https://github.com/balancer-labs/balancer-v2-monorepo/blob/42906226223f29e4489975eb3c0d5014dea83b66/pkg/vault/contracts/PoolRegistry.sol#L130-L139
-    function __parseBalancerPoolAddress(bytes32 _poolId)
-        private
-        pure
-        returns (address poolAddress_)
-    {
-        return address(uint256(_poolId) >> (12 * 8));
-    }
-
     //////////////
     // DECODERS //
     //////////////
 
     /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgs(bytes memory _encodedCallArgs)
+    function __decodeLpActionCallArgs(bytes memory _encodedCallArgs)
         private
         pure
         returns (
