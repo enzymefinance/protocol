@@ -1,4 +1,4 @@
-import { extractEvent } from '@enzymefinance/ethers';
+import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
   ITestKilnStakingContract,
@@ -9,6 +9,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
+  assertEvent,
   createKilnStakingPosition,
   createNewFund,
   deployProtocolFixture,
@@ -20,6 +21,7 @@ import {
 import { BigNumber, utils } from 'ethers';
 
 const bps = BigNumber.from(ONE_HUNDRED_PERCENT_IN_BPS);
+const randomAddressValue = randomAddress();
 
 let externalPositionManager: ExternalPositionManager;
 let kilnStakingPosition: KilnStakingPositionLib;
@@ -76,6 +78,19 @@ describe('init', () => {
 });
 
 describe('Stake', () => {
+  it('does not allow an invalid staking contract', async () => {
+    await expect(
+      kilnStakingPositionStake({
+        comptrollerProxy: comptrollerProxyUsed,
+        amount: 1,
+        externalPositionManager,
+        externalPositionProxy: kilnStakingPosition,
+        signer: fundOwner,
+        stakingContractAddress: randomAddressValue,
+      }),
+    ).rejects.toBeRevertedWith('Invalid staking contract');
+  });
+
   it('works as expected', async () => {
     const validatorAmount = BigNumber.from('3'); // >1
     const stakedAmount = validatorAmount.mul(utils.parseEther('32'));
@@ -90,6 +105,7 @@ describe('Stake', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     // Parse the publicKeys from the stake event
@@ -103,6 +119,12 @@ describe('Stake', () => {
     const vaultProxyBalanceAfter = await weth.balanceOf(vaultProxyUsed);
     expect(vaultProxyBalanceAfter).toEqBigNumber(seedBalance.sub(stakedAmount));
 
+    // Assert the correct events were emitted
+    assertEvent(receiptMultiStake, kilnStakingPosition.abi.getEvent('ValidatorsAdded'), {
+      stakingContractAddress: kilnStakingContract.address,
+      validatorAmount,
+    });
+
     // Stake for only 1 validator (measure gas only)
     const receiptOneStake = await kilnStakingPositionStake({
       comptrollerProxy: comptrollerProxyUsed,
@@ -110,10 +132,11 @@ describe('Stake', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     // Gas cost to stake for 1 validator
-    expect(receiptOneStake).toMatchInlineGasSnapshot('281060');
+    expect(receiptOneStake).toMatchInlineGasSnapshot('292103');
 
     // Gas cost per additional validator
     expect(receiptMultiStake.gasUsed.sub(receiptOneStake.gasUsed).div(validatorAmount.sub(1))).toMatchInlineGasSnapshot(
@@ -125,6 +148,20 @@ describe('Stake', () => {
 // NOTE: Consensus Layer Fees claiming cannot be tested since their dispatch() code is still undeveloped
 // https://github.com/kilnfi/staking-contracts/blob/dd41162155a5e944731d544229f2763d1a99eb9e/src/contracts/ConsensusLayerFeeDispatcher.sol#L60
 describe('ClaimFees', () => {
+  it('does not allow an invalid staking contract', async () => {
+    await expect(
+      kilnStakingPositionClaimFees({
+        comptrollerProxy: comptrollerProxyUsed,
+        publicKeys: [utils.hexlify(utils.randomBytes(100))],
+        claimType: KilnStakingPositionActionClaimType.ExecutionLayer,
+        externalPositionManager,
+        externalPositionProxy: kilnStakingPosition,
+        signer: fundOwner,
+        stakingContractAddress: randomAddressValue,
+      }),
+    ).rejects.toBeRevertedWith('Invalid staking contract');
+  });
+
   it('does not allow a validator that is not owned by the EP', async () => {
     await expect(
       kilnStakingPositionClaimFees({
@@ -134,6 +171,7 @@ describe('ClaimFees', () => {
         externalPositionManager,
         externalPositionProxy: kilnStakingPosition,
         signer: fundOwner,
+        stakingContractAddress: kilnStakingContract,
       }),
     ).rejects.toBeRevertedWith('Invalid validator');
   });
@@ -153,6 +191,7 @@ describe('ClaimFees', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     // Parse the publicKeys from the stake event
@@ -182,6 +221,7 @@ describe('ClaimFees', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     const vaultProxyWethBalanceAfter = await weth.balanceOf(vaultProxyUsed);
@@ -214,6 +254,7 @@ describe('ClaimFees', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     // 3. Seed and claim rewards for only 1 node, just to measure gas
@@ -233,14 +274,15 @@ describe('ClaimFees', () => {
       externalPositionManager,
       externalPositionProxy: kilnStakingPosition,
       signer: fundOwner,
+      stakingContractAddress: kilnStakingContract,
     });
 
     // Gas cost for tx with only 1 node (post-feeRecipient deployment)
-    expect(receiptOneNode).toMatchInlineGasSnapshot('244161');
+    expect(receiptOneNode).toMatchInlineGasSnapshot('254801');
 
     // Gas cost per subsequent node (post-feeRecipient deployment)
     const subsequentGasPerNode = receiptNNodes.gasUsed.sub(receiptOneNode.gasUsed).div(validatorAmount.sub(1));
-    expect(subsequentGasPerNode).toMatchInlineGasSnapshot('66352');
+    expect(subsequentGasPerNode).toMatchInlineGasSnapshot('66341');
   });
 });
 
@@ -266,7 +308,7 @@ describe('WithdrawEth', () => {
     const vaultProxyWethBalanceAfter = await weth.balanceOf(vaultProxyUsed);
     expect(vaultProxyWethBalanceAfter.sub(vaultProxyWethBalanceBefore)).toEqBigNumber(value);
 
-    expect(receipt).toMatchInlineGasSnapshot('196301');
+    expect(receipt).toMatchInlineGasSnapshot('197304');
   });
 });
 
@@ -285,6 +327,7 @@ describe('position value', () => {
         externalPositionManager,
         externalPositionProxy: kilnStakingPosition,
         signer: fundOwner,
+        stakingContractAddress: kilnStakingContract,
       });
 
       // The position holds no ETH, only validators

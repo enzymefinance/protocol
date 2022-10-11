@@ -19,7 +19,7 @@ pragma solidity 0.6.12;
 /// a numbered KilnStakingPositionLibBaseXXX that inherits the previous base.
 /// e.g., `KilnStakingPositionLibBase2 is KilnStakingPositionLibBase1`
 abstract contract KilnStakingPositionLibBase1 {
-    event ValidatorsAdded(uint256 validatorAmount);
+    event ValidatorsAdded(address stakingContractAddress, uint256 validatorAmount);
 
     uint256 internal validatorCount;
 }

@@ -19,17 +19,21 @@ abstract contract KilnStakingPositionDataDecoder {
     function __decodeClaimFeesAction(bytes memory _actionArgs)
         internal
         pure
-        returns (bytes[] memory publicKeys_, IKilnStakingPosition.ClaimFeeTypes claimFeeType)
+        returns (
+            address stakingContractAddress_,
+            bytes[] memory publicKeys_,
+            IKilnStakingPosition.ClaimFeeTypes claimFeeType
+        )
     {
-        return abi.decode(_actionArgs, (bytes[], IKilnStakingPosition.ClaimFeeTypes));
+        return abi.decode(_actionArgs, (address, bytes[], IKilnStakingPosition.ClaimFeeTypes));
     }
 
     /// @dev Helper to decode args used during the Stake action
     function __decodeStakeActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (uint256 validatorAmount_)
+        returns (address stakingContractAddress_, uint256 validatorAmount_)
     {
-        return abi.decode(_actionArgs, (uint256));
+        return abi.decode(_actionArgs, (address, uint256));
     }
 }

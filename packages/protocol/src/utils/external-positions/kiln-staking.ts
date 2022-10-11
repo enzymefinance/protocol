@@ -1,3 +1,4 @@
+import type { AddressLike } from '@enzymefinance/ethers';
 import type { BigNumberish, BytesLike } from 'ethers';
 
 import { encodeArgs } from '../encoding';
@@ -15,15 +16,23 @@ export enum KilnStakingPositionActionClaimType {
 }
 
 export function kilnStakingPositionClaimFeesArgs({
+  stakingContractAddress,
   publicKeys,
   claimType,
 }: {
+  stakingContractAddress: AddressLike;
   publicKeys: BytesLike[];
   claimType: KilnStakingPositionActionClaimType;
 }) {
-  return encodeArgs(['bytes[]', 'uint256'], [publicKeys, claimType]);
+  return encodeArgs(['address', 'bytes[]', 'uint256'], [stakingContractAddress, publicKeys, claimType]);
 }
 
-export function kilnStakingPositionStakeArgs({ amount }: { amount: BigNumberish }) {
-  return encodeArgs(['uint256'], [amount]);
+export function kilnStakingPositionStakeArgs({
+  stakingContractAddress,
+  amount,
+}: {
+  stakingContractAddress: AddressLike;
+  amount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [stakingContractAddress, amount]);
 }

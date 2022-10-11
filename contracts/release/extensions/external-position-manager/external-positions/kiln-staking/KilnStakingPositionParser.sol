@@ -10,6 +10,7 @@
 */
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
 import "../../../../interfaces/IKilnDepositContract.sol";
 import "../IExternalPositionParser.sol";
 import "./IKilnStakingPosition.sol";
@@ -26,11 +27,17 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
 
     uint256 public constant ETH_AMOUNT_PER_NODE = 32 ether;
 
-    IKilnDepositContract public immutable KILN_DEPOSIT_CONTRACT;
+    AddressListRegistry public immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    uint256 public immutable STAKING_CONTRACTS_LIST_ID;
     address public immutable WETH_TOKEN;
 
-    constructor(address _kilnDepositContract, address _weth) public {
-        KILN_DEPOSIT_CONTRACT = IKilnDepositContract(_kilnDepositContract);
+    constructor(
+        address _addressListRegistry,
+        uint256 _stakingContractsListId,
+        address _weth
+    ) public {
+        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        STAKING_CONTRACTS_LIST_ID = _stakingContractsListId;
         WETH_TOKEN = _weth;
     }
 
@@ -55,7 +62,11 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
         )
     {
         if (_actionId == uint256(IKilnStakingPosition.Actions.Stake)) {
-            uint256 validatorAmount = __decodeStakeActionArgs(_encodedActionArgs);
+            (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(
+                _encodedActionArgs
+            );
+
+            __validateStakingContract(stakingContractAddress);
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
@@ -63,11 +74,18 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
             assetsToTransfer_[0] = WETH_TOKEN;
             amountsToTransfer_[0] = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
         } else if (_actionId == uint256(IKilnStakingPosition.Actions.ClaimFees)) {
-            (bytes[] memory publicKeys, ) = __decodeClaimFeesAction(_encodedActionArgs);
+            (
+                address stakingContractAddress,
+                bytes[] memory publicKeys,
+
+            ) = __decodeClaimFeesAction(_encodedActionArgs);
+
+            __validateStakingContract(stakingContractAddress);
 
             for (uint256 i; i < publicKeys.length; i++) {
                 require(
-                    KILN_DEPOSIT_CONTRACT.getWithdrawer(publicKeys[i]) == _externalPosition,
+                    IKilnDepositContract(stakingContractAddress).getWithdrawer(publicKeys[i]) ==
+                        _externalPosition,
                     "parseAssetsForAction: Invalid validator"
                 );
             }
@@ -91,5 +109,13 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
         returns (bytes memory initArgs_)
     {
         return "";
+    }
+
+    /// @dev Helper to validate a Kiln StakingContract
+    function __validateStakingContract(address _who) private view {
+        require(
+            ADDRESS_LIST_REGISTRY_CONTRACT.isInList(STAKING_CONTRACTS_LIST_ID, _who),
+            "__validateStakingContract: Invalid staking contract"
+        );
     }
 }

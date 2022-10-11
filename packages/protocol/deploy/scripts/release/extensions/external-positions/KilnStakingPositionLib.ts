@@ -12,7 +12,7 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
 
   await deploy('KilnStakingPositionLib', {
-    args: [config.kiln.stakingContract, config.weth] as any,
+    args: [config.weth] as any,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

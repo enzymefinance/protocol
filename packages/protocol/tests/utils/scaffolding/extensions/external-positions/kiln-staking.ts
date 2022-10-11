@@ -37,6 +37,7 @@ export async function kilnStakingPositionClaimFees({
   externalPositionManager,
   signer,
   externalPositionProxy,
+  stakingContractAddress,
   publicKeys,
   claimType,
 }: {
@@ -44,10 +45,12 @@ export async function kilnStakingPositionClaimFees({
   externalPositionManager: ExternalPositionManager;
   signer: SignerWithAddress;
   externalPositionProxy: AddressLike;
+  stakingContractAddress: AddressLike;
   publicKeys: BytesLike[];
   claimType: KilnStakingPositionActionClaimType;
 }) {
   const actionArgs = kilnStakingPositionClaimFeesArgs({
+    stakingContractAddress,
     publicKeys,
     claimType,
   });
@@ -67,15 +70,18 @@ export async function kilnStakingPositionStake({
   externalPositionManager,
   externalPositionProxy,
   signer,
+  stakingContractAddress,
   amount,
 }: {
   comptrollerProxy: ComptrollerLib;
   externalPositionManager: ExternalPositionManager;
   externalPositionProxy: AddressLike;
   signer: SignerWithAddress;
+  stakingContractAddress: AddressLike;
   amount: BigNumberish;
 }) {
   const actionArgs = kilnStakingPositionStakeArgs({
+    stakingContractAddress,
     amount,
   });
 

@@ -32,12 +32,9 @@ contract KilnStakingPositionLib is
 
     uint256 public constant ETH_AMOUNT_PER_NODE = 32 ether;
 
-    IKilnDepositContract public immutable KILN_DEPOSIT_CONTRACT;
-
     IWETH public immutable WETH_TOKEN;
 
-    constructor(address _kilnDepositContract, address _wethToken) public {
-        KILN_DEPOSIT_CONTRACT = IKilnDepositContract(_kilnDepositContract);
+    constructor(address _wethToken) public {
         WETH_TOKEN = IWETH(_wethToken);
     }
 
@@ -62,20 +59,22 @@ contract KilnStakingPositionLib is
     /// @dev Claims Fees generated from a given validator
     function __claimFees(bytes memory _actionArgs) private {
         (
+            address stakingContractAddress,
             bytes[] memory publicKeys,
             IKilnStakingPosition.ClaimFeeTypes claimFeesType
         ) = __decodeClaimFeesAction(_actionArgs);
+
         if (claimFeesType == ClaimFeeTypes.ExecutionLayer) {
             for (uint256 i; i < publicKeys.length; i++) {
-                KILN_DEPOSIT_CONTRACT.withdrawELFee(publicKeys[i]);
+                IKilnDepositContract(stakingContractAddress).withdrawELFee(publicKeys[i]);
             }
         } else if (claimFeesType == ClaimFeeTypes.ConsensusLayer) {
             for (uint256 i; i < publicKeys.length; i++) {
-                KILN_DEPOSIT_CONTRACT.withdrawCLFee(publicKeys[i]);
+                IKilnDepositContract(stakingContractAddress).withdrawCLFee(publicKeys[i]);
             }
         } else if (claimFeesType == ClaimFeeTypes.All) {
             for (uint256 i; i < publicKeys.length; i++) {
-                KILN_DEPOSIT_CONTRACT.withdraw(publicKeys[i]);
+                IKilnDepositContract(stakingContractAddress).withdraw(publicKeys[i]);
             }
         } else {
             revert("__claimFees: Unsupported claimFee type");
@@ -86,17 +85,19 @@ contract KilnStakingPositionLib is
 
     /// @dev Stakes ETH to Kiln deposit contract
     function __stake(bytes memory _actionArgs) private {
-        uint256 validatorAmount = __decodeStakeActionArgs(_actionArgs);
+        (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(
+            _actionArgs
+        );
 
         uint256 amountStaked = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
 
         WETH_TOKEN.withdraw(amountStaked);
 
-        KILN_DEPOSIT_CONTRACT.deposit{value: amountStaked}();
+        IKilnDepositContract(stakingContractAddress).deposit{value: amountStaked}();
 
         validatorCount = validatorCount.add(validatorAmount);
 
-        emit ValidatorsAdded(validatorAmount);
+        emit ValidatorsAdded(stakingContractAddress, validatorAmount);
     }
 
     /// @dev Withdraws ETH balance from the external position
