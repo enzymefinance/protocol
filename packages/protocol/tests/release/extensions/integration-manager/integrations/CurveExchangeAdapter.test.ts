@@ -153,7 +153,7 @@ describe('takeOrder', () => {
 
   it('works as expected when called by a fund (ETH to ERC20)', async () => {
     const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
-    const incomingAsset = new ITestStandardToken(fork.config.lido.steth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.steth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;
 
@@ -192,7 +192,7 @@ describe('takeOrder', () => {
   });
 
   it('works as expected when called by a fund (ERC20 to ETH)', async () => {
-    const outgoingAsset = new ITestStandardToken(fork.config.lido.steth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.steth, provider);
     const incomingAsset = new ITestStandardToken(fork.config.weth, provider);
     const curveSwaps = await getCurveSwapsContract(fork.config.curve.addressProvider);
     const [fundOwner] = fork.accounts;

@@ -46,6 +46,7 @@ const primitives = {
   rlc: '0x607f4c5bb672230e8672085532f7e901544a7375',
   snx: '0xc011a73ee8576fb46f5e1c5751ca3b9fe0af2a6f',
   sohm: '0x04906695D6D12CF5459975d7C3C03356E4Ccd460',
+  steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84',
   susd: '0x57Ab1ec28D129707052df4dF418D58a2D46d5f51',
   sxp: '0x8ce9137d39326ad0cd6491fb5cc0cba0e089b6a9',
   uni: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984',
@@ -89,6 +90,7 @@ const aggregators = {
   rlc: ['0x4cba1e1fdc738d0fe8db3ee07728e2bc4da676c6', ChainlinkRateAsset.ETH],
   snx: ['0x79291a9d692df95334b1a0b3b4ae6bc606782f8c', ChainlinkRateAsset.ETH],
   sohm: ['0x9a72298ae3886221820b1c878d12d872087d3a23', ChainlinkRateAsset.ETH],
+  steth: ['0xcfe54b5cd566ab89272946f602d76ea879cab4a8', ChainlinkRateAsset.USD],
   susd: ['0x8e0b7e6062272B5eF4524250bFFF8e5Bd3497757', ChainlinkRateAsset.ETH],
   sxp: ['0xFb0CfD6c19e25DB4a08D8a204a387cEa48Cc138f', ChainlinkRateAsset.USD],
   uni: ['0xd6aa3d25116d8da79ea0246c4826eb951872e02e', ChainlinkRateAsset.ETH],
@@ -345,9 +347,6 @@ const mainnetConfig: DeploymentConfig = {
   },
   kiln: {
     stakingContract: '0x746d8A8FCAB7f829Fa500504f60D89C5CC1EA973'
-  },
-  lido: {
-    steth: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
   },
   maple: {
     mplRewardsFactory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',

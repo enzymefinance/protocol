@@ -635,7 +635,7 @@ describe('actions', () => {
         const pool = fork.config.curve.pools.steth.pool;
         const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
         const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-        const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+        const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
         const wethAmount = 123;
         const stethAmount = 456;
 
@@ -708,7 +708,7 @@ describe('actions', () => {
       const pool = fork.config.curve.pools.steth.pool;
       const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
       const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+      const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
       const wethAmount = 123;
       const stethAmount = 456;
 
@@ -947,7 +947,7 @@ describe('actions', () => {
         pool = fork.config.curve.pools.steth.pool;
         lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
         weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-        steth = new ITestStandardToken(fork.config.lido.steth, provider);
+        steth = new ITestStandardToken(fork.config.primitives.steth, provider);
 
         const wethSeedAmount = await getAssetUnit(weth);
 
@@ -1052,7 +1052,7 @@ describe('actions', () => {
       const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
       const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
       const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+      const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
@@ -1103,7 +1103,7 @@ describe('actions', () => {
       const lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
       const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
       const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+      const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
       const wethSeedAmount = 123;
       const stethSeedAmount = 456;
 
@@ -1154,7 +1154,7 @@ describe('actions', () => {
       const pool = fork.config.curve.pools.steth.pool;
       const gaugeToken = new ITestStandardToken(fork.config.curve.pools.steth.liquidityGaugeToken, provider);
       const weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-      const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+      const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
 
       const wethSeedAmount = await getAssetUnit(weth);
 

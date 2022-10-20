@@ -65,7 +65,7 @@ describe('actions', () => {
     pool = fork.config.curve.pools.steth.pool;
     lpToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
     weth = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-    steth = new ITestStandardToken(fork.config.lido.steth, provider);
+    steth = new ITestStandardToken(fork.config.primitives.steth, provider);
 
     // TODO: make distinction between valid and invalid cases?
     // Deploy wrapper
@@ -281,7 +281,7 @@ describe('actions', () => {
       expect(postTxWethBalance).toBeGtBigNumber(preTxWethBalance);
       expect(postTxStethBalance).toBeGtBigNumber(preTxStethBalance);
 
-      expect(receipt).toMatchInlineGasSnapshot(`1720044`);
+      expect(receipt).toMatchInlineGasSnapshot(`1717743`);
     });
   });
 });

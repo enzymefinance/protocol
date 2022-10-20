@@ -64,14 +64,12 @@ const fn: DeployFunction = async function (hre) {
 
     const fiduPriceFeed = await getOrNull('FiduPriceFeed');
     const idlePriceFeed = await getOrNull('IdlePriceFeed');
-    const lidoStethPriceFeed = await getOrNull('LidoStethPriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
     const yearnVaultV2PriceFeed = await getOrNull('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
       ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
       ...(fiduPriceFeed ? [[config.goldfinch.fidu, fiduPriceFeed.address] as [string, string]] : []),
-      ...(lidoStethPriceFeed ? [[config.lido.steth, lidoStethPriceFeed.address] as [string, string]] : []),
       ...(aavePriceFeed
         ? Object.values(config.aave.atokens).map(([atoken]) => [atoken, aavePriceFeed.address] as [string, string])
         : []),
@@ -124,7 +122,6 @@ fn.dependencies = [
   'CompoundPriceFeed',
   'FiduPriceFeed',
   'IdlePriceFeed',
-  'LidoStethPriceFeed',
   'PoolTogetherV4PriceFeed',
   'SynthetixPriceFeed',
   'YearnVaultV2PriceFeed',

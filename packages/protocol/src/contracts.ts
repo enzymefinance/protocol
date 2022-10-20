@@ -55,7 +55,6 @@ export * from './codegen/ConvexCurveLpStakingWrapperPriceFeed';
 export * from './codegen/CurvePriceFeed';
 export * from './codegen/FiduPriceFeed';
 export * from './codegen/IdlePriceFeed';
-export * from './codegen/LidoStethPriceFeed';
 export * from './codegen/PoolTogetherV4PriceFeed';
 export * from './codegen/RevertingPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';

@@ -151,7 +151,7 @@ describe('calcUnderlyingValues', () => {
     const curvePriceFeed = fork.deployment.curvePriceFeed;
     const curvePool = new ITestCurveLiquidityPool(fork.config.curve.pools.steth.pool, provider);
     const curveLPToken = new ITestStandardToken(fork.config.curve.pools.steth.lpToken, provider);
-    const steth = new ITestStandardToken(fork.config.lido.steth, provider);
+    const steth = new ITestStandardToken(fork.config.primitives.steth, provider);
     const stethUnit = await getAssetUnit(steth);
 
     const initialVirtualPrice = await curvePool.get_virtual_price();

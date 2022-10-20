@@ -59,7 +59,6 @@ import {
   IntegrationManager,
   KilnStakingPositionLib,
   KilnStakingPositionParser,
-  LidoStethPriceFeed,
   LiquityDebtPositionLib,
   LiquityDebtPositionParser,
   ManagementFee,
@@ -183,7 +182,6 @@ export async function deployProtocolFixture() {
     integrationManager: new IntegrationManager(fixture.IntegrationManager.address, deployer),
     kilnStakingPositionLib: new KilnStakingPositionLib(fixture.KilnStakingPositionLib.address, deployer),
     KilnStakingPositionParser: new KilnStakingPositionParser(fixture.KilnStakingPositionParser.address, deployer),
-    lidoStethPriceFeed: new LidoStethPriceFeed(fixture.LidoStethPriceFeed.address, deployer),
     liquityDebtPositionLib: new LiquityDebtPositionLib(fixture.LiquityDebtPositionLib.address, deployer),
     liquityDebtPositionParser: new LiquityDebtPositionParser(fixture.LiquityDebtPositionParser.address, deployer),
     managementFee: new ManagementFee(fixture.ManagementFee.address, deployer),
@@ -350,9 +348,6 @@ export interface DeploymentConfig {
   };
   kiln: {
     stakingContract: string;
-  };
-  lido: {
-    steth: string;
   };
   liquity: {
     borrowerOperations: string;
