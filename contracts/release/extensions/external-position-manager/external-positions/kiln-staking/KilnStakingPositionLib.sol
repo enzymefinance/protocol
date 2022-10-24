@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../../persistent/external-positions/kiln-staking/KilnStakingPositionLibBase1.sol";
-import "../../../../interfaces/IKilnDepositContract.sol";
+import "../../../../interfaces/IKilnStakingContract.sol";
 import "../../../../interfaces/IWETH.sol";
 import "./IKilnStakingPosition.sol";
 import "./KilnStakingPositionDataDecoder.sol";
@@ -66,15 +66,15 @@ contract KilnStakingPositionLib is
 
         if (claimFeesType == ClaimFeeTypes.ExecutionLayer) {
             for (uint256 i; i < publicKeys.length; i++) {
-                IKilnDepositContract(stakingContractAddress).withdrawELFee(publicKeys[i]);
+                IKilnStakingContract(stakingContractAddress).withdrawELFee(publicKeys[i]);
             }
         } else if (claimFeesType == ClaimFeeTypes.ConsensusLayer) {
             for (uint256 i; i < publicKeys.length; i++) {
-                IKilnDepositContract(stakingContractAddress).withdrawCLFee(publicKeys[i]);
+                IKilnStakingContract(stakingContractAddress).withdrawCLFee(publicKeys[i]);
             }
         } else if (claimFeesType == ClaimFeeTypes.All) {
             for (uint256 i; i < publicKeys.length; i++) {
-                IKilnDepositContract(stakingContractAddress).withdraw(publicKeys[i]);
+                IKilnStakingContract(stakingContractAddress).withdraw(publicKeys[i]);
             }
         } else {
             revert("__claimFees: Unsupported claimFee type");
@@ -93,7 +93,7 @@ contract KilnStakingPositionLib is
 
         WETH_TOKEN.withdraw(amountStaked);
 
-        IKilnDepositContract(stakingContractAddress).deposit{value: amountStaked}();
+        IKilnStakingContract(stakingContractAddress).deposit{value: amountStaked}();
 
         validatorCount = validatorCount.add(validatorAmount);
 

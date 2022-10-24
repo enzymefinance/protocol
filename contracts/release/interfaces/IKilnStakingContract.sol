@@ -11,7 +11,9 @@
 
 pragma solidity 0.6.12;
 
-interface IKilnDepositContract {
+/// @title IKilnStakingContract Interface
+/// @author Enzyme Council <security@enzyme.finance>
+interface IKilnStakingContract {
     function deposit() external payable;
 
     function getWithdrawer(bytes calldata _publicKey) external view returns (address withdrawer_);

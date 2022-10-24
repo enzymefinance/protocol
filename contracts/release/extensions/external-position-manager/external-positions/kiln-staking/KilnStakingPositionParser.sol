@@ -11,7 +11,7 @@
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
-import "../../../../interfaces/IKilnDepositContract.sol";
+import "../../../../interfaces/IKilnStakingContract.sol";
 import "../IExternalPositionParser.sol";
 import "./IKilnStakingPosition.sol";
 import "./KilnStakingPositionDataDecoder.sol";
@@ -84,7 +84,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
 
             for (uint256 i; i < publicKeys.length; i++) {
                 require(
-                    IKilnDepositContract(stakingContractAddress).getWithdrawer(publicKeys[i]) ==
+                    IKilnStakingContract(stakingContractAddress).getWithdrawer(publicKeys[i]) ==
                         _externalPosition,
                     "parseAssetsForAction: Invalid validator"
                 );
