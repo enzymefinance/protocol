@@ -205,6 +205,8 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Optional (can NOT be set later)
         if (_feeRecipient != address(0)) {
+            require(_feeBps < MAX_BPS, "init: Max fee exceeded");
+
             feeBps = _feeBps;
             feeRecipient = _feeRecipient;
 
@@ -309,7 +311,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
     /// @notice Deposits an amount of the deposit token in exchange for wrapped shares
     /// @param _amount The amount of the deposit token to deposit
     function deposit(uint256 _amount) external {
-        require(state == State.Deposit, "deposit: Unallowed State");
+        require(getState() == State.Deposit, "deposit: Unallowed State");
 
         // Allowed depositor check
         uint256 allowedDepositorListIdMem = getAllowedDepositorListId();
@@ -414,7 +416,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         address vaultProxyMem = getVaultProxy();
         __validateIsManagerOrOwner(msg.sender, vaultProxyMem);
 
-        require(state == State.Deposit, "enterLockedState: Invalid state");
+        require(getState() == State.Deposit, "enterLockedState: Invalid state");
 
         // Buy shares from the fund, using whatever amount of the denomination asset is in the current contract
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(
@@ -453,7 +455,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         address vaultProxyMem = getVaultProxy();
         __validateIsManagerOrOwner(msg.sender, vaultProxyMem);
 
-        require(state == State.Locked, "enterRedeemState: Invalid state");
+        require(getState() == State.Locked, "enterRedeemState: Invalid state");
 
         // Validate that there are no active external positions that contain value.
         // Allows a fund to keep an external position active, so long as it has been emptied.

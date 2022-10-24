@@ -657,7 +657,27 @@ describe('manager actions', () => {
       // Manager as caller tested in happy path
     });
 
-    it('can not be called during Deposit state', async () => {
+    it('can only be called during Deposit state', async () => {
+      // Seed wrapper with 1 denomination asset unit to buy some vault shares
+      await setAccountBalance({
+        account: sharesWrapper,
+        amount: denominationAssetUnit,
+        provider,
+        token: denominationAsset,
+      });
+
+      // Calling with manager should succeed
+      await sharesWrapper.connect(manager).enterLockedState();
+
+      // Seed with another denomination asset unit
+      await setAccountBalance({
+        account: sharesWrapper,
+        amount: denominationAssetUnit,
+        provider,
+        token: denominationAsset,
+      });
+
+      // Calling again should fail
       await expect(sharesWrapper.connect(manager).enterLockedState()).rejects.toBeRevertedWith('Invalid state');
     });
 
