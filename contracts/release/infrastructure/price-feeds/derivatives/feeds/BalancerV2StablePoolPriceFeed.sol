@@ -174,9 +174,11 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
     /// @dev Unlikely to be needed, just in case of bad storage entry
     function removePools(address[] calldata _pools) external onlyFundDeployerOwner {
         for (uint256 i; i < _pools.length; i++) {
-            delete poolToPoolInfo[_pools[i]];
+            if (isSupportedAsset(_pools[i])) {
+                delete poolToPoolInfo[_pools[i]];
 
-            emit PoolRemoved(_pools[i]);
+                emit PoolRemoved(_pools[i]);
+            }
         }
     }
 
