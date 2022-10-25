@@ -35,7 +35,8 @@ contract AuraBalancerV2LpStakingAdapter is
         __stakingWrapperClaimRewardsFor(_stakingToken, _vaultProxy);
     }
 
-    /// @dev Logic to get the BPT address for a given staking token
+    /// @dev Logic to get the BPT address for a given staking token.
+    /// For this adapter, the staking token is validated herein.
     function __getBptForStakingToken(address _stakingToken)
         internal
         view
@@ -43,16 +44,6 @@ contract AuraBalancerV2LpStakingAdapter is
         returns (address bpt_)
     {
         return STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(_stakingToken);
-    }
-
-    /// @dev Logic to check whether a given BPT is valid for the given staking token
-    function __isValidBptForStakingToken(address _stakingToken, address _bpt)
-        internal
-        view
-        override
-        returns (bool isValid_)
-    {
-        return _bpt == __getBptForStakingToken(_stakingToken);
     }
 
     /// @dev Logic to stake BPT to a given staking token.

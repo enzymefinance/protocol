@@ -36,19 +36,14 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @dev Logic to claim rewards for a given staking token
     function __claimRewards(address _vaultProxy, address _stakingToken) internal virtual;
 
-    /// @dev Logic to get the BPT address for a given staking token
+    /// @dev Logic to get the BPT address for a given staking token.
+    /// Implementations should pre-validate whether the staking token is valid,
+    /// when reasonable.
     function __getBptForStakingToken(address _stakingToken)
         internal
         view
         virtual
         returns (address bpt_);
-
-    /// @dev Logic to check whether a given BPT is valid for the given staking token
-    function __isValidBptForStakingToken(address _stakingToken, address _bpt)
-        internal
-        view
-        virtual
-        returns (bool isValid_);
 
     /// @dev Logic to stake BPT to a given staking token.
     /// Staking is always the last action and thus always sent to the _vaultProxy
@@ -164,7 +159,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
         // The full amount of unstaked bpt might not be used in a redemption for exact underlyings
         // (with max bpt specified). In that case, re-stake the unused bpt.
-        address bpt = __getBptForStakingToken(stakingToken);
+        address bpt = __parseBalancerPoolAddress(poolId);
         uint256 remainingBpt = ERC20(bpt).balanceOf(address(this));
         if (remainingBpt > 0) {
             __stake(_vaultProxy, stakingToken, remainingBpt);
@@ -340,7 +335,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             request
         ) = __decodeCombinedActionCallArgs(_encodedCallArgs);
 
-        __validateBptForStakingToken(stakingToken, __getBptForStakingToken(stakingToken));
+        __validatePoolForStakingToken(stakingToken, poolId);
         __validateNoInternalBalances(request.useInternalBalance);
 
         incomingAssets_[0] = stakingToken;
@@ -372,16 +367,12 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             _encodedCallArgs
         );
 
-        address bpt = __getBptForStakingToken(stakingToken);
-
-        __validateBptForStakingToken(stakingToken, bpt);
-
         spendAssets_ = new address[](1);
         spendAssetAmounts_ = new uint256[](1);
         incomingAssets_ = new address[](1);
         minIncomingAssetAmounts_ = new uint256[](1);
 
-        spendAssets_[0] = bpt;
+        spendAssets_[0] = __getBptForStakingToken(stakingToken);
         spendAssetAmounts_[0] = bptAmount;
 
         incomingAssets_[0] = stakingToken;
@@ -414,10 +405,6 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             _encodedCallArgs
         );
 
-        address bpt = __getBptForStakingToken(stakingToken);
-
-        __validateBptForStakingToken(stakingToken, bpt);
-
         spendAssets_ = new address[](1);
         spendAssetAmounts_ = new uint256[](1);
         incomingAssets_ = new address[](1);
@@ -426,7 +413,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         spendAssets_[0] = stakingToken;
         spendAssetAmounts_[0] = bptAmount;
 
-        incomingAssets_[0] = bpt;
+        incomingAssets_[0] = __getBptForStakingToken(stakingToken);
         minIncomingAssetAmounts_[0] = bptAmount;
 
         return (
@@ -467,7 +454,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             request
         ) = __decodeCombinedActionCallArgs(_encodedCallArgs);
 
-        __validateBptForStakingToken(stakingToken, __getBptForStakingToken(stakingToken));
+        __validatePoolForStakingToken(stakingToken, poolId);
         __validateNoInternalBalances(request.useInternalBalance);
 
         spendAssets_[0] = stakingToken;
@@ -491,10 +478,12 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         return address(uint256(_poolId) >> (12 * 8));
     }
 
-    /// @dev Helper to validate a given BPT for a given staking token
-    function __validateBptForStakingToken(address _stakingToken, address _bpt) internal view {
+    /// @dev Helper to validate a given poolId for a given staking token.
+    /// Does not validate the staking token itself, unless handled in the implementing contract
+    /// during __getBptForStakingToken().
+    function __validatePoolForStakingToken(address _stakingToken, bytes32 _poolId) internal view {
         require(
-            __isValidBptForStakingToken(_stakingToken, _bpt),
+            __getBptForStakingToken(_stakingToken) == __parseBalancerPoolAddress(_poolId),
             "__validateBptForStakingToken: Invalid"
         );
     }
