@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.6
+
+### Patch Changes
+
+- a4489bf2e: Publishing latest release
+
 ## 4.0.5
 
 ### Patch Changes
