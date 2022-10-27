@@ -24,7 +24,7 @@ export async function callOnExtension({
     callOnExtensionTx = comptrollerProxy.callOnExtension(extension, actionId, callArgs);
   }
 
-  await expect(callOnExtensionTx).resolves.toBeReceipt();
+  await expect(callOnExtensionTx);
 
   return callOnExtensionTx;
 }

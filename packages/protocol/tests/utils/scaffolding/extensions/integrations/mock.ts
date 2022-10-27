@@ -119,7 +119,7 @@ export async function mockGenericSwap({
     .connect(signer)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
-  await expect(swapTx).resolves.toBeReceipt();
+  await expect(swapTx);
 
   return swapTx;
 }

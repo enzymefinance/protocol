@@ -885,7 +885,9 @@ describe('manager actions', () => {
           });
 
           // Cannot be called while there is locked-CVX
-          await expect(sharesWrapper.connect(manager).enterRedeemState([])).rejects.toBeRevertedWith('Invalid state');
+          await expect(sharesWrapper.connect(manager).enterRedeemState([])).rejects.toBeRevertedWith(
+            'Non-zero value external position',
+          );
         });
 
         it('allows an active external position with 0 value', async () => {

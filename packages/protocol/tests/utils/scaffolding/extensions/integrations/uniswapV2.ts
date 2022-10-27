@@ -78,7 +78,7 @@ export async function uniswapV2Lend({
     .connect(fundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
-  await expect(lendTx).resolves.toBeReceipt();
+  await expect(lendTx);
 
   return lendTx;
 }
@@ -121,7 +121,7 @@ export async function uniswapV2Redeem({
     .connect(fundOwner)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 
-  await expect(redeemTx).resolves.toBeReceipt();
+  await expect(redeemTx);
 
   return redeemTx;
 }

@@ -173,7 +173,7 @@ describe('ClaimFees', () => {
         signer: fundOwner,
         stakingContractAddress: kilnStakingContract,
       }),
-    ).rejects.toBeRevertedWith('Invalid validator');
+    ).rejects.toBeReverted();
   });
 
   it('works as expected (execution rewards)', async () => {

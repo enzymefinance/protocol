@@ -1,13 +1,16 @@
 import { matcherHint } from 'jest-matcher-utils';
 
-export function toBeReverted(this: jest.MatcherContext, received: any) {
-  const error = received?.message;
-  const isReverted = error?.search('revert') >= 0;
-  const isThrown = error?.search('invalid opcode') >= 0;
-  const isError = error?.search('code=') >= 0;
+import { extractRevertReason } from './toBeRevertedWith';
 
-  const pass = isReverted || isThrown || isError;
-  const message = () => matcherHint('.toBeReverted', undefined, error, this);
+export function toBeReverted(this: jest.MatcherContext, received: any) {
+  const reason = extractRevertReason(received);
+
+  if (reason === undefined) {
+    throw new Error(`Failed to extract revert reason ${received}`);
+  }
+
+  const pass = /^(Error|Panic)\(.*\)$/i.test(reason);
+  const message = () => matcherHint('.toBeReverted', reason, undefined, this);
 
   return { message, pass };
 }
