@@ -2,7 +2,7 @@ name: Changeset
 on:
   push:
     branches:
-      - main
+      - v4
 
 env:
   NODE_OPTIONS: '--max-old-space-size=4096'
