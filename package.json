@@ -22,7 +22,7 @@
     "typecheck": "pnpm run --recursive typecheck",
     "release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm install --lockfile-only",
-    "changeset:publish": "pnpm build && changeset publish"
+    "changeset:publish": "pnpm compile && pnpm build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.24.1",
