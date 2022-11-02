@@ -15,8 +15,8 @@ const fn: DeployFunction = async function (hre) {
 
   const deployer = (await getSigners())[0];
 
-  const aaveDebtPositionLib = await getOrNull('AaveDebtPositionLib');
-  const aaveDebtPositionParser = await getOrNull('AaveDebtPositionParser');
+  const aaveV2DebtPositionLib = await getOrNull('AaveDebtPositionLib');
+  const aaveV2DebtPositionParser = await getOrNull('AaveDebtPositionParser');
   const arbitraryLoanPositionLib = await getOrNull('ArbitraryLoanPositionLib');
   const arbitraryLoanPositionParser = await getOrNull('ArbitraryLoanPositionParser');
   const compoundDebtPositionLib = await getOrNull('CompoundDebtPositionLib');
@@ -58,7 +58,7 @@ const fn: DeployFunction = async function (hre) {
   const positionTypes = [
     ...(compoundDebtPositionLib && compoundDebtPositionParser ? ['COMPOUND_DEBT'] : []),
     ...(uniswapV3ExternalPositionLib && uniswapV3ExternalPositionParser ? ['UNISWAP_V3_LIQUIDITY'] : []),
-    ...(aaveDebtPositionLib && aaveDebtPositionParser ? ['AAVE_DEBT'] : []),
+    ...(aaveV2DebtPositionLib && aaveV2DebtPositionParser ? ['AAVE_V2_DEBT'] : []),
     ...(liquityDebtPositionLib && liquityDebtPositionParser ? ['LIQUITY_DEBT'] : []),
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
@@ -98,11 +98,11 @@ const fn: DeployFunction = async function (hre) {
     );
   }
 
-  if (aaveDebtPositionLib && aaveDebtPositionParser) {
+  if (aaveV2DebtPositionLib && aaveV2DebtPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [ExternalPositionType.AaveDebtPosition],
-      [aaveDebtPositionLib],
-      [aaveDebtPositionParser],
+      [ExternalPositionType.AaveV2DebtPosition],
+      [aaveV2DebtPositionLib],
+      [aaveV2DebtPositionParser],
     );
   }
 

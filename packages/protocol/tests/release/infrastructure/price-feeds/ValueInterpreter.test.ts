@@ -18,7 +18,7 @@ describe('calcCanonicalAssetValue', () => {
   it('happy path: primitive to derivative (different decimals)', async () => {
     // Use usd stablecoin pair for comprehensibility
     // Use aToken since it has same value as underlying
-    const derivative = new ITestStandardToken(fork.config.aave.atokens.adai[0], provider);
+    const derivative = new ITestStandardToken(fork.config.aaveV2.atokens.adai, provider);
     const primitive = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const derivativeUnit = await getAssetUnit(derivative);

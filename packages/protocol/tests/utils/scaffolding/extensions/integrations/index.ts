@@ -1,4 +1,4 @@
-export * from './aave';
+export * from './aaveV2';
 export * from './balancerV2';
 export * from './compound';
 export * from './curve';

@@ -1,12 +1,12 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager } from '@enzymefinance/protocol';
 import {
-  AaveDebtPositionActionId,
-  aaveDebtPositionAddCollateralArgs,
-  aaveDebtPositionBorrowArgs,
-  aaveDebtPositionClaimRewardsArgs,
-  aaveDebtPositionRemoveCollateralArgs,
-  aaveDebtPositionRepayBorrowArgs,
+  AaveV2DebtPositionActionId,
+  aaveV2DebtPositionAddCollateralArgs,
+  aaveV2DebtPositionBorrowArgs,
+  aaveV2DebtPositionClaimRewardsArgs,
+  aaveV2DebtPositionRemoveCollateralArgs,
+  aaveV2DebtPositionRepayBorrowArgs,
   ExternalPositionType,
 } from '@enzymefinance/protocol';
 import type { SignerWithAddress } from '@enzymefinance/testutils';
@@ -14,7 +14,7 @@ import type { BigNumberish } from 'ethers';
 
 import { callOnExternalPosition, createExternalPosition } from './actions';
 
-export async function aaveDebtPositionAddCollateral({
+export async function aaveV2DebtPositionAddCollateral({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -29,14 +29,14 @@ export async function aaveDebtPositionAddCollateral({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionAddCollateralArgs({
+  const actionArgs = aaveV2DebtPositionAddCollateralArgs({
     aTokens,
     amounts,
   });
 
   return callOnExternalPosition({
     actionArgs,
-    actionId: AaveDebtPositionActionId.AddCollateralAssets,
+    actionId: AaveV2DebtPositionActionId.AddCollateralAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
@@ -44,7 +44,7 @@ export async function aaveDebtPositionAddCollateral({
   });
 }
 
-export async function aaveDebtPositionBorrow({
+export async function aaveV2DebtPositionBorrow({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -59,14 +59,14 @@ export async function aaveDebtPositionBorrow({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionBorrowArgs({
+  const actionArgs = aaveV2DebtPositionBorrowArgs({
     amounts,
     tokens,
   });
 
   return callOnExternalPosition({
     actionArgs,
-    actionId: AaveDebtPositionActionId.BorrowAsset,
+    actionId: AaveV2DebtPositionActionId.BorrowAsset,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
@@ -74,7 +74,7 @@ export async function aaveDebtPositionBorrow({
   });
 }
 
-export async function aaveDebtPositionClaimRewards({
+export async function aaveV2DebtPositionClaimRewards({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -87,13 +87,13 @@ export async function aaveDebtPositionClaimRewards({
   assets: AddressLike[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionClaimRewardsArgs({
+  const actionArgs = aaveV2DebtPositionClaimRewardsArgs({
     assets,
   });
 
   return callOnExternalPosition({
     actionArgs,
-    actionId: AaveDebtPositionActionId.ClaimRewards,
+    actionId: AaveV2DebtPositionActionId.ClaimRewards,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
@@ -101,7 +101,7 @@ export async function aaveDebtPositionClaimRewards({
   });
 }
 
-export async function aaveDebtPositionRemoveCollateral({
+export async function aaveV2DebtPositionRemoveCollateral({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -116,14 +116,14 @@ export async function aaveDebtPositionRemoveCollateral({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionRemoveCollateralArgs({
+  const actionArgs = aaveV2DebtPositionRemoveCollateralArgs({
     aTokens,
     amounts,
   });
 
   return callOnExternalPosition({
     actionArgs,
-    actionId: AaveDebtPositionActionId.RemoveCollateralAssets,
+    actionId: AaveV2DebtPositionActionId.RemoveCollateralAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
@@ -131,7 +131,7 @@ export async function aaveDebtPositionRemoveCollateral({
   });
 }
 
-export async function aaveDebtPositionRepayBorrow({
+export async function aaveV2DebtPositionRepayBorrow({
   comptrollerProxy,
   externalPositionManager,
   signer,
@@ -146,14 +146,14 @@ export async function aaveDebtPositionRepayBorrow({
   amounts: BigNumberish[];
   externalPositionProxy: AddressLike;
 }) {
-  const actionArgs = aaveDebtPositionRepayBorrowArgs({
+  const actionArgs = aaveV2DebtPositionRepayBorrowArgs({
     amounts,
     tokens,
   });
 
   return callOnExternalPosition({
     actionArgs,
-    actionId: AaveDebtPositionActionId.RepayBorrowedAssets,
+    actionId: AaveV2DebtPositionActionId.RepayBorrowedAssets,
     comptrollerProxy,
     externalPositionManager,
     externalPositionProxy,
@@ -161,7 +161,7 @@ export async function aaveDebtPositionRepayBorrow({
   });
 }
 
-export async function createAaveDebtPosition({
+export async function createAaveV2DebtPosition({
   signer,
   comptrollerProxy,
   externalPositionManager,
@@ -173,7 +173,7 @@ export async function createAaveDebtPosition({
   return createExternalPosition({
     comptrollerProxy,
     externalPositionManager,
-    externalPositionTypeId: ExternalPositionType.AaveDebtPosition,
+    externalPositionTypeId: ExternalPositionType.AaveV2DebtPosition,
     signer,
   });
 }

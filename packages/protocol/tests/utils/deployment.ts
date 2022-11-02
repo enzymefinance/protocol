@@ -1,8 +1,7 @@
 import {
-  AaveAdapter,
   AaveDebtPositionLib,
   AaveDebtPositionParser,
-  AavePriceFeed,
+  AaveV2Adapter,
   AddressListRegistry,
   AllowedAdapterIncomingAssetsPolicy,
   AllowedAdaptersPerManagerPolicy,
@@ -121,10 +120,9 @@ export async function deployProtocolFixture() {
 
   // prettier-ignore
   const deployment = {
-    aaveAdapter: new AaveAdapter(fixture.AaveAdapter.address, deployer),
     aaveDebtPositionLib: new AaveDebtPositionLib(fixture.AaveDebtPositionLib.address, deployer),
     aaveDebtPositionParser: new AaveDebtPositionParser(fixture.AaveDebtPositionParser.address, deployer),
-    aavePriceFeed: new AavePriceFeed(fixture.AavePriceFeed.address, deployer),
+    aaveV2Adapter: new AaveV2Adapter(fixture.AaveV2Adapter.address, deployer),
     addressListRegistry: new AddressListRegistry(fixture.AddressListRegistry.address, deployer),
     allowedAdapterIncomingAssetsPolicy: new AllowedAdapterIncomingAssetsPolicy(fixture.AllowedAdapterIncomingAssetsPolicy.address, deployer),
     allowedAdaptersPerManagerPolicy: new AllowedAdaptersPerManagerPolicy(fixture.AllowedAdaptersPerManagerPolicy.address, deployer),
@@ -321,11 +319,12 @@ export interface DeploymentConfig {
     >;
     virtualPriceDeviationThreshold: number;
   };
-  aave: {
+  aaveV2: {
     incentivesController: string;
+    lendingPool: string;
     lendingPoolAddressProvider: string;
     protocolDataProvider: string;
-    atokens: Record<string, [string, string]>;
+    atokens: Record<string, string>;
   };
   compound: {
     ceth: string;

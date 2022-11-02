@@ -45,7 +45,6 @@ export * from './codegen/PolicyManager';
 
 // Derivative price feeds
 export * from './codegen/IDerivativePriceFeed';
-export * from './codegen/AavePriceFeed';
 export * from './codegen/AuraBalancerV2LpStakingWrapperPriceFeed';
 export * from './codegen/BalancerV2GaugeTokenPriceFeed';
 export * from './codegen/BalancerV2StablePoolPriceFeed';
@@ -61,7 +60,7 @@ export * from './codegen/UniswapV2PoolPriceFeed';
 export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
-export * from './codegen/AaveAdapter';
+export * from './codegen/AaveV2Adapter';
 export * from './codegen/AuraBalancerV2LpStakingAdapter';
 export * from './codegen/BalancerV2LiquidityAdapter';
 export * from './codegen/CompoundAdapter';

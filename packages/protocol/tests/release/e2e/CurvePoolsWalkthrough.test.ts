@@ -61,7 +61,7 @@ beforeAll(async () => {
       supportsOneCoinRedeem: true,
     },
     aave: {
-      assetToLendAddress: fork.config.aave.atokens.ausdc[0],
+      assetToLendAddress: fork.config.aaveV2.atokens.ausdc,
       gaugeTokenAddress: fork.config.curve.pools.aave.liquidityGaugeToken,
       hasReentrantVirtualPrice: fork.config.curve.pools.aave.hasReentrantVirtualPrice,
       poolAddress: fork.config.curve.pools.aave.pool,

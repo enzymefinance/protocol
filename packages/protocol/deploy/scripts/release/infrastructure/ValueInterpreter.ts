@@ -1,5 +1,6 @@
 import type { ValueInterpreterArgs } from '@enzymefinance/protocol';
 import {
+  ChainlinkRateAsset,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
   ONE_YEAR_IN_SECONDS,
@@ -34,34 +35,64 @@ const fn: DeployFunction = async function (hre) {
   if (valueInterpreter.newlyDeployed) {
     const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
 
-    // Add ChainlinkPriceFeedMixin config
-
+    // 1. Add ChainlinkPriceFeedMixin config
     await valueInterpreterInstance.setEthUsdAggregator(config.chainlink.ethusd);
 
-    const primitivesInfo = Object.keys(config.primitives).map((key) => {
+    // 2. Add primitives to the asset universe
+
+    const primitives: string[] = [];
+    const aggregators: string[] = [];
+    const rateAssets: ChainlinkRateAsset[] = [];
+
+    // Standard primitives
+    for (const [key, primitive] of Object.entries(config.primitives)) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!config.chainlink.aggregators[key]) {
-        throw new Error(`Missing aggregator for ${key}`);
+        throw new Error(`Missing aggregator for primitive: ${key}`);
       }
 
-      const aggregator = config.chainlink.aggregators[key];
-      const primitive = config.primitives[key];
+      primitives.push(primitive);
+      const aggregatorInfo = config.chainlink.aggregators[key];
+      aggregators.push(aggregatorInfo[0]);
+      rateAssets.push(aggregatorInfo[1]);
+    }
 
-      return [primitive, ...aggregator] as const;
-    });
+    // Aave v2 aTokens as primitives
+    for (const [key, aToken] of Object.entries(config.aaveV2.atokens)) {
+      if (!key.startsWith('a')) {
+        throw new Error(`Key not formatted as Aave v2 aToken: ${key}`);
+      }
 
-    const primitives = primitivesInfo.map(([primitive]) => primitive);
-    const aggregators = primitivesInfo.map(([, aggregator]) => aggregator);
-    const rateAssets = primitivesInfo.map(([, , rateAsset]) => rateAsset);
+      primitives.push(aToken);
 
+      // Remove the "a" from aToken symbol
+      const primitiveKey = key.substring(1);
+
+      // Handle exceptions to the rule
+      if (primitiveKey === 'weth') {
+        aggregators.push(config.chainlink.ethusd);
+        rateAssets.push(ChainlinkRateAsset.USD);
+
+        break;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!config.chainlink.aggregators[primitiveKey]) {
+        throw new Error(`Missing aggregator for Aave v2 aToken: ${key}`);
+      }
+
+      const aggregatorInfo = config.chainlink.aggregators[primitiveKey];
+      aggregators.push(aggregatorInfo[0]);
+      rateAssets.push(aggregatorInfo[1]);
+    }
+
+    // Add all primitives to asset universe
     await valueInterpreterInstance.addPrimitives(primitives, aggregators, rateAssets);
 
-    // Add AggregatedDerivativePriceFeedMixin config
+    // 3. Add derivatives to the asset universe
 
-    const aavePriceFeed = await getOrNull('AavePriceFeed');
     const curvePriceFeed = await getOrNull('CurvePriceFeed');
     const compoundPriceFeed = await getOrNull('CompoundPriceFeed');
-
     const fiduPriceFeed = await getOrNull('FiduPriceFeed');
     const idlePriceFeed = await getOrNull('IdlePriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
@@ -70,9 +101,6 @@ const fn: DeployFunction = async function (hre) {
     const derivativePairs: [string, string][] = [
       ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
       ...(fiduPriceFeed ? [[config.goldfinch.fidu, fiduPriceFeed.address] as [string, string]] : []),
-      ...(aavePriceFeed
-        ? Object.values(config.aave.atokens).map(([atoken]) => [atoken, aavePriceFeed.address] as [string, string])
-        : []),
       ...(compoundPriceFeed
         ? Object.values(config.compound.ctokens).map(
             (ctoken) => [ctoken, compoundPriceFeed.address] as [string, string],
@@ -116,14 +144,11 @@ fn.dependencies = [
   'Config',
   'FundDeployer',
   // Derivative price feeds
-  'AavePriceFeed',
-  'AlphaHomoraV1PriceFeed',
   'CurvePriceFeed',
   'CompoundPriceFeed',
   'FiduPriceFeed',
   'IdlePriceFeed',
   'PoolTogetherV4PriceFeed',
-  'SynthetixPriceFeed',
   'YearnVaultV2PriceFeed',
 ];
 

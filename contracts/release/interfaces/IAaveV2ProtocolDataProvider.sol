@@ -11,12 +11,15 @@
 
 pragma solidity 0.6.12;
 
-/// @title IAaveIncentivesController interface
+/// @title IAaveV2ProtocolDataProvider interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IAaveIncentivesController {
-    function claimRewards(
-        address[] memory,
-        uint256,
-        address
-    ) external;
+interface IAaveV2ProtocolDataProvider {
+    function getReserveTokensAddresses(address _underlying)
+        external
+        view
+        returns (
+            address aToken_,
+            address stableDebtToken_,
+            address variableDebtToken_
+        );
 }

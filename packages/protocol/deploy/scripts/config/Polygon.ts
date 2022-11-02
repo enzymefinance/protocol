@@ -115,21 +115,22 @@ const aggregators = {
 } as const;
 const ethUsdAggregator = '0xF9680D99D6C9589e2a93a78A04A279e509205945';
 
-const atokens = {
-  aaave: ['0x1d2a0E5EC8E5bBDCA5CB219e649B565d8e5c3360', primitives.aave] as [string, string],
-  adai: ['0x27F8D03b3a2196956ED754baDc28D73be8830A6e', primitives.dai] as [string, string],
-  ausdc: ['0x1a13F4Ca1d028320A707D99520AbFefca3998b7F', primitives.usdc] as [string, string],
-  ausdt: ['0x60D55F02A771d515e077c9C2403a1ef324885CeC', primitives.usdt] as [string, string],
-  awbtc: ['0x5c2ed810328349100A66B82b78a1791B101C9D61', primitives.wbtc] as [string, string],
-  aweth: ['0x28424507fefb6f7f8E9D3860F56504E4e5f5f390', weth] as [string, string],
-  awmatic: ['0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4', primitives.wmatic] as [string, string],
+const aaveV2Tokens = {
+  aaave: '0x1d2a0E5EC8E5bBDCA5CB219e649B565d8e5c3360',
+  adai: '0x27F8D03b3a2196956ED754baDc28D73be8830A6e',
+  ausdc: '0x1a13F4Ca1d028320A707D99520AbFefca3998b7F',
+  ausdt: '0x60D55F02A771d515e077c9C2403a1ef324885CeC',
+  awbtc: '0x5c2ed810328349100A66B82b78a1791B101C9D61',
+  aweth: '0x28424507fefb6f7f8E9D3860F56504E4e5f5f390',
+  awmatic: '0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4',
 };
 
 // prettier-ignore
 const polygonConfig: DeploymentConfig = {
-  aave: {
-    atokens,
+  aaveV2: {
+    atokens: aaveV2Tokens,
     incentivesController: '0x357D51124f59836DeD84c8a1730D72B749d8BC23',
+    lendingPool: '0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf',
     lendingPoolAddressProvider: '0xd05e3E715d945B59290df0ae8eF85c1BdB684744',
     protocolDataProvider: '0x7551b5D2763519d4e37e8B81929D336De671d46d',
   },

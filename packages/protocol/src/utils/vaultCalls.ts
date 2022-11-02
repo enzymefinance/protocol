@@ -2,7 +2,7 @@ import { utils } from 'ethers';
 
 import { sighash } from './sighash';
 
-export const aaveClaimRewardsToSelfSelector = sighash(
+export const aaveV2ClaimRewardsToSelfSelector = sighash(
   utils.FunctionFragment.fromString('claimRewardsToSelf(address[], uint256)'),
 );
 

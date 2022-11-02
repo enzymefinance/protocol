@@ -2,13 +2,13 @@ import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import { AaveDebtPositionLib, ITestStandardToken } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
-  aaveDebtPositionAddCollateral,
-  aaveDebtPositionBorrow,
-  aaveDebtPositionClaimRewards,
-  aaveDebtPositionRemoveCollateral,
-  aaveDebtPositionRepayBorrow,
+  aaveV2DebtPositionAddCollateral,
+  aaveV2DebtPositionBorrow,
+  aaveV2DebtPositionClaimRewards,
+  aaveV2DebtPositionRemoveCollateral,
+  aaveV2DebtPositionRepayBorrow,
   assertExternalPositionAssetsToReceive,
-  createAaveDebtPosition,
+  createAaveV2DebtPosition,
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
@@ -16,7 +16,7 @@ import {
 } from '@enzymefinance/testutils';
 import { BigNumber, constants } from 'ethers';
 
-let aaveDebtPosition: AaveDebtPositionLib;
+let aaveV2DebtPosition: AaveDebtPositionLib;
 
 let comptrollerProxyUsed: ComptrollerLib;
 let vaultProxyUsed: VaultLib;
@@ -42,18 +42,18 @@ beforeEach(async () => {
   vaultProxyUsed = vaultProxy;
   comptrollerProxyUsed = comptrollerProxy;
 
-  const { externalPositionProxy } = await createAaveDebtPosition({
+  const { externalPositionProxy } = await createAaveV2DebtPosition({
     comptrollerProxy,
     externalPositionManager: fork.deployment.externalPositionManager,
     signer: fundOwner,
   });
 
-  aaveDebtPosition = new AaveDebtPositionLib(externalPositionProxy, provider);
+  aaveV2DebtPosition = new AaveDebtPositionLib(externalPositionProxy, provider);
 });
 
 describe('addCollateralAssets', () => {
   it('works as expected when called to addCollateral by a Fund', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -62,18 +62,18 @@ describe('addCollateralAssets', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    const externalPositionCollateralBalanceBefore = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionCollateralBalanceBefore = await aToken.balanceOf(aaveV2DebtPosition);
 
-    const addCollateralReceipt = await aaveDebtPositionAddCollateral({
+    const addCollateralReceipt = await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    const externalPositionCollateralBalanceAfter = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionCollateralBalanceAfter = await aToken.balanceOf(aaveV2DebtPosition);
 
     // Assert the correct balance of collateral was moved from the vaultProxy to the externalPosition
     expect(externalPositionCollateralBalanceAfter.sub(externalPositionCollateralBalanceBefore)).toBeAroundBigNumber(
@@ -86,18 +86,18 @@ describe('addCollateralAssets', () => {
       assets: [],
     });
 
-    const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
+    const getManagedAssetsCall = await aaveV2DebtPosition.getManagedAssets.call();
 
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(collateralAmounts[0]);
     expect(getManagedAssetsCall.assets_).toEqual(collateralAssets);
 
-    expect(addCollateralReceipt).toMatchInlineGasSnapshot(`364838`);
+    expect(addCollateralReceipt).toMatchInlineGasSnapshot(`362814`);
   });
 });
 
 describe('removeCollateralAssets', () => {
   it('works as expected when called to remove collateral by a Fund', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -109,28 +109,28 @@ describe('removeCollateralAssets', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    const externalPositionBalanceBefore = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionBalanceBefore = await aToken.balanceOf(aaveV2DebtPosition);
     const vaultBalanceBefore = await aToken.balanceOf(vaultProxyUsed);
 
-    const removeCollateralReceipt = await aaveDebtPositionRemoveCollateral({
+    const removeCollateralReceipt = await aaveV2DebtPositionRemoveCollateral({
       aTokens: collateralAssetsToBeRemoved,
       amounts: collateralAmountsToBeRemoved,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    const externalPositionBalanceAfter = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionBalanceAfter = await aToken.balanceOf(aaveV2DebtPosition);
     const vaultBalanceAfter = await aToken.balanceOf(vaultProxyUsed);
 
     // Assert the correct balance of collateral was moved from the externalPosition to the vaultProxy
@@ -149,7 +149,7 @@ describe('removeCollateralAssets', () => {
       roundingBuffer,
     );
 
-    const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
+    const getManagedAssetsCall = await aaveV2DebtPosition.getManagedAssets.call();
 
     expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(
       collateralAmounts[0].sub(collateralAmountsToBeRemoved[0]),
@@ -160,7 +160,7 @@ describe('removeCollateralAssets', () => {
   });
 
   it('works as expected when called to remove collateral by a Fund (max amount)', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken.address];
@@ -172,28 +172,28 @@ describe('removeCollateralAssets', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    const externalPositionBalanceBefore = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionBalanceBefore = await aToken.balanceOf(aaveV2DebtPosition);
     const vaultBalanceBefore = await aToken.balanceOf(vaultProxyUsed);
 
-    const removeCollateralReceipt = await aaveDebtPositionRemoveCollateral({
+    const removeCollateralReceipt = await aaveV2DebtPositionRemoveCollateral({
       aTokens: collateralAssetsToBeRemoved,
       amounts: collateralAmountsToBeRemoved,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    const externalPositionBalanceAfter = await aToken.balanceOf(aaveDebtPosition);
+    const externalPositionBalanceAfter = await aToken.balanceOf(aaveV2DebtPosition);
     const vaultBalanceAfter = await aToken.balanceOf(vaultProxyUsed);
 
     // Assert the correct balance of collateral was moved from the externalPosition to the vaultProxy
@@ -204,9 +204,9 @@ describe('removeCollateralAssets', () => {
 
     expect(vaultBalanceAfter.sub(vaultBalanceBefore)).toBeAroundBigNumber(collateralAmounts[0], roundingBuffer);
 
-    const getManagedAssetsCall = await aaveDebtPosition.getManagedAssets.call();
+    const getManagedAssetsCall = await aaveV2DebtPosition.getManagedAssets.call();
 
-    expect(getManagedAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
+    expect(getManagedAssetsCall).toMatchFunctionOutput(aaveV2DebtPosition.getManagedAssets.fragment, {
       amounts_: [],
       assets_: [],
     });
@@ -217,7 +217,7 @@ describe('removeCollateralAssets', () => {
 
 describe('borrowAssets', () => {
   it('works as expected when called for borrowing by a fund', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
@@ -230,22 +230,22 @@ describe('borrowAssets', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
     const vaultBalanceBefore = await token.balanceOf(vaultProxyUsed);
 
-    const borrowReceipt = await aaveDebtPositionBorrow({
+    const borrowReceipt = await aaveV2DebtPositionBorrow({
       amounts: borrowedAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
       tokens: borrowedAssets,
     });
@@ -260,9 +260,9 @@ describe('borrowAssets', () => {
       assets: borrowedAssets,
     });
 
-    const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
+    const getDebtAssetsCall = await aaveV2DebtPosition.getDebtAssets.call();
 
-    expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
+    expect(getDebtAssetsCall).toMatchFunctionOutput(aaveV2DebtPosition.getManagedAssets.fragment, {
       amounts_: borrowedAmounts,
       assets_: borrowedAssets,
     });
@@ -273,7 +273,7 @@ describe('borrowAssets', () => {
 
 describe('repayBorrowedAssets', () => {
   it('works as expected when called to repay borrow by a fund', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
@@ -286,20 +286,20 @@ describe('repayBorrowedAssets', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    await aaveDebtPositionBorrow({
+    await aaveV2DebtPositionBorrow({
       amounts: borrowedAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
       tokens: [token],
     });
@@ -310,18 +310,18 @@ describe('repayBorrowedAssets', () => {
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
-    const borrowedBalancesBefore = (await aaveDebtPosition.getDebtAssets.call()).amounts_[0];
+    const borrowedBalancesBefore = (await aaveV2DebtPosition.getDebtAssets.call()).amounts_[0];
 
-    const repayBorrowReceipt = await aaveDebtPositionRepayBorrow({
+    const repayBorrowReceipt = await aaveV2DebtPositionRepayBorrow({
       amounts: borrowedAmountsToBeRepaid,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
       tokens: [token],
     });
 
-    const borrowedBalancesAfter = (await aaveDebtPosition.getDebtAssets.call()).amounts_[0];
+    const borrowedBalancesAfter = (await aaveV2DebtPosition.getDebtAssets.call()).amounts_[0];
 
     assertExternalPositionAssetsToReceive({
       receipt: repayBorrowReceipt,
@@ -334,7 +334,7 @@ describe('repayBorrowedAssets', () => {
   });
 
   it('works as expected when called to repay borrow by a fund (more than full amount)', async () => {
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
@@ -347,20 +347,20 @@ describe('repayBorrowedAssets', () => {
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
-    await aaveDebtPositionBorrow({
+    await aaveV2DebtPositionBorrow({
       amounts: borrowedAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
       tokens: [token],
     });
@@ -371,15 +371,15 @@ describe('repayBorrowedAssets', () => {
     await provider.send('evm_increaseTime', [secondsToWarp]);
     await provider.send('evm_mine', []);
 
-    const borrowedBalancesBefore = (await aaveDebtPosition.getDebtAssets.call()).amounts_[0];
+    const borrowedBalancesBefore = (await aaveV2DebtPosition.getDebtAssets.call()).amounts_[0];
 
     const vaultBalanceBefore = await token.balanceOf(vaultProxyUsed);
 
-    const repayBorrowReceipt = await aaveDebtPositionRepayBorrow({
+    const repayBorrowReceipt = await aaveV2DebtPositionRepayBorrow({
       amounts: [borrowedBalancesBefore.add(1)],
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
       tokens: [token],
     });
@@ -388,9 +388,9 @@ describe('repayBorrowedAssets', () => {
 
     expect(vaultBalanceAfter).toBeAroundBigNumber(vaultBalanceBefore.sub(borrowedBalancesBefore));
 
-    const getDebtAssetsCall = await aaveDebtPosition.getDebtAssets.call();
+    const getDebtAssetsCall = await aaveV2DebtPosition.getDebtAssets.call();
 
-    expect(getDebtAssetsCall).toMatchFunctionOutput(aaveDebtPosition.getManagedAssets.fragment, {
+    expect(getDebtAssetsCall).toMatchFunctionOutput(aaveV2DebtPosition.getManagedAssets.fragment, {
       amounts_: [],
       assets_: [],
     });
@@ -407,7 +407,7 @@ xdescribe('claimRewards', () => {
     const stkAaveAddress = '0x4da27a545c0c5B758a6BA100e3a049001de870f5';
     const rewardToken = new ITestStandardToken(stkAaveAddress, provider);
 
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
     const collateralAmounts = [(await getAssetUnit(aToken)).mul(10)];
     const collateralAssets = [aToken];
@@ -416,12 +416,12 @@ xdescribe('claimRewards', () => {
 
     await setAccountBalance({ account: vaultProxyUsed, amount: seedAmount, provider, token: aToken });
 
-    await aaveDebtPositionAddCollateral({
+    await aaveV2DebtPositionAddCollateral({
       aTokens: collateralAssets,
       amounts: collateralAmounts,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 
@@ -432,11 +432,11 @@ xdescribe('claimRewards', () => {
 
     const stkAaveBalanceBefore = await rewardToken.balanceOf(vaultProxyUsed);
 
-    const claimRewardsReceipt = await aaveDebtPositionClaimRewards({
+    const claimRewardsReceipt = await aaveV2DebtPositionClaimRewards({
       assets: collateralAssets,
       comptrollerProxy: comptrollerProxyUsed,
       externalPositionManager: fork.deployment.externalPositionManager,
-      externalPositionProxy: aaveDebtPosition,
+      externalPositionProxy: aaveV2DebtPosition,
       signer: fundOwner,
     });
 

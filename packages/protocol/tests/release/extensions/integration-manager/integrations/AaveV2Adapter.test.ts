@@ -1,8 +1,8 @@
 import { randomAddress } from '@enzymefinance/ethers';
 import {
-  AaveAdapter,
-  aaveLendArgs,
-  aaveRedeemArgs,
+  AaveV2Adapter,
+  aaveV2LendArgs,
+  aaveV2RedeemArgs,
   ITestStandardToken,
   lendSelector,
   redeemSelector,
@@ -10,8 +10,8 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment } from '@enzymefinance/testutils';
 import {
-  aaveLend,
-  aaveRedeem,
+  aaveV2Lend,
+  aaveV2Redeem,
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
@@ -27,56 +27,43 @@ beforeEach(async () => {
   fork = await deployProtocolFixture();
 });
 
-describe('constructor', () => {
-  it('sets state vars', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const lendingPoolAddressProvider = await aaveAdapter.getAaveLendingPoolAddressProvider();
-
-    expect(lendingPoolAddressProvider).toMatchAddress(fork.config.aave.lendingPoolAddressProvider);
-
-    const referralCode = await aaveAdapter.getAaveReferralCode();
-
-    expect(referralCode).toEqBigNumber(BigNumber.from('158'));
-  });
-});
-
 describe('parseAssetsForAction', () => {
   it('does not allow a bad selector', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
+    const aaveV2Adapter = new AaveV2Adapter(fork.deployment.aaveV2Adapter, provider);
     const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
-    const args = aaveLendArgs({
+    const args = aaveV2LendArgs({
       aToken,
       amount,
     });
 
     await expect(
-      aaveAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
+      aaveV2Adapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    await expect(aaveAdapter.parseAssetsForAction(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
+    await expect(aaveV2Adapter.parseAssetsForAction(randomAddress(), lendSelector, args)).resolves.toBeTruthy();
   });
 
   it('generates expected output for lending', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
+    const aaveV2Adapter = new AaveV2Adapter(fork.deployment.aaveV2Adapter, provider);
     const outgoingToken = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = utils.parseUnits('1', await outgoingToken.decimals());
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
-    const args = aaveLendArgs({
+    const args = aaveV2LendArgs({
       aToken,
       amount,
     });
 
     await expect(
-      aaveAdapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
+      aaveV2Adapter.parseAssetsForAction(randomAddress(), utils.randomBytes(4), args),
     ).rejects.toBeRevertedWith('_selector invalid');
 
-    const result = await aaveAdapter.parseAssetsForAction(randomAddress(), lendSelector, args);
+    const result = await aaveV2Adapter.parseAssetsForAction(randomAddress(), lendSelector, args);
 
-    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
+    expect(result).toMatchFunctionOutput(aaveV2Adapter.parseAssetsForAction, {
       incomingAssets_: [aToken.address],
       minIncomingAssetAmounts_: [amount.sub(roundingBuffer)],
       spendAssetAmounts_: [amount],
@@ -86,19 +73,19 @@ describe('parseAssetsForAction', () => {
   });
 
   it('generates expected output for redeeming', async () => {
-    const aaveAdapter = new AaveAdapter(fork.deployment.aaveAdapter, provider);
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aaveV2Adapter = new AaveV2Adapter(fork.deployment.aaveV2Adapter, provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
     const amount = utils.parseUnits('1', await aToken.decimals());
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
-    const args = aaveRedeemArgs({
+    const args = aaveV2RedeemArgs({
       aToken,
       amount,
     });
 
-    const result = await aaveAdapter.parseAssetsForAction(randomAddress(), redeemSelector, args);
+    const result = await aaveV2Adapter.parseAssetsForAction(randomAddress(), redeemSelector, args);
 
-    expect(result).toMatchFunctionOutput(aaveAdapter.parseAssetsForAction, {
+    expect(result).toMatchFunctionOutput(aaveV2Adapter.parseAssetsForAction, {
       incomingAssets_: [token],
       minIncomingAssetAmounts_: [amount.sub(roundingBuffer)],
       spendAssetAmounts_: [amount],
@@ -121,7 +108,7 @@ describe('lend', () => {
 
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
     const amount = await getAssetUnit(token);
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
 
     await setAccountBalance({ account: vaultProxy, amount, provider, token });
 
@@ -130,9 +117,9 @@ describe('lend', () => {
       assets: [aToken, token],
     });
 
-    const lendReceipt = await aaveLend({
+    const lendReceipt = await aaveV2Lend({
       aToken,
-      aaveAdapter: fork.deployment.aaveAdapter,
+      aaveV2Adapter: fork.deployment.aaveV2Adapter,
       amount,
       comptrollerProxy,
       fundOwner,
@@ -147,7 +134,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`485321`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`475982`);
   });
 });
 
@@ -162,7 +149,7 @@ describe('redeem', () => {
       signer: fundOwner,
     });
 
-    const aToken = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
+    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
     const amount = await getAssetUnit(aToken);
     const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
@@ -173,9 +160,9 @@ describe('redeem', () => {
       assets: [token, aToken],
     });
 
-    const redeemReceipt = await aaveRedeem({
+    const redeemReceipt = await aaveV2Redeem({
       aToken,
-      aaveAdapter: fork.deployment.aaveAdapter,
+      aaveV2Adapter: fork.deployment.aaveV2Adapter,
       amount,
       comptrollerProxy,
       fundOwner,
@@ -191,6 +178,6 @@ describe('redeem', () => {
     expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
 
     // This can vary substantially for whatever reason
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`538018`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`500806`);
   });
 });

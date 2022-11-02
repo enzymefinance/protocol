@@ -3,7 +3,7 @@ import type { BigNumberish } from 'ethers';
 
 import { encodeArgs } from '../encoding';
 
-export enum AaveDebtPositionActionId {
+export enum AaveV2DebtPositionActionId {
   AddCollateralAssets = '0',
   RemoveCollateralAssets = '1',
   BorrowAsset = '2',
@@ -11,7 +11,7 @@ export enum AaveDebtPositionActionId {
   ClaimRewards = '4',
 }
 
-export function aaveDebtPositionAddCollateralArgs({
+export function aaveV2DebtPositionAddCollateralArgs({
   aTokens,
   amounts,
 }: {
@@ -21,15 +21,15 @@ export function aaveDebtPositionAddCollateralArgs({
   return encodeArgs(['address[]', 'uint256[]'], [aTokens, amounts]);
 }
 
-export function aaveDebtPositionBorrowArgs({ tokens, amounts }: { tokens: AddressLike[]; amounts: BigNumberish[] }) {
+export function aaveV2DebtPositionBorrowArgs({ tokens, amounts }: { tokens: AddressLike[]; amounts: BigNumberish[] }) {
   return encodeArgs(['address[]', 'uint256[]'], [tokens, amounts]);
 }
 
-export function aaveDebtPositionClaimRewardsArgs({ assets }: { assets: AddressLike[] }) {
+export function aaveV2DebtPositionClaimRewardsArgs({ assets }: { assets: AddressLike[] }) {
   return encodeArgs(['address[]'], [assets]);
 }
 
-export function aaveDebtPositionRemoveCollateralArgs({
+export function aaveV2DebtPositionRemoveCollateralArgs({
   aTokens,
   amounts,
 }: {
@@ -39,7 +39,7 @@ export function aaveDebtPositionRemoveCollateralArgs({
   return encodeArgs(['address[]', 'uint256[]'], [aTokens, amounts]);
 }
 
-export function aaveDebtPositionRepayBorrowArgs({
+export function aaveV2DebtPositionRepayBorrowArgs({
   tokens,
   amounts,
 }: {

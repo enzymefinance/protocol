@@ -1,4 +1,4 @@
-import type { AaveAdapterArgs } from '@enzymefinance/protocol';
+import type { AaveV2AdapterArgs } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -13,14 +13,9 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
   const integrationManager = await get('IntegrationManager');
-  const aavePriceFeed = await get('AavePriceFeed');
 
-  await deploy('AaveAdapter', {
-    args: [
-      integrationManager.address,
-      config.aave.lendingPoolAddressProvider,
-      aavePriceFeed.address,
-    ] as AaveAdapterArgs,
+  await deploy('AaveV2Adapter', {
+    args: [integrationManager.address, config.aaveV2.lendingPool] as AaveV2AdapterArgs,
     from: deployer.address,
     linkedData: {
       nonSlippageAdapter: true,
@@ -31,8 +26,8 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Adapters', 'AaveAdapter'];
-fn.dependencies = ['Config', 'IntegrationManager', 'AavePriceFeed'];
+fn.tags = ['Release', 'Adapters', 'AaveV2Adapter'];
+fn.dependencies = ['Config', 'IntegrationManager'];
 
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();

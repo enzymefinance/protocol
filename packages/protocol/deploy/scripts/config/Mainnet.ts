@@ -14,7 +14,9 @@ const feeToken = mln;
 const weth = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const wrappedNativeAsset = weth;
 
-// WETH is not included as it is auto-included in the chainlink price feed
+// WETH is not included as it is auto-included in the chainlink price feed.
+// Derivatives registered as primitives for pricing purposes due to having a 1:1 value relationship (e.g., Aave aTokens)
+// should be manually added via ValueInterpreter.ts.
 const primitives = {
   aave: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
   adx: '0xade00c28244d5ce17d72e40330b1c318cd12b7c3',
@@ -103,6 +105,29 @@ const aggregators = {
   zrx: ['0x2da4983a622a8498bb1a21fae9d8f6c664939962', ChainlinkRateAsset.ETH],
 } as const;
 
+const aaveV2Tokens = {
+  aaave: '0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B',
+  abal: '0x272F97b7a56a387aE942350bBC7Df5700f8a4576',
+  abusd: '0xA361718326c15715591c299427c62086F69923D9',
+  acrv: '0x8dAE6Cb04688C62d939ed9B68d32Bc62e49970b1',
+  adai: '0x028171bCA77440897B824Ca71D1c56caC55b68A3',
+  aenj: '0xaC6Df26a590F08dcC95D5a4705ae8abbc88509Ef',
+  aknc: '0x39C6b3e42d6A679d7D776778Fe880BC9487C2EDA',
+  alink: '0xa06bC25B5805d5F8d82847D191Cb4Af5A3e873E0',
+  amana: '0xa685a61171bb30d4072B338c80Cb7b2c865c873E',
+  amkr: '0xc713e5E149D5D0715DcD1c156a020976e7E56B88',
+  aren: '0xCC12AbE4ff81c9378D670De1b57F8e0Dd228D77a',
+  asnx: '0x35f6B052C598d933D69A4EEC4D04c73A191fE6c2',
+  asusd: '0x6C5024Cd4F8A59110119C56f8933403A539555EB',
+  auni: '0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1',
+  ausdc: '0xBcca60bB61934080951369a648Fb03DF4F96263C',
+  ausdt: '0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811',
+  awbtc: '0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656',
+  aweth: '0x030bA81f1c18d280636F32af80b9AAd02Cf0854e',
+  ayfi: '0x5165d24277cD063F5ac44Efd447B27025e888f37',
+  azrx: '0xDf7FF54aAcAcbFf42dfe29DD6144A69b629f8C9e',
+};
+
 const ctokens = {
   cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
   ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
@@ -116,29 +141,6 @@ const ctokens = {
 } as const;
 
 const compoundComptroller = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
-
-const atokens = {
-  aaave: ['0xFFC97d72E13E01096502Cb8Eb52dEe56f74DAD7B', primitives.aave] as [string, string],
-  abal: ['0x272F97b7a56a387aE942350bBC7Df5700f8a4576', primitives.bal] as [string, string],
-  abusd: ['0xA361718326c15715591c299427c62086F69923D9', primitives.busd] as [string, string],
-  acrv: ['0x8dAE6Cb04688C62d939ed9B68d32Bc62e49970b1', primitives.crv] as [string, string],
-  adai: ['0x028171bCA77440897B824Ca71D1c56caC55b68A3', primitives.dai] as [string, string],
-  aenj: ['0xaC6Df26a590F08dcC95D5a4705ae8abbc88509Ef', primitives.enj] as [string, string],
-  aknc: ['0x39C6b3e42d6A679d7D776778Fe880BC9487C2EDA', primitives.kncl] as [string, string],
-  alink: ['0xa06bC25B5805d5F8d82847D191Cb4Af5A3e873E0', primitives.link] as [string, string],
-  amana: ['0xa685a61171bb30d4072B338c80Cb7b2c865c873E', primitives.mana] as [string, string],
-  amkr: ['0xc713e5E149D5D0715DcD1c156a020976e7E56B88', primitives.mkr] as [string, string],
-  aren: ['0xCC12AbE4ff81c9378D670De1b57F8e0Dd228D77a', primitives.ren] as [string, string],
-  asnx: ['0x35f6B052C598d933D69A4EEC4D04c73A191fE6c2', primitives.snx] as [string, string],
-  asusd: ['0x6C5024Cd4F8A59110119C56f8933403A539555EB', primitives.susd] as [string, string],
-  auni: ['0xB9D7CB55f463405CDfBe4E90a6D2Df01C2B92BF1', primitives.uni] as [string, string],
-  ausdc: ['0xBcca60bB61934080951369a648Fb03DF4F96263C', primitives.usdc] as [string, string],
-  ausdt: ['0x3Ed3B47Dd13EC9a98b44e6204A523E766B225811', primitives.usdt] as [string, string],
-  awbtc: ['0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656', primitives.wbtc] as [string, string],
-  aweth: ['0x030bA81f1c18d280636F32af80b9AAd02Cf0854e', weth] as [string, string],
-  ayfi: ['0x5165d24277cD063F5ac44Efd447B27025e888f37', primitives.yfi] as [string, string],
-  azrx: ['0xDf7FF54aAcAcbFf42dfe29DD6144A69b629f8C9e', primitives.zrx] as [string, string],
-};
 
 const pools = {
   aaveWeth: '0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f',
@@ -197,9 +199,10 @@ const ethUsdAggregator = '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419';
 
 // prettier-ignore
 const mainnetConfig: DeploymentConfig = {
-  aave: {
-    atokens,
+  aaveV2: {
+    atokens: aaveV2Tokens,
     incentivesController: '0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5',
+    lendingPool: '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9',
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
   },

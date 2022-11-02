@@ -11,15 +11,9 @@
 
 pragma solidity 0.6.12;
 
-/// @title IAaveProtocolDataProvider interface
+/// @title IAaveAToken interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IAaveProtocolDataProvider {
-    function getReserveTokensAddresses(address)
-        external
-        view
-        returns (
-            address,
-            address,
-            address
-        );
+/// @notice Common Aave aToken interface for V2 and V3
+interface IAaveAToken {
+    function UNDERLYING_ASSET_ADDRESS() external view returns (address underlying_);
 }

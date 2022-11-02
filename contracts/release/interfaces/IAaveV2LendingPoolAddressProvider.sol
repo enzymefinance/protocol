@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-/// @title IAaveLendingPoolAddressProvider interface
+/// @title IAaveV2LendingPoolAddressProvider interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IAaveLendingPoolAddressProvider {
-    function getLendingPool() external view returns (address);
+interface IAaveV2LendingPoolAddressProvider {
+    function getLendingPool() external view returns (address pool_);
 }

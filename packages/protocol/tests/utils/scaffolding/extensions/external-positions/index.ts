@@ -1,4 +1,4 @@
-export * from './aave-debt';
+export * from './aave-v2-debt';
 export * from './actions';
 export * from './arbitrary-loan';
 export * from './common';

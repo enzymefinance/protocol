@@ -13,7 +13,11 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
 
   await deploy('AaveDebtPositionLib', {
-    args: [config.aave.protocolDataProvider, config.aave.lendingPoolAddressProvider, config.aave.incentivesController],
+    args: [
+      config.aaveV2.protocolDataProvider,
+      config.aaveV2.lendingPoolAddressProvider,
+      config.aaveV2.incentivesController,
+    ],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

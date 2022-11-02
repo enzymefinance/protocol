@@ -1,5 +1,5 @@
 import {
-  aaveClaimRewardsToSelfSelector,
+  aaveV2ClaimRewardsToSelfSelector,
   AddressListRegistry,
   addressListRegistryAddToListSelector,
   addressListRegistryAttestListsSelector,
@@ -75,8 +75,8 @@ const fn: DeployFunction = async function (hre) {
 
   // Calls to allow claiming Aave rewards
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (config.aave) {
-    vaultCalls.push([config.aave.incentivesController, aaveClaimRewardsToSelfSelector, vaultCallAnyDataHash]);
+  if (config.aaveV2) {
+    vaultCalls.push([config.aaveV2.incentivesController, aaveV2ClaimRewardsToSelfSelector, vaultCallAnyDataHash]);
   }
 
   // Calls to allow claiming rewards from Curve's Minter (and veToken forks like Balancer)

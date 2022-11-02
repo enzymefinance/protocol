@@ -77,9 +77,9 @@ describe('parseAssetsForAction', () => {
     pool: AddressLike;
 
   beforeEach(async () => {
-    aDai = fork.config.aave.atokens.adai[0];
-    aUsdc = fork.config.aave.atokens.ausdc[0];
-    aUsdt = fork.config.aave.atokens.ausdt[0];
+    aDai = fork.config.aaveV2.atokens.adai;
+    aUsdc = fork.config.aaveV2.atokens.ausdc;
+    aUsdt = fork.config.aaveV2.atokens.ausdt;
     dai = fork.config.primitives.dai;
     usdc = fork.config.primitives.usdc;
     usdt = fork.config.primitives.usdt;
@@ -564,8 +564,8 @@ describe('actions', () => {
       });
 
       it('works as expected (non-underlyings, 2 of 3 outgoing)', async () => {
-        const aUsdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
-        const aUsdt = new ITestStandardToken(fork.config.aave.atokens.ausdt[0], provider);
+        const aUsdc = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
+        const aUsdt = new ITestStandardToken(fork.config.aaveV2.atokens.ausdt, provider);
         const aUsdcAmount = 123;
         const aUsdtAmount = 456;
 
@@ -754,9 +754,9 @@ describe('actions', () => {
       beforeEach(async () => {
         pool = fork.config.curve.pools.aave.pool;
         lpToken = new ITestStandardToken(fork.config.curve.pools.aave.lpToken, provider);
-        aDai = new ITestStandardToken(fork.config.aave.atokens.adai[0], provider);
-        aUsdc = new ITestStandardToken(fork.config.aave.atokens.ausdc[0], provider);
-        aUsdt = new ITestStandardToken(fork.config.aave.atokens.ausdt[0], provider);
+        aDai = new ITestStandardToken(fork.config.aaveV2.atokens.adai, provider);
+        aUsdc = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
+        aUsdt = new ITestStandardToken(fork.config.aaveV2.atokens.ausdt, provider);
         dai = new ITestStandardToken(fork.config.primitives.dai, provider);
         usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
         usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);

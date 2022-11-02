@@ -12,32 +12,45 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../infrastructure/price-feeds/derivatives/feeds/AavePriceFeed.sol";
-import "../utils/actions/AaveActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../../../../../interfaces/IAaveAToken.sol";
+import "../AdapterBase.sol";
 
-/// @title AaveAdapter Contract
+/// @title AaveAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Adapter for Aave Lending <https://aave.com/>
+/// @notice Base contract for Aave V2 and V3 lending adapters
 /// @dev When lending and redeeming, a small `ROUNDING_BUFFER` is subtracted from the min incoming asset amount.
 /// This is a workaround for problematic quirks in `aToken` balance rounding (due to RayMath and rebasing logic),
 /// which would otherwise lead to tx failures during IntegrationManager validation of incoming asset amounts.
 /// Due to this workaround, an `aToken` value less than `ROUNDING_BUFFER` is not usable in this adapter,
 /// which is fine because those values would not make sense (gas-wise) to lend or redeem.
-contract AaveAdapter is AdapterBase, AaveActionsMixin {
+abstract contract AaveAdapterBase is AdapterBase {
     using SafeMath for uint256;
 
     uint256 private constant ROUNDING_BUFFER = 2;
 
-    address private immutable AAVE_PRICE_FEED;
+    constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
 
-    constructor(
-        address _integrationManager,
-        address _lendingPoolAddressProvider,
-        address _aavePriceFeed
-    ) public AdapterBase(_integrationManager) AaveActionsMixin(_lendingPoolAddressProvider) {
-        AAVE_PRICE_FEED = _aavePriceFeed;
-    }
+    ////////////////////////////////
+    // REQUIRED VIRTUAL FUNCTIONS //
+    ////////////////////////////////
+
+    /// @dev Logic to lend underlying for aToken
+    function __lend(
+        address _vaultProxy,
+        address _underlying,
+        uint256 _amount
+    ) internal virtual;
+
+    /// @dev Logic to redeem aToken for underlying
+    function __redeem(
+        address _vaultProxy,
+        address _underlying,
+        uint256 _amount
+    ) internal virtual;
+
+    /////////////
+    // ACTIONS //
+    /////////////
 
     /// @notice Lends an amount of a token to AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
@@ -51,7 +64,11 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
             _assetData
         );
 
-        __aaveLend(_vaultProxy, spendAssets[0], spendAssetAmounts[0]);
+        __lend({
+            _vaultProxy: _vaultProxy,
+            _underlying: spendAssets[0],
+            _amount: spendAssetAmounts[0]
+        });
     }
 
     /// @notice Redeems an amount of aTokens from AAVE
@@ -63,12 +80,16 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
         bytes calldata _assetData
     ) external onlyIntegrationManager {
         (
-            address[] memory spendAssets,
+            ,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
         ) = __decodeAssetData(_assetData);
 
-        __aaveRedeem(_vaultProxy, spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
+        __redeem({
+            _vaultProxy: _vaultProxy,
+            _underlying: incomingAssets[0],
+            _amount: spendAssetAmounts[0]
+        });
     }
 
     /////////////////////////////
@@ -124,12 +145,8 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
     {
         (address aToken, uint256 amount) = __decodeCallArgs(_actionData);
 
-        // Prevent from invalid token/aToken combination
-        address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
-        require(token != address(0), "__parseAssetsForLend: Unsupported aToken");
-
         spendAssets_ = new address[](1);
-        spendAssets_[0] = token;
+        spendAssets_[0] = IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS();
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = amount;
 
@@ -162,17 +179,13 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
     {
         (address aToken, uint256 amount) = __decodeCallArgs(_actionData);
 
-        // Prevent from invalid token/aToken combination
-        address token = AavePriceFeed(AAVE_PRICE_FEED).getUnderlyingForDerivative(aToken);
-        require(token != address(0), "__parseAssetsForRedeem: Unsupported aToken");
-
         spendAssets_ = new address[](1);
         spendAssets_[0] = aToken;
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = amount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = token;
+        incomingAssets_[0] = IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS();
         minIncomingAssetAmounts_ = new uint256[](1);
         // The `ROUNDING_BUFFER` is overly cautious in this case, but it comes at minimal expense
         minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
@@ -192,18 +205,8 @@ contract AaveAdapter is AdapterBase, AaveActionsMixin {
     function __decodeCallArgs(bytes memory _actionData)
         private
         pure
-        returns (address aToken, uint256 amount)
+        returns (address aToken_, uint256 amount_)
     {
         return abi.decode(_actionData, (address, uint256));
-    }
-
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
-
-    /// @notice Gets the `AAVE_PRICE_FEED` variable
-    /// @return aavePriceFeed_ The `AAVE_PRICE_FEED` variable value
-    function getAavePriceFeed() external view returns (address aavePriceFeed_) {
-        return AAVE_PRICE_FEED;
     }
 }

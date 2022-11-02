@@ -1,7 +1,7 @@
-import type { AaveAdapter, ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
+import type { AaveV2Adapter, ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import {
-  aaveLendArgs,
-  aaveRedeemArgs,
+  aaveV2LendArgs,
+  aaveV2RedeemArgs,
   callOnIntegrationArgs,
   IntegrationManagerActionId,
   lendSelector,
@@ -11,28 +11,28 @@ import type { SignerWithAddress } from '@enzymefinance/testutils';
 import type { BigNumberish } from 'ethers';
 import { utils } from 'ethers';
 
-export async function aaveLend({
+export async function aaveV2Lend({
   comptrollerProxy,
   integrationManager,
   fundOwner,
-  aaveAdapter,
+  aaveV2Adapter,
   aToken,
   amount = utils.parseEther('1'),
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  aaveAdapter: AaveAdapter;
+  aaveV2Adapter: AaveV2Adapter;
   aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
-  const lendArgs = aaveLendArgs({
+  const lendArgs = aaveV2LendArgs({
     aToken,
     amount,
   });
 
   const callArgs = callOnIntegrationArgs({
-    adapter: aaveAdapter,
+    adapter: aaveV2Adapter,
     encodedCallArgs: lendArgs,
     selector: lendSelector,
   });
@@ -44,28 +44,28 @@ export async function aaveLend({
   return lendTx;
 }
 
-export async function aaveRedeem({
+export async function aaveV2Redeem({
   comptrollerProxy,
   integrationManager,
   fundOwner,
-  aaveAdapter,
+  aaveV2Adapter,
   aToken,
   amount = utils.parseEther('1'),
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  aaveAdapter: AaveAdapter;
+  aaveV2Adapter: AaveV2Adapter;
   aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
-  const redeemArgs = aaveRedeemArgs({
+  const redeemArgs = aaveV2RedeemArgs({
     aToken,
     amount,
   });
 
   const callArgs = callOnIntegrationArgs({
-    adapter: aaveAdapter,
+    adapter: aaveV2Adapter,
     encodedCallArgs: redeemArgs,
     selector: redeemSelector,
   });

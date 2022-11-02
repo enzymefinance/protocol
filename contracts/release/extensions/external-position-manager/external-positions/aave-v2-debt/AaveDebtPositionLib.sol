@@ -11,11 +11,11 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../../../persistent/external-positions/aave-debt/AaveDebtPositionLibBase1.sol";
-import "../../../../interfaces/IAaveIncentivesController.sol";
-import "../../../../interfaces/IAaveLendingPool.sol";
-import "../../../../interfaces/IAaveLendingPoolAddressProvider.sol";
-import "../../../../interfaces/IAaveProtocolDataProvider.sol";
+import "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
+import "../../../../interfaces/IAaveV2IncentivesController.sol";
+import "../../../../interfaces/IAaveV2LendingPool.sol";
+import "../../../../interfaces/IAaveV2LendingPoolAddressProvider.sol";
+import "../../../../interfaces/IAaveV2ProtocolDataProvider.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../../../../utils/AssetHelpers.sol";
 import "./AaveDebtPositionDataDecoder.sol";
@@ -91,12 +91,12 @@ contract AaveDebtPositionLib is
     function __borrowAssets(bytes memory actionArgs) private {
         (address[] memory tokens, uint256[] memory amounts) = __decodeBorrowActionArgs(actionArgs);
 
-        address lendingPoolAddress = IAaveLendingPoolAddressProvider(
+        address lendingPoolAddress = IAaveV2LendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
         ).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
-            IAaveLendingPool(lendingPoolAddress).borrow(
+            IAaveV2LendingPool(lendingPoolAddress).borrow(
                 tokens[i],
                 amounts[i],
                 VARIABLE_INTEREST_RATE,
@@ -108,7 +108,7 @@ contract AaveDebtPositionLib is
 
             if (!assetIsBorrowed(tokens[i])) {
                 // Store the debt token as a flag that the token is now a borrowed asset
-                (, , address debtToken) = IAaveProtocolDataProvider(AAVE_DATA_PROVIDER)
+                (, , address debtToken) = IAaveV2ProtocolDataProvider(AAVE_DATA_PROVIDER)
                     .getReserveTokensAddresses(tokens[i]);
                 borrowedAssetToDebtToken[tokens[i]] = debtToken;
 
@@ -122,7 +122,7 @@ contract AaveDebtPositionLib is
     function __claimRewards(bytes memory actionArgs) private {
         address[] memory assets = __decodeClaimRewardsActionArgs(actionArgs);
 
-        IAaveIncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(
+        IAaveV2IncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(
             assets,
             type(uint256).max,
             msg.sender
@@ -163,7 +163,7 @@ contract AaveDebtPositionLib is
             actionArgs
         );
 
-        address lendingPoolAddress = IAaveLendingPoolAddressProvider(
+        address lendingPoolAddress = IAaveV2LendingPoolAddressProvider(
             AAVE_LENDING_POOL_ADDRESS_PROVIDER
         ).getLendingPool();
 
@@ -172,7 +172,7 @@ contract AaveDebtPositionLib is
 
             __approveAssetMaxAsNeeded(tokens[i], lendingPoolAddress, amounts[i]);
 
-            IAaveLendingPool(lendingPoolAddress).repay(
+            IAaveV2LendingPool(lendingPoolAddress).repay(
                 tokens[i],
                 amounts[i],
                 VARIABLE_INTEREST_RATE,
