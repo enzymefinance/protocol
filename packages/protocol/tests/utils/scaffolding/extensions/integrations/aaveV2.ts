@@ -1,4 +1,5 @@
-import type { AaveV2Adapter, ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
+import type { AddressLike } from '@enzymefinance/ethers';
+import type { ComptrollerLib, IntegrationManager, ITestStandardToken } from '@enzymefinance/protocol';
 import {
   aaveV2LendArgs,
   aaveV2RedeemArgs,
@@ -22,7 +23,7 @@ export async function aaveV2Lend({
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  aaveV2Adapter: AaveV2Adapter;
+  aaveV2Adapter: AddressLike;
   aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
@@ -55,7 +56,7 @@ export async function aaveV2Redeem({
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
   fundOwner: SignerWithAddress;
-  aaveV2Adapter: AaveV2Adapter;
+  aaveV2Adapter: AddressLike;
   aToken: ITestStandardToken;
   amount?: BigNumberish;
 }) {
