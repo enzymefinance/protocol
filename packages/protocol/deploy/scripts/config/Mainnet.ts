@@ -128,6 +128,8 @@ const aaveV2Tokens = {
   azrx: '0xDf7FF54aAcAcbFf42dfe29DD6144A69b629f8C9e',
 };
 
+const aaveV3Tokens = {};
+
 const ctokens = {
   cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
   ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
@@ -205,6 +207,12 @@ const mainnetConfig: DeploymentConfig = {
     lendingPool: '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9',
     lendingPoolAddressProvider: '0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5',
     protocolDataProvider: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
+  },
+  aaveV3: {
+    atokens: aaveV3Tokens,
+    pool: constants.AddressZero, // TODO: replace when on mainnet
+    poolAddressProvider: constants.AddressZero, // TODO: replace when on mainnet
+    referralCode: 0, // TODO: replace when referrals on mainnet
   },
   aura: {
     booster: '0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10',

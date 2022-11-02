@@ -1,4 +1,4 @@
-import type { AaveV2AdapterArgs } from '@enzymefinance/protocol';
+import type { AaveV3AdapterArgs } from '@enzymefinance/protocol';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
@@ -13,18 +13,19 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
 
-  const aaveV2ATokenListOwner = await get('AaveV2ATokenListOwner');
+  const aaveV3ATokenListOwner = await get('AaveV3ATokenListOwner');
   const addressListRegistry = await get('AddressListRegistry');
   const integrationManager = await get('IntegrationManager');
 
-  await deploy('AaveV2Adapter', {
+  await deploy('AaveV3Adapter', {
     args: [
       integrationManager.address,
       addressListRegistry.address,
-      aaveV2ATokenListOwner.linkedData.listId,
-      aaveV2ATokenListOwner.address,
-      config.aaveV2.lendingPool,
-    ] as AaveV2AdapterArgs,
+      aaveV3ATokenListOwner.linkedData.listId,
+      aaveV3ATokenListOwner.address,
+      config.aaveV3.pool,
+      config.aaveV3.referralCode,
+    ] as AaveV3AdapterArgs,
     from: deployer.address,
     linkedData: {
       nonSlippageAdapter: true,
@@ -35,8 +36,8 @@ const fn: DeployFunction = async function (hre) {
   });
 };
 
-fn.tags = ['Release', 'Adapters', 'AaveV2Adapter'];
-fn.dependencies = ['AaveV2ATokenListOwner', 'AddressListRegistry', 'Config', 'IntegrationManager'];
+fn.tags = ['Release', 'Adapters', 'AaveV3Adapter'];
+fn.dependencies = ['AaveV3ATokenListOwner', 'AddressListRegistry', 'Config', 'IntegrationManager'];
 
 fn.skip = async (hre) => {
   const chain = await hre.getChainId();

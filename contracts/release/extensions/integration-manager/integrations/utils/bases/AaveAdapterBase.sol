@@ -12,6 +12,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
 import "../../../../../interfaces/IAaveAToken.sol";
 import "../AdapterBase.sol";
 
@@ -23,12 +24,21 @@ import "../AdapterBase.sol";
 /// which would otherwise lead to tx failures during IntegrationManager validation of incoming asset amounts.
 /// Due to this workaround, an `aToken` value less than `ROUNDING_BUFFER` is not usable in this adapter,
 /// which is fine because those values would not make sense (gas-wise) to lend or redeem.
-abstract contract AaveAdapterBase is AdapterBase {
+abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsumerMixin {
     using SafeMath for uint256;
 
     uint256 private constant ROUNDING_BUFFER = 2;
 
-    constructor(address _integrationManager) public AdapterBase(_integrationManager) {}
+    constructor(
+        address _integrationManager,
+        address _addressListRegistry,
+        uint256 _aTokenListId,
+        address _aTokenListOwner
+    )
+        public
+        AdapterBase(_integrationManager)
+        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _aTokenListId, _aTokenListOwner)
+    {}
 
     ////////////////////////////////
     // REQUIRED VIRTUAL FUNCTIONS //
@@ -60,9 +70,16 @@ abstract contract AaveAdapterBase is AdapterBase {
         bytes calldata,
         bytes calldata _assetData
     ) external onlyIntegrationManager {
-        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, ) = __decodeAssetData(
-            _assetData
-        );
+        (
+            address[] memory spendAssets,
+            uint256[] memory spendAssetAmounts,
+            address[] memory incomingAssets
+        ) = __decodeAssetData(_assetData);
+
+        // Validate aToken.
+        // Must be done here instead of parseAssetsForAction(),
+        // since overriding visibility is not allowed.
+        __validateAndAddListItemIfUnregistered(incomingAssets[0]);
 
         __lend({
             _vaultProxy: _vaultProxy,
@@ -80,10 +97,15 @@ abstract contract AaveAdapterBase is AdapterBase {
         bytes calldata _assetData
     ) external onlyIntegrationManager {
         (
-            ,
+            address[] memory spendAssets,
             uint256[] memory spendAssetAmounts,
             address[] memory incomingAssets
         ) = __decodeAssetData(_assetData);
+
+        // Validate aToken.
+        // Must be done here instead of parseAssetsForAction(),
+        // since overriding visibility is not allowed.
+        __validateAndAddListItemIfUnregistered(spendAssets[0]);
 
         __redeem({
             _vaultProxy: _vaultProxy,

@@ -17,6 +17,10 @@ export * from './codegen/SharesSplitterFactory';
 export * from './codegen/SharesSplitterLib';
 export * from './codegen/UintListRegistry';
 
+// AddressList owners
+export * from './codegen/AaveV2ATokenListOwner';
+export * from './codegen/AaveV3ATokenListOwner';
+
 // Release core
 export * from './codegen/FundDeployer';
 export * from './codegen/ComptrollerLib';
@@ -61,6 +65,7 @@ export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
 export * from './codegen/AaveV2Adapter';
+export * from './codegen/AaveV3Adapter';
 export * from './codegen/AuraBalancerV2LpStakingAdapter';
 export * from './codegen/BalancerV2LiquidityAdapter';
 export * from './codegen/CompoundAdapter';
@@ -141,6 +146,7 @@ export * from './codegen/FundValueCalculator';
 export * from './codegen/UnpermissionedActionsWrapper';
 
 // Test contracts
+export * from './codegen/ITestAddOnlyAddressListOwner';
 export * from './codegen/ITestBalancerV2Helpers';
 export * from './codegen/ITestBalancerV2Vault';
 export * from './codegen/ITestCERC20';

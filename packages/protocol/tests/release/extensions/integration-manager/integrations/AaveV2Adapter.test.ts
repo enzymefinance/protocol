@@ -1,4 +1,5 @@
 import { randomAddress } from '@enzymefinance/ethers';
+import type { AaveV2ATokenListOwner, ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   AaveV2Adapter,
   aaveV2LendArgs,
@@ -8,7 +9,7 @@ import {
   redeemSelector,
   SpendAssetsHandleType,
 } from '@enzymefinance/protocol';
-import type { ProtocolDeployment } from '@enzymefinance/testutils';
+import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   aaveV2Lend,
   aaveV2Redeem,
@@ -95,89 +96,138 @@ describe('parseAssetsForAction', () => {
   });
 });
 
-describe('lend', () => {
-  it('works as expected when called for lending by a fund', async () => {
-    const [fundOwner] = fork.accounts;
+describe('actions', () => {
+  let aaveV2ATokenListOwner: AaveV2ATokenListOwner;
+  let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+  let fundOwner: SignerWithAddress;
+  let aToken: ITestStandardToken, underlying: ITestStandardToken;
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
+  beforeEach(async () => {
+    [fundOwner] = fork.accounts;
+
+    aaveV2ATokenListOwner = fork.deployment.aaveV2ATokenListOwner;
+
+    const newFundRes = await createNewFund({
+      denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, fundOwner),
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
 
-    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
-    const amount = await getAssetUnit(token);
-    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
+    comptrollerProxy = newFundRes.comptrollerProxy;
+    vaultProxy = newFundRes.vaultProxy;
 
-    await setAccountBalance({ account: vaultProxy, amount, provider, token });
+    aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
+    underlying = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
-    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [aToken, token],
-    });
-
-    const lendReceipt = await aaveV2Lend({
-      aToken,
-      aaveV2Adapter: fork.deployment.aaveV2Adapter,
-      amount,
-      comptrollerProxy,
-      fundOwner,
-      integrationManager: fork.deployment.integrationManager,
-    });
-
-    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [aToken, token],
-    });
-
-    expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
-    expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
-
-    expect(lendReceipt).toMatchInlineGasSnapshot(`475982`);
+    // Seed the vault with the underlying asset
+    const seedAmount = (await getAssetUnit(underlying)).mul(10);
+    await setAccountBalance({ account: vaultProxy, amount: seedAmount, provider, token: underlying });
   });
-});
 
-describe('redeem', () => {
-  it('works as expected when called for redeem by a fund', async () => {
-    const [fundOwner] = fork.accounts;
+  describe('lend', () => {
+    let amount: BigNumber;
 
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: new ITestStandardToken(fork.config.weth, fundOwner),
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
+    beforeEach(async () => {
+      amount = (await underlying.balanceOf(vaultProxy)).div(3);
     });
 
-    const aToken = new ITestStandardToken(fork.config.aaveV2.atokens.ausdc, provider);
-    const amount = await getAssetUnit(aToken);
-    const token = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    it('happy path: unregistered aToken', async () => {
+      const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [aToken, underlying],
+      });
 
-    await setAccountBalance({ account: vaultProxy, amount, provider, token: aToken });
+      const lendReceipt = await aaveV2Lend({
+        aToken,
+        aaveV2Adapter: fork.deployment.aaveV2Adapter,
+        amount,
+        comptrollerProxy,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
+      });
 
-    const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [token, aToken],
+      const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [aToken, underlying],
+      });
+
+      expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
+      expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
+
+      expect(lendReceipt).toMatchInlineGasSnapshot(`532470`);
     });
 
-    const redeemReceipt = await aaveV2Redeem({
-      aToken,
-      aaveV2Adapter: fork.deployment.aaveV2Adapter,
-      amount,
-      comptrollerProxy,
-      fundOwner,
-      integrationManager: fork.deployment.integrationManager,
+    it('happy path: registered aToken', async () => {
+      // Register the aToken on the relevant list
+      await aaveV2ATokenListOwner.addValidatedItemsToList([aToken]);
+
+      const receipt = await aaveV2Lend({
+        aToken,
+        aaveV2Adapter: fork.deployment.aaveV2Adapter,
+        amount,
+        comptrollerProxy,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
+      });
+
+      expect(receipt).toMatchInlineGasSnapshot(`489033`);
+    });
+  });
+
+  describe('redeem', () => {
+    let amount: BigNumber;
+
+    beforeEach(async () => {
+      // Seed the vault with the aToken
+      const seedAmount = (await getAssetUnit(aToken)).mul(10);
+      await setAccountBalance({ account: vaultProxy, amount: seedAmount, provider, token: aToken });
+
+      amount = seedAmount.div(3);
     });
 
-    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [token, aToken],
+    it('happy path: unregistered aToken', async () => {
+      const [preTxIncomingAssetBalance, preTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [underlying, aToken],
+      });
+
+      const redeemReceipt = await aaveV2Redeem({
+        aToken,
+        aaveV2Adapter: fork.deployment.aaveV2Adapter,
+        amount,
+        comptrollerProxy,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
+      });
+
+      const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+        account: vaultProxy,
+        assets: [underlying, aToken],
+      });
+
+      expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
+      expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
+
+      // This can vary substantially for whatever reason
+      expect(redeemReceipt).toMatchInlineGasSnapshot(`490107`);
     });
 
-    expect(postTxIncomingAssetBalance).toBeAroundBigNumber(preTxIncomingAssetBalance.add(amount), roundingBuffer);
-    expect(postTxOutgoingAssetBalance).toBeAroundBigNumber(preTxOutgoingAssetBalance.sub(amount), roundingBuffer);
+    it('happy path: registered aToken', async () => {
+      // Register the aToken on the relevant list
+      await aaveV2ATokenListOwner.addValidatedItemsToList([aToken]);
 
-    // This can vary substantially for whatever reason
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`500806`);
+      const receipt = await aaveV2Redeem({
+        aToken,
+        aaveV2Adapter: fork.deployment.aaveV2Adapter,
+        amount,
+        comptrollerProxy,
+        fundOwner,
+        integrationManager: fork.deployment.integrationManager,
+      });
+
+      // This can vary substantially for whatever reason
+      expect(receipt).toMatchInlineGasSnapshot(`446670`);
+    });
   });
 });

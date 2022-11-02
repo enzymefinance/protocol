@@ -125,6 +125,8 @@ const aaveV2Tokens = {
   awmatic: '0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4',
 };
 
+const aaveV3Tokens = {};
+
 // prettier-ignore
 const polygonConfig: DeploymentConfig = {
   aaveV2: {
@@ -132,7 +134,12 @@ const polygonConfig: DeploymentConfig = {
     incentivesController: '0x357D51124f59836DeD84c8a1730D72B749d8BC23',
     lendingPool: '0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf',
     lendingPoolAddressProvider: '0xd05e3E715d945B59290df0ae8eF85c1BdB684744',
-    protocolDataProvider: '0x7551b5D2763519d4e37e8B81929D336De671d46d',
+  },
+  aaveV3: {
+    atokens: aaveV3Tokens,
+    pool: constants.AddressZero, // TODO: replace
+    poolAddressProvider: constants.AddressZero, // TODO: replace
+    referralCode: 0, // TODO: replace when referrals live
   },
   chainlink: {
     aggregators,

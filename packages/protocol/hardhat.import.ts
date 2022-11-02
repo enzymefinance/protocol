@@ -53,6 +53,7 @@ export const config: HardhatUserConfig = {
       'IPolicy',
       'IPrimitivePriceFeed',
 
+      'ITestAddOnlyAddressListOwner',
       'ITestBalancerV2Helpers',
       'ITestBalancerV2Vault',
       'ITestCERC20',

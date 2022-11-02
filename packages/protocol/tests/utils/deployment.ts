@@ -2,6 +2,9 @@ import {
   AaveDebtPositionLib,
   AaveDebtPositionParser,
   AaveV2Adapter,
+  AaveV2ATokenListOwner,
+  AaveV3Adapter,
+  AaveV3ATokenListOwner,
   AddressListRegistry,
   AllowedAdapterIncomingAssetsPolicy,
   AllowedAdaptersPerManagerPolicy,
@@ -123,6 +126,9 @@ export async function deployProtocolFixture() {
     aaveDebtPositionLib: new AaveDebtPositionLib(fixture.AaveDebtPositionLib.address, deployer),
     aaveDebtPositionParser: new AaveDebtPositionParser(fixture.AaveDebtPositionParser.address, deployer),
     aaveV2Adapter: new AaveV2Adapter(fixture.AaveV2Adapter.address, deployer),
+    aaveV2ATokenListOwner: new AaveV2ATokenListOwner(fixture.AaveV2ATokenListOwner.address, deployer),
+    aaveV3Adapter: new AaveV3Adapter(fixture.AaveV3Adapter.address, deployer),
+    aaveV3ATokenListOwner: new AaveV3ATokenListOwner(fixture.AaveV3ATokenListOwner.address, deployer),
     addressListRegistry: new AddressListRegistry(fixture.AddressListRegistry.address, deployer),
     allowedAdapterIncomingAssetsPolicy: new AllowedAdapterIncomingAssetsPolicy(fixture.AllowedAdapterIncomingAssetsPolicy.address, deployer),
     allowedAdaptersPerManagerPolicy: new AllowedAdaptersPerManagerPolicy(fixture.AllowedAdaptersPerManagerPolicy.address, deployer),
@@ -324,6 +330,12 @@ export interface DeploymentConfig {
     lendingPool: string;
     lendingPoolAddressProvider: string;
     protocolDataProvider: string;
+    atokens: Record<string, string>;
+  };
+  aaveV3: {
+    pool: string;
+    poolAddressProvider: string;
+    referralCode: number;
     atokens: Record<string, string>;
   };
   compound: {

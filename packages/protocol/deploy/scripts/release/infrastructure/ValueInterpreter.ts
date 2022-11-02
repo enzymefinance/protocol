@@ -73,12 +73,41 @@ const fn: DeployFunction = async function (hre) {
         aggregators.push(config.chainlink.ethusd);
         rateAssets.push(ChainlinkRateAsset.USD);
 
-        break;
+        continue;
       }
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!config.chainlink.aggregators[primitiveKey]) {
         throw new Error(`Missing aggregator for Aave v2 aToken: ${key}`);
+      }
+
+      const aggregatorInfo = config.chainlink.aggregators[primitiveKey];
+      aggregators.push(aggregatorInfo[0]);
+      rateAssets.push(aggregatorInfo[1]);
+    }
+
+    // Aave v3 aTokens as primitives
+    for (const [key, aToken] of Object.entries(config.aaveV3.atokens)) {
+      if (!key.startsWith('a')) {
+        throw new Error(`Key not formatted as Aave v3 aToken: ${key}`);
+      }
+
+      primitives.push(aToken);
+
+      // Remove the "a" from aToken symbol
+      const primitiveKey = key.substring(1);
+
+      // Handle exceptions to the rule
+      if (primitiveKey === 'weth') {
+        aggregators.push(config.chainlink.ethusd);
+        rateAssets.push(ChainlinkRateAsset.USD);
+
+        continue;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!config.chainlink.aggregators[primitiveKey]) {
+        throw new Error(`Missing aggregator for Aave v3 aToken: ${key}`);
       }
 
       const aggregatorInfo = config.chainlink.aggregators[primitiveKey];

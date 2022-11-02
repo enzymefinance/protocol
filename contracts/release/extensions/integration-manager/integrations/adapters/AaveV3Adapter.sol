@@ -20,9 +20,16 @@ import "../utils/bases/AaveAdapterBase.sol";
 contract AaveV3Adapter is AaveAdapterBase, AaveV3ActionsMixin {
     constructor(
         address _integrationManager,
+        address _addressListRegistry,
+        uint256 _aTokenListId,
+        address _aTokenListOwner,
         address _pool,
         uint16 _referralCode
-    ) public AaveAdapterBase(_integrationManager) AaveV3ActionsMixin(_pool, _referralCode) {}
+    )
+        public
+        AaveAdapterBase(_integrationManager, _addressListRegistry, _aTokenListId, _aTokenListOwner)
+        AaveV3ActionsMixin(_pool, _referralCode)
+    {}
 
     ////////////////////////////////
     // REQUIRED VIRTUAL FUNCTIONS //
