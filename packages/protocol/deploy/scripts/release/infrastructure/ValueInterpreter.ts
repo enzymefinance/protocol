@@ -115,6 +115,35 @@ const fn: DeployFunction = async function (hre) {
       rateAssets.push(aggregatorInfo[1]);
     }
 
+    // Compound v3 cTokens as primitives
+    for (const [key, cToken] of Object.entries(config.compoundV3.ctokens)) {
+      if (!key.startsWith('c')) {
+        throw new Error(`Key not formatted as Compound v3 cToken: ${key}`);
+      }
+
+      primitives.push(cToken);
+
+      // Remove the "c" from cToken symbol
+      const primitiveKey = key.substring(1);
+
+      // Handle exceptions to the rule
+      if (primitiveKey === 'weth') {
+        aggregators.push(config.chainlink.ethusd);
+        rateAssets.push(ChainlinkRateAsset.USD);
+
+        continue;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!config.chainlink.aggregators[primitiveKey]) {
+        throw new Error(`Missing aggregator for Compound v3 cToken: ${key}`);
+      }
+
+      const aggregatorInfo = config.chainlink.aggregators[primitiveKey];
+      aggregators.push(aggregatorInfo[0]);
+      rateAssets.push(aggregatorInfo[1]);
+    }
+
     // Add all primitives to asset universe
     await valueInterpreterInstance.addPrimitives(primitives, aggregators, rateAssets);
 
@@ -128,10 +157,10 @@ const fn: DeployFunction = async function (hre) {
     const yearnVaultV2PriceFeed = await getOrNull('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
-      ...(compoundPriceFeed ? [[config.compound.ceth, compoundPriceFeed.address] as [string, string]] : []),
+      ...(compoundPriceFeed ? [[config.compoundV2.ceth, compoundPriceFeed.address] as [string, string]] : []),
       ...(fiduPriceFeed ? [[config.goldfinch.fidu, fiduPriceFeed.address] as [string, string]] : []),
       ...(compoundPriceFeed
-        ? Object.values(config.compound.ctokens).map(
+        ? Object.values(config.compoundV2.ctokens).map(
             (ctoken) => [ctoken, compoundPriceFeed.address] as [string, string],
           )
         : []),

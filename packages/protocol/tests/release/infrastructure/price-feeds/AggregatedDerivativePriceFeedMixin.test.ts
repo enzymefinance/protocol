@@ -13,7 +13,7 @@ async function snapshot() {
   } = await deployProtocolFixture();
 
   const uniswapV2PoolTokens = config.uniswap.pools;
-  const compoundTokens = config.compound.ctokens;
+  const compoundTokens = config.compoundV2.ctokens;
 
   const mockDerivative1 = await MockToken.deploy(deployer, 'Mock Derivative 1', 'MCKD001', 18);
   const mockDerivative2 = await MockToken.deploy(deployer, 'Mock Derivative 2', 'MCKD002', 18);

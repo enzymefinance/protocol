@@ -843,7 +843,7 @@ describe('redeem', () => {
         accounts: [fundOwner, investor],
         config: {
           primitives: { usdc },
-          compound: {
+          compoundV2: {
             ctokens: { cdai },
           },
         },

@@ -963,7 +963,7 @@ describe('redeem', () => {
 describe('getManagedAssets', () => {
   it('works as expected: one pre-settlement and one post-settlement loan of the same underlying asset (and one borrow to ignore)', async () => {
     const underlyingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
-    const yieldAsset = fork.config.compound.ctokens.cdai;
+    const yieldAsset = fork.config.compoundV2.ctokens.cdai;
 
     const underlyingAssetUnit = await getAssetUnit(underlyingAsset);
     const underlyingAssetAmount = BigNumber.from('1000000').mul(underlyingAssetUnit);
@@ -1138,7 +1138,7 @@ describe('getDebtAssets', () => {
 
     expect(debtAssets.amounts_[0]).toBeAroundBigNumber(borrowedAssetAmount, '0.03');
     expect(debtAssets.assets_[0]).toMatchAddress(borrowedAsset.address);
-    expect(debtAssets.assets_[1]).toMatchAddress(fork.config.compound.ctokens.cusdc);
+    expect(debtAssets.assets_[1]).toMatchAddress(fork.config.compoundV2.ctokens.cusdc);
     expect(debtAssets.amounts_[1]).toBeGtBigNumber(0);
   });
 });

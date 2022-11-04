@@ -16,7 +16,7 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
 
   const compoundPriceFeed = await deploy('CompoundPriceFeed', {
-    args: [fundDeployer.address, config.weth, config.compound.ceth] as CompoundPriceFeedArgs,
+    args: [fundDeployer.address, config.weth, config.compoundV2.ceth] as CompoundPriceFeedArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
@@ -24,7 +24,7 @@ const fn: DeployFunction = async function (hre) {
 
   // Register all uniswap pool tokens with the derivative price feed.
   if (compoundPriceFeed.newlyDeployed) {
-    const ctokens = Object.values(config.compound.ctokens);
+    const ctokens = Object.values(config.compoundV2.ctokens);
 
     if (ctokens.length) {
       log('Registering Compound cTokens');

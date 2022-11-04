@@ -3,6 +3,7 @@ export * from './actions';
 export * from './balancerV2';
 export * from './common';
 export * from './compound';
+export * from './compoundV3';
 export * from './curve';
 export * from './idle';
 export * from './olympusV2';

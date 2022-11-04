@@ -1,6 +1,7 @@
 export * from './aaveV2';
 export * from './balancerV2';
 export * from './compound';
+export * from './compoundV3';
 export * from './curve';
 export * from './idle';
 export * from './mock';

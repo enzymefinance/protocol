@@ -199,7 +199,7 @@ describe('receiveCallFromComptroller', () => {
       const [fundOwner] = fork.accounts;
       const externalPositionManager = fork.deployment.externalPositionManager;
       const policyManager = fork.deployment.policyManager;
-      const cdai = new ITestStandardToken(fork.config.compound.ctokens.cdai, provider);
+      const cdai = new ITestStandardToken(fork.config.compoundV2.ctokens.cdai, provider);
 
       const { comptrollerProxy, vaultProxy } = await createNewFund({
         denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),

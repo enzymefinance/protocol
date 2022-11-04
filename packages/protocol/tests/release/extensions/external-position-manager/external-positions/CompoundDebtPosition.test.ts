@@ -64,8 +64,8 @@ beforeEach(async () => {
 
   compoundDebtPosition = new CompoundDebtPositionLib(compoundDebtPositionProxyAddress, provider);
 
-  cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
-  ceth = new ITestCERC20(fork.config.compound.ceth, provider);
+  cdai = new ITestCERC20(fork.config.compoundV2.ctokens.cdai, provider);
+  ceth = new ITestCERC20(fork.config.compoundV2.ceth, provider);
 
   dai = new ITestStandardToken(fork.config.primitives.dai, provider);
   weth = new ITestStandardToken(fork.config.weth, provider);
@@ -92,7 +92,7 @@ beforeEach(async () => {
   });
 
   await compoundLend({
-    cToken: new ITestCERC20(fork.config.compound.ceth, provider),
+    cToken: new ITestCERC20(fork.config.compoundV2.ceth, provider),
     cTokenAmount: 1,
     compoundAdapter: fork.deployment.compoundAdapter,
     comptrollerProxy,
@@ -376,7 +376,7 @@ describe('receiveCallFromVault', () => {
         compoundDebtPositionBorrow({
           amounts: [1],
           assets: [randomAddress()],
-          cTokens: [fork.config.compound.ctokens.cdai],
+          cTokens: [fork.config.compoundV2.ctokens.cdai],
           comptrollerProxy: comptrollerProxyUsed,
           externalPositionManager: fork.deployment.externalPositionManager,
           externalPositionProxy: compoundDebtPosition.address,
@@ -559,7 +559,7 @@ describe('receiveCallFromVault', () => {
       const collateralAsset = cdai;
 
       const borrowedAsset = fork.config.primitives.wbtc;
-      const borrowCTokens = [fork.config.compound.ctokens.cwbtc2, fork.config.compound.ctokens.cwbtc];
+      const borrowCTokens = [fork.config.compoundV2.ctokens.cwbtc2, fork.config.compoundV2.ctokens.cwbtc];
       const borrowedAssets = borrowCTokens.map(() => borrowedAsset);
 
       // Ensure the amount borrowed is much lower than collateral

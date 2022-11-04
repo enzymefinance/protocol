@@ -59,6 +59,8 @@ export const config: HardhatUserConfig = {
       'ITestCERC20',
       'ITestChainlinkAggregator',
       'ITestCompoundComptroller',
+      'ITestCompoundV3Comet',
+      'ITestCompoundV3CometRewards',
       'ITestConvexBaseRewardPool',
       'ITestConvexBooster',
       'ITestConvexCrvDepositor',

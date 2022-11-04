@@ -130,7 +130,7 @@ const aaveV2Tokens = {
 
 const aaveV3Tokens = {};
 
-const ctokens = {
+const compoundV2CTokens = {
   cbat: '0x6c8c6b02e7b2be14d4fa6022dfd6d75921d90e4e',
   ccomp: '0x70e36f6bf80a52b3b46b3af8e106cc0ed743e8e4',
   cdai: '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643',
@@ -142,7 +142,9 @@ const ctokens = {
   czrx: '0xb3319f5d18bc0d84dd1b4825dcde5d5f7266d407',
 } as const;
 
-const compoundComptroller = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
+const compoundV3CTokens = {
+  cusdc: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+} as const;
 
 const pools = {
   aaveWeth: '0xdfc14d2af169b0d36c4eff567ada9b2e0cae044f',
@@ -258,10 +260,15 @@ const mainnetConfig: DeploymentConfig = {
     aggregators,
     ethusd: ethUsdAggregator,
   },
-  compound: {
+  compoundV2: {
     ceth: '0x4ddc2d193948926d02f9b1fe9e1daa0718270ed5',
-    comptroller: compoundComptroller,
-    ctokens
+    comptroller: '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B',
+    ctokens: compoundV2CTokens
+  },
+  compoundV3: {
+    configuratorProxy: '0x316f9708bB98af7dA9c68C1C3b5e79039cD336E3',
+    rewards: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40',
+    ctokens: compoundV3CTokens
   },
   convex: {
     booster: '0xF403C135812408BFbE8713b5A23a04b3D48AAE31',

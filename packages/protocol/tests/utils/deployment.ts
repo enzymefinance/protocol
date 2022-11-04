@@ -30,6 +30,8 @@ import {
   CompoundDebtPositionLib,
   CompoundDebtPositionParser,
   CompoundPriceFeed,
+  CompoundV3Adapter,
+  CompoundV3CTokenListOwner,
   ComptrollerLib,
   ConvexCurveLpStakingAdapter,
   ConvexCurveLpStakingWrapperFactory,
@@ -154,6 +156,8 @@ export async function deployProtocolFixture() {
     compoundDebtPositionLib: new CompoundDebtPositionLib(fixture.CompoundDebtPositionLib.address, deployer),
     compoundDebtPositionParser: new CompoundDebtPositionParser(fixture.CompoundDebtPositionParser.address, deployer),
     compoundPriceFeed: new CompoundPriceFeed(fixture.CompoundPriceFeed.address, deployer),
+    compoundV3Adapter: new CompoundV3Adapter(fixture.CompoundV3Adapter.address, deployer),
+    compoundV3CTokenListOwner: new CompoundV3CTokenListOwner(fixture.CompoundV3CTokenListOwner.address, deployer),
     comptrollerLib: new ComptrollerLib(fixture.ComptrollerLib.address, deployer),
     convexCurveLpStakingAdapter: new ConvexCurveLpStakingAdapter(fixture.ConvexCurveLpStakingAdapter.address, deployer),
     convexCurveLpStakingWrapperFactory: new ConvexCurveLpStakingWrapperFactory(fixture.ConvexCurveLpStakingWrapperFactory.address, deployer),
@@ -338,9 +342,14 @@ export interface DeploymentConfig {
     referralCode: number;
     atokens: Record<string, string>;
   };
-  compound: {
+  compoundV2: {
     ceth: string;
     comptroller: string;
+    ctokens: Record<string, string>;
+  };
+  compoundV3: {
+    configuratorProxy: string;
+    rewards: string;
     ctokens: Record<string, string>;
   };
   goldfinch: {

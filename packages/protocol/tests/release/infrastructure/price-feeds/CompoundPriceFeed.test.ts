@@ -49,7 +49,7 @@ describe('derivative gas costs', () => {
     // Use max of the dai balance to get cDai
     await setAccountBalance({ account: vaultProxy, amount: initialTokenAmount, provider, token: dai });
     await compoundLend({
-      cToken: new ITestCERC20(fork.config.compound.ctokens.cdai, provider),
+      cToken: new ITestCERC20(fork.config.compoundV2.ctokens.cdai, provider),
       cTokenAmount: BigNumber.from('1'),
       compoundAdapter: fork.deployment.compoundAdapter,
       comptrollerProxy,
@@ -70,17 +70,17 @@ describe('constructor', () => {
   it('sets state vars', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
 
-    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ctokens.ccomp)).toMatchAddress(
+    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compoundV2.ctokens.ccomp)).toMatchAddress(
       fork.config.primitives.comp,
     );
-    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ctokens.cdai)).toMatchAddress(
+    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compoundV2.ctokens.cdai)).toMatchAddress(
       fork.config.primitives.dai,
     );
-    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ceth)).toMatchAddress(fork.config.weth);
-    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ctokens.cusdc)).toMatchAddress(
+    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compoundV2.ceth)).toMatchAddress(fork.config.weth);
+    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compoundV2.ctokens.cusdc)).toMatchAddress(
       fork.config.primitives.usdc,
     );
-    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compound.ctokens.czrx)).toMatchAddress(
+    expect(await compoundPriceFeed.getTokenFromCToken(fork.config.compoundV2.ctokens.czrx)).toMatchAddress(
       fork.config.primitives.zrx,
     );
 
@@ -108,14 +108,14 @@ describe('addCTokens', () => {
   it('does not allow an already-set cToken', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
 
-    await expect(compoundPriceFeed.addCTokens([fork.config.compound.ctokens.cdai])).rejects.toBeRevertedWith(
+    await expect(compoundPriceFeed.addCTokens([fork.config.compoundV2.ctokens.cdai])).rejects.toBeRevertedWith(
       'Value already set',
     );
   });
 
   it('adds multiple cTokens and emits an event per added cToken', async () => {
-    const newCToken1 = fork.config.compound.ctokens.ccomp;
-    const newCToken2 = fork.config.compound.ctokens.cdai;
+    const newCToken1 = fork.config.compoundV2.ctokens.ccomp;
+    const newCToken2 = fork.config.compoundV2.ctokens.cdai;
     const newCToken1Underlying = fork.config.primitives.comp;
     const newCToken2Underlying = fork.config.primitives.dai;
 
@@ -123,7 +123,7 @@ describe('addCTokens', () => {
       fork.deployer,
       fork.deployment.fundDeployer,
       fork.config.weth,
-      fork.config.compound.ceth,
+      fork.config.compoundV2.ceth,
     );
 
     // The cTokens should not be supported assets initially
@@ -160,7 +160,7 @@ describe('addCTokens', () => {
 describe('calcUnderlyingValues', () => {
   it('returns rate for underlying token (cERC20)', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
-    const cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
+    const cdai = new ITestCERC20(fork.config.compoundV2.ctokens.cdai, provider);
     const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
@@ -179,7 +179,7 @@ describe('calcUnderlyingValues', () => {
 
   it('returns rate for underlying token (cETH)', async () => {
     const compoundPriceFeed = fork.deployment.compoundPriceFeed;
-    const ceth = new ITestCERC20(fork.config.compound.ceth, provider);
+    const ceth = new ITestCERC20(fork.config.compoundV2.ceth, provider);
     const weth = new ITestStandardToken(fork.config.weth, provider);
 
     const cTokenUnit = utils.parseUnits('1', 6);
@@ -200,7 +200,7 @@ describe('calcUnderlyingValues', () => {
 describe('expected values', () => {
   it('returns the expected value from the valueInterpreter (18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const cdai = new ITestCERC20(fork.config.compound.ctokens.cdai, provider);
+    const cdai = new ITestCERC20(fork.config.compoundV2.ctokens.cdai, provider);
     const dai = new ITestStandardToken(fork.config.primitives.dai, provider);
 
     const baseDecimals = await cdai.decimals();
@@ -219,7 +219,7 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const cusdc = new ITestCERC20(fork.config.compound.ctokens.cusdc, provider);
+    const cusdc = new ITestCERC20(fork.config.compoundV2.ctokens.cusdc, provider);
     const usdc = new ITestStandardToken(fork.config.primitives.usdc, provider);
 
     const baseDecimals = await cusdc.decimals();

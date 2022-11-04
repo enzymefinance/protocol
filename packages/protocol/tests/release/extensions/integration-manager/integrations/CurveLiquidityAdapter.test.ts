@@ -670,8 +670,8 @@ describe('actions', () => {
       it('works as expected', async () => {
         const pool = fork.config.curve.pools.usdt.pool;
         const lpToken = new ITestStandardToken(fork.config.curve.pools.usdt.lpToken, provider);
-        const cDai = new ITestStandardToken(fork.config.compound.ctokens.cdai, provider);
-        const cUsdc = new ITestStandardToken(fork.config.compound.ctokens.cusdc, provider);
+        const cDai = new ITestStandardToken(fork.config.compoundV2.ctokens.cdai, provider);
+        const cUsdc = new ITestStandardToken(fork.config.compoundV2.ctokens.cusdc, provider);
         const usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
         const amount = 1000;
 

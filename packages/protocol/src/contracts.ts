@@ -20,6 +20,7 @@ export * from './codegen/UintListRegistry';
 // AddressList owners
 export * from './codegen/AaveV2ATokenListOwner';
 export * from './codegen/AaveV3ATokenListOwner';
+export * from './codegen/CompoundV3CTokenListOwner';
 
 // Release core
 export * from './codegen/FundDeployer';
@@ -69,6 +70,7 @@ export * from './codegen/AaveV3Adapter';
 export * from './codegen/AuraBalancerV2LpStakingAdapter';
 export * from './codegen/BalancerV2LiquidityAdapter';
 export * from './codegen/CompoundAdapter';
+export * from './codegen/CompoundV3Adapter';
 export * from './codegen/ConvexCurveLpStakingAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAdapter';
@@ -152,6 +154,8 @@ export * from './codegen/ITestBalancerV2Vault';
 export * from './codegen/ITestCERC20';
 export * from './codegen/ITestChainlinkAggregator';
 export * from './codegen/ITestCompoundComptroller';
+export * from './codegen/ITestCompoundV3Comet';
+export * from './codegen/ITestCompoundV3CometRewards';
 export * from './codegen/ITestConvexBaseRewardPool';
 export * from './codegen/ITestConvexBooster';
 export * from './codegen/ITestConvexCrvDepositor';

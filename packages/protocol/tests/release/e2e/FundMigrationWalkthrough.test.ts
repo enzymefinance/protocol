@@ -121,11 +121,11 @@ describe('Walkthrough a fund migration', () => {
       new ITestStandardToken(fork.config.primitives.usdt, provider),
       new ITestStandardToken(fork.config.primitives.zrx, provider),
       // ctokens
-      new ITestStandardToken(fork.config.compound.ctokens.ccomp, provider),
-      new ITestStandardToken(fork.config.compound.ctokens.cdai, provider),
-      new ITestStandardToken(fork.config.compound.ceth, provider),
-      new ITestStandardToken(fork.config.compound.ctokens.cusdc, provider),
-      new ITestStandardToken(fork.config.compound.ctokens.cuni, provider),
+      new ITestStandardToken(fork.config.compoundV2.ctokens.ccomp, provider),
+      new ITestStandardToken(fork.config.compoundV2.ctokens.cdai, provider),
+      new ITestStandardToken(fork.config.compoundV2.ceth, provider),
+      new ITestStandardToken(fork.config.compoundV2.ctokens.cusdc, provider),
+      new ITestStandardToken(fork.config.compoundV2.ctokens.cuni, provider),
     ];
 
     await addNewAssetsToFund({

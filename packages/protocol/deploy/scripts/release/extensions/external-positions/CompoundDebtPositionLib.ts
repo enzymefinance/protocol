@@ -13,7 +13,7 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
 
   await deploy('CompoundDebtPositionLib', {
-    args: [config.compound.comptroller, config.primitives.comp, config.weth],
+    args: [config.compoundV2.comptroller, config.primitives.comp, config.weth],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

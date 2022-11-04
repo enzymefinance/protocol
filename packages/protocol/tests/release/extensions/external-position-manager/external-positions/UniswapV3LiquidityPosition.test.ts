@@ -200,8 +200,8 @@ describe('receiveCallFromVault', () => {
 
     it('does not allow two derivative assets', async () => {
       const { token0, token1 } = uniswapV3OrderTokenPair({
-        tokenA: fork.config.compound.ctokens.cdai,
-        tokenB: fork.config.compound.ctokens.cusdc,
+        tokenA: fork.config.compoundV2.ctokens.cdai,
+        tokenB: fork.config.compoundV2.ctokens.cusdc,
       });
 
       await createUniswapV3LiquidityPosition({
