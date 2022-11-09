@@ -1,5 +1,13 @@
 # @enzymefinance/protocol
 
+## 4.0.7
+
+### Patch Changes
+
+- 8bb3e9ff6: Publish packages
+- Updated dependencies [8bb3e9ff6]
+  - @enzymefinance/ethers@4.0.7
+
 ## 4.0.6
 
 ### Patch Changes
