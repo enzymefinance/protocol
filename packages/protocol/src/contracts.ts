@@ -62,6 +62,7 @@ export * from './codegen/IdlePriceFeed';
 export * from './codegen/PoolTogetherV4PriceFeed';
 export * from './codegen/RevertingPriceFeed';
 export * from './codegen/UniswapV2PoolPriceFeed';
+export * from './codegen/WstethPriceFeed';
 export * from './codegen/YearnVaultV2PriceFeed';
 
 // Integration adapters
@@ -175,6 +176,7 @@ export * from './codegen/ITestGoldfinchConfig';
 export * from './codegen/ITestGoldfinchSeniorPool';
 export * from './codegen/ITestGsnForwarder';
 export * from './codegen/ITestGsnRelayHub';
+export * from './codegen/ITestLidoSteth';
 export * from './codegen/ITestMapleGlobals';
 export * from './codegen/ITestMaplePool';
 export * from './codegen/ITestNotionalV2Router';

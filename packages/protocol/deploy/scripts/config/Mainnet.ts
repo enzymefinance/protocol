@@ -366,16 +366,20 @@ const mainnetConfig: DeploymentConfig = {
   kiln: {
     stakingContract: '0x746d8A8FCAB7f829Fa500504f60D89C5CC1EA973'
   },
+  lido: {
+    steth: primitives.steth,
+    wsteth: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+  },
+  liquity: {
+    borrowerOperations: '0x24179CD81c9e782A4096035f7eC97fB8B783e007',
+    troveManager: '0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2'
+  },
   maple: {
     mplRewardsFactory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',
     poolFactory: '0x2Cd79F7f8b38B9c0D80EA6B230441841A31537eC'
   },
   notional: {
     notionalContract: '0x1344A36A1B56144C3Bc62E7757377D288fDE0369'
-  },
-  liquity: {
-    borrowerOperations: '0x24179CD81c9e782A4096035f7eC97fB8B783e007',
-    troveManager: '0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2'
   },
   olympusV2: {
     stakingContract: '0xB63cac384247597756545b500253ff8E607a8020'

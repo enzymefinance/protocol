@@ -96,6 +96,7 @@ import {
   UsdEthSimulatedAggregator,
   ValueInterpreter,
   VaultLib,
+  WstethPriceFeed,
   YearnVaultV2Adapter,
   YearnVaultV2PriceFeed,
   ZeroExV2Adapter,
@@ -224,6 +225,7 @@ export async function deployProtocolFixture() {
     usdEthSimulatedAggregator: new UsdEthSimulatedAggregator(fixture.UsdEthSimulatedAggregator.address, deployer),
     valueInterpreter: new ValueInterpreter(fixture.ValueInterpreter.address, deployer),
     vaultLib: new VaultLib(fixture.VaultLib.address, deployer),
+    wstethPriceFeed: new WstethPriceFeed(fixture.WstethPriceFeed.address, deployer),
     yearnVaultV2Adapter: new YearnVaultV2Adapter(fixture.YearnVaultV2Adapter.address, deployer),
     yearnVaultV2PriceFeed: new YearnVaultV2PriceFeed(fixture.YearnVaultV2PriceFeed.address, deployer),
     zeroExV2Adapter: new ZeroExV2Adapter(fixture.ZeroExV2Adapter.address, deployer),
@@ -368,6 +370,10 @@ export interface DeploymentConfig {
   };
   kiln: {
     stakingContract: string;
+  };
+  lido: {
+    steth: string;
+    wsteth: string;
   };
   liquity: {
     borrowerOperations: string;

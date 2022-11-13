@@ -154,6 +154,7 @@ const fn: DeployFunction = async function (hre) {
     const fiduPriceFeed = await getOrNull('FiduPriceFeed');
     const idlePriceFeed = await getOrNull('IdlePriceFeed');
     const poolTogetherV4PriceFeed = await getOrNull('PoolTogetherV4PriceFeed');
+    const wstethPriceFeed = await getOrNull('WstethPriceFeed');
     const yearnVaultV2PriceFeed = await getOrNull('YearnVaultV2PriceFeed');
 
     const derivativePairs: [string, string][] = [
@@ -181,6 +182,7 @@ const fn: DeployFunction = async function (hre) {
             ([ptToken]) => [ptToken, poolTogetherV4PriceFeed.address] as [string, string],
           )
         : []),
+      ...(wstethPriceFeed ? [[config.lido.wsteth, wstethPriceFeed.address] as [string, string]] : []),
       ...(yearnVaultV2PriceFeed
         ? Object.values(config.yearn.vaultV2.yVaults).map(
             (yVault) => [yVault, yearnVaultV2PriceFeed.address] as [string, string],
@@ -207,6 +209,7 @@ fn.dependencies = [
   'FiduPriceFeed',
   'IdlePriceFeed',
   'PoolTogetherV4PriceFeed',
+  'WstethPriceFeed',
   'YearnVaultV2PriceFeed',
 ];
 

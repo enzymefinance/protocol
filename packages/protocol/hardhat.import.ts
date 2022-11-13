@@ -80,6 +80,7 @@ export const config: HardhatUserConfig = {
       'ITestGoldfinchSeniorPool',
       'ITestGsnForwarder',
       'ITestGsnRelayHub',
+      'ITestLidoSteth',
       'ITestMapleGlobals',
       'ITestMaplePool',
       'ITestNotionalV2Router',
