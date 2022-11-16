@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-require('dotenv').config({ path: '../../.env' });
+import path from 'path';
+
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 require('tsconfig-paths').register({ baseUrl: './', paths: require('./tsconfig.json').compilerOptions.paths });
 
 import '@nomiclabs/hardhat-ethers';
