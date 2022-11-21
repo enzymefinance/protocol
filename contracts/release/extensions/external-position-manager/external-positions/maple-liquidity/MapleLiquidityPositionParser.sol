@@ -9,9 +9,9 @@
     file that was distributed with this source code.
 */
 
-import "../../../../interfaces/IMaplePool.sol";
-import "../../../../interfaces/IMaplePoolFactory.sol";
-import "../../../../interfaces/IMapleMplRewardsFactory.sol";
+import "../../../../interfaces/IMapleV1MplRewardsFactory.sol";
+import "../../../../interfaces/IMapleV2Pool.sol";
+import "../../../../interfaces/IMapleV2ProxyFactory.sol";
 import "../IExternalPositionParser.sol";
 import "./IMapleLiquidityPosition.sol";
 import "./MapleLiquidityPositionDataDecoder.sol";
@@ -20,17 +20,17 @@ pragma solidity 0.6.12;
 
 /// @title MapleLiquidityPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Parser for Maple Debt Positions
+/// @notice Parser for Maple liquidity positions
 contract MapleLiquidityPositionParser is
     MapleLiquidityPositionDataDecoder,
     IExternalPositionParser
 {
-    address private immutable MAPLE_POOL_FACTORY;
-    address private immutable MAPLE_MPL_REWARDS_FACTORY;
+    address private immutable MAPLE_V1_MPL_REWARDS_FACTORY;
+    address private immutable MAPLE_V2_POOL_FACTORY;
 
-    constructor(address _maplePoolFactory, address _mapleMplRewardsFactory) public {
-        MAPLE_POOL_FACTORY = _maplePoolFactory;
-        MAPLE_MPL_REWARDS_FACTORY = _mapleMplRewardsFactory;
+    constructor(address _mapleV2PoolFactory, address _mapleV1MplRewardsFactory) public {
+        MAPLE_V1_MPL_REWARDS_FACTORY = _mapleV1MplRewardsFactory;
+        MAPLE_V2_POOL_FACTORY = _mapleV2PoolFactory;
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
@@ -52,43 +52,32 @@ contract MapleLiquidityPositionParser is
             address[] memory assetsToReceive_
         )
     {
-        __validateActionData(_actionId, _encodedActionArgs);
-
-        if (_actionId == uint256(IMapleLiquidityPosition.Actions.Lend)) {
-            (address pool, uint256 liquidityAssetAmount) = __decodeLendActionArgs(
+        if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendV2)) {
+            (address pool, uint256 liquidityAssetAmount) = __decodeLendV2ActionArgs(
                 _encodedActionArgs
             );
+            __validatePoolV2(pool);
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
 
-            assetsToTransfer_[0] = IMaplePool(pool).liquidityAsset();
+            assetsToTransfer_[0] = IMapleV2Pool(pool).asset();
             amountsToTransfer_[0] = liquidityAssetAmount;
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
-            (address pool, , uint256 liquidityAssetAmount) = __decodeLendAndStakeActionArgs(
-                _encodedActionArgs
-            );
-
-            assetsToTransfer_ = new address[](1);
-            amountsToTransfer_ = new uint256[](1);
-
-            assetsToTransfer_[0] = IMaplePool(pool).liquidityAsset();
-            amountsToTransfer_[0] = liquidityAssetAmount;
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Redeem)) {
-            (address pool, ) = __decodeRedeemActionArgs(_encodedActionArgs);
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.RequestRedeemV2)) {
+            (address pool, ) = __decodeRequestRedeemV2ActionArgs(_encodedActionArgs);
+            __validatePoolV2(pool);
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.RedeemV2)) {
+            (address pool, ) = __decodeRedeemV2ActionArgs(_encodedActionArgs);
+            __validatePoolV2(pool);
 
             assetsToReceive_ = new address[](1);
-            assetsToReceive_[0] = IMaplePool(pool).liquidityAsset();
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.UnstakeAndRedeem)) {
-            (address pool, , ) = __decodeUnstakeAndRedeemActionArgs(_encodedActionArgs);
-
-            assetsToReceive_ = new address[](1);
-            assetsToReceive_[0] = IMaplePool(pool).liquidityAsset();
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimInterest)) {
-            address pool = __decodeClaimInterestActionArgs(_encodedActionArgs);
-
-            assetsToReceive_ = new address[](1);
-            assetsToReceive_[0] = IMaplePool(pool).liquidityAsset();
+            assetsToReceive_[0] = IMapleV2Pool(pool).asset();
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.CancelRedeemV2)) {
+            (address pool, ) = __decodeCancelRedeemV2ActionArgs(_encodedActionArgs);
+            __validatePoolV2(pool);
+        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimRewardsV1)) {
+            address rewardsContract = __decodeClaimRewardsV1ActionArgs(_encodedActionArgs);
+            __validateRewardsContract(rewardsContract);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -106,66 +95,18 @@ contract MapleLiquidityPositionParser is
 
     // PRIVATE FUNCTIONS
 
-    /// @dev Runs validations before running a callOnExternalPosition.
-    function __validateActionData(uint256 _actionId, bytes memory _actionArgs) private view {
-        if (_actionId == uint256(IMapleLiquidityPosition.Actions.Lend)) {
-            (address pool, ) = __decodeLendActionArgs(_actionArgs);
-
-            __validatePool(pool);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.LendAndStake)) {
-            (address pool, address rewardsContract, ) = __decodeLendAndStakeActionArgs(
-                _actionArgs
-            );
-
-            __validatePool(pool);
-            __validateRewardsContract(rewardsContract);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.IntendToRedeem)) {
-            address pool = __decodeIntendToRedeemActionArgs(_actionArgs);
-
-            __validatePool(pool);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Redeem)) {
-            (address pool, ) = __decodeRedeemActionArgs(_actionArgs);
-
-            __validatePool(pool);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Stake)) {
-            (address rewardsContract, address pool, ) = __decodeStakeActionArgs(_actionArgs);
-
-            __validatePool(pool);
-            __validateRewardsContract(rewardsContract);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.Unstake)) {
-            (address rewardsContract, ) = __decodeUnstakeActionArgs(_actionArgs);
-
-            __validateRewardsContract(rewardsContract);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.UnstakeAndRedeem)) {
-            (address pool, address rewardsContract, ) = __decodeUnstakeAndRedeemActionArgs(
-                _actionArgs
-            );
-
-            __validatePool(pool);
-            __validateRewardsContract(rewardsContract);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimInterest)) {
-            address pool = __decodeClaimInterestActionArgs(_actionArgs);
-
-            __validatePool(pool);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimRewards)) {
-            address rewardsContract = __decodeClaimRewardsActionArgs(_actionArgs);
-
-            __validateRewardsContract(rewardsContract);
-        }
-    }
-
-    // Validates that a pool has been deployed from the Maple pool factory
-    function __validatePool(address _pool) private view {
+    // Validates that a pool v2 has been deployed from the Maple pool factory
+    function __validatePoolV2(address _poolV2) private view {
         require(
-            IMaplePoolFactory(MAPLE_POOL_FACTORY).isPool(_pool),
-            "__validatePool: Invalid pool"
+            IMapleV2ProxyFactory(MAPLE_V2_POOL_FACTORY).isInstance(_poolV2),
+            "__validatePoolV2: Invalid pool"
         );
     }
 
     // Validates that a rewards contract has been deployed from the Maple rewards factory
     function __validateRewardsContract(address _rewardsContract) private view {
         require(
-            IMapleMplRewardsFactory(MAPLE_MPL_REWARDS_FACTORY).isMplRewards(_rewardsContract),
+            IMapleV1MplRewardsFactory(MAPLE_V1_MPL_REWARDS_FACTORY).isMplRewards(_rewardsContract),
             "__validateRewardsContract: Invalid rewards contract"
         );
     }

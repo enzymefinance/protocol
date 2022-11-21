@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-/// @title IMaplePoolFactory Interface
+/// @title IMapleV2ProxyFactory Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IMaplePoolFactory {
-    function isPool(address) external view returns (bool);
+interface IMapleV2ProxyFactory {
+    function isInstance(address instance_) external view returns (bool isInstance_);
 }

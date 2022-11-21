@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-/// @title IMapleRewardsFactory Interface
+/// @title IMapleV2WithdrawalManager Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IMapleMplRewardsFactory {
-    function isMplRewards(address) external view returns (bool);
+interface IMapleV2WithdrawalManager {
+    function lockedShares(address _account) external view returns (uint256);
 }

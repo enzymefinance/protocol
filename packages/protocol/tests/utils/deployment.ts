@@ -69,6 +69,7 @@ import {
   ManualValueOracleFactory,
   MapleLiquidityPositionLib,
   MapleLiquidityPositionParser,
+  MapleV1ToV2PoolMapper,
   MinAssetBalancesPostRedemptionPolicy,
   MinMaxInvestmentPolicy,
   MinSharesSupplyFee,
@@ -197,6 +198,7 @@ export async function deployProtocolFixture() {
     manualValueOracleFactory: new ManualValueOracleFactory(fixture.ManualValueOracleFactory.address, deployer),
     mapleLiquidityPositionLib: new MapleLiquidityPositionLib(fixture.MapleLiquidityPositionLib.address, deployer),
     mapleLiquidityPositionParser: new MapleLiquidityPositionParser(fixture.MapleLiquidityPositionParser.address, deployer),
+    mapleV1ToV2PoolMapper: new MapleV1ToV2PoolMapper(fixture.MapleV1ToV2PoolMapper.address, deployer),
     minAssetBalancesPostRedemptionPolicy: new MinAssetBalancesPostRedemptionPolicy(fixture.MinAssetBalancesPostRedemptionPolicy.address, deployer),
     minMaxInvestmentPolicy: new MinMaxInvestmentPolicy(fixture.MinMaxInvestmentPolicy.address, deployer),
     notionalV2Position: new NotionalV2PositionLib(fixture.NotionalV2PositionLib.address, deployer),
@@ -380,8 +382,8 @@ export interface DeploymentConfig {
     troveManager: string;
   };
   maple: {
-    mplRewardsFactory: string;
-    poolFactory: string;
+    mplRewardsV1Factory: string;
+    pools: Record<string, { poolV1?: string; poolV2?: string }>;
   };
   notional: {
     notionalContract: string;

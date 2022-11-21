@@ -12,15 +12,22 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
   const config = await loadConfig(hre);
 
+  // TODO: Replace with real pool v2 factory
+  const mockMapleV2PoolFactoryIntegratee = await deploy('MockMapleV2PoolFactoryIntegratee', {
+    from: deployer.address,
+    log: true,
+    skipIfAlreadyDeployed: true,
+  });
+
   await deploy('MapleLiquidityPositionParser', {
-    args: [config.maple.poolFactory, config.maple.mplRewardsFactory],
+    args: [mockMapleV2PoolFactoryIntegratee.address, config.maple.mplRewardsV1Factory],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
 };
 
-fn.tags = ['Release', 'ExternalPositions', 'MapleDebtPositionParser'];
+fn.tags = ['Release', 'ExternalPositions', 'MapleLiquidityPositionParser'];
 fn.dependencies = ['Config'];
 
 fn.skip = async (hre) => {

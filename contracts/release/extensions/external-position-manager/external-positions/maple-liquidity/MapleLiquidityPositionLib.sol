@@ -12,11 +12,16 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../../../persistent/external-positions/maple-liquidity/MapleLiquidityPositionLibBase1.sol";
-import "../../../../interfaces/IMaplePool.sol";
-import "../../../../interfaces/IMapleMplRewards.sol";
+import "../../../../../persistent/external-positions/maple-liquidity/MapleLiquidityPositionLibBase2.sol";
+import "../../../../../persistent/external-positions/maple-liquidity/MapleV1ToV2PoolMapper.sol";
+import "../../../../interfaces/IMapleV1MplRewards.sol";
+import "../../../../interfaces/IMapleV1Pool.sol";
+import "../../../../interfaces/IMapleV2Pool.sol";
+import "../../../../interfaces/IMapleV2PoolManager.sol";
+import "../../../../interfaces/IMapleV2WithdrawalManager.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../../../../utils/AssetHelpers.sol";
+import "../../../../utils/Uint256ArrayLib.sol";
 import "./IMapleLiquidityPosition.sol";
 import "./MapleLiquidityPositionDataDecoder.sol";
 
@@ -26,213 +31,128 @@ import "./MapleLiquidityPositionDataDecoder.sol";
 contract MapleLiquidityPositionLib is
     IMapleLiquidityPosition,
     MapleLiquidityPositionDataDecoder,
-    MapleLiquidityPositionLibBase1,
+    MapleLiquidityPositionLibBase2,
     AssetHelpers
 {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
+    using Uint256ArrayLib for uint256[];
 
-    uint256 private constant MPT_DECIMALS_FACTOR = 10**18;
+    uint256 private constant MPT_V1_DECIMALS_FACTOR = 10**18;
+
+    MapleV1ToV2PoolMapper private immutable MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT;
+
+    constructor(address _mapleV1ToV2PoolMapper) public {
+        MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT = MapleV1ToV2PoolMapper(_mapleV1ToV2PoolMapper);
+    }
 
     /// @notice Initializes the external position
     /// @dev Nothing to initialize for this contract
     function init(bytes memory) external override {}
+
+    /////////////
+    // ACTIONS //
+    /////////////
 
     /// @notice Receives and executes a call from the Vault
     /// @param _actionData Encoded data to execute the action
     function receiveCallFromVault(bytes memory _actionData) external override {
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
-        if (actionId == uint256(Actions.Lend)) {
-            __lendAction(actionArgs);
-        } else if (actionId == uint256(Actions.LendAndStake)) {
-            __lendAndStakeAction(actionArgs);
-        } else if (actionId == uint256(Actions.IntendToRedeem)) {
-            __intendToRedeemAction(actionArgs);
-        } else if (actionId == uint256(Actions.Redeem)) {
-            __redeemAction(actionArgs);
-        } else if (actionId == uint256(Actions.Stake)) {
-            __stakeAction(actionArgs);
-        } else if (actionId == uint256(Actions.Unstake)) {
-            __unstakeAction(actionArgs);
-        } else if (actionId == uint256(Actions.UnstakeAndRedeem)) {
-            __unstakeAndRedeemAction(actionArgs);
-        } else if (actionId == uint256(Actions.ClaimInterest)) {
-            __claimInterestAction(actionArgs);
-        } else if (actionId == uint256(Actions.ClaimRewards)) {
-            __claimRewardsAction(actionArgs);
+        if (actionId == uint256(Actions.LendV2)) {
+            __lendV2Action(actionArgs);
+        } else if (actionId == uint256(Actions.RequestRedeemV2)) {
+            __requestRedeemV2Action(actionArgs);
+        } else if (actionId == uint256(Actions.RedeemV2)) {
+            __redeemV2Action(actionArgs);
+        } else if (actionId == uint256(Actions.CancelRedeemV2)) {
+            __cancelRedeemV2Action(actionArgs);
+        } else if (actionId == uint256(Actions.ClaimRewardsV1)) {
+            __claimRewardsV1Action(actionArgs);
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
     }
 
-    // @dev Calculates the value of pool tokens referenced in liquidityAsset
-    function __calcLiquidityAssetValueOfPoolTokens(
-        address _liquidityAsset,
-        uint256 _poolTokenAmount
-    ) private view returns (uint256 liquidityValue_) {
-        uint256 liquidityAssetDecimalsFactor = 10**(uint256(ERC20(_liquidityAsset).decimals()));
-
-        liquidityValue_ = _poolTokenAmount.mul(liquidityAssetDecimalsFactor).div(
-            MPT_DECIMALS_FACTOR
-        );
-
-        return liquidityValue_;
-    }
-
-    /// @dev Claims all interest accrued and send it to the Vault
-    function __claimInterestAction(bytes memory _actionArgs) private {
-        IMaplePool pool = IMaplePool(__decodeClaimInterestActionArgs(_actionArgs));
-
-        pool.withdrawFunds();
-
-        ERC20 liquidityAssetContract = ERC20(pool.liquidityAsset());
-
-        // Send liquidity asset interest to the vault
-        liquidityAssetContract.safeTransfer(
-            msg.sender,
-            liquidityAssetContract.balanceOf(address(this))
-        );
-    }
+    ////////////////
+    // V1 ACTIONS //
+    ////////////////
 
     /// @dev Claims all rewards accrued and send it to the Vault
-    function __claimRewardsAction(bytes memory _actionArgs) private {
-        address rewardsContract = __decodeClaimRewardsActionArgs(_actionArgs);
+    function __claimRewardsV1Action(bytes memory _actionArgs) private {
+        address rewardsContract = __decodeClaimRewardsV1ActionArgs(_actionArgs);
 
-        IMapleMplRewards mapleRewards = IMapleMplRewards(rewardsContract);
+        IMapleV1MplRewards mapleRewards = IMapleV1MplRewards(rewardsContract);
         ERC20 rewardToken = ERC20(mapleRewards.rewardsToken());
         mapleRewards.getReward();
 
         rewardToken.safeTransfer(msg.sender, rewardToken.balanceOf(address(this)));
     }
 
-    /// @dev Activates the cooldown period to redeem an asset from a Maple pool
-    function __intendToRedeemAction(bytes memory _actionArgs) private {
-        address pool = __decodeIntendToRedeemActionArgs(_actionArgs);
+    ////////////////
+    // V2 ACTIONS //
+    ////////////////
 
-        IMaplePool(pool).intendToWithdraw();
-    }
+    /// @dev Helper to add a Maple v2 pool used by the position
+    function __addUsedPoolV2IfUntracked(address _pool) private {
+        if (!isUsedLendingPoolV2(_pool)) {
+            usedLendingPoolsV2.push(_pool);
 
-    /// @dev Lends assets to a Maple pool
-    function __lend(
-        address _liquidityAsset,
-        address _pool,
-        uint256 _liquidityAssetAmount
-    ) private {
-        __approveAssetMaxAsNeeded(_liquidityAsset, _pool, _liquidityAssetAmount);
-
-        IMaplePool(_pool).deposit(_liquidityAssetAmount);
-
-        if (!isUsedLendingPool(_pool)) {
-            usedLendingPools.push(_pool);
-
-            emit UsedLendingPoolAdded(_pool);
+            emit UsedLendingPoolV2Added(_pool);
         }
     }
 
-    /// @dev Lends assets to a Maple pool (action)
-    function __lendAction(bytes memory _actionArgs) private {
-        (address pool, uint256 liquidityAssetAmount) = __decodeLendActionArgs(_actionArgs);
+    /// @dev Cancels redemption request from a Maple V2 pool by removing shares from escrow (action)
+    function __cancelRedeemV2Action(bytes memory _actionArgs) private {
+        (address pool, uint256 poolTokenAmount) = __decodeCancelRedeemV2ActionArgs(_actionArgs);
 
-        __lend(IMaplePool(pool).liquidityAsset(), pool, liquidityAssetAmount);
+        IMapleV2Pool(pool).removeShares({_shares: poolTokenAmount, _owner: address(this)});
     }
 
-    /// @dev Lends assets to a Maple pool, then stakes to a rewardsContract (action)
-    function __lendAndStakeAction(bytes memory _actionArgs) private {
-        (
-            address pool,
-            address rewardsContract,
-            uint256 liquidityAssetAmount
-        ) = __decodeLendAndStakeActionArgs(_actionArgs);
-        uint256 poolTokenBalanceBefore = ERC20(pool).balanceOf(address(this));
+    /// @dev Lends assets to a Maple V2 pool (action)
+    function __lendV2Action(bytes memory _actionArgs) private {
+        (address pool, uint256 liquidityAssetAmount) = __decodeLendV2ActionArgs(_actionArgs);
 
-        __lend(IMaplePool(pool).liquidityAsset(), pool, liquidityAssetAmount);
+        __approveAssetMaxAsNeeded({
+            _asset: IMapleV2Pool(pool).asset(),
+            _target: pool,
+            _neededAmount: liquidityAssetAmount
+        });
 
-        uint256 poolTokenBalanceAfter = ERC20(pool).balanceOf(address(this));
+        IMapleV2Pool(pool).deposit({_assets: liquidityAssetAmount, _receiver: address(this)});
 
-        __stake(rewardsContract, pool, poolTokenBalanceAfter.sub(poolTokenBalanceBefore));
+        __addUsedPoolV2IfUntracked(pool);
     }
 
-    /// @dev Redeems assets from a Maple pool and claims all accrued interest
-    function __redeem(address _pool, uint256 _liquidityAssetAmount) private {
-        // Also claims all accrued interest
-        IMaplePool(_pool).withdraw(_liquidityAssetAmount);
+    /// @dev Redeems assets from a Maple V2 pool (action)
+    function __redeemV2Action(bytes memory _actionArgs) private {
+        (address pool, uint256 poolTokenAmount) = __decodeRedeemV2ActionArgs(_actionArgs);
 
-        // If the full amount of pool tokens has been redeemed, it can be removed from usedLendingPools
-        if (ERC20(_pool).balanceOf(address(this)) == 0) {
-            usedLendingPools.removeStorageItem(_pool);
+        IMapleV2Pool(pool).redeem({
+            _shares: poolTokenAmount,
+            _receiver: msg.sender,
+            _owner: address(this)
+        });
 
-            emit UsedLendingPoolRemoved(_pool);
+        // If the full amount of pool tokens has been redeemed, it can be removed from usedLendingPoolsV2
+        if (__getTotalPoolTokenV2Balance(pool) == 0) {
+            usedLendingPoolsV2.removeStorageItem(pool);
+
+            emit UsedLendingPoolV2Removed(pool);
         }
     }
 
-    /// @dev Redeems assets from a Maple pool and claims all accrued interest (action)
-    function __redeemAction(bytes memory actionArgs) private {
-        (address pool, uint256 liquidityAssetAmount) = __decodeRedeemActionArgs(actionArgs);
+    /// @dev Request to Redeem assets from a Maple V2 pool (action)
+    function __requestRedeemV2Action(bytes memory _actionArgs) private {
+        // v1 pools must all be migrated before any redemptions are made,
+        // otherwise a situation could arise where airdropped MPTv2 are redeemed
+        // while their corresponding v1 snapshot balance is still included in position value.
+        require(usedLendingPoolsV1.length == 0, "__requestRedeemV2Action: Unmigrated pools");
 
-        __redeem(pool, liquidityAssetAmount);
+        (address pool, uint256 poolTokenAmount) = __decodeRequestRedeemV2ActionArgs(_actionArgs);
 
-        address liquidityAsset = IMaplePool(pool).liquidityAsset();
-
-        // Send liquidity asset back to the vault
-        ERC20(liquidityAsset).safeTransfer(
-            msg.sender,
-            ERC20(liquidityAsset).balanceOf(address(this))
-        );
-    }
-
-    /// @dev Stakes assets to a rewardsContract
-    function __stake(
-        address _rewardsContract,
-        address _pool,
-        uint256 _poolTokenAmount
-    ) private {
-        IMaplePool(_pool).increaseCustodyAllowance(_rewardsContract, _poolTokenAmount);
-
-        IMapleMplRewards(_rewardsContract).stake(_poolTokenAmount);
-    }
-
-    /// @dev Decodes actionArgs and calls __stake with args function (action)
-    function __stakeAction(bytes memory _actionArgs) private {
-        (address rewardsContract, address pool, uint256 poolTokenAmount) = __decodeStakeActionArgs(
-            _actionArgs
-        );
-
-        __stake(rewardsContract, pool, poolTokenAmount);
-    }
-
-    /// @dev Unstakes assets from a rewardsContract
-    function __unstake(address _rewardsContract, uint256 _poolTokenAmount) private {
-        IMapleMplRewards(_rewardsContract).withdraw(_poolTokenAmount);
-    }
-
-    /// @dev Unstakes assets from a rewardsContract (action)
-    function __unstakeAction(bytes memory _actionArgs) private {
-        (address rewardsContract, uint256 poolTokenAmount) = __decodeUnstakeActionArgs(
-            _actionArgs
-        );
-        __unstake(rewardsContract, poolTokenAmount);
-    }
-
-    /// @dev Unstakes assets from a rewardsContract, then redeems assets from a Maple pool and claims all accrued interest (action)
-    function __unstakeAndRedeemAction(bytes memory actionArgs) private {
-        (
-            address pool,
-            address rewardsContract,
-            uint256 poolTokenAmount
-        ) = __decodeUnstakeAndRedeemActionArgs(actionArgs);
-
-        address liquidityAsset = IMaplePool(pool).liquidityAsset();
-
-        __unstake(rewardsContract, poolTokenAmount);
-        __redeem(pool, __calcLiquidityAssetValueOfPoolTokens(liquidityAsset, poolTokenAmount));
-
-        // Send liquidity asset back to the vault
-        ERC20(liquidityAsset).safeTransfer(
-            msg.sender,
-            ERC20(liquidityAsset).balanceOf(address(this))
-        );
+        IMapleV2Pool(pool).requestRedeem({_shares: poolTokenAmount, _owner: address(this)});
     }
 
     ////////////////////
@@ -258,53 +178,206 @@ contract MapleLiquidityPositionLib is
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
-        address[] memory pools = getUsedLendingPools();
-        uint256 usedLendingPoolsLength = pools.length;
+        uint256 poolsV1Length = usedLendingPoolsV1.length;
 
-        assets_ = new address[](usedLendingPoolsLength);
-        amounts_ = new uint256[](usedLendingPoolsLength);
+        // Once v1 => v2 migration is allowed, require it
+        if (poolsV1Length > 0 && MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed()) {
+            migratePoolsV1ToV2();
 
-        for (uint256 i; i < usedLendingPoolsLength; i++) {
-            IMaplePool poolContract = IMaplePool(pools[i]);
+            // If migration does not revert, there are no more v1 pools
+            poolsV1Length = 0;
+        }
 
-            assets_[i] = poolContract.liquidityAsset();
+        // Calc underlying asset values of v2 pool token balances
+        address[] memory poolsV2 = getUsedLendingPoolsV2();
+        uint256 poolsV2Length = poolsV2.length;
+        assets_ = new address[](poolsV2Length);
+        amounts_ = new uint256[](poolsV2Length);
+        for (uint256 i; i < poolsV2Length; i++) {
+            address poolV2 = poolsV2[i];
 
-            // The liquidity asset balance is derived from the pool token balance (which is stored as a wad),
-            // while interest and losses are already returned in terms of the liquidity asset (not pool token)
-            uint256 liquidityAssetBalance = __calcLiquidityAssetValueOfPoolTokens(
-                assets_[i],
-                ERC20(address(poolContract)).balanceOf(address(this))
+            assets_[i] = IMapleV2Pool(poolV2).asset();
+            amounts_[i] = IMapleV2Pool(poolV2).convertToExitAssets(
+                __getTotalPoolTokenV2Balance(poolV2)
             );
+        }
 
-            uint256 accumulatedInterest = poolContract.withdrawableFundsOf(address(this));
-            uint256 accumulatedLosses = poolContract.recognizableLossesOf(address(this));
+        // If there are still v1 pools, that means that migration is not yet allowed,
+        // and we can still use v1 snapshots.
+        if (poolsV1Length > 0) {
+            // If snapshots are still allowed, update all snapshots
+            try this.snapshotPoolTokenV1BalanceValues() {} catch {}
 
-            amounts_[i] = liquidityAssetBalance.add(accumulatedInterest).sub(accumulatedLosses);
+            address[] memory poolsV1 = getUsedLendingPoolsV1();
+            for (uint256 i; i < poolsV1Length; i++) {
+                address poolV1 = poolsV1[i];
+
+                // Require there to be a snapshotted pool token v1 value,
+                // as we either have a snapshot at this point or no further snapshots are allowed
+                uint256 amount = getPreMigrationValueSnapshotOfPoolTokenV1(poolV1);
+                require(amount > 0, "getManagedAssets: No pool v1 snapshot");
+
+                assets_ = assets_.addItem(IMapleV1Pool(poolV1).liquidityAsset());
+                amounts_ = amounts_.addItem(amount);
+            }
         }
 
         // If more than 1 pool position, combine amounts of the same asset.
         // We can remove this if/when we aggregate asset amounts at the ComptrollerLib level.
-        if (usedLendingPoolsLength > 1) {
+        if (assets_.length > 1) {
             (assets_, amounts_) = __aggregateAssetAmounts(assets_, amounts_);
         }
 
         return (assets_, amounts_);
     }
 
+    /// @dev Helper to get total pool token v2 balance, including escrowed amount
+    function __getTotalPoolTokenV2Balance(address _pool) private view returns (uint256 balance_) {
+        balance_ = IERC20(_pool).balanceOf(address(this));
+
+        // According to Maple's WithdrawalManager code comments, IMapleV2PoolManager.withdrawalManager
+        // can be set to address(0) in order to pause redemptions, which would cause this to revert.
+        address withdrawalManager = IMapleV2PoolManager(IMapleV2Pool(_pool).manager())
+            .withdrawalManager();
+
+        return
+            balance_.add(IMapleV2WithdrawalManager(withdrawalManager).lockedShares(address(this)));
+    }
+
+    ////////////////////////
+    // V1-TO-V2 MIGRATION //
+    ////////////////////////
+
+    // @dev We can remove all of these post-migration in a future version
+
+    // EXTERNAL FUNCTIONS
+
+    /// @notice Creates a snapshot of all Maple Pool Token v1 balance values
+    /// @dev Callable by anybody
+    function snapshotPoolTokenV1BalanceValues() external {
+        require(
+            MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.snapshotsAreAllowed(),
+            "snapshotPoolTokenV1BalanceValues: Snapshots frozen"
+        );
+
+        address[] memory poolsV1 = getUsedLendingPoolsV1();
+        uint256 poolsV1Length = poolsV1.length;
+        for (uint256 i; i < poolsV1Length; i++) {
+            address poolV1 = poolsV1[i];
+            uint256 value = __calcPoolV1TokenBalanceValue(poolV1);
+
+            poolTokenV1ToPreMigrationValueSnapshot[poolV1] = value;
+
+            emit PoolTokenV1PreMigrationValueSnapshotted(poolV1, value);
+        }
+    }
+
+    // PUBLIC FUNCTIONS
+
+    /// @notice Gets the snapshotted value of a given Maple Pool Token v1 in terms of its liquidity asset,
+    /// taken prior to migration
+    /// @param _poolV1 The Maple Pool v1
+    /// @return valueSnapshot_ The snapshotted Maple Pool Token v1 value
+    function getPreMigrationValueSnapshotOfPoolTokenV1(address _poolV1)
+        public
+        view
+        returns (uint256 valueSnapshot_)
+    {
+        return poolTokenV1ToPreMigrationValueSnapshot[_poolV1];
+    }
+
+    /// @notice Migrates tracked v1 pools to tracked v2 pools
+    /// @dev Callable by anybody.
+    function migratePoolsV1ToV2() public {
+        require(
+            MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed(),
+            "migratePoolsV1ToV2: Migration not allowed"
+        );
+
+        address[] memory poolsV1 = getUsedLendingPoolsV1();
+        uint256 poolsV1Length = poolsV1.length;
+
+        for (uint256 i; i < poolsV1Length; i++) {
+            address poolV1 = poolsV1[i];
+            address poolV2 = MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.getPoolTokenV2FromPoolTokenV1(
+                poolV1
+            );
+            require(poolV2 != address(0), "migratePoolsV1ToV2: No mapping");
+
+            __addUsedPoolV2IfUntracked(poolV2);
+
+            // Remove the old v1 pool from storage
+            usedLendingPoolsV1.removeStorageItem(poolV1);
+            emit UsedLendingPoolRemoved(poolV1);
+
+            // Free up no-longer-needed snapshot storage
+            delete poolTokenV1ToPreMigrationValueSnapshot[poolV1];
+        }
+    }
+
+    // PRIVATE FUNCTIONS
+
+    /// @dev Calculates the value of pool tokens referenced in liquidityAsset
+    function __calcLiquidityAssetValueOfPoolTokensV1(
+        address _liquidityAsset,
+        uint256 _poolTokenAmount
+    ) private view returns (uint256 liquidityValue_) {
+        uint256 liquidityAssetDecimalsFactor = 10**(uint256(ERC20(_liquidityAsset).decimals()));
+
+        liquidityValue_ = _poolTokenAmount.mul(liquidityAssetDecimalsFactor).div(
+            MPT_V1_DECIMALS_FACTOR
+        );
+
+        return liquidityValue_;
+    }
+
+    /// @dev Helper to calculate the value of a v1 pool token balance of this contract,
+    /// in terms of the pool's liquidityAsset
+    function __calcPoolV1TokenBalanceValue(address _pool) private returns (uint256 value_) {
+        IMapleV1Pool poolContract = IMapleV1Pool(_pool);
+
+        // The liquidity asset balance is derived from the pool token balance (which is stored as a wad),
+        // while interest and losses are already returned in terms of the liquidity asset (not pool token)
+        uint256 liquidityAssetBalance = __calcLiquidityAssetValueOfPoolTokensV1(
+            poolContract.liquidityAsset(),
+            ERC20(_pool).balanceOf(address(this))
+        );
+
+        uint256 accumulatedInterest = poolContract.withdrawableFundsOf(address(this));
+        uint256 accumulatedLosses = poolContract.recognizableLossesOf(address(this));
+
+        value_ = liquidityAssetBalance.add(accumulatedInterest).sub(accumulatedLosses);
+
+        return value_;
+    }
+
     ///////////////////
     // STATE GETTERS //
     ///////////////////
 
-    /// @notice Gets all pools currently lent to
-    /// @return pools_ The pools currently lent to
-    function getUsedLendingPools() public view returns (address[] memory pools_) {
-        return usedLendingPools;
+    /// @notice Gets all Maple V1 pools currently lent to
+    /// @return poolsV1_ The Maple V1 pools currently lent to
+    function getUsedLendingPoolsV1() public view returns (address[] memory poolsV1_) {
+        return usedLendingPoolsV1;
     }
 
-    /// @notice Checks whether a pool is currently lent to
-    /// @param _pool The pool
+    /// @notice Gets all Maple V2 pools currently lent to
+    /// @return poolsV2_ The Maple V2 pools currently lent to
+    function getUsedLendingPoolsV2() public view returns (address[] memory poolsV2_) {
+        return usedLendingPoolsV2;
+    }
+
+    /// @notice Checks whether a pool V1 is currently lent to
+    /// @param _poolV1 The pool
     /// @return isUsed_ True if the pool is lent to
-    function isUsedLendingPool(address _pool) public view returns (bool isUsed_) {
-        return usedLendingPools.storageArrayContains(_pool);
+    function isUsedLendingPoolV1(address _poolV1) public view returns (bool isUsed_) {
+        return usedLendingPoolsV1.storageArrayContains(_poolV1);
+    }
+
+    /// @notice Checks whether a pool V2 is currently lent to
+    /// @param _poolV2 The pool
+    /// @return isUsed_ True if the pool is lent to
+    function isUsedLendingPoolV2(address _poolV2) public view returns (bool isUsed_) {
+        return usedLendingPoolsV2.storageArrayContains(_poolV2);
     }
 }

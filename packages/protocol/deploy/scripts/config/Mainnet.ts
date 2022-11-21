@@ -375,8 +375,12 @@ const mainnetConfig: DeploymentConfig = {
     troveManager: '0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2'
   },
   maple: {
-    mplRewardsFactory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',
-    poolFactory: '0x2Cd79F7f8b38B9c0D80EA6B230441841A31537eC'
+    mplRewardsV1Factory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',
+    pools: {
+      mavenUsdc: {
+        poolV1: '0x6F6c8013f639979C84b756C7FC1500eB5aF18Dc4',
+      }
+    }
   },
   notional: {
     notionalContract: '0x1344A36A1B56144C3Bc62E7757377D288fDE0369'

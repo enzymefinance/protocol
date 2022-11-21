@@ -4,91 +4,65 @@ import type { BigNumberish } from 'ethers';
 import { encodeArgs } from '../encoding';
 
 export enum MapleLiquidityPositionActionId {
-  Lend = '0',
-  LendAndStake = '1',
-  IntendToRedeem = '2',
-  Redeem = '3',
-  Stake = '4',
-  Unstake = '5',
-  UnstakeAndRedeem = '6',
-  ClaimInterest = '7',
-  ClaimRewards = '8',
+  LendV1 = '0',
+  LendAndStakeV1 = '1',
+  IntendToRedeemV1 = '2',
+  RedeemV1 = '3',
+  StakeV1 = '4',
+  UnstakeV1 = '5',
+  UnstakeAndRedeemV1 = '6',
+  ClaimInterestV1 = '7',
+  ClaimRewardsV1 = '8',
+  LendV2 = '9',
+  RequestRedeemV2 = '10',
+  RedeemV2 = '11',
+  CancelRedeemV2 = '12',
 }
 
-export function mapleLiquidityPositionClaimInterestArgs({ pool }: { pool: AddressLike }) {
-  return encodeArgs(['address'], [pool]);
+// V2
+
+export function mapleLiquidityPositionCancelRedeemV2Args({
+  pool,
+  poolTokenAmount,
+}: {
+  pool: AddressLike;
+  poolTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [pool, poolTokenAmount]);
 }
 
-export function mapleLiquidityPositionClaimRewardsArgs({ rewardsContract }: { rewardsContract: AddressLike }) {
+export function mapleLiquidityPositionLendV2Args({
+  pool,
+  liquidityAssetAmount,
+}: {
+  pool: AddressLike;
+  liquidityAssetAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [pool, liquidityAssetAmount]);
+}
+
+export function mapleLiquidityPositionRedeemV2Args({
+  pool,
+  poolTokenAmount,
+}: {
+  pool: AddressLike;
+  poolTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [pool, poolTokenAmount]);
+}
+
+export function mapleLiquidityPositionRequestRedeemV2Args({
+  pool,
+  poolTokenAmount,
+}: {
+  pool: AddressLike;
+  poolTokenAmount: BigNumberish;
+}) {
+  return encodeArgs(['address', 'uint256'], [pool, poolTokenAmount]);
+}
+
+// V1
+
+export function mapleLiquidityPositionClaimRewardsV1Args({ rewardsContract }: { rewardsContract: AddressLike }) {
   return encodeArgs(['address'], [rewardsContract]);
-}
-
-export function mapleLiquidityPositionIntendToRedeemArgs({ pool }: { pool: AddressLike }) {
-  return encodeArgs(['address'], [pool]);
-}
-
-export function mapleLiquidityPositionLendArgs({
-  pool,
-  liquidityAssetAmount,
-}: {
-  pool: AddressLike;
-  liquidityAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'uint256'], [pool, liquidityAssetAmount]);
-}
-
-export function mapleLiquidityPositionLendAndStakeArgs({
-  pool,
-  rewardsContract,
-  liquidityAssetAmount,
-}: {
-  pool: AddressLike;
-  rewardsContract: AddressLike;
-  liquidityAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'address', 'uint256'], [pool, rewardsContract, liquidityAssetAmount]);
-}
-
-export function mapleLiquidityPositionRedeemArgs({
-  pool,
-  liquidityAssetAmount,
-}: {
-  pool: AddressLike;
-  liquidityAssetAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'uint256'], [pool, liquidityAssetAmount]);
-}
-
-export function mapleLiquidityPositionStakeArgs({
-  rewardsContract,
-  pool,
-  poolTokenAmount,
-}: {
-  rewardsContract: AddressLike;
-  pool: AddressLike;
-  poolTokenAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'address', 'uint256'], [rewardsContract, pool, poolTokenAmount]);
-}
-
-export function mapleLiquidityPositionUnstakeArgs({
-  rewardsContract,
-  poolTokenAmount,
-}: {
-  rewardsContract: AddressLike;
-  poolTokenAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'uint256'], [rewardsContract, poolTokenAmount]);
-}
-
-export function mapleLiquidityPositionUnstakeAndRedeemArgs({
-  pool,
-  rewardsContract,
-  poolTokenAmount,
-}: {
-  pool: AddressLike;
-  rewardsContract: AddressLike;
-  poolTokenAmount: BigNumberish;
-}) {
-  return encodeArgs(['address', 'address', 'uint256'], [pool, rewardsContract, poolTokenAmount]);
 }

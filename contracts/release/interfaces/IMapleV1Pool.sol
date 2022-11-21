@@ -11,22 +11,12 @@
 
 pragma solidity 0.6.12;
 
-/// @title IMaplePool Interface
+/// @title IMapleV1Pool Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IMaplePool {
-    function deposit(uint256) external;
-
-    function increaseCustodyAllowance(address, uint256) external;
-
-    function intendToWithdraw() external;
-
+interface IMapleV1Pool {
     function liquidityAsset() external view returns (address);
 
     function recognizableLossesOf(address) external returns (uint256);
-
-    function withdraw(uint256) external;
-
-    function withdrawFunds() external;
 
     function withdrawableFundsOf(address) external returns (uint256);
 }
