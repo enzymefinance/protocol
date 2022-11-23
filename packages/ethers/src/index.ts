@@ -12,5 +12,6 @@ export * from './utils/resolveAddress';
 export * from './utils/resolveArguments';
 export * from './utils/sameAddress';
 export * from './utils/signTypedData';
+export * from './utils/signTypedDataGnosisSafe';
 export * from './utils/typedData';
 export * from './utils/verifySignature';

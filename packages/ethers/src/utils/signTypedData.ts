@@ -37,7 +37,7 @@ export async function signTypedData(
     }
   }
 
-  // Gnosis Safe doesn't support `eth_signTypedData_v4` or `eth_signTypedData` yet
+  // Fallback if `eth_signedTypedData` and `eth_signTypedData_v4` are not supported
   try {
     const method = 'eth_sign';
     const signature = await provider.send(method, [address.toLowerCase(), utils.hexlify(utils.toUtf8Bytes(message))]);
@@ -47,7 +47,7 @@ export async function signTypedData(
     if (typeof error === 'string' && error.startsWith('Error: Transaction was rejected')) {
       return { cancelled: true };
     }
-  }
 
-  return {};
+    throw new Error(typeof error === 'string' ? error : 'An error occured.');
+  }
 }
