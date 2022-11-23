@@ -1,5 +1,13 @@
 # @enzymefinance/protocol
 
+## 4.0.8
+
+### Patch Changes
+
+- c06baeab1: Add eth_sign for Gnosis Safe
+- Updated dependencies [c06baeab1]
+  - @enzymefinance/ethers@4.0.8
+
 ## 4.0.7
 
 ### Patch Changes

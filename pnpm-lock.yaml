@@ -43,7 +43,7 @@ importers:
   packages/protocol:
     specifiers:
       '@enzymefinance/eslint-config': 1.0.26
-      '@enzymefinance/ethers': workspace:4.0.7
+      '@enzymefinance/ethers': workspace:4.0.8
       '@ethersproject/abi': ^5.7.0
       '@ethersproject/abstract-signer': ^5.7.0
       '@jest/environment': ^28.1.3
