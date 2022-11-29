@@ -32,12 +32,11 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     constructor(
         address _integrationManager,
         address _addressListRegistry,
-        uint256 _aTokenListId,
-        address _aTokenListOwner
+        uint256 _aTokenListId
     )
         public
         AdapterBase(_integrationManager)
-        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _aTokenListId, _aTokenListOwner)
+        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _aTokenListId)
     {}
 
     ////////////////////////////////

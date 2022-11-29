@@ -23,7 +23,6 @@ const fn: DeployFunction = async function (hre) {
       config.compoundV3.rewards,
       addressListRegistry.address,
       compoundV3CTokenListOwner.linkedData.listId,
-      compoundV3CTokenListOwner.address,
     ] as CompoundV3AdapterArgs,
     from: deployer.address,
     linkedData: {

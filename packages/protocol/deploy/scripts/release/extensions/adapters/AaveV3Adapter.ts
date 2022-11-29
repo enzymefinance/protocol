@@ -22,7 +22,6 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       addressListRegistry.address,
       aaveV3ATokenListOwner.linkedData.listId,
-      aaveV3ATokenListOwner.address,
       config.aaveV3.pool,
       config.aaveV3.referralCode,
     ] as AaveV3AdapterArgs,

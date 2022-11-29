@@ -22,11 +22,10 @@ contract AaveV2Adapter is AaveAdapterBase, AaveV2ActionsMixin {
         address _integrationManager,
         address _addressListRegistry,
         uint256 _aTokenListId,
-        address _aTokenListOwner,
         address _lendingPool
     )
         public
-        AaveAdapterBase(_integrationManager, _addressListRegistry, _aTokenListId, _aTokenListOwner)
+        AaveAdapterBase(_integrationManager, _addressListRegistry, _aTokenListId)
         AaveV2ActionsMixin(_lendingPool)
     {}
 

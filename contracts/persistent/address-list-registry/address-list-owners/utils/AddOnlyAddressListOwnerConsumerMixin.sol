@@ -22,18 +22,17 @@ abstract contract AddOnlyAddressListOwnerConsumerMixin {
     uint256 internal immutable LIST_ID;
     AddOnlyAddressListOwnerBase internal immutable LIST_OWNER_CONTRACT;
 
-    constructor(
-        address _addressListRegistry,
-        uint256 _listId,
-        address _listOwner
-    ) public {
+    constructor(address _addressListRegistry, uint256 _listId) public {
         ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
         LIST_ID = _listId;
-        LIST_OWNER_CONTRACT = AddOnlyAddressListOwnerBase(_listOwner);
+
+        address listOwner = AddressListRegistry(_addressListRegistry).getListOwner(_listId);
+        LIST_OWNER_CONTRACT = AddOnlyAddressListOwnerBase(listOwner);
     }
 
     /// @dev Helper to lookup an item's existence and then attempt to add it.
-    /// AddOnlyAddressListOwnerBase.addToList() performs validation on the item.
+    /// AddOnlyAddressListOwnerBase.addValidatedItemsToList() performs validation on the item
+    /// via the __validateItems() implementation of its inheriting contract.
     function __validateAndAddListItemIfUnregistered(address _item) internal {
         if (!ADDRESS_LIST_REGISTRY_CONTRACT.isInList(LIST_ID, _item)) {
             address[] memory items = new address[](1);

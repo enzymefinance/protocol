@@ -40,12 +40,11 @@ contract CompoundV3Adapter is
         address _compoundV3Configurator,
         address _compoundV3Rewards,
         address _addressListRegistry,
-        uint256 _cTokenListId,
-        address _cTokenListOwner
+        uint256 _cTokenListId
     )
         public
         AdapterBase(_integrationManager)
-        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _cTokenListId, _cTokenListOwner)
+        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _cTokenListId)
         CompoundV3ActionsMixin(_compoundV3Rewards)
     {
         CONFIGURATOR_CONTRACT = ICompoundV3Configurator(_compoundV3Configurator);

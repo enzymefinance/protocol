@@ -22,7 +22,6 @@ const fn: DeployFunction = async function (hre) {
       integrationManager.address,
       addressListRegistry.address,
       aaveV2ATokenListOwner.linkedData.listId,
-      aaveV2ATokenListOwner.address,
       config.aaveV2.lendingPool,
     ] as AaveV2AdapterArgs,
     from: deployer.address,
