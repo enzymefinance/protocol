@@ -112,6 +112,13 @@ contract MapleLiquidityPositionLib is
 
     /// @dev Lends assets to a Maple V2 pool (action)
     function __lendV2Action(bytes memory _actionArgs) private {
+        // v1 pools must all be migrated before lending is allowed,
+        // otherwise a situation could arise where airdropped MPTv2 are double-counted
+        // since their corresponding v1 snapshot balance is still included in position value.
+        if (usedLendingPoolsV1.length > 0) {
+            migratePoolsV1ToV2();
+        }
+
         (address pool, uint256 liquidityAssetAmount) = __decodeLendV2ActionArgs(_actionArgs);
 
         __approveAssetMaxAsNeeded({
@@ -148,7 +155,9 @@ contract MapleLiquidityPositionLib is
         // v1 pools must all be migrated before any redemptions are made,
         // otherwise a situation could arise where airdropped MPTv2 are redeemed
         // while their corresponding v1 snapshot balance is still included in position value.
-        require(usedLendingPoolsV1.length == 0, "__requestRedeemV2Action: Unmigrated pools");
+        if (usedLendingPoolsV1.length > 0) {
+            migratePoolsV1ToV2();
+        }
 
         (address pool, uint256 poolTokenAmount) = __decodeRequestRedeemV2ActionArgs(_actionArgs);
 
@@ -173,52 +182,57 @@ contract MapleLiquidityPositionLib is
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
+    /// @dev Since lending is not allowed until all v1 pools are migrated,
+    /// tracked pools will either be all v1 or all v2, never a mix
     function getManagedAssets()
         external
         override
         returns (address[] memory assets_, uint256[] memory amounts_)
     {
         uint256 poolsV1Length = usedLendingPoolsV1.length;
-
-        // Once v1 => v2 migration is allowed, require it
-        if (poolsV1Length > 0 && MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed()) {
-            migratePoolsV1ToV2();
-
-            // If migration does not revert, there are no more v1 pools
-            poolsV1Length = 0;
-        }
-
-        // Calc underlying asset values of v2 pool token balances
-        address[] memory poolsV2 = getUsedLendingPoolsV2();
-        uint256 poolsV2Length = poolsV2.length;
-        assets_ = new address[](poolsV2Length);
-        amounts_ = new uint256[](poolsV2Length);
-        for (uint256 i; i < poolsV2Length; i++) {
-            address poolV2 = poolsV2[i];
-
-            assets_[i] = IMapleV2Pool(poolV2).asset();
-            amounts_[i] = IMapleV2Pool(poolV2).convertToExitAssets(
-                __getTotalPoolTokenV2Balance(poolV2)
-            );
-        }
-
-        // If there are still v1 pools, that means that migration is not yet allowed,
-        // and we can still use v1 snapshots.
         if (poolsV1Length > 0) {
-            // If snapshots are still allowed, update all snapshots
-            try this.snapshotPoolTokenV1BalanceValues() {} catch {}
+            if (MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed()) {
+                // Once v1 => v2 migration is allowed, require it
+                migratePoolsV1ToV2();
 
-            address[] memory poolsV1 = getUsedLendingPoolsV1();
-            for (uint256 i; i < poolsV1Length; i++) {
-                address poolV1 = poolsV1[i];
+                // If migration does not revert, there are no more v1 pools
+                poolsV1Length = 0;
+            } else {
+                // All pools are v1
 
-                // Require there to be a snapshotted pool token v1 value,
-                // as we either have a snapshot at this point or no further snapshots are allowed
-                uint256 amount = getPreMigrationValueSnapshotOfPoolTokenV1(poolV1);
-                require(amount > 0, "getManagedAssets: No pool v1 snapshot");
+                // If snapshots are still allowed, update all snapshots
+                try this.snapshotPoolTokenV1BalanceValues() {} catch {}
 
-                assets_ = assets_.addItem(IMapleV1Pool(poolV1).liquidityAsset());
-                amounts_ = amounts_.addItem(amount);
+                address[] memory poolsV1 = getUsedLendingPoolsV1();
+                assets_ = new address[](poolsV1Length);
+                amounts_ = new uint256[](poolsV1Length);
+                for (uint256 i; i < poolsV1Length; i++) {
+                    address poolV1 = poolsV1[i];
+
+                    // Require there to be a snapshotted pool token v1 value,
+                    // as we either have a snapshot at this point or no further snapshots are allowed
+                    uint256 amount = getPreMigrationValueSnapshotOfPoolTokenV1(poolV1);
+                    require(amount > 0, "getManagedAssets: No pool v1 snapshot");
+
+                    assets_[i] = IMapleV1Pool(poolV1).liquidityAsset();
+                    amounts_[i] = amount;
+                }
+            }
+        }
+
+        if (poolsV1Length == 0) {
+            // All pools are v2
+            address[] memory poolsV2 = getUsedLendingPoolsV2();
+            uint256 poolsV2Length = poolsV2.length;
+            assets_ = new address[](poolsV2Length);
+            amounts_ = new uint256[](poolsV2Length);
+            for (uint256 i; i < poolsV2Length; i++) {
+                address poolV2 = poolsV2[i];
+
+                assets_[i] = IMapleV2Pool(poolV2).asset();
+                amounts_[i] = IMapleV2Pool(poolV2).convertToExitAssets(
+                    __getTotalPoolTokenV2Balance(poolV2)
+                );
             }
         }
 
@@ -365,13 +379,6 @@ contract MapleLiquidityPositionLib is
     /// @return poolsV2_ The Maple V2 pools currently lent to
     function getUsedLendingPoolsV2() public view returns (address[] memory poolsV2_) {
         return usedLendingPoolsV2;
-    }
-
-    /// @notice Checks whether a pool V1 is currently lent to
-    /// @param _poolV1 The pool
-    /// @return isUsed_ True if the pool is lent to
-    function isUsedLendingPoolV1(address _poolV1) public view returns (bool isUsed_) {
-        return usedLendingPoolsV1.storageArrayContains(_poolV1);
     }
 
     /// @notice Checks whether a pool V2 is currently lent to

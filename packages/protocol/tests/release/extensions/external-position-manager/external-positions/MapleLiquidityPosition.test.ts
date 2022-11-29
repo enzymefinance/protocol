@@ -26,8 +26,6 @@ import {
 } from '@enzymefinance/testutils';
 import type { BigNumber } from 'ethers';
 
-const convertBetweenAssetsAndSharesTolerance = 10;
-
 // TODO mainnet fork: remove this
 let mockPoolV2: MockMapleV2PoolIntegratee;
 
@@ -130,6 +128,25 @@ describe('lendV2', () => {
     ).rejects.toBeRevertedWith('Invalid pool');
   });
 
+  it('does not allow if there are any un-migratable v1 pools', async () => {
+    await simulateMapleV1Lend({
+      mapleLiquidityPosition: mapleLiquidityPosition.address,
+      poolV1: poolV1Token.address,
+      poolV1TokenAmount: 1,
+    });
+
+    await expect(
+      mapleLiquidityPositionLendV2({
+        comptrollerProxy: comptrollerProxyUsed,
+        externalPositionManager,
+        externalPositionProxy: mapleLiquidityPosition,
+        liquidityAssetAmount: lendAmount,
+        pool: poolV2Token,
+        signer: fundOwner,
+      }),
+    ).rejects.toBeRevertedWith('Migration not allowed');
+  });
+
   it('does not add an already-tracked pool', async () => {
     // Lend to the same pool twice
     await mapleLiquidityPositionLendV2({
@@ -205,7 +222,7 @@ describe('lendV2', () => {
       assets_: [liquidityAsset],
     });
 
-    expect(lendV2Receipt).toMatchInlineGasSnapshot('283606');
+    expect(lendV2Receipt).toMatchInlineGasSnapshot('285017');
   });
 });
 
@@ -240,7 +257,7 @@ describe('requestRedeemV2', () => {
     ).rejects.toBeRevertedWith('Invalid pool');
   });
 
-  it('does not allow if there are any un-migrated v1 pools', async () => {
+  it('does not allow if there are any un-migratable v1 pools', async () => {
     await simulateMapleV1Lend({
       mapleLiquidityPosition: mapleLiquidityPosition.address,
       poolV1: poolV1Token.address,
@@ -256,7 +273,7 @@ describe('requestRedeemV2', () => {
         pool: poolV2Token,
         signer: fundOwner,
       }),
-    ).rejects.toBeRevertedWith('Unmigrated pools');
+    ).rejects.toBeRevertedWith('Migration not allowed');
   });
 
   it('works as expected', async () => {
@@ -610,50 +627,6 @@ describe('getManagedAssets', () => {
     );
 
     expect(await mapleLiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot('70711');
-  });
-
-  it('happy path: one v1 pool, one v2 pool, same asset values', async () => {
-    // Lend for equally-valued LP tokens on v1 and v2
-    await simulateMapleV1Lend({
-      mapleLiquidityPosition: mapleLiquidityPosition.address,
-      poolV1: poolV1Token.address,
-      poolV1TokenAmount: lendAmount.mul(poolV1TokenUnit).div(liquidityAssetUnit),
-    });
-
-    // To account for unrealized losses in pool v2,
-    // we must first convert the target value into the amount of shares required to redeem to receive that value
-    const targetV2SharesForEqualValue = await poolV2.convertToExitShares(lendAmount);
-    const actualV2LendAmount = await poolV2.convertToAssets(targetV2SharesForEqualValue);
-    await mapleLiquidityPositionLendV2({
-      comptrollerProxy: comptrollerProxyUsed,
-      externalPositionManager,
-      externalPositionProxy: mapleLiquidityPosition,
-      liquidityAssetAmount: actualV2LendAmount,
-      pool: poolV2Token,
-      signer: fundOwner,
-    });
-
-    const poolV2TokenBalance = await mapleLiquidityPositionCalcPoolV2TokenBalance({
-      mapleLiquidityPosition,
-      poolV2Address: poolV2Token,
-    });
-
-    // The position value should be roughly the lendAmount x 2
-    const actualPoolV1TokensValue = lendAmount;
-    const actualPoolV2TokensValue = await poolV2.convertToExitAssets(poolV2TokenBalance);
-    const actualTotalPoolTokensValue = actualPoolV1TokensValue.add(actualPoolV2TokensValue);
-    expect(actualTotalPoolTokensValue).toBeAroundBigNumber(lendAmount.mul(2), convertBetweenAssetsAndSharesTolerance);
-
-    // Two pools should be used, but only one liquidityAsset is reported
-    expect((await mapleLiquidityPosition.getUsedLendingPoolsV1()).length).toBe(1);
-    expect((await mapleLiquidityPosition.getUsedLendingPoolsV2()).length).toBe(1);
-    expect(await mapleLiquidityPosition.getManagedAssets.call()).toMatchFunctionOutput(
-      mapleLiquidityPosition.getManagedAssets.fragment,
-      {
-        amounts_: [actualTotalPoolTokensValue],
-        assets_: [liquidityAsset],
-      },
-    );
   });
 });
 
