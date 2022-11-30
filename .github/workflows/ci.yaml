@@ -9,6 +9,10 @@ on:
       - v[1-9]*
       - audit/*
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CACHE_VERSION: '4'
   NODE_OPTIONS: '--max-old-space-size=4096'
@@ -17,6 +21,8 @@ jobs:
   foundry:
     name: Foundry
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -47,6 +53,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -100,6 +107,8 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
