@@ -414,7 +414,6 @@ const mainnetConfig: DeploymentConfig = {
       perp: {underlying: unsupportedAssets.perp, pool: '0xe8865b89576866da3f9b7fc868e057fb37f9b5a5', voucher: '0x2d53f42b2edf8907bcaa4d3f28e6f76bd95334e3'},
       usf: {underlying: unsupportedAssets.usf, pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57', voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034' }},
   },
-  
   synthetix: {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',
     originator: '0x1ad1fc9964c551f456238Dd88D6a38344B5319D7',

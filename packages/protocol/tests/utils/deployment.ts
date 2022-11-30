@@ -249,20 +249,18 @@ export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
 import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
 
 export interface DeploymentConfig {
-  feeBps: number;
-  feeToken: string;
-  feeTokenBurn: {
-    burnFromVault: boolean;
-    sendToProtocolFeeReserve: boolean;
-    externalBurnerAddress: string;
+  aaveV2: {
+    incentivesController: string;
+    lendingPool: string;
+    lendingPoolAddressProvider: string;
+    protocolDataProvider: string;
+    atokens: Record<string, string>;
   };
-  weth: string;
-  wrappedNativeAsset: string;
-  primitives: Record<string, string>;
-  gsn: {
-    relayHub: string;
-    relayWorker: string;
-    trustedForwarder: string;
+  aaveV3: {
+    pool: string;
+    poolAddressProvider: string;
+    referralCode: number;
+    atokens: Record<string, string>;
   };
   aura: {
     booster: string;
@@ -299,13 +297,15 @@ export interface DeploymentConfig {
     ethusd: string;
     aggregators: Record<string, readonly [string, ChainlinkRateAsset]>;
   };
-  synthetix: {
-    snx: string;
-    susd: string;
-    delegateApprovals: string;
-    originator: string;
-    redeemer: string;
-    trackingCode: string;
+  compoundV2: {
+    ceth: string;
+    comptroller: string;
+    ctokens: Record<string, string>;
+  };
+  compoundV3: {
+    configuratorProxy: string;
+    rewards: string;
+    ctokens: Record<string, string>;
   };
   convex: {
     booster: string;
@@ -333,32 +333,21 @@ export interface DeploymentConfig {
     >;
     virtualPriceDeviationThreshold: number;
   };
-  aaveV2: {
-    incentivesController: string;
-    lendingPool: string;
-    lendingPoolAddressProvider: string;
-    protocolDataProvider: string;
-    atokens: Record<string, string>;
-  };
-  aaveV3: {
-    pool: string;
-    poolAddressProvider: string;
-    referralCode: number;
-    atokens: Record<string, string>;
-  };
-  compoundV2: {
-    ceth: string;
-    comptroller: string;
-    ctokens: Record<string, string>;
-  };
-  compoundV3: {
-    configuratorProxy: string;
-    rewards: string;
-    ctokens: Record<string, string>;
+  feeBps: number;
+  feeToken: string;
+  feeTokenBurn: {
+    burnFromVault: boolean;
+    sendToProtocolFeeReserve: boolean;
+    externalBurnerAddress: string;
   };
   goldfinch: {
     fidu: string;
     seniorPool: string;
+  };
+  gsn: {
+    relayHub: string;
+    relayWorker: string;
+    trustedForwarder: string;
   };
   idle: {
     bestYieldIdleDai: string;
@@ -401,6 +390,7 @@ export interface DeploymentConfig {
     ptTokens: Record<string, [string, string]>;
   };
   positionsLimit: number;
+  primitives: Record<string, string>;
   snapshot: {
     delegateRegistry: string;
   };
@@ -412,11 +402,18 @@ export interface DeploymentConfig {
     manualPriceOracle: string;
     convertibles: Record<'perp' | 'usf', { underlying: string; voucher: string; pool: string }>;
   };
+  synthetix: {
+    snx: string;
+    susd: string;
+    delegateApprovals: string;
+    originator: string;
+    redeemer: string;
+    trackingCode: string;
+  };
   theGraph: {
     stakingProxy: string;
     grt: string;
   };
-  unsupportedAssets: Record<string, string>;
   uniswap: {
     factory: string;
     router: string;
@@ -426,6 +423,9 @@ export interface DeploymentConfig {
     router: string;
     nonFungiblePositionManager: string;
   };
+  unsupportedAssets: Record<string, string>;
+  weth: string;
+  wrappedNativeAsset: string;
   yearn: {
     vaultV2: {
       registry: string;
