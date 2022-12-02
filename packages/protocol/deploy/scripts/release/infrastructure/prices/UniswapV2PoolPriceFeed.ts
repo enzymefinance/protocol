@@ -24,7 +24,7 @@ const fn: DeployFunction = async function (hre) {
   });
 
   // Register all uniswap pool tokens with the derivative price feed
-  if (uniswapPoolPriceFeed.newlyDeployed) {
+  if (uniswapPoolPriceFeed.newlyDeployed && !hre.network.live) {
     const pools = Object.values(config.uniswap.pools);
 
     if (pools.length) {

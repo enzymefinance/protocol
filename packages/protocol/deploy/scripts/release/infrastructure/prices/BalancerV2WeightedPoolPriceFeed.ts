@@ -29,7 +29,7 @@ const fn: DeployFunction = async function (hre) {
   });
 
   // Register all weighted pool BPTs with the derivative price feed
-  if (balancerV2WeightedPoolPriceFeed.newlyDeployed) {
+  if (balancerV2WeightedPoolPriceFeed.newlyDeployed && !hre.network.live) {
     const pools = Object.values(config.balancer.poolsWeighted.pools);
 
     if (pools.length) {

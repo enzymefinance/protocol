@@ -18,7 +18,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (depositWrapper.newlyDeployed) {
+  if (depositWrapper.newlyDeployed && !hre.network.live) {
     const fundDeployerInstance = new FundDeployer(fundDeployer.address, deployer);
 
     log('Adding DepositWrapper as buySharesOnBehalf caller on FundDeployer');

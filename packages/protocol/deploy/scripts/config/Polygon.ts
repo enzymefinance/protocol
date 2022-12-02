@@ -134,6 +134,7 @@ const polygonConfig: DeploymentConfig = {
     incentivesController: '0x357D51124f59836DeD84c8a1730D72B749d8BC23',
     lendingPool: '0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf',
     lendingPoolAddressProvider: '0xd05e3E715d945B59290df0ae8eF85c1BdB684744',
+    protocolDataProvider: '0x7551b5D2763519d4e37e8B81929D336De671d46d'
   },
   aaveV3: {
     atokens: aaveV3Tokens,

@@ -27,7 +27,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (curvePriceFeed.newlyDeployed) {
+  if (curvePriceFeed.newlyDeployed && !hre.network.live) {
     const curvePriceFeedInstance = new CurvePriceFeed(curvePriceFeed.address, deployer);
     const pools = Object.values(config.curve.pools);
 

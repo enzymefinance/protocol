@@ -34,7 +34,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (onlyUntrackDustOrPricelessAssetsPolicy.newlyDeployed) {
+  if (onlyUntrackDustOrPricelessAssetsPolicy.newlyDeployed && !hre.network.live) {
     const onlyUntrackDustOrPricelessAssetsPolicyContract = new OnlyUntrackDustOrPricelessAssetsPolicy(
       onlyUntrackDustOrPricelessAssetsPolicy.address,
       deployer,

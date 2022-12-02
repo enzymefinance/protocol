@@ -18,7 +18,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (protocolFeeTracker.newlyDeployed) {
+  if (protocolFeeTracker.newlyDeployed && !hre.network.live) {
     const fundDeployerInstance = new FundDeployerContract(fundDeployer.address, deployer);
 
     log('Updating ProtocolFeeTracker on FundDeployer');

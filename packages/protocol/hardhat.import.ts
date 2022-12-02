@@ -54,7 +54,6 @@ export const config: HardhatUserConfig = {
       'IMigrationHookHandler',
       'IPolicy',
       'IPrimitivePriceFeed',
-
       'ITestAddOnlyAddressListOwner',
       'ITestBalancerV2Helpers',
       'ITestBalancerV2Vault',

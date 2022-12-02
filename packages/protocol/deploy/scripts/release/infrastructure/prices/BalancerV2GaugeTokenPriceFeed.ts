@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
   });
 
   // Register all tokens with the derivative price feed
-  if (balancerV2GaugeTokenPriceFeed.newlyDeployed) {
+  if (balancerV2GaugeTokenPriceFeed.newlyDeployed && !hre.network.live) {
     const pools = [
       ...Object.values(config.balancer.poolsWeighted.pools).filter((item) => item.gauge !== constants.AddressZero),
       ...Object.values(config.balancer.poolsStable.pools).filter((item) => item.gauge !== constants.AddressZero),

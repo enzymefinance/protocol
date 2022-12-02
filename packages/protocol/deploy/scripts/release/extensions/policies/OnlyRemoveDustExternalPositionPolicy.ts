@@ -34,7 +34,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (onlyRemoveDustExternalPositionPolicy.newlyDeployed) {
+  if (onlyRemoveDustExternalPositionPolicy.newlyDeployed && !hre.network.live) {
     const onlyRemoveDustExternalPositionPolicyContract = new OnlyRemoveDustExternalPositionPolicy(
       onlyRemoveDustExternalPositionPolicy.address,
       deployer,

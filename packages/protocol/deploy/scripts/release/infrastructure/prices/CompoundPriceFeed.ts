@@ -23,7 +23,7 @@ const fn: DeployFunction = async function (hre) {
   });
 
   // Register all uniswap pool tokens with the derivative price feed.
-  if (compoundPriceFeed.newlyDeployed) {
+  if (compoundPriceFeed.newlyDeployed && !hre.network.live) {
     const ctokens = Object.values(config.compoundV2.ctokens);
 
     if (ctokens.length) {

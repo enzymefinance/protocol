@@ -153,6 +153,8 @@ fn.dependencies = [
   'ProtocolFeeTracker',
   'SynthetixAdapter',
 ];
+
 fn.runAtTheEnd = true;
+fn.skip = async (hre) => hre.network.live;
 
 export default fn;

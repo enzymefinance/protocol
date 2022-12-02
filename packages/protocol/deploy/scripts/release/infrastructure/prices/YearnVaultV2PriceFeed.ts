@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (yearnVaultV2PriceFeed.newlyDeployed) {
+  if (yearnVaultV2PriceFeed.newlyDeployed && !hre.network.live) {
     const yearnVaultV2PriceFeedInstance = new YearnVaultV2PriceFeed(yearnVaultV2PriceFeed.address, deployer);
     const yVaults = Object.values(config.yearn.vaultV2.yVaults);
     const underlyings = await Promise.all(

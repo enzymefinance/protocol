@@ -1,3 +1,4 @@
+import type { providers } from 'ethers';
 import { utils } from 'ethers';
 
 import type { ContractReceipt, SendFunction } from '../function';
@@ -10,10 +11,14 @@ export function extractEvent<TFunction extends SendFunction<any, any>>(
 ) {
   const contract = receipt.function.contract.abi;
   const fragment = ensureEvent(event, contract);
+
+  return extractEventFromLogs(receipt.logs, fragment);
+}
+
+export function extractEventFromLogs(logs: providers.Log[], fragment: utils.EventFragment) {
   const abi = new utils.Interface([fragment]);
   const topic = abi.getEventTopic(fragment);
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  const matches = (receipt.logs ?? []).filter((item) => item.topics.includes(topic)).map((log) => abi.parseLog(log));
+  const matches = logs.filter((item) => item.topics.includes(topic)).map((log) => abi.parseLog(log));
 
   return matches;
 }

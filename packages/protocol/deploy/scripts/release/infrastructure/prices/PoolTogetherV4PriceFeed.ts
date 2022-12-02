@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (poolTogetherV4PriceFeed.newlyDeployed) {
+  if (poolTogetherV4PriceFeed.newlyDeployed && !hre.network.live) {
     const poolTogetherV4PriceFeedInstance = new PoolTogetherV4PriceFeed(poolTogetherV4PriceFeed.address, deployer);
     const ptTokenValues = Object.values(config.poolTogetherV4.ptTokens);
 

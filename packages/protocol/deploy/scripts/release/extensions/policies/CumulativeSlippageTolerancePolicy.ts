@@ -3,6 +3,7 @@ import { AddressListRegistry, AddressListUpdateType, ONE_DAY_IN_SECONDS } from '
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { loadConfig } from '../../../../utils/config';
+import { getListId } from '../../../../utils/helpers';
 
 const fn: DeployFunction = async function (hre) {
   const {
@@ -23,12 +24,12 @@ const fn: DeployFunction = async function (hre) {
 
     const addressListRegistry = await get('AddressListRegistry');
     const addressListRegistryContract = new AddressListRegistry(addressListRegistry.address, deployer);
-    const nonSlippageAdaptersListId = await addressListRegistryContract.getListCount();
-
-    await addressListRegistryContract.createList(
-      dispatcher.address,
-      AddressListUpdateType.AddAndRemove,
-      nonSlippageAdapters,
+    const nonSlippageAdaptersListId = getListId(
+      await addressListRegistryContract.createList(
+        dispatcher.address,
+        AddressListUpdateType.AddAndRemove,
+        nonSlippageAdapters,
+      ),
     );
 
     await deploy('CumulativeSlippageTolerancePolicy', {

@@ -15,8 +15,6 @@ const fn: DeployFunction = async function (hre) {
   const fundDeployer = await get('FundDeployer');
   const valueInterpreter = await get('ValueInterpreter');
 
-  const pools = Object.values(config.balancer.poolsStable.pools);
-
   const balancerV2StablePoolPriceFeed = await deploy('BalancerV2StablePoolPriceFeed', {
     args: [
       fundDeployer.address,
@@ -29,26 +27,29 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (pools.length) {
-    // Register all stable pool BPTs with the derivative price feed
-    if (balancerV2StablePoolPriceFeed.newlyDeployed) {
+  if (balancerV2StablePoolPriceFeed.newlyDeployed && !hre.network.live) {
+    const pools = Object.values(config.balancer.poolsStable.pools);
+
+    if (pools.length) {
+      // Register all stable pool BPTs with the derivative price feed
       const balancerV2StablePoolPriceFeedInstance = new BalancerV2StablePoolPriceFeed(
         balancerV2StablePoolPriceFeed.address,
         deployer,
       );
+
       await balancerV2StablePoolPriceFeedInstance.addPools(
         pools.map((pool) => balancerV2GetPoolFromId(pool.id)),
         pools.map((pool) => pool.invariantProxyAsset),
       );
+
+      // Register all stable pool BPTs with the ValueInterpreter
+      const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
+
+      await valueInterpreterInstance.addDerivatives(
+        pools.map((pool) => balancerV2GetPoolFromId(pool.id)),
+        pools.map(() => balancerV2StablePoolPriceFeed.address),
+      );
     }
-
-    // Register all stable pool BPTs with the ValueInterpreter
-    const valueInterpreterInstance = new ValueInterpreter(valueInterpreter.address, deployer);
-
-    await valueInterpreterInstance.addDerivatives(
-      pools.map((pool) => balancerV2GetPoolFromId(pool.id)),
-      pools.map(() => balancerV2StablePoolPriceFeed.address),
-    );
   }
 };
 

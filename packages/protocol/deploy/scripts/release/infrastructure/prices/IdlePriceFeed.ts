@@ -22,7 +22,7 @@ const fn: DeployFunction = async function (hre) {
     skipIfAlreadyDeployed: true,
   });
 
-  if (idlePriceFeed.newlyDeployed) {
+  if (idlePriceFeed.newlyDeployed && !hre.network.live) {
     const idlePriceFeedInstance = new IdlePriceFeed(idlePriceFeed.address, deployer);
     const idleTokens = Object.values(config.idle);
     const underlyings = await Promise.all(
