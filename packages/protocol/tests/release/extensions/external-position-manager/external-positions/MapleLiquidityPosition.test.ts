@@ -222,7 +222,7 @@ describe('lendV2', () => {
       assets_: [liquidityAsset],
     });
 
-    expect(lendV2Receipt).toMatchInlineGasSnapshot('285017');
+    expect(lendV2Receipt).toMatchInlineGasSnapshot('299061');
   });
 });
 
@@ -303,7 +303,7 @@ describe('requestRedeemV2', () => {
     const withdrawalManagerBalanceAfter = await withdrawalManager.lockedShares(mapleLiquidityPosition);
     expect(withdrawalManagerBalanceAfter).toEqBigNumber(withdrawalManagerBalanceBefore.add(redeemPoolTokenAmount));
 
-    expect(requestRedeemReceipt).toMatchInlineGasSnapshot('149533');
+    expect(requestRedeemReceipt).toMatchInlineGasSnapshot('158994');
   });
 });
 
@@ -395,7 +395,7 @@ describe('redeemV2', () => {
       vaultProxyAssetBalanceBefore.add(await poolV2.convertToExitAssets(redeemPoolTokenAmount)),
     );
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot('177438');
+    expect(redeemReceipt).toMatchInlineGasSnapshot('187065');
   });
 
   it('works as expected (full redemption)', async () => {
@@ -487,7 +487,7 @@ describe('cancelRedeemV2Action', () => {
     const unlockedPoolTokensAfter = await poolV2Token.balanceOf(mapleLiquidityPosition);
     expect(unlockedPoolTokensAfter).toEqBigNumber(unlockedPoolTokensBefore.add(cancelPoolTokenAmount));
 
-    expect(receipt).toMatchInlineGasSnapshot('147490');
+    expect(receipt).toMatchInlineGasSnapshot('157022');
   });
 });
 

@@ -11,12 +11,8 @@
 
 pragma solidity 0.6.12;
 
-/// @title IMapleV2PoolManager Interface
+/// @title IMapleV2Globals Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IMapleV2PoolManager {
-    function factory() external view returns (address factory_);
-
-    function pool() external view returns (address pool_);
-
-    function withdrawalManager() external view returns (address withdrawalManager_);
+interface IMapleV2Globals {
+    function isFactory(bytes32 _key, address _who) external view returns (bool isFactory_);
 }

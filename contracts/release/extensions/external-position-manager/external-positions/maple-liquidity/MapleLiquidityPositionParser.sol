@@ -10,7 +10,9 @@
 */
 
 import "../../../../interfaces/IMapleV1MplRewardsFactory.sol";
+import "../../../../interfaces/IMapleV2Globals.sol";
 import "../../../../interfaces/IMapleV2Pool.sol";
+import "../../../../interfaces/IMapleV2PoolManager.sol";
 import "../../../../interfaces/IMapleV2ProxyFactory.sol";
 import "../IExternalPositionParser.sol";
 import "./IMapleLiquidityPosition.sol";
@@ -26,11 +28,11 @@ contract MapleLiquidityPositionParser is
     IExternalPositionParser
 {
     address private immutable MAPLE_V1_MPL_REWARDS_FACTORY;
-    address private immutable MAPLE_V2_POOL_FACTORY;
+    address private immutable MAPLE_V2_GLOBALS;
 
-    constructor(address _mapleV2PoolFactory, address _mapleV1MplRewardsFactory) public {
+    constructor(address _mapleV2Globals, address _mapleV1MplRewardsFactory) public {
         MAPLE_V1_MPL_REWARDS_FACTORY = _mapleV1MplRewardsFactory;
-        MAPLE_V2_POOL_FACTORY = _mapleV2PoolFactory;
+        MAPLE_V2_GLOBALS = _mapleV2Globals;
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
@@ -95,11 +97,23 @@ contract MapleLiquidityPositionParser is
 
     // PRIVATE FUNCTIONS
 
-    // Validates that a pool v2 has been deployed from the Maple pool factory
+    // Validates that a pool v2 has been deployed from a Maple factory
     function __validatePoolV2(address _poolV2) private view {
+        address poolManager = IMapleV2Pool(_poolV2).manager();
         require(
-            IMapleV2ProxyFactory(MAPLE_V2_POOL_FACTORY).isInstance(_poolV2),
-            "__validatePoolV2: Invalid pool"
+            IMapleV2PoolManager(poolManager).pool() == _poolV2,
+            "__validatePoolV2: Invalid PoolManager relation"
+        );
+
+        address poolManagerFactory = IMapleV2PoolManager(poolManager).factory();
+        require(
+            IMapleV2ProxyFactory(poolManagerFactory).isInstance(poolManager),
+            "__validatePoolV2: Invalid PoolManagerFactory relation"
+        );
+
+        require(
+            IMapleV2Globals(MAPLE_V2_GLOBALS).isFactory("POOL_MANAGER", poolManagerFactory),
+            "__validatePoolV2: Invalid Globals relation"
         );
     }
 
