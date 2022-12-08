@@ -1,7 +1,6 @@
 {
   "name": "monorepo",
   "private": true,
-  "packageManager": "pnpm@7.8.0",
   "scripts": {
     "build": "pnpm run --recursive -- build",
     "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run compile && cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run --filter @enzymefinance/protocol -- test",

@@ -36,16 +36,16 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7.8.0
-
-      - name: Install dependencies
-        run: pnpm install
+          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
         with:
           cache: pnpm
           node-version: 16
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Run tests
         run: forge test
@@ -66,13 +66,16 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7.8.0
+          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
         with:
           cache: pnpm
           node-version: 16
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Hardhat artifact cache
         uses: actions/cache@v2
@@ -84,6 +87,9 @@ jobs:
           restore-keys: |
             artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
+      - name: Compile contracts
+        run: pnpm compile
+
       - name: Hardhat fork cache
         uses: actions/cache@v2
         with:
@@ -91,12 +97,6 @@ jobs:
           key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-${{ github.sha }}
           restore-keys: |
             fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Compile contracts
-        run: pnpm compile
 
       - name: Run tests
         working-directory: ./packages/protocol
@@ -116,7 +116,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7.8.0
+          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
@@ -124,16 +124,18 @@ jobs:
           cache: pnpm
           node-version: 16
 
-      - name: Hardhat fork cache
-        uses: actions/cache@v2
-        with:
-          path: cache/hardhat-network-fork
-          key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ github.sha }}
-          restore-keys: |
-            fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install
+
+      - name: Hardhat artifact cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            artifacts
+            cache/solidity-files-cache.json
+          key: artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ hashFiles('contracts/**/*.sol') }}
+          restore-keys: |
+            artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-
 
       - name: Compile contracts
         run: pnpm compile
