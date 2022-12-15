@@ -10,7 +10,7 @@ export function extractRevertReason(error: any): string | undefined {
     .replace(/^VM Exception while processing transaction: /, '');
 
   {
-    const match = /^reverted with panic code (0x[0-9]{1,2})/.exec(cleaned);
+    const match = /^reverted with panic code (0x[0-9]{1,2}) \(.*\)$/.exec(cleaned);
 
     if (match !== null) {
       return `Panic(${match[1]})`;
@@ -18,7 +18,7 @@ export function extractRevertReason(error: any): string | undefined {
   }
 
   {
-    const match = /^reverted with reason string '(.*)'/.exec(cleaned);
+    const match = /^reverted with reason string '(.*)'$/.exec(cleaned);
 
     if (match !== null) {
       return `Error(${match[1]})`;
@@ -26,11 +26,19 @@ export function extractRevertReason(error: any): string | undefined {
   }
 
   {
-    const match = /^revert with reason "(.*)"/.exec(cleaned);
+    const match = /^revert with reason "(.*)"$/.exec(cleaned);
 
     if (match !== null) {
       return `Error(${match[1]})`;
     }
+  }
+
+  if (cleaned === 'Transaction reverted without a reason string') {
+    return `Error(reverted without a reason string)`;
+  }
+
+  if (cleaned === 'Transaction reverted: function call to a non-contract account') {
+    return `Error(function call to a non-contract account)`;
   }
 
   if (typeof error?.reason === 'string') {
@@ -38,7 +46,7 @@ export function extractRevertReason(error: any): string | undefined {
   }
 
   if (error?.reason === null && error?.data === '0x') {
-    return `Error()`;
+    return `Error(reverted without a reason string)`;
   }
 
   return undefined;

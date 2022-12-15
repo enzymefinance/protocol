@@ -325,7 +325,7 @@ describe('lend', () => {
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(preTxOutgoingAssetBalance.sub(outgoingUnderlyingAmount));
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`764699`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`1039881`);
   });
 });
 
@@ -408,7 +408,7 @@ describe('redeem', () => {
     // Assert the absolute amount of govTokensEarned, since some individual rewards could be 0.
     expect(totalGovTokenVaultBalances).toBeGtBigNumber(0);
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`691418`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`967525`);
   });
 });
 

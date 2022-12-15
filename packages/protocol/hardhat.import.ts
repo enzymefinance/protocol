@@ -84,6 +84,7 @@ export const config: HardhatUserConfig = {
       'ITestGsnRelayHub',
       'ITestMapleV2Pool',
       'ITestMapleV2PoolManager',
+      'ITestMapleV2ProxyFactory',
       'ITestMapleV2WithdrawalManager',
       'ITestNotionalV2Router',
       'ITestSnapshotDelegateRegistry',
@@ -130,7 +131,7 @@ export const config: HardhatUserConfig = {
       blockGasLimit: 12450000,
       chainId: 1,
       forking: {
-        blockNumber: 15642400, // Sept 29, 2022
+        blockNumber: 16185500, // Dec 14, 2022
         url: node('mainnet'),
       },
       gasPrice: 0, // TODO: Consider removing this again.

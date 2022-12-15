@@ -66,7 +66,7 @@ describe.each(integrateeKeys)('%s as adapter', (integrateeKey) => {
         crvToken = new ITestStandardToken(fork.config.balancer.balToken, provider);
         cvxToken = new ITestStandardToken(fork.config.aura.auraToken, provider);
 
-        pid = 3; // steth stable pool (w/ LDO rewards)
+        pid = 29; // steth stable pool (w/ LDO rewards)
         wrapperName = 'Enzyme Staked: Balancer stETH Stable Pool Aura Deposit';
         wrapperSymbol = 'stkauraB-stETH-STABLE';
         extraRewardsToken = new ITestStandardToken(fork.config.primitives.ldo, provider);

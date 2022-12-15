@@ -244,7 +244,7 @@ describe('buy sale actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`463651`);
+    expect(receipt).toMatchInlineGasSnapshot(`466257`);
   });
 
   it('works as expected - buy sales by units (partial sale units)', async () => {
@@ -276,7 +276,7 @@ describe('buy sale actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`657861`);
+    expect(receipt).toMatchInlineGasSnapshot(`660612`);
   });
 });
 
@@ -492,7 +492,7 @@ describe('sales creation actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`518495`);
+    expect(receipt).toMatchInlineGasSnapshot(`521098`);
   });
 
   it('works as expected - fixed price', async () => {
@@ -548,7 +548,7 @@ describe('sales creation actions', () => {
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`489182`);
+    expect(receipt).toMatchInlineGasSnapshot(`491788`);
   });
 
   it('works as expected - reconcile', async () => {
@@ -710,7 +710,7 @@ describe('remove sale action', () => {
     // Should receive currency token
     assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`380594`);
+    expect(receipt).toMatchInlineGasSnapshot(`383246`);
   });
 
   it('works as expected - remove sale (fulfilled)', async () => {

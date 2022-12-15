@@ -202,7 +202,7 @@ describe('lend', () => {
       preTxUnderlyingBalance.sub(outgoingUnderlyingAmount).add(preTxAdapterUnderlyingBalance),
     );
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`311705`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`314001`);
   });
 });
 
@@ -240,10 +240,12 @@ describe('redeem', () => {
     // Since we can't easily test that unused shares are returned to the vaultProxy,
     // seed the adapter with a small amount of yVault shares, which will be returned to
     // the vaultProxy upon running redeem()
-    await token.connect(userAddress).approve(yVaultContract, constants.MaxUint256);
-    await yVaultContract.connect(userAddress).deposit(assetUnit, yearnVaultV2Adapter);
-    const preTxAdapterYVaultBalance = await yVault.balanceOf(yearnVaultV2Adapter);
+    const adapterSeedAmount = assetUnit.div(11);
+    await setAccountBalance({ account: userAddress, amount: adapterSeedAmount, provider, token });
+    await token.connect(userAddress).approve(yVaultContract, adapterSeedAmount);
+    await yVaultContract.connect(userAddress).deposit(adapterSeedAmount, yearnVaultV2Adapter);
 
+    const preTxAdapterYVaultBalance = await yVault.balanceOf(yearnVaultV2Adapter);
     expect(preTxAdapterYVaultBalance).toBeGtBigNumber(0);
 
     const [preTxUnderlyingBalance, preTxYVaultBalance] = await getAssetBalances({
@@ -286,6 +288,6 @@ describe('redeem', () => {
       slippageToleranceBps,
     );
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`203760`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`206207`);
   });
 });

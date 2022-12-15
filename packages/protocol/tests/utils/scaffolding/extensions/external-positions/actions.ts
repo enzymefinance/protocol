@@ -35,7 +35,9 @@ export async function callOnExternalPosition({
 
   return comptrollerProxy
     .connect(signer)
-    .callOnExtension(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs);
+    .callOnExtension.args(externalPositionManager, ExternalPositionManagerActionId.CallOnExternalPosition, callArgs)
+    .gas(8000000)
+    .send();
 }
 
 export async function createExternalPosition({

@@ -1,14 +1,15 @@
+import type { AddressLike } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager, MapleV1ToV2PoolMapper, VaultLib } from '@enzymefinance/protocol';
 import {
   ITestMapleV2Pool,
   ITestMapleV2PoolManager,
+  ITestMapleV2ProxyFactory,
   ITestMapleV2WithdrawalManager,
   ITestStandardToken,
   MapleLiquidityPositionLib,
-  MockMapleV2PoolIntegratee,
 } from '@enzymefinance/protocol';
-import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
+import type { EthereumTestnetProvider, ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
   assertExternalPositionAssetsToReceive,
@@ -16,6 +17,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetUnit,
+  impersonateContractSigner,
   mapleLiquidityPositionCalcPoolV2TokenBalance,
   mapleLiquidityPositionCancelRedeemV2,
   mapleLiquidityPositionLendV2,
@@ -24,10 +26,9 @@ import {
   setAccountBalance,
   simulateMapleV1Lend,
 } from '@enzymefinance/testutils';
-import type { BigNumber } from 'ethers';
+import { BigNumber } from 'ethers';
 
-// TODO mainnet fork: remove this
-let mockPoolV2: MockMapleV2PoolIntegratee;
+const randomAddressValue = randomAddress();
 
 let externalPositionManager: ExternalPositionManager, mapleV1ToV2PoolMapper: MapleV1ToV2PoolMapper;
 
@@ -49,6 +50,26 @@ let seedAmount: BigNumber;
 
 let fork: ProtocolDeployment;
 
+async function warpToRedemptionWindow({
+  provider,
+  withdrawalManager,
+  mapleLiquidityPosition,
+}: {
+  provider: EthereumTestnetProvider;
+  withdrawalManager: ITestMapleV2WithdrawalManager;
+  mapleLiquidityPosition: AddressLike;
+}) {
+  const exitCycleId = await withdrawalManager.exitCycleId(mapleLiquidityPosition);
+  const { windowEnd_, windowStart_ } = await withdrawalManager.getWindowAtId(exitCycleId);
+  const currentTime = BigNumber.from((await provider.getBlock('latest')).timestamp);
+
+  if (currentTime.gt(windowEnd_)) {
+    throw 'Beyond redemption window';
+  } else if (currentTime.lt(windowStart_)) {
+    await provider.send('evm_increaseTime', [windowStart_.sub(currentTime).toNumber()]);
+  }
+}
+
 beforeEach(async () => {
   fork = await deployProtocolFixture();
 
@@ -59,17 +80,12 @@ beforeEach(async () => {
   externalPositionManager = fork.deployment.externalPositionManager;
   mapleV1ToV2PoolMapper = fork.deployment.mapleV1ToV2PoolMapper;
 
-  // TODO mainnet fork: remove this block
-  mockPoolV2 = await MockMapleV2PoolIntegratee.deploy(fork.deployer, 'MPT_TEST', 'MPT1', 18);
-  await mockPoolV2.setAsset(fork.config.primitives.usdc);
-
   // Maple pool vars
-  // TODO mainnet fork: change to `fork.config.maple.pools.mavenUsdc.poolV2 as string`
-  poolV2 = new ITestMapleV2Pool(mockPoolV2, provider);
-  const poolManager = new ITestMapleV2PoolManager(await mockPoolV2.manager(), provider);
+  poolV2 = new ITestMapleV2Pool(fork.config.maple.pools.mavenUsdc.poolV2!, provider);
+  const poolManager = new ITestMapleV2PoolManager(await poolV2.manager(), provider);
   withdrawalManager = new ITestMapleV2WithdrawalManager(await poolManager.withdrawalManager(), provider);
   poolV1Token = new ITestStandardToken(fork.config.maple.pools.mavenUsdc.poolV1!, provider);
-  poolV2Token = new ITestStandardToken(mockPoolV2, provider);
+  poolV2Token = new ITestStandardToken(poolV2, provider);
   liquidityAsset = new ITestStandardToken(await poolV2.asset(), provider);
 
   liquidityAssetUnit = await getAssetUnit(liquidityAsset);
@@ -99,6 +115,15 @@ beforeEach(async () => {
 
   // Common user-input vars for tests
   lendAmount = seedAmount.div(11);
+
+  // Raise the Maple pool liquidity cap well above the amount we intend to lend
+  const poolDelegateSigner = await impersonateContractSigner({
+    contractAddress: await poolManager.poolDelegate(),
+    ethSeeder: fork.deployer,
+    provider,
+  });
+  const currentPoolAssets = await poolManager.totalAssets();
+  await poolManager.connect(poolDelegateSigner).setLiquidityCap(currentPoolAssets.add(lendAmount.mul(10000)));
 });
 
 describe('init', () => {
@@ -114,18 +139,37 @@ describe('init', () => {
 });
 
 describe('lendV2', () => {
-  xit('does not allow an invalid pool', async () => {
-    // TODO mainnet fork: Remove xit
-    await expect(
-      mapleLiquidityPositionLendV2({
-        comptrollerProxy: comptrollerProxyUsed,
-        externalPositionManager,
-        externalPositionProxy: mapleLiquidityPosition,
-        liquidityAssetAmount: lendAmount,
-        pool: randomAddress(),
-        signer: fundOwner,
-      }),
-    ).rejects.toBeRevertedWith('Invalid pool');
+  it('does not allow an invalid pool', async () => {
+    const mockPool = await ITestMapleV2Pool.mock(fork.deployer);
+    const mockPoolManager = await ITestMapleV2PoolManager.mock(fork.deployer);
+    const mockFactory = await ITestMapleV2ProxyFactory.mock(fork.deployer);
+
+    const payload = {
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      liquidityAssetAmount: lendAmount,
+      pool: mockPool,
+      signer: fundOwner,
+    };
+
+    // 1. Invalid pool:poolManager relation
+    await mockPool.manager.returns(mockPoolManager);
+    await mockPoolManager.pool.returns(randomAddressValue);
+
+    await expect(mapleLiquidityPositionLendV2(payload)).rejects.toBeRevertedWith('Invalid PoolManager relation');
+
+    // 2. Invalid poolManager:factory relation
+    await mockPoolManager.pool.returns(mockPool);
+    await mockPoolManager.factory.returns(mockFactory);
+    await mockFactory.isInstance.returns(false);
+
+    await expect(mapleLiquidityPositionLendV2(payload)).rejects.toBeRevertedWith('Invalid PoolManagerFactory relation');
+
+    // 3. Invalid factory:globals relation
+    await mockFactory.isInstance.returns(true);
+
+    await expect(mapleLiquidityPositionLendV2(payload)).rejects.toBeRevertedWith('Invalid Globals relation');
   });
 
   it('does not allow if there are any un-migratable v1 pools', async () => {
@@ -222,7 +266,7 @@ describe('lendV2', () => {
       assets_: [liquidityAsset],
     });
 
-    expect(lendV2Receipt).toMatchInlineGasSnapshot('299061');
+    expect(lendV2Receipt).toMatchInlineGasSnapshot('348602');
   });
 });
 
@@ -243,18 +287,19 @@ describe('requestRedeemV2', () => {
     expect(redeemPoolTokenAmount).toBeGtBigNumber(0);
   });
 
-  xit('does not allow an invalid pool', async () => {
-    // TODO mainnet fork: Remove xit
+  it('does not allow an invalid pool', async () => {
+    // Actual reverts tested in lend()
+
     await expect(
       mapleLiquidityPositionRequestRedeemV2({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager,
         externalPositionProxy: mapleLiquidityPosition,
         poolTokenAmount: redeemPoolTokenAmount,
-        pool: randomAddress(),
+        pool: randomAddressValue,
         signer: fundOwner,
       }),
-    ).rejects.toBeRevertedWith('Invalid pool');
+    ).rejects.toBeReverted();
   });
 
   it('does not allow if there are any un-migratable v1 pools', async () => {
@@ -278,7 +323,7 @@ describe('requestRedeemV2', () => {
 
   it('works as expected', async () => {
     const externalPositionPoolBalanceBefore = await poolV2Token.balanceOf(mapleLiquidityPosition);
-    const withdrawalManagerBalanceBefore = await poolV2Token.balanceOf(withdrawalManager);
+    const withdrawalManagerBalanceBefore = await withdrawalManager.lockedShares(mapleLiquidityPosition);
 
     const requestRedeemReceipt = await mapleLiquidityPositionRequestRedeemV2({
       comptrollerProxy: comptrollerProxyUsed,
@@ -303,7 +348,7 @@ describe('requestRedeemV2', () => {
     const withdrawalManagerBalanceAfter = await withdrawalManager.lockedShares(mapleLiquidityPosition);
     expect(withdrawalManagerBalanceAfter).toEqBigNumber(withdrawalManagerBalanceBefore.add(redeemPoolTokenAmount));
 
-    expect(requestRedeemReceipt).toMatchInlineGasSnapshot('158994');
+    expect(requestRedeemReceipt).toMatchInlineGasSnapshot('279913');
   });
 });
 
@@ -318,33 +363,26 @@ describe('redeemV2', () => {
       signer: fundOwner,
     });
 
-    // Queue all pool tokens for redemption. The tests can then decide whether to redeem partial or full amount.
-    await mapleLiquidityPositionRequestRedeemV2({
-      comptrollerProxy: comptrollerProxyUsed,
-      externalPositionManager,
-      externalPositionProxy: mapleLiquidityPosition,
-      poolTokenAmount: await poolV2Token.balanceOf(mapleLiquidityPosition),
-      pool: poolV2Token,
-      signer: fundOwner,
-    });
-
-    // TODO mainnet fork: Move to the redemption window when redemption is allowed
-    // const timeToNextWindow = await testMapleGlobals.lpCooldownPeriod();
-    // await provider.send('evm_increaseTime', [timeToNextWindow.toNumber() + 1]);
+    // Skip to the next withdrawal cycle to guarantee that we are the only parties requesting redemption.
+    // Makes partial/full redemptions easier.
+    const cycleDuration = (await withdrawalManager.getCurrentConfig()).cycleDuration;
+    const currentTime = BigNumber.from((await provider.getBlock('latest')).timestamp);
+    await provider.send('evm_increaseTime', [currentTime.add(cycleDuration).toNumber()]);
   });
 
-  xit('does not allow an invalid pool', async () => {
-    // TODO mainnet fork: Remove xit
+  it('does not allow an invalid pool', async () => {
+    // Actual reverts tested in lend()
+
     await expect(
       mapleLiquidityPositionRedeemV2({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager,
         externalPositionProxy: mapleLiquidityPosition,
         poolTokenAmount: 1,
-        pool: randomAddress(),
+        pool: randomAddressValue,
         signer: fundOwner,
       }),
-    ).rejects.toBeRevertedWith('Invalid pool');
+    ).rejects.toBeReverted();
   });
 
   it('works as expected (partial redemption)', async () => {
@@ -356,6 +394,22 @@ describe('redeemV2', () => {
 
     const redeemPoolTokenAmount = externalPositionPoolBalanceBefore.div(11);
     expect(redeemPoolTokenAmount).toBeGtBigNumber(0);
+
+    // Queue all desired pool tokens for redemption
+    await mapleLiquidityPositionRequestRedeemV2({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      poolTokenAmount: redeemPoolTokenAmount,
+      pool: poolV2Token,
+      signer: fundOwner,
+    });
+
+    await warpToRedemptionWindow({
+      provider,
+      withdrawalManager,
+      mapleLiquidityPosition,
+    });
 
     const redeemReceipt = await mapleLiquidityPositionRedeemV2({
       comptrollerProxy: comptrollerProxyUsed,
@@ -395,13 +449,29 @@ describe('redeemV2', () => {
       vaultProxyAssetBalanceBefore.add(await poolV2.convertToExitAssets(redeemPoolTokenAmount)),
     );
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot('187065');
+    expect(redeemReceipt).toMatchInlineGasSnapshot('293858');
   });
 
   it('works as expected (full redemption)', async () => {
     const externalPositionPoolBalanceBefore = await mapleLiquidityPositionCalcPoolV2TokenBalance({
       mapleLiquidityPosition,
       poolV2Address: poolV2Token,
+    });
+
+    // Queue all desired pool tokens for redemption
+    await mapleLiquidityPositionRequestRedeemV2({
+      comptrollerProxy: comptrollerProxyUsed,
+      externalPositionManager,
+      externalPositionProxy: mapleLiquidityPosition,
+      poolTokenAmount: externalPositionPoolBalanceBefore,
+      pool: poolV2Token,
+      signer: fundOwner,
+    });
+
+    await warpToRedemptionWindow({
+      provider,
+      withdrawalManager,
+      mapleLiquidityPosition,
     });
 
     const redeemReceipt = await mapleLiquidityPositionRedeemV2({
@@ -448,21 +518,26 @@ describe('cancelRedeemV2Action', () => {
       signer: fundOwner,
     });
 
-    // TODO mainnet fork: Move to the redemption window when redemption is allowed
+    await warpToRedemptionWindow({
+      provider,
+      withdrawalManager,
+      mapleLiquidityPosition,
+    });
   });
 
-  xit('does not allow an invalid pool', async () => {
-    // TODO mainnet fork: Remove xit
+  it('does not allow an invalid pool', async () => {
+    // Actual reverts tested in lend()
+
     await expect(
       mapleLiquidityPositionCancelRedeemV2({
         comptrollerProxy: comptrollerProxyUsed,
         externalPositionManager,
         externalPositionProxy: mapleLiquidityPosition,
         poolTokenAmount: 1,
-        pool: randomAddress(),
+        pool: randomAddressValue,
         signer: fundOwner,
       }),
-    ).rejects.toBeRevertedWith('Invalid pool');
+    ).rejects.toBeReverted();
   });
 
   it('works as expected', async () => {
@@ -487,7 +562,7 @@ describe('cancelRedeemV2Action', () => {
     const unlockedPoolTokensAfter = await poolV2Token.balanceOf(mapleLiquidityPosition);
     expect(unlockedPoolTokensAfter).toEqBigNumber(unlockedPoolTokensBefore.add(cancelPoolTokenAmount));
 
-    expect(receipt).toMatchInlineGasSnapshot('157022');
+    expect(receipt).toMatchInlineGasSnapshot('262248');
   });
 });
 
@@ -537,8 +612,12 @@ describe('getManagedAssets', () => {
     const poolTokenV1Value = (await mapleLiquidityPosition.connect(fundOwner).getManagedAssets.call()).amounts_[0];
 
     // Seed untracked v2 pool tokens
-    // TODO mainnet fork: Change this to use setAccountBalance. Don't want to bloat the json file with each deployment of the mock token.
-    await mockPoolV2.mintFor(mapleLiquidityPosition, liquidityAssetUnit.mul(10));
+    await setAccountBalance({
+      account: mapleLiquidityPosition,
+      amount: liquidityAssetUnit.mul(10),
+      provider,
+      token: poolV2Token,
+    });
     const poolTokenV2Value = await poolV2.convertToExitAssets(await poolV2Token.balanceOf(mapleLiquidityPosition));
 
     // Make sure both tokens have non-zero value and are not equal values
@@ -626,7 +705,7 @@ describe('getManagedAssets', () => {
       preRequestRedeemManagedAssets,
     );
 
-    expect(await mapleLiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot('70711');
+    expect(await mapleLiquidityPosition.connect(fundOwner).getManagedAssets()).toMatchInlineGasSnapshot('127438');
   });
 });
 

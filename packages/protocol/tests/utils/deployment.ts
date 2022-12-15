@@ -372,6 +372,7 @@ export interface DeploymentConfig {
   };
   maple: {
     mplRewardsV1Factory: string;
+    v2Globals: string;
     pools: Record<string, { poolV1?: string; poolV2?: string }>;
   };
   notional: {

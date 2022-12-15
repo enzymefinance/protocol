@@ -11,12 +11,15 @@ import {
   balancerV2GetPoolFromId,
   balancerV2LendArgs,
   balancerV2RedeemArgs,
+  balancerV2StablePoolsUserDataExactBptInForTokensOut,
+  balancerV2StablePoolsUserDataTokenInForExactBptOut,
   balancerV2WeightedPoolsUserDataBptInForExactTokensOut,
   balancerV2WeightedPoolsUserDataExactBptInForOneTokenOut,
   balancerV2WeightedPoolsUserDataExactBptInForTokensOut,
   balancerV2WeightedPoolsUserDataExactTokensInForBptOut,
   balancerV2WeightedPoolsUserDataTokenInForExactBptOut,
   ITestBalancerV2Helpers,
+  ITestBalancerV2Vault,
   ITestStandardToken,
   lendSelector,
   redeemSelector,
@@ -42,20 +45,15 @@ import {
 import type { BytesLike } from 'ethers';
 import { BigNumber, utils } from 'ethers';
 
-// TODO: This is currently using a pool with no reward tokens. Need to update to a pool with a reward token.
+// TODO: Get the extra reward token seeded and running again on Bal+Aura
 
 let fork: ProtocolDeployment;
 let valueInterpreter: ValueInterpreter;
 let balancerV2LiquidityAdapter: BalancerV2LiquidityAdapter;
 let balancerVaultAddress: AddressLike;
 let poolId: BytesLike, bpt: ITestStandardToken, stakingToken: ITestStandardToken;
-let ohm: ITestStandardToken, dai: ITestStandardToken, weth: ITestStandardToken; // TODO: remove these
 let poolAssets: ITestStandardToken[];
-
-// TODO: remove these individual indexes
-// const poolIndexOhm = 0;
-const poolIndexDai = 1;
-const poolIndexWeth = 2;
+// let extraRewardToken: ITestStandardToken;
 
 const adapterKeys = ['balancer', 'aura'];
 describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
@@ -63,29 +61,28 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
     fork = await deployProtocolFixture();
     valueInterpreter = fork.deployment.valueInterpreter;
     balancerVaultAddress = fork.config.balancer.vault;
+    const balancerVault = new ITestBalancerV2Vault(balancerVaultAddress, provider);
 
-    // weighted pool: [OHM, DAI, WETH]
-    poolId = fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.id;
+    // stable pool: wstETH [wstETH, WETH]
+    poolId = fork.config.balancer.poolsStable.pools.steth.id;
     bpt = new ITestStandardToken(balancerV2GetPoolFromId(poolId), provider);
-    ohm = new ITestStandardToken(fork.config.primitives.ohm, provider);
-    dai = new ITestStandardToken(fork.config.primitives.dai, provider);
-    weth = new ITestStandardToken(fork.config.weth, provider);
-    poolAssets = [ohm, dai, weth];
+    // TODO: grab dynamically
+    // extraRewardToken = new ITestStandardToken(fork.config.primitives.ldo, provider);
+
+    const poolAssetAddresses = (await balancerVault.getPoolTokens(poolId)).tokens_;
+    poolAssets = poolAssetAddresses.map((poolAssetAddress) => new ITestStandardToken(poolAssetAddress, provider));
 
     // Adapter-specific vars
     switch (adapterKey) {
       case 'balancer':
         balancerV2LiquidityAdapter = fork.deployment.balancerV2LiquidityAdapter;
-        stakingToken = new ITestStandardToken(
-          fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.gauge,
-          provider,
-        );
+        stakingToken = new ITestStandardToken(fork.config.balancer.poolsStable.pools.steth.gauge, provider);
         break;
       case 'aura':
         balancerV2LiquidityAdapter = fork.deployment.auraBalancerV2LpStakingAdapter as BalancerV2LiquidityAdapter;
 
         // Deploy a staking wrapper for the Aura pool
-        const pid = 30; // [OHM, DAI, WETH]
+        const pid = 29; // wstETH
         const factory = fork.deployment.auraBalancerV2LpStakingWrapperFactory;
         await factory.deploy(pid);
         stakingToken = new ITestStandardToken(await factory.getWrapperForConvexPool(pid), provider);
@@ -135,8 +132,8 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
 
     describe('lendAndStake', () => {
       // Use an option that only partially spends outgoing tokens to confirm no tokens are stuck in adapter
-      it('happy path: Weighted pool: TOKEN_IN_FOR_EXACT_BPT_OUT', async () => {
-        const spendAssetIndex = 1;
+      it('happy path: TOKEN_IN_FOR_EXACT_BPT_OUT', async () => {
+        const spendAssetIndex = 1; // WETH
         const spendAsset = poolAssets[spendAssetIndex];
         const maxSpendAssetAmount = (await getAssetUnit(spendAsset)).mul(100);
 
@@ -145,7 +142,7 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           await valueInterpreter.calcCanonicalAssetValue.args(spendAsset, maxSpendAssetAmount, bpt).call()
         ).div(3);
 
-        const userData = balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
+        const userData = balancerV2StablePoolsUserDataTokenInForExactBptOut({
           bptAmountOut: incomingBptAmount,
           tokenIndex: spendAssetIndex,
         });
@@ -287,8 +284,9 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
     });
 
     describe('unstakeAndRedeem', () => {
-      // Use an option that only partially spends outgoing tokens to confirm no tokens are stuck in adapter
-      it('happy path: Weighted Pool: BPT_IN_FOR_EXACT_TOKENS_OUT', async () => {
+      // TODO: Use an option that only partially spends outgoing tokens to confirm no tokens are stuck in adapter
+      // (this is not an option for the wstETH pool)
+      it('happy path: BPT_IN_FOR_EXACT_TOKENS_OUT', async () => {
         // Seed the vault with some BPT and stake
         await setAccountBalance({
           account: vaultProxy,
@@ -309,34 +307,27 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
         });
 
         // Partially redeem staking tokens
-        const maxRedeemStakingTokenAmount = initialStakingTokenBalance.div(5);
-        expect(maxRedeemStakingTokenAmount).not.toEqBigNumber(BigNumber.from(0));
+        const redeemStakingTokenAmount = initialStakingTokenBalance.div(5);
+        expect(redeemStakingTokenAmount).not.toEqBigNumber(BigNumber.from(0));
 
-        // Use an arbitrary small amount of each pool token
-        const incomingAssetAmounts = await Promise.all(
-          poolAssets.map(async (asset) => (await getAssetUnit(asset)).div(100)),
-        );
+        const minIncomingAssetAmounts = poolAssets.map(() => 1);
 
-        const userData = balancerV2WeightedPoolsUserDataBptInForExactTokensOut({
-          amountsOut: incomingAssetAmounts,
-          maxBPTAmountIn: maxRedeemStakingTokenAmount,
+        const userData = balancerV2StablePoolsUserDataExactBptInForTokensOut({
+          bptAmountIn: redeemStakingTokenAmount,
         });
 
         const request = await balancerV2ConstructRequest({
           provider,
           balancerVaultAddress,
           poolId,
-          limits: incomingAssetAmounts,
+          limits: minIncomingAssetAmounts,
           userData,
         });
 
-        // Calc expected amount of staked tokens to spend.
-        // This is the amount that will actually get unstaked.
-        // Any unredeemed amount will get re-staked.
-        const { bptIn_ } = await balancerHelpers.queryExit
+        // Calc expected amount of tokens to receive
+        const { amountsOut_: expectedIncomingAmounts } = await balancerHelpers.queryExit
           .args(poolId, balancerV2LiquidityAdapter, vaultProxy, request)
           .call();
-        expect(bptIn_).toBeGtBigNumber(0);
 
         // Get pre-redeem balances of all tokens
         const preTxPoolAssetBalances = await getAssetBalances({
@@ -351,9 +342,9 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           balancerV2LiquidityAdapter,
           stakingToken,
           poolId,
-          bptAmount: maxRedeemStakingTokenAmount,
+          bptAmount: redeemStakingTokenAmount,
           incomingAssets: poolAssets,
-          minIncomingAssetAmounts: incomingAssetAmounts,
+          minIncomingAssetAmounts,
           request,
         });
 
@@ -363,13 +354,15 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           assets: poolAssets,
         });
 
-        // Assert the exact amounts of tokens expected
+        // Assert the exact amounts of incoming tokens expected
         for (const i in poolAssets) {
-          expect(postTxPoolAssetBalances[i]).toEqBigNumber(preTxPoolAssetBalances[i].add(incomingAssetAmounts[i]));
+          expect(postTxPoolAssetBalances[i]).toEqBigNumber(preTxPoolAssetBalances[i].add(expectedIncomingAmounts[i]));
         }
 
-        // The staked token balance should only have decreased by the exact amount of bpt actually redeemed
-        expect(await stakingToken.balanceOf(vaultProxy)).toEqBigNumber(initialStakingTokenBalance.sub(bptIn_));
+        // Assert the staked token balance decreased correctly
+        expect(await stakingToken.balanceOf(vaultProxy)).toEqBigNumber(
+          initialStakingTokenBalance.sub(redeemStakingTokenAmount),
+        );
 
         expect(receipt).toMatchGasSnapshot(adapterKey);
       });
@@ -420,6 +413,8 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
 
         // Vault balances of reward tokens should be 0
         expect(await bal.balanceOf(vaultProxy)).toEqBigNumber(0);
+        // TODO: Need to seed the extra reward token on Bal/Aura to get this working
+        // expect(await extraRewardToken.balanceOf(vaultProxy)).toEqBigNumber(0);
 
         // Claim all earned rewards
         await balancerV2ClaimRewards({
@@ -432,12 +427,20 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
 
         // Assert vault balances of reward tokens have increased
         expect(await bal.balanceOf(vaultProxy)).toBeGtBigNumber(0);
+        // TODO: Need to seed the extra reward token on Bal/Aura to get this working
+        // expect(await extraRewardToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
       });
     });
   });
 });
 
+// TODO: refactor to be more abstract like the above combined tests
 describe('balancer only', () => {
+  const poolIndexDai = 1;
+  const poolIndexWeth = 2;
+
+  let ohm: ITestStandardToken, dai: ITestStandardToken, weth: ITestStandardToken;
+
   beforeEach(async () => {
     fork = await deployProtocolFixture();
     balancerVaultAddress = fork.config.balancer.vault;
@@ -448,6 +451,7 @@ describe('balancer only', () => {
     ohm = new ITestStandardToken(fork.config.primitives.ohm, provider);
     dai = new ITestStandardToken(fork.config.primitives.dai, provider);
     weth = new ITestStandardToken(fork.config.weth, provider);
+    poolAssets = [ohm, dai, weth];
 
     balancerV2LiquidityAdapter = fork.deployment.balancerV2LiquidityAdapter;
     stakingToken = new ITestStandardToken(fork.config.balancer.poolsWeighted.pools.ohm50Dai25Weth25.gauge, provider);

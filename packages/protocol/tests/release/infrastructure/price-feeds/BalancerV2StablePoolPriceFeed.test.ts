@@ -88,9 +88,9 @@ describe('expected values', () => {
       .args(staBAL3, await getAssetUnit(staBAL3), dai)
       .call();
 
-    // Balancer staBAL3 Stable Pool price on Sept 29th, 2022 was worth about $1.01
+    // Balancer staBAL3 Stable Pool price on Dec 14th, 2022 was worth about $1.01
     // Source: <https://app.zerion.io/explore/asset/staBAL3-0x06df3b2bbb68adc8b0e302443692037ed9f91b42>
-    expect(canonicalAssetValue).toEqBigNumber('1005585823512264396');
+    expect(canonicalAssetValue).toEqBigNumber('1019509353825516284');
   });
 });
 

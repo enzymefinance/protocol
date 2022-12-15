@@ -217,7 +217,7 @@ const mainnetConfig: DeploymentConfig = {
     referralCode: 0, // TODO: replace when referrals on mainnet
   },
   aura: {
-    booster: '0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10',
+    booster: '0xA57b8d98dAE62B26Ec3bcC4a365338157060B234',
     auraToken: '0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF',
   },
   balancer: {
@@ -364,7 +364,7 @@ const mainnetConfig: DeploymentConfig = {
     riskAdjustedIdleUsdt: '0x28fAc5334C9f7262b3A3Fe707e250E01053e07b5',
   },
   kiln: {
-    stakingContract: '0x746d8A8FCAB7f829Fa500504f60D89C5CC1EA973'
+    stakingContract: '0x0816DF553a89c4bFF7eBfD778A9706a989Dd3Ce3'
   },
   lido: {
     steth: primitives.steth,
@@ -376,9 +376,11 @@ const mainnetConfig: DeploymentConfig = {
   },
   maple: {
     mplRewardsV1Factory: '0x0155729EbCd47Cb1fBa02bF5a8DA20FaF3860535',
+    v2Globals: '0x804a6F5F667170F545Bf14e5DDB48C70B788390C',
     pools: {
       mavenUsdc: {
         poolV1: '0x6F6c8013f639979C84b756C7FC1500eB5aF18Dc4',
+        poolV2: '0xd3cd37a7299B963bbc69592e5Ba933388f70dc88',
       }
     }
   },

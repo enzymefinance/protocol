@@ -9,7 +9,12 @@ export enum BalancerV2StablePoolJoinKind {
   EXACT_TOKENS_IN_FOR_BPT_OUT,
   TOKEN_IN_FOR_EXACT_BPT_OUT,
   ALL_TOKENS_IN_FOR_EXACT_BPT_OUT,
-  ADD_TOKEN,
+}
+
+export enum BalancerV2StablePoolExitKind {
+  EXACT_BPT_IN_FOR_ONE_TOKEN_OUT = 0,
+  EXACT_BPT_IN_FOR_TOKENS_OUT,
+  BPT_IN_FOR_EXACT_TOKENS_OUT,
 }
 
 export enum BalancerV2WeightedPoolJoinKind {
@@ -211,6 +216,40 @@ export function balancerV2WeightedPoolsUserDataTokenInForExactBptOut({
 }
 
 // Stable pools
+
+// exits
+
+export function balancerV2StablePoolsUserDataExactBptInForOneTokenOut({
+  bptAmountIn,
+  tokenIndex,
+}: {
+  bptAmountIn: BigNumberish;
+  tokenIndex: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint8', 'uint256', 'uint256'],
+    [BalancerV2StablePoolExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT, bptAmountIn, tokenIndex],
+  );
+}
+
+export function balancerV2StablePoolsUserDataExactBptInForTokensOut({ bptAmountIn }: { bptAmountIn: BigNumberish }) {
+  return encodeArgs(['uint8', 'uint256'], [BalancerV2StablePoolExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, bptAmountIn]);
+}
+
+// joins
+
+export function balancerV2StablePoolsUserDataExactTokensInForBptOut({
+  amountsIn,
+  bptOut,
+}: {
+  amountsIn: BigNumberish[];
+  bptOut: BigNumberish;
+}) {
+  return encodeArgs(
+    ['uint8', 'uint256[]', 'uint256'],
+    [BalancerV2StablePoolJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, amountsIn, bptOut],
+  );
+}
 
 export function balancerV2StablePoolsUserDataTokenInForExactBptOut({
   bptAmountOut,

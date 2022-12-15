@@ -587,16 +587,16 @@ describe('expected values', () => {
 
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // Sept 29, 2022
-      // bnb/usd was about $282
-      // ren/usd was about $0.115
-      // 1 bnb was about 2450 ren
+      // Dec 14, 2022
+      // bnb/usd was about $270
+      // ren/usd was about $0.085
+      // 1 bnb was about 3175 ren
 
       const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('2457345968198470605686');
+      expect(canonicalAssetValue).toEqBigNumber('3129274896831388097515');
     });
   });
 

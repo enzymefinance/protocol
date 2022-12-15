@@ -261,11 +261,13 @@ describe('borrowAssets', () => {
     });
 
     const getDebtAssetsCall = await aaveV2DebtPosition.getDebtAssets.call();
+    expect(getDebtAssetsCall.assets_.length).toBe(borrowedAssets.length);
 
-    expect(getDebtAssetsCall).toMatchFunctionOutput(aaveV2DebtPosition.getManagedAssets.fragment, {
-      amounts_: borrowedAmounts,
-      assets_: borrowedAssets,
-    });
+    for (const i in getDebtAssetsCall.assets_) {
+      expect(getDebtAssetsCall.assets_[i]).toMatchAddress(borrowedAssets[i]);
+      // Give a small tolerance for aToken rounding
+      expect(getDebtAssetsCall.amounts_[i]).toBeAroundBigNumber(borrowedAmounts[i], 1);
+    }
 
     expect(borrowReceipt).toMatchInlineGasSnapshot(`544325`);
   });

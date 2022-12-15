@@ -114,7 +114,7 @@ describe('expected values', () => {
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue.args(idleDai, idleTokenUnit, dai).call();
 
     // Value should be a small percentage above 1 unit of the underlying
-    expect(canonicalAssetValue).toBeAroundBigNumber('1055046802123867539', '0.03');
+    expect(canonicalAssetValue).toBeAroundBigNumber('1087342228080086667', '0.03');
   });
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
@@ -177,6 +177,6 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`146196`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`419376`);
   });
 });

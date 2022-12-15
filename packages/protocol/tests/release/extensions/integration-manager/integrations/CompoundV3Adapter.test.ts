@@ -296,18 +296,23 @@ describe('claimRewards', () => {
     // Provide collateral to allow borrowing
     const collateralToken = new ITestStandardToken(fork.config.primitives.uni, provider);
     const collateralUnit = await getAssetUnit(collateralToken);
+    const collateralAmount = collateralUnit.mul(10_000);
 
     await setAccountBalance({
       account: vaultProxy,
-      amount: collateralUnit.mul(100_000),
+      amount: collateralAmount,
       provider,
       token: collateralToken,
     });
-    await collateralToken.connect(vaultSigner).approve(cToken, collateralUnit.mul(100_000));
-    await cToken.connect(vaultSigner).supply(collateralToken, collateralUnit.mul(100_000));
+    await collateralToken.connect(vaultSigner).approve(cToken, collateralAmount);
+    await cToken.connect(vaultSigner).supply(collateralToken, collateralAmount);
 
-    // Take out a loan so that the vault can accrue rewards
-    await cToken.connect(vaultSigner).withdraw(underlyingAsset, underlyingAssetUnit.mul(10_000));
+    // Take out a loan so that the vault can accrue rewards. Assume fine to borrow half of collateral value.
+    const collateralValueInBorrowAsset = await fork.deployment.valueInterpreter.calcCanonicalAssetValue
+      .args(collateralToken, collateralAmount, underlyingAsset)
+      .call();
+
+    await cToken.connect(vaultSigner).withdraw(underlyingAsset, collateralValueInBorrowAsset.div(2));
 
     await provider.send('evm_increaseTime', [ONE_YEAR_IN_SECONDS]);
     await provider.send('evm_mine', []);
