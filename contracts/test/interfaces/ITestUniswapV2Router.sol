@@ -23,11 +23,11 @@ interface ITestUniswapV2Router {
         uint256 _reserveB
     ) external pure returns (uint256 quote_);
 
-    function swapExactTokensForTokens(
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint256 _amountIn,
         uint256 _amountOutMin,
-        address[] memory _path,
+        address[] calldata _path,
         address _to,
         uint256 _deadline
-    ) external returns (uint256[] memory amounts_);
+    ) external;
 }

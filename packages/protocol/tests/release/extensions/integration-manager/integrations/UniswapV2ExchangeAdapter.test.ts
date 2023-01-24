@@ -12,6 +12,7 @@ import {
   createNewFund,
   deployProtocolFixture,
   getAssetBalances,
+  getAssetUnit,
   setAccountBalance,
   uniswapV2TakeOrder,
 } from '@enzymefinance/testutils';
@@ -148,7 +149,7 @@ describe('takeOrder', () => {
 
     // Seed fund and take order
     await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
-    await uniswapV2TakeOrder({
+    const receipt = await uniswapV2TakeOrder({
       comptrollerProxy,
       fundOwner,
       integrationManager,
@@ -169,6 +170,8 @@ describe('takeOrder', () => {
 
     expect(incomingAssetAmount).toEqBigNumber(amountsOut[1]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
+
+    expect(receipt).toMatchInlineGasSnapshot(`243513`);
   });
 
   it('works as expected when called by a fund and swap assets via an intermediary', async () => {
@@ -198,7 +201,7 @@ describe('takeOrder', () => {
 
     // Seed fund and take order
     await setAccountBalance({ account: vaultProxy, amount: outgoingAssetAmount, provider, token: outgoingAsset });
-    await uniswapV2TakeOrder({
+    const receipt = await uniswapV2TakeOrder({
       comptrollerProxy,
       fundOwner,
       integrationManager,
@@ -219,5 +222,52 @@ describe('takeOrder', () => {
 
     expect(incomingAssetAmount).toEqBigNumber(amountsOut[2]);
     expect(postTxOutgoingAssetBalance).toEqBigNumber(BigNumber.from(0));
+
+    expect(receipt).toMatchInlineGasSnapshot(`354538`);
+  });
+
+  it('works as expected with an outgoing token with an on-transfer fee', async () => {
+    const weth = new ITestStandardToken(fork.config.weth, provider);
+    const outgoingAsset = new ITestStandardToken(fork.config.primitives.paxg, provider);
+    const incomingAsset = weth;
+    const uniswapRouter = new ITestUniswapV2Router(fork.config.uniswap.router, provider);
+    const [fundOwner] = fork.accounts;
+    const uniswapV2ExchangeAdapter = fork.deployment.uniswapV2ExchangeAdapter;
+    const integrationManager = fork.deployment.integrationManager;
+
+    const { comptrollerProxy, vaultProxy } = await createNewFund({
+      denominationAsset: weth,
+      fundDeployer: fork.deployment.fundDeployer,
+      fundOwner,
+      signer: fundOwner,
+    });
+
+    const path = [outgoingAsset, incomingAsset];
+
+    // Seed fund
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: await getAssetUnit(outgoingAsset),
+      provider,
+      token: outgoingAsset,
+    });
+
+    // Using the balance instead of the exact amount since a transfer fee has been deducted
+    const outgoingAssetAmount = await outgoingAsset.balanceOf(vaultProxy);
+    const amountsOut = await uniswapRouter.getAmountsOut(outgoingAssetAmount, path);
+
+    const receipt = await uniswapV2TakeOrder({
+      comptrollerProxy,
+      fundOwner,
+      integrationManager,
+      minIncomingAssetAmount: amountsOut[1].mul(97).div(100), // Less than amounts out since transfer fees will be deducted at each transfer step
+      outgoingAssetAmount,
+      path,
+      provider,
+      uniswapV2ExchangeAdapter,
+      vaultProxy,
+    });
+
+    expect(receipt).toMatchInlineGasSnapshot(`293851`);
   });
 });

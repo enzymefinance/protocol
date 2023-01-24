@@ -84,13 +84,14 @@ abstract contract UniswapV2ActionsMixin is AssetHelpers {
         __approveAssetMaxAsNeeded(_path[0], UNISWAP_V2_ROUTER2, _outgoingAssetAmount);
 
         // Execute fill
-        IUniswapV2Router2(UNISWAP_V2_ROUTER2).swapExactTokensForTokens(
-            _outgoingAssetAmount,
-            _minIncomingAssetAmount,
-            _path,
-            _recipient,
-            __uniswapV2GetActionDeadline()
-        );
+        IUniswapV2Router2(UNISWAP_V2_ROUTER2)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                _outgoingAssetAmount,
+                _minIncomingAssetAmount,
+                _path,
+                _recipient,
+                __uniswapV2GetActionDeadline()
+            );
     }
 
     /// @dev Helper to swap many assets to a single target asset.

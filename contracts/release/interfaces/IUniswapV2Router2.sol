@@ -42,11 +42,11 @@ interface IUniswapV2Router2 {
         uint256
     ) external returns (uint256, uint256);
 
-    function swapExactTokensForTokens(
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint256,
         uint256,
         address[] calldata,
         address,
         uint256
-    ) external returns (uint256[] memory);
+    ) external;
 }

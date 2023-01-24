@@ -117,13 +117,16 @@ describe('exchangeEthAndBuyShares', () => {
     const expectedDenominationAssetReceived = (await uniswapRouter.getAmountsOut(investmentEth, uniswapPath))[1];
 
     // Format data for a Uniswap exchange of WETH => denominationAsset
-    const uniswapExchangeData = encodeFunctionData(uniswapRouter.swapExactTokensForTokens.fragment, [
-      investmentEth,
-      1,
-      uniswapPath,
-      depositWrapper,
-      BigNumber.from((await provider.getBlock('latest')).timestamp).add(300),
-    ]);
+    const uniswapExchangeData = encodeFunctionData(
+      uniswapRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens.fragment,
+      [
+        investmentEth,
+        1,
+        uniswapPath,
+        depositWrapper,
+        BigNumber.from((await provider.getBlock('latest')).timestamp).add(300),
+      ],
+    );
 
     // Attempting to execute the exchange and buy shares with a too-high minInvestmentAmount should fail
     await expect(
