@@ -33,6 +33,10 @@ const fn: DeployFunction = async function (hre) {
   const liquityDebtPositionParser = await getOrNull('LiquityDebtPositionParser');
   const mapleLiquidityPositionLib = await getOrNull('MapleLiquidityPositionLib');
   const mapleLiquidityPositionParser = await getOrNull('MapleLiquidityPositionParser');
+  const solvV2BondBuyerPositionLib = await getOrNull('SolvV2BondBuyerPositionLib');
+  const solvV2BondBuyerPositionParser = await getOrNull('SolvV2BondBuyerPositionParser');
+  const solvV2BondIssuerPositionLib = await getOrNull('SolvV2BondIssuerPositionLib');
+  const solvV2BondIssuerPositionParser = await getOrNull('SolvV2BondIssuerPositionParser');
   const notionalV2PositionLib = await getOrNull('NotionalV2PositionLib');
   const notionalV2PositionParser = await getOrNull('NotionalV2PositionParser');
   const solvV2ConvertibleBuyerPositionLib = await getOrNull('SolvV2ConvertibleBuyerPositionLib');
@@ -68,6 +72,8 @@ const fn: DeployFunction = async function (hre) {
     ...(solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser
       ? ['SOLV_V2_CONVERTIBLE_ISSUER']
       : []),
+    ...(solvV2BondBuyerPositionLib && solvV2BondBuyerPositionParser ? ['SOLV_V2_BOND_BUYER'] : []),
+    ...(solvV2BondIssuerPositionLib && solvV2BondIssuerPositionParser ? ['SOLV_V2_BOND_ISSUER'] : []),
     ...(notionalV2PositionLib && notionalV2PositionParser ? ['NOTIONAL_V2'] : []),
     ...(kilnStakingPositionLib && kilnStakingPositionParser ? ['KILN_STAKING'] : []),
   ];
@@ -175,6 +181,22 @@ const fn: DeployFunction = async function (hre) {
       [ExternalPositionType.NotionalV2Position],
       [notionalV2PositionLib],
       [notionalV2PositionParser],
+    );
+  }
+
+  if (solvV2BondBuyerPositionLib && solvV2BondBuyerPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.SolvV2BondBuyerPosition],
+      [solvV2BondBuyerPositionLib],
+      [solvV2BondBuyerPositionParser],
+    );
+  }
+
+  if (solvV2BondIssuerPositionLib && solvV2BondIssuerPositionParser) {
+    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
+      [ExternalPositionType.SolvV2BondIssuerPosition],
+      [solvV2BondIssuerPositionLib],
+      [solvV2BondIssuerPositionParser],
     );
   }
 

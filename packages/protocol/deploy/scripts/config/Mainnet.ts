@@ -197,6 +197,8 @@ const yVaultsV2 = {
 };
 
 const unsupportedAssets = {
+  iusd: '0x0A3BB08b3a15A19b4De82F8AcFc862606FB69A2D',
+  izi: '0x9ad37205d608B8b219e6a2573f922094CEc5c200',
   perp: '0xbc396689893d065f41bc2c6ecbee5e0085233447',
   seth: '0x5e74c9036fb86bd7ecdcb084a0673efc32ea31cb',
   usf: '0xe0e05c43c097b0982db6c9d626c4eb9e95c3b9ce',
@@ -410,14 +412,24 @@ const mainnetConfig: DeploymentConfig = {
     delegateRegistry: '0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446'
   },
   solvFinanceV2: {
-    convertibleMarket: '0x962e18f89d27Cfc84c8fFA2ec7C90b3D933AD685',
-    initialConvertibleOfferingMarket: '0x83208b368c34dac1a0f8b616f278ed42f1ffb8cd',
-    deployer: '0x21bc9179d5c529b52e3ee8f6ecf0e63fa231d16c',
-    manualPriceOracle: '0x19337144D223B0cA0d3d19472f4b848D2B6E45e2',
-    priceOracleManager: '0x7b430d4ffd1bc1f635b9375c5dc602df44e2edc4',
+    bonds: {
+      initialOfferingMarket: '0x2e2E940c7041A2948934175a81908bAA8adc6AFe',
+      manualPriceOracle: '0x86d6Fa3485f9a69549Ccd767d4Ca084d4eEFF89a',
+      priceOracleManager: '0xbfe7e3ea57b89ea978732e4aa05af86291b93766',
+      vouchers:{
+        bviUsdWeth: {underlying: unsupportedAssets.iusd, pool: '0xf498875333A794Fe586430793db1B84070B040A0', voucher: '0xf4F7139b1FcC5Cac2f573Cc4B684Cc75367A9cfD'},
+        bviZiBit: {underlying: unsupportedAssets.izi, pool: '0x4910441fAA90e74c7e5F8BD88aB27B4893814D62', voucher: '0xf4d5F535695b70459EBF73796a7447950308bb71' }},
+    },
     convertibles: {
-      perp: {underlying: unsupportedAssets.perp, pool: '0xe8865b89576866da3f9b7fc868e057fb37f9b5a5', voucher: '0x2d53f42b2edf8907bcaa4d3f28e6f76bd95334e3'},
-      usf: {underlying: unsupportedAssets.usf, pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57', voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034' }},
+      initialOfferingMarket: '0x83208b368c34dac1a0f8b616f278ed42f1ffb8cd',
+      manualPriceOracle: '0x19337144D223B0cA0d3d19472f4b848D2B6E45e2',
+      market: '0x962e18f89d27Cfc84c8fFA2ec7C90b3D933AD685',
+      priceOracleManager: '0x7b430d4ffd1bc1f635b9375c5dc602df44e2edc4',
+      vouchers: {
+        perp: {underlying: unsupportedAssets.perp, pool: '0xe8865b89576866da3f9b7fc868e057fb37f9b5a5', voucher: '0x2d53f42b2edf8907bcaa4d3f28e6f76bd95334e3'},
+        usf: {underlying: unsupportedAssets.usf, pool: '0xa2c9d8c01f42db434b9ba91678f6cb6999e5bf57', voucher: '0xbF50337eD0Ff20Fa4d5702BF2DA187E2C217D034' }}
+    },
+    deployer: '0x21bc9179d5c529b52e3ee8f6ecf0e63fa231d16c'
   },
   synthetix: {
     delegateApprovals: '0x15fd6e554874B9e70F832Ed37f231Ac5E142362f',

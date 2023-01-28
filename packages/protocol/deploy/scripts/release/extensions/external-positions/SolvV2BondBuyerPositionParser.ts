@@ -12,15 +12,15 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
 
-  await deploy('SolvV2ConvertibleBuyerPositionParser', {
-    args: [config.solvFinanceV2.convertibles.market, config.solvFinanceV2.convertibles.initialOfferingMarket],
+  await deploy('SolvV2BondBuyerPositionParser', {
+    args: [config.solvFinanceV2.bonds.initialOfferingMarket],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
 };
 
-fn.tags = ['Release', 'ExternalPositions', 'SolvV2ConvertibleBuyerPositionParser'];
+fn.tags = ['Release', 'ExternalPositions', 'SolvV2BondBuyerPositionParser'];
 fn.dependencies = ['Config'];
 
 fn.skip = async (hre) => {

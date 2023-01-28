@@ -13,7 +13,7 @@ const fn: DeployFunction = async function (hre) {
   const config = await loadConfig(hre);
 
   await deploy('SolvV2ConvertibleBuyerPositionLib', {
-    args: [config.solvFinanceV2.convertibleMarket, config.solvFinanceV2.initialConvertibleOfferingMarket],
+    args: [config.solvFinanceV2.convertibles.market, config.solvFinanceV2.convertibles.initialOfferingMarket],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

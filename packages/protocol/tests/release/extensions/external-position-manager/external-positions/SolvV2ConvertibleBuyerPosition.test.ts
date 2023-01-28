@@ -2,12 +2,12 @@ import { extractEvent } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
   ETH_ADDRESS,
+  ITestSolvV2ConvertibleManualPriceOracle,
   ITestSolvV2ConvertibleMarket,
   ITestSolvV2ConvertiblePool,
+  ITestSolvV2ConvertiblePriceOracleManager,
   ITestSolvV2ConvertibleVoucher,
   ITestSolvV2InitialConvertibleOfferingMarket,
-  ITestSolvV2ManualPriceOracle,
-  ITestSolvV2PriceOracleManager,
   ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_WEEK_IN_SECONDS,
@@ -52,8 +52,8 @@ let vaultProxy: VaultLib;
 let convertibleMarket: ITestSolvV2ConvertibleMarket;
 let initialConvertibleOfferingMarket: ITestSolvV2InitialConvertibleOfferingMarket;
 let solvConvertibleBuyerPosition: SolvV2ConvertibleBuyerPositionLib;
-let oracleManager: ITestSolvV2PriceOracleManager;
-let manualPriceOracle: ITestSolvV2ManualPriceOracle;
+let oracleManager: ITestSolvV2ConvertiblePriceOracleManager;
+let manualPriceOracle: ITestSolvV2ConvertibleManualPriceOracle;
 let voucher: ITestSolvV2ConvertibleVoucher;
 let voucherPool: ITestSolvV2ConvertiblePool;
 
@@ -95,20 +95,26 @@ beforeEach(async () => {
   // All tests use the USF convertible voucher
   currencyToken = new ITestStandardToken(fork.config.primitives.usdt, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new ITestStandardToken(fork.config.solvFinanceV2.convertibles.usf.underlying, provider);
+  underlyingToken = new ITestStandardToken(fork.config.solvFinanceV2.convertibles.vouchers.usf.underlying, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvConvertibleBuyerPosition = new SolvV2ConvertibleBuyerPositionLib(externalPositionProxy, provider);
   const solvDeployer = await impersonateSigner({ provider, signerAddress: fork.config.solvFinanceV2.deployer });
-  oracleManager = new ITestSolvV2PriceOracleManager(fork.config.solvFinanceV2.priceOracleManager, solvDeployer);
-  manualPriceOracle = new ITestSolvV2ManualPriceOracle(fork.config.solvFinanceV2.manualPriceOracle, solvDeployer);
-  convertibleMarket = new ITestSolvV2ConvertibleMarket(fork.config.solvFinanceV2.convertibleMarket, solvDeployer);
-  initialConvertibleOfferingMarket = new ITestSolvV2InitialConvertibleOfferingMarket(
-    fork.config.solvFinanceV2.initialConvertibleOfferingMarket,
+  oracleManager = new ITestSolvV2ConvertiblePriceOracleManager(
+    fork.config.solvFinanceV2.convertibles.priceOracleManager,
     solvDeployer,
   );
-  voucher = new ITestSolvV2ConvertibleVoucher(fork.config.solvFinanceV2.convertibles.usf.voucher, provider);
-  voucherPool = new ITestSolvV2ConvertiblePool(fork.config.solvFinanceV2.convertibles.usf.pool, solvDeployer);
+  manualPriceOracle = new ITestSolvV2ConvertibleManualPriceOracle(
+    fork.config.solvFinanceV2.convertibles.manualPriceOracle,
+    solvDeployer,
+  );
+  convertibleMarket = new ITestSolvV2ConvertibleMarket(fork.config.solvFinanceV2.convertibles.market, solvDeployer);
+  initialConvertibleOfferingMarket = new ITestSolvV2InitialConvertibleOfferingMarket(
+    fork.config.solvFinanceV2.convertibles.initialOfferingMarket,
+    solvDeployer,
+  );
+  voucher = new ITestSolvV2ConvertibleVoucher(fork.config.solvFinanceV2.convertibles.vouchers.usf.voucher, provider);
+  voucherPool = new ITestSolvV2ConvertiblePool(fork.config.solvFinanceV2.convertibles.vouchers.usf.pool, solvDeployer);
 
   // Seed the vaultProxy with currency, and issuer with underlying and currency
   const underlyingAmount = underlyingUnit.mul(100_000);
@@ -303,7 +309,7 @@ describe('claim voucher', () => {
     await provider.send('evm_mine', []);
 
     // Update Oracle
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
 
     // Set price to above the highestPrice so that the claim returns underlying
     await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice.mul(2));
@@ -765,7 +771,7 @@ describe('get managed assets', () => {
     await provider.send('evm_mine', []);
 
     // Update Oracle to a manual price oracle to manipulate the price
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
 
     await manualPriceOracle._setPrice(underlyingToken, maturity, lowestPrice.div(2));
     await voucherPool.settleConvertiblePrice(slotId);
@@ -797,7 +803,7 @@ describe('get managed assets', () => {
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS + ONE_WEEK_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
     // Settlement price halfway between lowest and highest
     const settlePrice = lowestPrice.add(highestPrice).div(2);
     await manualPriceOracle._setPrice(underlyingToken, maturity, settlePrice);
@@ -830,7 +836,7 @@ describe('get managed assets', () => {
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS + ONE_WEEK_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
     await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice.mul(2));
     await voucherPool.settleConvertiblePrice(slotId);
 
@@ -864,7 +870,7 @@ describe('get managed assets', () => {
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS + ONE_WEEK_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
     await manualPriceOracle._setPrice(underlyingToken, maturity, lowestPrice);
     await voucherPool.settleConvertiblePrice(slotId);
 
@@ -945,7 +951,7 @@ describe('get managed assets', () => {
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS + maturity2]);
     await provider.send('evm_mine', []);
 
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
     // Settle first slot price to above highestPrice
     await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice.mul(2));
     await voucherPool.settleConvertiblePrice(slotId);
@@ -1005,7 +1011,7 @@ describe('get managed assets', () => {
     await provider.send('evm_increaseTime', [ONE_DAY_IN_SECONDS + ONE_WEEK_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
     await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice.mul(2));
     await voucherPool.settleConvertiblePrice(slotId);
 

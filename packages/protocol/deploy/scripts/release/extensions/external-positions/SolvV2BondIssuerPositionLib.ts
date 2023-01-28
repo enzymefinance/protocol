@@ -9,18 +9,18 @@ const fn: DeployFunction = async function (hre) {
     ethers: { getSigners },
   } = hre;
 
-  const config = await loadConfig(hre);
   const deployer = (await getSigners())[0];
+  const config = await loadConfig(hre);
 
-  await deploy('SolvV2ConvertibleBuyerPositionParser', {
-    args: [config.solvFinanceV2.convertibles.market, config.solvFinanceV2.convertibles.initialOfferingMarket],
+  await deploy('SolvV2BondIssuerPositionLib', {
+    args: [config.solvFinanceV2.bonds.initialOfferingMarket],
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,
   });
 };
 
-fn.tags = ['Release', 'ExternalPositions', 'SolvV2ConvertibleBuyerPositionParser'];
+fn.tags = ['Release', 'ExternalPositions', 'SolvV2BondIssuerPositionLib'];
 fn.dependencies = ['Config'];
 
 fn.skip = async (hre) => {

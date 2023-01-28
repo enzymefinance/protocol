@@ -9,9 +9,14 @@
 
 pragma solidity 0.6.12;
 
-/// @title ITestSolvV2PriceOracleManager Interface
+/// @title ITestSolvV2BondManualPriceOracle Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice A test interface for Solv V2 Price Oracle Manager
-interface ITestSolvV2PriceOracleManager {
-    function _setVoucherOracle(address voucher_, address oracle_) external;
+/// @notice A test interface for Solv V2 Manual Price Oracle
+interface ITestSolvV2BondManualPriceOracle {
+    function setPrice(
+        address _base,
+        address _anchor,
+        uint64 _timestamp,
+        int256 _price
+    ) external;
 }

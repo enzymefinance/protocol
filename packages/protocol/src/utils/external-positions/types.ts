@@ -11,4 +11,6 @@ export enum ExternalPositionType {
   SolvV2ConvertibleIssuerPosition = '9',
   NotionalV2Position = '10',
   KilnStakingPosition = '11',
+  SolvV2BondBuyerPosition = '12',
+  SolvV2BondIssuerPosition = '13',
 }

@@ -8,6 +8,8 @@ export * from './kiln-staking';
 export * from './liquity-debt';
 export * from './maple-liquidity';
 export * from './mocks';
+export * from './solv-v2-bond-buyer';
+export * from './solv-v2-bond-issuer';
 export * from './notional-v2';
 export * from './solv-v2-convertible-buyer';
 export * from './solv-v2-convertible-issuer';

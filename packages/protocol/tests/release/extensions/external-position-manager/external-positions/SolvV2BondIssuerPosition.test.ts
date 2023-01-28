@@ -2,16 +2,16 @@ import { sameAddress } from '@enzymefinance/ethers';
 import type { ComptrollerLib, ExternalPositionManager, VaultLib } from '@enzymefinance/protocol';
 import {
   ETH_ADDRESS,
-  ITestSolvV2ConvertibleManualPriceOracle,
-  ITestSolvV2ConvertiblePool,
-  ITestSolvV2ConvertiblePriceOracleManager,
-  ITestSolvV2ConvertibleVoucher,
+  ITestSolvV2BondManualPriceOracle,
+  ITestSolvV2BondPool,
+  ITestSolvV2BondPriceOracleManager,
+  ITestSolvV2BondVoucher,
   ITestSolvV2InitialConvertibleOfferingMarket,
   ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_HOUR_IN_SECONDS,
   ONE_WEEK_IN_SECONDS,
-  SolvV2ConvertibleIssuerPositionLib,
+  SolvV2BondIssuerPositionLib,
   SolvV2SalePriceType,
 } from '@enzymefinance/protocol';
 import type {
@@ -23,7 +23,7 @@ import {
   assertEvent,
   assertExternalPositionAssetsToReceive,
   createNewFund,
-  createSolvV2ConvertibleIssuerPosition,
+  createSolvV2BondIssuerPosition,
   deployProtocolFixture,
   getAssetUnit,
   impersonateSigner,
@@ -38,6 +38,7 @@ import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, constants, utils } from 'ethers';
 
 const voucherUnit = utils.parseUnits('1', 26);
+const ivoFeeRate = 6; // 6bps
 
 let fundOwner: SignerWithAddress;
 let buyer: SignerWithAddress;
@@ -49,11 +50,11 @@ let underlyingUnit: BigNumber;
 let comptrollerProxy: ComptrollerLib;
 let externalPositionManager: ExternalPositionManager;
 let vaultProxy: VaultLib;
-let initialConvertibleOfferingMarket: ITestSolvV2InitialConvertibleOfferingMarket;
-let solvV2ConvertibleIssuerPosition: SolvV2ConvertibleIssuerPositionLib;
+let initialBondOfferingMarket: ITestSolvV2InitialConvertibleOfferingMarket;
+let solvV2BondIssuerPosition: SolvV2BondIssuerPositionLib;
 let solvDeployer: SignerWithAddress;
-let voucher: ITestSolvV2ConvertibleVoucher;
-let voucherPool: ITestSolvV2ConvertiblePool;
+let voucher: ITestSolvV2BondVoucher;
+let voucherPool: ITestSolvV2BondPool;
 
 let fork: ProtocolDeployment;
 
@@ -86,26 +87,27 @@ beforeEach(async () => {
 
   externalPositionManager = fork.deployment.externalPositionManager;
 
-  const { externalPositionProxy } = await createSolvV2ConvertibleIssuerPosition({
+  const { externalPositionProxy } = await createSolvV2BondIssuerPosition({
     comptrollerProxy,
     externalPositionManager,
     signer: fundOwner,
   });
-  solvV2ConvertibleIssuerPosition = new SolvV2ConvertibleIssuerPositionLib(externalPositionProxy, provider);
+
+  solvV2BondIssuerPosition = new SolvV2BondIssuerPositionLib(externalPositionProxy, provider);
 
   // All tests use the USF convertible voucher (except the test for multiple voucher issuance)
-  currencyToken = new ITestStandardToken(fork.config.primitives.usdt, provider);
+  currencyToken = new ITestStandardToken(fork.config.weth, provider);
   currencyUnit = await getAssetUnit(currencyToken);
-  underlyingToken = new ITestStandardToken(fork.config.unsupportedAssets.usf, provider);
+  underlyingToken = new ITestStandardToken(fork.config.solvFinanceV2.bonds.vouchers.bviUsdWeth.underlying, provider);
   underlyingUnit = await getAssetUnit(underlyingToken);
 
   solvDeployer = await impersonateSigner({ provider, signerAddress: fork.config.solvFinanceV2.deployer });
-  initialConvertibleOfferingMarket = new ITestSolvV2InitialConvertibleOfferingMarket(
-    fork.config.solvFinanceV2.convertibles.initialOfferingMarket,
+  initialBondOfferingMarket = new ITestSolvV2InitialConvertibleOfferingMarket(
+    fork.config.solvFinanceV2.bonds.initialOfferingMarket,
     solvDeployer,
   );
-  voucherPool = new ITestSolvV2ConvertiblePool(fork.config.solvFinanceV2.convertibles.vouchers.usf.pool, solvDeployer);
-  voucher = new ITestSolvV2ConvertibleVoucher(fork.config.solvFinanceV2.convertibles.vouchers.usf.voucher, provider);
+  voucher = new ITestSolvV2BondVoucher(fork.config.solvFinanceV2.bonds.vouchers.bviUsdWeth.voucher, provider);
+  voucherPool = new ITestSolvV2BondPool(fork.config.solvFinanceV2.bonds.vouchers.bviUsdWeth.pool, solvDeployer);
 
   // Seed the vaultProxy with underlying and currency, and buyer with currency
   const underlyingAmount = underlyingUnit.mul(100_000);
@@ -115,13 +117,13 @@ beforeEach(async () => {
   await setAccountBalance({ account: vaultProxy, amount: underlyingAmount, provider, token: underlyingToken });
 
   // Approve buyer spend on solv offering market
-  await currencyToken.connect(buyer).approve(initialConvertibleOfferingMarket, constants.MaxUint256);
+  await currencyToken.connect(buyer).approve(initialBondOfferingMarket, constants.MaxUint256);
 
   // Get the next IVO id
-  offerId = await initialConvertibleOfferingMarket.nextOfferingId.call();
+  offerId = await initialBondOfferingMarket.nextOfferingId.call();
 
   // Set the EP as the voucher manager so they can create the Initial Voucher Offering (IVO)
-  await initialConvertibleOfferingMarket.setVoucherManager(voucher, [solvV2ConvertibleIssuerPosition], true);
+  await initialBondOfferingMarket.setVoucherManager(voucher, [solvV2BondIssuerPosition], true);
 
   // Parameters of the IVO
   const { timestamp } = await provider.getBlock('latest');
@@ -145,7 +147,7 @@ beforeEach(async () => {
     currency: currencyToken,
     endTime,
     externalPositionManager,
-    externalPositionProxy: solvV2ConvertibleIssuerPosition,
+    externalPositionProxy: solvV2BondIssuerPosition,
     max: 0,
     min: 0,
     mintParameter: {
@@ -164,13 +166,12 @@ beforeEach(async () => {
   };
 
   slotId = await voucher.getSlot(
-    solvV2ConvertibleIssuerPosition,
+    solvV2BondIssuerPosition,
     currencyToken,
     lowestPrice,
     highestPrice,
     startTime,
     maturity,
-    0,
   );
 });
 
@@ -185,20 +186,21 @@ describe('Actions.Offer', () => {
     // Set non-default min and max values to ensure that they are set properly
     const min = 1;
     const max = voucherUnit;
+
     const receipt = await solvV2ConvertibleIssuerPositionCreateOffer({ ...createOfferArgs, min, max });
 
     // Value of external position should be equal to deposited collateral
-    const managedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
+    const managedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
     expect(managedAssets.assets_.length).toBe(1);
     expect(managedAssets.assets_[0]).toMatchAddress(underlyingToken);
     expect(managedAssets.amounts_[0]).toEqBigNumber(tokenInAmount);
 
     // Check that the offer has been properly added on Solv's contract
-    const offer = await initialConvertibleOfferingMarket.offerings(offerId);
+    const offer = await initialBondOfferingMarket.offerings(offerId);
     expect(offer.currency).toMatchAddress(createOfferArgs.currency);
     expect(offer.endTime).toBe(createOfferArgs.endTime);
     expect(offer.isValid).toBe(true);
-    expect(offer.issuer).toMatchAddress(solvV2ConvertibleIssuerPosition);
+    expect(offer.issuer).toMatchAddress(solvV2BondIssuerPosition);
     expect(offer.max).toEqBigNumber(max);
     expect(offer.min).toEqBigNumber(min);
     expect(offer.priceType).toBe(createOfferArgs.priceType);
@@ -212,7 +214,7 @@ describe('Actions.Offer', () => {
     expect(offer.voucher).toMatchAddress(createOfferArgs.voucher);
 
     // Check that the mint parameters have been properly added on Solv's contract
-    const solvMintParameter = await initialConvertibleOfferingMarket.mintParameters(offerId);
+    const solvMintParameter = await initialBondOfferingMarket.mintParameters(offerId);
     const { mintParameter } = createOfferArgs;
     expect(solvMintParameter.effectiveTime).toEqBigNumber(mintParameter.effectiveTime);
     expect(solvMintParameter.highestPrice).toEqBigNumber(mintParameter.highestPrice);
@@ -221,25 +223,25 @@ describe('Actions.Offer', () => {
     expect(solvMintParameter.tokenInAmount).toEqBigNumber(mintParameter.tokenInAmount);
 
     // Check that the voucher has been added to the contract's storage
-    const vouchers = await solvV2ConvertibleIssuerPosition.getIssuedVouchers();
+    const vouchers = await solvV2BondIssuerPosition.getIssuedVouchers();
     expect(vouchers.length).toBe(1);
     expect(vouchers[0]).toMatchAddress(voucher);
 
     // Check that the offer has been added to the contract's storage
-    const offers = await solvV2ConvertibleIssuerPosition.getOffers();
+    const offers = await solvV2BondIssuerPosition.getOffers();
     expect(offers.length).toBe(1);
     expect(offers[0]).toEqBigNumber(offerId);
 
-    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
+    assertEvent(receipt, solvV2BondIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
       voucher,
     });
-    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferAdded'), {
+    assertEvent(receipt, solvV2BondIssuerPosition.abi.getEvent('OfferAdded'), {
       offerId,
     });
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`578889`);
+    expect(receipt).toMatchInlineGasSnapshot(`570259`);
   });
 });
 
@@ -258,7 +260,7 @@ describe('Actions.RemoveOffer', () => {
     const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       offerId,
       signer: fundOwner,
     });
@@ -267,16 +269,16 @@ describe('Actions.RemoveOffer', () => {
 
     expect(vaultUnderlyingBalanceAfter).toEqBigNumber(initialVaultUnderlyingBalance);
 
-    const offers = await solvV2ConvertibleIssuerPosition.getOffers();
+    const offers = await solvV2BondIssuerPosition.getOffers();
     expect(offers.length).toBe(0);
 
-    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferRemoved'), {
+    assertEvent(receipt, solvV2BondIssuerPosition.abi.getEvent('OfferRemoved'), {
       offerId,
     });
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`298120`);
+    expect(receipt).toMatchInlineGasSnapshot(`286734`);
   });
 
   it('works as expected - after buys and ivo end', async () => {
@@ -285,14 +287,14 @@ describe('Actions.RemoveOffer', () => {
     await provider.send('evm_mine', []);
 
     // Buy voucher
-    await initialConvertibleOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
+    await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Warp time to post maturity
     await provider.send('evm_increaseTime', [timeToMaturity]);
     await provider.send('evm_mine', []);
 
-    const managedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
-    const offer = await initialConvertibleOfferingMarket.offerings(offerId);
+    const managedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
+    const offer = await initialBondOfferingMarket.offerings(offerId);
     const expectedOutstandingUnderlying = offer.units.div(lowestPrice);
 
     // Proceeds of sale (minus solv market fees) should be in managed assets, in addition to underlying of unsold IVO units
@@ -300,8 +302,11 @@ describe('Actions.RemoveOffer', () => {
     expect(managedAssets.assets_[0]).toMatchAddress(underlyingToken);
     expect(managedAssets.amounts_[0]).toEqBigNumber(expectedOutstandingUnderlying);
     expect(managedAssets.assets_[1]).toMatchAddress(currencyToken);
-    // Expected receivable currency is price of voucher minus 50bps fees
-    const expectedReceivableCurrency = BigNumber.from(priceData).sub(BigNumber.from(priceData).mul(50).div(10000));
+
+    // Expected receivable currency is price of voucher minus ivo fee
+    const expectedReceivableCurrency = BigNumber.from(priceData).sub(
+      BigNumber.from(priceData).mul(ivoFeeRate).div(10000),
+    );
     expect(managedAssets.amounts_[1]).toEqBigNumber(expectedReceivableCurrency);
 
     const vaultUnderlyingBalanceBefore = await underlyingToken.balanceOf(vaultProxy);
@@ -310,7 +315,7 @@ describe('Actions.RemoveOffer', () => {
     const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       offerId,
       signer: fundOwner,
     });
@@ -331,13 +336,13 @@ describe('Actions.RemoveOffer', () => {
     await provider.send('evm_increaseTime', [ONE_HOUR_IN_SECONDS]);
     await provider.send('evm_mine', []);
 
-    const preBuyOffering = await initialConvertibleOfferingMarket.offerings(offerId);
+    const preBuyOffering = await initialBondOfferingMarket.offerings(offerId);
 
     // Buy all available units
-    await initialConvertibleOfferingMarket.connect(buyer).buy(offerId, preBuyOffering.units);
+    await initialBondOfferingMarket.connect(buyer).buy(offerId, preBuyOffering.units);
 
     // Check that there are no units remaining in the offering
-    const postBuyOffering = await initialConvertibleOfferingMarket.offerings(offerId);
+    const postBuyOffering = await initialBondOfferingMarket.offerings(offerId);
     expect(postBuyOffering.units).toEqBigNumber(0);
 
     // Warp time to post maturity
@@ -348,14 +353,14 @@ describe('Actions.RemoveOffer', () => {
     const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       offerId,
       signer: fundOwner,
     });
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken] });
 
-    expect(receipt).toMatchInlineGasSnapshot(`296548`);
+    expect(receipt).toMatchInlineGasSnapshot(`279000`);
   });
 });
 
@@ -366,17 +371,17 @@ describe('Actions.Reconcile', () => {
 
   it('works as expected', async () => {
     // Buy voucher
-    await initialConvertibleOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
+    await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Check that some currency has been received by the EP
-    const externalPositionBalance = await currencyToken.balanceOf(solvV2ConvertibleIssuerPosition);
+    const externalPositionBalance = await currencyToken.balanceOf(solvV2BondIssuerPosition);
     expect(externalPositionBalance).toBeGtBigNumber(0);
 
     // Reconcile
     const receipt = await solvV2ConvertibleIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
     });
 
@@ -385,7 +390,7 @@ describe('Actions.Reconcile', () => {
     // Check that the currency has been received by the vault
     expect(await currencyToken.balanceOf(vaultProxy)).toBeGtBigNumber(0);
 
-    expect(receipt).toMatchInlineGasSnapshot(`229132`);
+    expect(receipt).toMatchInlineGasSnapshot(`216822`);
   });
 });
 
@@ -394,13 +399,13 @@ describe('Actions.Refund', () => {
     await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
 
     // Buy voucher so that there are minted vouchers to refund
-    await initialConvertibleOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
+    await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Reconcile so that there is no outstanding currency in the EP
     await solvV2ConvertibleIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
     });
   });
@@ -411,7 +416,7 @@ describe('Actions.Refund', () => {
     const receipt = await solvV2ConvertibleIssuerPositionRefund({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
       slotId,
       voucher,
@@ -423,7 +428,7 @@ describe('Actions.Refund', () => {
     expect(preVaultCurrencyBalance).toBeGtBigNumber(postVaultCurrencyBalance);
 
     // Check that all transferred currency has been used for refund (no currency outstanding in the EP)
-    expect(await currencyToken.balanceOf(solvV2ConvertibleIssuerPosition)).toEqBigNumber(0);
+    expect(await currencyToken.balanceOf(solvV2BondIssuerPosition)).toEqBigNumber(0);
 
     // Check that slot is marked as refunded
     const slotDetail = await voucher.getSlotDetail(slotId);
@@ -440,13 +445,13 @@ describe('Actions.Withdraw', () => {
     await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
 
     // Buy voucher
-    await initialConvertibleOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
+    await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Reconcile proceeds of the sale
     await solvV2ConvertibleIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
     });
   });
@@ -458,24 +463,26 @@ describe('Actions.Withdraw', () => {
     await provider.send('evm_increaseTime', [timeToMaturity]);
     await provider.send('evm_mine', []);
 
-    // Update Oracle
-    const oracleManager = new ITestSolvV2ConvertiblePriceOracleManager(
-      fork.config.solvFinanceV2.convertibles.priceOracleManager,
+    const oracleManager = new ITestSolvV2BondPriceOracleManager(
+      fork.config.solvFinanceV2.bonds.priceOracleManager,
       solvDeployer,
     );
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
 
-    const manualPriceOracle = new ITestSolvV2ConvertibleManualPriceOracle(
-      fork.config.solvFinanceV2.convertibles.manualPriceOracle,
+    // Update Oracle
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.bonds.manualPriceOracle);
+
+    const manualPriceOracle = new ITestSolvV2BondManualPriceOracle(
+      fork.config.solvFinanceV2.bonds.manualPriceOracle,
       solvDeployer,
     );
 
     // Set price to the highestPrice to ensure that some underlying can be withdrawn
-    await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice);
+    await manualPriceOracle.setPrice(underlyingToken, currencyToken, maturity, highestPrice);
 
-    await voucherPool.settleConvertiblePrice(slotId);
+    await voucherPool.setSettlePrice(slotId);
+    await provider.send('evm_mine', []);
 
-    const preManagedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
+    const preManagedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
     expect(preManagedAssets.assets_.length).toBe(1);
     expect(preManagedAssets.assets_[0]).toMatchAddress(underlyingToken);
     const preManagedUnderlying = preManagedAssets.amounts_[0];
@@ -483,16 +490,16 @@ describe('Actions.Withdraw', () => {
     const receipt = await solvV2ConvertibleIssuerPositionWithdraw({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
       slotId,
       voucher,
     });
 
     // Send an getManagedAssets tx first to remove the issued voucher
-    const managedAssetsReceipt = await solvV2ConvertibleIssuerPosition.connect(fundOwner).getManagedAssets();
+    const managedAssetsReceipt = await solvV2BondIssuerPosition.connect(fundOwner).getManagedAssets();
     // Call getManagedAssets to retrieve return values (not affected by previous tx)
-    const postManagedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
+    const postManagedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
     expect(preManagedAssets.assets_.length).toBe(1);
     expect(postManagedAssets.assets_[0]).toMatchAddress(underlyingToken);
     const postManagedUnderlying = postManagedAssets.amounts_[0];
@@ -513,80 +520,77 @@ describe('Actions.Withdraw', () => {
     expect(slotDetail.isIssuerWithdrawn).toBe(true);
 
     // Voucher should have been automatically removed on calling getManagedAssets when all issued vouchers are withdrawn
-    assertEvent(managedAssetsReceipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherRemoved'), {
+    assertEvent(managedAssetsReceipt, solvV2BondIssuerPosition.abi.getEvent('IssuedVoucherRemoved'), {
       voucher,
     });
 
-    expect((await solvV2ConvertibleIssuerPosition.getIssuedVouchers()).length).toBe(0);
+    expect((await solvV2BondIssuerPosition.getIssuedVouchers()).length).toBe(0);
 
-    expect(receipt).toMatchInlineGasSnapshot(`291296`);
+    expect(receipt).toMatchInlineGasSnapshot(`248391`);
   });
 
   it('works as expected - with refund', async () => {
-    const preRefundVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
     await solvV2ConvertibleIssuerPositionRefund({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
       slotId,
       voucher,
     });
-
-    const postRefundVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
-    const refundCost = preRefundVaultCurrencyBalance.sub(postRefundVaultCurrencyBalance);
 
     // Warp time beyond maturity
     await provider.send('evm_increaseTime', [timeToMaturity]);
 
     // Update Oracle
-    const oracleManager = new ITestSolvV2ConvertiblePriceOracleManager(
-      fork.config.solvFinanceV2.convertibles.priceOracleManager,
+    const oracleManager = new ITestSolvV2BondPriceOracleManager(
+      fork.config.solvFinanceV2.bonds.priceOracleManager,
       solvDeployer,
     );
-    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.convertibles.manualPriceOracle);
+    await oracleManager._setVoucherOracle(voucher, fork.config.solvFinanceV2.bonds.manualPriceOracle);
 
-    const manualPriceOracle = new ITestSolvV2ConvertibleManualPriceOracle(
-      fork.config.solvFinanceV2.convertibles.manualPriceOracle,
+    const manualPriceOracle = new ITestSolvV2BondManualPriceOracle(
+      fork.config.solvFinanceV2.bonds.manualPriceOracle,
       solvDeployer,
     );
 
-    // Set price to above the highestPrice so that the currency can be withdrawn (settled in underlying when price is > highestPrice, even when refunded)
-    await manualPriceOracle._setPrice(underlyingToken, maturity, highestPrice.mul(2));
+    await manualPriceOracle.setPrice(underlyingToken, currencyToken, maturity, highestPrice);
 
-    await voucherPool.settleConvertiblePrice(slotId);
+    await voucherPool.setSettlePrice(slotId);
 
-    const preWithdrawVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
+    const preWithdrawVaultUnderlyingBalance = await underlyingToken.balanceOf(vaultProxy);
 
     const receipt = await solvV2ConvertibleIssuerPositionWithdraw({
       comptrollerProxy,
       externalPositionManager,
-      externalPositionProxy: solvV2ConvertibleIssuerPosition,
+      externalPositionProxy: solvV2BondIssuerPosition,
       signer: fundOwner,
       slotId,
       voucher,
     });
 
-    const postWithdrawVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
-    const withdrawalAmount = postWithdrawVaultCurrencyBalance.sub(preWithdrawVaultCurrencyBalance);
+    const postWithdrawVaultUnderlyingBalance = await underlyingToken.balanceOf(vaultProxy);
+    const withdrawalAmount = postWithdrawVaultUnderlyingBalance.sub(preWithdrawVaultUnderlyingBalance);
 
-    assertExternalPositionAssetsToReceive({ receipt, assets: [currencyToken, underlyingToken] });
+    assertExternalPositionAssetsToReceive({ receipt, assets: [underlyingToken] });
+
+    const { totalValue } = await voucher.getSlotDetail(slotId);
+
+    const expectedWithdrawnUnderlying = totalValue.div(lowestPrice);
 
     // Check that the cost of the refund has been withdrawn
-    expect(withdrawalAmount).toEqBigNumber(refundCost);
+    expect(withdrawalAmount).toEqBigNumber(expectedWithdrawnUnderlying);
 
-    expect(receipt).toMatchInlineGasSnapshot(`348631`);
+    expect(receipt).toMatchInlineGasSnapshot(`238341`);
   });
 });
 
 describe('multiple voucher issuance', () => {
   it('works as expected', async () => {
     // Seed underlying and currency
-    const underlyingToken2 = new ITestStandardToken(fork.config.unsupportedAssets.perp, provider);
-    const currencyToken2 = new ITestStandardToken(fork.config.primitives.usdc, provider);
+    const underlyingToken2 = new ITestStandardToken(fork.config.unsupportedAssets.izi, provider);
 
     const underlyingToken2Unit = await getAssetUnit(underlyingToken2);
-    const currencyToken2Unit = await getAssetUnit(currencyToken2);
 
     await setAccountBalance({
       account: vaultProxy,
@@ -594,48 +598,53 @@ describe('multiple voucher issuance', () => {
       provider,
       token: underlyingToken2,
     });
+
     await setAccountBalance({
       account: vaultProxy,
-      amount: currencyToken2Unit.mul(100_000),
+      amount: currencyUnit.mul(100_000),
       provider,
-      token: currencyToken2,
+      token: currencyToken,
     });
 
-    const voucher2 = new ITestSolvV2ConvertibleVoucher(
-      fork.config.solvFinanceV2.convertibles.vouchers.perp.voucher,
+    const voucher2 = new ITestSolvV2BondVoucher(
+      fork.config.solvFinanceV2.bonds.vouchers.bviZiBit.voucher,
       solvDeployer,
     );
+    const voucherPool2 = new ITestSolvV2BondPool(fork.config.solvFinanceV2.bonds.vouchers.bviZiBit.pool, solvDeployer);
+
+    // Add currencyToken as fundCurrency to allow creating an offer
+    await voucherPool2.setFundCurrency(currencyToken, true);
 
     // Set the EP as the voucher manager so they can create the Initial Voucher Offering (IVO)
-    await initialConvertibleOfferingMarket.setVoucherManager(voucher2, [solvV2ConvertibleIssuerPosition], true);
+    await initialBondOfferingMarket.setVoucherManager(voucher2, [solvV2BondIssuerPosition], true);
 
     // Create two offers for two different vouchers
     await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
 
-    const offerId2 = await initialConvertibleOfferingMarket.nextOfferingId.call();
+    const offerId2 = await initialBondOfferingMarket.nextOfferingId.call();
 
     const receipt = await solvV2ConvertibleIssuerPositionCreateOffer({
       ...createOfferArgs,
-      currency: currencyToken2,
+      currency: currencyToken,
       voucher: voucher2,
     });
 
-    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
+    assertEvent(receipt, solvV2BondIssuerPosition.abi.getEvent('IssuedVoucherAdded'), {
       voucher: voucher2,
     });
-    assertEvent(receipt, solvV2ConvertibleIssuerPosition.abi.getEvent('OfferAdded'), {
+    assertEvent(receipt, solvV2BondIssuerPosition.abi.getEvent('OfferAdded'), {
       offerId: offerId2,
     });
 
     assertExternalPositionAssetsToReceive({ receipt, assets: [] });
 
     // Assert that the second voucher has been added
-    const vouchers = await solvV2ConvertibleIssuerPosition.getIssuedVouchers();
+    const vouchers = await solvV2BondIssuerPosition.getIssuedVouchers();
     expect(vouchers.length).toBe(2);
     expect(vouchers[1]).toMatchAddress(voucher2);
 
     // Assert that the second offer has been added
-    const offers = await solvV2ConvertibleIssuerPosition.getOffers();
+    const offers = await solvV2BondIssuerPosition.getOffers();
     expect(offers.length).toBe(2);
     expect(offers[1]).toEqBigNumber(offerId2);
 
@@ -643,7 +652,7 @@ describe('multiple voucher issuance', () => {
     await provider.send('evm_increaseTime', [timeToMaturity]);
     await provider.send('evm_mine', []);
 
-    const managedAssets = await solvV2ConvertibleIssuerPosition.getManagedAssets.call();
+    const managedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
 
     // Managed assets should contain both underlying tokens
     expect(managedAssets.assets_.length).toBe(2);
@@ -653,6 +662,6 @@ describe('multiple voucher issuance', () => {
     expect(underlyingTokenIndex).not.toBe(-1);
     expect(underlyingToken2Index).not.toBe(-1);
 
-    expect(receipt).toMatchInlineGasSnapshot(`497195`);
+    expect(receipt).toMatchInlineGasSnapshot(`501322`);
   });
 });

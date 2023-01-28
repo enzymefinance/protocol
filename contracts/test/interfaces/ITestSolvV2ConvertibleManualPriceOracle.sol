@@ -9,13 +9,13 @@
 
 pragma solidity 0.6.12;
 
-/// @title ITestSolvV2ManualPriceOracle Interface
+/// @title ITestSolvV2ConvertibleManualPriceOracle Interface
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A test interface for Solv V2 Manual Price Oracle
-interface ITestSolvV2ManualPriceOracle {
+interface ITestSolvV2ConvertibleManualPriceOracle {
     function _setPrice(
-        address underlying_,
-        uint64 maturity_,
-        int256 price_
+        address _underlying,
+        uint64 _maturity,
+        int256 _price
     ) external;
 }
