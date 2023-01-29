@@ -64,12 +64,12 @@ contract AuraBalancerV2LpStakingAdapter is
 
     /// @dev Logic to unstake BPT from a given staking token
     function __unstake(
-        address _vaultProxy,
+        address _from,
         address _recipient,
         address _stakingToken,
         uint256 _bptAmount
     ) internal override {
-        __stakingWrapperUnstake(_stakingToken, _vaultProxy, _recipient, _bptAmount, false);
+        __stakingWrapperUnstake(_stakingToken, _from, _recipient, _bptAmount, false);
     }
 
     ///////////////

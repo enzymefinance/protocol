@@ -42,6 +42,19 @@ abstract contract StakingWrapperActionsMixin is AssetHelpers {
         uint256 _amount,
         bool _claimRewards
     ) internal {
-        IStakingWrapper(_wrapper).withdrawToOnBehalf(_from, _to, _amount, _claimRewards);
+        if (_from == address(this)) {
+            IStakingWrapper(_wrapper).withdrawTo({
+                _to: _to,
+                _amount: _amount,
+                _claimRewardsToHolder: _claimRewards
+            });
+        } else {
+            IStakingWrapper(_wrapper).withdrawToOnBehalf({
+                _onBehalf: _from,
+                _to: _to,
+                _amount: _amount,
+                _claimRewardsToHolder: _claimRewards
+            });
+        }
     }
 }

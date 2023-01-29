@@ -4,6 +4,11 @@ import { BigNumber, utils } from 'ethers';
 
 import { encodeArgs } from '../encoding';
 
+export enum BalancerV2SwapKind {
+  GIVEN_IN = 0,
+  GIVEN_OUT,
+}
+
 export enum BalancerV2StablePoolJoinKind {
   INIT = 0,
   EXACT_TOKENS_IN_FOR_BPT_OUT,
@@ -32,12 +37,26 @@ export enum BalancerV2WeightedPoolExitKind {
   REMOVE_TOKEN,
 }
 
+export interface BalancerV2BatchSwapStep {
+  poolId: BytesLike;
+  assetInIndex: BigNumberish;
+  assetOutIndex: BigNumberish;
+  amount: BigNumberish;
+  userData: BytesLike;
+}
+
 export interface BalancerV2PoolBalanceChange {
   assets: AddressLike[];
   limits: BigNumberish[];
   userData: BytesLike;
   useInternalBalance: boolean;
 }
+
+export const balancerV2BatchSwapStepTuple = utils.ParamType.fromString(
+  `tuple(bytes32 poolId, uint256 assetInIndex, uint256 assetOutIndex, uint256 amount, bytes userData)`,
+);
+
+export const balancerV2BatchSwapStepTupleArray = `${balancerV2BatchSwapStepTuple.format('full')}[]`;
 
 export const balancerV2PoolBalanceChangeTuple = utils.ParamType.fromString(
   `tuple(address[] assets, uint256[] limits, bytes userData, bool useInternalBalance)`,
@@ -120,6 +139,25 @@ export function balancerV2StakeArgs({
   bptAmount: BigNumberish;
 }) {
   return encodeArgs(['address', 'uint256'], [stakingToken, bptAmount]);
+}
+
+export function balancerV2TakeOrderArgs({
+  swapKind,
+  swaps,
+  assets,
+  limits,
+  stakingTokens,
+}: {
+  swapKind: BalancerV2SwapKind;
+  swaps: BalancerV2BatchSwapStep[];
+  assets: AddressLike[];
+  limits: BigNumberish[];
+  stakingTokens: AddressLike[];
+}) {
+  return encodeArgs(
+    ['uint8', balancerV2BatchSwapStepTupleArray, 'address[]', 'int256[]', 'address[]'],
+    [swapKind, swaps, assets, limits, stakingTokens],
+  );
 }
 
 export function balancerV2UnstakeArgs({

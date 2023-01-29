@@ -13,6 +13,21 @@ pragma experimental ABIEncoderV2;
 /// @title IBalancerV2Vault interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IBalancerV2Vault {
+    struct BatchSwapStep {
+        bytes32 poolId;
+        uint256 assetInIndex;
+        uint256 assetOutIndex;
+        uint256 amount;
+        bytes userData;
+    }
+
+    struct FundManagement {
+        address sender;
+        bool fromInternalBalance;
+        address payable recipient;
+        bool toInternalBalance;
+    }
+
     // JoinPoolRequest and ExitPoolRequest are just differently labeled versions of PoolBalanceChange.
     // See: https://github.com/balancer-labs/balancer-v2-monorepo/blob/42906226223f29e4489975eb3c0d5014dea83b66/pkg/vault/contracts/PoolBalances.sol#L70
     struct PoolBalanceChange {
@@ -21,6 +36,20 @@ interface IBalancerV2Vault {
         bytes userData;
         bool useInternalBalance;
     }
+
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    function batchSwap(
+        SwapKind _kind,
+        BatchSwapStep[] memory _swaps,
+        address[] memory _assets,
+        FundManagement memory _funds,
+        int256[] memory _limits,
+        uint256 _deadline
+    ) external returns (int256[] memory assetDeltas_);
 
     function exitPool(
         bytes32 _poolId,

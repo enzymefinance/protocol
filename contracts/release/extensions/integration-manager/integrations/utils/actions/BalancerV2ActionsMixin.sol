@@ -21,6 +21,34 @@ abstract contract BalancerV2ActionsMixin {
         BALANCER_VAULT_CONTRACT = IBalancerV2Vault(_balancerVault);
     }
 
+    /// @dev Helper to execute batchSwap() on BalancerV2.
+    /// Sender must have already approved allowances to the Balancer Vault.
+    function __balancerV2BatchSwap(
+        address _sender,
+        address _recipient,
+        IBalancerV2Vault.SwapKind _kind,
+        IBalancerV2Vault.BatchSwapStep[] memory _swaps,
+        address[] memory _assets,
+        int256[] memory _limits
+    ) internal returns (int256[] memory assetDeltas_) {
+        IBalancerV2Vault.FundManagement memory funds = IBalancerV2Vault.FundManagement({
+            sender: _sender,
+            fromInternalBalance: false,
+            recipient: payable(_recipient),
+            toInternalBalance: false
+        });
+
+        return
+            BALANCER_VAULT_CONTRACT.batchSwap({
+                _kind: _kind,
+                _swaps: _swaps,
+                _assets: _assets,
+                _funds: funds,
+                _limits: _limits,
+                _deadline: block.timestamp
+            });
+    }
+
     /// @dev Helper to add liquidity
     function __balancerV2Lend(
         bytes32 _poolId,

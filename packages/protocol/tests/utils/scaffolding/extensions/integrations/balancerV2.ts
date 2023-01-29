@@ -1,7 +1,9 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type {
+  BalancerV2BatchSwapStep,
   BalancerV2LiquidityAdapter,
   BalancerV2PoolBalanceChange,
+  BalancerV2SwapKind,
   ComptrollerLib,
   IntegrationManager,
   VaultLib,
@@ -12,6 +14,7 @@ import {
   balancerV2LendArgs,
   balancerV2RedeemArgs,
   balancerV2StakeArgs,
+  balancerV2TakeOrderArgs,
   balancerV2UnstakeAndRedeemArgs,
   balancerV2UnstakeArgs,
   callOnIntegrationArgs,
@@ -22,12 +25,14 @@ import {
   lendSelector,
   redeemSelector,
   stakeSelector,
+  takeOrderSelector,
   unstakeAndRedeemSelector,
   unstakeSelector,
 } from '@enzymefinance/protocol';
 import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/testutils';
 import { setAccountBalance } from '@enzymefinance/testutils';
 import type { BigNumberish, BytesLike } from 'ethers';
+import { constants } from 'ethers';
 
 export async function balancerV2ConstructRequest({
   provider,
@@ -265,6 +270,64 @@ export async function balancerV2Stake({
 
   return comptrollerProxy
     .connect(fundOwner)
+    .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
+}
+
+export async function balancerV2TakeOrder({
+  signer,
+  comptrollerProxy,
+  integrationManager,
+  balancerV2LiquidityAdapter,
+  swapKind,
+  swaps,
+  assets,
+  limits,
+  stakingTokens = assets.map(() => constants.AddressZero),
+  provider,
+  seedFund = false,
+}: {
+  signer: SignerWithAddress;
+  comptrollerProxy: ComptrollerLib;
+  integrationManager: IntegrationManager;
+  balancerV2LiquidityAdapter: BalancerV2LiquidityAdapter;
+  swapKind: BalancerV2SwapKind;
+  swaps: BalancerV2BatchSwapStep[];
+  assets: AddressLike[];
+  limits: BigNumberish[];
+  stakingTokens?: AddressLike[];
+  provider?: EthereumTestnetProvider;
+  seedFund?: boolean;
+}) {
+  if (seedFund && provider) {
+    const vaultProxy = await comptrollerProxy.getVaultProxy();
+
+    for (let i = 0; i < assets.length; i++) {
+      // `+` limit is a spend asset
+      if (limits[i] > 0) {
+        await setAccountBalance({
+          account: vaultProxy,
+          amount: limits[i],
+          provider,
+          token: assets[i],
+        });
+      }
+    }
+  }
+
+  const callArgs = callOnIntegrationArgs({
+    adapter: balancerV2LiquidityAdapter,
+    selector: takeOrderSelector,
+    encodedCallArgs: balancerV2TakeOrderArgs({
+      swapKind,
+      swaps,
+      assets,
+      limits,
+      stakingTokens,
+    }),
+  });
+
+  return comptrollerProxy
+    .connect(signer)
     .callOnExtension(integrationManager, IntegrationManagerActionId.CallOnIntegration, callArgs);
 }
 

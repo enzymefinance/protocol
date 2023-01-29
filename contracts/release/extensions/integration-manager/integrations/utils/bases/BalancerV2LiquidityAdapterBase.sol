@@ -56,7 +56,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
     /// @dev Logic to unstake BPT from a given staking token
     function __unstake(
-        address _vaultProxy,
+        address _from,
         address _recipient,
         address _stakingToken,
         uint256 _bptAmount
@@ -121,6 +121,109 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(_actionData);
 
         __stake(_vaultProxy, stakingToken, bptAmount);
+    }
+
+    /// @notice Swaps assets on Balancer via batchSwap()
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _actionData Data specific to this action
+    /// @dev All `_actionData` inputs are Balancer `batchSwap()` params, with the exception of `stakingTokens`.
+    /// "Spend assets" and "incoming assets" are parsed from the `limits` values corresponding to `assets`:
+    /// - limit > 0 is a spend asset
+    /// - limit < 0 is an incoming asset (including a partially-consumed intermediary asset)
+    /// - limit == 0 is an intermediary asset that is completely consumed in the swap
+    /// This function can also used for "LPing" with ComposableStablePool instances,
+    /// since those pools contain their own BPT as an underlying asset.
+    /// `stakingTokens` facilitates "lend and stake" and "unstake and redeem"-like functionality for such pools.
+    /// If `stakingTokens[i]` is non-empty, it is considered to be the actual spend/incoming asset
+    /// that must be unstaked to / staked from the BPT specified in `assets[i]` before/after the batchSawp().
+    function takeOrder(
+        address _vaultProxy,
+        bytes calldata _actionData,
+        bytes calldata
+    ) external onlyIntegrationManager {
+        (
+            IBalancerV2Vault.SwapKind kind,
+            IBalancerV2Vault.BatchSwapStep[] memory swaps,
+            address[] memory assets,
+            int256[] memory limits,
+            address[] memory stakingTokens
+        ) = __decodeTakeOrderCallArgs(_actionData);
+
+        // Pre-process spend and incoming assets
+        bool hasIncomingStakedBpt;
+        uint256 assetCount = assets.length;
+        for (uint256 i; i < assetCount; i++) {
+            if (limits[i] > 0) {
+                uint256 spendAssetAmount = uint256(limits[i]);
+
+                // Unstake BPT
+                if (stakingTokens[i] != address(0)) {
+                    __unstake({
+                        _from: address(this),
+                        _recipient: address(this),
+                        _stakingToken: stakingTokens[i],
+                        _bptAmount: spendAssetAmount
+                    });
+                }
+
+                // Grant allowances
+                __approveAssetMaxAsNeeded({
+                    _asset: assets[i],
+                    _target: address(BALANCER_VAULT_CONTRACT),
+                    _neededAmount: spendAssetAmount
+                });
+            } else if (limits[i] < 0 && stakingTokens[i] != address(0)) {
+                hasIncomingStakedBpt = true;
+            }
+        }
+
+        // Execute batch swap
+        int256[] memory assetDeltas = __balancerV2BatchSwap({
+            _sender: address(this),
+            _recipient: hasIncomingStakedBpt ? address(this) : _vaultProxy,
+            _kind: kind,
+            _swaps: swaps,
+            _assets: assets,
+            _limits: limits
+        });
+
+        // Post-process spend and incoming assets
+        for (uint256 i; i < assetCount; i++) {
+            if (limits[i] > 0) {
+                // Re-stake any unused BPT,
+                // only if partial spend was intentional due to specifying exact swap output amounts.
+                // Prevents griefing edge case if `__stake()` reverts.
+                if (
+                    stakingTokens[i] != address(0) && kind == IBalancerV2Vault.SwapKind.GIVEN_OUT
+                ) {
+                    uint256 bptAmount = ERC20(assets[i]).balanceOf(address(this));
+                    if (bptAmount > 0) {
+                        __stake({
+                            _vaultProxy: _vaultProxy,
+                            _stakingToken: stakingTokens[i],
+                            _bptAmount: bptAmount
+                        });
+                    }
+                }
+
+                // Push any remaining spend asset balance back to the vault
+                __pushFullAssetBalance({_target: _vaultProxy, _asset: assets[i]});
+            } else if (limits[i] < 0) {
+                if (stakingTokens[i] != address(0)) {
+                    __stake({
+                        _vaultProxy: _vaultProxy,
+                        _stakingToken: stakingTokens[i],
+                        _bptAmount: ERC20(assets[i]).balanceOf(address(this))
+                    });
+                } else if (hasIncomingStakedBpt) {
+                    // Push any remaining incoming asset balance back to the vault
+                    __pushFullAssetBalance({_target: _vaultProxy, _asset: assets[i]});
+                }
+            } else {
+                // Validate no leftover balance for assets assumed to be purely intermediary
+                require(assetDeltas[i] == 0, "takeOrder: leftover intermediary");
+            }
+        }
     }
 
     /// @notice Unstakes LP tokens
@@ -273,6 +376,8 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             return __parseAssetsForLendAndStake(_actionData);
         } else if (_selector == UNSTAKE_AND_REDEEM_SELECTOR) {
             return __parseAssetsForUnstakeAndRedeem(_actionData);
+        } else if (_selector == TAKE_ORDER_SELECTOR) {
+            return __parseAssetsForTakeOrder(_actionData);
         } else if (_selector == STAKE_SELECTOR) {
             return __parseAssetsForStake(_actionData);
         } else if (_selector == UNSTAKE_SELECTOR) {
@@ -377,6 +482,90 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
         incomingAssets_[0] = stakingToken;
         minIncomingAssetAmounts_[0] = bptAmount;
+
+        return (
+            IIntegrationManager.SpendAssetsHandleType.Transfer,
+            spendAssets_,
+            spendAssetAmounts_,
+            incomingAssets_,
+            minIncomingAssetAmounts_
+        );
+    }
+
+    /// @dev Helper function to parse spend and incoming assets from encoded call args
+    /// during takeOrder() calls
+    function __parseAssetsForTakeOrder(bytes calldata _encodedCallArgs)
+        private
+        view
+        returns (
+            IIntegrationManager.SpendAssetsHandleType spendAssetsHandleType_,
+            address[] memory spendAssets_,
+            uint256[] memory spendAssetAmounts_,
+            address[] memory incomingAssets_,
+            uint256[] memory minIncomingAssetAmounts_
+        )
+    {
+        (
+            ,
+            ,
+            address[] memory assets,
+            int256[] memory limits,
+            address[] memory stakingTokens
+        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+
+        // See takeOrder() comments for how spend and incoming assets are parsed
+
+        uint256 spendAssetsCount;
+        uint256 incomingAssetsCount;
+        for (uint256 i; i < assets.length; i++) {
+            if (limits[i] > 0) {
+                spendAssetsCount++;
+            } else if (limits[i] < 0) {
+                incomingAssetsCount++;
+            }
+        }
+
+        spendAssets_ = new address[](spendAssetsCount);
+        spendAssetAmounts_ = new uint256[](spendAssetsCount);
+
+        incomingAssets_ = new address[](incomingAssetsCount);
+        minIncomingAssetAmounts_ = new uint256[](incomingAssetsCount);
+
+        for (uint256 i; i < assets.length; i++) {
+            int256 limit = limits[i];
+
+            if (limit > 0) {
+                address spendAsset = assets[i];
+                address stakingToken = stakingTokens[i];
+
+                if (stakingToken != address(0)) {
+                    require(
+                        spendAsset == __getBptForStakingToken(stakingToken),
+                        "__parseAssetsForTakeOrder: BPT mismatch"
+                    );
+                    spendAsset = stakingToken;
+                }
+
+                spendAssetsCount--;
+                spendAssets_[spendAssetsCount] = spendAsset;
+                spendAssetAmounts_[spendAssetsCount] = uint256(limit);
+            } else if (limit < 0) {
+                address incomingAsset = assets[i];
+                address stakingToken = stakingTokens[i];
+
+                if (stakingToken != address(0)) {
+                    require(
+                        incomingAsset == __getBptForStakingToken(stakingToken),
+                        "__parseAssetsForTakeOrder: BPT mismatch"
+                    );
+                    incomingAsset = stakingToken;
+                }
+
+                incomingAssetsCount--;
+                incomingAssets_[incomingAssetsCount] = incomingAsset;
+                minIncomingAssetAmounts_[incomingAssetsCount] = uint256(-limit);
+            }
+        }
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -540,5 +729,31 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         returns (address stakingToken_, uint256 bptAmount_)
     {
         return abi.decode(_encodedCallArgs, (address, uint256));
+    }
+
+    /// @dev Helper to decode callArgs for takeOrder().
+    /// See takeOrder() comments for args explanation.
+    function __decodeTakeOrderCallArgs(bytes memory _encodedCallArgs)
+        private
+        pure
+        returns (
+            IBalancerV2Vault.SwapKind kind_,
+            IBalancerV2Vault.BatchSwapStep[] memory swaps_,
+            address[] memory assets_,
+            int256[] memory limits_,
+            address[] memory stakingTokens_
+        )
+    {
+        return
+            abi.decode(
+                _encodedCallArgs,
+                (
+                    IBalancerV2Vault.SwapKind,
+                    IBalancerV2Vault.BatchSwapStep[],
+                    address[],
+                    int256[],
+                    address[]
+                )
+            );
     }
 }

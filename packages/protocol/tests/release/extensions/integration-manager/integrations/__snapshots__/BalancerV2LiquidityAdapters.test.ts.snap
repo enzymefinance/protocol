@@ -1,17 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`aura as adapter actions lendAndStake happy path: TOKEN_IN_FOR_EXACT_BPT_OUT: aura 1`] = `1145697`;
+exports[`aura as adapter parseAssetsForAction actions lendAndStake happy path: TOKEN_IN_FOR_EXACT_BPT_OUT: aura 1`] = `1145663`;
 
-exports[`aura as adapter actions stake happy path: aura 1`] = `887244`;
+exports[`aura as adapter parseAssetsForAction actions stake happy path: aura 1`] = `887345`;
 
-exports[`aura as adapter actions unstake happy path: aura 1`] = `910521`;
+exports[`aura as adapter parseAssetsForAction actions takeOrder happy path: one swap: aura 1`] = `381315`;
 
-exports[`aura as adapter actions unstakeAndRedeem happy path: BPT_IN_FOR_EXACT_TOKENS_OUT: aura 1`] = `1240166`;
+exports[`aura as adapter parseAssetsForAction actions takeOrder nested composable stable pool lend happy path: with staking: aura 1`] = `1129510`;
 
-exports[`balancer as adapter actions lendAndStake happy path: TOKEN_IN_FOR_EXACT_BPT_OUT: balancer 1`] = `1047553`;
+exports[`aura as adapter parseAssetsForAction actions takeOrder nested composable stable pool lend happy path: without staking: aura 1`] = `517550`;
 
-exports[`balancer as adapter actions stake happy path: balancer 1`] = `789095`;
+exports[`aura as adapter parseAssetsForAction actions takeOrder nested composable stable pool redeem happy path: with staking: aura 1`] = `1182296`;
 
-exports[`balancer as adapter actions unstake happy path: balancer 1`] = `634684`;
+exports[`aura as adapter parseAssetsForAction actions takeOrder nested composable stable pool redeem happy path: without staking: aura 1`] = `482436`;
 
-exports[`balancer as adapter actions unstakeAndRedeem happy path: BPT_IN_FOR_EXACT_TOKENS_OUT: balancer 1`] = `954770`;
+exports[`aura as adapter parseAssetsForAction actions unstake happy path: aura 1`] = `910661`;
+
+exports[`aura as adapter parseAssetsForAction actions unstakeAndRedeem happy path: BPT_IN_FOR_EXACT_TOKENS_OUT: aura 1`] = `1240169`;
+
+exports[`balancer as adapter parseAssetsForAction actions lendAndStake happy path: TOKEN_IN_FOR_EXACT_BPT_OUT: balancer 1`] = `1047485`;
+
+exports[`balancer as adapter parseAssetsForAction actions stake happy path: balancer 1`] = `789192`;
+
+exports[`balancer as adapter parseAssetsForAction actions takeOrder happy path: one swap: balancer 1`] = `381517`;
+
+exports[`balancer as adapter parseAssetsForAction actions takeOrder nested composable stable pool lend happy path: with staking: balancer 1`] = `1042553`;
+
+exports[`balancer as adapter parseAssetsForAction actions takeOrder nested composable stable pool lend happy path: without staking: balancer 1`] = `517752`;
+
+exports[`balancer as adapter parseAssetsForAction actions takeOrder nested composable stable pool redeem happy path: with staking: balancer 1`] = `894567`;
+
+exports[`balancer as adapter parseAssetsForAction actions takeOrder nested composable stable pool redeem happy path: without staking: balancer 1`] = `482642`;
+
+exports[`balancer as adapter parseAssetsForAction actions unstake happy path: balancer 1`] = `634781`;
+
+exports[`balancer as adapter parseAssetsForAction actions unstakeAndRedeem happy path: BPT_IN_FOR_EXACT_TOKENS_OUT: balancer 1`] = `954704`;

@@ -245,7 +245,7 @@ const mainnetConfig: DeploymentConfig = {
     },
     poolsStable: {
       // TODO: 2nd item is metastable pool factory, unsure if we can support with price feed
-      poolFactories: ["0xc66Ba2B6595D3613CCab350C886aCE23866EDe24", "0x67d27634E44793fE63c467035E31ea8635117cd4"],
+      poolFactories: ["0xc66Ba2B6595D3613CCab350C886aCE23866EDe24", "0x67d27634E44793fE63c467035E31ea8635117cd4", "0xf9ac7B9dF2b3454E841110CcE5550bD5AC6f875F"],
       pools: {
         // Balancer USD stable pool
         staBAL3: {
@@ -257,6 +257,11 @@ const mainnetConfig: DeploymentConfig = {
           id: '0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080',
           invariantProxyAsset: weth,
           gauge: '0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE'
+        },
+        aaveBoosted: {
+          id: '0xa13a9247ea42d743238089903570127dda72fe4400000000000000000000035d',
+          invariantProxyAsset: primitives.usdc,
+          gauge: '0xa6325e799d266632D347e41265a69aF111b05403'
         }
       }
     }
