@@ -680,13 +680,13 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the `creator` variable
     /// @return creator_ The `creator` variable value
-    function getCreator() external view returns (address creator_) {
+    function getCreator() external view override returns (address creator_) {
         return creator;
     }
 
     /// @notice Gets the `migrator` variable
     /// @return migrator_ The `migrator` variable value
-    function getMigrator() public view returns (address migrator_) {
+    function getMigrator() public view override returns (address migrator_) {
         return migrator;
     }
 

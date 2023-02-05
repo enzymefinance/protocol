@@ -2,6 +2,7 @@ import { randomAddress } from '@enzymefinance/ethers';
 import type { ComptrollerLib, VaultLib } from '@enzymefinance/protocol';
 import {
   encodeArgs,
+  encodeFunctionData,
   GlobalConfigLib,
   ITestStandardToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
@@ -15,6 +16,7 @@ import { constants, utils } from 'ethers';
 const noValidationDummyAddress = '0x000000000000000000000000000000000000aaaa';
 const noValidationDummyAmount = constants.MaxUint256.sub(1);
 const randomAddressValue = randomAddress();
+const randomAddressValue2 = randomAddress();
 const randomSelector = utils.randomBytes(4);
 let fork: ProtocolDeployment;
 let globalConfigProxy: GlobalConfigLib;
@@ -62,6 +64,113 @@ describe('core', () => {
 
       // Assert the correct event was emitted
       assertEvent(setGlobalConfigLibTx, 'GlobalConfigLibSet', { nextGlobalConfigLib });
+    });
+  });
+});
+
+describe('formatDepositCall', () => {
+  it('does not allow an invalid vault', async () => {
+    await expect(
+      globalConfigProxy.formatDepositCall(randomAddressValue, randomAddressValue, 123),
+    ).rejects.toBeRevertedWith('Unsupported release');
+  });
+
+  describe('v4', () => {
+    const depositAssetAmount = 123;
+
+    let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+
+    beforeEach(async () => {
+      const [fundOwner] = fork.accounts;
+
+      const newFundRes = await createNewFund({
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
+      });
+
+      comptrollerProxy = newFundRes.comptrollerProxy;
+      vaultProxy = newFundRes.vaultProxy;
+    });
+
+    it('only allows the denomination asset', async () => {
+      await expect(
+        globalConfigProxy.formatDepositCall(vaultProxy, randomAddressValue, depositAssetAmount),
+      ).rejects.toBeRevertedWith('Unsupported _depositAsset');
+    });
+
+    it('happy path', async () => {
+      const expectedPayload = encodeFunctionData(comptrollerProxy.buyShares.fragment, [depositAssetAmount, 1]);
+
+      expect(
+        await globalConfigProxy.formatDepositCall(
+          vaultProxy,
+          await comptrollerProxy.getDenominationAsset(),
+          depositAssetAmount,
+        ),
+      ).toMatchFunctionOutput(globalConfigProxy.formatDepositCall, {
+        target_: comptrollerProxy,
+        payload_: expectedPayload,
+      });
+    });
+  });
+});
+
+describe('formatSingleAssetRedemptionCall', () => {
+  it('does not allow an invalid vault', async () => {
+    await expect(
+      globalConfigProxy.formatSingleAssetRedemptionCall(
+        randomAddressValue,
+        randomAddressValue,
+        randomAddressValue,
+        123,
+        true,
+      ),
+    ).rejects.toBeRevertedWith('Unsupported release');
+  });
+
+  describe('v4', () => {
+    const recipient = randomAddressValue;
+    const asset = randomAddressValue2;
+    const amount = 123;
+
+    let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+
+    beforeEach(async () => {
+      const [fundOwner] = fork.accounts;
+
+      const newFundRes = await createNewFund({
+        denominationAsset: new ITestStandardToken(fork.config.primitives.usdc, provider),
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
+      });
+
+      comptrollerProxy = newFundRes.comptrollerProxy;
+      vaultProxy = newFundRes.vaultProxy;
+    });
+
+    it('does not allow _amountIsShares=false', async () => {
+      await expect(
+        globalConfigProxy.formatSingleAssetRedemptionCall(vaultProxy, recipient, asset, amount, false),
+      ).rejects.toBeRevertedWith('_amountIsShares must be true');
+    });
+
+    it('happy path', async () => {
+      const expectedPayload = encodeFunctionData(comptrollerProxy.redeemSharesForSpecificAssets.fragment, [
+        recipient,
+        amount,
+        [asset],
+        [ONE_HUNDRED_PERCENT_IN_BPS],
+      ]);
+
+      expect(
+        await globalConfigProxy.formatSingleAssetRedemptionCall(vaultProxy, recipient, asset, amount, true),
+      ).toMatchFunctionOutput(globalConfigProxy.formatDepositCall, {
+        target_: comptrollerProxy,
+        payload_: expectedPayload,
+      });
     });
   });
 });

@@ -14,6 +14,7 @@
     "deploy:matic": "hardhat deploy --network matic",
     "export:matic": "hardhat export --network matic --export deployments/matic.json",
     "verify:matic": "hardhat etherscan-verify --network matic",
+    "size-contracts": "hardhat size-contracts",
     "prettier": "prettier --check --plugin prettier-plugin-solidity \"**/*.{js,ts,json,md,yml,sol}\"",
     "solhint": "solhint --max-warnings 0 \"**/*.sol\"",
     "format": "pnpm prettier --write && pnpm solhint --fix && pnpm run --recursive format",
