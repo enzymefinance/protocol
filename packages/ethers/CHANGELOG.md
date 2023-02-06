@@ -1,5 +1,11 @@
 # @enzymefinance/ethers
 
+## 4.0.9
+
+### Patch Changes
+
+- f82ac29f9: Latest protocol version
+
 ## 4.0.8
 
 ### Patch Changes
