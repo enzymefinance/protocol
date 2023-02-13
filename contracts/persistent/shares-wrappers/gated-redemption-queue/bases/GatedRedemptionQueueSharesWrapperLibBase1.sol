@@ -31,7 +31,7 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
         uint256 sharesReceived
     );
 
-    event Initialized(address vaultProxy);
+    event Initialized(address indexed vaultProxy);
 
     event Kicked(address indexed user, uint256 sharesAmount);
 
