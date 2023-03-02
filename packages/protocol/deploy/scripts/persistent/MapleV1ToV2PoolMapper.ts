@@ -1,5 +1,6 @@
-import { isOneOfNetworks, Network } from 'deploy/utils/helpers';
 import type { DeployFunction } from 'hardhat-deploy/types';
+
+import { isOneOfNetworks, Network } from '../../utils/helpers';
 
 const fn: DeployFunction = async function (hre) {
   const {
