@@ -18,13 +18,15 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../global-config/interfaces/IGlobalConfig2.sol";
 import "../../vault/interfaces/IVaultCore.sol";
-import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
+import "./bases/GatedRedemptionQueueSharesWrapperLibBase2.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A release-agnostic ERC20 wrapper for Enzyme vault shares that facilitates queued,
 /// single-asset redemptions, as well as misc participation controls
-contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase1 {
+/// @dev Holders of these wrapped shares must fully trust the vault `owner`,
+/// who can appropriate their full value
+contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase2 {
     using Address for address;
     using SafeCast for uint256;
     using SafeERC20 for ERC20;
@@ -313,15 +315,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             __checkpointRelativeSharesAllowed();
         }
 
-        // Remove user from queue
-        RedemptionQueue storage queue = redemptionQueue;
-        uint256 userSharesPending = queue.userToRequest[_user].sharesPending;
-        if (userSharesPending > 0) {
-            queue.totalSharesPending = uint256(queue.totalSharesPending)
-                .sub(userSharesPending)
-                .toUint128();
-            __removeRedemptionRequest({_user: _user, _queueLength: queue.users.length});
-        }
+        __removeUserFromRedemptionQueue(_user);
 
         // Burn and redeem the shares
         sharesRedeemed_ = balanceOf(_user);
@@ -521,6 +515,18 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         queue.users.pop();
 
         emit RedemptionRequestRemoved(_user);
+    }
+
+    /// @dev Helper to remove a given user from the redemption queue
+    function __removeUserFromRedemptionQueue(address _user) private {
+        RedemptionQueue storage queue = redemptionQueue;
+        uint256 userSharesPending = queue.userToRequest[_user].sharesPending;
+        if (userSharesPending > 0) {
+            queue.totalSharesPending = uint256(queue.totalSharesPending)
+                .sub(userSharesPending)
+                .toUint128();
+            __removeRedemptionRequest({_user: _user, _queueLength: queue.users.length});
+        }
     }
 
     /////////////////////////////
@@ -771,6 +777,26 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _managers Managers to add
     function addManagers(address[] calldata _managers) external onlyOwner {
         __addManagers(_managers);
+    }
+
+    /// @notice Forces a wrapped shares transfer between two users without an approval
+    /// @param _sender From whom
+    /// @param _recipient To whom
+    /// @dev Fully removes _sender from the redemption queue prior to transfer
+    function forceTransfer(address _sender, address _recipient)
+        external
+        onlyOwner
+        returns (uint256 amount_)
+    {
+        __removeUserFromRedemptionQueue(_sender);
+
+        amount_ = balanceOf(_sender);
+
+        _transfer({sender: _sender, recipient: _recipient, amount: amount_});
+
+        emit TransferForced(_sender, _recipient, amount_);
+
+        return amount_;
     }
 
     /// @notice Removes managers

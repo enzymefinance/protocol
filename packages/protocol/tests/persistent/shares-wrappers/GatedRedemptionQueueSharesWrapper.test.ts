@@ -975,6 +975,39 @@ describe('transfers', () => {
 
     it.todo('happy path: unlimited approval');
   });
+
+  describe('forceTransfer', () => {
+    it('cannot be called by manager', async () => {
+      await expect(sharesWrapper.connect(manager).forceTransfer(investor1, investor2)).rejects.toBeRevertedWith(
+        'onlyOwner: Unauthorized',
+      );
+    });
+
+    it('happy path', async () => {
+      const preTransferInvestor1Bal = await sharesWrapper.balanceOf(investor1);
+      const preTransferInvestor2Bal = await sharesWrapper.balanceOf(investor2);
+
+      // Add some shares to redemption queue
+      await sharesWrapper.connect(investor1).requestRedeem(123);
+
+      const receipt = await sharesWrapper.connect(fundOwner).forceTransfer(investor1, investor2);
+
+      // Assert sender was removed from redemption queue
+      expect((await sharesWrapper.getRedemptionQueue()).totalSharesPending_).toEqBigNumber(0);
+
+      // Assert shares transferred
+      expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(0);
+      expect(await sharesWrapper.balanceOf(investor2)).toEqBigNumber(
+        preTransferInvestor2Bal.add(preTransferInvestor1Bal),
+      );
+
+      assertEvent(receipt, 'TransferForced', {
+        sender: investor1.address,
+        recipient: investor2.address,
+        amount: preTransferInvestor1Bal,
+      });
+    });
+  });
 });
 
 describe('redemption window calcs', () => {
