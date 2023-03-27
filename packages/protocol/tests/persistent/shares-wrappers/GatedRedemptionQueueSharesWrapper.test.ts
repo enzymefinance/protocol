@@ -979,7 +979,7 @@ describe('transfers', () => {
   describe('forceTransfer', () => {
     it('cannot be called by manager', async () => {
       await expect(sharesWrapper.connect(manager).forceTransfer(investor1, investor2)).rejects.toBeRevertedWith(
-        'onlyOwner: Unauthorized',
+        'Unauthorized',
       );
     });
 

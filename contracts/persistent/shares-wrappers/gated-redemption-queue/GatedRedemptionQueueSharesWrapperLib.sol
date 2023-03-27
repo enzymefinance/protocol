@@ -36,19 +36,6 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     IGlobalConfig2 private immutable GLOBAL_CONFIG_CONTRACT;
     address private immutable THIS_LIB;
 
-    modifier onlyManagerOrOwner() {
-        require(
-            isManager(msg.sender) || msg.sender == IVaultCore(getVaultProxy()).getOwner(),
-            "onlyManagerOrOwner: Unauthorized"
-        );
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == IVaultCore(getVaultProxy()).getOwner(), "onlyOwner: Unauthorized");
-        _;
-    }
-
     constructor(address _globalConfigProxy)
         public
         ERC20("Wrapped Enzyme Shares Lib", "wENZF-lib")
@@ -86,6 +73,22 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         __setRedemptionWindowConfig(_windowConfig);
 
         emit Initialized(_vaultProxy);
+    }
+
+    ///////////////
+    // MODIFIERS //
+    ///////////////
+
+    // Functions instead of modifiers, as this is bumping up against contract size limit
+
+    function __onlyManagerOrOwner() private view {
+        if (!isManager(msg.sender)) {
+            __onlyOwner();
+        }
+    }
+
+    function __onlyOwner() private view {
+        require(msg.sender == IVaultCore(getVaultProxy()).getOwner(), "Unauthorized");
     }
 
     /////////////////////
@@ -304,12 +307,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _user The user
     /// @param sharesRedeemed_ The amount of shares redeemed
     /// @dev Must cleanup any approvals separately
-    function kick(address _user)
-        external
-        onlyManagerOrOwner
-        nonReentrant
-        returns (uint256 sharesRedeemed_)
-    {
+    function kick(address _user) external nonReentrant returns (uint256 sharesRedeemed_) {
+        __onlyManagerOrOwner();
+
         // Checkpoint redemption queue relativeSharesAllowed before updating the queue or shares supply
         if (__isInLatestRedemptionWindow(block.timestamp)) {
             __checkpointRelativeSharesAllowed();
@@ -342,9 +342,10 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     function redeemFromQueue(uint256 _startIndex, uint256 _endIndex)
         external
         nonReentrant
-        onlyManagerOrOwner
         returns (address[] memory usersRedeemed_, uint256[] memory sharesRedeemed_)
     {
+        __onlyManagerOrOwner();
+
         (uint256 windowStart, uint256 windowEnd) = calcLatestRedemptionWindow();
         require(
             __isWithinRange({
@@ -608,7 +609,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         address[] calldata _users,
         address[] calldata _assets,
         uint256[] calldata _amounts
-    ) external onlyManagerOrOwner {
+    ) external {
+        __onlyManagerOrOwner();
+
         require(
             _users.length == _assets.length && _users.length == _amounts.length,
             "setDepositApprovals: Unequal arrays"
@@ -626,8 +629,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _amounts The amount of each approval
     function setRedemptionApprovals(address[] calldata _users, uint256[] calldata _amounts)
         external
-        onlyManagerOrOwner
     {
+        __onlyManagerOrOwner();
+
         require(_users.length == _amounts.length, "setRedemptionApprovals: Unequal arrays");
 
         for (uint256 i; i < _users.length; i++) {
@@ -645,7 +649,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         address[] calldata _users,
         address[] calldata _recipients,
         uint256[] calldata _amounts
-    ) external onlyManagerOrOwner {
+    ) external {
+        __onlyManagerOrOwner();
+
         require(
             _users.length == _recipients.length && _users.length == _amounts.length,
             "setTransferApprovals: Unequal arrays"
@@ -660,22 +666,25 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Sets whether deposit approvals are required
     /// @param _nextUseDepositApprovals True if required
-    function setUseDepositApprovals(bool _nextUseDepositApprovals) external onlyManagerOrOwner {
+    function setUseDepositApprovals(bool _nextUseDepositApprovals) external {
+        __onlyManagerOrOwner();
+
         __setUseDepositApprovals(_nextUseDepositApprovals);
     }
 
     /// @notice Sets whether redemption approvals are required
     /// @param _nextUseRedemptionApprovals True if required
-    function setUseRedemptionApprovals(bool _nextUseRedemptionApprovals)
-        external
-        onlyManagerOrOwner
-    {
+    function setUseRedemptionApprovals(bool _nextUseRedemptionApprovals) external {
+        __onlyManagerOrOwner();
+
         __setUseRedemptionApprovals(_nextUseRedemptionApprovals);
     }
 
     /// @notice Sets whether transfer approvals are required
     /// @param _nextUseTransferApprovals True if required
-    function setUseTransferApprovals(bool _nextUseTransferApprovals) external onlyManagerOrOwner {
+    function setUseTransferApprovals(bool _nextUseTransferApprovals) external {
+        __onlyManagerOrOwner();
+
         __setUseTransferApprovals(_nextUseTransferApprovals);
     }
 
@@ -710,14 +719,17 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _nextWindowConfig The RedemptionWindowConfig
     function setRedemptionWindowConfig(RedemptionWindowConfig calldata _nextWindowConfig)
         external
-        onlyManagerOrOwner
     {
+        __onlyManagerOrOwner();
+
         __setRedemptionWindowConfig(_nextWindowConfig);
     }
 
     /// @notice Sets the asset received during redemptions
     /// @param _nextRedemptionAsset The asset
-    function setRedemptionAsset(address _nextRedemptionAsset) external onlyManagerOrOwner {
+    function setRedemptionAsset(address _nextRedemptionAsset) external {
+        __onlyManagerOrOwner();
+
         __setRedemptionAsset(_nextRedemptionAsset);
     }
 
@@ -775,7 +787,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Adds managers
     /// @param _managers Managers to add
-    function addManagers(address[] calldata _managers) external onlyOwner {
+    function addManagers(address[] calldata _managers) external {
+        __onlyOwner();
+
         __addManagers(_managers);
     }
 
@@ -785,9 +799,10 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @dev Fully removes _sender from the redemption queue prior to transfer
     function forceTransfer(address _sender, address _recipient)
         external
-        onlyOwner
         returns (uint256 amount_)
     {
+        __onlyOwner();
+
         __removeUserFromRedemptionQueue(_sender);
 
         amount_ = balanceOf(_sender);
@@ -801,7 +816,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Removes managers
     /// @param _managers Managers to remove
-    function removeManagers(address[] calldata _managers) external onlyOwner {
+    function removeManagers(address[] calldata _managers) external {
+        __onlyOwner();
+
         for (uint256 i; i < _managers.length; i++) {
             address manager = _managers[i];
 
