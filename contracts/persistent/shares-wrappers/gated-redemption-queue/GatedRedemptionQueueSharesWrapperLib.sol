@@ -16,6 +16,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "../../../release/interfaces/IWETH.sol";
 import "../../global-config/interfaces/IGlobalConfig2.sol";
 import "../../vault/interfaces/IVaultCore.sol";
 import "./bases/GatedRedemptionQueueSharesWrapperLibBase2.sol";
@@ -31,18 +32,24 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     using SafeCast for uint256;
     using SafeERC20 for ERC20;
 
+    address private constant NATIVE_ASSET = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 private constant ONE_HUNDRED_PERCENT = 1e18;
 
     IGlobalConfig2 private immutable GLOBAL_CONFIG_CONTRACT;
     address private immutable THIS_LIB;
+    IWETH private immutable WRAPPED_NATIVE_ASSET_CONTRACT;
 
-    constructor(address _globalConfigProxy)
+    constructor(address _globalConfigProxy, address _wrappedNativeAsset)
         public
         ERC20("Wrapped Enzyme Shares Lib", "wENZF-lib")
     {
         GLOBAL_CONFIG_CONTRACT = IGlobalConfig2(_globalConfigProxy);
         THIS_LIB = address(this);
+        WRAPPED_NATIVE_ASSET_CONTRACT = IWETH(_wrappedNativeAsset);
     }
+
+    /// @dev Needed to unwrap from WRAPPED_NATIVE_ASSET_CONTRACT
+    receive() external payable {}
 
     /// @notice Initializes a proxy instance
     /// @param _vaultProxy The VaultProxy that will have its shares wrapped
@@ -306,7 +313,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @notice Kicks a user from the wrapper, redeeming their wrapped shares
     /// @param _user The user
     /// @param sharesRedeemed_ The amount of shares redeemed
-    /// @dev Must cleanup any approvals separately
+    /// @dev Must cleanup any approvals separately.
+    /// If `redemptionAsset` is the native asset,
+    /// the kicked user will receive the wrapped native asset instead (prevents reverting).
     function kick(address _user) external nonReentrant returns (uint256 sharesRedeemed_) {
         __onlyManagerOrOwner();
 
@@ -321,11 +330,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         sharesRedeemed_ = balanceOf(_user);
         _burn({account: _user, amount: sharesRedeemed_});
 
-        __redeemCall({
-            _recipient: _user,
-            _sharesAmount: sharesRedeemed_,
-            _redemptionAsset: getRedemptionAsset()
-        });
+        __redeemCall({_recipient: _user, _sharesAmount: sharesRedeemed_});
 
         emit Kicked(_user, sharesRedeemed_);
 
@@ -428,22 +433,44 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             .sub(totalSharesRedeemed)
             .toUint128();
 
-        // Redeem shares to this contract
+        // Check whether native asset is to be dispersed
+        bool disperseNativeAsset;
         ERC20 redemptionAssetContract = ERC20(getRedemptionAsset());
-        __redeemCall({
-            _recipient: address(this),
-            _sharesAmount: totalSharesRedeemed,
-            _redemptionAsset: address(redemptionAssetContract)
-        });
+        if (address(redemptionAssetContract) == NATIVE_ASSET) {
+            redemptionAssetContract = ERC20(address(WRAPPED_NATIVE_ASSET_CONTRACT));
+            disperseNativeAsset = true;
+        }
+
+        // Redeem shares to this contract
+        uint256 balanceToDisperse = redemptionAssetContract.balanceOf(address(this));
+
+        __redeemCall({_recipient: address(this), _sharesAmount: totalSharesRedeemed});
+
+        balanceToDisperse = redemptionAssetContract.balanceOf(address(this)).sub(
+            balanceToDisperse
+        );
 
         // Disperse received asset
-        uint256 balanceToDisperse = redemptionAssetContract.balanceOf(address(this));
-        for (uint256 i; i < usersRedeemed_.length; i++) {
-            redemptionAssetContract.safeTransfer(
-                usersRedeemed_[i],
-                balanceToDisperse.mul(sharesRedeemed_[i]).div(totalSharesRedeemed)
-            );
+        if (disperseNativeAsset) {
+            WRAPPED_NATIVE_ASSET_CONTRACT.withdraw(balanceToDisperse);
         }
+
+        for (uint256 i; i < usersRedeemed_.length; i++) {
+            uint256 userAmountToDisperse = balanceToDisperse.mul(sharesRedeemed_[i]).div(
+                totalSharesRedeemed
+            );
+
+            if (disperseNativeAsset) {
+                Address.sendValue({
+                    recipient: payable(usersRedeemed_[i]),
+                    amount: userAmountToDisperse
+                });
+            } else {
+                redemptionAssetContract.safeTransfer(usersRedeemed_[i], userAmountToDisperse);
+            }
+        }
+
+        return (usersRedeemed_, sharesRedeemed_);
     }
 
     /// @dev Helper to checkpoint the relative shares allowed per user.
@@ -480,18 +507,17 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     }
 
     /// @dev Helper to redeem vault shares for the redemption asset
-    function __redeemCall(
-        address _recipient,
-        uint256 _sharesAmount,
-        address _redemptionAsset
-    ) private {
-        require(_redemptionAsset != address(0), "__redeemCall: No redemption asset");
+    function __redeemCall(address _recipient, uint256 _sharesAmount) private {
+        address assetToReceive = getRedemptionAsset();
+        if (assetToReceive == NATIVE_ASSET) {
+            assetToReceive = address(WRAPPED_NATIVE_ASSET_CONTRACT);
+        }
 
         (address target, bytes memory payload) = GLOBAL_CONFIG_CONTRACT
             .formatSingleAssetRedemptionCall({
                 _vaultProxy: getVaultProxy(),
                 _recipient: _recipient,
-                _asset: _redemptionAsset,
+                _asset: assetToReceive,
                 _amount: _sharesAmount,
                 _amountIsShares: true
             });
@@ -737,6 +763,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @dev Helper to set redemptionAsset
     function __setRedemptionAsset(address _nextRedemptionAsset) private {
+        require(_nextRedemptionAsset != address(0), "__setRedemptionAsset: No redemption asset");
+
         redemptionAsset = _nextRedemptionAsset;
 
         emit RedemptionAssetSet(_nextRedemptionAsset);

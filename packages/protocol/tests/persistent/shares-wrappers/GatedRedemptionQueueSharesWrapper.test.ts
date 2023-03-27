@@ -1,12 +1,14 @@
 import type { ContractReceipt } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type {
+  ComptrollerLib,
   GatedRedemptionQueueSharesWrapperFactory,
   GatedRedemptionQueueSharesWrapperLib,
   GatedRedemptionQueueSharesWrapperRedemptionWindowConfig,
   VaultLib,
 } from '@enzymefinance/protocol';
 import {
+  GatedRedemptionQueueSharesWrapperNativeAssetAddress,
   ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_HUNDRED_PERCENT_IN_WEI,
@@ -15,6 +17,7 @@ import {
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
+  addNewAssetsToFund,
   assertEvent,
   createNewFund,
   deployGatedRedemptionQueueSharesWrapper,
@@ -36,7 +39,7 @@ let fundOwner: SignerWithAddress,
   investor2: SignerWithAddress,
   investor3: SignerWithAddress,
   randomUser: SignerWithAddress;
-let vaultProxy: VaultLib;
+let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
 let denominationAsset: ITestStandardToken, denominationAssetUnit: BigNumber;
 let sharesUnit: BigNumber;
 let sharesWrapper: GatedRedemptionQueueSharesWrapperLib;
@@ -61,6 +64,7 @@ beforeEach(async () => {
     signer: fundOwner,
   });
 
+  comptrollerProxy = newFundRes.comptrollerProxy;
   vaultProxy = newFundRes.vaultProxy;
 
   sharesUnit = await getAssetUnit(vaultProxy);
@@ -671,6 +675,58 @@ describe('investment flow', () => {
         );
         expect(queueAfterSecondRedemption.relativeSharesCheckpointed_).toEqBigNumber(
           queueAfterFirstRedemption.relativeSharesCheckpointed_,
+        );
+      });
+
+      it('happy path: redeem for native asset', async () => {
+        const wrappedNativeAsset = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+
+        // Set redemption asset to native asset
+        await sharesWrapper.connect(manager).setRedemptionAsset(GatedRedemptionQueueSharesWrapperNativeAssetAddress);
+
+        // Add a ton of wrapped native asset to the fund so that redemptions can be filled
+        const gav = await comptrollerProxy.calcGav.call();
+        const wrappedNativeAssetAmountToAdd = await fork.deployment.valueInterpreter.calcCanonicalAssetValue
+          .args(denominationAsset, gav.mul(100), wrappedNativeAsset)
+          .call();
+        await addNewAssetsToFund({
+          signer: fundOwner,
+          comptrollerProxy,
+          integrationManager: fork.deployment.integrationManager,
+          assets: [wrappedNativeAsset],
+          amounts: [wrappedNativeAssetAmountToAdd],
+          provider,
+        });
+
+        // Warp to redemption window
+        const secsUntilWindow = BigNumber.from(redemptionWindowConfig.firstWindowStart).sub(
+          (await provider.getBlock('latest')).timestamp,
+        );
+        await provider.send('evm_increaseTime', [secsUntilWindow.toNumber()]);
+
+        // Get pre-tx balances and shares to redeem for both investors
+        const preRedeemInvestor1EthBal = await provider.getBalance(investor1.address);
+        const preRedeemInvestor2EthBal = await provider.getBalance(investor2.address);
+        const investor1SharesRedeemed = (await sharesWrapper.getRedemptionQueueUserRequest(investor1)).sharesPending;
+        const investor2SharesRedeemed = (await sharesWrapper.getRedemptionQueueUserRequest(investor2)).sharesPending;
+        const totalSharesRedeemed = investor1SharesRedeemed.add(investor2SharesRedeemed);
+
+        // Redeem all investors
+        await sharesWrapper.connect(manager).redeemFromQueue(0, constants.MaxUint256);
+
+        // Estimate the amount each investor should have received
+        const nativeAssetRedeemed = wrappedNativeAssetAmountToAdd.sub(await wrappedNativeAsset.balanceOf(vaultProxy));
+        const expectedInvestor1Payout = nativeAssetRedeemed.mul(investor1SharesRedeemed).div(totalSharesRedeemed);
+        expect(expectedInvestor1Payout).toBeGtBigNumber(0);
+        const expectedInvestor2Payout = nativeAssetRedeemed.mul(investor2SharesRedeemed).div(totalSharesRedeemed);
+        expect(expectedInvestor2Payout).toBeGtBigNumber(0);
+
+        // Assert investor balances increased as expected
+        expect(await provider.getBalance(investor1.address)).toEqBigNumber(
+          preRedeemInvestor1EthBal.add(expectedInvestor1Payout),
+        );
+        expect(await provider.getBalance(investor2.address)).toEqBigNumber(
+          preRedeemInvestor2EthBal.add(expectedInvestor2Payout),
         );
       });
     });
