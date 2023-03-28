@@ -103,6 +103,11 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
         relayHubOnly
         returns (bytes memory context_, bool rejectOnRecipientRevert_)
     {
+        require(
+            _relayRequest.relayData.forwarder == TRUSTED_FORWARDER,
+            "preRelayedCall: Unauthorized forwarder"
+        );
+
         address vaultProxy = getParentVault();
         require(
             IVault(vaultProxy).canRelayCalls(_relayRequest.request.from),
