@@ -21,21 +21,19 @@ import "../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../core/fund-deployer/FundDeployer.sol";
 import "../../extensions/policy-manager/PolicyManager.sol";
-import "./bases/GasRelayPaymasterLibBase1.sol";
+import "./bases/GasRelayPaymasterLibBase2.sol";
 import "./IGasRelayPaymaster.sol";
 import "./IGasRelayPaymasterDepositor.sol";
 
 /// @title GasRelayPaymasterLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library for the "paymaster" contract which refunds GSN relayers
-contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
+contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     using SafeMath for uint256;
 
     // Immutable and constants
     // Sane defaults, subject to change after gas profiling
     uint256 private constant CALLDATA_SIZE_LIMIT = 10500;
-    // Deposit in wei
-    uint256 private constant DEPOSIT = 0.5 ether;
     // Sane defaults, subject to change after gas profiling
     uint256 private constant PRE_RELAYED_CALL_GAS_LIMIT = 100000;
     uint256 private constant POST_RELAYED_CALL_GAS_LIMIT = 110000;
@@ -43,6 +41,10 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
     // PAYMASTER_ACCEPTANCE_BUDGET = FORWARDER_HUB_OVERHEAD + PRE_RELAYED_CALL_GAS_LIMIT
     uint256 private constant PAYMASTER_ACCEPTANCE_BUDGET = 150000;
 
+    uint256 private immutable DEPOSIT_COOLDOWN; // in seconds
+    uint256 private immutable DEPOSIT_MAX_TOTAL; // in wei
+    uint256 private immutable RELAY_FEE_MAX_BASE;
+    uint256 private immutable RELAY_FEE_MAX_PERCENT; // e.g., `10` is 10%
     address private immutable RELAY_HUB;
     address private immutable TRUSTED_FORWARDER;
     address private immutable WETH_TOKEN;
@@ -63,8 +65,16 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
     constructor(
         address _wethToken,
         address _relayHub,
-        address _trustedForwarder
+        address _trustedForwarder,
+        uint256 _depositCooldown,
+        uint256 _depositMaxTotal,
+        uint256 _relayFeeMaxBase,
+        uint256 _relayFeeMaxPercent
     ) public {
+        DEPOSIT_COOLDOWN = _depositCooldown;
+        DEPOSIT_MAX_TOTAL = _depositMaxTotal;
+        RELAY_FEE_MAX_BASE = _relayFeeMaxBase;
+        RELAY_FEE_MAX_PERCENT = _relayFeeMaxPercent;
         RELAY_HUB = _relayHub;
         TRUSTED_FORWARDER = _trustedForwarder;
         WETH_TOKEN = _wethToken;
@@ -106,6 +116,14 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
         require(
             _relayRequest.relayData.forwarder == TRUSTED_FORWARDER,
             "preRelayedCall: Unauthorized forwarder"
+        );
+        require(
+            _relayRequest.relayData.baseRelayFee <= RELAY_FEE_MAX_BASE,
+            "preRelayedCall: High baseRelayFee"
+        );
+        require(
+            _relayRequest.relayData.pctRelayFee <= RELAY_FEE_MAX_PERCENT,
+            "preRelayedCall: High pctRelayFee"
         );
 
         address vaultProxy = getParentVault();
@@ -177,19 +195,27 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
 
     /// @dev Helper to pull WETH from the associated vault to top up to the max ETH deposit in the relay hub
     function __depositMax() private {
-        uint256 prevDeposit = getRelayHubDeposit();
-
-        if (prevDeposit < DEPOSIT) {
-            uint256 amount = DEPOSIT.sub(prevDeposit);
-
-            IGasRelayPaymasterDepositor(getParentComptroller()).pullWethForGasRelayer(amount);
-
-            IWETH(getWethToken()).withdraw(amount);
-
-            IGsnRelayHub(getHubAddr()).depositFor{value: amount}(address(this));
-
-            emit Deposited(amount);
+        // Only allow one deposit every DEPOSIT_COOLDOWN seconds
+        if (block.timestamp - getLastDepositTimestamp() < DEPOSIT_COOLDOWN) {
+            return;
         }
+
+        // Cap the total deposit to DEPOSIT_MAX_TOTAL wei
+        uint256 prevDeposit = getRelayHubDeposit();
+        if (prevDeposit >= DEPOSIT_MAX_TOTAL) {
+            return;
+        }
+        uint256 amount = DEPOSIT_MAX_TOTAL.sub(prevDeposit);
+
+        IGasRelayPaymasterDepositor(getParentComptroller()).pullWethForGasRelayer(amount);
+
+        IWETH(getWethToken()).withdraw(amount);
+
+        IGsnRelayHub(getHubAddr()).depositFor{value: amount}(address(this));
+
+        lastDepositTimestamp = block.timestamp;
+
+        emit Deposited(amount);
     }
 
     /// @dev Helper to get the ComptrollerProxy for a given VaultProxy
@@ -314,6 +340,12 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase1 {
     /// @return relayHub_ The `RELAY_HUB` value
     function getHubAddr() public view override returns (address relayHub_) {
         return RELAY_HUB;
+    }
+
+    /// @notice Gets the timestamp at last deposit into the relayer
+    /// @return lastDepositTimestamp_ The timestamp
+    function getLastDepositTimestamp() public view returns (uint256 lastDepositTimestamp_) {
+        return lastDepositTimestamp;
     }
 
     /// @notice Gets the `parentVault` variable value

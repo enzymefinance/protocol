@@ -1,6 +1,6 @@
-import { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import { ChainlinkRateAsset, ONE_DAY_IN_SECONDS } from '@enzymefinance/protocol';
 import type { DeploymentConfig } from '@enzymefinance/testutils';
-import { constants } from 'ethers';
+import { constants, utils } from 'ethers';
 import type { DeployFunction } from 'hardhat-deploy/types';
 
 import { saveConfig } from '../../utils/config';
@@ -169,6 +169,10 @@ const polygonConfig: DeploymentConfig = {
     sendToProtocolFeeReserve: true,
   },
   gsn: {
+    depositCooldown: ONE_DAY_IN_SECONDS,
+    depositMaxTotal: utils.parseEther('1'), // TODO: use a reasonable amount of MATIC
+    relayFeeMaxBase: 0,
+    relayFeeMaxPercent: 70, // TODO: use a reasonable %
     relayHub: '0x6C28AfC105e65782D9Ea6F2cA68df84C9e7d750d',
     relayWorker: constants.AddressZero,
     trustedForwarder: '0x14c6b99AfFC61e9b0753146F3437A223d0c58279',

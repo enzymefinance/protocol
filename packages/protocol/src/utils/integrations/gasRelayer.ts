@@ -51,7 +51,7 @@ export async function createSignedRelayRequest({
   relayWorker,
   customProvider,
   validUntil,
-  pctRelayFee = BigNumber.from(0),
+  pctRelayFee = BigNumber.from(10), // 10%
   baseRelayFee = BigNumber.from(0),
   clientId = BigNumber.from(1),
   paymasterData = utils.defaultAbiCoder.encode(['bool'], [true]),

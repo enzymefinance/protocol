@@ -9,11 +9,10 @@ import {
   VaultLib,
   VaultProxy,
 } from '@enzymefinance/protocol';
-import type { EthereumTestnetProvider, SignerWithAddress } from '@enzymefinance/testutils';
+import type { SignerWithAddress } from '@enzymefinance/testutils';
 import type { BigNumberish, BytesLike } from 'ethers';
-import { BigNumber, utils } from 'ethers';
+import { BigNumber } from 'ethers';
 
-import { setAccountBalance } from '../accounts';
 import { assertEvent } from '../assertions';
 import type { BuySharesParams } from './shares';
 import { buyShares } from './shares';
@@ -220,31 +219,16 @@ export async function createVaultProxy({
   return new VaultLib(vaultProxyContract, fundAccessor);
 }
 
-export async function setupGasRelayerPaymaster({
+export async function deployGasRelayerPaymaster({
   signer,
-  vaultProxy,
-  fundAccessor,
-  provider,
-  weth,
-  startingBalance = utils.parseUnits('10', 18),
+  comptrollerProxy,
 }: {
   signer: SignerWithAddress;
-  vaultProxy: AddressLike;
-  fundAccessor: AddressLike;
-  provider: EthereumTestnetProvider;
-  weth: ITestStandardToken;
-  startingBalance?: BigNumberish;
+  comptrollerProxy: ComptrollerLib;
 }) {
-  if (startingBalance) {
-    await setAccountBalance({ account: vaultProxy, amount: startingBalance, provider, token: weth });
-  }
+  await comptrollerProxy.deployGasRelayPaymaster();
 
-  const comptrollerProxy = new ComptrollerLib(fundAccessor, signer);
-  const receipt = await comptrollerProxy.deployGasRelayPaymaster();
+  const paymasterAddress = await comptrollerProxy.getGasRelayPaymaster();
 
-  const eventArgs = assertEvent(receipt, 'GasRelayPaymasterSet', {
-    gasRelayPaymaster: expect.any(String) as string,
-  });
-
-  return new GasRelayPaymasterLib(eventArgs.gasRelayPaymaster, signer);
+  return new GasRelayPaymasterLib(paymasterAddress, signer);
 }

@@ -14,7 +14,15 @@ const fn: DeployFunction = async function (hre) {
   const deployer = (await getSigners())[0];
 
   const gasRelayPaymasterLib = await deploy('GasRelayPaymasterLib', {
-    args: [config.wrappedNativeAsset, config.gsn.relayHub, config.gsn.trustedForwarder] as GasRelayPaymasterLibArgs,
+    args: [
+      config.wrappedNativeAsset,
+      config.gsn.relayHub,
+      config.gsn.trustedForwarder,
+      config.gsn.depositCooldown,
+      config.gsn.depositMaxTotal,
+      config.gsn.relayFeeMaxBase,
+      config.gsn.relayFeeMaxPercent,
+    ] as GasRelayPaymasterLibArgs,
     from: deployer.address,
     log: true,
     skipIfAlreadyDeployed: true,

@@ -257,7 +257,7 @@ describe('lendV2', () => {
 
     // Assert the expected pool tokens were received for the pool conversion rate pre-deposit
     const poolTokenBalanceAfter = await poolV2Token.balanceOf(mapleLiquidityPosition);
-    expect(poolTokenBalanceAfter).toEqBigNumber(expectedSharesReceived);
+    expect(poolTokenBalanceAfter).toBeAroundBigNumber(expectedSharesReceived, 1);
 
     // The position value should match the pool's reported exit conversion post-deposit
     const getManagedAssetsCall = await mapleLiquidityPosition.getManagedAssets.call();

@@ -1,3 +1,4 @@
+import type { SendFunction } from '@enzymefinance/ethers';
 import { randomAddress } from '@enzymefinance/ethers';
 import type { AllowedDepositRecipientsPolicy, FundDeployer, PolicyManager, VaultLib } from '@enzymefinance/protocol';
 import {
@@ -18,231 +19,285 @@ import {
   addNewAssetsToFund,
   assertDidRelay,
   assertDidRelaySuccessfully,
+  assertEvent,
   assertPaymasterDidRejectForReason,
   buySharesFunction,
   calcMlnValueAndBurnAmountForSharesBuyback,
   createFundDeployer,
   createMigrationRequest,
   createNewFund,
+  deployGasRelayerPaymaster,
   deployProtocolFixture,
   getAssetBalances,
   getAssetUnit,
   redeemSharesInKind,
   relayTransaction,
   setAccountBalance,
-  setupGasRelayerPaymaster,
+  transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { constants, utils } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
+let depositCooldown: number, depositMaxTotal: BigNumber;
 let fork: ProtocolDeployment;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
   await global.provider.send('hardhat_impersonateAccount', [fork.config.gsn.relayWorker]);
+
+  depositCooldown = fork.config.gsn.depositCooldown;
+  depositMaxTotal = BigNumber.from(fork.config.gsn.depositMaxTotal);
 });
 
 describe('gas relayer', () => {
-  it('should take deposit on deployment', async () => {
-    const [fundOwner] = fork.accounts;
-    const weth = new ITestStandardToken(fork.config.weth, provider);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: weth,
+  let wrappedNativeAsset: ITestStandardToken;
+  let fundOwner: SignerWithAddress;
+  let comptrollerProxy: ComptrollerLib, vaultProxy: VaultLib;
+  let miscSendFunction: SendFunction<any>;
+
+  beforeEach(async () => {
+    // Create fund
+    [fundOwner] = fork.accounts;
+    wrappedNativeAsset = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
+    const newFundRes = await createNewFund({
+      denominationAsset: wrappedNativeAsset,
       fundDeployer: fork.deployment.fundDeployer,
       fundOwner,
       signer: fundOwner,
     });
-    const startingBalance = utils.parseUnits('10', 18);
-    const deposit = utils.parseUnits('0.5', 18);
+    comptrollerProxy = newFundRes.comptrollerProxy;
+    vaultProxy = newFundRes.vaultProxy;
 
-    await setupGasRelayerPaymaster({
-      fundAccessor: comptrollerProxy,
-      signer: fundOwner,
-      provider,
-      startingBalance,
-      vaultProxy,
-      weth,
-    });
-    const [postDeploymentWethBalance] = await getAssetBalances({
+    // Seed fund with more than enough wrapped native asset for multiple gas relayer deposits
+    await setAccountBalance({
       account: vaultProxy,
-      assets: [weth],
-    });
-
-    expect(postDeploymentWethBalance).toEqBigNumber(startingBalance.sub(deposit));
-  });
-
-  it('should not allow deployment if there is not enough weth in the fund', async () => {
-    const [fundOwner] = fork.accounts;
-    const weth = new ITestStandardToken(fork.config.weth, provider);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: weth,
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-    const startingBalance = utils.parseUnits('0.09', 18);
-
-    await setAccountBalance({ account: vaultProxy, amount: startingBalance, provider, token: weth });
-    await expect(comptrollerProxy.deployGasRelayPaymaster()).rejects.toBeReverted();
-  });
-
-  it('fund owner should be able to withdraw gas relayer deposit', async () => {
-    const [fundOwner] = fork.accounts;
-    const weth = new ITestStandardToken(fork.config.weth, provider);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: weth,
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
-    const startingBalance = utils.parseUnits('10', 18);
-    const vaultPaymaster = await setupGasRelayerPaymaster({
-      fundAccessor: comptrollerProxy,
-      signer: fundOwner,
+      amount: depositMaxTotal.mul(11),
       provider,
-      startingBalance,
-      vaultProxy,
-      weth,
+      token: wrappedNativeAsset,
     });
 
-    await vaultPaymaster.withdrawBalance();
-
-    const [postWitdrawWethBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [weth],
-    });
-
-    expect(postWitdrawWethBalance).toEqBigNumber(startingBalance);
-  });
-
-  it('should relay and not pull from fund if flag set to false', async () => {
-    const [fundOwner] = fork.accounts;
-    const weth = new ITestStandardToken(fork.config.weth, provider);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: weth,
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
-      signer: fundOwner,
-    });
-
-    expect(await vaultProxy.isTrackedAsset(fork.config.primitives.usdt)).toBe(false);
-
-    // / set-up paymaster
-    const vaultPaymaster = await setupGasRelayerPaymaster({
-      fundAccessor: comptrollerProxy,
-      signer: fundOwner,
-      provider,
-      vaultProxy,
-      weth,
-    });
-
-    // first tx, deposit wouldn't be topped up regardless
-    const first = comptrollerProxy.setAutoProtocolFeeSharesBuyback.args(true);
-
-    assertDidRelaySuccessfully(
-      await relayTransaction({
-        relayHub: fork.config.gsn.relayHub,
-        relayWorker: fork.config.gsn.relayWorker,
-        sendFunction: first,
-        vaultPaymaster: vaultPaymaster.address,
-      }),
-    );
-
-    // / 2nd tx to relay, deposit would be topped up here if this test fails
-    const sendFunction = comptrollerProxy.callOnExtension.args(
+    // Can be any arbitrary call that should never fail
+    miscSendFunction = comptrollerProxy.callOnExtension.args(
       fork.deployment.integrationManager.address,
       IntegrationManagerActionId.AddTrackedAssetsToVault,
       addTrackedAssetsToVaultArgs({ assets: [fork.config.primitives.usdt] }),
     );
-
-    assertDidRelaySuccessfully(
-      await relayTransaction({
-        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
-        relayHub: fork.config.gsn.relayHub,
-        relayWorker: fork.config.gsn.relayWorker,
-        sendFunction,
-        vaultPaymaster: vaultPaymaster.address,
-      }),
-    );
-
-    expect(await vaultProxy.isTrackedAsset(fork.config.primitives.usdt)).toBe(true);
-
-    const [postWitdrawWethBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [weth],
-    });
-    const startingBalance = utils.parseUnits('10', 18);
-    const deposit = utils.parseUnits('0.5', 18);
-
-    expect(postWitdrawWethBalance).toEqBigNumber(startingBalance.sub(deposit));
   });
 
-  it('should relay and pull funds to top up deposit', async () => {
-    const [fundOwner] = fork.accounts;
-    const weth = new ITestStandardToken(fork.config.weth, provider);
-    const { comptrollerProxy, vaultProxy } = await createNewFund({
-      denominationAsset: weth,
-      fundDeployer: fork.deployment.fundDeployer,
-      fundOwner,
+  it('deploys correctly from ComptrollerProxy', async () => {
+    const preTxVaultNativeAssetBalance = await wrappedNativeAsset.balanceOf(vaultProxy);
+
+    const receipt = await comptrollerProxy.deployGasRelayPaymaster();
+
+    const paymasterAddress = await comptrollerProxy.getGasRelayPaymaster();
+    expect(paymasterAddress).not.toMatchAddress(constants.AddressZero);
+
+    const paymaster = new GasRelayPaymasterLib(paymasterAddress, provider);
+
+    // Gas relayer deposit should be taken from the vault
+    expect(await paymaster.getRelayHubDeposit()).toEqBigNumber(depositMaxTotal);
+    expect(await wrappedNativeAsset.balanceOf(vaultProxy)).toEqBigNumber(
+      preTxVaultNativeAssetBalance.sub(depositMaxTotal),
+    );
+
+    // Last deposit timestamp should have been updated
+    expect(await paymaster.getLastDepositTimestamp()).toEqBigNumber(await transactionTimestamp(receipt));
+
+    // Assert expected events
+    assertEvent(receipt, paymaster.abi.getEvent('Deposited'), { amount: depositMaxTotal });
+    assertEvent(receipt, comptrollerProxy.abi.getEvent('GasRelayPaymasterSet'), {
+      gasRelayPaymaster: paymaster.address,
+    });
+  });
+
+  it('fund owner should be able to withdraw deposit directly from gas relayer', async () => {
+    const paymaster = await deployGasRelayerPaymaster({
       signer: fundOwner,
+      comptrollerProxy,
     });
 
-    // set-up paymaster
-    const startingBalance = utils.parseUnits('1', 18);
-    const vaultPaymaster = await setupGasRelayerPaymaster({
-      fundAccessor: comptrollerProxy,
+    const preTxVaultBalance = await wrappedNativeAsset.balanceOf(vaultProxy);
+
+    await paymaster.withdrawBalance();
+
+    expect(await wrappedNativeAsset.balanceOf(vaultProxy)).toEqBigNumber(preTxVaultBalance.add(depositMaxTotal));
+  });
+
+  it('does not allow a high baseRelayFee', async () => {
+    const paymaster = await deployGasRelayerPaymaster({
       signer: fundOwner,
-      provider,
-      startingBalance,
-      vaultProxy,
-      weth,
+      comptrollerProxy,
     });
-
-    // tx to relay
-    const firstSendFunction = comptrollerProxy.callOnExtension.args(
-      fork.deployment.integrationManager.address,
-      IntegrationManagerActionId.AddTrackedAssetsToVault,
-      addTrackedAssetsToVaultArgs({ assets: [fork.config.primitives.usdt] }),
-    );
-
-    const sendFunction = comptrollerProxy.callOnExtension.args(
-      fork.deployment.integrationManager.address,
-      IntegrationManagerActionId.AddTrackedAssetsToVault,
-      addTrackedAssetsToVaultArgs({ assets: [fork.config.primitives.usdc] }),
-    );
-
-    const [preRelayWethBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [weth],
-    });
-
-    const relayed = assertDidRelay(
-      await relayTransaction({
-        paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
-        relayHub: fork.config.gsn.relayHub,
-        relayWorker: fork.config.gsn.relayWorker,
-        sendFunction: firstSendFunction,
-        vaultPaymaster: vaultPaymaster.address,
-      }),
-    );
 
     const receipt = await relayTransaction({
       paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
       relayHub: fork.config.gsn.relayHub,
       relayWorker: fork.config.gsn.relayWorker,
-      sendFunction,
-      vaultPaymaster: vaultPaymaster.address,
+      sendFunction: miscSendFunction,
+      vaultPaymaster: paymaster.address,
+      baseRelayFee: BigNumber.from(fork.config.gsn.relayFeeMaxBase).add(1),
     });
 
-    assertDidRelaySuccessfully(receipt);
+    assertPaymasterDidRejectForReason(receipt, 'High baseRelayFee');
+  });
 
-    const [postRelayWethBalance] = await getAssetBalances({
-      account: vaultProxy,
-      assets: [weth],
+  it('does not allow a high pctRelayFee', async () => {
+    const paymaster = await deployGasRelayerPaymaster({
+      signer: fundOwner,
+      comptrollerProxy,
     });
-    const debit = preRelayWethBalance.sub(postRelayWethBalance);
 
-    expect(debit).toBeAroundBigNumber(relayed.charge, 5000);
+    const receipt = await relayTransaction({
+      paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+      relayHub: fork.config.gsn.relayHub,
+      relayWorker: fork.config.gsn.relayWorker,
+      sendFunction: miscSendFunction,
+      vaultPaymaster: paymaster.address,
+      pctRelayFee: BigNumber.from(fork.config.gsn.relayFeeMaxPercent).add(1),
+    });
+
+    assertPaymasterDidRejectForReason(receipt, 'High pctRelayFee');
+  });
+
+  describe('top up', () => {
+    let paymaster: GasRelayPaymasterLib;
+
+    beforeEach(async () => {
+      paymaster = await deployGasRelayerPaymaster({
+        signer: fundOwner,
+        comptrollerProxy,
+      });
+    });
+
+    it('should NOT top up: deposit is at max', async () => {
+      // Warp beyond the deposit cooldown period
+      await provider.send('evm_increaseTime', [depositCooldown + 1]);
+
+      const preRelayLastDepositTimestamp = await paymaster.getLastDepositTimestamp();
+
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      expect(await paymaster.getLastDepositTimestamp()).toEqBigNumber(preRelayLastDepositTimestamp);
+    });
+
+    it('should NOT top up: within the deposit cooldown period', async () => {
+      const preRelayLastDepositTimestamp = await paymaster.getLastDepositTimestamp();
+
+      // No top-up
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      // Some relay hub balance has been used
+      expect(await paymaster.getRelayHubDeposit()).toBeLtBigNumber(depositMaxTotal);
+
+      // Warp to just before end of cooldown period
+      await provider.send('evm_increaseTime', [depositCooldown - 60]);
+
+      // No top-up
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      expect(await paymaster.getLastDepositTimestamp()).toEqBigNumber(preRelayLastDepositTimestamp);
+    });
+
+    it('should NOT top up: top-up flag set to false', async () => {
+      const preRelayLastDepositTimestamp = await paymaster.getLastDepositTimestamp();
+
+      // No top-up
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      // Some relay hub balance has been used
+      expect(await paymaster.getRelayHubDeposit()).toBeLtBigNumber(depositMaxTotal);
+
+      // Warp beyond end of cooldown period
+      await provider.send('evm_increaseTime', [depositCooldown + 1]);
+
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [false]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      expect(await paymaster.getLastDepositTimestamp()).toEqBigNumber(preRelayLastDepositTimestamp);
+    });
+
+    it('should top up correctly', async () => {
+      // No top-up
+      assertDidRelaySuccessfully(
+        await relayTransaction({
+          paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+          relayHub: fork.config.gsn.relayHub,
+          relayWorker: fork.config.gsn.relayWorker,
+          sendFunction: miscSendFunction,
+          vaultPaymaster: paymaster.address,
+        }),
+      );
+
+      // Some relay hub balance has been used
+      expect(await paymaster.getRelayHubDeposit()).toBeLtBigNumber(depositMaxTotal);
+
+      // Warp beyond end of cooldown period
+      await provider.send('evm_increaseTime', [depositCooldown + 1]);
+
+      const preTxRelayHubDeposit = await paymaster.getRelayHubDeposit();
+      const preTxVaultBalance = await wrappedNativeAsset.balanceOf(vaultProxy);
+
+      const relayReceipt = await relayTransaction({
+        paymasterData: utils.defaultAbiCoder.encode(['bool'], [true]),
+        relayHub: fork.config.gsn.relayHub,
+        relayWorker: fork.config.gsn.relayWorker,
+        sendFunction: miscSendFunction,
+        vaultPaymaster: paymaster.address,
+      });
+
+      const relayed = assertDidRelay(relayReceipt);
+      assertDidRelaySuccessfully(relayReceipt);
+
+      // New last deposit timestamp
+      expect(await paymaster.getLastDepositTimestamp()).toEqBigNumber(await transactionTimestamp(relayReceipt));
+
+      // Correct balance was taken from the vault
+      const postTxVaultBalance = await wrappedNativeAsset.balanceOf(vaultProxy);
+      const vaultDebit = preTxVaultBalance.sub(postTxVaultBalance);
+      expect(vaultDebit).toEqBigNumber(depositMaxTotal.sub(preTxRelayHubDeposit));
+
+      // RelayHub balance is the max deposit net relayed tx cost
+      const postTxRelayHubDeposit = await paymaster.getRelayHubDeposit();
+      expect(postTxRelayHubDeposit).toEqBigNumber(depositMaxTotal.sub(relayed.charge));
+    });
   });
 });
 
@@ -278,7 +333,7 @@ describe('expected relayable txs', () => {
 
     await addNewAssetsToFund({
       provider,
-      amounts: [wethUnit],
+      amounts: [wethUnit.mul(10)],
       assets: [weth],
       comptrollerProxy,
       integrationManager: fork.deployment.integrationManager,
@@ -830,8 +885,8 @@ describe('expected relayable txs', () => {
       // Asset should be untracked
       expect(await vaultProxy.isTrackedAsset(assetToTrack)).toBe(false);
 
-      const newComptrollerAdress = await vaultProxy.getAccessor();
-      const newComptroller = new ComptrollerLib(newComptrollerAdress, fundOwner);
+      const newComptrollerAddress = await vaultProxy.getAccessor();
+      const newComptroller = new ComptrollerLib(newComptrollerAddress, fundOwner);
 
       const sendFunction = newComptroller.callOnExtension.args(
         fork.deployment.integrationManager.address,

@@ -251,6 +251,7 @@ type Resolve<T extends () => any> = ReturnType<T> extends Promise<infer U> ? U :
 export type ProtocolDeployment = Resolve<typeof deployProtocolFixture>;
 
 import type { ChainlinkRateAsset } from '@enzymefinance/protocol';
+import type { BigNumberish } from 'ethers';
 
 export interface DeploymentConfig {
   aaveV2: {
@@ -349,6 +350,10 @@ export interface DeploymentConfig {
     seniorPool: string;
   };
   gsn: {
+    depositCooldown: number;
+    depositMaxTotal: BigNumberish;
+    relayFeeMaxBase: BigNumberish;
+    relayFeeMaxPercent: number;
     relayHub: string;
     relayWorker: string;
     trustedForwarder: string;
