@@ -59,6 +59,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _useRedemptionApprovals True if the redemption request pre-approvals are required
     /// @param _useTransferApprovals True if shares transfer pre-approvals are required
     /// @param _windowConfig Initial redemption window configuration
+    /// @dev The following vars initialize to their default value as they were added after the 1st version:
+    /// - `depositMode`
     function init(
         address _vaultProxy,
         address[] calldata _managers,
@@ -176,9 +178,296 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         }
     }
 
-    //////////////////////////////////////
-    // SUBSCRIPTION ACTIONS - DEPOSITOR //
-    //////////////////////////////////////
+    /////////////////////////////////////////////////
+    // SUBSCRIPTION ACTIONS - DEPOSITOR - DEPOSITS //
+    /////////////////////////////////////////////////
+
+    // DepositMode.Direct
+
+    /// @notice Deposits an asset to mint wrapped Enzyme vault shares
+    /// @param _depositAsset The asset to deposit
+    /// @param _depositAssetAmount The amount of the asset to deposit
+    /// @param _minSharesAmount The min shares to mint
+    /// @return sharesReceived_ The amount of wrapped shares received
+    /// @dev Does not support deposits in fee-on-transfer tokens.
+    /// Can specify _depositAsset == NATIVE_ASSET to wrap and deposit native asset.
+    function deposit(
+        address _depositAsset,
+        uint256 _depositAssetAmount,
+        uint256 _minSharesAmount
+    ) external payable nonReentrant returns (uint256 sharesReceived_) {
+        require(getDepositMode() == DepositMode.Direct, "deposit: Wrong mode");
+
+        _depositAsset = __preDeposit({
+            _depositAssetOrNativeAsset: _depositAsset,
+            _depositAssetAmount: _depositAssetAmount
+        });
+
+        sharesReceived_ = __depositToVault({
+            _depositAsset: _depositAsset,
+            _depositAssetAmount: _depositAssetAmount
+        });
+        require(sharesReceived_ >= _minSharesAmount, "deposit: Insufficient shares");
+
+        // Mint wrapped shares for the actual shares received
+        _mint(msg.sender, sharesReceived_);
+
+        emit Deposited(msg.sender, _depositAsset, _depositAssetAmount, sharesReceived_);
+
+        return sharesReceived_;
+    }
+
+    // DepositMode.Request
+
+    /// @notice Cancels the caller's deposit request for a given deposit asset
+    /// @param _depositAsset The deposit asset
+    /// @dev Can specify _depositAsset == NATIVE_ASSET to unwrap and receive native asset
+    function cancelRequestDeposit(address _depositAsset) external {
+        bool refundNativeAsset;
+        if (_depositAsset == NATIVE_ASSET) {
+            refundNativeAsset = true;
+
+            _depositAsset = address(WRAPPED_NATIVE_ASSET_CONTRACT);
+        }
+
+        uint256 depositAssetAmount = getDepositQueueUserRequest({
+            _depositAsset: _depositAsset,
+            _user: msg.sender
+        }).assetAmount;
+
+        __removeDepositRequest({_user: msg.sender, _depositAsset: _depositAsset});
+
+        if (refundNativeAsset) {
+            WRAPPED_NATIVE_ASSET_CONTRACT.withdraw(depositAssetAmount);
+
+            Address.sendValue({recipient: msg.sender, amount: depositAssetAmount});
+        } else {
+            ERC20(_depositAsset).safeTransfer(msg.sender, depositAssetAmount);
+        }
+    }
+
+    /// @notice Requests to deposit an asset to mint wrapped Enzyme vault shares
+    /// @param _depositAsset The asset to deposit
+    /// @param _depositAssetAmount The amount of the asset to deposit
+    /// @dev Can specify _depositAsset == NATIVE_ASSET to wrap and deposit native asset
+    function requestDeposit(address _depositAsset, uint256 _depositAssetAmount) external payable {
+        require(getDepositMode() == DepositMode.Request, "requestDeposit: Wrong mode");
+        // Require amount >0 so we can assume a DepositRequest with amount =0 means empty
+        require(_depositAssetAmount > 0, "requestDeposit: Missing amount");
+
+        _depositAsset = __preDeposit({
+            _depositAssetOrNativeAsset: _depositAsset,
+            _depositAssetAmount: _depositAssetAmount
+        });
+
+        DepositQueue storage queue = depositAssetToQueue[_depositAsset];
+        DepositRequest storage request = queue.userToRequest[msg.sender];
+
+        uint256 nextDepositAmount;
+        if (request.assetAmount > 0) {
+            nextDepositAmount = uint256(request.assetAmount).add(_depositAssetAmount);
+        } else {
+            // New request
+
+            nextDepositAmount = _depositAssetAmount;
+
+            // Set index before pushing to queue to rely on length
+            request.index = uint64(queue.users.length);
+            queue.users.push(msg.sender);
+        }
+
+        // Set the new user request amount
+        request.assetAmount = nextDepositAmount.toUint128();
+
+        emit DepositRequestAdded(msg.sender, _depositAsset, _depositAssetAmount);
+    }
+
+    // PRIVATE HELPERS
+
+    /// @dev Helper to deposit an asset from this contract to the vault
+    function __depositToVault(address _depositAsset, uint256 _depositAssetAmount)
+        private
+        returns (uint256 sharesReceived_)
+    {
+        // Checkpoint redemption queue relativeSharesAllowed before changing the shares supply
+        if (__isInLatestRedemptionWindow(block.timestamp)) {
+            __checkpointRelativeSharesAllowed();
+        }
+
+        ERC20 sharesTokenContract = ERC20(getVaultProxy());
+        uint256 preSharesBal = sharesTokenContract.balanceOf(address(this));
+
+        // Format the call to deposit for shares
+        (address depositTarget, bytes memory depositPayload) = GLOBAL_CONFIG_CONTRACT
+            .formatDepositCall({
+                _vaultProxy: address(sharesTokenContract),
+                _depositAsset: _depositAsset,
+                _depositAssetAmount: _depositAssetAmount
+            });
+
+        // Approve the deposit target as necessary
+        if (ERC20(_depositAsset).allowance(address(this), depositTarget) == 0) {
+            ERC20(_depositAsset).safeApprove(depositTarget, type(uint256).max);
+        }
+
+        // Deposit and receive shares
+        depositTarget.functionCall(depositPayload);
+
+        // Calculate the actual shares received
+        return sharesTokenContract.balanceOf(address(this)).sub(preSharesBal);
+    }
+
+    /// @dev Helper to perform pre-deposit actions
+    function __preDeposit(address _depositAssetOrNativeAsset, uint256 _depositAssetAmount)
+        private
+        returns (address depositAsset_)
+    {
+        // Handle deposit asset
+        if (_depositAssetOrNativeAsset == NATIVE_ASSET) {
+            depositAsset_ = address(WRAPPED_NATIVE_ASSET_CONTRACT);
+
+            require(_depositAssetAmount == msg.value, "__preDeposit: msg.value mismatch");
+
+            WRAPPED_NATIVE_ASSET_CONTRACT.deposit{value: _depositAssetAmount}();
+        } else {
+            require(msg.value == 0, "__preDeposit: Non-zero msg.value");
+
+            depositAsset_ = _depositAssetOrNativeAsset;
+
+            ERC20(depositAsset_).safeTransferFrom(msg.sender, address(this), _depositAssetAmount);
+        }
+        // After this point, whether the native asset was deposited is irrelevant
+
+        // Handle deposit approval
+        if (depositApprovalsAreUsed()) {
+            uint256 depositApproval = getDepositApproval({
+                _user: msg.sender,
+                _asset: depositAsset_
+            });
+
+            // If deposit approval is not max, validate and remove exact approval
+            if (depositApproval != type(uint256).max) {
+                require(depositApproval == _depositAssetAmount, "__preDeposit: Approval mismatch");
+                delete userToAssetToDepositApproval[msg.sender][depositAsset_];
+            }
+        }
+
+        return depositAsset_;
+    }
+
+    /// @dev Helper to remove a deposit request from the queue
+    function __removeDepositRequest(address _user, address _depositAsset) private {
+        DepositQueue storage queue = depositAssetToQueue[_depositAsset];
+        uint256 queueLength = queue.users.length;
+        uint256 userIndex = queue.userToRequest[_user].index;
+
+        if (userIndex < queueLength - 1) {
+            address userToMove = queue.users[queueLength - 1];
+
+            queue.users[userIndex] = userToMove;
+            queue.userToRequest[userToMove].index = uint64(userIndex);
+        }
+
+        delete queue.userToRequest[_user];
+        queue.users.pop();
+
+        emit DepositRequestRemoved(_user, _depositAsset);
+    }
+
+    ///////////////////////////////////////////////
+    // SUBSCRIPTION ACTIONS - MANAGER - DEPOSITS //
+    ///////////////////////////////////////////////
+
+    /// @notice Deposits for all requests in the queue
+    /// @param _depositAsset The deposit asset of the requests
+    /// @return users_ The ordered users deposited
+    /// @return userSharesReceived_ The shares received per users_
+    function depositAllFromQueue(address _depositAsset)
+        external
+        returns (address[] memory users_, uint256[] memory userSharesReceived_)
+    {
+        // Enumerate the users array from the queue end, for more performant request removals
+        DepositQueue memory queue = depositAssetToQueue[_depositAsset];
+        uint256 queueLength = queue.users.length;
+        users_ = new address[](queueLength);
+        for (uint256 i; i < queueLength; i++) {
+            users_[i] = queue.users[queueLength - 1 - i];
+        }
+
+        userSharesReceived_ = __depositFromQueue({_depositAsset: _depositAsset, _users: users_});
+
+        return (users_, userSharesReceived_);
+    }
+
+    /// @notice Deposits for specified requests in the queue
+    /// @param _depositAsset The deposit asset of the requests
+    /// @param _users The users of the requests
+    /// @return userSharesReceived_ The shares received per _users
+    /// @dev Unlike the redemption queue, there is no deposit window during which deposit requests are frozen.
+    /// Since these requests are fluid, the manager can't rely on the queue's `users` array ordering,
+    /// so user addresses are used as an input instead of request indexes.
+    function depositFromQueue(address _depositAsset, address[] memory _users)
+        external
+        returns (uint256[] memory userSharesReceived_)
+    {
+        return __depositFromQueue({_depositAsset: _depositAsset, _users: _users});
+    }
+
+    /// @dev Helper to deposit users from the queue
+    function __depositFromQueue(address _depositAsset, address[] memory _users)
+        private
+        nonReentrant
+        returns (uint256[] memory userSharesReceived_)
+    {
+        __onlyManagerOrOwner();
+
+        // Tally the request deposit amounts and remove the requests
+        uint256 usersCount = _users.length;
+        uint256[] memory userDepositAmounts = new uint256[](usersCount);
+        userSharesReceived_ = new uint256[](usersCount);
+        uint256 totalDepositAmount;
+        for (uint256 i; i < usersCount; i++) {
+            address user = _users[i];
+            uint256 userDepositAmount = depositAssetToQueue[_depositAsset]
+                .userToRequest[user]
+                .assetAmount;
+
+            userDepositAmounts[i] = userDepositAmount;
+            totalDepositAmount = totalDepositAmount.add(userDepositAmount);
+
+            __removeDepositRequest({_user: user, _depositAsset: _depositAsset});
+        }
+
+        // Deposit the total amount to the vault
+        uint256 totalSharesReceived = __depositToVault({
+            _depositAsset: _depositAsset,
+            _depositAssetAmount: totalDepositAmount
+        });
+
+        // Distribute wrapped shares pro-rata to depositors
+        for (uint256 i; i < _users.length; i++) {
+            address user = _users[i];
+            uint256 userDepositAmount = userDepositAmounts[i];
+
+            // Flooring each user's pro-rata shares potentially leaves unwrapped vault shares dust,
+            // but since it is an insignificant amount, that dust is not dealt with
+            uint256 userSharesReceived = totalSharesReceived.mul(userDepositAmount).div(
+                totalDepositAmount
+            );
+            userSharesReceived_[i] = userSharesReceived;
+
+            // Mint wrapped shares for the actual shares received
+            _mint(user, userSharesReceived);
+
+            emit Deposited(user, _depositAsset, userDepositAmount, userSharesReceived);
+        }
+
+        return userSharesReceived_;
+    }
+
+    ////////////////////////////////////////////////////
+    // SUBSCRIPTION ACTIONS - DEPOSITOR - REDEMPTIONS //
+    ////////////////////////////////////////////////////
 
     /// @notice Cancels the caller's redemption request
     function cancelRequestRedeem() external nonReentrant {
@@ -197,73 +486,6 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             .toUint128();
 
         __removeRedemptionRequest({_user: msg.sender, _queueLength: queue.users.length});
-    }
-
-    /// @notice Deposits a token to mint wrapped Enzyme vault shares
-    /// @param _depositAssetContract The token to deposit
-    /// @param _depositAssetAmount The amount of the token to deposit
-    /// @param _minSharesAmount The min shares to mint
-    /// @return sharesReceived_ The amount of wrapped shares received
-    /// @dev Does not support deposits in fee-on-transfer tokens
-    function deposit(
-        ERC20 _depositAssetContract,
-        uint256 _depositAssetAmount,
-        uint256 _minSharesAmount
-    ) external nonReentrant returns (uint256 sharesReceived_) {
-        if (depositApprovalsAreUsed()) {
-            uint256 depositApproval = getDepositApproval({
-                _user: msg.sender,
-                _asset: address(_depositAssetContract)
-            });
-
-            // If deposit approval is not max, validate and remove exact approval
-            if (depositApproval != type(uint256).max) {
-                require(depositApproval == _depositAssetAmount, "deposit: Approval mismatch");
-                delete userToAssetToDepositApproval[msg.sender][address(_depositAssetContract)];
-            }
-        }
-
-        // Checkpoint redemption queue relativeSharesAllowed before changing the shares supply
-        if (__isInLatestRedemptionWindow(block.timestamp)) {
-            __checkpointRelativeSharesAllowed();
-        }
-
-        // Pull token from user
-        _depositAssetContract.safeTransferFrom(msg.sender, address(this), _depositAssetAmount);
-
-        ERC20 sharesTokenContract = ERC20(getVaultProxy());
-        uint256 preSharesBal = sharesTokenContract.balanceOf(address(this));
-
-        // Format the call to deposit for shares
-        (address depositTarget, bytes memory depositPayload) = GLOBAL_CONFIG_CONTRACT
-            .formatDepositCall({
-                _vaultProxy: address(sharesTokenContract),
-                _depositAsset: address(_depositAssetContract),
-                _depositAssetAmount: _depositAssetAmount
-            });
-
-        // Approve the deposit target as necessary
-        if (_depositAssetContract.allowance(address(this), depositTarget) == 0) {
-            _depositAssetContract.safeApprove(depositTarget, type(uint256).max);
-        }
-
-        // Deposit and receive shares
-        depositTarget.functionCall(depositPayload);
-
-        // Mint wrapped shares for the actual shares received
-        sharesReceived_ = sharesTokenContract.balanceOf(address(this)).sub(preSharesBal);
-        require(sharesReceived_ >= _minSharesAmount, "deposit: Insufficient shares");
-
-        _mint(msg.sender, sharesReceived_);
-
-        emit Deposited(
-            msg.sender,
-            address(_depositAssetContract),
-            _depositAssetAmount,
-            sharesReceived_
-        );
-
-        return sharesReceived_;
     }
 
     /// @notice Requests to join the queue for redeeming wrapped shares
@@ -741,6 +963,16 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     // MANAGER CALLS - MISC //
     //////////////////////////
 
+    /// @notice Sets the DepositMode for the wrapper
+    /// @param _mode The DepositMode
+    function setDepositMode(DepositMode _mode) external {
+        __onlyManagerOrOwner();
+
+        depositMode = _mode;
+
+        emit DepositModeSet(_mode);
+    }
+
     /// @notice Sets the configuration for the redemption window
     /// @param _nextWindowConfig The RedemptionWindowConfig
     function setRedemptionWindowConfig(RedemptionWindowConfig calldata _nextWindowConfig)
@@ -877,6 +1109,17 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     // EXTERNAL FUNCTIONS
 
+    /// @notice Gets the list of all users in the given asset's deposit queue
+    /// @param _depositAsset The deposit asset
+    /// @return users_ The list of users
+    function getDepositQueueUsers(address _depositAsset)
+        external
+        view
+        returns (address[] memory users_)
+    {
+        return depositAssetToQueue[_depositAsset].users;
+    }
+
     /// @notice Gets the redemption queue state
     /// @return totalSharesPending_ The total shares pending in the queue
     /// @return relativeSharesAllowed_ The relative shares allowed per-user during the window, as of the last checkpoint
@@ -946,6 +1189,24 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         returns (uint256 amount_)
     {
         return userToAssetToDepositApproval[_user][_asset];
+    }
+
+    /// @notice Gets the DepositMode for the wrapper
+    /// @return mode_ The DepositMode
+    function getDepositMode() public view returns (DepositMode mode_) {
+        return depositMode;
+    }
+
+    /// @notice Gets the deposit request for a specified asset and user
+    /// @param _depositAsset The deposit asset
+    /// @param _user The user
+    /// @return request_ The DepositRequest
+    function getDepositQueueUserRequest(address _depositAsset, address _user)
+        public
+        view
+        returns (DepositRequest memory request_)
+    {
+        return depositAssetToQueue[_depositAsset].userToRequest[_user];
     }
 
     /// @notice Gets the redemption approval for a given user

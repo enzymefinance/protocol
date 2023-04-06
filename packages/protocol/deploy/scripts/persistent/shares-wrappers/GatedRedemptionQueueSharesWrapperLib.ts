@@ -21,6 +21,6 @@ const fn: DeployFunction = async function (hre) {
 };
 
 fn.tags = ['Persistent', 'GatedRedemptionQueueSharesWrapperLib'];
-fn.dependencies = ['GlobalConfigProxy'];
+fn.dependencies = ['Config', 'GlobalConfigProxy'];
 
 export default fn;

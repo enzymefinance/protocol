@@ -4,7 +4,12 @@ import type {
   GatedRedemptionQueueSharesWrapperRedemptionWindowConfig,
   VaultLib,
 } from '@enzymefinance/protocol';
-import { ITestStandardToken, ONE_DAY_IN_SECONDS, TEN_PERCENT_IN_WEI } from '@enzymefinance/protocol';
+import {
+  GatedRedemptionQueueSharesWrapperDepositMode,
+  ITestStandardToken,
+  ONE_DAY_IN_SECONDS,
+  TEN_PERCENT_IN_WEI,
+} from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -93,6 +98,8 @@ describe('deploy', () => {
       sharesWrapper.getRedemptionWindowConfig,
       redemptionWindowConfig,
     );
+    // Further state is default values as not set in factory/init
+    expect(await sharesWrapper.getDepositMode()).toEqBigNumber(GatedRedemptionQueueSharesWrapperDepositMode.Direct);
 
     expect(receipt).toMatchInlineGasSnapshot('358709');
   });

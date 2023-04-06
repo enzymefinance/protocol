@@ -7,6 +7,11 @@ export enum ArbitraryTokenPhasedSharesWrapperState {
   Redeem = '2',
 }
 
+export enum GatedRedemptionQueueSharesWrapperDepositMode {
+  Direct = '0',
+  Request = '1',
+}
+
 export interface GatedRedemptionQueueSharesWrapperRedemptionWindowConfig {
   firstWindowStart: BigNumberish;
   frequency: BigNumberish;
@@ -18,4 +23,4 @@ export const GatedRedemptionQueueSharesWrapperRedemptionWindowConfigTuple = util
   `tuple(uint64 firstWindowStart, uint32 frequency, uint32 duration, uint64 relativeSharesCap)`,
 );
 
-export const GatedRedemptionQueueSharesWrapperNativeAssetAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+export const gatedRedemptionQueueSharesWrapperNativeAssetAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';

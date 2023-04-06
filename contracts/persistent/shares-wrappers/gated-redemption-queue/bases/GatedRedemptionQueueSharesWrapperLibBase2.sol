@@ -23,5 +23,33 @@ import "./GatedRedemptionQueueSharesWrapperLibBase1.sol";
 abstract contract GatedRedemptionQueueSharesWrapperLibBase2 is
     GatedRedemptionQueueSharesWrapperLibBase1
 {
+    enum DepositMode {
+        Direct,
+        Request
+    }
+
+    event DepositModeSet(DepositMode mode);
+
+    event DepositRequestAdded(
+        address indexed user,
+        address indexed depositAsset,
+        uint256 depositAssetAmount
+    );
+
+    event DepositRequestRemoved(address indexed user, address indexed depositAsset);
+
     event TransferForced(address indexed sender, address indexed recipient, uint256 amount);
+
+    struct DepositQueue {
+        mapping(address => DepositRequest) userToRequest;
+        address[] users;
+    }
+
+    struct DepositRequest {
+        uint64 index;
+        uint128 assetAmount;
+    }
+
+    DepositMode internal depositMode;
+    mapping(address => DepositQueue) internal depositAssetToQueue;
 }

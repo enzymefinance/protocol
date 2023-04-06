@@ -1,4 +1,4 @@
-import type { ContractReceipt } from '@enzymefinance/ethers';
+import type { AddressLike, ContractReceipt } from '@enzymefinance/ethers';
 import { extractEvent, randomAddress } from '@enzymefinance/ethers';
 import type {
   ComptrollerLib,
@@ -8,11 +8,13 @@ import type {
   VaultLib,
 } from '@enzymefinance/protocol';
 import {
-  GatedRedemptionQueueSharesWrapperNativeAssetAddress,
+  GatedRedemptionQueueSharesWrapperDepositMode,
+  gatedRedemptionQueueSharesWrapperNativeAssetAddress,
   ITestStandardToken,
   ONE_DAY_IN_SECONDS,
   ONE_HUNDRED_PERCENT_IN_WEI,
   ONE_PERCENT_IN_WEI,
+  SHARES_UNIT,
   TEN_PERCENT_IN_WEI,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
@@ -26,7 +28,7 @@ import {
   setAccountBalance,
   transactionTimestamp,
 } from '@enzymefinance/testutils';
-import { BigNumber, constants } from 'ethers';
+import { BigNumber, constants, utils } from 'ethers';
 
 const randomAddressValue = randomAddress();
 
@@ -46,6 +48,8 @@ let sharesWrapper: GatedRedemptionQueueSharesWrapperLib;
 let sharesWrapperDeploymentReceipt: ContractReceipt<any>;
 let redemptionAsset: ITestStandardToken;
 let redemptionWindowConfig: GatedRedemptionQueueSharesWrapperRedemptionWindowConfig;
+let wrappedNativeAsset: ITestStandardToken;
+let nativeAssetAddressFlag: AddressLike;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -53,6 +57,8 @@ beforeEach(async () => {
   [fundOwner, manager, investor1, investor2, investor3, randomUser] = fork.accounts;
   sharesWrapperFactory = fork.deployment.gatedRedemptionQueueSharesWrapperFactory;
 
+  nativeAssetAddressFlag = gatedRedemptionQueueSharesWrapperNativeAssetAddress;
+  wrappedNativeAsset = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
   denominationAsset = new ITestStandardToken(fork.config.primitives.usdc, provider);
   denominationAssetUnit = await getAssetUnit(denominationAsset);
 
@@ -162,6 +168,15 @@ describe('init', () => {
 
 describe('investment flow', () => {
   describe('deposit', () => {
+    it('cannot be called if wrong DepositMode', async () => {
+      // Set deposit mode to Request
+      await sharesWrapper.connect(manager).setDepositMode(GatedRedemptionQueueSharesWrapperDepositMode.Request);
+
+      await expect(
+        sharesWrapper.connect(investor1).deposit(denominationAsset, denominationAssetUnit, 1),
+      ).rejects.toBeRevertedWith('Wrong mode');
+    });
+
     it('reverts if insufficient shares are received', async () => {
       await expect(
         sharesWrapper.connect(investor1).deposit(denominationAsset, denominationAssetUnit, constants.MaxUint256),
@@ -222,8 +237,8 @@ describe('investment flow', () => {
       });
 
       // Check the gas of both deposits
-      expect(deposit1Receipt).toMatchInlineGasSnapshot('381493');
-      expect(deposit2Receipt).toMatchInlineGasSnapshot('268185');
+      expect(deposit1Receipt).toMatchInlineGasSnapshot('383594');
+      expect(deposit2Receipt).toMatchInlineGasSnapshot('270326');
     });
 
     it('happy path: within redemption window', async () => {
@@ -282,6 +297,339 @@ describe('investment flow', () => {
       });
 
       it.todo('happy path: unlimited approval');
+    });
+  });
+
+  describe('DepositMode.Request', () => {
+    beforeEach(async () => {
+      // Set deposit mode to Request
+      await sharesWrapper.connect(manager).setDepositMode(GatedRedemptionQueueSharesWrapperDepositMode.Request);
+    });
+
+    describe('requestDeposit', () => {
+      it('cannot be called if wrong DepositMode', async () => {
+        // Set deposit mode to Direct
+        await sharesWrapper.connect(manager).setDepositMode(GatedRedemptionQueueSharesWrapperDepositMode.Direct);
+
+        await expect(
+          sharesWrapper.connect(investor1).requestDeposit(denominationAsset, denominationAssetUnit),
+        ).rejects.toBeRevertedWith('Wrong mode');
+      });
+
+      it('does not allow a missing deposit amount', async () => {
+        await expect(sharesWrapper.connect(investor1).requestDeposit(denominationAsset, 0)).rejects.toBeRevertedWith(
+          'Missing amount',
+        );
+      });
+
+      it('happy path: two users', async () => {
+        const investor1FirstRequestAmount = denominationAssetUnit.mul(3);
+        const investor1SecondRequestAmount = investor1FirstRequestAmount.mul(3);
+        const investor1RequestAmount = investor1FirstRequestAmount.add(investor1SecondRequestAmount);
+        const investor2RequestAmount = denominationAssetUnit.div(5);
+        const totalRequestAmount = investor1RequestAmount.add(investor2RequestAmount);
+
+        // Do all the deposit requests
+        const firstRequestReceipt = await sharesWrapper
+          .connect(investor1)
+          .requestDeposit(denominationAsset, investor1FirstRequestAmount);
+        const secondRequestReceipt = await sharesWrapper
+          .connect(investor1)
+          .requestDeposit(denominationAsset, investor1SecondRequestAmount);
+        await sharesWrapper.connect(investor2).requestDeposit(denominationAsset, investor2RequestAmount);
+
+        // Assert the denomination asset has been transferred to the wrapper
+        expect(await denominationAsset.balanceOf(sharesWrapper)).toEqBigNumber(totalRequestAmount);
+
+        // Assert the deposit queue requests have been correctly set
+        expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor1)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUserRequest,
+          {
+            index: 0,
+            assetAmount: investor1RequestAmount,
+          },
+        );
+        expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor2)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUserRequest,
+          {
+            index: 1,
+            assetAmount: investor2RequestAmount,
+          },
+        );
+        expect(await sharesWrapper.getDepositQueueUsers(denominationAsset)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUsers,
+          [investor1, investor2],
+        );
+
+        // Use the second request event to confirm that emitted amount is the new amount only
+        assertEvent(secondRequestReceipt, 'DepositRequestAdded', {
+          user: investor1.address,
+          depositAsset: denominationAsset.address,
+          depositAssetAmount: investor1SecondRequestAmount,
+        });
+
+        // Use the first request event for gas estimation, as that will be the max cost
+        expect(firstRequestReceipt).toMatchInlineGasSnapshot('160860');
+      });
+    });
+
+    describe('cancelRequestDeposit', () => {
+      it('happy path', async () => {
+        const deposit1Amount = denominationAssetUnit.mul(11);
+        const deposit2Amount = denominationAssetUnit.mul(3);
+
+        // Both investors request deposit
+        await sharesWrapper.connect(investor1).requestDeposit(denominationAsset, deposit1Amount);
+        await sharesWrapper.connect(investor2).requestDeposit(denominationAsset, deposit2Amount);
+
+        // Investor1 cancels their request
+        const receipt = await sharesWrapper.connect(investor1).cancelRequestDeposit(denominationAsset);
+
+        // Investor1 should be removed from the queue
+        expect(await sharesWrapper.getDepositQueueUsers(denominationAsset)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUsers,
+          [investor2],
+        );
+        expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor1)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUserRequest,
+          {
+            index: 0,
+            assetAmount: 0,
+          },
+        );
+        expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor2)).toMatchFunctionOutput(
+          sharesWrapper.getDepositQueueUserRequest,
+          {
+            index: 0,
+            assetAmount: deposit2Amount,
+          },
+        );
+
+        // Assert event
+        assertEvent(receipt, 'DepositRequestRemoved', {
+          user: investor1.address,
+          depositAsset: denominationAsset.address,
+        });
+
+        expect(receipt).toMatchInlineGasSnapshot('83386');
+      });
+    });
+
+    describe('deposit from queue', () => {
+      let deposit1Amount: BigNumber, deposit2Amount: BigNumber, deposit3Amount: BigNumber;
+
+      beforeEach(async () => {
+        deposit1Amount = denominationAssetUnit.mul(11);
+        deposit2Amount = denominationAssetUnit.mul(3);
+        deposit3Amount = denominationAssetUnit.mul(5);
+
+        // All investors request deposit
+        await sharesWrapper.connect(investor1).requestDeposit(denominationAsset, deposit1Amount);
+        await sharesWrapper.connect(investor2).requestDeposit(denominationAsset, deposit2Amount);
+        await sharesWrapper.connect(investor3).requestDeposit(denominationAsset, deposit3Amount);
+      });
+
+      describe('depositAllFromQueue', () => {
+        it('happy path', async () => {
+          // Deposit for all investors
+          const receipt = await sharesWrapper.connect(manager).depositAllFromQueue(denominationAsset);
+
+          // Validate the shares wrapper and vault have equal balances
+          const expectedTotalAmountDeposited = deposit1Amount.add(deposit2Amount).add(deposit3Amount);
+          const expectedTotalSharesReceived = expectedTotalAmountDeposited.mul(SHARES_UNIT).div(denominationAssetUnit);
+          expect(await vaultProxy.balanceOf(sharesWrapper)).toEqBigNumber(expectedTotalSharesReceived);
+
+          // Assert wrapped shares were correctly issued pro-rata
+          const expectedInvestor1SharesReceived = deposit1Amount.mul(SHARES_UNIT).div(denominationAssetUnit);
+          const expectedInvestor2SharesReceived = deposit2Amount.mul(SHARES_UNIT).div(denominationAssetUnit);
+          const expectedInvestor3SharesReceived = deposit3Amount.mul(SHARES_UNIT).div(denominationAssetUnit);
+
+          expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(expectedInvestor1SharesReceived);
+          expect(await sharesWrapper.balanceOf(investor2)).toEqBigNumber(expectedInvestor2SharesReceived);
+          expect(await sharesWrapper.balanceOf(investor3)).toEqBigNumber(expectedInvestor3SharesReceived);
+
+          // Assert events
+          // Queue is iterated backwards from end
+          const events = extractEvent(receipt, 'Deposited');
+          expect(events.length).toBe(3);
+          expect(events[0]).toMatchEventArgs({
+            user: investor3,
+            depositToken: denominationAsset,
+            depositTokenAmount: deposit3Amount,
+            sharesReceived: expectedInvestor3SharesReceived,
+          });
+          expect(events[1]).toMatchEventArgs({
+            user: investor2,
+            depositToken: denominationAsset,
+            depositTokenAmount: deposit2Amount,
+            sharesReceived: expectedInvestor2SharesReceived,
+          });
+          expect(events[2]).toMatchEventArgs({
+            user: investor1,
+            depositToken: denominationAsset,
+            depositTokenAmount: deposit1Amount,
+            sharesReceived: expectedInvestor1SharesReceived,
+          });
+        });
+      });
+
+      describe('depositFromQueue', () => {
+        it('happy path: single user, middle of queue', async () => {
+          // Most logic tested during depositAllFromQueue. Only test queue removal here.
+
+          // Deposit for investor 2 only (middle of queue)
+          await sharesWrapper.connect(manager).depositFromQueue(denominationAsset, [investor2]);
+
+          // Validate that only investor1 and investor3 remain in the queue
+          expect(await sharesWrapper.getDepositQueueUsers(denominationAsset)).toMatchFunctionOutput(
+            sharesWrapper.getDepositQueueUsers,
+            [investor1, investor3],
+          );
+          expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor1)).toMatchFunctionOutput(
+            sharesWrapper.getDepositQueueUserRequest,
+            {
+              index: 0,
+              assetAmount: deposit1Amount,
+            },
+          );
+          expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor3)).toMatchFunctionOutput(
+            sharesWrapper.getDepositQueueUserRequest,
+            {
+              index: 1,
+              assetAmount: deposit3Amount,
+            },
+          );
+
+          // The request of investor2 should have been deleted
+          expect(await sharesWrapper.getDepositQueueUserRequest(denominationAsset, investor2)).toMatchFunctionOutput(
+            sharesWrapper.getDepositQueueUserRequest,
+            {
+              index: 0,
+              assetAmount: 0,
+            },
+          );
+        });
+      });
+    });
+  });
+
+  describe('native asset deposits', () => {
+    const depositAmount = 123;
+
+    beforeEach(async () => {
+      // Create fund with wrapped native asset as denominationAsset, and deploy a new shares wrapper for it
+
+      denominationAsset = wrappedNativeAsset;
+      const newFundRes = await createNewFund({
+        denominationAsset,
+        fundDeployer: fork.deployment.fundDeployer,
+        fundOwner,
+        signer: fundOwner,
+      });
+      comptrollerProxy = newFundRes.comptrollerProxy;
+      vaultProxy = newFundRes.vaultProxy;
+
+      const deploySharesWrapperRes = await deployGatedRedemptionQueueSharesWrapper({
+        signer: randomUser,
+        sharesWrapperFactory,
+        vaultProxy,
+        managers: [manager],
+        redemptionAsset,
+        useDepositApprovals: false,
+        useRedemptionApprovals: false,
+        useTransferApprovals: false,
+        redemptionWindowConfig,
+      });
+      sharesWrapper = deploySharesWrapperRes.sharesWrapper;
+
+      // Seed and pre-approve investor1
+      await setAccountBalance({
+        account: investor1,
+        amount: utils.parseEther('100'),
+        provider,
+        token: wrappedNativeAsset,
+      });
+      await wrappedNativeAsset.connect(investor1).approve(sharesWrapper, constants.MaxUint256);
+    });
+
+    describe('DepositMode.Direct', () => {
+      it('happy path: native asset', async () => {
+        await sharesWrapper
+          .connect(investor1)
+          .deposit.args(nativeAssetAddressFlag, depositAmount, 1)
+          .value(depositAmount)
+          .send();
+
+        // Assert the depositor received the correct amount of wrapped shares
+        expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(depositAmount);
+      });
+
+      it('happy path: wrapped native asset', async () => {
+        await sharesWrapper.connect(investor1).deposit(wrappedNativeAsset, depositAmount, 1);
+
+        // Assert the depositor received the correct amount of wrapped shares
+        expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(depositAmount);
+      });
+    });
+
+    describe('DepositMode.Request', () => {
+      beforeEach(async () => {
+        // Set deposit mode to Request
+        await sharesWrapper.connect(manager).setDepositMode(GatedRedemptionQueueSharesWrapperDepositMode.Request);
+      });
+
+      describe('cancelRequestDeposit', () => {
+        beforeEach(async () => {
+          // Request a deposit with wrapped native asset
+          await sharesWrapper.connect(investor1).requestDeposit(wrappedNativeAsset, depositAmount);
+        });
+
+        it('happy path: refund native asset', async () => {
+          const preTxNativeAssetBal = await provider.getBalance(investor1.address);
+
+          await sharesWrapper.connect(investor1).cancelRequestDeposit(nativeAssetAddressFlag);
+
+          // Assert the depositor received the correct refund
+          expect(await provider.getBalance(investor1.address)).toEqBigNumber(preTxNativeAssetBal.add(depositAmount));
+        });
+
+        it('happy path: refund wrapped native asset', async () => {
+          const preTxWrappedNativeAssetBal = await wrappedNativeAsset.balanceOf(investor1);
+
+          await sharesWrapper.connect(investor1).cancelRequestDeposit(wrappedNativeAsset);
+
+          // Assert the depositor received the correct refund
+          expect(await wrappedNativeAsset.balanceOf(investor1)).toEqBigNumber(
+            preTxWrappedNativeAssetBal.add(depositAmount),
+          );
+        });
+      });
+
+      describe('requestDeposit', () => {
+        it('happy path: native asset', async () => {
+          await sharesWrapper
+            .connect(investor1)
+            .requestDeposit.args(nativeAssetAddressFlag, depositAmount)
+            .value(depositAmount)
+            .send();
+
+          // Execute the request
+          await sharesWrapper.connect(manager).depositAllFromQueue(wrappedNativeAsset);
+
+          // Assert the depositor received the correct amount of wrapped shares
+          expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(depositAmount);
+        });
+
+        it('happy path: wrapped native asset', async () => {
+          await sharesWrapper.connect(investor1).requestDeposit(wrappedNativeAsset, depositAmount);
+
+          // Execute the request
+          await sharesWrapper.connect(manager).depositAllFromQueue(wrappedNativeAsset);
+
+          // Assert the depositor received the correct amount of wrapped shares
+          expect(await sharesWrapper.balanceOf(investor1)).toEqBigNumber(depositAmount);
+        });
+      });
     });
   });
 
@@ -679,10 +1027,8 @@ describe('investment flow', () => {
       });
 
       it('happy path: redeem for native asset', async () => {
-        const wrappedNativeAsset = new ITestStandardToken(fork.config.wrappedNativeAsset, provider);
-
         // Set redemption asset to native asset
-        await sharesWrapper.connect(manager).setRedemptionAsset(GatedRedemptionQueueSharesWrapperNativeAssetAddress);
+        await sharesWrapper.connect(manager).setRedemptionAsset(nativeAssetAddressFlag);
 
         // Add a ton of wrapped native asset to the fund so that redemptions can be filled
         const gav = await comptrollerProxy.calcGav.call();
