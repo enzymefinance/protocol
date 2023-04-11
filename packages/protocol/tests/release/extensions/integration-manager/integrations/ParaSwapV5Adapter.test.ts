@@ -3,6 +3,10 @@ import type { ComptrollerLib, IntegrationManager, ParaSwapV5Adapter, VaultLib } 
 import {
   ITestStandardToken,
   ONE_HUNDRED_PERCENT_IN_BPS,
+  paraSwapV5ConstructMegaSwapData,
+  paraSwapV5ConstructMultiSwapData,
+  paraSwapV5ConstructSimpleSwapData,
+  ParaSwapV5SwapType,
   paraSwapV5TakeMultipleOrdersArgs,
   paraSwapV5TakeOrderArgs,
   SpendAssetsHandleType,
@@ -58,7 +62,10 @@ describe('parseAssetsForAction', () => {
       minIncomingAssetAmount: 1,
       outgoingAsset: randomAddress(),
       outgoingAssetAmount: 1,
-      paths: paraSwapV5GenerateDummyPaths({ toTokens: [randomAddress()] }),
+      swapData: paraSwapV5ConstructMultiSwapData({
+        paths: paraSwapV5GenerateDummyPaths({ toTokens: [randomAddress()] }),
+      }),
+      swapType: ParaSwapV5SwapType.Multi,
       uuid: utils.randomBytes(16),
     });
 
@@ -82,7 +89,10 @@ describe('parseAssetsForAction', () => {
       minIncomingAssetAmount,
       outgoingAsset,
       outgoingAssetAmount,
-      paths: paraSwapV5GenerateDummyPaths({ toTokens: [incomingAsset] }),
+      swapData: paraSwapV5ConstructMultiSwapData({
+        paths: paraSwapV5GenerateDummyPaths({ toTokens: [incomingAsset] }),
+      }),
+      swapType: ParaSwapV5SwapType.Multi,
       uuid: utils.randomBytes(16),
     });
 
@@ -140,7 +150,8 @@ describe('parseAssetsForAction', () => {
         minIncomingAssetAmount: 1,
         outgoingAsset: order.outgoingAsset,
         outgoingAssetAmount: order.outgoingAssetAmount,
-        paths: order.paths,
+        swapData: paraSwapV5ConstructMultiSwapData({ paths: order.paths }),
+        swapType: ParaSwapV5SwapType.Multi,
         uuid: utils.randomBytes(16),
       }),
     );
@@ -164,7 +175,7 @@ describe('parseAssetsForAction', () => {
 });
 
 describe('takeOrder', () => {
-  it('happy path', async () => {
+  it('happy path - multiSwap', async () => {
     const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
     const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
 
@@ -209,7 +220,8 @@ describe('takeOrder', () => {
       outgoingAsset,
       outgoingAssetAmount,
       paraSwapV5Adapter,
-      paths,
+      swapType: ParaSwapV5SwapType.Multi,
+      swapData: paraSwapV5ConstructMultiSwapData({ paths }),
     });
 
     // Calculate the fund balances after the tx and assert the correct final token balances
@@ -218,6 +230,115 @@ describe('takeOrder', () => {
       assets: [incomingAsset, outgoingAsset],
     });
 
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));
+    expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
+  });
+
+  it('happy path - simpleSwap', async () => {
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
+
+    const outgoingAssetAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = '1';
+
+    // Seed fund with more than what will be spent
+    const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAssetBalance,
+      provider,
+      token: outgoingAsset,
+    });
+
+    // Trade on ParaSwap
+    // Test values obtained from ParaSwap's API: https://apiv5.paraswap.io/transactions/1?onlyParams=true&ignoreChecks=true
+    await paraSwapV5TakeOrder({
+      comptrollerProxy,
+      signer: fundOwner,
+      integrationManager,
+      minIncomingAssetAmount,
+      outgoingAsset,
+      outgoingAssetAmount,
+      paraSwapV5Adapter,
+      swapData: paraSwapV5ConstructSimpleSwapData({
+        incomingAsset,
+        callees: ['0xe592427a0aece92de3edee1f18e0157c05861564'],
+        exchangeData:
+          '0xc04b8d59000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000def171fe48cf0115b1d80b88dc8eab59176fee5700000000000000000000000000000000000000000000000000000000640f68de0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002bc02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f46b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000',
+        startIndexes: [0, 292],
+        values: [0],
+      }),
+      swapType: ParaSwapV5SwapType.Simple,
+    });
+
+    // Calculate the fund balances after the tx and assert the correct final token balances
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
+
+    expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));
+    expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
+  });
+
+  it('happy path - megaSwap', async () => {
+    const outgoingAsset = new ITestStandardToken(fork.config.weth, provider);
+    const incomingAsset = new ITestStandardToken(fork.config.primitives.dai, provider);
+    const outgoingAssetAmount = utils.parseEther('1');
+    const minIncomingAssetAmount = '1';
+    const uniV2Payload = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: fork.config.uniswap.pools.daiWeth,
+      incomingAsset,
+    });
+    const sushiPayload = await paraSwapV5ConstructUniV2ForkPayload({
+      provider,
+      pool: sushiDaiWethPoolAddress,
+      incomingAsset,
+    });
+    const fiftyPercent = BigNumber.from(ONE_HUNDRED_PERCENT_IN_BPS).div(2);
+    const paths1 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset,
+      payloads: [uniV2Payload, sushiPayload],
+      percents: [fiftyPercent, fiftyPercent],
+    });
+
+    const paths2 = paraSwapV5ConstructUniV2ForkPaths({
+      incomingAsset,
+      payloads: [uniV2Payload, sushiPayload],
+      percents: [fiftyPercent, fiftyPercent],
+    });
+    // Seed fund with more than what will be spent
+    const initialOutgoingAssetBalance = outgoingAssetAmount.mul(2);
+    await setAccountBalance({
+      account: vaultProxy,
+      amount: initialOutgoingAssetBalance,
+      provider,
+      token: outgoingAsset,
+    });
+
+    // Trade on ParaSwap
+    await paraSwapV5TakeOrder({
+      comptrollerProxy,
+      signer: fundOwner,
+      integrationManager,
+      minIncomingAssetAmount,
+      outgoingAsset,
+      outgoingAssetAmount,
+      paraSwapV5Adapter,
+      swapType: ParaSwapV5SwapType.Mega,
+      swapData: paraSwapV5ConstructMegaSwapData({
+        megaPaths: [
+          { fromAmountPercent: fiftyPercent, path: paths1 },
+          { fromAmountPercent: fiftyPercent, path: paths2 },
+        ],
+      }),
+    });
+    // Calculate the fund balances after the tx and assert the correct final token balances
+    const [postTxIncomingAssetBalance, postTxOutgoingAssetBalance] = await getAssetBalances({
+      account: vaultProxy,
+      assets: [incomingAsset, outgoingAsset],
+    });
     expect(postTxOutgoingAssetBalance).toEqBigNumber(initialOutgoingAssetBalance.sub(outgoingAssetAmount));
     expect(postTxIncomingAssetBalance).toBeGtBigNumber(0);
   });
@@ -281,10 +402,25 @@ describe('takeMultipleOrders', () => {
       signer: fundOwner,
       paraSwapV5Adapter,
       orders: [
-        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
-        { outgoingAsset: outgoingAsset2, outgoingAssetAmount: outgoingAsset2Amount, paths: paths2 },
+        {
+          outgoingAsset: outgoingAsset1,
+          outgoingAssetAmount: outgoingAsset1Amount,
+          swapType: ParaSwapV5SwapType.Multi,
+          swapData: paraSwapV5ConstructMultiSwapData({ paths: paths1 }),
+        },
+        {
+          outgoingAsset: outgoingAsset2,
+          outgoingAssetAmount: outgoingAsset2Amount,
+          swapType: ParaSwapV5SwapType.Multi,
+          swapData: paraSwapV5ConstructMultiSwapData({ paths: paths2 }),
+        },
         // Uses the first payload twice to test non-unique assets
-        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
+        {
+          outgoingAsset: outgoingAsset1,
+          outgoingAssetAmount: outgoingAsset1Amount,
+          swapType: ParaSwapV5SwapType.Multi,
+          swapData: paraSwapV5ConstructMultiSwapData({ paths: paths1 }),
+        },
       ],
       allowOrdersToFail: false,
     });
@@ -357,8 +493,18 @@ describe('takeMultipleOrders', () => {
       signer: fundOwner,
       paraSwapV5Adapter,
       orders: [
-        { outgoingAsset: outgoingAsset1, outgoingAssetAmount: outgoingAsset1Amount, paths: paths1 },
-        { outgoingAsset: outgoingAsset2, outgoingAssetAmount: outgoingAsset2Amount, paths: paths2 },
+        {
+          outgoingAsset: outgoingAsset1,
+          outgoingAssetAmount: outgoingAsset1Amount,
+          swapType: ParaSwapV5SwapType.Multi,
+          swapData: paraSwapV5ConstructMultiSwapData({ paths: paths1 }),
+        },
+        {
+          outgoingAsset: outgoingAsset2,
+          outgoingAssetAmount: outgoingAsset2Amount,
+          swapType: ParaSwapV5SwapType.Multi,
+          swapData: paraSwapV5ConstructMultiSwapData({ paths: paths2 }),
+        },
       ],
     };
 

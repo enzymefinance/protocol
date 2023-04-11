@@ -35,6 +35,11 @@ interface IParaSwapV5AugustusSwapper {
         Adapter[] adapters;
     }
 
+    struct MegaSwapPath {
+        uint256 fromAmountPercent;
+        Path[] path;
+    }
+
     struct SellData {
         address fromToken;
         uint256 fromAmount;
@@ -49,5 +54,47 @@ interface IParaSwapV5AugustusSwapper {
         bytes16 uuid;
     }
 
-    function multiSwap(SellData calldata) external payable returns (uint256);
+    struct MegaSwapSellData {
+        address fromToken;
+        uint256 fromAmount;
+        uint256 toAmount;
+        uint256 expectedAmount;
+        address payable beneficiary;
+        MegaSwapPath[] path;
+        address payable partner;
+        uint256 feePercent;
+        bytes permit;
+        uint256 deadline;
+        bytes16 uuid;
+    }
+
+    struct SimpleData {
+        address fromToken;
+        address toToken;
+        uint256 fromAmount;
+        uint256 toAmount;
+        uint256 expectedAmount;
+        address[] callees;
+        bytes exchangeData;
+        uint256[] startIndexes;
+        uint256[] values;
+        address payable beneficiary;
+        address payable partner;
+        uint256 feePercent;
+        bytes permit;
+        uint256 deadline;
+        bytes16 uuid;
+    }
+
+    function megaSwap(MegaSwapSellData calldata data)
+        external
+        payable
+        returns (uint256 receivedAmount_);
+
+    function multiSwap(SellData calldata data) external payable returns (uint256 receivedAmount_);
+
+    function simpleSwap(SimpleData calldata data)
+        external
+        payable
+        returns (uint256 receivedAmount_);
 }

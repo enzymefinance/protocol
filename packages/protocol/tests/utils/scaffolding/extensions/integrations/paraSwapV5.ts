@@ -5,7 +5,7 @@ import type {
   IntegrationManager,
   ITestStandardToken,
   ParaSwapV5Adapter,
-  ParaSwapV5Path,
+  ParaSwapV5SwapType,
 } from '@enzymefinance/protocol';
 import {
   callOnIntegrationArgs,
@@ -28,7 +28,8 @@ export interface ParaSwapV5OrderParams {
   minIncomingAssetAmount?: BigNumberish;
   expectedIncomingAssetAmount?: BigNumberish;
   uuid?: BytesLike;
-  paths: ParaSwapV5Path[];
+  swapType: ParaSwapV5SwapType;
+  swapData: BytesLike;
 }
 
 const paraSwapV5UniV2ForkAdapterAddress = '0x3A0430bF7cd2633af111ce3204DB4b0990857a6F';
@@ -40,7 +41,6 @@ export function paraSwapV5GenerateDummyPaths({ toTokens }: { toTokens: AddressLi
     return {
       // Not supported in our protocol
       adapters: [],
-
       to: toToken,
       totalNetworkFee: 0, // Can ignore this param in the dummy
     };
@@ -68,7 +68,8 @@ export async function paraSwapV5TakeMultipleOrders({
       minIncomingAssetAmount: order.minIncomingAssetAmount ? order.minIncomingAssetAmount : 1,
       outgoingAsset: order.outgoingAsset,
       outgoingAssetAmount: order.outgoingAssetAmount,
-      paths: order.paths,
+      swapData: order.swapData,
+      swapType: order.swapType,
       uuid: order.uuid ? order.uuid : utils.randomBytes(16),
     }),
   );
@@ -99,7 +100,8 @@ export async function paraSwapV5TakeOrder({
   minIncomingAssetAmount = 1,
   expectedIncomingAssetAmount = minIncomingAssetAmount,
   uuid = utils.randomBytes(16),
-  paths,
+  swapType,
+  swapData,
 }: {
   comptrollerProxy: ComptrollerLib;
   integrationManager: IntegrationManager;
@@ -110,15 +112,17 @@ export async function paraSwapV5TakeOrder({
   minIncomingAssetAmount?: BigNumberish;
   expectedIncomingAssetAmount?: BigNumberish;
   uuid?: BytesLike;
-  paths: ParaSwapV5Path[];
+  swapType: ParaSwapV5SwapType;
+  swapData: BytesLike;
 }) {
   const takeOrderArgs = paraSwapV5TakeOrderArgs({
     expectedIncomingAssetAmount,
     minIncomingAssetAmount,
     outgoingAsset,
     outgoingAssetAmount,
-    paths,
     uuid,
+    swapType,
+    swapData,
   });
 
   const callArgs = callOnIntegrationArgs({

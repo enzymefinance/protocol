@@ -23,6 +23,12 @@ import "../utils/AdapterBase.sol";
 contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     using AddressArrayLib for address[];
 
+    enum SwapType {
+        Simple,
+        Multi,
+        Mega
+    }
+
     event MultipleOrdersItemFailed(uint256 index, string reason);
 
     constructor(
@@ -79,24 +85,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
         bytes calldata _actionData,
         bytes calldata
     ) external {
-        (
-            uint256 minIncomingAssetAmount,
-            uint256 expectedIncomingAssetAmount,
-            address outgoingAsset,
-            uint256 outgoingAssetAmount,
-            bytes16 uuid,
-            IParaSwapV5AugustusSwapper.Path[] memory paths
-        ) = __decodeTakeOrderCallArgs(_actionData);
-
-        __paraSwapV5MultiSwap(
-            outgoingAsset,
-            outgoingAssetAmount,
-            minIncomingAssetAmount,
-            expectedIncomingAssetAmount,
-            payable(_vaultProxy),
-            uuid,
-            paths
-        );
+        __takeOrder({_vaultProxy: _vaultProxy, _orderData: _actionData});
     }
 
     /// @notice External implementation of __takeOrderAndValidateIncoming(), only intended for internal usage
@@ -107,6 +96,51 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
         __takeOrderAndValidateIncoming(_vaultProxy, _orderData);
     }
 
+    /// @dev Helper to route an order according to its swap type
+    function __takeOrder(address _vaultProxy, bytes memory _orderData) private {
+        (
+            uint256 minIncomingAssetAmount,
+            uint256 expectedIncomingAssetAmount,
+            address outgoingAsset,
+            uint256 outgoingAssetAmount,
+            bytes16 uuid,
+            SwapType swapType,
+            bytes memory swapData
+        ) = __decodeTakeOrderCallArgs(_orderData);
+
+        if (swapType == SwapType.Mega) {
+            __paraSwapV5MegaSwap({
+                _fromToken: outgoingAsset,
+                _fromAmount: outgoingAssetAmount,
+                _toAmount: minIncomingAssetAmount,
+                _expectedAmount: expectedIncomingAssetAmount,
+                _beneficiary: payable(_vaultProxy),
+                _uuid: uuid,
+                _path: __decodeMegaSwapData(swapData)
+            });
+        } else if (swapType == SwapType.Multi) {
+            __paraSwapV5MultiSwap({
+                _fromToken: outgoingAsset,
+                _fromAmount: outgoingAssetAmount,
+                _toAmount: minIncomingAssetAmount,
+                _expectedAmount: expectedIncomingAssetAmount,
+                _beneficiary: payable(_vaultProxy),
+                _uuid: uuid,
+                _path: __decodeMultiSwapData(swapData)
+            });
+        } else if (swapType == SwapType.Simple) {
+            __paraSwapV5SimpleSwap({
+                _fromToken: outgoingAsset,
+                _fromAmount: outgoingAssetAmount,
+                _toAmount: minIncomingAssetAmount,
+                _expectedAmount: expectedIncomingAssetAmount,
+                _simpleSwapParams: __decodeSimpleSwapData(swapData),
+                _beneficiary: payable(_vaultProxy),
+                _uuid: uuid
+            });
+        }
+    }
+
     /// @dev Helper to trade assets on ParaSwap and then validate the received asset amount.
     /// The validation is probably unnecessary since ParaSwap validates the min amount,
     /// but it is consistent with the practice of doing all validations internally also,
@@ -114,29 +148,25 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     function __takeOrderAndValidateIncoming(address _vaultProxy, bytes memory _orderData) private {
         (
             uint256 minIncomingAssetAmount,
-            uint256 expectedIncomingAssetAmount,
-            address outgoingAsset,
-            uint256 outgoingAssetAmount,
-            bytes16 uuid,
-            IParaSwapV5AugustusSwapper.Path[] memory paths
+            ,
+            ,
+            ,
+            ,
+            SwapType swapType,
+            bytes memory swapData
         ) = __decodeTakeOrderCallArgs(_orderData);
 
-        ERC20 incomingAssetContract = ERC20(paths[paths.length - 1].to);
+        address incomingAsset = __getIncomingAssetFromSwapData({
+            _swapType: swapType,
+            _swapData: swapData
+        });
 
-        uint256 preIncomingAssetBal = incomingAssetContract.balanceOf(_vaultProxy);
+        uint256 preIncomingAssetBal = ERC20(incomingAsset).balanceOf(_vaultProxy);
 
-        __paraSwapV5MultiSwap(
-            outgoingAsset,
-            outgoingAssetAmount,
-            minIncomingAssetAmount,
-            expectedIncomingAssetAmount,
-            payable(_vaultProxy),
-            uuid,
-            paths
-        );
+        __takeOrder({_vaultProxy: _vaultProxy, _orderData: _orderData});
 
         require(
-            incomingAssetContract.balanceOf(_vaultProxy).sub(preIncomingAssetBal) >=
+            ERC20(incomingAsset).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >=
                 minIncomingAssetAmount,
             "__takeOrderAndValidateIncoming: Received incoming asset less than expected"
         );
@@ -176,31 +206,45 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
             spendAssetAmounts_ = new uint256[](1);
             incomingAssets_ = new address[](1);
             minIncomingAssetAmounts_ = new uint256[](1);
+            SwapType swapType;
+            bytes memory swapData;
 
-            IParaSwapV5AugustusSwapper.Path[] memory paths;
             (
                 minIncomingAssetAmounts_[0],
                 ,
                 spendAssets_[0],
                 spendAssetAmounts_[0],
                 ,
-                paths
+                swapType,
+                swapData
             ) = __decodeTakeOrderCallArgs(_actionData);
 
-            incomingAssets_[0] = paths[paths.length - 1].to;
+            incomingAssets_[0] = __getIncomingAssetFromSwapData({
+                _swapType: swapType,
+                _swapData: swapData
+            });
         } else if (_selector == TAKE_MULTIPLE_ORDERS_SELECTOR) {
             (bytes[] memory ordersData, ) = __decodeTakeMultipleOrdersCallArgs(_actionData);
 
             spendAssets_ = new address[](ordersData.length);
             spendAssetAmounts_ = new uint256[](ordersData.length);
             for (uint256 i; i < ordersData.length; i++) {
-                IParaSwapV5AugustusSwapper.Path[] memory paths;
-                (, , spendAssets_[i], spendAssetAmounts_[i], , paths) = __decodeTakeOrderCallArgs(
-                    ordersData[i]
-                );
+                SwapType swapType;
+                bytes memory swapData;
+                (
+                    ,
+                    ,
+                    spendAssets_[i],
+                    spendAssetAmounts_[i],
+                    ,
+                    swapType,
+                    swapData
+                ) = __decodeTakeOrderCallArgs(ordersData[i]);
 
                 // Add unique incoming assets
-                incomingAssets_ = incomingAssets_.addUniqueItem(paths[paths.length - 1].to);
+                incomingAssets_ = incomingAssets_.addUniqueItem(
+                    __getIncomingAssetFromSwapData({_swapType: swapType, _swapData: swapData})
+                );
             }
             (spendAssets_, spendAssetAmounts_) = __aggregateAssetAmounts(
                 spendAssets_,
@@ -229,6 +273,54 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     // DECODERS //
     //////////////
 
+    /// @dev Helper to decode the encoded swapData for MegaSwap
+    function __decodeMegaSwapData(bytes memory _swapData)
+        private
+        pure
+        returns (IParaSwapV5AugustusSwapper.MegaSwapPath[] memory path_)
+    {
+        return abi.decode(_swapData, (IParaSwapV5AugustusSwapper.MegaSwapPath[]));
+    }
+
+    /// @dev Helper to decode the encoded swapData for MultiSwap
+    function __decodeMultiSwapData(bytes memory _swapData)
+        private
+        pure
+        returns (IParaSwapV5AugustusSwapper.Path[] memory path_)
+    {
+        return abi.decode(_swapData, (IParaSwapV5AugustusSwapper.Path[]));
+    }
+
+    /// @dev Helper to decode the encoded swapData for SimpleSwap
+    function __decodeSimpleSwapData(bytes memory _swapData)
+        private
+        pure
+        returns (SimpleSwapParams memory simpleSwapParams_)
+    {
+        return abi.decode(_swapData, (SimpleSwapParams));
+    }
+
+    /// @dev Helper to decode the encoded callOnIntegration call arguments for takeOrder()
+    function __decodeTakeOrderCallArgs(bytes memory _actionData)
+        private
+        pure
+        returns (
+            uint256 minIncomingAssetAmount_,
+            uint256 expectedIncomingAssetAmount_,
+            address outgoingAsset_,
+            uint256 outgoingAssetAmount_,
+            bytes16 uuid_, // Passed as a courtesy to ParaSwap for analytics
+            SwapType swapType_,
+            bytes memory swapData_
+        )
+    {
+        return
+            abi.decode(
+                _actionData,
+                (uint256, uint256, address, uint256, bytes16, SwapType, bytes)
+            );
+    }
+
     /// @dev Helper to decode the encoded callOnIntegration call arguments for takeMultipleOrders()
     function __decodeTakeMultipleOrdersCallArgs(bytes calldata _actionData)
         private
@@ -238,23 +330,28 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
         return abi.decode(_actionData, (bytes[], bool));
     }
 
-    /// @dev Helper to decode the encoded callOnIntegration call arguments for takeOrder()
-    function __decodeTakeOrderCallArgs(bytes memory _actionData)
+    /////////////
+    // HELPERS //
+    /////////////
+
+    /// @dev Helper to retrieve incoming asset from swapData
+    function __getIncomingAssetFromSwapData(SwapType _swapType, bytes memory _swapData)
         private
         pure
-        returns (
-            uint256 minIncomingAssetAmount_,
-            uint256 expectedIncomingAssetAmount_, // Passed as a courtesy to ParaSwap for analytics
-            address outgoingAsset_,
-            uint256 outgoingAssetAmount_,
-            bytes16 uuid_,
-            IParaSwapV5AugustusSwapper.Path[] memory paths_
-        )
+        returns (address incomingAsset_)
     {
-        return
-            abi.decode(
-                _actionData,
-                (uint256, uint256, address, uint256, bytes16, IParaSwapV5AugustusSwapper.Path[])
+        if (_swapType == SwapType.Mega) {
+            IParaSwapV5AugustusSwapper.MegaSwapPath[] memory megaPaths = __decodeMegaSwapData(
+                _swapData
             );
+            IParaSwapV5AugustusSwapper.Path[] memory paths = megaPaths[0].path;
+            incomingAsset_ = paths[paths.length - 1].to;
+        } else if (_swapType == SwapType.Multi) {
+            IParaSwapV5AugustusSwapper.Path[] memory paths = __decodeMultiSwapData(_swapData);
+            incomingAsset_ = paths[paths.length - 1].to;
+        } else if (_swapType == SwapType.Simple) {
+            SimpleSwapParams memory simpleSwapParams = __decodeSimpleSwapData(_swapData);
+            incomingAsset_ = simpleSwapParams.incomingAsset;
+        }
     }
 }

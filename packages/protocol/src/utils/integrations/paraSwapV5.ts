@@ -26,13 +26,37 @@ export interface ParaSwapV5Path {
   adapters: ParaSwapV5AdapterInterface[];
 }
 
+export interface ParaSwapV5MultiPath {
+  paths: ParaSwapV5Path[];
+}
+
+export interface ParaSwapV5MegaSwapPath {
+  fromAmountPercent: BigNumberish;
+  path: ParaSwapV5Path[];
+}
+
+export interface ParaSwapV5SimpleSwapParams {
+  incomingAsset: AddressLike;
+  callees: AddressLike[];
+  exchangeData: BytesLike;
+  startIndexes: BigNumberish[];
+  values: BigNumberish[];
+}
+
+export enum ParaSwapV5SwapType {
+  Simple = 0,
+  Multi = 1,
+  Mega = 2,
+}
+
 export interface ParaSwapV5TakeOrder {
   minIncomingAssetAmount: BigNumberish;
   expectedIncomingAssetAmount: BigNumberish;
   outgoingAsset: AddressLike;
   outgoingAssetAmount: BigNumberish;
   uuid: BytesLike;
-  paths: ParaSwapV5Path[];
+  swapType: ParaSwapV5SwapType;
+  swapData: BytesLike;
 }
 
 export const paraSwapV5RouteTuple = utils.ParamType.fromString(
@@ -50,6 +74,15 @@ export const paraSwapV5PathTuple = utils.ParamType.fromString(
 );
 export const paraSwapV5PathTupleArray = `${paraSwapV5PathTuple.format('full')}[]`;
 
+export const paraSwapV5MegaPathTuple = utils.ParamType.fromString(
+  `tuple(uint256 fromAmountPercent, ${paraSwapV5PathTupleArray} path)`,
+);
+export const paraSwapV5MegaPathTupleArray = `${paraSwapV5MegaPathTuple.format('full')}[]`;
+
+export const paraswapv5SimpleSwapParams = utils.ParamType.fromString(
+  'tuple(address incomingAsset, address[] callees, bytes exchangeData, uint256[] startIndexes, uint256[] values)',
+);
+
 export function paraSwapV5TakeMultipleOrdersArgs({
   ordersData,
   allowOrdersToFail,
@@ -66,10 +99,29 @@ export function paraSwapV5TakeOrderArgs({
   outgoingAsset,
   outgoingAssetAmount,
   uuid,
-  paths,
+  swapType,
+  swapData,
 }: ParaSwapV5TakeOrder) {
   return encodeArgs(
-    ['uint256', 'uint256', 'address', 'uint256', 'bytes16', paraSwapV5PathTupleArray],
-    [minIncomingAssetAmount, expectedIncomingAssetAmount, outgoingAsset, outgoingAssetAmount, uuid, paths],
+    ['uint256', 'uint256', 'address', 'uint256', 'bytes16', 'uint256', 'bytes'],
+    [minIncomingAssetAmount, expectedIncomingAssetAmount, outgoingAsset, outgoingAssetAmount, uuid, swapType, swapData],
   );
+}
+
+export function paraSwapV5ConstructMegaSwapData({ megaPaths }: { megaPaths: ParaSwapV5MegaSwapPath[] }): string {
+  return encodeArgs([paraSwapV5MegaPathTupleArray], [megaPaths]);
+}
+
+export function paraSwapV5ConstructMultiSwapData({ paths }: { paths: ParaSwapV5MultiPath['paths'] }): string {
+  return encodeArgs([paraSwapV5PathTupleArray], [paths]);
+}
+
+export function paraSwapV5ConstructSimpleSwapData({
+  incomingAsset,
+  callees,
+  exchangeData,
+  startIndexes,
+  values,
+}: ParaSwapV5SimpleSwapParams): string {
+  return encodeArgs([paraswapv5SimpleSwapParams], [[incomingAsset, callees, exchangeData, startIndexes, values]]);
 }
