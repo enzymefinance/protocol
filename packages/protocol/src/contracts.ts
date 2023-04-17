@@ -88,6 +88,7 @@ export * from './codegen/UniswapV2LiquidityAdapter';
 export * from './codegen/UniswapV3Adapter';
 export * from './codegen/YearnVaultV2Adapter';
 export * from './codegen/ZeroExV2Adapter';
+export * from './codegen/ZeroExV4Adapter';
 
 // External positions
 export * from './codegen/AaveDebtPositionParser';

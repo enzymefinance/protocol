@@ -103,6 +103,7 @@ import {
   YearnVaultV2Adapter,
   YearnVaultV2PriceFeed,
   ZeroExV2Adapter,
+  ZeroExV4Adapter,
 } from '@enzymefinance/protocol';
 
 export async function getNamedSigner(name: string) {
@@ -235,6 +236,7 @@ export async function deployProtocolFixture() {
     yearnVaultV2Adapter: new YearnVaultV2Adapter(fixture.YearnVaultV2Adapter.address, deployer),
     yearnVaultV2PriceFeed: new YearnVaultV2PriceFeed(fixture.YearnVaultV2PriceFeed.address, deployer),
     zeroExV2Adapter: new ZeroExV2Adapter(fixture.ZeroExV2Adapter.address, deployer),
+    zeroExV4Adapter: new ZeroExV4Adapter(fixture.ZeroExV4Adapter.address, deployer),
   } as const;
 
   return {
@@ -450,8 +452,11 @@ export interface DeploymentConfig {
       yVaults: Record<string, string>;
     };
   };
-  zeroex: {
+  zeroexV2: {
     exchange: string;
     allowedMakers: string[];
+  };
+  zeroexV4: {
+    exchange: string;
   };
 }

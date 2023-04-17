@@ -470,12 +470,15 @@ const mainnetConfig: DeploymentConfig = {
       yVaults: yVaultsV2
     }
   },
-  zeroex: {
+  zeroexV2: {
     allowedMakers: [
       '0x56178a0d5F301bAf6CF3e1Cd53d9863437345Bf9',
       '0xe0238DA09Cab56B3066F26F98657DccE801c16B9'
     ],
     exchange: '0x080bf510fcbf18b91105470639e9561022937712',
+  },
+  zeroexV4: {
+    exchange: '0xdef1c0ded9bec7f1a1670819833240f027b25eff',
   },
 }
 

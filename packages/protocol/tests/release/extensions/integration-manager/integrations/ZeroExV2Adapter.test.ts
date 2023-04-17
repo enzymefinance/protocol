@@ -32,13 +32,13 @@ describe('constructor', () => {
 
     const getExchangeCall = await zeroExV2Adapter.getZeroExV2Exchange();
 
-    expect(getExchangeCall).toMatchAddress(fork.config.zeroex.exchange);
+    expect(getExchangeCall).toMatchAddress(fork.config.zeroexV2.exchange);
 
     const getIntegrationManagerCall = await zeroExV2Adapter.getIntegrationManager();
 
     expect(getIntegrationManagerCall).toMatchAddress(fork.deployment.integrationManager);
 
-    for (const allowedMaker of fork.config.zeroex.allowedMakers) {
+    for (const allowedMaker of fork.config.zeroexV2.allowedMakers) {
       const isAllowedMakerCall = await zeroExV2Adapter.isAllowedMaker(allowedMaker);
 
       expect(isAllowedMakerCall).toBe(true);
@@ -59,7 +59,7 @@ describe('parseAssetsForAction', () => {
     const takerAssetFillAmount = BigNumber.from(11);
 
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: fork.deployer,
@@ -99,7 +99,7 @@ describe('parseAssetsForAction', () => {
     const expectedMinIncomingAssetAmount = makerAssetAmount.mul(takerAssetFillAmount).div(takerAssetAmount);
 
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
@@ -150,7 +150,7 @@ describe('parseAssetsForAction', () => {
       .sub(expectedTakerFee);
 
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
@@ -197,7 +197,7 @@ describe('parseAssetsForAction', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
@@ -245,7 +245,7 @@ describe('parseAssetsForAction', () => {
     const expectedTakerFee = takerAssetFillAmount.mul(takerFee).div(takerAssetAmount);
 
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress,
       maker: deployer,
@@ -348,7 +348,7 @@ describe('takeOrder', () => {
     await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: constants.AddressZero,
       maker,
@@ -417,7 +417,7 @@ describe('takeOrder', () => {
     await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: randomAddress(),
       maker,
@@ -491,7 +491,7 @@ describe('takeOrder', () => {
     await setAccountBalance({ provider, account: maker, amount: makerAssetAmount, token: incomingAsset });
     await incomingAsset.connect(maker).approve(erc20Proxy, makerAssetAmount);
     const unsignedOrder = createUnsignedZeroExV2Order({
-      exchange: fork.config.zeroex.exchange,
+      exchange: fork.config.zeroexV2.exchange,
       expirationTimeSeconds: (await provider.getBlock('latest')).timestamp + ONE_DAY_IN_SECONDS,
       feeRecipientAddress: constants.AddressZero,
       maker,
