@@ -85,6 +85,7 @@ beforeEach(async () => {
   };
 
   // Deploy a wrapper with defined config
+  const depositMode = GatedRedemptionQueueSharesWrapperDepositMode.Direct;
   const deploySharesWrapperRes = await deployGatedRedemptionQueueSharesWrapper({
     signer: randomUser,
     sharesWrapperFactory,
@@ -94,6 +95,7 @@ beforeEach(async () => {
     useDepositApprovals: false,
     useRedemptionApprovals: false,
     useTransferApprovals: false,
+    depositMode,
     redemptionWindowConfig,
   });
   sharesWrapper = deploySharesWrapperRes.sharesWrapper;
@@ -128,7 +130,16 @@ describe('init', () => {
     // shares wrapper is already deployed
 
     await expect(
-      sharesWrapper.init(vaultProxy, [], redemptionAsset, true, true, true, redemptionWindowConfig),
+      sharesWrapper.init(
+        vaultProxy,
+        [],
+        redemptionAsset,
+        true,
+        true,
+        true,
+        GatedRedemptionQueueSharesWrapperDepositMode.Direct,
+        redemptionWindowConfig,
+      ),
     ).rejects.toBeRevertedWith('Initialized');
   });
 
@@ -143,6 +154,7 @@ describe('init', () => {
         useDepositApprovals: true,
         useRedemptionApprovals: true,
         useTransferApprovals: true,
+        depositMode: GatedRedemptionQueueSharesWrapperDepositMode.Direct,
         redemptionWindowConfig,
       }),
     ).rejects.toBeRevertedWith('Invalid vault');
@@ -237,8 +249,8 @@ describe('investment flow', () => {
       });
 
       // Check the gas of both deposits
-      expect(deposit1Receipt).toMatchInlineGasSnapshot('383594');
-      expect(deposit2Receipt).toMatchInlineGasSnapshot('270326');
+      expect(deposit1Receipt).toMatchInlineGasSnapshot('381825');
+      expect(deposit2Receipt).toMatchInlineGasSnapshot('268557');
     });
 
     it('happy path: within redemption window', async () => {
@@ -369,7 +381,7 @@ describe('investment flow', () => {
         });
 
         // Use the first request event for gas estimation, as that will be the max cost
-        expect(firstRequestReceipt).toMatchInlineGasSnapshot('160860');
+        expect(firstRequestReceipt).toMatchInlineGasSnapshot('158915');
       });
     });
 
@@ -538,6 +550,7 @@ describe('investment flow', () => {
         useDepositApprovals: false,
         useRedemptionApprovals: false,
         useTransferApprovals: false,
+        depositMode: GatedRedemptionQueueSharesWrapperDepositMode.Direct,
         redemptionWindowConfig,
       });
       sharesWrapper = deploySharesWrapperRes.sharesWrapper;

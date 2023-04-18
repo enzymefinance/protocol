@@ -39,6 +39,7 @@ contract GatedRedemptionQueueSharesWrapperFactory is IBeacon {
     /// @param _useDepositApprovals True if deposit pre-approvals are required
     /// @param _useRedemptionApprovals True if the redemption request pre-approvals are required
     /// @param _useTransferApprovals True if shares transfer pre-approvals are required
+    /// @param _depositMode The mode to follow for deposits
     /// @param _windowConfig Initial redemption window configuration
     /// @return wrapperProxy_ The deployed wrapper proxy
     function deploy(
@@ -48,6 +49,7 @@ contract GatedRedemptionQueueSharesWrapperFactory is IBeacon {
         bool _useDepositApprovals,
         bool _useRedemptionApprovals,
         bool _useTransferApprovals,
+        GatedRedemptionQueueSharesWrapperLibBase1.DepositMode _depositMode,
         GatedRedemptionQueueSharesWrapperLibBase1.RedemptionWindowConfig calldata _windowConfig
     ) external returns (address wrapperProxy_) {
         require(
@@ -63,6 +65,7 @@ contract GatedRedemptionQueueSharesWrapperFactory is IBeacon {
             _useDepositApprovals,
             _useRedemptionApprovals,
             _useTransferApprovals,
+            _depositMode,
             _windowConfig
         );
 

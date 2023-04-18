@@ -68,6 +68,7 @@ describe('deploy', () => {
         useDepositApprovals: true,
         useRedemptionApprovals: true,
         useTransferApprovals: true,
+        depositMode: GatedRedemptionQueueSharesWrapperDepositMode.Request,
         redemptionWindowConfig,
       }),
     ).rejects.toBeRevertedWith('Invalid vault');
@@ -75,6 +76,7 @@ describe('deploy', () => {
 
   it('happy path', async () => {
     // The deployment event is tested in this helper
+    const depositMode = GatedRedemptionQueueSharesWrapperDepositMode.Request;
     const { receipt, sharesWrapper } = await deployGatedRedemptionQueueSharesWrapper({
       signer: randomUser,
       sharesWrapperFactory,
@@ -84,6 +86,7 @@ describe('deploy', () => {
       useDepositApprovals: true,
       useRedemptionApprovals: true,
       useTransferApprovals: true,
+      depositMode,
       redemptionWindowConfig,
     });
 
@@ -94,14 +97,13 @@ describe('deploy', () => {
     expect(await sharesWrapper.depositApprovalsAreUsed()).toBe(true);
     expect(await sharesWrapper.redemptionApprovalsAreUsed()).toBe(true);
     expect(await sharesWrapper.transferApprovalsAreUsed()).toBe(true);
+    expect(await sharesWrapper.getDepositMode()).toEqBigNumber(depositMode);
     expect(await sharesWrapper.getRedemptionWindowConfig()).toMatchFunctionOutput(
       sharesWrapper.getRedemptionWindowConfig,
       redemptionWindowConfig,
     );
-    // Further state is default values as not set in factory/init
-    expect(await sharesWrapper.getDepositMode()).toEqBigNumber(GatedRedemptionQueueSharesWrapperDepositMode.Direct);
 
-    expect(receipt).toMatchInlineGasSnapshot('358709');
+    expect(receipt).toMatchInlineGasSnapshot('361009');
   });
 });
 

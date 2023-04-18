@@ -22,6 +22,11 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 /// e.g., `GatedRedemptionQueueSharesWrapperLibBase2 is GatedRedemptionQueueSharesWrapperLibBase1`
 /// DO NOT EDIT CONTRACT.
 abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, ReentrancyGuard {
+    enum DepositMode {
+        Direct,
+        Request
+    }
+
     event DepositApproval(address indexed user, address indexed asset, uint256 amount);
 
     event Deposited(
@@ -30,6 +35,16 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
         uint256 depositTokenAmount,
         uint256 sharesReceived
     );
+
+    event DepositModeSet(DepositMode mode);
+
+    event DepositRequestAdded(
+        address indexed user,
+        address indexed depositAsset,
+        uint256 depositAssetAmount
+    );
+
+    event DepositRequestRemoved(address indexed user, address indexed depositAsset);
 
     event Initialized(address indexed vaultProxy);
 
@@ -58,11 +73,23 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
 
     event TransferApproval(address indexed sender, address indexed recipient, uint256 amount);
 
+    event TransferForced(address indexed sender, address indexed recipient, uint256 amount);
+
     event UseDepositApprovalsSet(bool useApprovals);
 
     event UseRedemptionApprovalsSet(bool useApprovals);
 
     event UseTransferApprovalsSet(bool useApprovals);
+
+    struct DepositQueue {
+        mapping(address => DepositRequest) userToRequest;
+        address[] users;
+    }
+
+    struct DepositRequest {
+        uint64 index;
+        uint128 assetAmount;
+    }
 
     struct RedemptionQueue {
         uint128 totalSharesPending;
@@ -85,13 +112,15 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
         uint64 relativeSharesCap; // 100% is 1e18; e.g., 50% is 0.5e18
     }
 
-    // Packing vaultProxy with useDepositApprovals makes deposits slightly cheaper
+    // Packing vaultProxy with depositMode and useDepositApprovals makes deposits slightly cheaper
     address internal vaultProxy;
+    DepositMode internal depositMode;
     bool internal useDepositApprovals;
     bool internal useRedemptionApprovals;
     bool internal useTransferApprovals;
     address internal redemptionAsset;
 
+    mapping(address => DepositQueue) internal depositAssetToQueue;
     RedemptionQueue internal redemptionQueue;
     RedemptionWindowConfig internal redemptionWindowConfig;
 
@@ -110,6 +139,7 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
         bool _useDepositApprovals,
         bool _useRedemptionApprovals,
         bool _useTransferApprovals,
+        DepositMode _depositMode,
         GatedRedemptionQueueSharesWrapperLibBase1.RedemptionWindowConfig calldata _windowConfig
     ) external virtual;
 }

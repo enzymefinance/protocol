@@ -1,6 +1,7 @@
 import type { AddressLike } from '@enzymefinance/ethers';
 import type {
   ArbitraryTokenPhasedSharesWrapperFactory,
+  GatedRedemptionQueueSharesWrapperDepositMode,
   GatedRedemptionQueueSharesWrapperFactory,
   GatedRedemptionQueueSharesWrapperRedemptionWindowConfig,
 } from '@enzymefinance/protocol';
@@ -78,6 +79,7 @@ export async function deployGatedRedemptionQueueSharesWrapper({
   useDepositApprovals,
   useRedemptionApprovals,
   useTransferApprovals,
+  depositMode,
   redemptionWindowConfig,
 }: {
   signer: SignerWithAddress;
@@ -88,6 +90,7 @@ export async function deployGatedRedemptionQueueSharesWrapper({
   useDepositApprovals: boolean;
   useRedemptionApprovals: boolean;
   useTransferApprovals: boolean;
+  depositMode: GatedRedemptionQueueSharesWrapperDepositMode;
   redemptionWindowConfig: GatedRedemptionQueueSharesWrapperRedemptionWindowConfig;
 }) {
   const receipt = await sharesWrapperFactory
@@ -99,6 +102,7 @@ export async function deployGatedRedemptionQueueSharesWrapper({
       useDepositApprovals,
       useRedemptionApprovals,
       useTransferApprovals,
+      depositMode,
       redemptionWindowConfig,
     );
 

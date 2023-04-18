@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../../release/interfaces/IWETH.sol";
 import "../../global-config/interfaces/IGlobalConfig2.sol";
 import "../../vault/interfaces/IVaultCore.sol";
-import "./bases/GatedRedemptionQueueSharesWrapperLibBase2.sol";
+import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -27,7 +27,7 @@ import "./bases/GatedRedemptionQueueSharesWrapperLibBase2.sol";
 /// single-asset redemptions, as well as misc participation controls
 /// @dev Holders of these wrapped shares must fully trust the vault `owner`,
 /// who can appropriate their full value
-contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase2 {
+contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase1 {
     using Address for address;
     using SafeCast for uint256;
     using SafeERC20 for ERC20;
@@ -58,6 +58,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _useDepositApprovals True if deposit pre-approvals are required
     /// @param _useRedemptionApprovals True if the redemption request pre-approvals are required
     /// @param _useTransferApprovals True if shares transfer pre-approvals are required
+    /// @param _depositMode The mode to follow for deposits
     /// @param _windowConfig Initial redemption window configuration
     /// @dev The following vars initialize to their default value as they were added after the 1st version:
     /// - `depositMode`
@@ -68,7 +69,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         bool _useDepositApprovals,
         bool _useRedemptionApprovals,
         bool _useTransferApprovals,
-        GatedRedemptionQueueSharesWrapperLibBase1.RedemptionWindowConfig calldata _windowConfig
+        DepositMode _depositMode,
+        RedemptionWindowConfig calldata _windowConfig
     ) external override {
         require(vaultProxy == address(0), "init: Initialized");
 
@@ -79,6 +81,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         __setUseDepositApprovals(_useDepositApprovals);
         __setUseRedemptionApprovals(_useRedemptionApprovals);
         __setUseTransferApprovals(_useTransferApprovals);
+        __setDepositMode(_depositMode);
         __setRedemptionWindowConfig(_windowConfig);
 
         emit Initialized(_vaultProxy);
@@ -968,9 +971,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     function setDepositMode(DepositMode _mode) external {
         __onlyManagerOrOwner();
 
-        depositMode = _mode;
-
-        emit DepositModeSet(_mode);
+        __setDepositMode(_mode);
     }
 
     /// @notice Sets the configuration for the redemption window
@@ -992,6 +993,12 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     }
 
     // PRIVATE FUNCTIONS
+
+    function __setDepositMode(DepositMode _mode) private {
+        depositMode = _mode;
+
+        emit DepositModeSet(_mode);
+    }
 
     /// @dev Helper to set redemptionAsset
     function __setRedemptionAsset(address _nextRedemptionAsset) private {
