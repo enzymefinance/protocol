@@ -1,5 +1,11 @@
 # @enzymefinance/ethers
 
+## 4.0.10
+
+### Patch Changes
+
+- 1f61b9af0: Release 4.0.10
+
 ## 4.0.9
 
 ### Patch Changes
