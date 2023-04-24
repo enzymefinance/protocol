@@ -77,7 +77,6 @@ import {
   MinSharesSupplyFee,
   NotionalV2PositionLib,
   NotionalV2PositionParser,
-  OlympusV2Adapter,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
   ParaSwapV5Adapter,
@@ -209,7 +208,6 @@ export async function deployProtocolFixture() {
     notionalV2Position: new NotionalV2PositionLib(fixture.NotionalV2PositionLib.address, deployer),
     notionalV2PositionParser: new NotionalV2PositionParser(fixture.NotionalV2PositionParser.address, deployer),
     minSharesSupplyFee: new MinSharesSupplyFee(fixture.MinSharesSupplyFee.address, deployer),
-    olympusV2Adapter: new OlympusV2Adapter(fixture.OlympusV2Adapter.address, deployer),
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture.OnlyRemoveDustExternalPositionPolicy.address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture.OnlyUntrackDustOrPricelessAssetsPolicy.address, deployer),
     paraSwapV5Adapter: new ParaSwapV5Adapter(fixture.ParaSwapV5Adapter.address, deployer),
@@ -388,9 +386,6 @@ export interface DeploymentConfig {
   };
   notional: {
     notionalContract: string;
-  };
-  olympusV2: {
-    stakingContract: string;
   };
   paraSwapV5: {
     augustusSwapper: string;

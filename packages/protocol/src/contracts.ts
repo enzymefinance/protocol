@@ -79,7 +79,6 @@ export * from './codegen/ConvexCurveLpStakingAdapter';
 export * from './codegen/CurveExchangeAdapter';
 export * from './codegen/CurveLiquidityAdapter';
 export * from './codegen/IdleAdapter';
-export * from './codegen/OlympusV2Adapter';
 export * from './codegen/ParaSwapV5Adapter';
 export * from './codegen/PoolTogetherV4Adapter';
 export * from './codegen/SynthetixAdapter';
