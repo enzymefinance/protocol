@@ -408,13 +408,6 @@ export interface DeploymentConfig {
       priceOracleManager: string;
       vouchers: Record<'bviUsdWeth' | 'bviZiBit', { underlying: string; voucher: string; pool: string }>;
     };
-    convertibles: {
-      initialOfferingMarket: string;
-      manualPriceOracle: string;
-      market: string;
-      priceOracleManager: string;
-      vouchers: Record<'perp' | 'usf', { underlying: string; voucher: string; pool: string }>;
-    };
     deployer: string;
   };
   synthetix: {

@@ -12,6 +12,11 @@ export enum SolvV2BondIssuerPositionActionId {
   Withdraw = '4',
 }
 
+export enum SolvV2SalePriceType {
+  Fixed = 0,
+  Declining = 1,
+}
+
 const solvMintParameterTuple = utils.ParamType.fromString(
   `tuple(uint128 lowestPrice, uint128 highestPrice, uint128 tokenInAmount, uint64 effectiveTime, uint64 maturity)`,
 );

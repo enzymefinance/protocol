@@ -39,10 +39,6 @@ const fn: DeployFunction = async function (hre) {
   const solvV2BondIssuerPositionParser = await getOrNull('SolvV2BondIssuerPositionParser');
   const notionalV2PositionLib = await getOrNull('NotionalV2PositionLib');
   const notionalV2PositionParser = await getOrNull('NotionalV2PositionParser');
-  const solvV2ConvertibleBuyerPositionLib = await getOrNull('SolvV2ConvertibleBuyerPositionLib');
-  const solvV2ConvertibleBuyerPositionParser = await getOrNull('SolvV2ConvertibleBuyerPositionParser');
-  const solvV2ConvertibleIssuerPositionLib = await getOrNull('SolvV2ConvertibleIssuerPositionLib');
-  const solvV2ConvertibleIssuerPositionParser = await getOrNull('SolvV2ConvertibleIssuerPositionParser');
   const theGraphDelegationPositionLib = await getOrNull('TheGraphDelegationPositionLib');
   const theGraphDelegationPositionParser = await getOrNull('TheGraphDelegationPositionParser');
   const uniswapV3ExternalPositionLib = await getOrNull('UniswapV3LiquidityPositionLib');
@@ -67,11 +63,7 @@ const fn: DeployFunction = async function (hre) {
     ...(convexVotingPositionLib && convexVotingPositionParser ? ['CONVEX_VOTING'] : []),
     ...(theGraphDelegationPositionLib && theGraphDelegationPositionParser ? ['THE_GRAPH_DELEGATION'] : []),
     ...(mapleLiquidityPositionLib && mapleLiquidityPositionParser ? ['MAPLE_LIQUIDITY'] : []),
-    ...(solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser ? ['SOLV_V2_CONVERTIBLE_BUYER'] : []),
     ...(arbitraryLoanPositionLib && arbitraryLoanPositionParser ? ['ARBITRARY_LOAN'] : []),
-    ...(solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser
-      ? ['SOLV_V2_CONVERTIBLE_ISSUER']
-      : []),
     ...(solvV2BondBuyerPositionLib && solvV2BondBuyerPositionParser ? ['SOLV_V2_BOND_BUYER'] : []),
     ...(solvV2BondIssuerPositionLib && solvV2BondIssuerPositionParser ? ['SOLV_V2_BOND_ISSUER'] : []),
     ...(notionalV2PositionLib && notionalV2PositionParser ? ['NOTIONAL_V2'] : []),
@@ -144,27 +136,11 @@ const fn: DeployFunction = async function (hre) {
     );
   }
 
-  if (solvV2ConvertibleBuyerPositionLib && solvV2ConvertibleBuyerPositionParser) {
-    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [ExternalPositionType.SolvV2ConvertibleBuyerPosition],
-      [solvV2ConvertibleBuyerPositionLib],
-      [solvV2ConvertibleBuyerPositionParser],
-    );
-  }
-
   if (arbitraryLoanPositionLib && arbitraryLoanPositionParser) {
     await externalPositionManagerInstance.updateExternalPositionTypesInfo(
       [ExternalPositionType.ArbitraryLoanPosition],
       [arbitraryLoanPositionLib],
       [arbitraryLoanPositionParser],
-    );
-  }
-
-  if (solvV2ConvertibleIssuerPositionLib && solvV2ConvertibleIssuerPositionParser) {
-    await externalPositionManagerInstance.updateExternalPositionTypesInfo(
-      [ExternalPositionType.SolvV2ConvertibleIssuerPosition],
-      [solvV2ConvertibleIssuerPositionLib],
-      [solvV2ConvertibleIssuerPositionParser],
     );
   }
 

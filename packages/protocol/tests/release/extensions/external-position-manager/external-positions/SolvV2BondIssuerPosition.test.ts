@@ -17,7 +17,7 @@ import {
 import type {
   ProtocolDeployment,
   SignerWithAddress,
-  SolvV2ConvertibleIssuerPositionCreateOfferParams,
+  SolvV2BondIssuerPositionCreateOfferParams,
 } from '@enzymefinance/testutils';
 import {
   assertEvent,
@@ -28,11 +28,11 @@ import {
   getAssetUnit,
   impersonateSigner,
   setAccountBalance,
-  solvV2ConvertibleIssuerPositionCreateOffer,
-  solvV2ConvertibleIssuerPositionReconcile,
-  solvV2ConvertibleIssuerPositionRefund,
-  solvV2ConvertibleIssuerPositionRemoveOffer,
-  solvV2ConvertibleIssuerPositionWithdraw,
+  solvV2BondIssuerPositionCreateOffer,
+  solvV2BondIssuerPositionReconcile,
+  solvV2BondIssuerPositionRefund,
+  solvV2BondIssuerPositionRemoveOffer,
+  solvV2BondIssuerPositionWithdraw,
 } from '@enzymefinance/testutils';
 import type { BigNumberish, BytesLike } from 'ethers';
 import { BigNumber, constants, utils } from 'ethers';
@@ -68,7 +68,7 @@ let lowestPrice: BigNumber;
 let priceData: BytesLike;
 let tokenInAmount: BigNumber;
 let slotId: BigNumber;
-let createOfferArgs: SolvV2ConvertibleIssuerPositionCreateOfferParams;
+let createOfferArgs: SolvV2BondIssuerPositionCreateOfferParams;
 
 beforeEach(async () => {
   fork = await deployProtocolFixture();
@@ -95,7 +95,6 @@ beforeEach(async () => {
 
   solvV2BondIssuerPosition = new SolvV2BondIssuerPositionLib(externalPositionProxy, provider);
 
-  // All tests use the USF convertible voucher (except the test for multiple voucher issuance)
   currencyToken = new ITestStandardToken(fork.config.weth, provider);
   currencyUnit = await getAssetUnit(currencyToken);
   underlyingToken = new ITestStandardToken(fork.config.solvFinanceV2.bonds.vouchers.bviUsdWeth.underlying, provider);
@@ -177,9 +176,9 @@ beforeEach(async () => {
 
 describe('Actions.Offer', () => {
   it('should revert when eth is specified as currency', async () => {
-    expect(
-      solvV2ConvertibleIssuerPositionCreateOffer({ ...createOfferArgs, currency: ETH_ADDRESS }),
-    ).rejects.toBeRevertedWith('__validateNotNativeToken: Native asset is unsupported');
+    expect(solvV2BondIssuerPositionCreateOffer({ ...createOfferArgs, currency: ETH_ADDRESS })).rejects.toBeRevertedWith(
+      '__validateNotNativeToken: Native asset is unsupported',
+    );
   });
 
   it('works as expected', async () => {
@@ -187,7 +186,7 @@ describe('Actions.Offer', () => {
     const min = 1;
     const max = voucherUnit;
 
-    const receipt = await solvV2ConvertibleIssuerPositionCreateOffer({ ...createOfferArgs, min, max });
+    const receipt = await solvV2BondIssuerPositionCreateOffer({ ...createOfferArgs, min, max });
 
     // Value of external position should be equal to deposited collateral
     const managedAssets = await solvV2BondIssuerPosition.getManagedAssets.call();
@@ -250,14 +249,14 @@ describe('Actions.RemoveOffer', () => {
 
   beforeEach(async () => {
     initialVaultUnderlyingBalance = await underlyingToken.balanceOf(vaultProxy);
-    await solvV2ConvertibleIssuerPositionCreateOffer({ ...createOfferArgs, startTime: startTime + 100 });
+    await solvV2BondIssuerPositionCreateOffer({ ...createOfferArgs, startTime: startTime + 100 });
   });
 
   it('works as expected - before ivo start', async () => {
     const vaultUnderlyingBalanceBefore = await underlyingToken.balanceOf(vaultProxy);
     expect(vaultUnderlyingBalanceBefore).toBeLtBigNumber(initialVaultUnderlyingBalance);
 
-    const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
+    const receipt = await solvV2BondIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -312,7 +311,7 @@ describe('Actions.RemoveOffer', () => {
     const vaultUnderlyingBalanceBefore = await underlyingToken.balanceOf(vaultProxy);
     const vaultCurrencyBalanceBefore = await currencyToken.balanceOf(vaultProxy);
 
-    const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
+    const receipt = await solvV2BondIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -350,7 +349,7 @@ describe('Actions.RemoveOffer', () => {
     await provider.send('evm_mine', []);
 
     // Remove offer
-    const receipt = await solvV2ConvertibleIssuerPositionRemoveOffer({
+    const receipt = await solvV2BondIssuerPositionRemoveOffer({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -366,7 +365,7 @@ describe('Actions.RemoveOffer', () => {
 
 describe('Actions.Reconcile', () => {
   beforeEach(async () => {
-    await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
+    await solvV2BondIssuerPositionCreateOffer(createOfferArgs);
   });
 
   it('works as expected', async () => {
@@ -378,7 +377,7 @@ describe('Actions.Reconcile', () => {
     expect(externalPositionBalance).toBeGtBigNumber(0);
 
     // Reconcile
-    const receipt = await solvV2ConvertibleIssuerPositionReconcile({
+    const receipt = await solvV2BondIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -396,13 +395,13 @@ describe('Actions.Reconcile', () => {
 
 describe('Actions.Refund', () => {
   beforeEach(async () => {
-    await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
+    await solvV2BondIssuerPositionCreateOffer(createOfferArgs);
 
     // Buy voucher so that there are minted vouchers to refund
     await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Reconcile so that there is no outstanding currency in the EP
-    await solvV2ConvertibleIssuerPositionReconcile({
+    await solvV2BondIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -413,7 +412,7 @@ describe('Actions.Refund', () => {
   it('works as expected', async () => {
     const preVaultCurrencyBalance = await currencyToken.balanceOf(vaultProxy);
 
-    const receipt = await solvV2ConvertibleIssuerPositionRefund({
+    const receipt = await solvV2BondIssuerPositionRefund({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -442,13 +441,13 @@ describe('Actions.Refund', () => {
 
 describe('Actions.Withdraw', () => {
   beforeEach(async () => {
-    await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
+    await solvV2BondIssuerPositionCreateOffer(createOfferArgs);
 
     // Buy voucher
     await initialBondOfferingMarket.connect(buyer).buy(offerId, voucherUnit);
 
     // Reconcile proceeds of the sale
-    await solvV2ConvertibleIssuerPositionReconcile({
+    await solvV2BondIssuerPositionReconcile({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -487,7 +486,7 @@ describe('Actions.Withdraw', () => {
     expect(preManagedAssets.assets_[0]).toMatchAddress(underlyingToken);
     const preManagedUnderlying = preManagedAssets.amounts_[0];
 
-    const receipt = await solvV2ConvertibleIssuerPositionWithdraw({
+    const receipt = await solvV2BondIssuerPositionWithdraw({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -530,7 +529,7 @@ describe('Actions.Withdraw', () => {
   });
 
   it('works as expected - with refund', async () => {
-    await solvV2ConvertibleIssuerPositionRefund({
+    await solvV2BondIssuerPositionRefund({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -560,7 +559,7 @@ describe('Actions.Withdraw', () => {
 
     const preWithdrawVaultUnderlyingBalance = await underlyingToken.balanceOf(vaultProxy);
 
-    const receipt = await solvV2ConvertibleIssuerPositionWithdraw({
+    const receipt = await solvV2BondIssuerPositionWithdraw({
       comptrollerProxy,
       externalPositionManager,
       externalPositionProxy: solvV2BondIssuerPosition,
@@ -619,11 +618,11 @@ describe('multiple voucher issuance', () => {
     await initialBondOfferingMarket.setVoucherManager(voucher2, [solvV2BondIssuerPosition], true);
 
     // Create two offers for two different vouchers
-    await solvV2ConvertibleIssuerPositionCreateOffer(createOfferArgs);
+    await solvV2BondIssuerPositionCreateOffer(createOfferArgs);
 
     const offerId2 = await initialBondOfferingMarket.nextOfferingId.call();
 
-    const receipt = await solvV2ConvertibleIssuerPositionCreateOffer({
+    const receipt = await solvV2BondIssuerPositionCreateOffer({
       ...createOfferArgs,
       currency: currencyToken,
       voucher: voucher2,
