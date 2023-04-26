@@ -994,7 +994,7 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           expect(postTxToken1Balance).toEqBigNumber(0);
           expect(postTxToken2Balance).toEqBigNumber(0);
 
-          expect(lendReceipt).toMatchInlineGasSnapshot('553662');
+          expect(lendReceipt).toMatchInlineGasSnapshot('545005');
         });
 
         it('happy path: Weighted Pool: TOKEN_IN_FOR_EXACT_BPT_OUT', async () => {
@@ -1056,7 +1056,7 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           expect(postTxPoolTokenBalance).toEqBigNumber(incomingBptAmount);
           expect(postTxSpendAssetBalance).toEqBigNumber(preTxSpendAssetBalance.sub(amountsIn_[spendAssetIndex]));
 
-          expect(lendReceipt).toMatchInlineGasSnapshot('420381');
+          expect(lendReceipt).toMatchInlineGasSnapshot('404320');
         });
       });
 
@@ -1160,7 +1160,7 @@ describe.each(adapterKeys)('%s as adapter', (adapterKey) => {
           expect(postRedeemBptBalance).toEqBigNumber(preRedeemBptBalance.sub(redeemBptAmount));
           expect(postRedeemIncomingAssetBalance).toEqBigNumber(preRedeemIncomingAssetBalance.add(amountsOut_[1]));
 
-          expect(redeemReceipt).toMatchInlineGasSnapshot('427344');
+          expect(redeemReceipt).toMatchInlineGasSnapshot('413752');
         });
 
         // Use an option that only partially spends outgoing tokens to confirm no tokens are stuck in adapter

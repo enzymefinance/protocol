@@ -14,20 +14,22 @@ import {
   createNewFund,
   createTheGraphDelegationPosition,
   deployProtocolFixture,
+  getAssetUnit,
   impersonateContractSigner,
   setAccountBalance,
   theGraphDelegationPositionDelegate,
   theGraphDelegationPositionUndelegate,
   theGraphDelegationPositionWithdraw,
 } from '@enzymefinance/testutils';
-import { BigNumber, constants, utils } from 'ethers';
+import type { BigNumber } from 'ethers';
+import { constants } from 'ethers';
 
 // Sources: https://thegraph.com/explorer and https://graphscan.io/#indexers
-const indexers = ['0xe992d67d0632027166140128f28eea9b4ca00f12', '0xe6368e677871b288294536c8fe6cb1bbeb19f7a2'];
+const indexers = ['0x5a8904be09625965d9aec4bffd30d853438a053e', '0xb06071394531b63b0bac78f27e12dc2beaa913e4'];
 
 let grt: ITestStandardToken;
 let fundOwner: SignerWithAddress;
-let delegationFeeBps: BigNumber;
+let delegationFee: BigNumber;
 
 let vaultProxy: VaultLib;
 let comptrollerProxy: ComptrollerLib;
@@ -35,7 +37,7 @@ let theGraphDelegationPosition: TheGraphDelegationPositionLib;
 let theGraphStakingContract: ITestTheGraphStaking;
 
 let fork: ProtocolDeployment;
-const grtUnit = utils.parseUnits('1', 18);
+let grtUnit: BigNumber, grtDelegationAmount: BigNumber, grtDelegationFees: BigNumber;
 
 async function fastForwardEpoch() {
   // Impersonate epoch manager governor
@@ -76,20 +78,23 @@ beforeEach(async () => {
 
   theGraphDelegationPosition = new TheGraphDelegationPositionLib(externalPositionProxy, provider);
   theGraphStakingContract = new ITestTheGraphStaking(fork.config.theGraph.stakingProxy, provider);
-  const delegationFee = await theGraphStakingContract.delegationTaxPercentage();
-
-  // Converting from 6 decimals to 4 decimals (bps)
-  delegationFeeBps = BigNumber.from(delegationFee).div(100);
+  // Fee is given in hundreds of bps (so 1% = 10000)
+  delegationFee = await theGraphStakingContract.delegationTaxPercentage();
 
   grt = new ITestStandardToken(fork.config.theGraph.grt, provider);
+  grtUnit = await getAssetUnit(grt);
+  grtDelegationAmount = grtUnit.mul(1000);
+  // Adding 1 wei as there seems to be some rounding issue that causes fees to be 1 wei more than what's expected
+  grtDelegationFees = grtDelegationAmount
+    .mul(delegationFee)
+    .div(ONE_HUNDRED_PERCENT_IN_BPS * 100)
+    .add(1);
+
   await setAccountBalance({ provider, account: vaultProxy.address, amount: grtUnit.mul(100_000_000), token: grt });
 });
 
 describe('delegate', () => {
   it('works as expected when called to delegate', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     const delegateReceipt = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -121,8 +126,6 @@ describe('delegate', () => {
   });
 
   it('works as expected when delegating to two indexers', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-
     const delegateReceipt1 = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -147,9 +150,6 @@ describe('delegate', () => {
   });
 
   it('works as expected when delegating twice to the same indexer', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     const delegateReceipt1 = await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -170,8 +170,8 @@ describe('delegate', () => {
 
     const getManagedAssetsCall = await theGraphDelegationPosition.getManagedAssets.call();
 
-    // Assert that the external position is now worth the GRT delegation amount, net of fees
-    expect(getManagedAssetsCall.amounts_[0]).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees).mul(2));
+    // Assert that the external position is now worth the GRT delegation amount, net of fees. Adding 1 wei for rounding error.
+    expect(getManagedAssetsCall.amounts_[0]).toEqBigNumber(grtDelegationAmount.sub(grtDelegationFees).mul(2).add(1));
     expect(getManagedAssetsCall.assets_).toEqual([grt.address]);
 
     assertEvent(delegateReceipt1, theGraphDelegationPosition.abi.getEvent('IndexerAdded'), { indexer: indexers[0] });
@@ -181,9 +181,6 @@ describe('delegate', () => {
 
 describe('undelegate', () => {
   it('works as expected when called to undelegate', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -227,9 +224,6 @@ describe('undelegate', () => {
 
 describe('withdraw', () => {
   it('works as expected when called to partially withdraw', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -338,9 +332,6 @@ describe('withdraw', () => {
   });
 
   it('works as expected when called to partially redelegate', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -378,11 +369,15 @@ describe('withdraw', () => {
     const getManagedAssetsCall = await theGraphDelegationPosition.getManagedAssets.call();
 
     const redelegationAmount = grtDelegationAmount.sub(grtDelegationFees).div(2);
-    const redelegationFees = redelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
+    const redelegationFees = redelegationAmount
+      .mul(delegationFee)
+      .div(ONE_HUNDRED_PERCENT_IN_BPS * 100)
+      .add(1);
 
     // Assert that the external position is still worth the GRT delegation amount, minus the delegation and redelegation fees
-    expect(getManagedAssetsCall.amounts_[0]).toEqBigNumber(
+    expect(getManagedAssetsCall.amounts_[0]).toBeAroundBigNumber(
       grtDelegationAmount.sub(grtDelegationFees).sub(redelegationFees),
+      1,
     );
 
     const redelegationGrtValue = await theGraphDelegationPosition.getDelegationGrtValue(indexers[1]);
@@ -407,9 +402,6 @@ describe('withdraw', () => {
   });
 
   it('works as expected when called to fully redelegate', async () => {
-    const grtDelegationAmount = grtUnit.mul(1000);
-    const grtDelegationFees = grtDelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
-
     await theGraphDelegationPositionDelegate({
       comptrollerProxy,
       externalPositionManager: fork.deployment.externalPositionManager,
@@ -443,7 +435,10 @@ describe('withdraw', () => {
     });
 
     const redelegationAmount = grtDelegationAmount.sub(grtDelegationFees);
-    const redelegationFees = redelegationAmount.mul(delegationFeeBps).div(ONE_HUNDRED_PERCENT_IN_BPS);
+    const redelegationFees = redelegationAmount
+      .mul(delegationFee)
+      .div(ONE_HUNDRED_PERCENT_IN_BPS * 100)
+      .add(1);
 
     // Assert that the redelegation amount is delegated to the second indexer
     const redelegationGrtValue = await theGraphDelegationPosition.getDelegationGrtValue(indexers[1]);

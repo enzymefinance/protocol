@@ -5,6 +5,7 @@ import {
   ITestCERC20,
   ITestCompoundComptroller,
   ITestStandardToken,
+  ONE_YEAR_IN_SECONDS,
   VaultLib,
 } from '@enzymefinance/protocol';
 import type { ProtocolDeployment, SignerWithAddress } from '@enzymefinance/testutils';
@@ -800,10 +801,10 @@ describe('receiveCallFromVault', () => {
     beforeEach(async () => {
       const [fundOwner] = fork.accounts;
 
-      const collateralAmounts = [await ceth.balanceOf.args(vaultProxyUsed).call()];
-      const collateralAssets = [ceth.address];
+      const collateralAmounts = [await cdai.balanceOf.args(vaultProxyUsed).call()];
+      const collateralAssets = [cdai.address];
 
-      const borrowedAssets = [weth.address];
+      const borrowedAssets = [dai.address];
       const borrowedAmounts = [lentAmount.div(10)];
 
       await compoundDebtPositionAddCollateral({
@@ -871,7 +872,7 @@ describe('receiveCallFromVault', () => {
 
       const compToken = new ITestStandardToken(fork.config.primitives.comp, provider);
 
-      const secondsToWarp = 100000000;
+      const secondsToWarp = ONE_YEAR_IN_SECONDS;
 
       await provider.send('evm_increaseTime', [secondsToWarp]);
       await provider.send('evm_mine', []);

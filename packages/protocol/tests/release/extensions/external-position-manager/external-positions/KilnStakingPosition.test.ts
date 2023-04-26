@@ -140,7 +140,7 @@ describe('Stake', () => {
 
     // Gas cost per additional validator
     expect(receiptMultiStake.gasUsed.sub(receiptOneStake.gasUsed).div(validatorAmount.sub(1))).toMatchInlineGasSnapshot(
-      '97965',
+      '99403',
     );
   });
 });
@@ -281,11 +281,11 @@ describe('ClaimFees', () => {
     });
 
     // Gas cost for tx with only 1 node (post-feeRecipient deployment)
-    expect(receiptOneNode).toMatchInlineGasSnapshot('269152');
+    expect(receiptOneNode).toMatchInlineGasSnapshot('270541');
 
     // Gas cost per subsequent node (post-feeRecipient deployment)
     const subsequentGasPerNode = receiptNNodes.gasUsed.sub(receiptOneNode.gasUsed).div(validatorAmount.sub(1));
-    expect(subsequentGasPerNode).toMatchInlineGasSnapshot('73704');
+    expect(subsequentGasPerNode).toMatchInlineGasSnapshot('75115');
   });
 });
 

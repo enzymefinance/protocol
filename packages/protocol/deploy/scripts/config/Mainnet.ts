@@ -401,6 +401,9 @@ const mainnetConfig: DeploymentConfig = {
   notional: {
     notionalContract: '0x1344A36A1B56144C3Bc62E7757377D288fDE0369'
   },
+oneInchV5: {
+  aggregationRouter: '0x1111111254eeb25477b68fb85ed929f73a960582',
+},
   paraSwapV5: {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     feePartner: constants.AddressZero,

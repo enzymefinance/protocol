@@ -6,6 +6,7 @@ export * from './compound';
 export * from './compoundV3';
 export * from './curve';
 export * from './idle';
+export * from './oneInchV5';
 export * from './paraSwapV5';
 export * from './poolTogetherV4';
 export * from './synthetix';

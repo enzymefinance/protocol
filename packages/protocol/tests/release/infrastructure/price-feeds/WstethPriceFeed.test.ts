@@ -52,7 +52,7 @@ describe('expected values', () => {
       .args(wsteth, utils.parseEther('1'), quoteAsset)
       .call();
 
-    // On Dec 14th, 2022 WSTETH/USD was around $1420.
-    expect(canonicalAssetValue).toEqBigNumber('1417153969');
+    // On April 14th, 2023 WSTETH/USD was around $2000.
+    expect(canonicalAssetValue).toEqBigNumber('2082935742');
   });
 });

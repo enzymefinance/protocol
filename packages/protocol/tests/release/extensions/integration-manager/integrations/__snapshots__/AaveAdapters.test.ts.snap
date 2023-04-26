@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`aaveV2 as adapter actions lend happy path: registered aToken: aaveV2 1`] = `489033`;
+exports[`aaveV2 as adapter actions lend happy path: registered aToken: aaveV2 1`] = `489011`;
 
-exports[`aaveV2 as adapter actions lend happy path: unregistered aToken: aaveV2 1`] = `532470`;
+exports[`aaveV2 as adapter actions lend happy path: unregistered aToken: aaveV2 1`] = `532448`;
 
-exports[`aaveV2 as adapter actions redeem happy path: registered aToken: aaveV2 1`] = `446670`;
+exports[`aaveV2 as adapter actions redeem happy path: registered aToken: aaveV2 1`] = `446648`;
 
-exports[`aaveV2 as adapter actions redeem happy path: unregistered aToken: aaveV2 1`] = `490107`;
+exports[`aaveV2 as adapter actions redeem happy path: unregistered aToken: aaveV2 1`] = `490085`;

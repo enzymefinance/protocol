@@ -149,7 +149,7 @@ describe('openTrove', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(openTroveReceipt).toMatchInlineGasSnapshot('776641', gasAssertionTolerance);
+    expect(openTroveReceipt).toMatchInlineGasSnapshot('709470', gasAssertionTolerance);
   });
 });
 
@@ -206,7 +206,7 @@ describe('addCollateral', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(addCollateralReceipt).toMatchInlineGasSnapshot('508342', gasAssertionTolerance);
+    expect(addCollateralReceipt).toMatchInlineGasSnapshot('437482', gasAssertionTolerance);
   });
 });
 
@@ -269,7 +269,7 @@ describe('removeCollateral', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('553570', gasAssertionTolerance);
+    expect(removeCollateralReceipt).toMatchInlineGasSnapshot('482710', gasAssertionTolerance);
   });
 });
 
@@ -329,7 +329,7 @@ describe('borrowLusd', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('517182', gasAssertionTolerance);
+    expect(borrowLusdReceipt).toMatchInlineGasSnapshot('446334', gasAssertionTolerance);
   });
 });
 
@@ -389,7 +389,7 @@ describe('closeTrove', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(closeTroveReceipt).toMatchInlineGasSnapshot('530011', gasAssertionTolerance);
+    expect(closeTroveReceipt).toMatchInlineGasSnapshot('459163', gasAssertionTolerance);
   });
 });
 
@@ -446,6 +446,6 @@ describe('repayBorrow', () => {
     });
 
     // Actual gas spent varies based on the accuracy of the hint values
-    expect(repayBorrowReceipt).toMatchInlineGasSnapshot('482742', gasAssertionTolerance);
+    expect(repayBorrowReceipt).toMatchInlineGasSnapshot('411882', gasAssertionTolerance);
   });
 });

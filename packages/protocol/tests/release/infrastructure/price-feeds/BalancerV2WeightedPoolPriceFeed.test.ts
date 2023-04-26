@@ -172,9 +172,9 @@ describe('expected values', () => {
       .args(bpt, await getAssetUnit(bpt), quoteAsset)
       .call();
 
-    // 50OHM-25DAI-25WETH on Dec 14th, 2022 was worth about $18
+    // 50OHM-25DAI-25WETH on Apr 7th, 2023 was worth about $20.57
     // Source: <https://app.zerion.io/explore/asset/50OHM-25DAI-25WETH-0xc45d42f801105e861e86658648e3678ad7aa70f9>
-    expect(canonicalAssetValue).toEqBigNumber('17869833168389598938');
+    expect(canonicalAssetValue).toEqBigNumber('20204005763105551117');
   });
 
   it('sub-18 decimal intermediary asset: returns the expected value from the valueInterpreter', async () => {
@@ -199,7 +199,7 @@ describe('expected values', () => {
       .call();
 
     // See ref rate in prev test case
-    expect(canonicalAssetValue).toEqBigNumber('17869832953125774486');
+    expect(canonicalAssetValue).toEqBigNumber('20204003385397868041');
   });
 });
 

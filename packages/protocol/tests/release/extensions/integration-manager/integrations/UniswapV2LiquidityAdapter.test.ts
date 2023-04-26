@@ -208,7 +208,7 @@ describe('lend', () => {
       amountBDesired.mul(poolTokensSupply).div(tokenBReserve),
     );
 
-    expect(expectedPoolTokens).toEqBigNumber('56532669719215379');
+    expect(expectedPoolTokens).toEqBigNumber('47230755378507765');
 
     await setAccountBalance({ account: vaultProxy, amount: amountADesired, provider, token: tokenA });
     await setAccountBalance({ account: vaultProxy, amount: amountBDesired, provider, token: tokenB });

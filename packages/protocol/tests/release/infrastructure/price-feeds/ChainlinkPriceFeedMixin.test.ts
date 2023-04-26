@@ -587,7 +587,7 @@ describe('expected values', () => {
 
       expect(baseDecimals).toEqBigNumber(quoteDecimals);
 
-      // Dec 14, 2022
+      // Apr 7, 2023
       // bnb/usd was about $270
       // ren/usd was about $0.085
       // 1 bnb was about 3175 ren
@@ -596,7 +596,7 @@ describe('expected values', () => {
         .args(bnb, utils.parseUnits('1', baseDecimals), ren)
         .call();
 
-      expect(canonicalAssetValue).toEqBigNumber('3129274896831388097515');
+      expect(canonicalAssetValue).toEqBigNumber('3040317219155428028805');
     });
   });
 

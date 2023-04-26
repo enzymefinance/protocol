@@ -77,6 +77,7 @@ import {
   MinSharesSupplyFee,
   NotionalV2PositionLib,
   NotionalV2PositionParser,
+  OneInchV5Adapter,
   OnlyRemoveDustExternalPositionPolicy,
   OnlyUntrackDustOrPricelessAssetsPolicy,
   ParaSwapV5Adapter,
@@ -208,6 +209,7 @@ export async function deployProtocolFixture() {
     notionalV2Position: new NotionalV2PositionLib(fixture.NotionalV2PositionLib.address, deployer),
     notionalV2PositionParser: new NotionalV2PositionParser(fixture.NotionalV2PositionParser.address, deployer),
     minSharesSupplyFee: new MinSharesSupplyFee(fixture.MinSharesSupplyFee.address, deployer),
+    oneInchV5Adapter: new OneInchV5Adapter(fixture.OneInchV5Adapter.address, deployer),    
     onlyRemoveDustExternalPositionPolicy: new OnlyRemoveDustExternalPositionPolicy(fixture.OnlyRemoveDustExternalPositionPolicy.address, deployer),
     onlyUntrackDustOrPricelessAssetsPolicy: new OnlyUntrackDustOrPricelessAssetsPolicy(fixture.OnlyUntrackDustOrPricelessAssetsPolicy.address, deployer),
     paraSwapV5Adapter: new ParaSwapV5Adapter(fixture.ParaSwapV5Adapter.address, deployer),
@@ -386,6 +388,9 @@ export interface DeploymentConfig {
   };
   notional: {
     notionalContract: string;
+  };
+  oneInchV5: {
+    aggregationRouter: string;
   };
   paraSwapV5: {
     augustusSwapper: string;

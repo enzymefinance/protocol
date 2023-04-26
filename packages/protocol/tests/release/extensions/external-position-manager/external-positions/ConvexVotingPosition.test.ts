@@ -121,7 +121,7 @@ describe('actions', () => {
 
       expect(await vlCVX.lockedBalanceOf(convexVotingPosition)).toEqBigNumber(lockAmount);
 
-      expect(receipt).toMatchInlineGasSnapshot('358499');
+      expect(receipt).toMatchInlineGasSnapshot('378190');
     });
   });
 
@@ -169,7 +169,7 @@ describe('actions', () => {
         assets: [],
       });
 
-      expect(receipt).toMatchInlineGasSnapshot('682405');
+      expect(receipt).toMatchInlineGasSnapshot('699247');
     });
   });
 
@@ -217,7 +217,7 @@ describe('actions', () => {
         assets: [cvx],
       });
 
-      expect(receipt).toMatchInlineGasSnapshot('304356');
+      expect(receipt).toMatchInlineGasSnapshot('387473');
     });
   });
 
@@ -508,7 +508,7 @@ describe('position value', () => {
         },
       );
 
-      expect(receipt).toMatchInlineGasSnapshot('353699');
+      expect(receipt).toMatchInlineGasSnapshot('373390');
     });
   });
 });

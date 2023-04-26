@@ -33,8 +33,8 @@ describe('latestRoundData', () => {
     expect(latestRoundDataRes.answeredInRound_).toEqBigNumber(chainlinkLatestRoundDataRes.answeredInRound_);
 
     // Rate should be inverse ETH/USD price with the target precision (1/price * 1e18).
-    // On Dec 14th, 2022 ETH/USD was around $1300.
-    expect(latestRoundDataRes.answer_).toEqBigNumber(763725541784990);
+    // On April 14th, 2023 ETH/USD was around $2000.
+    expect(latestRoundDataRes.answer_).toEqBigNumber(535956148368075);
   });
 });
 
@@ -63,6 +63,6 @@ describe('e2e', () => {
       await valueInterpreter.calcCanonicalAssetValue
         .args(curveLpToken, curveLpTokenUnit, fork.config.primitives.usdc)
         .call(),
-    ).toEqBigNumber(1097779);
+    ).toEqBigNumber(1111155);
   });
 });

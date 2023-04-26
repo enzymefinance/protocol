@@ -171,7 +171,7 @@ describe('lend', () => {
       vaultProxy,
     });
 
-    expect(lendReceipt).toMatchInlineGasSnapshot(`394108`);
+    expect(lendReceipt).toMatchInlineGasSnapshot(`391562`);
   });
 });
 
@@ -203,7 +203,7 @@ describe('redeem', () => {
       vaultProxy,
     });
 
-    expect(redeemReceipt).toMatchInlineGasSnapshot(`341452`);
+    expect(redeemReceipt).toMatchInlineGasSnapshot(`316220`);
   });
 });
 

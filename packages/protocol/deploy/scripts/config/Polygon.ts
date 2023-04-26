@@ -177,6 +177,9 @@ const polygonConfig: DeploymentConfig = {
     relayWorker: constants.AddressZero,
     trustedForwarder: '0x14c6b99AfFC61e9b0753146F3437A223d0c58279',
   },
+  oneInchV5: {
+    aggregationRouter: "0x1111111254eeb25477b68fb85ed929f73a960582"
+  },
   paraSwapV5: {
     augustusSwapper: '0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57',
     feePartner: '0xf5ac3c711b016d517a280c8ad38be7c2ff460f17',

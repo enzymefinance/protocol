@@ -209,12 +209,12 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(18);
 
-    // cDai/usd price on Dec 14, 2022 was about 0.022 USD.
+    // cDai/usd price on Apr 7, 2023 was about 0.022 USD.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cdai, utils.parseUnits('1', baseDecimals), dai)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('22120101045536757');
+    expect(canonicalAssetValue).toEqBigNumber('22206258919329760');
   });
 
   it('returns the expected value from the valueInterpreter (non 18 decimals)', async () => {
@@ -228,11 +228,11 @@ describe('expected values', () => {
     expect(baseDecimals).toEqBigNumber(8);
     expect(quoteDecimals).toEqBigNumber(6);
 
-    // cUsdc/usd price on Dec 14, 2022 was about 0.0226 USD.
+    // cUsdc/usd price on Apr 7, 2023 was about 0.0228 USD.
     const canonicalAssetValue = await valueInterpreter.calcCanonicalAssetValue
       .args(cusdc, utils.parseUnits('1', baseDecimals), usdc)
       .call();
 
-    expect(canonicalAssetValue).toEqBigNumber('22693');
+    expect(canonicalAssetValue).toEqBigNumber('22803');
   });
 });

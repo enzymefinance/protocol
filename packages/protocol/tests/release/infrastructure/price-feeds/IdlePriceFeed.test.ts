@@ -76,7 +76,7 @@ describe('calcUnderlyingValues', () => {
 
   it('returns the correct rate for underlying token (non 18-decimal underlying)', async () => {
     const idlePriceFeed = fork.deployment.idlePriceFeed;
-    const idleToken = new ITestIdleTokenV4(fork.config.idle.bestYieldIdleUsdt, provider);
+    const idleToken = new ITestIdleTokenV4(fork.config.idle.riskAdjustedIdleUsdc, provider);
     const underlying = new ITestStandardToken(await idleToken.token(), provider);
 
     expect(await underlying.decimals()).not.toEqBigNumber(18);
@@ -119,7 +119,7 @@ describe('expected values', () => {
 
   it('returns the expected value from the valueInterpreter (non 18-decimal underlying)', async () => {
     const valueInterpreter = fork.deployment.valueInterpreter;
-    const idleUsdt = new ITestStandardToken(fork.config.idle.bestYieldIdleUsdt, provider);
+    const idleUsdt = new ITestStandardToken(fork.config.idle.riskAdjustedIdleUsdc, provider);
     const usdt = new ITestStandardToken(fork.config.primitives.usdt, provider);
 
     expect(await usdt.decimals()).not.toEqBigNumber(18);
@@ -177,6 +177,6 @@ describe('derivative gas costs', () => {
     const calcGavWithTokenGas = (await comptrollerProxy.calcGav()).gasUsed;
 
     // Assert gas
-    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`419376`);
+    expect(calcGavWithTokenGas.sub(calcGavBaseGas)).toMatchInlineGasSnapshot(`249207`);
   });
 });
