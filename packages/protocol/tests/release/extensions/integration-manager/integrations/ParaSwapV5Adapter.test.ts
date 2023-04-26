@@ -522,7 +522,8 @@ describe('takeMultipleOrders', () => {
 
     assertEvent(receipt, paraSwapV5Adapter.abi.getEvent('MultipleOrdersItemFailed'), {
       index: 1,
-      reason: 'Call to adapter failed',
+      reason:
+        '0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001643616c6c20746f2061646170746572206661696c656400000000000000000000',
     });
 
     // Calculate the fund balances after the tx and assert the correct final token balances

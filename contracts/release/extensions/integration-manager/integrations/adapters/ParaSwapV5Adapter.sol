@@ -29,7 +29,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
         Mega
     }
 
-    event MultipleOrdersItemFailed(uint256 index, string reason);
+    event MultipleOrdersItemFailed(uint256 index, bytes reason);
 
     constructor(
         address _integrationManager,
@@ -62,8 +62,8 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
 
         if (allowOrdersToFail) {
             for (uint256 i; i < ordersData.length; i++) {
-                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {} catch Error(
-                    string memory reason
+                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {} catch (
+                    bytes memory reason
                 ) {
                     emit MultipleOrdersItemFailed(i, reason);
                 }
