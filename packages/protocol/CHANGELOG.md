@@ -1,5 +1,11 @@
 # @enzymefinance/protocol
 
+## 4.0.11
+
+### Patch Changes
+
+- e01807090: ZeroExV4 helpers
+
 ## 4.0.10
 
 ### Patch Changes
