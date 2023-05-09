@@ -124,6 +124,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         spendAssetAmounts_ = new uint256[](1);
 
         address maker;
+        uint256 makerAmount;
         uint256 takerAmount;
         uint256 takerTokenFeeAmount;
 
@@ -133,6 +134,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
             );
 
             maker = order.maker;
+            makerAmount = order.makerAmount;
             incomingAssets_[0] = order.makerToken;
             spendAssets_[0] = order.takerToken;
             takerAmount = order.takerAmount;
@@ -142,6 +144,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
                 encodedZeroExOrderArgs
             );
             maker = order.maker;
+            makerAmount = order.makerAmount;
             incomingAssets_[0] = order.makerToken;
             spendAssets_[0] = order.takerToken;
             takerAmount = order.takerAmount;
@@ -162,6 +165,12 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         } else {
             spendAssetAmounts_[0] = takerAssetFillAmount;
         }
+
+        minIncomingAssetAmounts_[0] = __calcRelativeQuantity({
+            _quantity1: takerAmount,
+            _quantity2: makerAmount,
+            _relativeQuantity1: takerAssetFillAmount
+        });
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,

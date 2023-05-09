@@ -171,7 +171,7 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV4AdapterWithWhitelist.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      minIncomingAssetAmounts_: [0],
+      minIncomingAssetAmounts_: [makerAmount.mul(takerAssetFillAmount).div(takerAmount)],
       spendAssetAmounts_: [takerAssetFillAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       spendAssets_: [outgoingAsset],
@@ -206,7 +206,7 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV4Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      minIncomingAssetAmounts_: [0],
+      minIncomingAssetAmounts_: [makerAmount.mul(takerAssetFillAmount).div(takerAmount)],
       spendAssetAmounts_: [takerAssetFillAmount],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       spendAssets_: [outgoingAsset],
@@ -243,7 +243,7 @@ describe('parseAssetsForAction', () => {
 
     expect(result).toMatchFunctionOutput(zeroExV4Adapter.parseAssetsForAction, {
       incomingAssets_: [incomingAsset],
-      minIncomingAssetAmounts_: [0],
+      minIncomingAssetAmounts_: [makerAmount.mul(takerAssetFillAmount).div(takerAmount)],
       spendAssetAmounts_: [takerAssetFillAmount.add(expectedTakerFee)],
       spendAssetsHandleType_: SpendAssetsHandleType.Transfer,
       spendAssets_: [outgoingAsset],
