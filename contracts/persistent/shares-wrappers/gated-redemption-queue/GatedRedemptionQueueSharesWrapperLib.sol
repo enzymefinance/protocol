@@ -361,8 +361,12 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @dev Helper to remove a deposit request from the queue
     function __removeDepositRequest(address _user, address _depositAsset) private {
         DepositQueue storage queue = depositAssetToQueue[_depositAsset];
-        uint256 queueLength = queue.users.length;
+
+        // Validate that a request exists for the _user
+        require(queue.userToRequest[_user].assetAmount > 0, "__removeDepositRequest: No request");
+
         uint256 userIndex = queue.userToRequest[_user].index;
+        uint256 queueLength = queue.users.length;
 
         if (userIndex < queueLength - 1) {
             address userToMove = queue.users[queueLength - 1];

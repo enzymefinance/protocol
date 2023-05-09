@@ -386,6 +386,16 @@ describe('investment flow', () => {
     });
 
     describe('cancelRequestDeposit', () => {
+      it('cannot be called for a user without a request', async () => {
+        // Add one user to the queue (so there is a valid request at index 0)
+        await sharesWrapper.connect(investor1).requestDeposit(denominationAsset, denominationAssetUnit);
+
+        // Cancel from a user with no request
+        await expect(
+          sharesWrapper.connect(randomUser).cancelRequestDeposit(denominationAsset),
+        ).rejects.toBeRevertedWith('No request');
+      });
+
       it('happy path', async () => {
         const deposit1Amount = denominationAssetUnit.mul(11);
         const deposit2Amount = denominationAssetUnit.mul(3);
@@ -486,6 +496,12 @@ describe('investment flow', () => {
       });
 
       describe('depositFromQueue', () => {
+        it('cannot be called for a user without a request', async () => {
+          await expect(
+            sharesWrapper.connect(manager).depositFromQueue(denominationAsset, [randomUser]),
+          ).rejects.toBeRevertedWith('No request');
+        });
+
         it('happy path: single user, middle of queue', async () => {
           // Most logic tested during depositAllFromQueue. Only test queue removal here.
 
