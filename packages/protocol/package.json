@@ -58,6 +58,7 @@
     "@nomiclabs/hardhat-etherscan": "3.1.0",
     "@openzeppelin-solc-0.7/contracts": "npm:@openzeppelin/contracts@3.4.2-solc-0.7",
     "@openzeppelin/contracts": "3.4.1",
+    "@openzeppelin/contractsV4": "npm:@openzeppelin/contracts@4.8.1",
     "@types/fs-extra": "^9.0.13",
     "@types/jest": "^28.1.6",
     "@types/node": "^18.6.4",

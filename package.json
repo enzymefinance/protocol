@@ -1,6 +1,7 @@
 {
   "name": "monorepo",
   "private": true,
+  "packageManager": "pnpm@8.3.1",
   "scripts": {
     "build": "pnpm run --recursive -- build",
     "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run compile && cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run --filter @enzymefinance/protocol -- test",
@@ -17,8 +18,8 @@
     "size-contracts": "hardhat size-contracts",
     "prettier": "prettier --check --plugin prettier-plugin-solidity \"**/*.{js,ts,json,md,yml,sol}\"",
     "solhint": "solhint --max-warnings 0 \"**/*.sol\"",
-    "format": "pnpm prettier --write && pnpm solhint --fix && pnpm run --recursive format",
-    "lint": "pnpm prettier --cache && pnpm solhint && pnpm run --recursive lint",
+    "format": "forge fmt tests && pnpm prettier --write && pnpm solhint --fix && pnpm run --recursive format",
+    "lint": "forge fmt --check tests && pnpm prettier --cache && pnpm solhint && pnpm run --recursive lint",
     "typecheck": "pnpm run --recursive typecheck",
     "release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm install --lockfile-only",

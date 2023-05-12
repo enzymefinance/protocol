@@ -7,12 +7,16 @@ cache_path = "cache"
 bytecode_hash = "none"
 verbosity = 3
 remappings = [
-  "@enzyme/=contracts/",
   "@uniswap/=node_modules/@uniswap/",
   "@openzeppelin/=node_modules/@openzeppelin/",
   "@openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/",
   "forge-std/=lib/forge-std/src/"
 ]
+fs_permissions = [{ access = "read", path = "./artifacts"}]
 
 [profile.default.optimizer_details]
 yul = false
+
+[rpc_endpoints]
+mainnet = "${ETHEREUM_NODE_MAINNET}"
+polygon = "${ETHEREUM_NODE_POLYGON}"

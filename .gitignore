@@ -22,3 +22,4 @@ cache/
 artifacts/
 deployments/
 node_modules/
+tests/interfaces/internal/

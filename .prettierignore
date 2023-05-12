@@ -13,3 +13,6 @@ deployments/
 
 # Ignore dependencies.
 lib/
+
+# Ignore tests directory (uses `forge fmt`).
+tests/

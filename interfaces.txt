@@ -1,0 +1,176 @@
+#######################################################################################################################
+# PERSISTENT
+#######################################################################################################################
+
+# Dispatcher
+IDispatcher.sol: Dispatcher.abi.json
+IMigrationHookHandler.sol: IMigrationHookHandler.abi.json
+
+# Arbitrary value oracle
+IArbitraryValueOracle.sol: IArbitraryValueOracle.abi.json
+IManualValueOracleFactory.sol: ManualValueOracleFactory.abi.json
+IManualValueOracleLib.sol: ManualValueOracleLib.abi.json
+
+# Off-chain
+IFundValueCalculatorRouter.sol: FundValueCalculatorRouter.abi.json
+IFundValueCalculatorUsdWrapper.sol: FundValueCalculatorUsdWrapper.abi.json
+
+# Address list registry
+IAddressListRegistry.sol: AddressListRegistry.abi.json
+IAaveV2ATokenListOwner.sol: AaveV2ATokenListOwner.abi.json
+IAaveV3ATokenListOwner.sol: AaveV3ATokenListOwner.abi.json
+ICompoundV3CTokenListOwner.sol: CompoundV3CTokenListOwner.abi.json
+
+# Uint list registry
+IUintListRegistry.sol: UintListRegistry.abi.json
+
+# Global config
+IGlobalConfigLib.sol: GlobalConfigLib.abi.json
+
+# Shares splitter
+ISharesSplitterLib.sol: SharesSplitterLib.abi.json
+ISharesSplitterFactory.sol: SharesSplitterFactory.abi.json
+
+# Protocol fee
+IProtocolFeeReserve.sol: ProtocolFeeReserveLib.abi.json
+
+# Shares wrapper
+IGatedRedemptionQueueSharesWrapperLib.sol: GatedRedemptionQueueSharesWrapperLib.abi.json
+IGatedRedemptionQueueSharesWrapperFactory.sol: GatedRedemptionQueueSharesWrapperFactory.abi.json
+
+# External positions
+IExternalPosition.sol: IExternalPosition.abi.json
+IExternalPositionFactory.sol: ExternalPositionFactory.abi.json
+IExternalPositionProxy.sol: ExternalPositionProxy.abi.json
+IExternalPositionVault.sol: IExternalPositionVault.abi.json
+IMapleV1ToV2PoolMapper.sol: MapleV1ToV2PoolMapper.abi.json
+
+#######################################################################################################################
+# RELEASE
+#######################################################################################################################
+
+# Core
+IVault.sol: VaultLib.abi.json
+IVaultCore.sol: IVaultCore.abi.json
+IComptroller.sol: ComptrollerLib.abi.json
+IFundDeployer.sol: FundDeployer.abi.json
+
+# Policies
+IPolicy.sol: IPolicy.abi.json
+IPolicyManager.sol: PolicyManager.abi.json
+IAllowedExternalPositionTypesPolicy.sol: AllowedExternalPositionTypesPolicy.abi.json
+ICumulativeSlippageTolerancePolicy.sol: CumulativeSlippageTolerancePolicy.abi.json
+IOnlyUntrackDustOrPricelessAssetsPolicy.sol: OnlyUntrackDustOrPricelessAssetsPolicy.abi.json
+IAllowedAdapterIncomingAssetsPolicy.sol: AllowedAdapterIncomingAssetsPolicy.abi.json
+IAllowedExternalPositionTypesPerManagerPolicy.sol: AllowedExternalPositionTypesPerManagerPolicy.abi.json
+IOnlyRemoveDustExternalPositionPolicy.sol: OnlyRemoveDustExternalPositionPolicy.abi.json
+IAllowedAdaptersPerManagerPolicy.sol: AllowedAdaptersPerManagerPolicy.abi.json
+IAllowedAdaptersPolicy.sol: AllowedAdaptersPolicy.abi.json
+IAllowedDepositRecipientsPolicy.sol: AllowedDepositRecipientsPolicy.abi.json
+IAllowedSharesTransferRecipientsPolicy.sol: AllowedSharesTransferRecipientsPolicy.abi.json
+IMinMaxInvestmentPolicy.sol: MinMaxInvestmentPolicy.abi.json
+IAllowedAssetsForRedemptionPolicy.sol: AllowedAssetsForRedemptionPolicy.abi.json
+IMinAssetBalancesPostRedemptionPolicy.sol: MinAssetBalancesPostRedemptionPolicy.abi.json
+
+# Fees
+IFee.sol: IFee.abi.json
+IFeeManager.sol: FeeManager.abi.json
+IManagementFee.sol: ManagementFee.abi.json
+IMinSharesSupplyFee.sol: MinSharesSupplyFee.abi.json
+IExitRateDirectFee.sol: ExitRateDirectFee.abi.json
+IExitRateBurnFee.sol: ExitRateBurnFee.abi.json
+IEntranceRateBurnFee.sol: EntranceRateBurnFee.abi.json
+IEntranceRateDirectFee.sol: EntranceRateDirectFee.abi.json
+IPerformanceFee.sol: PerformanceFee.abi.json
+
+# Integrations
+IIntegrationAdapter.sol: IIntegrationAdapter.abi.json
+IIntegrationManager.sol: IntegrationManager.abi.json
+IUniswapV2LiquidityAdapter.sol: UniswapV2LiquidityAdapter.abi.json
+IAaveV3Adapter.sol: AaveV3Adapter.abi.json
+ISynthetixAdapter.sol: SynthetixAdapter.abi.json
+IPoolTogetherV4Adapter.sol: PoolTogetherV4Adapter.abi.json
+IConvexCurveLpStakingAdapter.sol: ConvexCurveLpStakingAdapter.abi.json
+IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
+IIdleAdapter.sol: IdleAdapter.abi.json
+ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
+IUniswapV2ExchangeAdapter.sol: UniswapV2ExchangeAdapter.abi.json
+ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
+IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
+IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
+IAaveV2Adapter.sol: AaveV2Adapter.abi.json
+IAuraBalancerV2LpStakingAdapter.sol: AuraBalancerV2LpStakingAdapter.abi.json
+IZeroExV2Adapter.sol: ZeroExV2Adapter.abi.json
+IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
+ICurveExchangeAdapter.sol: CurveExchangeAdapter.abi.json
+ICompoundAdapter.sol: CompoundAdapter.abi.json
+
+# External positions
+IExternalPositionManager.sol: ExternalPositionManager.abi.json
+IAaveDebtPositionLib.sol: AaveDebtPositionLib.abi.json
+IAaveDebtPositionParser.sol: AaveDebtPositionParser.abi.json
+IArbitraryLoanPositionLib.sol: ArbitraryLoanPositionLib.abi.json
+IArbitraryLoanPositionParser.sol: ArbitraryLoanPositionParser.abi.json
+IArbitraryLoanFixedInterestModule.sol: ArbitraryLoanFixedInterestModule.abi.json
+IArbitraryLoanTotalNominalDeltaOracleModule.sol: ArbitraryLoanTotalNominalDeltaOracleModule.abi.json
+IKilnStakingPositionLib.sol: KilnStakingPositionLib.abi.json
+IKilnStakingPositionParser.sol: KilnStakingPositionParser.abi.json
+ILiquityDebtPositionLib.sol: LiquityDebtPositionLib.abi.json
+ILiquityDebtPositionParser.sol: LiquityDebtPositionParser.abi.json
+INotionalV2PositionLib.sol: NotionalV2PositionLib.abi.json
+INotionalV2PositionParser.sol: NotionalV2PositionParser.abi.json
+ITheGraphDelegationPositionLib.sol: TheGraphDelegationPositionLib.abi.json
+ITheGraphDelegationPositionParser.sol: TheGraphDelegationPositionParser.abi.json
+IMapleLiquidityPositionLib.sol: MapleLiquidityPositionLib.abi.json
+IMapleLiquidityPositionParser.sol: MapleLiquidityPositionParser.abi.json
+ISolvV2BondIssuerPositionLib.sol: SolvV2BondIssuerPositionLib.abi.json
+ISolvV2BondIssuerPositionParser.sol: SolvV2BondIssuerPositionParser.abi.json
+IConvexVotingPositionLib.sol: ConvexVotingPositionLib.abi.json
+IConvexVotingPositionParser.sol: ConvexVotingPositionParser.abi.json
+IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
+IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
+ISolvV2BondBuyerPositionLib.sol: SolvV2BondBuyerPositionLib.abi.json
+ISolvV2BondBuyerPositionParser.sol: SolvV2BondBuyerPositionParser.abi.json
+ICompoundDebtPositionLib.sol: CompoundDebtPositionLib.abi.json
+ICompoundDebtPositionParser.sol: CompoundDebtPositionParser.abi.json
+
+# Value interpreter
+IValueInterpreter.sol: ValueInterpreter.abi.json
+
+# Price feeds
+IDerivativePriceFeed.sol: IDerivativePriceFeed.abi.json
+ICurvePriceFeed.sol: CurvePriceFeed.abi.json
+IBalancerV2WeightedPoolPriceFeed.sol: BalancerV2WeightedPoolPriceFeed.abi.json
+IFiduPriceFeed.sol: FiduPriceFeed.abi.json
+IBalancerV2StablePoolPriceFeed.sol: BalancerV2StablePoolPriceFeed.abi.json
+IWstethPriceFeed.sol: WstethPriceFeed.abi.json
+ICompoundPriceFeed.sol: CompoundPriceFeed.abi.json
+IUniswapV2PoolPriceFeed.sol: UniswapV2PoolPriceFeed.abi.json
+IBalancerV2GaugeTokenPriceFeed.sol: BalancerV2GaugeTokenPriceFeed.abi.json
+IPoolTogetherV4PriceFeed.sol: PoolTogetherV4PriceFeed.abi.json
+IIdlePriceFeed.sol: IdlePriceFeed.abi.json
+IRevertingPriceFeed.sol: RevertingPriceFeed.abi.json
+IAuraBalancerV2LpStakingWrapperPriceFeed.sol: AuraBalancerV2LpStakingWrapperPriceFeed.abi.json
+IConvexCurveLpStakingWrapperPriceFeed.sol: ConvexCurveLpStakingWrapperPriceFeed.abi.json
+IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
+IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
+
+# Protocol fee
+IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json
+
+# Gas relayer
+IGasRelayPaymasterLib.sol: GasRelayPaymasterLib.abi.json
+IGasRelayPaymasterFactory.sol: GasRelayPaymasterFactory.abi.json
+IConvexCurveLpStakingWrapperFactory.sol: ConvexCurveLpStakingWrapperFactory.abi.json
+IConvexCurveLpStakingWrapperLib.sol: ConvexCurveLpStakingWrapperLib.abi.json
+IAuraBalancerV2LpStakingWrapperFactory.sol: AuraBalancerV2LpStakingWrapperFactory.abi.json
+
+# Peripheral
+IDepositWrapper.sol: DepositWrapper.abi.json
+IUnpermissionedActionsWrapper.sol: UnpermissionedActionsWrapper.abi.json
+IArbitraryTokenPhasedSharesWrapperFactory.sol: ArbitraryTokenPhasedSharesWrapperFactory.abi.json
+IArbitraryTokenPhasedSharesWrapperProxy.sol: ArbitraryTokenPhasedSharesWrapperProxy.abi.json
+IArbitraryTokenPhasedSharesWrapperLib.sol: ArbitraryTokenPhasedSharesWrapperLib.abi.json
+
+# Off-chain
+IFundValueCalculator.sol: FundValueCalculator.abi.json

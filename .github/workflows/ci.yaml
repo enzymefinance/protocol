@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CACHE_VERSION: '4'
+  CACHE_VERSION: '5'
   NODE_OPTIONS: '--max-old-space-size=4096'
 
 jobs:
@@ -35,8 +35,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
-        with:
-          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
@@ -47,8 +45,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Make interfaces
+        run: make interfaces
+
       - name: Run tests
         run: forge test
+        env:
+          ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
+          ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
 
   test:
     name: Test
@@ -65,8 +69,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
-        with:
-          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
@@ -113,10 +115,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
-        with:
-          version: 7.18.1
 
       - name: Set up node
         uses: actions/setup-node@v2
