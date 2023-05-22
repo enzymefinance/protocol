@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ICurveAddressProvider.sol";
-import "../../../../../interfaces/ICurveSwapsERC20.sol";
-import "../../../../../interfaces/ICurveSwapsEther.sol";
-import "../../../../../interfaces/IWETH.sol";
+import "../../../../../../external-interfaces/ICurveAddressProvider.sol";
+import "../../../../../../external-interfaces/ICurveSwapsERC20.sol";
+import "../../../../../../external-interfaces/ICurveSwapsEther.sol";
+import "../../../../../../external-interfaces/IWETH.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title CurveExchangeActionsMixin Contract

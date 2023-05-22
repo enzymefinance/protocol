@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IIdleTokenV4.sol";
+import "../../../../../../external-interfaces/IIdleTokenV4.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title IdleV4ActionsMixin Contract

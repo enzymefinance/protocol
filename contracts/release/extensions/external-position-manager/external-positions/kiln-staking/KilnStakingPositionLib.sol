@@ -14,8 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../../persistent/external-positions/kiln-staking/KilnStakingPositionLibBase1.sol";
-import "../../../../interfaces/IKilnStakingContract.sol";
-import "../../../../interfaces/IWETH.sol";
+import "../../../../../external-interfaces/IKilnStakingContract.sol";
+import "../../../../../external-interfaces/IWETH.sol";
 import "./IKilnStakingPosition.sol";
 import "./KilnStakingPositionDataDecoder.sol";
 

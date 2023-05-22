@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../interfaces/IConvexBaseRewardPool.sol";
-import "../../../interfaces/IConvexBooster.sol";
-import "../../../interfaces/IConvexVirtualBalanceRewardPool.sol";
+import "../../../../external-interfaces/IConvexBaseRewardPool.sol";
+import "../../../../external-interfaces/IConvexBooster.sol";
+import "../../../../external-interfaces/IConvexVirtualBalanceRewardPool.sol";
 import "../StakingWrapperLibBase.sol";
 
 /// @title ConvexCurveLpStakingWrapperLib Contract

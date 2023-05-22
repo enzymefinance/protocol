@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/ICompoundComptroller.sol";
+import "../../../../../external-interfaces/ICompoundComptroller.sol";
 import "../utils/bases/CompoundAdapterBase.sol";
 
 /// @title CompoundAdapter Contract

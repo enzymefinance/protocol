@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../interfaces/INotionalV2Router.sol";
+import "../../../../../external-interfaces/INotionalV2Router.sol";
 import "../IExternalPositionParser.sol";
 import "./INotionalV2Position.sol";
 import "./NotionalV2PositionDataDecoder.sol";

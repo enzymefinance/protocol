@@ -11,7 +11,7 @@
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
-import "../../../../interfaces/IKilnStakingContract.sol";
+import "../../../../../external-interfaces/IKilnStakingContract.sol";
 import "../IExternalPositionParser.sol";
 import "./IKilnStakingPosition.sol";
 import "./KilnStakingPositionDataDecoder.sol";

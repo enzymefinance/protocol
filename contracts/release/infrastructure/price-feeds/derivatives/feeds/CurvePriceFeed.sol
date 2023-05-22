@@ -14,11 +14,11 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../../interfaces/ICurveAddressProvider.sol";
-import "../../../../interfaces/ICurveLiquidityPool.sol";
-import "../../../../interfaces/ICurvePoolOwner.sol";
-import "../../../../interfaces/ICurveRegistryMain.sol";
-import "../../../../interfaces/ICurveRegistryMetapoolFactory.sol";
+import "../../../../../external-interfaces/ICurveAddressProvider.sol";
+import "../../../../../external-interfaces/ICurveLiquidityPool.sol";
+import "../../../../../external-interfaces/ICurvePoolOwner.sol";
+import "../../../../../external-interfaces/ICurveRegistryMain.sol";
+import "../../../../../external-interfaces/ICurveRegistryMetapoolFactory.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 

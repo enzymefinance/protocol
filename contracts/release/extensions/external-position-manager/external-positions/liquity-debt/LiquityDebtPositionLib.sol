@@ -11,9 +11,9 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../../interfaces/ILiquityBorrowerOperations.sol";
-import "../../../../interfaces/ILiquityTroveManager.sol";
-import "../../../../interfaces/IWETH.sol";
+import "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
+import "../../../../../external-interfaces/ILiquityTroveManager.sol";
+import "../../../../../external-interfaces/IWETH.sol";
 import "./ILiquityDebtPosition.sol";
 import "./LiquityDebtPositionDataDecoder.sol";
 

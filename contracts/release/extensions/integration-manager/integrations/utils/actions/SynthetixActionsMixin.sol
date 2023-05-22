@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ISynthetix.sol";
-import "../../../../../interfaces/ISynthetixProxyERC20.sol";
-import "../../../../../interfaces/ISynthetixRedeemer.sol";
-import "../../../../../interfaces/ISynthetixSynth.sol";
+import "../../../../../../external-interfaces/ISynthetix.sol";
+import "../../../../../../external-interfaces/ISynthetixProxyERC20.sol";
+import "../../../../../../external-interfaces/ISynthetixRedeemer.sol";
+import "../../../../../../external-interfaces/ISynthetixSynth.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title SynthetixActionsMixin Contract

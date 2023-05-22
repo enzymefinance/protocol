@@ -12,11 +12,11 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "../../../../interfaces/IConvexBaseRewardPool.sol";
-import "../../../../interfaces/IConvexCvxLockerV2.sol";
-import "../../../../interfaces/IConvexVlCvxExtraRewardDistribution.sol";
-import "../../../../interfaces/ISnapshotDelegateRegistry.sol";
-import "../../../../interfaces/IVotiumMultiMerkleStash.sol";
+import "../../../../../external-interfaces/IConvexBaseRewardPool.sol";
+import "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
+import "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
+import "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
+import "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
 import "../../../../utils/AssetHelpers.sol";
 import "./ConvexVotingPositionDataDecoder.sol";
 import "./IConvexVotingPosition.sol";

@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../../persistent/external-positions/the-graph-delegation/TheGraphDelegationPositionLibBase1.sol";
-import "../../../../interfaces/ITheGraphStaking.sol";
+import "../../../../../external-interfaces/ITheGraphStaking.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "./ITheGraphDelegationPosition.sol";
 import "./TheGraphDelegationPositionDataDecoder.sol";

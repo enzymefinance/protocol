@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IUniswapV2Router2.sol";
+import "../../../../../../external-interfaces/IUniswapV2Router2.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title UniswapV2ActionsMixin Contract

@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/ILidoSteth.sol";
+import "../../../../../external-interfaces/ILidoSteth.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title WstethPriceFeed Contract

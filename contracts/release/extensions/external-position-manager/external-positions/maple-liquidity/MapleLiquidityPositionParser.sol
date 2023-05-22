@@ -9,11 +9,11 @@
     file that was distributed with this source code.
 */
 
-import "../../../../interfaces/IMapleV1MplRewardsFactory.sol";
-import "../../../../interfaces/IMapleV2Globals.sol";
-import "../../../../interfaces/IMapleV2Pool.sol";
-import "../../../../interfaces/IMapleV2PoolManager.sol";
-import "../../../../interfaces/IMapleV2ProxyFactory.sol";
+import "../../../../../external-interfaces/IMapleV1MplRewardsFactory.sol";
+import "../../../../../external-interfaces/IMapleV2Globals.sol";
+import "../../../../../external-interfaces/IMapleV2Pool.sol";
+import "../../../../../external-interfaces/IMapleV2PoolManager.sol";
+import "../../../../../external-interfaces/IMapleV2ProxyFactory.sol";
 import "../IExternalPositionParser.sol";
 import "./IMapleLiquidityPosition.sol";
 import "./MapleLiquidityPositionDataDecoder.sol";

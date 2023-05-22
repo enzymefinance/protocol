@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../interfaces/IBalancerV2Vault.sol";
+import "../../../../../../external-interfaces/IBalancerV2Vault.sol";
 import "../../../../../utils/AddressArrayLib.sol";
 import "../../utils/actions/BalancerV2ActionsMixin.sol";
 import "../../utils/AdapterBase.sol";

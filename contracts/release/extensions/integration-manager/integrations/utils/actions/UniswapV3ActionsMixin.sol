@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../interfaces/IUniswapV3SwapRouter.sol";
+import "../../../../../../external-interfaces/IUniswapV3SwapRouter.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title UniswapV3ActionsMixin Contract

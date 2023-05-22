@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../release/interfaces/IAaveAToken.sol";
-import "../../../release/interfaces/IAaveV3Pool.sol";
-import "../../../release/interfaces/IAaveV3PoolAddressProvider.sol";
+import "../../../external-interfaces/IAaveAToken.sol";
+import "../../../external-interfaces/IAaveV3Pool.sol";
+import "../../../external-interfaces/IAaveV3PoolAddressProvider.sol";
 import "./utils/AddOnlyAddressListOwnerBase.sol";
 
 /// @title AaveV3ATokenListOwner Contract

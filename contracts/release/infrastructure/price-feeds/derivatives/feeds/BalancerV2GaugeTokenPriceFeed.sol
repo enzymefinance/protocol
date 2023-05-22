@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/IBalancerV2LiquidityGauge.sol";
+import "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title BalancerV2GaugeTokenPriceFeed Contract

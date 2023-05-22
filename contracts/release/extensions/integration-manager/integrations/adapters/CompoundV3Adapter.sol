@@ -14,7 +14,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
-import "../../../../interfaces/ICompoundV3Configurator.sol";
+import "../../../../../external-interfaces/ICompoundV3Configurator.sol";
 import "../utils/actions/CompoundV3ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 

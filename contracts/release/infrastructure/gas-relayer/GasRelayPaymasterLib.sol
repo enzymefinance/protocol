@@ -14,9 +14,9 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "../../interfaces/IGsnRelayHub.sol";
-import "../../interfaces/IGsnTypes.sol";
-import "../../interfaces/IWETH.sol";
+import "../../../external-interfaces/IGsnRelayHub.sol";
+import "../../../external-interfaces/IGsnTypes.sol";
+import "../../../external-interfaces/IWETH.sol";
 import "../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../core/fund-deployer/FundDeployer.sol";

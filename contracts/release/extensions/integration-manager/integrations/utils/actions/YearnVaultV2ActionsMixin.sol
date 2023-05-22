@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IYearnVaultV2.sol";
+import "../../../../../../external-interfaces/IYearnVaultV2.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title YearnVaultV2ActionsMixin Contract

@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
-import "../../../release/interfaces/IWETH.sol";
+import "../../../external-interfaces/IWETH.sol";
 import "../../global-config/interfaces/IGlobalConfig2.sol";
 import "../../vault/interfaces/IVaultCore.sol";
 import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";

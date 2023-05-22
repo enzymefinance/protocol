@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ICompoundV3Comet.sol";
-import "../../../../../interfaces/ICompoundV3CometRewards.sol";
+import "../../../../../../external-interfaces/ICompoundV3Comet.sol";
+import "../../../../../../external-interfaces/ICompoundV3CometRewards.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title CompoundV3ActionsMixin Contract

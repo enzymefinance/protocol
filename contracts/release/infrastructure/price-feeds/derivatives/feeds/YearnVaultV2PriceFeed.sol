@@ -13,8 +13,8 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../../interfaces/IYearnVaultV2.sol";
-import "../../../../interfaces/IYearnVaultV2Registry.sol";
+import "../../../../../external-interfaces/IYearnVaultV2.sol";
+import "../../../../../external-interfaces/IYearnVaultV2Registry.sol";
 import "../IDerivativePriceFeed.sol";
 import "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
 

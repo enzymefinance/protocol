@@ -15,9 +15,9 @@ import "../../../../utils/AddressArrayLib.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../../../../utils/BalancerV2LogExpMath.sol";
 import "../../../../utils/BalancerV2FixedPoint.sol";
-import "../../../../interfaces/IBalancerV2WeightedPool.sol";
-import "../../../../interfaces/IBalancerV2PoolFactory.sol";
-import "../../../../interfaces/IBalancerV2Vault.sol";
+import "../../../../../external-interfaces/IBalancerV2WeightedPool.sol";
+import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
+import "../../../../../external-interfaces/IBalancerV2Vault.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
 import "../IDerivativePriceFeed.sol";
 

@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../interfaces/IVotiumMultiMerkleStash.sol";
+import "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
 
 /// @title ConvexVotingPositionDataDecoder Contract
 /// @author Enzyme Council <security@enzyme.finance>

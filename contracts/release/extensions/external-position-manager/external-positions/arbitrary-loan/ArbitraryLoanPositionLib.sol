@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../../../../persistent/external-positions/arbitrary-loan/ArbitraryLoanPositionLibBase1.sol";
 import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
-import "../../../../interfaces/IWETH.sol";
+import "../../../../../external-interfaces/IWETH.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../../../../utils/AssetHelpers.sol";
 import "../../../../utils/MathHelpers.sol";

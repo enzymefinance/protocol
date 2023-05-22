@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../interfaces/IGoldfinchConfig.sol";
-import "../../../../interfaces/IGoldfinchSeniorPool.sol";
+import "../../../../../external-interfaces/IGoldfinchConfig.sol";
+import "../../../../../external-interfaces/IGoldfinchSeniorPool.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title FiduPriceFeed Contract

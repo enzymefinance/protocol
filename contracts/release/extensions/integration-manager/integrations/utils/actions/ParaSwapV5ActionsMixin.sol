@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IParaSwapV5AugustusSwapper.sol";
+import "../../../../../../external-interfaces/IParaSwapV5AugustusSwapper.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title ParaSwapV5ActionsMixin Contract

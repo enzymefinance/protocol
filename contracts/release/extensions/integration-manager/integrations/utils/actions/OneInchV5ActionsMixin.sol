@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IOneInchV5AggregationRouter.sol";
+import "../../../../../../external-interfaces/IOneInchV5AggregationRouter.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title OneInchV5ActionsMixin Contract

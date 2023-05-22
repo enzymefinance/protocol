@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ICERC20.sol";
-import "../../../../../interfaces/ICEther.sol";
-import "../../../../../interfaces/IWETH.sol";
+import "../../../../../../external-interfaces/ICERC20.sol";
+import "../../../../../../external-interfaces/ICEther.sol";
+import "../../../../../../external-interfaces/IWETH.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title CompoundActionsMixin Contract

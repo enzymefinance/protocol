@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/IdlePriceFeed.sol";
-import "../../../../interfaces/IIdleTokenV4.sol";
+import "../../../../../external-interfaces/IIdleTokenV4.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../utils/actions/IdleV4ActionsMixin.sol";
 import "../utils/AdapterBase.sol";

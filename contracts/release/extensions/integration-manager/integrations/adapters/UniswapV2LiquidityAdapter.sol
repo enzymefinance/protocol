@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/IUniswapV2Factory.sol";
+import "../../../../../external-interfaces/IUniswapV2Factory.sol";
 import "../utils/actions/UniswapV2ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
 

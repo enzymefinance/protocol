@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../interfaces/IPoolTogetherV4PrizePool.sol";
-import "../../../../interfaces/IPoolTogetherV4Ticket.sol";
+import "../../../../../external-interfaces/IPoolTogetherV4PrizePool.sol";
+import "../../../../../external-interfaces/IPoolTogetherV4Ticket.sol";
 import "./utils/PeggedDerivativesPriceFeedBase.sol";
 
 /// @title PoolTogetherV4PriceFeed Contract

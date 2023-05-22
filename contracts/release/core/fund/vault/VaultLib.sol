@@ -21,7 +21,7 @@ import "../../../../persistent/vault/VaultLibBase2.sol";
 import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
-import "../../../interfaces/IWETH.sol";
+import "../../../../external-interfaces/IWETH.sol";
 import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
 import "./IVault.sol";

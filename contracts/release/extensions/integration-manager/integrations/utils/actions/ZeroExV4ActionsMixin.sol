@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../interfaces/IZeroExV4.sol";
+import "../../../../../../external-interfaces/IZeroExV4.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title ZeroExV4ActionsMixin Contract

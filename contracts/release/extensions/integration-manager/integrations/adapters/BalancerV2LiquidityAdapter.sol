@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../interfaces/IBalancerV2LiquidityGauge.sol";
+import "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
 import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
 import "../utils/bases/BalancerV2LiquidityAdapterBase.sol";
 

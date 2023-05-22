@@ -11,9 +11,9 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../../interfaces/IBalancerV2PoolFactory.sol";
-import "../../../../interfaces/IBalancerV2StablePool.sol";
-import "../../../../interfaces/IBalancerV2Vault.sol";
+import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
+import "../../../../../external-interfaces/IBalancerV2StablePool.sol";
+import "../../../../../external-interfaces/IBalancerV2Vault.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";

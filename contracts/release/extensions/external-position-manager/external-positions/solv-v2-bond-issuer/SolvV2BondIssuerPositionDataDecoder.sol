@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 
 /// @title SolvV2BondIssuerPositionDataDecoder Contract
 /// @author Enzyme Council <security@enzyme.finance>

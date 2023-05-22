@@ -8,8 +8,8 @@
 */
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../../../../interfaces/ISolvV2BondPool.sol";
-import "../../../../interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import "../../../../../external-interfaces/ISolvV2BondPool.sol";
+import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "../IExternalPositionParser.sol";
 import "./ISolvV2BondIssuerPosition.sol";

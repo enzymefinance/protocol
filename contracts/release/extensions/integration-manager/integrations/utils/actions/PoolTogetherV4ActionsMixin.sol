@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IPoolTogetherV4PrizeDistributor.sol";
-import "../../../../../interfaces/IPoolTogetherV4PrizePool.sol";
-import "../../../../../interfaces/IPoolTogetherV4Ticket.sol";
+import "../../../../../../external-interfaces/IPoolTogetherV4PrizeDistributor.sol";
+import "../../../../../../external-interfaces/IPoolTogetherV4PrizePool.sol";
+import "../../../../../../external-interfaces/IPoolTogetherV4Ticket.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title PoolTogetherV4ActionsMixin Contract

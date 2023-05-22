@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../release/interfaces/IGsnTypes.sol";
+import "../../external-interfaces/IGsnTypes.sol";
 
 /// @title ITestGsnRelayHub Interface
 /// @author Enzyme Council <security@enzyme.finance>

@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "../../../../../interfaces/IWETH.sol";
+import "../../../../../../external-interfaces/IWETH.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title CurveLiquidityActionsMixin Contract

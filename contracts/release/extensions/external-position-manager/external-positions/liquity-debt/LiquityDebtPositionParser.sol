@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import "../../../../interfaces/ILiquityTroveManager.sol";
+import "../../../../../external-interfaces/ILiquityTroveManager.sol";
 import "../IExternalPositionParser.sol";
 import "./ILiquityDebtPosition.sol";
 import "./LiquityDebtPositionDataDecoder.sol";

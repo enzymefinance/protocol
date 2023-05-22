@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/IAaveV3Pool.sol";
+import "../../../../../../external-interfaces/IAaveV3Pool.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title AaveV3ActionsMixin Contract

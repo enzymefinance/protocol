@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../interfaces/ICurveLiquidityGaugeV2.sol";
+import "../../../../../../external-interfaces/ICurveLiquidityGaugeV2.sol";
 import "../../../../../utils/AssetHelpers.sol";
 
 /// @title CurveGaugeV2ActionsMixin Contract

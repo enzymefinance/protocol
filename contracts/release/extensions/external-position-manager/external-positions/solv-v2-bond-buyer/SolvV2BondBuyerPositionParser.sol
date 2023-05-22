@@ -8,9 +8,9 @@
 */
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "../../../../interfaces/ISolvV2BondPool.sol";
-import "../../../../interfaces/ISolvV2BondVoucher.sol";
-import "../../../../interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import "../../../../../external-interfaces/ISolvV2BondPool.sol";
+import "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
+import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import "../IExternalPositionParser.sol";
 import "./ISolvV2BondBuyerPosition.sol";
 import "./SolvV2BondBuyerPositionDataDecoder.sol";

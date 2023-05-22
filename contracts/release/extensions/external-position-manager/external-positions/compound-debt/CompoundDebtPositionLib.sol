@@ -13,10 +13,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../../../../../persistent/external-positions/compound-debt/CompoundDebtPositionLibBase1.sol";
-import "../../../../interfaces/ICERC20.sol";
-import "../../../../interfaces/ICEther.sol";
-import "../../../../interfaces/ICompoundComptroller.sol";
-import "../../../../interfaces/IWETH.sol";
+import "../../../../../external-interfaces/ICERC20.sol";
+import "../../../../../external-interfaces/ICEther.sol";
+import "../../../../../external-interfaces/ICompoundComptroller.sol";
+import "../../../../../external-interfaces/IWETH.sol";
 import "../../../../utils/AddressArrayLib.sol";
 import "./ICompoundDebtPosition.sol";
 
