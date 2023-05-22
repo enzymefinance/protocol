@@ -17,6 +17,6 @@ import "./utils/PeggedDerivativesPriceFeedBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed for multiple derivatives that are pegged 1:1 to their underlyings,
 /// and have the same decimals as their underlying
-abstract contract PeggedDerivativesPriceFeed is PeggedDerivativesPriceFeedBase {
+contract PeggedDerivativesPriceFeed is PeggedDerivativesPriceFeedBase {
     constructor(address _fundDeployer) public PeggedDerivativesPriceFeedBase(_fundDeployer) {}
 }
