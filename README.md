@@ -23,7 +23,7 @@ Please **DO NOT** open a public issue.
 This repo is currently in-flux for a gradual move from Hardhat to Foundry, so there are mixed dependencies, deployment mechanisms, helpers, and tests. The following rules should hold:
 
 - all production contracts live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts))
-- the "old" Hardhat-based dependencies / deployment / helpers / tests live in `packages/`
+- the "old" Hardhat-based dependencies / deployment / helpers / tests live in `hardhat/`
 - the "new" Foundry-based dependencies / deployment / helpers / tests live in `tests/`
 
 Test suites are being gradually migrated from the Hardhat setup to Foundry, so check both for test coverage.

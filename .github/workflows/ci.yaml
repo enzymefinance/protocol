@@ -67,6 +67,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
 
@@ -83,8 +88,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            artifacts
-            cache/solidity-files-cache.json
+            artifacts/hardhat
+            cache/hardhat/solidity-files-cache.json
           key: artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ hashFiles('contracts/**/*.sol') }}
           restore-keys: |
             artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-
@@ -95,13 +100,12 @@ jobs:
       - name: Hardhat fork cache
         uses: actions/cache@v2
         with:
-          path: cache/hardhat-network-fork
+          path: cache/hardhat/hardhat-network-fork
           key: fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-${{ github.sha }}
           restore-keys: |
             fork-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ matrix.shard }}-
 
       - name: Run tests
-        working-directory: ./packages/protocol
         run: pnpm jest --shard ${{ matrix.shard }} --testPathIgnorePatterns=/tests/ci-excluded/
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
@@ -136,8 +140,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            artifacts
-            cache/solidity-files-cache.json
+            artifacts/hardhat
+            cache/hardhat/solidity-files-cache.json
           key: artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ hashFiles('contracts/**/*.sol') }}
           restore-keys: |
             artifacts-${{ env.CACHE_VERSION }}-${{ runner.os }}-

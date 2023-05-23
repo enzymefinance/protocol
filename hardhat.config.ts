@@ -1,2 +1,185 @@
-// NOTE: This file exists here to make the vscode extension happy.
-export { config as default } from './packages/protocol/hardhat.import';
+/* eslint-disable @typescript-eslint/no-var-requires */
+require('dotenv').config();
+require('tsconfig-paths').register();
+
+import '@nomicfoundation/hardhat-foundry';
+import '@nomiclabs/hardhat-ethers';
+import '@nomiclabs/hardhat-etherscan';
+import 'hardhat-deploy';
+import './hardhat/tasks/verify';
+import './hardhat/tasks/compile';
+import { HardhatUserConfig } from 'hardhat/types';
+
+function node(networkName: string) {
+  const fallback = 'http://localhost:8545';
+  const uppercase = networkName.toUpperCase();
+
+  return process.env[`ETHEREUM_NODE_${uppercase}`] || process.env.ETHEREUM_NODE || fallback;
+}
+
+function accounts(networkName: string) {
+  const uppercase = networkName.toUpperCase();
+  const accounts = process.env[`ETHEREUM_ACCOUNTS_${uppercase}`] || process.env.ETHEREUM_ACCOUNTS || '';
+
+  return accounts
+    .split(',')
+    .map((account) => account.trim())
+    .filter(Boolean);
+}
+
+const mnemonic = 'test test test test test test test test test test test junk';
+
+export default <HardhatUserConfig>{
+  codeGenerator: {
+    abi: {
+      enabled: false,
+    },
+    bytecode: {
+      enabled: false,
+    },
+    clear: true,
+    enabled: true,
+    include: [
+      // Explicitly allow inclusion of core release interfaces.
+      'IExternalPosition',
+      'IExternalPositionParser',
+      'IExternalPositionProxy',
+      'IDerivativePriceFeed',
+      'IExtension',
+      'IIntegrationAdapter',
+      'IFee',
+      'IMigrationHookHandler',
+      'IPolicy',
+      'IPrimitivePriceFeed',
+      'ITestAddOnlyAddressListOwner',
+      'ITestBalancerV2Helpers',
+      'ITestBalancerV2Vault',
+      'ITestCERC20',
+      'ITestChainlinkAggregator',
+      'ITestCompoundComptroller',
+      'ITestCompoundV3Comet',
+      'ITestCompoundV3CometRewards',
+      'ITestConvexBaseRewardPool',
+      'ITestConvexBooster',
+      'ITestConvexCrvDepositor',
+      'ITestConvexCvxLocker',
+      'ITestConvexVirtualBalanceRewardPool',
+      'ITestConvexVlCvxExtraRewardDistribution',
+      'ITestCurveAddressProvider',
+      'ITestCurveLiquidityPool',
+      'ITestCurveRegistry',
+      'ITestCurveSwaps',
+      'ITestIdleTokenV4',
+      'ITestKilnStakingContract',
+      'ITestLidoSteth',
+      'ITestLiquityHintHelper',
+      'ITestLiquitySortedTroves',
+      'ITestLiquityTroveManager',
+      'ITestGoldfinchConfig',
+      'ITestGoldfinchSeniorPool',
+      'ITestGsnForwarder',
+      'ITestGsnRelayHub',
+      'ITestMapleV2Pool',
+      'ITestMapleV2PoolManager',
+      'ITestMapleV2ProxyFactory',
+      'ITestMapleV2WithdrawalManager',
+      'ITestNotionalV2Router',
+      'ITestSnapshotDelegateRegistry',
+      'ITestSolvV2BondManualPriceOracle',
+      'ITestSolvV2BondMarket',
+      'ITestSolvV2BondPool',
+      'ITestSolvV2BondVoucher',
+      'ITestSolvV2BondPriceOracleManager',
+      'ITestSolvV2ConvertibleManualPriceOracle',
+      'ITestSolvV2ConvertibleMarket',
+      'ITestSolvV2ConvertiblePool',
+      'ITestSolvV2ConvertiblePriceOracleManager',
+      'ITestSolvV2ConvertibleVoucher',
+      'ITestSolvV2InitialConvertibleOfferingMarket',
+      'ITestStandardToken',
+      'ITestSynthetixExchanger',
+      'ITestTheGraphEpochManager',
+      'ITestTheGraphStaking',
+      'ITestUniswapV2Pair',
+      'ITestUniswapV2Router',
+      'ITestUniswapV3NonFungibleTokenManager',
+      'ITestVotiumMultiMerkleStash',
+      'ITestWETH',
+      'ITestYearnVaultV2',
+    ],
+    options: {
+      ignoreContractsWithoutAbi: true,
+      ignoreContractsWithoutBytecode: true,
+    },
+    typescript: {
+      path: './hardhat/codegen',
+    },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  namedAccounts: {
+    deployer: 0,
+  },
+  networks: {
+    hardhat: {
+      accounts: {
+        count: 10,
+        mnemonic,
+      },
+      blockGasLimit: 12450000,
+      chainId: 1,
+      forking: {
+        blockNumber: 17000000, // Apr 7, 2023
+        url: node('mainnet'),
+      },
+      gasPrice: 0, // TODO: Consider removing this again.
+      initialBaseFeePerGas: 0,
+    },
+    mainnet: {
+      accounts: accounts('mainnet'),
+      url: node('mainnet'),
+    },
+    matic: {
+      accounts: accounts('matic'),
+      url: node('matic'),
+    },
+    testnet: {
+      accounts: accounts('testnet'),
+      url: node('testnet'),
+    },
+  },
+  paths: {
+    deploy: './hardhat/deploy/scripts',
+    cache: './cache/hardhat',
+    artifacts: './artifacts/hardhat',
+  },
+  solidity: {
+    compilers: [
+      {
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+        version: '0.7.6',
+      },
+      {
+        settings: {
+          optimizer: {
+            details: {
+              yul: false,
+            },
+            enabled: true,
+            runs: 200,
+          },
+        },
+        version: '0.6.12',
+      },
+    ],
+  },
+};

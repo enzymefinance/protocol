@@ -1,9 +1,6 @@
 # Ignore the pnpm lock file.
 pnpm-lock.yaml
 
-# Ignore generated changelog.
-CHANGELOG.md
-
 # Ignore build output.
 codegen/
 dist/
@@ -12,7 +9,7 @@ artifacts/
 deployments/
 
 # Ignore dependencies.
-lib/
+/lib/
 
 # Ignore tests directory (uses `forge fmt`).
-tests/
+/tests/

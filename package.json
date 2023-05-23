@@ -1,40 +1,77 @@
 {
-  "name": "monorepo",
   "private": true,
-  "packageManager": "pnpm@8.3.1",
+  "packageManager": "pnpm@8.5.1",
   "scripts": {
-    "build": "pnpm run --recursive -- build",
-    "test": "cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run compile && cross-env TS_NODE_TRANSPILE_ONLY=1 pnpm run --filter @enzymefinance/protocol -- test",
-    "compile": "hardhat compile",
+    "test": "pnpm run compile && cross-env TS_NODE_TRANSPILE_ONLY=1 jest --maxWorkers 50%",
+    "compile": "cross-env TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
     "deploy:testnet": "hardhat deploy --network testnet",
-    "export:testnet": "hardhat export --network testnet --export deployments/testnet.json",
+    "export:testnet": "hardhat export --network testnet --export hardhat/deployments/testnet.json",
     "verify:testnet": "hardhat etherscan-verify --network testnet",
     "deploy:mainnet": "hardhat deploy --network mainnet",
-    "export:mainnet": "hardhat export --network mainnet --export deployments/mainnet.json",
+    "export:mainnet": "hardhat export --network mainnet --export hardhat/deployments/mainnet.json",
     "verify:mainnet": "hardhat etherscan-verify --network mainnet",
     "deploy:matic": "hardhat deploy --network matic",
-    "export:matic": "hardhat export --network matic --export deployments/matic.json",
+    "export:matic": "hardhat export --network matic --export hardhat/deployments/matic.json",
     "verify:matic": "hardhat etherscan-verify --network matic",
-    "size-contracts": "hardhat size-contracts",
-    "prettier": "prettier --check --plugin prettier-plugin-solidity \"**/*.{js,ts,json,md,yml,sol}\"",
+    "prettier": "prettier --cache --check --plugin prettier-plugin-solidity \"**/*.{js,ts,json,md,yml,sol}\"",
+    "eslint": "eslint \"hardhat/**/*.{js,ts}\" --cache",
     "solhint": "solhint --max-warnings 0 \"**/*.sol\"",
-    "format": "forge fmt tests && pnpm prettier --write && pnpm solhint --fix && pnpm run --recursive format",
-    "lint": "forge fmt --check tests && pnpm prettier --cache && pnpm solhint && pnpm run --recursive lint",
-    "typecheck": "pnpm run --recursive typecheck",
-    "release": "pnpm build && changeset publish",
-    "changeset:version": "changeset version && pnpm install --lockfile-only",
-    "changeset:publish": "pnpm compile && pnpm build && changeset publish"
+    "format": "forge fmt tests && pnpm prettier --write && pnpm solhint --fix && pnpm eslint --fix",
+    "lint": "forge fmt --check tests && pnpm prettier && pnpm solhint && pnpm eslint",
+    "typecheck": "tsc --noEmit"
   },
-  "devDependencies": {
-    "@changesets/cli": "^2.24.1",
-    "@tsconfig/node16": "^1.0.3",
+  "dependencies": {
+    "@enzymefinance/eslint-config": "1.0.26",
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/abstract-signer": "^5.7.0",
+    "@jest/environment": "^29.5.0",
+    "@nomicfoundation/hardhat-foundry": "^1.0.1",
+    "@nomiclabs/hardhat-ethers": "2.2.3",
+    "@nomiclabs/hardhat-etherscan": "3.1.7",
+    "@openzeppelin-solc-0.7/contracts": "npm:@openzeppelin/contracts@3.4.2-solc-0.7",
+    "@openzeppelin/contracts": "3.4.1",
+    "@openzeppelin/contractsV4": "npm:@openzeppelin/contracts@4.8.1",
+    "@tsconfig/node16": "^1.0.4",
+    "@types/fs-extra": "^11.0.1",
+    "@types/jest": "^29.5.1",
+    "@types/node": "^20.2.3",
+    "@uniswap/v3-periphery": "github:uniswap/v3-periphery#80f26c86c57b8a5e4b913f42844d4c8bd274d058",
     "cross-env": "^7.0.3",
+    "decimal.js": "^10.4.3",
+    "deepmerge": "^4.3.1",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.12.0",
+    "ethers": "^5.7.1",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.2.6",
+    "hardhat": "2.14.0",
+    "hardhat-deploy": "^0.11.29",
+    "jest": "^29.5.0",
+    "jest-diff": "^29.5.0",
+    "jest-environment-node": "^29.5.0",
+    "jest-matcher-utils": "^29.5.0",
+    "jest-snapshot": "^29.5.0",
+    "merkletreejs": "^0.3.10",
     "prettier": "^2.7.1",
     "prettier-plugin-solidity": "1.0.0-dev.23",
     "solhint": "3.3.7",
-    "typescript": "^4.7.4"
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.7.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.0.4"
   },
   "resolutions": {
     "antlr4": "4.9.0"
+  },
+  "eslintConfig": {
+    "extends": "@enzymefinance/eslint-config",
+    "rules": {
+      "@typescript-eslint/no-shadow": "off"
+    },
+    "parserOptions": {
+      "project": [
+        "./tsconfig.json"
+      ]
+    }
   }
 }

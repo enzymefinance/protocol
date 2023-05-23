@@ -22,7 +22,7 @@ FORGE := forge
 
 TESTS_DIR := tests/
 CONTRACTS_DIR := contracts/
-ARTIFACTS_DIR := artifacts/
+ARTIFACTS_DIR := artifacts/foundry
 INTERFACES_DIR := tests/interfaces/internal/
 INTERFACES_LICENSE_HEADER := // SPDX-License-Identifier: Unlicense
 
@@ -40,7 +40,7 @@ build: artifacts interfaces ## Build all contract artifacts & interfaces
 artifacts: $(ARTIFACTS_DIR) ## Build all contract artifacts
 
 .PHONY: interfaces
-interfaces: $(INTERFACES_DIR) ## ## Generate interfaces for all contracts listed in interfaces.txt
+interfaces: $(INTERFACES_DIR) ## Generate interfaces for all contracts listed in interfaces.txt
 
 .PHONY: test
 test: ## Run the entire test suite
@@ -58,7 +58,7 @@ format: ## Format all contract source files
 
 .PHONY: clean
 clean: ## Remove all untracked files and directories
-> git clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache/hardhat-network-fork
+> git clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache
 
 $(ARTIFACTS_DIR): Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > mkdir -p $(@D)

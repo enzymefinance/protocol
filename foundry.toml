@@ -1,9 +1,9 @@
 [profile.default]
 libs = ["node_modules", "lib"]
 src = "contracts"
-out = "artifacts"
 test = "tests"
-cache_path = "cache"
+out = "artifacts/foundry"
+cache_path = "cache/foundry"
 bytecode_hash = "none"
 verbosity = 3
 remappings = [
@@ -12,7 +12,7 @@ remappings = [
   "@openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/",
   "forge-std/=lib/forge-std/src/"
 ]
-fs_permissions = [{ access = "read", path = "./artifacts"}]
+fs_permissions = [{ access = "read", path = "./artifacts/foundry"}]
 
 [profile.default.optimizer_details]
 yul = false

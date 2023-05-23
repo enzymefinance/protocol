@@ -1,4 +1,14 @@
 {
   "extends": "@tsconfig/node16/tsconfig.json",
-  "exclude": ["**/node_modules/**", "**/dist/**"]
+  "include": ["hardhat/**/*.ts", "./hardhat.config.ts"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@enzymefinance/protocol": ["hardhat"],
+      "@enzymefinance/ethers": ["hardhat/ethers"],
+      "@enzymefinance/testutils": ["hardhat/testutils"],
+      "@enzymefinance/testutils/jest/matchers": ["hardhat/testutils/jest/matchers"],
+      "@enzymefinance/testutils/jest/environment": ["hardhat/testutils/jest/environment"]
+    }
+  }
 }
