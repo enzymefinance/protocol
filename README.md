@@ -1,6 +1,7 @@
 # Enzyme Protocol
 
-![Build Status](../../workflows/CI/badge.svg)
+[![CI](../../actions/workflows/ci.yaml/badge.svg)](../../actions/workflows/ci.yaml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 Enzyme is an Ethereum-based protocol for decentralized on-chain asset management. It is a protocol for people or entities to manage their wealth & the wealth of others within a customizable and safe environment. Enzyme empowers anyone to set up, manage and invest in customized on-chain investment vehicles.
 
@@ -63,6 +64,6 @@ forge test --match-test <REGEX>
 
 ## Contributing
 
-See [our contributing instructions](CONTRIBUTING.md).
+See [our contributing instructions](.github/CONTRIBUTING.md).
 
-Please note that all repositories hosted under this organization follow our [Code of Conduct](CODE_OF_CONDUCT.md), make sure to review and follow it.
+Please note that all repositories hosted under this organization follow our [Code of Conduct](.github/CODE_OF_CONDUCT.md), make sure to review and follow it.

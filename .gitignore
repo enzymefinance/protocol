@@ -10,6 +10,7 @@
 !.solhint.json
 !.solhintignore
 !.vscode
+!.editorconfig
 
 # Ignore foundry artifacts & cache.
 artifacts/

@@ -21,10 +21,10 @@ NPX := npx
 CAST := cast
 FORGE := forge
 
-TESTS_DIR := tests/
-CONTRACTS_DIR := contracts/
-ARTIFACTS_DIR := artifacts/
-INTERFACES_DIR := tests/interfaces/internal/
+TESTS_DIR := tests
+CONTRACTS_DIR := contracts
+ARTIFACTS_DIR := artifacts
+INTERFACES_DIR := $(TESTS_DIR)/interfaces/internal
 INTERFACES_LICENSE_HEADER := // SPDX-License-Identifier: Unlicense
 
 .PHONY: help
@@ -32,47 +32,42 @@ help: ## Describe useful make targets
 > grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %s\n", $$1, $$2}'
 
 .PHONY: all
-all: build lint test ## Run build, lint (default)
+all: build lint test ## Run build, lint & test (default)
 
 .PHONY: build
 build: artifacts interfaces ## Build all contract artifacts & interfaces
 
 .PHONY: artifacts
-artifacts: $(ARTIFACTS_DIR) ## Build all contract artifacts
+artifacts: $(ARTIFACTS_DIR)/ ## Build all contract artifacts
 
 .PHONY: interfaces
-interfaces: $(INTERFACES_DIR) ## Generate interfaces for all contracts listed in interfaces.txt
+interfaces: $(INTERFACES_DIR)/ ## Generate interfaces for all contracts listed in interfaces.txt
 
 .PHONY: test
 test: ## Run the entire test suite
 > $(FORGE) test
 
-.PHONY: solhint
-solhint: ## Run solhint on all contract source files
-> $(NPX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
-
 .PHONY: lint
-lint: ## Lint all contract source files
-# TODO: Switch to `forge fmt` for the contract source files too.
-> $(FORGE) fmt --check $(TESTS_DIR)
+lint: ## Check linting on all contract source files
+> $(NPX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
+> $(FORGE) fmt --check $(CONTRACTS_DIR) $(TESTS_DIR)
 
 .PHONY: format
-format: ## Format all contract source files
-# TODO: Switch to `forge fmt` for the contract source files too.
-> $(FORGE) fmt $(TESTS_DIR)
+format: ## Apply formatting to all contract source files
+> $(FORGE) fmt $(CONTRACTS_DIR) $(TESTS_DIR)
 
 .PHONY: clean
 clean: ## Remove all untracked files and directories
 > git clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache
 
-$(ARTIFACTS_DIR): Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
+$(ARTIFACTS_DIR)/: Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > mkdir -p $(@D)
 > # Remove this once the `forge build` command supports a more capable version of the `--skip` option.
 > export FOUNDRY_TEST=this-directory-does-not-exist
 > $(FORGE) build --extra-output-files abi
 > touch $@ 
 
-$(INTERFACES_DIR): Makefile $(ARTIFACTS_DIR) interfaces.txt
+$(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR) interfaces.txt
 > mkdir -p $(@D)
 >
 > # Remove all existing interfaces and abis.
@@ -102,7 +97,7 @@ $(INTERFACES_DIR): Makefile $(ARTIFACTS_DIR) interfaces.txt
 >   fi
 >
 >   # Prepend the interfaces directory to the output path and check the file extension.
->   output="$(INTERFACES_DIR)$$output"
+>   output="$(INTERFACES_DIR)/$$output"
 >   if [[ ! "$$input" == *.abi.json ]]; then
 >     echo "Invalid extension for interface source $$input"
 >     exit 1
