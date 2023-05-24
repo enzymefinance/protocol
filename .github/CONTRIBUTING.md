@@ -40,8 +40,8 @@ When making a pull request (PR), please:
 - Follow the "Git Branching Model" outlined in this document
 - Follow the "Style Guide" outlined in this document
 - Add tests that cover newly introduced code
-- Format your code (using foundry) by running `make format`
-- Lint your code (using solhint) by running `make solhint`
+- Format your code by running `make format`
+- Lint your code by running `make lint`
 - Write a thorough description about the purpose and implementation of the PR
 - Make a comment in the PR that includes any breaking changes to solidity code
 
@@ -58,7 +58,7 @@ Some of our style choices are enforceable by a linter and formatting rules.
 
 Using a linter is not a substitute for understanding the style guide, however, since some of our style choices do not have rules that can be enforced by these linters yet.
 
-#### Solhint
+#### Linting
 
 We use [solhint](https://github.com/protofire/solhint) for linting Solidity code. We extend solhint's [recommended rules](https://github.com/protofire/solhint/blob/master/docs/rules.md) with a few of our own, which can be found in `.solhint.json`.
 
