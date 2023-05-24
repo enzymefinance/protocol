@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import "@openzeppelin-solc-0.7/contracts/token/ERC721/ERC721.sol";
+import "openzeppelin-solc-0.7/token/ERC721/ERC721.sol";
 import "./interfaces/IExternalPositionParserUniswapV3LiquidityPosition.sol";
 import "./interfaces/IUniswapV3LiquidityPosition.sol";
 import "./interfaces/IValueInterpreterUniswapV3LiquidityPosition.sol";

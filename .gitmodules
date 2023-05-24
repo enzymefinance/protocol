@@ -1,3 +1,18 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/openzeppelin-solc-0.6"]
+	path = lib/openzeppelin-solc-0.6
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/openzeppelin-solc-0.7"]
+	path = lib/openzeppelin-solc-0.7
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/openzeppelin-solc-0.8"]
+	path = lib/openzeppelin-solc-0.8
+	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "lib/uniswap-v3-periphery"]
+	path = lib/uniswap-v3-periphery
+	url = https://github.com/uniswap/v3-periphery
+[submodule "lib/uniswap-v3-core"]
+	path = lib/uniswap-v3-core
+	url = https://github.com/uniswap/v3-core

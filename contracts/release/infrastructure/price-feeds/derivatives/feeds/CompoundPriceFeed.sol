@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../../../../external-interfaces/ICERC20.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";

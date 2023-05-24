@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.17;
 
-import {IERC20} from "@openzeppelin/contractsV4/token/ERC20/IERC20.sol";
-import {Address} from "@openzeppelin/contractsV4/utils/Address.sol";
+import {IERC20} from "openzeppelin-solc-0.8/token/ERC20/IERC20.sol";
+import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {UnitTest} from "tests/bases/UnitTest.sol";
 import {FeeHook} from "tests/utils/fees/FeeUtils.sol";
 import {PerformanceFeeUtils} from "tests/utils/fees/PerformanceFeeUtils.sol";

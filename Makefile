@@ -17,12 +17,13 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
+NPX := npx
 CAST := cast
 FORGE := forge
 
 TESTS_DIR := tests/
 CONTRACTS_DIR := contracts/
-ARTIFACTS_DIR := artifacts/foundry
+ARTIFACTS_DIR := artifacts/
 INTERFACES_DIR := tests/interfaces/internal/
 INTERFACES_LICENSE_HEADER := // SPDX-License-Identifier: Unlicense
 
@@ -46,15 +47,19 @@ interfaces: $(INTERFACES_DIR) ## Generate interfaces for all contracts listed in
 test: ## Run the entire test suite
 > $(FORGE) test
 
+.PHONY: solhint
+solhint: ## Run solhint on all contract source files
+> $(NPX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
+
 .PHONY: lint
 lint: ## Lint all contract source files
 # TODO: Switch to `forge fmt` for the contract source files too.
-> $(FORGE) fmt --check $(TESTS_DIR) $(INTERFACES_DIR)
+> $(FORGE) fmt --check $(TESTS_DIR)
 
 .PHONY: format
 format: ## Format all contract source files
 # TODO: Switch to `forge fmt` for the contract source files too.
-> $(FORGE) fmt $(TESTS_DIR) $(INTERFACES_DIR)
+> $(FORGE) fmt $(TESTS_DIR)
 
 .PHONY: clean
 clean: ## Remove all untracked files and directories

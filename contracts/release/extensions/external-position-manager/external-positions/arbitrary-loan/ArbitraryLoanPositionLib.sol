@@ -9,10 +9,10 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solc-0.6/utils/SafeCast.sol";
 import "../../../../../persistent/external-positions/arbitrary-loan/ArbitraryLoanPositionLibBase1.sol";
 import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
 import "../../../../../external-interfaces/IWETH.sol";

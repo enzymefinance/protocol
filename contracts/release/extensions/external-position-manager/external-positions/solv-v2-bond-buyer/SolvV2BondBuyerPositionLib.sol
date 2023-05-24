@@ -10,9 +10,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import "../../../../../persistent/external-positions/solv-v2-bond-buyer/SolvV2BondBuyerPositionLibBase1.sol";
 import "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";

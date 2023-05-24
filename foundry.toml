@@ -1,18 +1,26 @@
 [profile.default]
-libs = ["node_modules", "lib"]
+libs = ["lib"]
 src = "contracts"
 test = "tests"
-out = "artifacts/foundry"
-cache_path = "cache/foundry"
+out = "artifacts"
+cache_path = "cache"
 bytecode_hash = "none"
 verbosity = 3
+fs_permissions = [{ access = "read", path = "./artifacts"}]
+
+# NOTE: Remappings are somewhat limited right now as there's no way to apply them to specific contexts: https://github.com/foundry-rs/foundry/issues/1855
 remappings = [
-  "@uniswap/=node_modules/@uniswap/",
-  "@openzeppelin/=node_modules/@openzeppelin/",
-  "@openzeppelin-solc-0.7/=node_modules/@openzeppelin-solc-0.7/",
-  "forge-std/=lib/forge-std/src/"
+  # Used by us directly.
+  "forge-std/=lib/forge-std/src/",
+  "openzeppelin-solc-0.6/=lib/openzeppelin-solc-0.6/contracts/",
+  "openzeppelin-solc-0.7/=lib/openzeppelin-solc-0.7/contracts/",
+  "openzeppelin-solc-0.8/=lib/openzeppelin-solc-0.8/contracts/",
+  "uniswap-v3-periphery/=lib/uniswap-v3-periphery/contracts/",
+
+  # Used by uniswap v3 internally.
+  "@uniswap/v3-core/=lib/uniswap-v3-core/",
+  "@openzeppelin/contracts/=lib/openzeppelin-solc-0.6/contracts/",
 ]
-fs_permissions = [{ access = "read", path = "./artifacts/foundry"}]
 
 [profile.default.optimizer_details]
 yul = false

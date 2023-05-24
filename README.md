@@ -14,74 +14,54 @@ B. Direct email to [security@enzyme.finance](mailto:security@enzyme.finance)
 
 Please **DO NOT** open a public issue.
 
-## Using this Repo
+## Using this Repository
 
 ### A Tale of Two Frameworks
 
 :construction:
 
-This repo is currently in-flux for a gradual move from Hardhat to Foundry, so there are mixed dependencies, deployment mechanisms, helpers, and tests. The following rules should hold:
+This repo is currently in-flux for a gradual move from Hardhat to Foundry. All production contracts continue to live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts)).
 
-- all production contracts live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts))
-- the "old" Hardhat-based dependencies / deployment / helpers / tests live in `hardhat/`
-- the "new" Foundry-based dependencies / deployment / helpers / tests live in `tests/`
-
-Test suites are being gradually migrated from the Hardhat setup to Foundry, so check both for test coverage.
+If you are looking for the legacy test suite & test coverage please refer to the [hardhat branch](https://github.com/enzymefinance/protocol/tree/hardhat).
 
 ### Prerequisites
 
-1. Make sure to have the following installed:
+Make sure to have the following installed:
 
-- [node](https://www.nodejs.org)
-- [pnpm](https://pnpm.io)
 - [foundry](https://github.com/foundry-rs/foundry)
 - [make](https://www.gnu.org/software/make/)
 
-2. Clone this repo:
+Then, clone this repository:
 
 ```
 git clone [GIT_REPOSITORY_URL]
 ```
 
-### Dependencies
+### Compile Contracts
 
-1. Install node packages:
-
-```sh
-pnpm install
-```
-
-2. Generate internal interfaces for foundry deployment and tests:
+Generate internal interfaces for foundry deployment and tests:
 
 ```sh
 make build
 ```
 
-### Compile contracts
+### Run Tests
+
+First, create your `.env` file by copying `.env.example`. Input your Ethereum (and/or other networks) node endpoint info as-needed (generally, only setting `ETHEREUM_NODE_MAINNET`, `ETHEREUM_NODE_POLYGON`, etc is fine).
+
+Then, in order to run the test suite:
 
 ```sh
-pnpm compile
+make test
 ```
 
-### Run tests
-
-1. Create a `.env` file by copying `.env.example`. Input your Ethereum (and/or other networks) node endpoint info as-needed (generally, only setting `ETHEREUM_NODE_MAINNET`, `ETHEREUM_NODE_POLYGON`, etc is fine).
-
-2. Run hardhat tests with (defaults to full test suite):
+You can also manually run parts of the test suite using `forge` directly, e.g:
 
 ```sh
-pnpm test
+forge test --match-test <REGEX>
 ```
 
-3. Run foundry tests with (defaults to full test suite):
-
-```sh
-forge test
-```
-
-Note that tests might fail on the first runs while building a cache for the fork block, due to timeout. Continue to run tests as-needed, which will build the cache.
-
-## Contribute
+## Contributing
 
 See [our contributing instructions](CONTRIBUTING.md).
 

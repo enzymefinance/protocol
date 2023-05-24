@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Walkthrough for usdc as denomination asset signals a reconfiguration with the same setup: usdc 1`] = `556800`;
-
-exports[`Walkthrough for usdc as denomination asset warp beyond reconfiguration timelock and execute the reconfiguration: usdc 1`] = `352181`;
-
-exports[`Walkthrough for weth as denomination asset signals a reconfiguration with the same setup: weth 1`] = `554542`;
-
-exports[`Walkthrough for weth as denomination asset warp beyond reconfiguration timelock and execute the reconfiguration: weth 1`] = `319762`;

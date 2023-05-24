@@ -1,12 +1,9 @@
 {
-  "eslint.format.enable": true,
-  "eslint.packageManager": "pnpm",
-  "eslint.workingDirectories": [{ "mode": "auto" }],
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": true
   },
+  "solidity.formatter": "forge",
   "[solidity]": {
     "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
   }

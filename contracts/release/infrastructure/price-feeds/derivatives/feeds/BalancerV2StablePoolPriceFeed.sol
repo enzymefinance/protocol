@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
 import "../../../../../external-interfaces/IBalancerV2StablePool.sol";
 import "../../../../../external-interfaces/IBalancerV2Vault.sol";

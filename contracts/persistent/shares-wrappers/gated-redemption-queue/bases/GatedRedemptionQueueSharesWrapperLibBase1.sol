@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLibBase1 Contract
 /// @author Enzyme Council <security@enzyme.finance>

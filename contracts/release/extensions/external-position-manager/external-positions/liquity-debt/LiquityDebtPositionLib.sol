@@ -9,8 +9,8 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
 import "../../../../../external-interfaces/ILiquityTroveManager.sol";
 import "../../../../../external-interfaces/IWETH.sol";

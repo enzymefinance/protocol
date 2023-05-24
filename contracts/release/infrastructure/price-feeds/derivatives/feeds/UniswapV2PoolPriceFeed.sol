@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/IUniswapV2Pair.sol";
 import "../../../../utils/FundDeployerOwnerMixin.sol";
 import "../../../../utils/MathHelpers.sol";

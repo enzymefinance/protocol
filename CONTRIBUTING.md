@@ -2,7 +2,7 @@
 
 As an open source project, we will consider changes to the code base from the community via pull requests. This document contains the guidelines for submission.
 
-## Requesting permission to contribute
+## Requesting Permission to Contribute
 
 Currently, all active development happens in a private development repo, which is then pushed to the public repo as releases and extended functionality are brought into production.
 
@@ -27,7 +27,7 @@ Each branch name should be prefixed with either `feat/`, `fix/`, `refactor/`, `c
 - `test/my-branch` (for adding, fixing, or updating tests and test helpers)
 - `docs/my-branch` (for documentation additions or changes)
 
-## Issues, pull requests and reviews
+## Issues, Pull Requests and Reviews
 
 Anybody can open a new issue, which will be reviewed by a maintainer.
 
@@ -40,8 +40,8 @@ When making a pull request (PR), please:
 - Follow the "Git Branching Model" outlined in this document
 - Follow the "Style Guide" outlined in this document
 - Add tests that cover newly introduced code
-- Format your code (using prettier) by running `pnpm format`
-- Lint your code (using solhint) by running `pnpm lint`
+- Format your code (using foundry) by running `make format`
+- Lint your code (using solhint) by running `make solhint`
 - Write a thorough description about the purpose and implementation of the PR
 - Make a comment in the PR that includes any breaking changes to solidity code
 
@@ -62,15 +62,15 @@ Using a linter is not a substitute for understanding the style guide, however, s
 
 We use [solhint](https://github.com/protofire/solhint) for linting Solidity code. We extend solhint's [recommended rules](https://github.com/protofire/solhint/blob/master/docs/rules.md) with a few of our own, which can be found in `.solhint.json`.
 
-#### Prettier
+#### Formatting
 
-We use [prettier](https://prettier.io/) for formatting both Solidity and TypeScript code, in order to standardize formatting practices. It is recommended to install a plugin for your text editor such as [this one](https://github.com/prettier/prettier-vscode) for VSCode, which can be configured to apply formatting on save.
+We use [forge](https://prettier.io/) for formatting our Solidity code, in order to standardize formatting practices.
 
 ### Solidity
 
 Please adhere to the recommended [official Solidity style guide for v0.6.12](https://solidity.readthedocs.io/en/v0.6.12/style-guide.html), in addition to the following styling choices:
 
-#### State variables
+#### State Variables
 
 - All state vars and all functions should be `private` by default, unless they are meant to be inherited (in which case they are `internal`)
 - State getter functions should be named as `getXXX`
@@ -92,7 +92,7 @@ Please adhere to the recommended [official Solidity style guide for v0.6.12](htt
 - Interface files should only include the minimal functions that are required by other protocol contracts. They are not complete representations of the contract interface.
 - Any contract that has functions that are dependencies of other contracts must inherit an interface and `override` the required functions, i.e., `MyContract is IMyContract`.
 
-#### Natspec comments
+#### Natspec Comments
 
 We use [Natspec](https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format) annotations, which can be parsed to generate documentation.
 

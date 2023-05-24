@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
 import "../core/fund/comptroller/ComptrollerLib.sol";
 import "../core/fund/vault/VaultLib.sol";

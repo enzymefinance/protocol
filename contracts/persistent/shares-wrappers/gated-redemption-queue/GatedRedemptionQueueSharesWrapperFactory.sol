@@ -10,8 +10,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/proxy/BeaconProxy.sol";
-import "@openzeppelin/contracts/proxy/IBeacon.sol";
+import "openzeppelin-solc-0.6/proxy/BeaconProxy.sol";
+import "openzeppelin-solc-0.6/proxy/IBeacon.sol";
 import "../../dispatcher/IDispatcher.sol";
 import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
 

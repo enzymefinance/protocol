@@ -7,7 +7,7 @@
     file that was distributed with this source code.
 */
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/ISolvV2BondPool.sol";
 import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import "../../../../utils/AddressArrayLib.sol";

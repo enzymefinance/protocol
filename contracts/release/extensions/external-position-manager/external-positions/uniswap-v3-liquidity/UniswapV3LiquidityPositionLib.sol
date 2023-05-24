@@ -10,11 +10,11 @@
 pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin-solc-0.7/contracts/math/SafeMath.sol";
-import "@openzeppelin-solc-0.7/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin-solc-0.7/contracts/token/ERC20/SafeERC20.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
-import "@uniswap/v3-periphery/contracts/libraries/PositionValue.sol";
+import "openzeppelin-solc-0.7/math/SafeMath.sol";
+import "openzeppelin-solc-0.7/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.7/token/ERC20/SafeERC20.sol";
+import "uniswap-v3-periphery/interfaces/INonfungiblePositionManager.sol";
+import "uniswap-v3-periphery/libraries/PositionValue.sol";
 import "../../../../../persistent/external-positions/uniswap-v3-liquidity/UniswapV3LiquidityPositionLibBase1.sol";
 import "./interfaces/IUniswapV3LiquidityPosition.sol";
 import "./interfaces/IValueInterpreterUniswapV3LiquidityPosition.sol";

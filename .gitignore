@@ -4,22 +4,16 @@
 # Ignore all dotfiles except the whitelisted ones.
 .*
 !.env.example
-!.changeset
 !.github
 !.gitignore
 !.gitattributes
-!.prettierrc
-!.eslintignore
 !.solhint.json
 !.solhintignore
 !.vscode
-!.npmrc
 
-# Ignore build output and dependencies.
-codegen/
-dist/
-cache/
+# Ignore foundry artifacts & cache.
 artifacts/
-deployments/
-node_modules/
+cache/
+
+# Ignore internal interfaces.
 tests/interfaces/internal/

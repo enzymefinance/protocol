@@ -12,10 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "openzeppelin-solc-0.6/utils/Address.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import "openzeppelin-solc-0.6/utils/SafeCast.sol";
 import "../../../external-interfaces/IWETH.sol";
 import "../../global-config/interfaces/IGlobalConfig2.sol";
 import "../../vault/interfaces/IVaultCore.sol";

@@ -1,7 +1,7 @@
 {
   "extends": "solhint:recommended",
   "rules": {
-    "compiler-version": ["error", "0.6.12 || 0.7.6 || >=0.6.0 <0.9.0"],
+    "compiler-version": ["error", ">=0.6.0 <0.9.0"],
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "no-empty-blocks": "off",
     "not-rely-on-time": "off",
@@ -9,6 +9,7 @@
     "no-inline-assembly": "off",
     "var-name-mixedcase": "off",
     "func-name-mixedcase": "off",
-    "reason-string": ["off"]
+    "reason-string": "off",
+    "no-global-import": "off"
   }
 }

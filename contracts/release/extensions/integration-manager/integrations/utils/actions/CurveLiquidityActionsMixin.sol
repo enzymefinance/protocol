@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "openzeppelin-solc-0.6/utils/Strings.sol";
 import "../../../../../../external-interfaces/IWETH.sol";
 import "../../../../../utils/AssetHelpers.sol";
 

@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/utils/Address.sol";
 import "../../../external-interfaces/IGsnRelayHub.sol";
 import "../../../external-interfaces/IGsnTypes.sol";
 import "../../../external-interfaces/IWETH.sol";

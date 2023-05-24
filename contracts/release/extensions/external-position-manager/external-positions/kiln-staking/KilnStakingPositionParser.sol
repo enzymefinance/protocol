@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
 import "../../../../../external-interfaces/IKilnStakingContract.sol";
 import "../IExternalPositionParser.sol";

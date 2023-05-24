@@ -1,0 +1,65 @@
+name: Verify
+on:
+  push:
+    branches:
+      - v[1-9]*
+      - audit/*
+  pull_request:
+    branches:
+      - v[1-9]*
+      - audit/*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Compile contracts
+        run: make artifacts
+
+      - name: Generate interfaces
+        run: make interfaces
+
+      - name: Run tests
+        run: make test
+        env:
+          ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
+          ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Set up node
+        uses: actions/setup-node@v3
+
+      - name: Check linting
+        run: make lint
+
+      - name: Check solhint
+        run: make solhint

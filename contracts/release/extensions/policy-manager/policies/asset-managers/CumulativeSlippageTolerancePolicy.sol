@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";

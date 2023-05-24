@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../external-interfaces/IChainlinkAggregator.sol";
 
 /// @title ChainlinkPriceFeedMixin Contract
