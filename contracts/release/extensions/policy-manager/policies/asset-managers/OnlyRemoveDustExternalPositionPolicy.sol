@@ -20,11 +20,7 @@ import "../utils/PricelessAssetBypassMixin.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that only allows removing external positions whose value can be considered negligible
 /// @dev Assets that do not have a valid price can be signaled via PricelessAssetBypassMixin to be valued at `0`
-contract OnlyRemoveDustExternalPositionPolicy is
-    PolicyBase,
-    DustEvaluatorMixin,
-    PricelessAssetBypassMixin
-{
+contract OnlyRemoveDustExternalPositionPolicy is PolicyBase, DustEvaluatorMixin, PricelessAssetBypassMixin {
     constructor(
         address _policyManager,
         address _fundDeployer,
@@ -59,12 +55,7 @@ contract OnlyRemoveDustExternalPositionPolicy is
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
         implementedHooks_[0] = IPolicyManager.PolicyHook.RemoveExternalPosition;
 
@@ -77,11 +68,12 @@ contract OnlyRemoveDustExternalPositionPolicy is
     /// @return isValid_ True if the rule passes
     /// @dev onlyPolicyManager validation not necessary as no state is updated,
     /// but is cheap and nice-to-have since an event is fired
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook,
-        bytes calldata _encodedArgs
-    ) external override onlyPolicyManager returns (bool isValid_) {
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook, bytes calldata _encodedArgs)
+        external
+        override
+        onlyPolicyManager
+        returns (bool isValid_)
+    {
         (, address externalPosition) = __decodeRemoveExternalPositionValidationData(_encodedArgs);
 
         return __isDust(__calcExternalPositionValue(_comptrollerProxy, externalPosition));
@@ -94,27 +86,18 @@ contract OnlyRemoveDustExternalPositionPolicy is
         private
         returns (uint256 value_)
     {
-        (
-            address[] memory managedAssets,
-            uint256[] memory managedAssetBalances
-        ) = IExternalPosition(_externalPosition).getManagedAssets();
+        (address[] memory managedAssets, uint256[] memory managedAssetBalances) =
+            IExternalPosition(_externalPosition).getManagedAssets();
 
         uint256 managedAssetsValue = __calcTotalValueExlcudingBypassablePricelessAssets(
-            _comptrollerProxy,
-            managedAssets,
-            managedAssetBalances,
-            getPricelessAssetBypassWethToken()
+            _comptrollerProxy, managedAssets, managedAssetBalances, getPricelessAssetBypassWethToken()
         );
 
-        (address[] memory debtAssets, uint256[] memory debtAssetBalances) = IExternalPosition(
-            _externalPosition
-        ).getDebtAssets();
+        (address[] memory debtAssets, uint256[] memory debtAssetBalances) =
+            IExternalPosition(_externalPosition).getDebtAssets();
 
         uint256 debtAssetsValue = __calcTotalValueExlcudingBypassablePricelessAssets(
-            _comptrollerProxy,
-            debtAssets,
-            debtAssetBalances,
-            getPricelessAssetBypassWethToken()
+            _comptrollerProxy, debtAssets, debtAssetBalances, getPricelessAssetBypassWethToken()
         );
 
         if (managedAssetsValue > debtAssetsValue) {

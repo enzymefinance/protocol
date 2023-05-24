@@ -24,11 +24,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
     address private immutable LUSD_TOKEN;
     address private immutable WETH_TOKEN;
 
-    constructor(
-        address _liquityTroveManager,
-        address _lusdToken,
-        address _wethToken
-    ) public {
+    constructor(address _liquityTroveManager, address _lusdToken, address _wethToken) public {
         LIQUITY_TROVE_MANAGER = _liquityTroveManager;
         LUSD_TOKEN = _lusdToken;
         WETH_TOKEN = _wethToken;
@@ -41,11 +37,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
     /// @return assetsToTransfer_ The assets to be transfered from the Vault
     /// @return amountsToTransfer_ The amounts to be transfered from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -55,7 +47,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
         )
     {
         if (_actionId == uint256(ILiquityDebtPosition.Actions.OpenTrove)) {
-            (, uint256 collateralAmount, , , ) = __decodeOpenTroveArgs(_encodedActionArgs);
+            (, uint256 collateralAmount,,,) = __decodeOpenTroveArgs(_encodedActionArgs);
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
@@ -65,7 +57,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
             assetsToReceive_[0] = LUSD_TOKEN;
         }
         if (_actionId == uint256(ILiquityDebtPosition.Actions.AddCollateral)) {
-            (uint256 collateralAmount, , ) = __decodeAddCollateralActionArgs(_encodedActionArgs);
+            (uint256 collateralAmount,,) = __decodeAddCollateralActionArgs(_encodedActionArgs);
 
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
@@ -76,7 +68,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
             assetsToReceive_ = new address[](1);
             assetsToReceive_[0] = WETH_TOKEN;
         } else if (_actionId == uint256(ILiquityDebtPosition.Actions.RepayBorrow)) {
-            (uint256 lusdAmount, , ) = __decodeRepayBorrowActionArgs(_encodedActionArgs);
+            (uint256 lusdAmount,,) = __decodeRepayBorrowActionArgs(_encodedActionArgs);
             assetsToTransfer_ = new address[](1);
             amountsToTransfer_ = new uint256[](1);
             assetsToTransfer_[0] = LUSD_TOKEN;
@@ -85,9 +77,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
             assetsToReceive_ = new address[](1);
             assetsToReceive_[0] = LUSD_TOKEN;
         } else if (_actionId == uint256(ILiquityDebtPosition.Actions.CloseTrove)) {
-            uint256 lusdAmount = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveDebt(
-                _externalPosition
-            );
+            uint256 lusdAmount = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveDebt(_externalPosition);
 
             assetsToTransfer_ = new address[](1);
             assetsToReceive_ = new address[](1);
@@ -103,11 +93,7 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
 
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @return initArgs_ Parsed and encoded args for ExternalPositionProxy.init()
-    function parseInitArgs(address, bytes memory)
-        external
-        override
-        returns (bytes memory initArgs_)
-    {
+    function parseInitArgs(address, bytes memory) external override returns (bytes memory initArgs_) {
         return "";
     }
 }

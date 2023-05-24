@@ -19,12 +19,9 @@ import "../../../../../utils/AssetHelpers.sol";
 /// @notice Mixin contract for interacting with Yearn v2 vaults
 abstract contract YearnVaultV2ActionsMixin is AssetHelpers {
     /// @dev Helper to lend underlying for yVault shares
-    function __yearnVaultV2Lend(
-        address _recipient,
-        address _yVault,
-        address _underlying,
-        uint256 _underlyingAmount
-    ) internal {
+    function __yearnVaultV2Lend(address _recipient, address _yVault, address _underlying, uint256 _underlyingAmount)
+        internal
+    {
         __approveAssetMaxAsNeeded(_underlying, _yVault, _underlyingAmount);
         IYearnVaultV2(_yVault).deposit(_underlyingAmount, _recipient);
     }

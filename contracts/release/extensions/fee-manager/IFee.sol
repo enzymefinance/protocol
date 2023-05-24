@@ -21,14 +21,9 @@ interface IFee {
 
     function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) external;
 
-    function payout(address _comptrollerProxy, address _vaultProxy)
-        external
-        returns (bool isPayable_);
+    function payout(address _comptrollerProxy, address _vaultProxy) external returns (bool isPayable_);
 
-    function getRecipientForFund(address _comptrollerProxy)
-        external
-        view
-        returns (address recipient_);
+    function getRecipientForFund(address _comptrollerProxy) external view returns (address recipient_);
 
     function settle(
         address _comptrollerProxy,
@@ -36,18 +31,9 @@ interface IFee {
         IFeeManager.FeeHook _hook,
         bytes calldata _settlementData,
         uint256 _gav
-    )
-        external
-        returns (
-            IFeeManager.SettlementType settlementType_,
-            address payer_,
-            uint256 sharesDue_
-        );
+    ) external returns (IFeeManager.SettlementType settlementType_, address payer_, uint256 sharesDue_);
 
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        returns (bool settles_, bool usesGav_);
+    function settlesOnHook(IFeeManager.FeeHook _hook) external view returns (bool settles_, bool usesGav_);
 
     function update(
         address _comptrollerProxy,
@@ -57,8 +43,5 @@ interface IFee {
         uint256 _gav
     ) external;
 
-    function updatesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        returns (bool updates_, bool usesGav_);
+    function updatesOnHook(IFeeManager.FeeHook _hook) external view returns (bool updates_, bool usesGav_);
 }

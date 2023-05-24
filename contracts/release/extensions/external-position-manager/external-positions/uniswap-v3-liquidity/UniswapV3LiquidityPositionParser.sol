@@ -39,11 +39,7 @@ contract UniswapV3LiquidityPositionParser is
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         view
         override
@@ -53,21 +49,9 @@ contract UniswapV3LiquidityPositionParser is
             address[] memory assetsToReceive_
         )
     {
-        if (
-            _actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Mint)
-        ) {
-            (
-                address token0,
-                address token1,
-                ,
-                ,
-                ,
-                uint256 amount0Desired,
-                uint256 amount1Desired,
-                ,
-
-            ) = __decodeMintActionArgs(_encodedActionArgs);
+        if (_actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Mint)) {
+            (address token0, address token1,,,, uint256 amount0Desired, uint256 amount1Desired,,) =
+                __decodeMintActionArgs(_encodedActionArgs);
 
             require(__poolIsSupportable(token0, token1), "parseAssetsForAction: Unsupported pair");
             // We do not validate whether an external position for the fund already exists,
@@ -80,31 +64,21 @@ contract UniswapV3LiquidityPositionParser is
             amountsToTransfer_ = new uint256[](2);
             amountsToTransfer_[0] = amount0Desired;
             amountsToTransfer_[1] = amount1Desired;
-        } else if (
-            _actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.AddLiquidity)
-        ) {
-            (
-                uint256 nftId,
-                uint256 amount0Desired,
-                uint256 amount1Desired,
-                ,
-
-            ) = __decodeAddLiquidityActionArgs(_encodedActionArgs);
+        } else if (_actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.AddLiquidity)) {
+            (uint256 nftId, uint256 amount0Desired, uint256 amount1Desired,,) =
+                __decodeAddLiquidityActionArgs(_encodedActionArgs);
 
             // Cheaper than storing an additional mapping of nfts or looping through the nftIds array
             require(
-                _externalPosition ==
-                    ERC721(getUniswapV3NonfungiblePositionManager()).ownerOf(nftId),
+                _externalPosition == ERC721(getUniswapV3NonfungiblePositionManager()).ownerOf(nftId),
                 "__decodeEncodedActionArgs: Invalid nftId"
             );
 
             assetsToTransfer_ = new address[](2);
             amountsToTransfer_ = new uint256[](2);
 
-            (assetsToTransfer_[0], assetsToTransfer_[1]) = IUniswapV3LiquidityPosition(
-                _externalPosition
-            ).getPairForNft(nftId);
+            (assetsToTransfer_[0], assetsToTransfer_[1]) =
+                IUniswapV3LiquidityPosition(_externalPosition).getPairForNft(nftId);
 
             amountsToTransfer_[0] = amount0Desired;
             amountsToTransfer_[1] = amount1Desired;
@@ -115,9 +89,8 @@ contract UniswapV3LiquidityPositionParser is
             uint256 nftId = abi.decode(_encodedActionArgs, (uint256));
 
             assetsToReceive_ = new address[](2);
-            (assetsToReceive_[0], assetsToReceive_[1]) = IUniswapV3LiquidityPosition(
-                _externalPosition
-            ).getPairForNft(nftId);
+            (assetsToReceive_[0], assetsToReceive_[1]) =
+                IUniswapV3LiquidityPosition(_externalPosition).getPairForNft(nftId);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -132,22 +105,17 @@ contract UniswapV3LiquidityPositionParser is
     /// @dev Helper to determine if a pool is supportable, based on whether a trusted rate
     /// is available for its underlying token pair. Both of the underlying tokens must be supported,
     /// and at least one must be a supported primitive asset.
-    function __poolIsSupportable(address _tokenA, address _tokenB)
-        private
-        view
-        returns (bool isSupportable_)
-    {
-        IValueInterpreterUniswapV3LiquidityPosition valueInterpreterContract = IValueInterpreterUniswapV3LiquidityPosition(
-                getValueInterpreter()
-            );
+    function __poolIsSupportable(address _tokenA, address _tokenB) private view returns (bool isSupportable_) {
+        IValueInterpreterUniswapV3LiquidityPosition valueInterpreterContract =
+            IValueInterpreterUniswapV3LiquidityPosition(getValueInterpreter());
 
         if (valueInterpreterContract.isSupportedPrimitiveAsset(_tokenA)) {
             if (valueInterpreterContract.isSupportedAsset(_tokenB)) {
                 return true;
             }
         } else if (
-            valueInterpreterContract.isSupportedDerivativeAsset(_tokenA) &&
-            valueInterpreterContract.isSupportedPrimitiveAsset(_tokenB)
+            valueInterpreterContract.isSupportedDerivativeAsset(_tokenA)
+                && valueInterpreterContract.isSupportedPrimitiveAsset(_tokenB)
         ) {
             return true;
         }
@@ -161,11 +129,7 @@ contract UniswapV3LiquidityPositionParser is
 
     /// @notice Gets the `UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER` variable value
     /// @return nonfungiblePositionManager_ The `UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER` variable value
-    function getUniswapV3NonfungiblePositionManager()
-        public
-        view
-        returns (address nonfungiblePositionManager_)
-    {
+    function getUniswapV3NonfungiblePositionManager() public view returns (address nonfungiblePositionManager_) {
         return UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER;
     }
 

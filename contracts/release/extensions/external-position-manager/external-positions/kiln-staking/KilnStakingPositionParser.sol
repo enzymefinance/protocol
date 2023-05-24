@@ -31,11 +31,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
     uint256 public immutable STAKING_CONTRACTS_LIST_ID;
     address public immutable WETH_TOKEN;
 
-    constructor(
-        address _addressListRegistry,
-        uint256 _stakingContractsListId,
-        address _weth
-    ) public {
+    constructor(address _addressListRegistry, uint256 _stakingContractsListId, address _weth) public {
         ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
         STAKING_CONTRACTS_LIST_ID = _stakingContractsListId;
         WETH_TOKEN = _weth;
@@ -48,11 +44,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -62,9 +54,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
         )
     {
         if (_actionId == uint256(IKilnStakingPosition.Actions.Stake)) {
-            (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(
-                _encodedActionArgs
-            );
+            (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(_encodedActionArgs);
 
             __validateStakingContract(stakingContractAddress);
 
@@ -74,18 +64,13 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
             assetsToTransfer_[0] = WETH_TOKEN;
             amountsToTransfer_[0] = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
         } else if (_actionId == uint256(IKilnStakingPosition.Actions.ClaimFees)) {
-            (
-                address stakingContractAddress,
-                bytes[] memory publicKeys,
-
-            ) = __decodeClaimFeesAction(_encodedActionArgs);
+            (address stakingContractAddress, bytes[] memory publicKeys,) = __decodeClaimFeesAction(_encodedActionArgs);
 
             __validateStakingContract(stakingContractAddress);
 
             for (uint256 i; i < publicKeys.length; i++) {
                 require(
-                    IKilnStakingContract(stakingContractAddress).getWithdrawer(publicKeys[i]) ==
-                        _externalPosition,
+                    IKilnStakingContract(stakingContractAddress).getWithdrawer(publicKeys[i]) == _externalPosition,
                     "parseAssetsForAction: Invalid validator"
                 );
             }
@@ -103,11 +88,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
 
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @return initArgs_ Parsed and encoded args for ExternalPositionProxy.init()
-    function parseInitArgs(address, bytes memory)
-        external
-        override
-        returns (bytes memory initArgs_)
-    {
+    function parseInitArgs(address, bytes memory) external override returns (bytes memory initArgs_) {
         return "";
     }
 

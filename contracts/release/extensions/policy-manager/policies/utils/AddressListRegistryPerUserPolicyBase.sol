@@ -19,11 +19,7 @@ import "../utils/PolicyBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base contract inheritable by any policy that uses the AddressListRegistry and wants to track lists per fund user
 abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
-    event ListsSetForFundAndUser(
-        address indexed comptrollerProxy,
-        address indexed user,
-        uint256[] listIds
-    );
+    event ListsSetForFundAndUser(address indexed comptrollerProxy, address indexed user, uint256[] listIds);
 
     AddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
 
@@ -50,12 +46,8 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
     // INTERNAL FUNCTIONS
 
     /// @dev Helper to set the lists to be used by a given fund and for specific users
-    function __updateListsForFund(address _comptrollerProxy, bytes calldata _encodedSettings)
-        internal
-    {
-        (address[] memory users, bytes[] memory listsData) = __decodePolicySettings(
-            _encodedSettings
-        );
+    function __updateListsForFund(address _comptrollerProxy, bytes calldata _encodedSettings) internal {
+        (address[] memory users, bytes[] memory listsData) = __decodePolicySettings(_encodedSettings);
 
         require(users.length == listsData.length, "__updateListsForFund: unequal arrays");
 
@@ -71,10 +63,7 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
         private
         returns (uint256 listId_)
     {
-        (
-            AddressListRegistry.UpdateType updateType,
-            address[] memory initialItems
-        ) = __decodeNewListData(_newListData);
+        (AddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
 
         return ADDRESS_LIST_REGISTRY_CONTRACT.createList(_vaultProxy, updateType, initialItems);
     }
@@ -109,14 +98,8 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
     /// @dev Helper to set the lists to be used by a given fund and user
     /// This is done in a simple manner rather than the most gas-efficient way possible
     /// (e.g., comparing already-stored items with an updated list would save on storage operations during updates).
-    function __updateListsForFundAndUser(
-        address _comptrollerProxy,
-        address _user,
-        bytes memory _listData
-    ) private {
-        (uint256[] memory existingListIds, bytes[] memory newListsData) = __decodeUserListsData(
-            _listData
-        );
+    function __updateListsForFundAndUser(address _comptrollerProxy, address _user, bytes memory _listData) private {
+        (uint256[] memory existingListIds, bytes[] memory newListsData) = __decodeUserListsData(_listData);
 
         // Clear the previously stored list ids as needed
         if (comptrollerProxyToUserToListIds[_comptrollerProxy][_user].length > 0) {
@@ -138,13 +121,8 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
                 address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
                 for (uint256 i; i < newListsData.length; i++) {
                     uint256 nextListIdsIndex = existingListIds.length + i;
-                    nextListIds[nextListIdsIndex] = __createAddressListFromData(
-                        vaultProxy,
-                        newListsData[i]
-                    );
-                    comptrollerProxyToUserToListIds[_comptrollerProxy][_user].push(
-                        nextListIds[nextListIdsIndex]
-                    );
+                    nextListIds[nextListIdsIndex] = __createAddressListFromData(vaultProxy, newListsData[i]);
+                    comptrollerProxyToUserToListIds[_comptrollerProxy][_user].push(nextListIds[nextListIdsIndex]);
                 }
             }
         }

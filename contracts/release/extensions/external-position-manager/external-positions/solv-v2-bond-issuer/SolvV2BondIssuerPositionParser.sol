@@ -22,22 +22,16 @@ pragma experimental ABIEncoderV2;
 /// @title SolvV2BondIssuerPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Solv V2 Bond Issuer positions
-contract SolvV2BondIssuerPositionParser is
-    IExternalPositionParser,
-    SolvV2BondIssuerPositionDataDecoder
-{
+contract SolvV2BondIssuerPositionParser is IExternalPositionParser, SolvV2BondIssuerPositionDataDecoder {
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
     address private constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    ISolvV2InitialConvertibleOfferingMarket
-        private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
+    ISolvV2InitialConvertibleOfferingMarket private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
 
     constructor(address _initialBondOfferingMarket) public {
-        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(
-            _initialBondOfferingMarket
-        );
+        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(_initialBondOfferingMarket);
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
@@ -47,11 +41,7 @@ contract SolvV2BondIssuerPositionParser is
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -84,9 +74,7 @@ contract SolvV2BondIssuerPositionParser is
             uint24[] memory offersMem = ISolvV2BondIssuerPosition(_externalPosition).getOffers();
             uint256 offersLength = offersMem.length;
             for (uint256 i; i < offersLength; i++) {
-                address currency = INITIAL_BOND_OFFERING_MARKET_CONTRACT
-                    .offerings(offersMem[i])
-                    .currency;
+                address currency = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offersMem[i]).currency;
                 if (ERC20(currency).balanceOf(_externalPosition) > 0) {
                     assetsToReceive_ = assetsToReceive_.addUniqueItem(currency);
                 }
@@ -94,18 +82,12 @@ contract SolvV2BondIssuerPositionParser is
         } else if (_actionId == uint256(ISolvV2BondIssuerPosition.Actions.Refund)) {
             (address voucher, uint256 slotId) = __decodeRefundActionArgs(_encodedActionArgs);
 
-            ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(
-                ISolvV2BondVoucher(voucher).bondPool()
-            );
+            ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(ISolvV2BondVoucher(voucher).bondPool());
 
-            ISolvV2BondPool.SlotDetail memory slotDetail = voucherPoolContract.getSlotDetail(
-                slotId
-            );
+            ISolvV2BondPool.SlotDetail memory slotDetail = voucherPoolContract.getSlotDetail(slotId);
 
-            uint256 currencyAmount = slotDetail
-                .totalValue
-                .mul(10**uint256(ERC20(slotDetail.fundCurrency).decimals()))
-                .div(10**uint256(voucherPoolContract.valueDecimals()));
+            uint256 currencyAmount = slotDetail.totalValue.mul(10 ** uint256(ERC20(slotDetail.fundCurrency).decimals()))
+                .div(10 ** uint256(voucherPoolContract.valueDecimals()));
 
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = slotDetail.fundCurrency;
@@ -114,8 +96,8 @@ contract SolvV2BondIssuerPositionParser is
         } else if (_actionId == uint256(ISolvV2BondIssuerPosition.Actions.RemoveOffer)) {
             uint24 offerId = __decodeRemoveOfferActionArgs(_encodedActionArgs);
 
-            ISolvV2InitialConvertibleOfferingMarket.Offering
-                memory offer = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
+            ISolvV2InitialConvertibleOfferingMarket.Offering memory offer =
+                INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
             // If offer has remaining unsold units, some underlying is refunded
             if (offer.units > 0) {
@@ -127,7 +109,7 @@ contract SolvV2BondIssuerPositionParser is
                 assetsToReceive_ = assetsToReceive_.addItem(offer.currency);
             }
         } else if (_actionId == uint256(ISolvV2BondIssuerPosition.Actions.Withdraw)) {
-            (address voucher, ) = __decodeWithdrawActionArgs(_encodedActionArgs);
+            (address voucher,) = __decodeWithdrawActionArgs(_encodedActionArgs);
 
             assetsToReceive_ = new address[](1);
             assetsToReceive_[0] = ISolvV2BondVoucher(voucher).underlying();
@@ -144,9 +126,6 @@ contract SolvV2BondIssuerPositionParser is
 
     /// @dev Helper to validate that assets are not the NATIVE_TOKEN_ADDRESS
     function __validateNotNativeToken(address _asset) private pure {
-        require(
-            _asset != NATIVE_TOKEN_ADDRESS,
-            "__validateNotNativeToken: Native asset is unsupported"
-        );
+        require(_asset != NATIVE_TOKEN_ADDRESS, "__validateNotNativeToken: Native asset is unsupported");
     }
 }

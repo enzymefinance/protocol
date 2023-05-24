@@ -38,20 +38,16 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function takeMultipleOrders(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external postActionSpendAssetsTransferHandler(_vaultProxy, _assetData) {
-        (bytes[] memory ordersData, bool allowOrdersToFail) = __decodeTakeMultipleOrdersCallArgs(
-            _actionData
-        );
+    function takeMultipleOrders(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
+    {
+        (bytes[] memory ordersData, bool allowOrdersToFail) = __decodeTakeMultipleOrdersCallArgs(_actionData);
 
         if (allowOrdersToFail) {
             for (uint256 i; i < ordersData.length; i++) {
-                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {} catch (
-                    bytes memory reason
-                ) {
+                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {}
+                catch (bytes memory reason) {
                     emit MultipleOrdersItemFailed(i, reason);
                 }
             }
@@ -66,29 +62,23 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external postActionSpendAssetsTransferHandler(_vaultProxy, _assetData) {
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
+    {
         __takeOrder({_orderData: _actionData});
     }
 
     /// @notice External implementation of __takeOrderAndValidateIncoming(), only intended for internal usage
     /// @dev Necessary for try/catch
-    function takeOrderAndValidateIncoming(address _vaultProxy, bytes calldata _orderData)
-        external
-    {
+    function takeOrderAndValidateIncoming(address _vaultProxy, bytes calldata _orderData) external {
         __takeOrderAndValidateIncoming(_vaultProxy, _orderData);
     }
 
     /// @dev Helper to route an order according to its swap type
     function __takeOrder(bytes memory _orderData) private {
-        (
-            address executor,
-            IOneInchV5AggregationRouter.SwapDescription memory swapDescription,
-            bytes memory data
-        ) = __decodeTakeOrderCallArgs(_orderData);
+        (address executor, IOneInchV5AggregationRouter.SwapDescription memory swapDescription, bytes memory data) =
+            __decodeTakeOrderCallArgs(_orderData);
 
         __oneInchV5Swap({_executor: executor, _description: swapDescription, _data: data});
     }
@@ -98,19 +88,15 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
     /// but it is consistent with the practice of doing all validations internally also,
     /// which is bypassed during the actions that call this function.
     function __takeOrderAndValidateIncoming(address _vaultProxy, bytes memory _orderData) private {
-        (
-            ,
-            IOneInchV5AggregationRouter.SwapDescription memory swapDescription,
-
-        ) = __decodeTakeOrderCallArgs(_orderData);
+        (, IOneInchV5AggregationRouter.SwapDescription memory swapDescription,) = __decodeTakeOrderCallArgs(_orderData);
 
         uint256 preIncomingAssetBal = ERC20(swapDescription.dstToken).balanceOf(_vaultProxy);
 
         __takeOrder({_orderData: _orderData});
 
         require(
-            ERC20(swapDescription.dstToken).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >=
-                swapDescription.minReturnAmount,
+            ERC20(swapDescription.dstToken).balanceOf(_vaultProxy).sub(preIncomingAssetBal)
+                >= swapDescription.minReturnAmount,
             "__takeOrderAndValidateIncoming: Received incoming asset less than expected"
         );
     }
@@ -129,11 +115,7 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address _vaultProxy,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address _vaultProxy, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -151,47 +133,32 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
             incomingAssets_ = new address[](1);
             minIncomingAssetAmounts_ = new uint256[](1);
 
-            (
-                ,
-                IOneInchV5AggregationRouter.SwapDescription memory swapDescription,
+            (, IOneInchV5AggregationRouter.SwapDescription memory swapDescription,) =
+                __decodeTakeOrderCallArgs(_actionData);
 
-            ) = __decodeTakeOrderCallArgs(_actionData);
-
-            require(
-                _vaultProxy == swapDescription.dstReceiver,
-                "parseAssetsForAction: invalid dstReceiver"
-            );
+            require(_vaultProxy == swapDescription.dstReceiver, "parseAssetsForAction: invalid dstReceiver");
 
             spendAssets_[0] = swapDescription.srcToken;
             spendAssetAmounts_[0] = swapDescription.amount;
             incomingAssets_[0] = swapDescription.dstToken;
             minIncomingAssetAmounts_[0] = swapDescription.minReturnAmount;
         } else if (_selector == TAKE_MULTIPLE_ORDERS_SELECTOR) {
-            (bytes[] memory ordersData, ) = __decodeTakeMultipleOrdersCallArgs(_actionData);
+            (bytes[] memory ordersData,) = __decodeTakeMultipleOrdersCallArgs(_actionData);
 
             spendAssets_ = new address[](ordersData.length);
             spendAssetAmounts_ = new uint256[](ordersData.length);
             for (uint256 i; i < ordersData.length; i++) {
-                (
-                    ,
-                    IOneInchV5AggregationRouter.SwapDescription memory swapDescription,
+                (, IOneInchV5AggregationRouter.SwapDescription memory swapDescription,) =
+                    __decodeTakeOrderCallArgs(ordersData[i]);
 
-                ) = __decodeTakeOrderCallArgs(ordersData[i]);
-
-                require(
-                    _vaultProxy == swapDescription.dstReceiver,
-                    "parseAssetsForAction: invalid dstReceiver"
-                );
+                require(_vaultProxy == swapDescription.dstReceiver, "parseAssetsForAction: invalid dstReceiver");
 
                 spendAssets_[i] = swapDescription.srcToken;
                 spendAssetAmounts_[i] = swapDescription.amount;
                 incomingAssets_ = incomingAssets_.addUniqueItem(swapDescription.dstToken);
             }
 
-            (spendAssets_, spendAssetAmounts_) = __aggregateAssetAmounts(
-                spendAssets_,
-                spendAssetAmounts_
-            );
+            (spendAssets_, spendAssetAmounts_) = __aggregateAssetAmounts(spendAssets_, spendAssetAmounts_);
 
             // Ignores the IntegrationManager's incoming asset amount validations in order
             // to support optional order failure bypass,
@@ -225,8 +192,7 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
             bytes memory data_
         )
     {
-        return
-            abi.decode(_actionData, (address, IOneInchV5AggregationRouter.SwapDescription, bytes));
+        return abi.decode(_actionData, (address, IOneInchV5AggregationRouter.SwapDescription, bytes));
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments for takeMultipleOrders()

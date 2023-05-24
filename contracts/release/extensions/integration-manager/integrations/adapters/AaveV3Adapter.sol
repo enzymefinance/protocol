@@ -35,20 +35,12 @@ contract AaveV3Adapter is AaveAdapterBase, AaveV3ActionsMixin {
     ////////////////////////////////
 
     /// @dev Logic to lend underlying for aToken
-    function __lend(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal override {
+    function __lend(address _vaultProxy, address _underlying, uint256 _amount) internal override {
         __aaveV3Lend({_recipient: _vaultProxy, _underlying: _underlying, _amount: _amount});
     }
 
     /// @dev Logic to redeem aToken for underlying
-    function __redeem(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal override {
+    function __redeem(address _vaultProxy, address _underlying, uint256 _amount) internal override {
         __aaveV3Redeem({_recipient: _vaultProxy, _underlying: _underlying, _amount: _amount});
     }
 }

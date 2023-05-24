@@ -107,10 +107,7 @@ contract Dispatcher is IDispatcher {
     mapping(address => MigrationRequest) private vaultProxyToMigrationRequest;
 
     modifier onlyCurrentFundDeployer() {
-        require(
-            msg.sender == currentFundDeployer,
-            "Only the current FundDeployer can call this function"
-        );
+        require(msg.sender == currentFundDeployer, "Only the current FundDeployer can call this function");
         _;
     }
 
@@ -144,10 +141,7 @@ contract Dispatcher is IDispatcher {
     /// @notice Claim ownership of the contract
     function claimOwnership() external override {
         address nextOwner = nominatedOwner;
-        require(
-            msg.sender == nextOwner,
-            "claimOwnership: Only the nominatedOwner can call this function"
-        );
+        require(msg.sender == nextOwner, "claimOwnership: Only the nominatedOwner can call this function");
 
         delete nominatedOwner;
 
@@ -160,10 +154,7 @@ contract Dispatcher is IDispatcher {
     /// @notice Revoke the nomination of a new contract owner
     function removeNominatedOwner() external override onlyOwner {
         address removedNominatedOwner = nominatedOwner;
-        require(
-            removedNominatedOwner != address(0),
-            "removeNominatedOwner: There is no nominated owner"
-        );
+        require(removedNominatedOwner != address(0), "removeNominatedOwner: There is no nominated owner");
 
         delete nominatedOwner;
 
@@ -173,14 +164,8 @@ contract Dispatcher is IDispatcher {
     /// @notice Set a new FundDeployer for use within the contract
     /// @param _nextFundDeployer The address of the FundDeployer contract
     function setCurrentFundDeployer(address _nextFundDeployer) external override onlyOwner {
-        require(
-            _nextFundDeployer != address(0),
-            "setCurrentFundDeployer: _nextFundDeployer cannot be empty"
-        );
-        require(
-            __isContract(_nextFundDeployer),
-            "setCurrentFundDeployer: Non-contract _nextFundDeployer"
-        );
+        require(_nextFundDeployer != address(0), "setCurrentFundDeployer: _nextFundDeployer cannot be empty");
+        require(__isContract(_nextFundDeployer), "setCurrentFundDeployer: Non-contract _nextFundDeployer");
 
         address prevFundDeployer = currentFundDeployer;
         require(
@@ -197,18 +182,9 @@ contract Dispatcher is IDispatcher {
     /// @param _nextNominatedOwner The account to nominate
     /// @dev Does not prohibit overwriting the current nominatedOwner
     function setNominatedOwner(address _nextNominatedOwner) external override onlyOwner {
-        require(
-            _nextNominatedOwner != address(0),
-            "setNominatedOwner: _nextNominatedOwner cannot be empty"
-        );
-        require(
-            _nextNominatedOwner != owner,
-            "setNominatedOwner: _nextNominatedOwner is already the owner"
-        );
-        require(
-            _nextNominatedOwner != nominatedOwner,
-            "setNominatedOwner: _nextNominatedOwner is already nominated"
-        );
+        require(_nextNominatedOwner != address(0), "setNominatedOwner: _nextNominatedOwner cannot be empty");
+        require(_nextNominatedOwner != owner, "setNominatedOwner: _nextNominatedOwner is already the owner");
+        require(_nextNominatedOwner != nominatedOwner, "setNominatedOwner: _nextNominatedOwner is already nominated");
 
         nominatedOwner = _nextNominatedOwner;
 
@@ -235,33 +211,22 @@ contract Dispatcher is IDispatcher {
     /// @param _vaultAccessor The account to set as the VaultProxy's permissioned accessor
     /// @param _fundName The name of the fund
     /// @dev Input validation should be handled by the VaultProxy during deployment
-    function deployVaultProxy(
-        address _vaultLib,
-        address _owner,
-        address _vaultAccessor,
-        string calldata _fundName
-    ) external override onlyCurrentFundDeployer returns (address vaultProxy_) {
+    function deployVaultProxy(address _vaultLib, address _owner, address _vaultAccessor, string calldata _fundName)
+        external
+        override
+        onlyCurrentFundDeployer
+        returns (address vaultProxy_)
+    {
         require(__isContract(_vaultAccessor), "deployVaultProxy: Non-contract _vaultAccessor");
 
-        bytes memory constructData = abi.encodeWithSelector(
-            IMigratableVault.init.selector,
-            _owner,
-            _vaultAccessor,
-            _fundName
-        );
+        bytes memory constructData =
+            abi.encodeWithSelector(IMigratableVault.init.selector, _owner, _vaultAccessor, _fundName);
         vaultProxy_ = address(new VaultProxy(constructData, _vaultLib));
 
         address fundDeployer = msg.sender;
         vaultProxyToFundDeployer[vaultProxy_] = fundDeployer;
 
-        emit VaultProxyDeployed(
-            fundDeployer,
-            _owner,
-            vaultProxy_,
-            _vaultLib,
-            _vaultAccessor,
-            _fundName
-        );
+        emit VaultProxyDeployed(fundDeployer, _owner, vaultProxy_, _vaultLib, _vaultAccessor, _fundName);
 
         return vaultProxy_;
     }
@@ -304,21 +269,11 @@ contract Dispatcher is IDispatcher {
             _bypassFailure
         );
         __invokeMigrationInCancelHook(
-            _vaultProxy,
-            prevFundDeployer,
-            nextFundDeployer,
-            nextVaultAccessor,
-            nextVaultLib,
-            _bypassFailure
+            _vaultProxy, prevFundDeployer, nextFundDeployer, nextVaultAccessor, nextVaultLib, _bypassFailure
         );
 
         emit MigrationCancelled(
-            _vaultProxy,
-            prevFundDeployer,
-            nextFundDeployer,
-            nextVaultAccessor,
-            nextVaultLib,
-            executableTimestamp
+            _vaultProxy, prevFundDeployer, nextFundDeployer, nextVaultAccessor, nextVaultLib, executableTimestamp
         );
     }
 
@@ -328,23 +283,14 @@ contract Dispatcher is IDispatcher {
     function executeMigration(address _vaultProxy, bool _bypassFailure) external override {
         MigrationRequest memory request = vaultProxyToMigrationRequest[_vaultProxy];
         address nextFundDeployer = request.nextFundDeployer;
-        require(
-            nextFundDeployer != address(0),
-            "executeMigration: No migration request exists for _vaultProxy"
-        );
-        require(
-            msg.sender == nextFundDeployer,
-            "executeMigration: Only the target FundDeployer can call this function"
-        );
+        require(nextFundDeployer != address(0), "executeMigration: No migration request exists for _vaultProxy");
+        require(msg.sender == nextFundDeployer, "executeMigration: Only the target FundDeployer can call this function");
         require(
             nextFundDeployer == currentFundDeployer,
             "executeMigration: The target FundDeployer is no longer the current FundDeployer"
         );
         uint256 executableTimestamp = request.executableTimestamp;
-        require(
-            block.timestamp >= executableTimestamp,
-            "executeMigration: The migration timelock has not elapsed"
-        );
+        require(block.timestamp >= executableTimestamp, "executeMigration: The migration timelock has not elapsed");
 
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         address nextVaultAccessor = request.nextVaultAccessor;
@@ -381,12 +327,7 @@ contract Dispatcher is IDispatcher {
         );
 
         emit MigrationExecuted(
-            _vaultProxy,
-            prevFundDeployer,
-            nextFundDeployer,
-            nextVaultAccessor,
-            nextVaultLib,
-            executableTimestamp
+            _vaultProxy, prevFundDeployer, nextFundDeployer, nextVaultAccessor, nextVaultLib, executableTimestamp
         );
     }
 
@@ -394,10 +335,7 @@ contract Dispatcher is IDispatcher {
     /// @param _nextTimelock The number of seconds for the new timelock
     function setMigrationTimelock(uint256 _nextTimelock) external override onlyOwner {
         uint256 prevTimelock = migrationTimelock;
-        require(
-            _nextTimelock != prevTimelock,
-            "setMigrationTimelock: _nextTimelock is the current timelock"
-        );
+        require(_nextTimelock != prevTimelock, "setMigrationTimelock: _nextTimelock is the current timelock");
 
         migrationTimelock = _nextTimelock;
 
@@ -415,19 +353,13 @@ contract Dispatcher is IDispatcher {
         address _nextVaultLib,
         bool _bypassFailure
     ) external override onlyCurrentFundDeployer {
-        require(
-            __isContract(_nextVaultAccessor),
-            "signalMigration: Non-contract _nextVaultAccessor"
-        );
+        require(__isContract(_nextVaultAccessor), "signalMigration: Non-contract _nextVaultAccessor");
 
         address prevFundDeployer = vaultProxyToFundDeployer[_vaultProxy];
         require(prevFundDeployer != address(0), "signalMigration: _vaultProxy does not exist");
 
         address nextFundDeployer = msg.sender;
-        require(
-            nextFundDeployer != prevFundDeployer,
-            "signalMigration: Can only migrate to a new FundDeployer"
-        );
+        require(nextFundDeployer != prevFundDeployer, "signalMigration: Can only migrate to a new FundDeployer");
 
         __invokeMigrationOutHook(
             IMigrationHookHandler.MigrationOutHook.PreSignal,
@@ -458,12 +390,7 @@ contract Dispatcher is IDispatcher {
         );
 
         emit MigrationSignaled(
-            _vaultProxy,
-            prevFundDeployer,
-            nextFundDeployer,
-            _nextVaultAccessor,
-            _nextVaultLib,
-            executableTimestamp
+            _vaultProxy, prevFundDeployer, nextFundDeployer, _nextVaultAccessor, _nextVaultLib, executableTimestamp
         );
     }
 
@@ -487,18 +414,10 @@ contract Dispatcher is IDispatcher {
             )
         );
         if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked("MigrationOutCancelHook: ", returnData))
-            );
+            require(_bypassFailure, string(abi.encodePacked("MigrationOutCancelHook: ", returnData)));
 
             emit MigrationInCancelHookFailed(
-                returnData,
-                _vaultProxy,
-                _prevFundDeployer,
-                _nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
+                returnData, _vaultProxy, _prevFundDeployer, _nextFundDeployer, _nextVaultAccessor, _nextVaultLib
             );
         }
     }
@@ -525,19 +444,10 @@ contract Dispatcher is IDispatcher {
             )
         );
         if (!success) {
-            require(
-                _bypassFailure,
-                string(abi.encodePacked(__migrationOutHookFailureReasonPrefix(_hook), returnData))
-            );
+            require(_bypassFailure, string(abi.encodePacked(__migrationOutHookFailureReasonPrefix(_hook), returnData)));
 
             emit MigrationOutHookFailed(
-                returnData,
-                _hook,
-                _vaultProxy,
-                _prevFundDeployer,
-                _nextFundDeployer,
-                _nextVaultAccessor,
-                _nextVaultLib
+                returnData, _hook, _vaultProxy, _prevFundDeployer, _nextFundDeployer, _nextVaultAccessor, _nextVaultLib
             );
         }
     }
@@ -575,24 +485,14 @@ contract Dispatcher is IDispatcher {
 
     /// @notice Gets the current FundDeployer that is allowed to deploy and migrate funds
     /// @return currentFundDeployer_ The current FundDeployer contract address
-    function getCurrentFundDeployer()
-        external
-        view
-        override
-        returns (address currentFundDeployer_)
-    {
+    function getCurrentFundDeployer() external view override returns (address currentFundDeployer_) {
         return currentFundDeployer;
     }
 
     /// @notice Gets the FundDeployer with which a given VaultProxy is associated
     /// @param _vaultProxy The VaultProxy instance
     /// @return fundDeployer_ The FundDeployer contract address
-    function getFundDeployerForVaultProxy(address _vaultProxy)
-        external
-        view
-        override
-        returns (address fundDeployer_)
-    {
+    function getFundDeployerForVaultProxy(address _vaultProxy) external view override returns (address fundDeployer_) {
         return vaultProxyToFundDeployer[_vaultProxy];
     }
 
@@ -616,12 +516,7 @@ contract Dispatcher is IDispatcher {
     {
         MigrationRequest memory r = vaultProxyToMigrationRequest[_vaultProxy];
         if (r.executableTimestamp > 0) {
-            return (
-                r.nextFundDeployer,
-                r.nextVaultAccessor,
-                r.nextVaultLib,
-                r.executableTimestamp
-            );
+            return (r.nextFundDeployer, r.nextVaultAccessor, r.nextVaultLib, r.executableTimestamp);
         }
     }
 
@@ -645,12 +540,7 @@ contract Dispatcher is IDispatcher {
 
     /// @notice Gets the shares token `symbol` value for use in VaultProxy instances
     /// @return sharesTokenSymbol_ The `symbol` value
-    function getSharesTokenSymbol()
-        external
-        view
-        override
-        returns (string memory sharesTokenSymbol_)
-    {
+    function getSharesTokenSymbol() external view override returns (string memory sharesTokenSymbol_) {
         return sharesTokenSymbol;
     }
 
@@ -663,8 +553,7 @@ contract Dispatcher is IDispatcher {
         override
         returns (uint256 secondsRemaining_)
     {
-        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy]
-            .executableTimestamp;
+        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy].executableTimestamp;
         if (executableTimestamp == 0) {
             return 0;
         }
@@ -685,8 +574,7 @@ contract Dispatcher is IDispatcher {
         override
         returns (bool hasExecutableRequest_)
     {
-        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy]
-            .executableTimestamp;
+        uint256 executableTimestamp = vaultProxyToMigrationRequest[_vaultProxy].executableTimestamp;
 
         return executableTimestamp > 0 && block.timestamp >= executableTimestamp;
     }
@@ -694,12 +582,7 @@ contract Dispatcher is IDispatcher {
     /// @notice Checks whether a migration request exists for a given VaultProxy
     /// @param _vaultProxy The VaultProxy instance
     /// @return hasMigrationRequest_ True if a migration request exists
-    function hasMigrationRequest(address _vaultProxy)
-        external
-        view
-        override
-        returns (bool hasMigrationRequest_)
-    {
+    function hasMigrationRequest(address _vaultProxy) external view override returns (bool hasMigrationRequest_) {
         return vaultProxyToMigrationRequest[_vaultProxy].executableTimestamp > 0;
     }
 }

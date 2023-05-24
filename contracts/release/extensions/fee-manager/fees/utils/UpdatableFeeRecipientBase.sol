@@ -24,8 +24,7 @@ abstract contract UpdatableFeeRecipientBase is SettableFeeRecipientBase {
     /// @param _recipient The fee recipient
     function setRecipientForFund(address _comptrollerProxy, address _recipient) external {
         require(
-            msg.sender ==
-                VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner(),
+            msg.sender == VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner(),
             "__setRecipientForFund: Only vault owner callable"
         );
 

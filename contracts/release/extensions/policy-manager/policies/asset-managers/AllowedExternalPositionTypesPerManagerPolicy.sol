@@ -44,12 +44,7 @@ contract AllowedExternalPositionTypesPerManagerPolicy is UintListRegistryPerUser
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](4);
         implementedHooks_[0] = IPolicyManager.PolicyHook.CreateExternalPosition;
         implementedHooks_[1] = IPolicyManager.PolicyHook.PostCallOnExternalPosition;
@@ -77,39 +72,28 @@ contract AllowedExternalPositionTypesPerManagerPolicy is UintListRegistryPerUser
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
     /// @dev onlyPolicyManager validation not necessary, as state is not updated and no events are fired
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook _hook,
-        bytes calldata _encodedArgs
-    ) external override returns (bool isValid_) {
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook _hook, bytes calldata _encodedArgs)
+        external
+        override
+        returns (bool isValid_)
+    {
         uint256 externalPositionTypeId;
         address caller;
         if (_hook == IPolicyManager.PolicyHook.CreateExternalPosition) {
-            (caller, externalPositionTypeId, ) = __decodeCreateExternalPositionValidationData(
-                _encodedArgs
-            );
+            (caller, externalPositionTypeId,) = __decodeCreateExternalPositionValidationData(_encodedArgs);
         } else if (_hook == IPolicyManager.PolicyHook.PostCallOnExternalPosition) {
             address externalPosition;
-            (caller, externalPosition, , , , ) = __decodePostCallOnExternalPositionValidationData(
-                _encodedArgs
-            );
-            externalPositionTypeId = IExternalPositionProxy(externalPosition)
-                .getExternalPositionType();
+            (caller, externalPosition,,,,) = __decodePostCallOnExternalPositionValidationData(_encodedArgs);
+            externalPositionTypeId = IExternalPositionProxy(externalPosition).getExternalPositionType();
         } else if (_hook == IPolicyManager.PolicyHook.ReactivateExternalPosition) {
             address externalPosition;
-            (caller, externalPosition) = __decodeReactivateExternalPositionValidationData(
-                _encodedArgs
-            );
-            externalPositionTypeId = IExternalPositionProxy(externalPosition)
-                .getExternalPositionType();
+            (caller, externalPosition) = __decodeReactivateExternalPositionValidationData(_encodedArgs);
+            externalPositionTypeId = IExternalPositionProxy(externalPosition).getExternalPositionType();
         } else {
             // PolicyHook.RemoveExternalPosition
             address externalPosition;
-            (caller, externalPosition) = __decodeRemoveExternalPositionValidationData(
-                _encodedArgs
-            );
-            externalPositionTypeId = IExternalPositionProxy(externalPosition)
-                .getExternalPositionType();
+            (caller, externalPosition) = __decodeRemoveExternalPositionValidationData(_encodedArgs);
+            externalPositionTypeId = IExternalPositionProxy(externalPosition).getExternalPositionType();
         }
 
         return passesRule(_comptrollerProxy, caller, externalPositionTypeId);
@@ -122,15 +106,12 @@ contract AllowedExternalPositionTypesPerManagerPolicy is UintListRegistryPerUser
     /// @param _caller The caller for which to check the rule
     /// @param _externalPositionTypeId The external position type id for which to check the rule
     /// @return isValid_ True if the rule passes
-    function passesRule(
-        address _comptrollerProxy,
-        address _caller,
-        uint256 _externalPositionTypeId
-    ) public view returns (bool isValid_) {
-        if (
-            _caller ==
-            VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner()
-        ) {
+    function passesRule(address _comptrollerProxy, address _caller, uint256 _externalPositionTypeId)
+        public
+        view
+        returns (bool isValid_)
+    {
+        if (_caller == VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner()) {
             // fund owner passes rule by default
             return true;
         }

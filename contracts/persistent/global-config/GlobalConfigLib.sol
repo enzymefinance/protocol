@@ -32,11 +32,12 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
     /// @param _depositAsset The token to deposit for shares
     /// @param _depositAssetAmount The exact amount of _depositAsset to deposit
     /// @dev Caller must validate expected shares received if required
-    function formatDepositCall(
-        address _vaultProxy,
-        address _depositAsset,
-        uint256 _depositAssetAmount
-    ) external view override returns (address target_, bytes memory payload_) {
+    function formatDepositCall(address _vaultProxy, address _depositAsset, uint256 _depositAssetAmount)
+        external
+        view
+        override
+        returns (address target_, bytes memory payload_)
+    {
         // Get release for _vaultProxy
         address fundDeployer = __getFundDeployerForVaultProxy(_vaultProxy);
 
@@ -45,17 +46,12 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
 
             // Deposit asset must be denominationAsset
             require(
-                _depositAsset ==
-                    IGlobalConfigLibComptrollerV4(comptrollerProxy).getDenominationAsset(),
+                _depositAsset == IGlobalConfigLibComptrollerV4(comptrollerProxy).getDenominationAsset(),
                 "formatDepositCall: Unsupported _depositAsset"
             );
 
             target_ = comptrollerProxy;
-            payload_ = abi.encodeWithSelector(
-                IGlobalConfigLibComptrollerV4.buyShares.selector,
-                _depositAssetAmount,
-                1
-            );
+            payload_ = abi.encodeWithSelector(IGlobalConfigLibComptrollerV4.buyShares.selector, _depositAssetAmount, 1);
         } else {
             revert("formatDepositCall: Unsupported release");
         }
@@ -82,10 +78,7 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
 
         if (fundDeployer == FUND_DEPLOYER_V4) {
             // `_amountIsShares == false` is not yet unsupported
-            require(
-                _amountIsShares,
-                "formatSingleAssetRedemptionCall: _amountIsShares must be true"
-            );
+            require(_amountIsShares, "formatSingleAssetRedemptionCall: _amountIsShares must be true");
 
             target_ = IVaultCore(_vaultProxy).getAccessor();
 
@@ -138,32 +131,25 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
 
             // Validate selector
             if (
-                !(_redeemSelector ==
-                    IGlobalConfigLibComptrollerV4.redeemSharesForSpecificAssets.selector ||
-                    _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesInKind.selector)
+                !(
+                    _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesForSpecificAssets.selector
+                        || _redeemSelector == IGlobalConfigLibComptrollerV4.redeemSharesInKind.selector
+                )
             ) {
                 return false;
             }
 
             // Both functions have the same first two params so we can ignore the rest of _redeemData
-            (address encodedRecipient, uint256 encodedSharesAmount) = abi.decode(
-                _redeemData,
-                (address, uint256)
-            );
+            (address encodedRecipient, uint256 encodedSharesAmount) = abi.decode(_redeemData, (address, uint256));
 
             // Optionally validate recipient
-            if (
-                _recipientToValidate != NO_VALIDATION_DUMMY_ADDRESS &&
-                _recipientToValidate != encodedRecipient
-            ) {
+            if (_recipientToValidate != NO_VALIDATION_DUMMY_ADDRESS && _recipientToValidate != encodedRecipient) {
                 return false;
             }
 
             // Optionally validate shares amount
-            if (
-                _sharesAmountToValidate != NO_VALIDATION_DUMMY_AMOUNT &&
-                _sharesAmountToValidate != encodedSharesAmount
-            ) {
+            if (_sharesAmountToValidate != NO_VALIDATION_DUMMY_AMOUNT && _sharesAmountToValidate != encodedSharesAmount)
+            {
                 return false;
             }
 
@@ -174,11 +160,7 @@ contract GlobalConfigLib is IGlobalConfig2, GlobalConfigLibBase1 {
     }
 
     /// @dev Helper to get the FundDeployer (release) for a given vault
-    function __getFundDeployerForVaultProxy(address _vaultProxy)
-        private
-        view
-        returns (address fundDeployer_)
-    {
+    function __getFundDeployerForVaultProxy(address _vaultProxy) private view returns (address fundDeployer_) {
         return IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy);
     }
 }

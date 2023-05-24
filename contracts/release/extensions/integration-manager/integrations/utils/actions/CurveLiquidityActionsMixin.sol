@@ -51,29 +51,19 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             if (_squashedOutgoingAssets[i] == getCurveLiquidityWrappedNativeAsset()) {
                 // It is never the case that a pool has multiple slots for the same native asset,
                 // so this is not additive
-                outgoingNativeAssetAmount = ERC20(getCurveLiquidityWrappedNativeAsset()).balanceOf(
-                        address(this)
-                    );
+                outgoingNativeAssetAmount = ERC20(getCurveLiquidityWrappedNativeAsset()).balanceOf(address(this));
                 IWETH(getCurveLiquidityWrappedNativeAsset()).withdraw(outgoingNativeAssetAmount);
             } else {
                 // Once an asset it approved for a given pool, it will almost definitely
                 // never need approval again, but it is topped up to max once an arbitrary
                 // threshold is reached
-                __approveAssetMaxAsNeeded(
-                    _squashedOutgoingAssets[i],
-                    _pool,
-                    ASSET_APPROVAL_TOP_UP_THRESHOLD
-                );
+                __approveAssetMaxAsNeeded(_squashedOutgoingAssets[i], _pool, ASSET_APPROVAL_TOP_UP_THRESHOLD);
             }
         }
 
         // Dynamically call the appropriate selector
         (bool success, bytes memory returnData) = _pool.call{value: outgoingNativeAssetAmount}(
-            __curveAddLiquidityEncodeCalldata(
-                _orderedOutgoingAssetAmounts,
-                _minIncomingLpTokenAmount,
-                _useUnderlyings
-            )
+            __curveAddLiquidityEncodeCalldata(_orderedOutgoingAssetAmounts, _minIncomingLpTokenAmount, _useUnderlyings)
         );
         require(success, string(returnData));
     }
@@ -90,9 +80,7 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
         // Dynamically call the appropriate selector
         (bool success, bytes memory returnData) = _pool.call(
             __curveRemoveLiquidityEncodeCalldata(
-                _outgoingLpTokenAmount,
-                _orderedMinIncomingAssetAmounts,
-                _useUnderlyings
+                _outgoingLpTokenAmount, _orderedMinIncomingAssetAmounts, _useUnderlyings
             )
         );
         require(success, string(returnData));
@@ -148,16 +136,12 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             finalEncodedArgOrEmpty = abi.encode(true);
         }
 
-        return
-            abi.encodePacked(
-                __curveAddLiquidityEncodeSelector(
-                    _orderedOutgoingAssetAmounts.length,
-                    _useUnderlyings
-                ),
-                abi.encodePacked(_orderedOutgoingAssetAmounts),
-                _minIncomingLpTokenAmount,
-                finalEncodedArgOrEmpty
-            );
+        return abi.encodePacked(
+            __curveAddLiquidityEncodeSelector(_orderedOutgoingAssetAmounts.length, _useUnderlyings),
+            abi.encodePacked(_orderedOutgoingAssetAmounts),
+            _minIncomingLpTokenAmount,
+            finalEncodedArgOrEmpty
+        );
     }
 
     /// @dev Helper to encode selector for a call to add liquidity on Curve
@@ -171,28 +155,20 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             finalArgOrEmpty = ",bool";
         }
 
-        return
-            bytes4(
-                keccak256(
-                    abi.encodePacked(
-                        "add_liquidity(uint256[",
-                        _numberOfCoins.toString(),
-                        "],",
-                        "uint256",
-                        finalArgOrEmpty,
-                        ")"
-                    )
+        return bytes4(
+            keccak256(
+                abi.encodePacked(
+                    "add_liquidity(uint256[", _numberOfCoins.toString(), "],", "uint256", finalArgOrEmpty, ")"
                 )
-            );
+            )
+        );
     }
 
     /// @dev Helper to wrap the full native asset balance of the current contract
     function __curveLiquidityWrapNativeAssetBalance() private {
         uint256 nativeAssetBalance = payable(address(this)).balance;
         if (nativeAssetBalance > 0) {
-            IWETH(payable(getCurveLiquidityWrappedNativeAsset())).deposit{
-                value: nativeAssetBalance
-            }();
+            IWETH(payable(getCurveLiquidityWrappedNativeAsset())).deposit{value: nativeAssetBalance}();
         }
     }
 
@@ -207,16 +183,12 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             finalEncodedArgOrEmpty = abi.encode(true);
         }
 
-        return
-            abi.encodePacked(
-                __curveRemoveLiquidityEncodeSelector(
-                    _orderedMinIncomingAssetAmounts.length,
-                    _useUnderlyings
-                ),
-                _outgoingLpTokenAmount,
-                abi.encodePacked(_orderedMinIncomingAssetAmounts),
-                finalEncodedArgOrEmpty
-            );
+        return abi.encodePacked(
+            __curveRemoveLiquidityEncodeSelector(_orderedMinIncomingAssetAmounts.length, _useUnderlyings),
+            _outgoingLpTokenAmount,
+            abi.encodePacked(_orderedMinIncomingAssetAmounts),
+            finalEncodedArgOrEmpty
+        );
     }
 
     /// @dev Helper to encode selector for a call to remove liquidity on Curve
@@ -230,19 +202,13 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             finalArgOrEmpty = ",bool";
         }
 
-        return
-            bytes4(
-                keccak256(
-                    abi.encodePacked(
-                        "remove_liquidity(uint256,",
-                        "uint256[",
-                        _numberOfCoins.toString(),
-                        "]",
-                        finalArgOrEmpty,
-                        ")"
-                    )
+        return bytes4(
+            keccak256(
+                abi.encodePacked(
+                    "remove_liquidity(uint256,", "uint256[", _numberOfCoins.toString(), "]", finalArgOrEmpty, ")"
                 )
-            );
+            )
+        );
     }
 
     ///////////////////

@@ -15,11 +15,7 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all external position parsers
 interface IExternalPositionParser {
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         returns (
             address[] memory assetsToTransfer_,

@@ -40,11 +40,7 @@ abstract contract NotionalV2PositionDataDecoder {
     function __decodeLendActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint16 currencyId_,
-            uint256 underlyingTokenAmount_,
-            bytes32 encodedLendTrade_
-        )
+        returns (uint16 currencyId_, uint256 underlyingTokenAmount_, bytes32 encodedLendTrade_)
     {
         return abi.decode(_actionArgs, (uint16, uint256, bytes32));
     }

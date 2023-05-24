@@ -31,16 +31,12 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     /// @notice Claims rewards from the Prize Distributor
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
-        (
-            address prizeDistributor,
-            uint32[] memory drawIds,
-            bytes memory winningPicks
-        ) = __decodeClaimRewardsCallArgs(_actionData);
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
+        (address prizeDistributor, uint32[] memory drawIds, bytes memory winningPicks) =
+            __decodeClaimRewardsCallArgs(_actionData);
 
         __poolTogetherV4Claim(_vaultProxy, prizeDistributor, drawIds, winningPicks);
     }
@@ -48,16 +44,12 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     /// @notice Lends an amount of a token to PoolTogether
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
-    ) external onlyIntegrationManager {
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_encodedAssetTransferArgs);
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyIntegrationManager
+    {
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_encodedAssetTransferArgs);
 
         __poolTogetherV4Lend(_vaultProxy, spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
@@ -65,14 +57,12 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     /// @notice Redeems an amount of ptTokens from PoolTogether
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _encodedAssetTransferArgs Encoded args for expected assets to spend and receive
-    function redeem(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _encodedAssetTransferArgs
-    ) external onlyIntegrationManager {
-        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, ) = __decodeAssetData(
-            _encodedAssetTransferArgs
-        );
+    function redeem(address _vaultProxy, bytes calldata, bytes calldata _encodedAssetTransferArgs)
+        external
+        onlyIntegrationManager
+    {
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts,) =
+            __decodeAssetData(_encodedAssetTransferArgs);
 
         __poolTogetherV4Redeem(_vaultProxy, spendAssets[0], spendAssetAmounts[0]);
     }
@@ -90,11 +80,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -133,8 +119,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
         (address ptToken, uint256 amount) = __decodeCallArgs(_actionData);
 
         // Prevent from invalid token/ptToken combination
-        address token = PoolTogetherV4PriceFeed(POOL_TOGETHER_V4_PRICE_FEED)
-            .getUnderlyingForDerivative(ptToken);
+        address token = PoolTogetherV4PriceFeed(POOL_TOGETHER_V4_PRICE_FEED).getUnderlyingForDerivative(ptToken);
         require(token != address(0), "__parseAssetsForLend: Unsupported ptToken");
 
         spendAssets_ = new address[](1);
@@ -172,8 +157,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
         (address ptToken, uint256 amount) = __decodeCallArgs(_actionData);
 
         // Prevent from invalid token/ptToken combination
-        address token = PoolTogetherV4PriceFeed(POOL_TOGETHER_V4_PRICE_FEED)
-            .getUnderlyingForDerivative(ptToken);
+        address token = PoolTogetherV4PriceFeed(POOL_TOGETHER_V4_PRICE_FEED).getUnderlyingForDerivative(ptToken);
         require(token != address(0), "__parseAssetsForRedeem: Unsupported ptToken");
 
         spendAssets_ = new address[](1);
@@ -220,11 +204,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgs(bytes memory _actionData)
-        private
-        pure
-        returns (address ptToken_, uint256 amount_)
-    {
+    function __decodeCallArgs(bytes memory _actionData) private pure returns (address ptToken_, uint256 amount_) {
         return abi.decode(_actionData, (address, uint256));
     }
 
@@ -232,11 +212,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
     function __decodeClaimRewardsCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            address prizeDistributor_,
-            uint32[] memory drawIds_,
-            bytes memory winningPicks_
-        )
+        returns (address prizeDistributor_, uint32[] memory drawIds_, bytes memory winningPicks_)
     {
         return abi.decode(_actionData, (address, uint32[], bytes));
     }
@@ -247,11 +223,7 @@ contract PoolTogetherV4Adapter is AdapterBase, PoolTogetherV4ActionsMixin {
 
     /// @notice Gets the `POOL_TOGETHER_V4_PRICE_FEED` variable
     /// @return poolTogetherV4PriceFeed_ The `POOL_TOGETHER_V4_PRICE_FEED` variable value
-    function getPoolTogetherV4PriceFeed()
-        external
-        view
-        returns (address poolTogetherV4PriceFeed_)
-    {
+    function getPoolTogetherV4PriceFeed() external view returns (address poolTogetherV4PriceFeed_) {
         return POOL_TOGETHER_V4_PRICE_FEED;
     }
 }

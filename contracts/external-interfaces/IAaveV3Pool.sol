@@ -68,22 +68,12 @@ interface IAaveV3Pool {
         //bit 176-211 unbacked mint cap in whole tokens, unbackedMintCap == 0 => minting disabled
         //bit 212-251 debt ceiling for isolation mode with (ReserveConfiguration::DEBT_CEILING_DECIMALS) decimals
         //bit 252-255 unused
-
         uint256 data;
     }
 
     function getReserveData(address _asset) external returns (ReserveData memory reserveData_);
 
-    function supply(
-        address _underlying,
-        uint256 _amount,
-        address _to,
-        uint16 _referralCode
-    ) external;
+    function supply(address _underlying, uint256 _amount, address _to, uint16 _referralCode) external;
 
-    function withdraw(
-        address _underlying,
-        uint256 _amount,
-        address _to
-    ) external;
+    function withdraw(address _underlying, uint256 _amount, address _to) external;
 }

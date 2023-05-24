@@ -15,14 +15,7 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Minimal interface for our interactions with the Uniswap V2's Pair contract
 interface IUniswapV2Pair {
-    function getReserves()
-        external
-        view
-        returns (
-            uint112,
-            uint112,
-            uint32
-        );
+    function getReserves() external view returns (uint112, uint112, uint32);
 
     function kLast() external view returns (uint256);
 

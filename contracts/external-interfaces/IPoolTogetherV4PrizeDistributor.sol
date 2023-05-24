@@ -14,9 +14,5 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IPoolTogetherV4PrizeDistributor interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IPoolTogetherV4PrizeDistributor {
-    function claim(
-        address,
-        uint32[] calldata,
-        bytes calldata
-    ) external returns (uint256);
+    function claim(address, uint32[] calldata, bytes calldata) external returns (uint256);
 }

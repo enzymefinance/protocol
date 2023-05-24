@@ -37,13 +37,7 @@ abstract contract FeeBase is IFee {
     /// @notice Gets the recipient of the fee for a given fund
     /// @dev address(0) signifies the VaultProxy owner.
     /// Returns address(0) by default, can be overridden by fee.
-    function getRecipientForFund(address)
-        external
-        view
-        virtual
-        override
-        returns (address recipient_)
-    {
+    function getRecipientForFund(address) external view virtual override returns (address recipient_) {
         return address(0);
     }
 
@@ -55,13 +49,7 @@ abstract contract FeeBase is IFee {
 
     /// @notice Update fee state after all settlement has occurred during a given fee hook
     /// @dev Unimplemented by default, can be overridden by fee
-    function update(
-        address,
-        address,
-        IFeeManager.FeeHook,
-        bytes calldata,
-        uint256
-    ) external virtual override {
+    function update(address, address, IFeeManager.FeeHook, bytes calldata, uint256) external virtual override {
         return;
     }
 
@@ -69,13 +57,7 @@ abstract contract FeeBase is IFee {
     /// @return updates_ True if the fee updates on the _hook
     /// @return usesGav_ True if the fee uses GAV during update() for the _hook
     /// @dev Returns false values by default, can be overridden by fee
-    function updatesOnHook(IFeeManager.FeeHook)
-        external
-        view
-        virtual
-        override
-        returns (bool updates_, bool usesGav_)
-    {
+    function updatesOnHook(IFeeManager.FeeHook) external view virtual override returns (bool updates_, bool usesGav_) {
         return (false, false);
     }
 
@@ -92,11 +74,7 @@ abstract contract FeeBase is IFee {
     function __decodePreRedeemSharesSettlementData(bytes memory _settlementData)
         internal
         pure
-        returns (
-            address redeemer_,
-            uint256 sharesQuantity_,
-            bool forSpecificAssets_
-        )
+        returns (address redeemer_, uint256 sharesQuantity_, bool forSpecificAssets_)
     {
         return abi.decode(_settlementData, (address, uint256, bool));
     }
@@ -105,11 +83,7 @@ abstract contract FeeBase is IFee {
     function __decodePostBuySharesSettlementData(bytes memory _settlementData)
         internal
         pure
-        returns (
-            address buyer_,
-            uint256 investmentAmount_,
-            uint256 sharesIssued_
-        )
+        returns (address buyer_, uint256 investmentAmount_, uint256 sharesIssued_)
     {
         return abi.decode(_settlementData, (address, uint256, uint256));
     }

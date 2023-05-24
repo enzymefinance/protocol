@@ -34,8 +34,8 @@ contract UniswapV3LiquidityPositionLib is
     address private immutable NON_FUNGIBLE_TOKEN_MANAGER;
     address private immutable VALUE_INTERPRETER;
 
-    uint256 private constant TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE = 10**18;
-    uint256 private constant UNISWAP_SQRT_INFLATE_FACTOR = 2**192;
+    uint256 private constant TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE = 10 ** 18;
+    uint256 private constant UNISWAP_SQRT_INFLATE_FACTOR = 2 ** 192;
 
     constructor(address _nonFungibleTokenManager, address _valueInterpreter) {
         NON_FUNGIBLE_TOKEN_MANAGER = _nonFungibleTokenManager;
@@ -51,9 +51,7 @@ contract UniswapV3LiquidityPositionLib is
     function receiveCallFromVault(bytes memory _actionData) external override {
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
-        if (
-            actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Mint)
-        ) {
+        if (actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Mint)) {
             (
                 address token0,
                 address token1,
@@ -81,17 +79,9 @@ contract UniswapV3LiquidityPositionLib is
                     deadline: block.timestamp
                 })
             );
-        } else if (
-            actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.AddLiquidity)
-        ) {
-            (
-                uint256 nftId,
-                uint256 amount0Desired,
-                uint256 amount1Desired,
-                uint256 amount0Min,
-                uint256 amount1Min
-            ) = __decodeAddLiquidityActionArgs(actionArgs);
+        } else if (actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.AddLiquidity)) {
+            (uint256 nftId, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min) =
+                __decodeAddLiquidityActionArgs(actionArgs);
 
             __addLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams({
@@ -103,16 +93,9 @@ contract UniswapV3LiquidityPositionLib is
                     deadline: block.timestamp
                 })
             );
-        } else if (
-            actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.RemoveLiquidity)
-        ) {
-            (
-                uint256 nftId,
-                uint128 liquidity,
-                uint256 amount0Min,
-                uint256 amount1Min
-            ) = __decodeRemoveLiquidityActionArgs(actionArgs);
+        } else if (actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.RemoveLiquidity)) {
+            (uint256 nftId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min) =
+                __decodeRemoveLiquidityActionArgs(actionArgs);
 
             __removeLiquidity(
                 INonfungiblePositionManager.DecreaseLiquidityParams({
@@ -123,22 +106,12 @@ contract UniswapV3LiquidityPositionLib is
                     deadline: block.timestamp
                 })
             );
-        } else if (
-            actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Purge)
-        ) {
-            (
-                uint256 nftId,
-                uint128 liquidity,
-                uint256 amount0Min,
-                uint256 amount1Min
-            ) = __decodePurgeActionArgs(actionArgs);
+        } else if (actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Purge)) {
+            (uint256 nftId, uint128 liquidity, uint256 amount0Min, uint256 amount1Min) =
+                __decodePurgeActionArgs(actionArgs);
 
             __purge(nftId, liquidity, amount0Min, amount1Min);
-        } else if (
-            actionId ==
-            uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Collect)
-        ) {
+        } else if (actionId == uint256(IUniswapV3LiquidityPosition.UniswapV3LiquidityPositionActions.Collect)) {
             __collect(__decodeCollectActionArgs(actionArgs));
         } else {
             revert("receiveCallFromVault: Invalid actionId");
@@ -148,14 +121,11 @@ contract UniswapV3LiquidityPositionLib is
     // PRIVATE FUNCTIONS
 
     /// @dev Adds liquidity to the uniswap position
-    function __addLiquidity(INonfungiblePositionManager.IncreaseLiquidityParams memory _params)
-        private
-    {
+    function __addLiquidity(INonfungiblePositionManager.IncreaseLiquidityParams memory _params) private {
         // No need to approve assets since pre-approved during minting
 
-        (, uint256 amount0, uint256 amount1) = INonfungiblePositionManager(
-            getNonFungibleTokenManager()
-        ).increaseLiquidity(_params);
+        (, uint256 amount0, uint256 amount1) =
+            INonfungiblePositionManager(getNonFungibleTokenManager()).increaseLiquidity(_params);
 
         if (amount0 < _params.amount0Desired) {
             address token0 = getToken0ForNft(_params.tokenId);
@@ -169,11 +139,7 @@ contract UniswapV3LiquidityPositionLib is
     }
 
     /// @dev Helper to approve a target account with the max amount of an asset
-    function __approveAssetMaxAsNeeded(
-        address _asset,
-        address _target,
-        uint256 _neededAmount
-    ) internal {
+    function __approveAssetMaxAsNeeded(address _asset, address _target, uint256 _neededAmount) internal {
         uint256 allowance = ERC20(_asset).allowance(address(this), _target);
         if (allowance < _neededAmount) {
             if (allowance > 0) {
@@ -204,10 +170,8 @@ contract UniswapV3LiquidityPositionLib is
         );
         require(success, string(returnData));
 
-        (, , , , , , , liquidity_) = abi.decode(
-            returnData,
-            (uint96, address, address, address, uint24, int24, int24, uint128)
-        );
+        (,,,,,,, liquidity_) =
+            abi.decode(returnData, (uint96, address, address, address, uint24, int24, int24, uint128));
 
         return liquidity_;
     }
@@ -215,21 +179,12 @@ contract UniswapV3LiquidityPositionLib is
     /// @dev Mints a new uniswap position, receiving an nft as a receipt
     function __mint(INonfungiblePositionManager.MintParams memory _params) private {
         // Grant max token approval to the nft manager as necessary
-        __approveAssetMaxAsNeeded(
-            _params.token0,
-            getNonFungibleTokenManager(),
-            _params.amount0Desired
-        );
-        __approveAssetMaxAsNeeded(
-            _params.token1,
-            getNonFungibleTokenManager(),
-            _params.amount1Desired
-        );
+        __approveAssetMaxAsNeeded(_params.token0, getNonFungibleTokenManager(), _params.amount0Desired);
+        __approveAssetMaxAsNeeded(_params.token1, getNonFungibleTokenManager(), _params.amount1Desired);
 
         // Mint the nft
-        (uint256 tokenId, , uint256 amount0, uint256 amount1) = INonfungiblePositionManager(
-            getNonFungibleTokenManager()
-        ).mint(_params);
+        (uint256 tokenId,, uint256 amount0, uint256 amount1) =
+            INonfungiblePositionManager(getNonFungibleTokenManager()).mint(_params);
 
         // Update local storage
         nftIds.push(tokenId);
@@ -238,17 +193,11 @@ contract UniswapV3LiquidityPositionLib is
 
         // Transfer back to the vaultProxy tokens not added as liquidity
         if (amount0 < _params.amount0Desired) {
-            ERC20(_params.token0).safeTransfer(
-                msg.sender,
-                ERC20(_params.token0).balanceOf(address(this))
-            );
+            ERC20(_params.token0).safeTransfer(msg.sender, ERC20(_params.token0).balanceOf(address(this)));
         }
 
         if (amount1 < _params.amount1Desired) {
-            ERC20(_params.token1).safeTransfer(
-                msg.sender,
-                ERC20(_params.token1).balanceOf(address(this))
-            );
+            ERC20(_params.token1).safeTransfer(msg.sender, ERC20(_params.token1).balanceOf(address(this)));
         }
 
         emit NFTPositionAdded(tokenId);
@@ -260,12 +209,7 @@ contract UniswapV3LiquidityPositionLib is
     /// _liquidity == 0 signifies no liquidity to be removed (i.e., only collect and burn).
     /// 0 < _liquidity 0 < max uint128 signifies the full amount of liquidity is known (more gas-efficient).
     /// _liquidity == max uint128 signifies the full amount of liquidity is unknown.
-    function __purge(
-        uint256 _nftId,
-        uint128 _liquidity,
-        uint256 _amount0Min,
-        uint256 _amount1Min
-    ) private {
+    function __purge(uint256 _nftId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min) private {
         if (_liquidity == type(uint128).max) {
             // This consumes a lot of unnecessary gas because of all the SLOAD operations,
             // when we only care about `liquidity`.
@@ -309,9 +253,7 @@ contract UniswapV3LiquidityPositionLib is
     }
 
     /// @dev Removes liquidity from the uniswap position and transfers the tokens back to the vault
-    function __removeLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory _params)
-        private
-    {
+    function __removeLiquidity(INonfungiblePositionManager.DecreaseLiquidityParams memory _params) private {
         INonfungiblePositionManager(getNonFungibleTokenManager()).decreaseLiquidity(_params);
 
         __collect(_params.tokenId);
@@ -326,23 +268,14 @@ contract UniswapV3LiquidityPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        pure
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external pure override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         uint256[] memory nftIdsCopy = getNftIds();
         if (nftIdsCopy.length == 0) {
             return (assets_, amounts_);
@@ -370,24 +303,22 @@ contract UniswapV3LiquidityPositionLib is
             }
 
             if (sqrtPriceX96 == 0) {
-                uint256 token0VirtualReserves = IValueInterpreterUniswapV3LiquidityPosition(
-                    VALUE_INTERPRETER
-                ).calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
+                uint256 token0VirtualReserves = IValueInterpreterUniswapV3LiquidityPosition(VALUE_INTERPRETER)
+                    .calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
 
                 // Adapted from UniswapV3 white paper formula 6.4 <https://uniswap.org/whitepaper-v3.pdf>
                 sqrtPriceX96 = uint160(
                     __uniswapSqrt(
-                        (UNISWAP_SQRT_INFLATE_FACTOR.mul(TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE))
-                            .div(token0VirtualReserves)
+                        (UNISWAP_SQRT_INFLATE_FACTOR.mul(TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE)).div(
+                            token0VirtualReserves
+                        )
                     )
                 );
                 sqrtPricesX96[i] = sqrtPriceX96;
             }
 
             (amounts_[token0Index], amounts_[token1Index]) = PositionValue.total(
-                INonfungiblePositionManager(getNonFungibleTokenManager()),
-                nftIdsCopy[i],
-                sqrtPriceX96
+                INonfungiblePositionManager(getNonFungibleTokenManager()), nftIdsCopy[i], sqrtPriceX96
             );
         }
 
@@ -486,12 +417,7 @@ contract UniswapV3LiquidityPositionLib is
     /// @param _nftId The id of the nft
     /// @return token0_ The `token0` value
     /// @return token1_ The `token1` value
-    function getPairForNft(uint256 _nftId)
-        public
-        view
-        override
-        returns (address token0_, address token1_)
-    {
+    function getPairForNft(uint256 _nftId) public view override returns (address token0_, address token1_) {
         return (getToken0ForNft(_nftId), getToken1ForNft(_nftId));
     }
 

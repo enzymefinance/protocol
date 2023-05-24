@@ -48,11 +48,11 @@ abstract contract TreasurySplitterMixin {
     /// @param _amount The amount to claim
     /// @param _to The recipient of the claimed token
     /// @return claimedAmount_ The token amount claimed
-    function claimTokenAmountTo(
-        address _token,
-        uint256 _amount,
-        address _to
-    ) external virtual returns (uint256 claimedAmount_) {
+    function claimTokenAmountTo(address _token, uint256 _amount, address _to)
+        external
+        virtual
+        returns (uint256 claimedAmount_)
+    {
         return __claimToken(msg.sender, _token, _amount, _to);
     }
 
@@ -62,17 +62,12 @@ abstract contract TreasurySplitterMixin {
     /// @param _user The user
     /// @param _token The token
     /// @return balClaimable_ The claimable token balance
-    function getTokenBalClaimableForUser(address _user, address _token)
-        public
-        view
-        returns (uint256 balClaimable_)
-    {
-        return
-            __calcTokenBalClaimable(
-                getSplitPercentageForUser(_user),
-                getTokenBalClaimedForUser(_user, _token),
-                getTotalTokenBalClaimed(_token).add(ERC20(_token).balanceOf(address(this)))
-            );
+    function getTokenBalClaimableForUser(address _user, address _token) public view returns (uint256 balClaimable_) {
+        return __calcTokenBalClaimable(
+            getSplitPercentageForUser(_user),
+            getTokenBalClaimedForUser(_user, _token),
+            getTotalTokenBalClaimed(_token).add(ERC20(_token).balanceOf(address(this)))
+        );
     }
 
     // INTERNAL FUNCTIONS
@@ -83,20 +78,17 @@ abstract contract TreasurySplitterMixin {
         uint256 _balClaimedForUser,
         uint256 _totalCumulativeBal
     ) internal pure returns (uint256 balClaimable_) {
-        uint256 totalCumulativeBalShareForUser = _totalCumulativeBal
-            .mul(_splitPercentageForUser)
-            .div(ONE_HUNDRED_PERCENT);
+        uint256 totalCumulativeBalShareForUser =
+            _totalCumulativeBal.mul(_splitPercentageForUser).div(ONE_HUNDRED_PERCENT);
 
         return totalCumulativeBalShareForUser.sub(_balClaimedForUser);
     }
 
     /// @dev Helper to claim tokens
-    function __claimToken(
-        address _user,
-        address _token,
-        uint256 _amount,
-        address _to
-    ) internal returns (uint256 claimedAmount_) {
+    function __claimToken(address _user, address _token, uint256 _amount, address _to)
+        internal
+        returns (uint256 claimedAmount_)
+    {
         claimedAmount_ = __claimTokenWithoutTransfer(_user, _token, _amount);
         ERC20(_token).safeTransfer(_to, claimedAmount_);
 
@@ -104,20 +96,16 @@ abstract contract TreasurySplitterMixin {
     }
 
     /// @dev Helper to claim tokens, but not transfer them (i.e., perform some other action)
-    function __claimTokenWithoutTransfer(
-        address _user,
-        address _token,
-        uint256 _amount
-    ) internal returns (uint256 claimedAmount_) {
+    function __claimTokenWithoutTransfer(address _user, address _token, uint256 _amount)
+        internal
+        returns (uint256 claimedAmount_)
+    {
         uint256 totalBalClaimed = getTotalTokenBalClaimed(_token);
         uint256 balClaimedForUser = getTokenBalClaimedForUser(_user, _token);
 
         uint256 totalCumulativeBal = totalBalClaimed.add(ERC20(_token).balanceOf(address(this)));
-        uint256 claimableBalForUser = __calcTokenBalClaimable(
-            getSplitPercentageForUser(_user),
-            balClaimedForUser,
-            totalCumulativeBal
-        );
+        uint256 claimableBalForUser =
+            __calcTokenBalClaimable(getSplitPercentageForUser(_user), balClaimedForUser, totalCumulativeBal);
 
         if (_amount == type(uint256).max) {
             claimedAmount_ = claimableBalForUser;
@@ -139,9 +127,7 @@ abstract contract TreasurySplitterMixin {
     /// @dev Helper to set the desired treasury split ratio.
     /// Uses `memory` instead of `calldata` in case implementing contract cannot pass `calldata`,
     /// e.g., in its constructor().
-    function __setSplitRatio(address[] memory _users, uint256[] memory _splitPercentages)
-        internal
-    {
+    function __setSplitRatio(address[] memory _users, uint256[] memory _splitPercentages) internal {
         uint256 totalSplitPercentage;
         for (uint256 i; i < _users.length; i++) {
             // Do not allow zero-addresses or duplicate users
@@ -165,11 +151,7 @@ abstract contract TreasurySplitterMixin {
     /// @notice Gets the split ratio percentage for a given user
     /// @param _user The user
     /// @return splitPercentage_ The split percentage
-    function getSplitPercentageForUser(address _user)
-        public
-        view
-        returns (uint256 splitPercentage_)
-    {
+    function getSplitPercentageForUser(address _user) public view returns (uint256 splitPercentage_) {
         return userToSplitPercentage[_user];
     }
 
@@ -177,22 +159,14 @@ abstract contract TreasurySplitterMixin {
     /// @param _user The user
     /// @param _token The token
     /// @return balClaimed_ The balance claimed
-    function getTokenBalClaimedForUser(address _user, address _token)
-        public
-        view
-        returns (uint256 balClaimed_)
-    {
+    function getTokenBalClaimedForUser(address _user, address _token) public view returns (uint256 balClaimed_) {
         return userToTokenToBalClaimed[_user][_token];
     }
 
     /// @notice Gets the total token balance already claimed
     /// @param _token The token
     /// @return totalBalClaimed_ The total balance claimed
-    function getTotalTokenBalClaimed(address _token)
-        public
-        view
-        returns (uint256 totalBalClaimed_)
-    {
+    function getTotalTokenBalClaimed(address _token) public view returns (uint256 totalBalClaimed_) {
         return tokenToTotalBalClaimed[_token];
     }
 }

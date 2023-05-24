@@ -27,9 +27,6 @@ contract PoolTogetherV4PriceFeed is PeggedDerivativesPriceFeedBase {
         address controller = IPoolTogetherV4Ticket(_derivative).controller();
         address prizePoolAsset = IPoolTogetherV4PrizePool(controller).getToken();
 
-        require(
-            prizePoolAsset == _underlying,
-            "__validateDerivative: Invalid ptToken or token provided"
-        );
+        require(prizePoolAsset == _underlying, "__validateDerivative: Invalid ptToken or token provided");
     }
 }

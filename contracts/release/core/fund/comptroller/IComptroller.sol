@@ -22,11 +22,7 @@ interface IComptroller {
 
     function calcGrossShareValue() external returns (uint256);
 
-    function callOnExtension(
-        address,
-        uint256,
-        bytes calldata
-    ) external;
+    function callOnExtension(address, uint256, bytes calldata) external;
 
     function destructActivated(uint256, uint256) external;
 
@@ -52,11 +48,7 @@ interface IComptroller {
 
     function permissionedVaultAction(IVault.VaultAction, bytes calldata) external;
 
-    function preTransferSharesHook(
-        address,
-        address,
-        uint256
-    ) external;
+    function preTransferSharesHook(address, address, uint256) external;
 
     function preTransferSharesHookFreelyTransferable(address) external view;
 

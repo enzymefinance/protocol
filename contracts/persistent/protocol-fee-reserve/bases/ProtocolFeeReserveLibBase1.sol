@@ -22,10 +22,5 @@ import "./ProtocolFeeReserveLibBaseCore.sol";
 abstract contract ProtocolFeeReserveLibBase1 is ProtocolFeeReserveLibBaseCore {
     event MlnTokenBalanceWithdrawn(address indexed to, uint256 amount);
 
-    event SharesBoughtBack(
-        address indexed vaultProxy,
-        uint256 sharesAmount,
-        uint256 mlnValue,
-        uint256 mlnBurned
-    );
+    event SharesBoughtBack(address indexed vaultProxy, uint256 sharesAmount, uint256 mlnValue, uint256 mlnBurned);
 }

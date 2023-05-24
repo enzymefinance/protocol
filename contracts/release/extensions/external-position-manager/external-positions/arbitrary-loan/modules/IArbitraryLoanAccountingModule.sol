@@ -16,10 +16,7 @@ interface IArbitraryLoanAccountingModule {
     /// @param _totalBorrowed The total borrowed amount
     /// @param _totalRepaid The total repaid amount
     /// @return faceValue_ The face value
-    function calcFaceValue(uint256 _totalBorrowed, uint256 _totalRepaid)
-        external
-        view
-        returns (uint256 faceValue_);
+    function calcFaceValue(uint256 _totalBorrowed, uint256 _totalRepaid) external view returns (uint256 faceValue_);
 
     /// @notice Configures options per-loan
     /// @param _configData Encoded options
@@ -29,11 +26,7 @@ interface IArbitraryLoanAccountingModule {
     /// @param _prevTotalBorrowed The total borrowed amount not including the new borrow amount
     /// @param _totalRepaid The total repaid amount
     /// @param _borrowAmount The new borrow amount
-    function preBorrow(
-        uint256 _prevTotalBorrowed,
-        uint256 _totalRepaid,
-        uint256 _borrowAmount
-    ) external;
+    function preBorrow(uint256 _prevTotalBorrowed, uint256 _totalRepaid, uint256 _borrowAmount) external;
 
     /// @notice Implements logic immediately prior to effects and interactions when closing a loan
     /// @param _totalBorrowed The total borrowed amount
@@ -64,11 +57,9 @@ interface IArbitraryLoanAccountingModule {
     /// @param _prevTotalRepaid The total repaid amount not including the new repay amount
     /// @param _repayAmountInput The user-input repay amount
     /// @return repayAmount_ The formatted amount to repay
-    function preRepay(
-        uint256 _totalBorrowed,
-        uint256 _prevTotalRepaid,
-        uint256 _repayAmountInput
-    ) external returns (uint256 repayAmount_);
+    function preRepay(uint256 _totalBorrowed, uint256 _prevTotalRepaid, uint256 _repayAmountInput)
+        external
+        returns (uint256 repayAmount_);
 
     /// @notice Receives and executes an arbitrary call from the loan contract
     /// @param _actionData Encoded data for the arbitrary call

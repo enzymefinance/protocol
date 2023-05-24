@@ -26,12 +26,7 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
     address private immutable SYNTHETIX_REDEEMER;
     bytes32 private immutable SYNTHETIX_TRACKING_CODE;
 
-    constructor(
-        address _originator,
-        address _redeemer,
-        address _synthetix,
-        bytes32 _trackingCode
-    ) public {
+    constructor(address _originator, address _redeemer, address _synthetix, bytes32 _trackingCode) public {
         SYNTHETIX_ORIGINATOR = _originator;
         SYNTHETIX_REDEEMER = _redeemer;
         SYNTHETIX = _synthetix;
@@ -39,11 +34,7 @@ abstract contract SynthetixActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to get the currency key for a Synthetix synth
-    function __synthetixGetCurrencyKey(address _synth)
-        internal
-        view
-        returns (bytes32 currencyKey_)
-    {
+    function __synthetixGetCurrencyKey(address _synth) internal view returns (bytes32 currencyKey_) {
         return ISynthetixSynth(ISynthetixProxyERC20(_synth).target()).currencyKey();
     }
 

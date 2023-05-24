@@ -18,11 +18,7 @@ import "../utils/AdapterBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for swapping assets on Curve <https://www.curve.fi/>
 contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
-    constructor(
-        address _integrationManager,
-        address _addressProvider,
-        address _wethToken
-    )
+    constructor(address _integrationManager, address _addressProvider, address _wethToken)
         public
         AdapterBase(_integrationManager)
         CurveExchangeActionsMixin(_addressProvider, _wethToken)
@@ -36,11 +32,10 @@ contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
     /// @notice Trades assets on Curve
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         (
             address pool,
             address outgoingAsset,
@@ -49,14 +44,7 @@ contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
             uint256 minIncomingAssetAmount
         ) = __decodeCallArgs(_actionData);
 
-        __curveTakeOrder(
-            _vaultProxy,
-            pool,
-            outgoingAsset,
-            outgoingAssetAmount,
-            incomingAsset,
-            minIncomingAssetAmount
-        );
+        __curveTakeOrder(_vaultProxy, pool, outgoingAsset, outgoingAssetAmount, incomingAsset, minIncomingAssetAmount);
     }
 
     /////////////////////////////
@@ -72,11 +60,7 @@ contract CurveExchangeAdapter is AdapterBase, CurveExchangeActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override

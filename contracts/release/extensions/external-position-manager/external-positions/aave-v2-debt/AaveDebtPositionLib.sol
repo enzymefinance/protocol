@@ -41,11 +41,9 @@ contract AaveDebtPositionLib is
 
     uint256 private constant VARIABLE_INTEREST_RATE = 2;
 
-    constructor(
-        address _aaveDataProvider,
-        address _aaveLendingPoolAddressProvider,
-        address _aaveIncentivesController
-    ) public {
+    constructor(address _aaveDataProvider, address _aaveLendingPoolAddressProvider, address _aaveIncentivesController)
+        public
+    {
         AAVE_DATA_PROVIDER = _aaveDataProvider;
         AAVE_LENDING_POOL_ADDRESS_PROVIDER = _aaveLendingPoolAddressProvider;
         AAVE_INCENTIVES_CONTROLLER = _aaveIncentivesController;
@@ -77,7 +75,7 @@ contract AaveDebtPositionLib is
 
     /// @dev Receives and adds aTokens as collateral
     function __addCollateralAssets(bytes memory actionArgs) private {
-        (address[] memory aTokens, ) = __decodeAddCollateralActionArgs(actionArgs);
+        (address[] memory aTokens,) = __decodeAddCollateralActionArgs(actionArgs);
 
         for (uint256 i; i < aTokens.length; i++) {
             if (!assetIsCollateral(aTokens[i])) {
@@ -91,25 +89,20 @@ contract AaveDebtPositionLib is
     function __borrowAssets(bytes memory actionArgs) private {
         (address[] memory tokens, uint256[] memory amounts) = __decodeBorrowActionArgs(actionArgs);
 
-        address lendingPoolAddress = IAaveV2LendingPoolAddressProvider(
-            AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        ).getLendingPool();
+        address lendingPoolAddress =
+            IAaveV2LendingPoolAddressProvider(AAVE_LENDING_POOL_ADDRESS_PROVIDER).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
             IAaveV2LendingPool(lendingPoolAddress).borrow(
-                tokens[i],
-                amounts[i],
-                VARIABLE_INTEREST_RATE,
-                AAVE_REFERRAL_CODE,
-                address(this)
+                tokens[i], amounts[i], VARIABLE_INTEREST_RATE, AAVE_REFERRAL_CODE, address(this)
             );
 
             ERC20(tokens[i]).safeTransfer(msg.sender, amounts[i]);
 
             if (!assetIsBorrowed(tokens[i])) {
                 // Store the debt token as a flag that the token is now a borrowed asset
-                (, , address debtToken) = IAaveV2ProtocolDataProvider(AAVE_DATA_PROVIDER)
-                    .getReserveTokensAddresses(tokens[i]);
+                (,, address debtToken) =
+                    IAaveV2ProtocolDataProvider(AAVE_DATA_PROVIDER).getReserveTokensAddresses(tokens[i]);
                 borrowedAssetToDebtToken[tokens[i]] = debtToken;
 
                 borrowedAssets.push(tokens[i]);
@@ -122,24 +115,15 @@ contract AaveDebtPositionLib is
     function __claimRewards(bytes memory actionArgs) private {
         address[] memory assets = __decodeClaimRewardsActionArgs(actionArgs);
 
-        IAaveV2IncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(
-            assets,
-            type(uint256).max,
-            msg.sender
-        );
+        IAaveV2IncentivesController(AAVE_INCENTIVES_CONTROLLER).claimRewards(assets, type(uint256).max, msg.sender);
     }
 
     /// @dev Removes assets from collateral
     function __removeCollateralAssets(bytes memory actionArgs) private {
-        (address[] memory aTokens, uint256[] memory amounts) = __decodeRemoveCollateralActionArgs(
-            actionArgs
-        );
+        (address[] memory aTokens, uint256[] memory amounts) = __decodeRemoveCollateralActionArgs(actionArgs);
 
         for (uint256 i; i < aTokens.length; i++) {
-            require(
-                assetIsCollateral(aTokens[i]),
-                "__removeCollateralAssets: Invalid collateral asset"
-            );
+            require(assetIsCollateral(aTokens[i]), "__removeCollateralAssets: Invalid collateral asset");
 
             uint256 collateralBalance = ERC20(aTokens[i]).balanceOf(address(this));
 
@@ -159,25 +143,17 @@ contract AaveDebtPositionLib is
 
     /// @dev Repays borrowed assets, reducing the borrow balance
     function __repayBorrowedAssets(bytes memory actionArgs) private {
-        (address[] memory tokens, uint256[] memory amounts) = __decodeRepayBorrowActionArgs(
-            actionArgs
-        );
+        (address[] memory tokens, uint256[] memory amounts) = __decodeRepayBorrowActionArgs(actionArgs);
 
-        address lendingPoolAddress = IAaveV2LendingPoolAddressProvider(
-            AAVE_LENDING_POOL_ADDRESS_PROVIDER
-        ).getLendingPool();
+        address lendingPoolAddress =
+            IAaveV2LendingPoolAddressProvider(AAVE_LENDING_POOL_ADDRESS_PROVIDER).getLendingPool();
 
         for (uint256 i; i < tokens.length; i++) {
             require(assetIsBorrowed(tokens[i]), "__repayBorrowedAssets: Invalid borrowed asset");
 
             __approveAssetMaxAsNeeded(tokens[i], lendingPoolAddress, amounts[i]);
 
-            IAaveV2LendingPool(lendingPoolAddress).repay(
-                tokens[i],
-                amounts[i],
-                VARIABLE_INTEREST_RATE,
-                address(this)
-            );
+            IAaveV2LendingPool(lendingPoolAddress).repay(tokens[i], amounts[i], VARIABLE_INTEREST_RATE, address(this));
 
             uint256 remainingBalance = ERC20(tokens[i]).balanceOf(address(this));
 
@@ -201,11 +177,7 @@ contract AaveDebtPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = borrowedAssets;
         amounts_ = new uint256[](assets_.length);
 
@@ -219,11 +191,7 @@ contract AaveDebtPositionLib is
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = collateralAssets;
         amounts_ = new uint256[](collateralAssets.length);
 
@@ -254,12 +222,7 @@ contract AaveDebtPositionLib is
     /// @param _borrowedAsset The asset that has been borrowed
     /// @return debtToken_ The associated debt token
     /// @dev Returns empty if _borrowedAsset is not a valid borrowed asset
-    function getDebtTokenForBorrowedAsset(address _borrowedAsset)
-        public
-        view
-        override
-        returns (address debtToken_)
-    {
+    function getDebtTokenForBorrowedAsset(address _borrowedAsset) public view override returns (address debtToken_) {
         return borrowedAssetToDebtToken[_borrowedAsset];
     }
 }

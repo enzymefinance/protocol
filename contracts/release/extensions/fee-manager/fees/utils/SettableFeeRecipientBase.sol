@@ -34,12 +34,7 @@ abstract contract SettableFeeRecipientBase {
     /// @param _comptrollerProxy The ComptrollerProxy contract for the fund
     /// @return recipient_ The recipient
     /// @dev address(0) signifies the VaultProxy owner
-    function getRecipientForFund(address _comptrollerProxy)
-        public
-        view
-        virtual
-        returns (address recipient_)
-    {
+    function getRecipientForFund(address _comptrollerProxy) public view virtual returns (address recipient_) {
         return comptrollerProxyToRecipient[_comptrollerProxy];
     }
 }

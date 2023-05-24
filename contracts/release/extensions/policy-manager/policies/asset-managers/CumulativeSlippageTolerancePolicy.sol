@@ -27,10 +27,7 @@ import "../utils/PricelessAssetBypassMixin.sol";
 contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMixin {
     using SafeMath for uint256;
 
-    event CumulativeSlippageUpdatedForFund(
-        address indexed comptrollerProxy,
-        uint256 nextCumulativeSlippage
-    );
+    event CumulativeSlippageUpdatedForFund(address indexed comptrollerProxy, uint256 nextCumulativeSlippage);
 
     event FundSettingsSet(address indexed comptrollerProxy, uint256 tolerance);
 
@@ -85,11 +82,8 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
         uint64 tolerance = abi.decode(_encodedSettings, (uint64));
         require(tolerance < ONE_HUNDRED_PERCENT, "addFundSettings: Max tolerance exceeded");
 
-        comptrollerProxyToPolicyInfo[_comptrollerProxy] = PolicyInfo({
-            tolerance: tolerance,
-            cumulativeSlippage: 0,
-            lastSlippageTimestamp: 0
-        });
+        comptrollerProxyToPolicyInfo[_comptrollerProxy] =
+            PolicyInfo({tolerance: tolerance, cumulativeSlippage: 0, lastSlippageTimestamp: 0});
 
         emit FundSettingsSet(_comptrollerProxy, tolerance);
     }
@@ -102,12 +96,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
         implementedHooks_[0] = IPolicyManager.PolicyHook.PostCallOnIntegration;
 
@@ -119,11 +108,12 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
     /// @dev Requires onlyPolicyManager as it updates state using passed data
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook,
-        bytes calldata _encodedArgs
-    ) external override onlyPolicyManager returns (bool isValid_) {
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook, bytes calldata _encodedArgs)
+        external
+        override
+        onlyPolicyManager
+        returns (bool isValid_)
+    {
         (
             ,
             address adapter,
@@ -138,13 +128,8 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
             return true;
         }
 
-        uint256 newSlippage = __calcSlippage(
-            _comptrollerProxy,
-            incomingAssets,
-            incomingAssetAmounts,
-            spendAssets,
-            spendAssetAmounts
-        );
+        uint256 newSlippage =
+            __calcSlippage(_comptrollerProxy, incomingAssets, incomingAssetAmounts, spendAssets, spendAssetAmounts);
         if (newSlippage == 0) {
             return true;
         }
@@ -165,10 +150,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
         uint256[] memory _spendAssetAmounts
     ) private returns (uint256 slippage_) {
         uint256 outgoingValue = __calcTotalValueExlcudingBypassablePricelessAssets(
-            _comptrollerProxy,
-            _spendAssets,
-            _spendAssetAmounts,
-            getPricelessAssetBypassWethToken()
+            _comptrollerProxy, _spendAssets, _spendAssetAmounts, getPricelessAssetBypassWethToken()
         );
 
         // In case there are only incoming assets (e.g., claiming rewards), return early
@@ -177,10 +159,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
         }
 
         uint256 incomingValue = __calcTotalValueExlcudingBypassablePricelessAssets(
-            _comptrollerProxy,
-            _incomingAssets,
-            _incomingAssetAmounts,
-            getPricelessAssetBypassWethToken()
+            _comptrollerProxy, _incomingAssets, _incomingAssetAmounts, getPricelessAssetBypassWethToken()
         );
 
         if (outgoingValue > incomingValue) {
@@ -194,30 +173,24 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
 
     /// @dev Helper to determine if an adapter is bypassable
     function __isBypassableAction(address _adapter) private view returns (bool isBypassable_) {
-        return
-            AddressListRegistry(getAddressListRegistry()).isInList(
-                getBypassableAdaptersListId(),
-                _adapter
-            );
+        return AddressListRegistry(getAddressListRegistry()).isInList(getBypassableAdaptersListId(), _adapter);
     }
 
     /// @dev Helper to update the cumulative slippage for a given fund.
     /// The stored `cumulativeSlippage` is replenished at a constant rate,
     /// relative to the fund's tolerance over the TOLERANCE_PERIOD_DURATION.
-    function __updateCumulativeSlippage(
-        address _comptrollerProxy,
-        uint256 _newSlippage,
-        uint256 _tolerance
-    ) private returns (uint256 nextCumulativeSlippage_) {
+    function __updateCumulativeSlippage(address _comptrollerProxy, uint256 _newSlippage, uint256 _tolerance)
+        private
+        returns (uint256 nextCumulativeSlippage_)
+    {
         PolicyInfo storage policyInfo = comptrollerProxyToPolicyInfo[_comptrollerProxy];
 
         nextCumulativeSlippage_ = policyInfo.cumulativeSlippage;
 
         // Deduct the slippage that is replenishable given the previous slippage timestamp
         if (nextCumulativeSlippage_ > 0) {
-            uint256 cumulativeSlippageToRestore = _tolerance
-                .mul(block.timestamp.sub(policyInfo.lastSlippageTimestamp))
-                .div(getTolerancePeriodDuration());
+            uint256 cumulativeSlippageToRestore =
+                _tolerance.mul(block.timestamp.sub(policyInfo.lastSlippageTimestamp)).div(getTolerancePeriodDuration());
             if (cumulativeSlippageToRestore < nextCumulativeSlippage_) {
                 nextCumulativeSlippage_ = nextCumulativeSlippage_.sub(cumulativeSlippageToRestore);
             } else {
@@ -248,22 +221,14 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
 
     /// @notice Gets the `BYPASSABLE_ADAPTERS_LIST_ID` variable
     /// @return bypassableAdaptersListId_ The `BYPASSABLE_ADAPTERS_LIST_ID` variable value
-    function getBypassableAdaptersListId()
-        public
-        view
-        returns (uint256 bypassableAdaptersListId_)
-    {
+    function getBypassableAdaptersListId() public view returns (uint256 bypassableAdaptersListId_) {
         return BYPASSABLE_ADAPTERS_LIST_ID;
     }
 
     /// @notice Gets the PolicyInfo for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return policyInfo_ The PolicyInfo values
-    function getPolicyInfoForFund(address _comptrollerProxy)
-        public
-        view
-        returns (PolicyInfo memory policyInfo_)
-    {
+    function getPolicyInfoForFund(address _comptrollerProxy) public view returns (PolicyInfo memory policyInfo_) {
         return comptrollerProxyToPolicyInfo[_comptrollerProxy];
     }
 

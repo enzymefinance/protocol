@@ -43,11 +43,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     /// @notice Redeems an array of deprecated synths for their last underlying sUSD values
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -62,14 +58,11 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     /// @notice Trades assets on Synthetix
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
-        (, address outgoingAsset, uint256 outgoingAssetAmount) = __decodeTakeOrderArgs(
-            _actionData
-        );
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
+        (, address outgoingAsset, uint256 outgoingAssetAmount) = __decodeTakeOrderArgs(_actionData);
 
         __synthetixTakeOrder(_vaultProxy, outgoingAsset, outgoingAssetAmount, SUSD_TOKEN);
     }
@@ -88,11 +81,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address _vaultProxy,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address _vaultProxy, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -105,17 +94,13 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
         )
     {
         if (_selector == TAKE_ORDER_SELECTOR) {
-            (
-                uint256 minIncomingSusdAmount,
-                address outgoingAsset,
-                uint256 outgoingAssetAmount
-            ) = __decodeTakeOrderArgs(_actionData);
+            (uint256 minIncomingSusdAmount, address outgoingAsset, uint256 outgoingAssetAmount) =
+                __decodeTakeOrderArgs(_actionData);
 
             // If synths are added back to the asset universe, they should not be traded via Synthetix,
             // since there are no longer synth settlement considerations
             require(
-                !VALUE_INTERPRETER_CONTRACT.isSupportedAsset(outgoingAsset),
-                "parseAssetsForAction: Unallowed synth"
+                !VALUE_INTERPRETER_CONTRACT.isSupportedAsset(outgoingAsset), "parseAssetsForAction: Unallowed synth"
             );
 
             spendAssets_ = new address[](1);
@@ -163,11 +148,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode the encoded redeem arguments
-    function __decodeRedeemArgs(bytes memory _actionData)
-        private
-        pure
-        returns (address[] memory synths_)
-    {
+    function __decodeRedeemArgs(bytes memory _actionData) private pure returns (address[] memory synths_) {
         return abi.decode(_actionData, (address[]));
     }
 
@@ -175,11 +156,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     function __decodeTakeOrderArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            uint256 minIncomingSusdAmount_,
-            address outgoingAsset_,
-            uint256 outgoingAssetAmount_
-        )
+        returns (uint256 minIncomingSusdAmount_, address outgoingAsset_, uint256 outgoingAssetAmount_)
     {
         return abi.decode(_actionData, (uint256, address, uint256));
     }

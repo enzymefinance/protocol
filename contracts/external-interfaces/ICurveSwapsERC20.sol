@@ -14,12 +14,5 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title ICurveSwapsERC20 Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ICurveSwapsERC20 {
-    function exchange(
-        address,
-        address,
-        address,
-        uint256,
-        uint256,
-        address
-    ) external returns (uint256);
+    function exchange(address, address, address, uint256, uint256, address) external returns (uint256);
 }

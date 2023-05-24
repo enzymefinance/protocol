@@ -14,9 +14,5 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IAaveV2IncentivesController interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IAaveV2IncentivesController {
-    function claimRewards(
-        address[] memory _assets,
-        uint256 _amount,
-        address _to
-    ) external;
+    function claimRewards(address[] memory _assets, uint256 _amount, address _to) external;
 }

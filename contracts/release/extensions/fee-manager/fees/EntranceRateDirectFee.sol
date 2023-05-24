@@ -18,19 +18,13 @@ import "./utils/UpdatableFeeRecipientBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An EntranceRateFee that transfers the fee shares to a recipient
 contract EntranceRateDirectFee is EntranceRateFeeBase, UpdatableFeeRecipientBase {
-    constructor(address _feeManager)
-        public
-        EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Direct)
-    {}
+    constructor(address _feeManager) public EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Direct) {}
 
     /// @notice Add the initial fee settings for a fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _settingsData Encoded settings to apply to the fee for a fund
     /// @dev onlyFeeManager validated by parent
-    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData)
-        public
-        override
-    {
+    function addFundSettings(address _comptrollerProxy, bytes calldata _settingsData) public override {
         super.addFundSettings(_comptrollerProxy, _settingsData);
 
         (, address recipient) = abi.decode(_settingsData, (uint256, address));

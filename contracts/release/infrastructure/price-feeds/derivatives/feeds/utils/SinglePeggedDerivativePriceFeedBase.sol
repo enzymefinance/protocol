@@ -22,10 +22,7 @@ abstract contract SinglePeggedDerivativePriceFeedBase is IDerivativePriceFeed {
     address private immutable UNDERLYING;
 
     constructor(address _derivative, address _underlying) public {
-        require(
-            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(),
-            "constructor: Unequal decimals"
-        );
+        require(ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "constructor: Unequal decimals");
 
         DERIVATIVE = _derivative;
         UNDERLYING = _underlying;

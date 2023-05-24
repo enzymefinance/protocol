@@ -10,6 +10,7 @@
 */
 
 pragma solidity >=0.6.0 <0.9.0;
+
 import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
 
 /// @title IPoolTogetherV4Ticket Interface

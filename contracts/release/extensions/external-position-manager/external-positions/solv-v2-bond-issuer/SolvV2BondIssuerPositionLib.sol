@@ -37,13 +37,10 @@ contract SolvV2BondIssuerPositionLib is
     using SafeMath for uint256;
     using Uint256ArrayLib for uint256[];
 
-    ISolvV2InitialConvertibleOfferingMarket
-        private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
+    ISolvV2InitialConvertibleOfferingMarket private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
 
     constructor(address _initialBondOfferingMarket) public {
-        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(
-            _initialBondOfferingMarket
-        );
+        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(_initialBondOfferingMarket);
     }
 
     /// @notice Initializes the external position
@@ -86,21 +83,11 @@ contract SolvV2BondIssuerPositionLib is
         ) = __decodeCreateOfferActionArgs(_actionArgs);
 
         ERC20(ISolvV2BondVoucher(voucher).underlying()).safeApprove(
-            address(INITIAL_BOND_OFFERING_MARKET_CONTRACT),
-            mintParameter.tokenInAmount
+            address(INITIAL_BOND_OFFERING_MARKET_CONTRACT), mintParameter.tokenInAmount
         );
 
         uint24 offerId = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offer(
-            voucher,
-            currency,
-            min,
-            max,
-            startTime,
-            endTime,
-            useAllowList,
-            priceType,
-            priceData,
-            mintParameter
+            voucher, currency, min, max, startTime, endTime, useAllowList, priceType, priceData, mintParameter
         );
 
         if (!issuedVouchers.storageArrayContains(voucher)) {
@@ -131,9 +118,7 @@ contract SolvV2BondIssuerPositionLib is
     /// @dev Helper to refund a voucher slot
     function __actionRefund(bytes memory _actionArgs) private {
         (address voucher, uint256 slotId) = __decodeRefundActionArgs(_actionArgs);
-        ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(
-            ISolvV2BondVoucher(voucher).bondPool()
-        );
+        ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(ISolvV2BondVoucher(voucher).bondPool());
 
         ISolvV2BondPool.SlotDetail memory slotDetail = voucherPoolContract.getSlotDetail(slotId);
 
@@ -150,8 +135,8 @@ contract SolvV2BondIssuerPositionLib is
 
         // Retrieve offer details before removal
 
-        ISolvV2InitialConvertibleOfferingMarket.Offering
-            memory offer = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
+        ISolvV2InitialConvertibleOfferingMarket.Offering memory offer =
+            INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
         ERC20 currencyToken = ERC20(offer.currency);
         ERC20 underlyingToken = ERC20(ISolvV2BondVoucher(offer.voucher).underlying());
@@ -210,11 +195,7 @@ contract SolvV2BondIssuerPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
@@ -225,21 +206,15 @@ contract SolvV2BondIssuerPositionLib is
     /// 1. Underlying balance outstanding in IVO offers (collateral not yet used for minting)
     /// 2. Unreconciled assets received for an IVO sale
     /// 3. Outstanding assets that are withdrawable from issued vouchers (post-maturity)
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         uint24[] memory offersMem = getOffers();
 
         // Balance of assets that are withdrawable from issued vouchers (post-maturity)
         (assets_, amounts_) = __getWithdrawableAssetAmountsAndRemoveWithdrawnVouchers();
 
         // Underlying balance outstanding in non-closed IVO offers
-        (
-            address[] memory underlyingAssets,
-            uint256[] memory underlyingAmounts
-        ) = __getOffersUnderlyingBalance(offersMem);
+        (address[] memory underlyingAssets, uint256[] memory underlyingAmounts) =
+            __getOffersUnderlyingBalance(offersMem);
         uint256 underlyingAssetsLength = underlyingAssets.length;
         for (uint256 i; i < underlyingAssetsLength; i++) {
             assets_ = assets_.addItem(underlyingAssets[i]);
@@ -247,10 +222,7 @@ contract SolvV2BondIssuerPositionLib is
         }
 
         // Balance of currencies that could have been received on IVOs sales
-        (
-            address[] memory currencies,
-            uint256[] memory currencyBalances
-        ) = __getReceivableCurrencyBalances(offersMem);
+        (address[] memory currencies, uint256[] memory currencyBalances) = __getReceivableCurrencyBalances(offersMem);
 
         uint256 currenciesLength = currencies.length;
         for (uint256 i; i < currenciesLength; i++) {
@@ -273,13 +245,11 @@ contract SolvV2BondIssuerPositionLib is
         amounts_ = new uint256[](offersLength);
 
         for (uint256 i; i < offersLength; i++) {
-            ISolvV2InitialConvertibleOfferingMarket.Offering
-                memory offering = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(_offers[i]);
+            ISolvV2InitialConvertibleOfferingMarket.Offering memory offering =
+                INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(_offers[i]);
 
-            ISolvV2InitialConvertibleOfferingMarket.MintParameter
-                memory mintParameters = INITIAL_BOND_OFFERING_MARKET_CONTRACT.mintParameters(
-                    _offers[i]
-                );
+            ISolvV2InitialConvertibleOfferingMarket.MintParameter memory mintParameters =
+                INITIAL_BOND_OFFERING_MARKET_CONTRACT.mintParameters(_offers[i]);
 
             uint256 refundAmount = uint256(offering.units).div(mintParameters.lowestPrice);
 
@@ -299,9 +269,7 @@ contract SolvV2BondIssuerPositionLib is
         uint256 offersLength = _offers.length;
 
         for (uint256 i; i < offersLength; i++) {
-            address currency = INITIAL_BOND_OFFERING_MARKET_CONTRACT
-                .offerings(_offers[i])
-                .currency;
+            address currency = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(_offers[i]).currency;
             // Go to next item if currency has already been checked
             if (currencies_.contains(currency)) {
                 continue;
@@ -329,16 +297,14 @@ contract SolvV2BondIssuerPositionLib is
         for (uint256 i; i < vouchersLength; i++) {
             uint256 preAssetsLength = assets_.length;
 
-            ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(
-                ISolvV2BondVoucher(vouchersMem[i]).bondPool()
-            );
+            ISolvV2BondPool voucherPoolContract = ISolvV2BondPool(ISolvV2BondVoucher(vouchersMem[i]).bondPool());
             uint256[] memory slots = voucherPoolContract.getIssuerSlots(address(this));
 
             uint256 withdrawableUnderlying;
 
             for (uint256 j; j < slots.length; j++) {
-                ISolvV2BondPool.SlotDetail memory slotDetail = ISolvV2BondVoucher(vouchersMem[i])
-                    .getSlotDetail(slots[j]);
+                ISolvV2BondPool.SlotDetail memory slotDetail =
+                    ISolvV2BondVoucher(vouchersMem[i]).getSlotDetail(slots[j]);
 
                 // If the vault has issued at least one voucher that has not reached maturity, revert
                 require(

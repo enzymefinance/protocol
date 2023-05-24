@@ -24,15 +24,11 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     event CTokenAdded(address indexed cToken, address indexed token);
 
-    uint256 private constant CTOKEN_RATE_DIVISOR = 10**18;
+    uint256 private constant CTOKEN_RATE_DIVISOR = 10 ** 18;
 
     mapping(address => address) private cTokenToToken;
 
-    constructor(
-        address _fundDeployer,
-        address _weth,
-        address _ceth
-    ) public FundDeployerOwnerMixin(_fundDeployer) {
+    constructor(address _fundDeployer, address _weth, address _ceth) public FundDeployerOwnerMixin(_fundDeployer) {
         // Set cEth
         cTokenToToken[_ceth] = _weth;
         emit CTokenAdded(_ceth, _weth);
@@ -54,9 +50,8 @@ contract CompoundPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
         underlyingAmounts_ = new uint256[](1);
         // Returns a rate scaled to 10^18
-        underlyingAmounts_[0] = _derivativeAmount
-            .mul(ICERC20(_derivative).exchangeRateStored())
-            .div(CTOKEN_RATE_DIVISOR);
+        underlyingAmounts_[0] =
+            _derivativeAmount.mul(ICERC20(_derivative).exchangeRateStored()).div(CTOKEN_RATE_DIVISOR);
 
         return (underlyings_, underlyingAmounts_);
     }

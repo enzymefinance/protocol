@@ -21,11 +21,11 @@ import "../AdapterBase.sol";
 abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     address private immutable COMPOUND_PRICE_FEED;
 
-    constructor(
-        address _integrationManager,
-        address _compoundPriceFeed,
-        address _wethToken
-    ) public AdapterBase(_integrationManager) CompoundActionsMixin(_wethToken) {
+    constructor(address _integrationManager, address _compoundPriceFeed, address _wethToken)
+        public
+        AdapterBase(_integrationManager)
+        CompoundActionsMixin(_wethToken)
+    {
         COMPOUND_PRICE_FEED = _compoundPriceFeed;
     }
 
@@ -35,21 +35,14 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    )
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         // More efficient to parse all from _assetData
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         __compoundLend(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
@@ -57,21 +50,14 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     /// @notice Redeems an amount of cTokens from Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    )
+    function redeem(address _vaultProxy, bytes calldata, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         // More efficient to parse all from _assetData
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         __compoundRedeem(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
@@ -79,11 +65,7 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     /// @notice Claims rewards from the cTokens comptroller
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external virtual;
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata) external virtual;
 
     /////////////////////////////
     // PARSE ASSETS FOR METHOD //
@@ -98,11 +80,7 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -144,9 +122,7 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address cToken, uint256 tokenAmount, uint256 minCTokenAmount) = __decodeCallArgs(
-            _actionData
-        );
+        (address cToken, uint256 tokenAmount, uint256 minCTokenAmount) = __decodeCallArgs(_actionData);
         address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
         require(token != address(0), "__parseAssetsForLend: Unsupported cToken");
 
@@ -182,9 +158,7 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address cToken, uint256 cTokenAmount, uint256 minTokenAmount) = __decodeCallArgs(
-            _actionData
-        );
+        (address cToken, uint256 cTokenAmount, uint256 minTokenAmount) = __decodeCallArgs(_actionData);
         address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
         require(token != address(0), "__parseAssetsForRedeem: Unsupported cToken");
 
@@ -213,11 +187,7 @@ abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
     function __decodeCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            address cToken_,
-            uint256 outgoingAssetAmount_,
-            uint256 minIncomingAssetAmount_
-        )
+        returns (address cToken_, uint256 outgoingAssetAmount_, uint256 minIncomingAssetAmount_)
     {
         return abi.decode(_actionData, (address, uint256, uint256));
     }

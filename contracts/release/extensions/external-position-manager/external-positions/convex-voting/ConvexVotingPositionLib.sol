@@ -24,11 +24,7 @@ import "./IConvexVotingPosition.sol";
 /// @title ConvexVotingPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Library contract for Convex vlCVX positions
-contract ConvexVotingPositionLib is
-    IConvexVotingPosition,
-    ConvexVotingPositionDataDecoder,
-    AssetHelpers
-{
+contract ConvexVotingPositionLib is IConvexVotingPosition, ConvexVotingPositionDataDecoder, AssetHelpers {
     using SafeERC20 for ERC20;
 
     bytes32 private constant CONVEX_SNAPSHOT_ID = "cvx.eth";
@@ -146,10 +142,7 @@ contract ConvexVotingPositionLib is
         // Unstake any cvxCrv that was claimed and staked on behalf of address(this)
         if (unstakeCvxCrv) {
             // Auto-claims any rewards accrued to staked cvxCrv
-            CVX_CRV_STAKING_CONTRACT.withdraw(
-                CVX_CRV_STAKING_CONTRACT.balanceOf(address(this)),
-                true
-            );
+            CVX_CRV_STAKING_CONTRACT.withdraw(CVX_CRV_STAKING_CONTRACT.balanceOf(address(this)), true);
         }
 
         __pushFullAssetBalances(msg.sender, allTokensToTransfer);
@@ -162,26 +155,18 @@ contract ConvexVotingPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         // In addition to vlCVX, must also account for the CVX balance in this contract,
         // in case `kickExpiredLocks()` is called on the locker for expired vlCVX
-        uint256 totalCvxBalance = CVX_TOKEN_CONTRACT.balanceOf(address(this)) +
-            VLCVX_CONTRACT.lockedBalanceOf(address(this));
+        uint256 totalCvxBalance =
+            CVX_TOKEN_CONTRACT.balanceOf(address(this)) + VLCVX_CONTRACT.lockedBalanceOf(address(this));
 
         if (totalCvxBalance > 0) {
             assets_ = new address[](1);

@@ -18,10 +18,7 @@ import "./ExternalPositionProxy.sol";
 /// @notice A contract factory for External Positions
 contract ExternalPositionFactory {
     event PositionDeployed(
-        address indexed vaultProxy,
-        uint256 indexed typeId,
-        address indexed constructLib,
-        bytes constructData
+        address indexed vaultProxy, uint256 indexed typeId, address indexed constructLib, bytes constructData
     );
 
     event PositionDeployerAdded(address positionDeployer);
@@ -41,8 +38,7 @@ contract ExternalPositionFactory {
 
     modifier onlyDispatcherOwner() {
         require(
-            msg.sender == IDispatcher(getDispatcher()).getOwner(),
-            "Only the Dispatcher owner can call this function"
+            msg.sender == IDispatcher(getDispatcher()).getOwner(), "Only the Dispatcher owner can call this function"
         );
         _;
     }
@@ -56,20 +52,13 @@ contract ExternalPositionFactory {
     /// @param _vaultProxy The _vaultProxy owner of the external position
     /// @param _typeId The type of external position to be created
     /// @param _constructLib The external position lib contract that will be used on the constructor
-    function deploy(
-        address _vaultProxy,
-        uint256 _typeId,
-        address _constructLib,
-        bytes memory _constructData
-    ) external returns (address externalPositionProxy_) {
-        require(
-            isPositionDeployer(msg.sender),
-            "deploy: Only a position deployer can call this function"
-        );
+    function deploy(address _vaultProxy, uint256 _typeId, address _constructLib, bytes memory _constructData)
+        external
+        returns (address externalPositionProxy_)
+    {
+        require(isPositionDeployer(msg.sender), "deploy: Only a position deployer can call this function");
 
-        externalPositionProxy_ = address(
-            new ExternalPositionProxy(_vaultProxy, _typeId, _constructLib, _constructData)
-        );
+        externalPositionProxy_ = address(new ExternalPositionProxy(_vaultProxy, _typeId, _constructLib, _constructData));
 
         accountToIsExternalPositionProxy[externalPositionProxy_] = true;
 
@@ -118,10 +107,7 @@ contract ExternalPositionFactory {
     /// @param _accounts Accounts to be added as position deployers
     function addPositionDeployers(address[] memory _accounts) external onlyDispatcherOwner {
         for (uint256 i; i < _accounts.length; i++) {
-            require(
-                !isPositionDeployer(_accounts[i]),
-                "addPositionDeployers: Account is already a position deployer"
-            );
+            require(!isPositionDeployer(_accounts[i]), "addPositionDeployers: Account is already a position deployer");
 
             accountToIsPositionDeployer[_accounts[i]] = true;
 
@@ -133,10 +119,7 @@ contract ExternalPositionFactory {
     /// @param _accounts Existing position deployers to be removed from their role
     function removePositionDeployers(address[] memory _accounts) external onlyDispatcherOwner {
         for (uint256 i; i < _accounts.length; i++) {
-            require(
-                isPositionDeployer(_accounts[i]),
-                "removePositionDeployers: Account is not a position deployer"
-            );
+            require(isPositionDeployer(_accounts[i]), "removePositionDeployers: Account is not a position deployer");
 
             accountToIsPositionDeployer[_accounts[i]] = false;
 
@@ -153,22 +136,14 @@ contract ExternalPositionFactory {
     /// @notice Gets the label for a position type
     /// @param _typeId The position type id
     /// @return label_ The label
-    function getLabelForPositionType(uint256 _typeId)
-        external
-        view
-        returns (string memory label_)
-    {
+    function getLabelForPositionType(uint256 _typeId) external view returns (string memory label_) {
         return positionTypeIdToLabel[_typeId];
     }
 
     /// @notice Checks if an account is an external position proxy
     /// @param _account The account to check
     /// @return isExternalPositionProxy_ True if the account is an externalPositionProxy
-    function isExternalPositionProxy(address _account)
-        external
-        view
-        returns (bool isExternalPositionProxy_)
-    {
+    function isExternalPositionProxy(address _account) external view returns (bool isExternalPositionProxy_) {
         return accountToIsExternalPositionProxy[_account];
     }
 

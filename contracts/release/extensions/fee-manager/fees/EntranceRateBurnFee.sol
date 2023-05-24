@@ -17,8 +17,5 @@ import "./utils/EntranceRateFeeBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An EntranceRateFee that burns the fee shares
 contract EntranceRateBurnFee is EntranceRateFeeBase {
-    constructor(address _feeManager)
-        public
-        EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Burn)
-    {}
+    constructor(address _feeManager) public EntranceRateFeeBase(_feeManager, IFeeManager.SettlementType.Burn) {}
 }

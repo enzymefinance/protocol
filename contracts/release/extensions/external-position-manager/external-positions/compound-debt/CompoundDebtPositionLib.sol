@@ -32,11 +32,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     address private immutable COMPOUND_COMPTROLLER;
     address private immutable WETH_TOKEN;
 
-    constructor(
-        address _compoundComptroller,
-        address _compToken,
-        address _weth
-    ) public {
+    constructor(address _compoundComptroller, address _compToken, address _weth) public {
         COMPOUND_COMPTROLLER = _compoundComptroller;
         COMP_TOKEN = _compToken;
         WETH_TOKEN = _weth;
@@ -51,10 +47,8 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     function receiveCallFromVault(bytes memory _actionData) external override {
         (uint256 actionId, bytes memory actionArgs) = abi.decode(_actionData, (uint256, bytes));
 
-        (address[] memory assets, uint256[] memory amounts, bytes memory data) = abi.decode(
-            actionArgs,
-            (address[], uint256[], bytes)
-        );
+        (address[] memory assets, uint256[] memory amounts, bytes memory data) =
+            abi.decode(actionArgs, (address[], uint256[], bytes));
 
         if (actionId == uint256(ExternalPositionActions.AddCollateral)) {
             __addCollateralAssets(assets, amounts);
@@ -73,13 +67,11 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
 
     /// @dev Adds assets as collateral
     function __addCollateralAssets(address[] memory _assets, uint256[] memory _amounts) private {
-        uint256[] memory enterMarketErrorCodes = ICompoundComptroller(getCompoundComptroller())
-            .enterMarkets(_assets);
+        uint256[] memory enterMarketErrorCodes = ICompoundComptroller(getCompoundComptroller()).enterMarkets(_assets);
 
         for (uint256 i; i < _assets.length; i++) {
             require(
-                enterMarketErrorCodes[i] == 0,
-                "__addCollateralAssets: Error while calling enterMarkets on Compound"
+                enterMarketErrorCodes[i] == 0, "__addCollateralAssets: Error while calling enterMarkets on Compound"
             );
 
             if (!assetIsCollateral(_assets[i])) {
@@ -92,11 +84,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     }
 
     /// @dev Borrows assets using the available collateral
-    function __borrowAssets(
-        address[] memory _assets,
-        uint256[] memory _amounts,
-        bytes memory _data
-    ) private {
+    function __borrowAssets(address[] memory _assets, uint256[] memory _amounts, bytes memory _data) private {
         address[] memory cTokens = abi.decode(_data, (address[]));
 
         for (uint256 i; i < _assets.length; i++) {
@@ -107,14 +95,12 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
                 borrowedAssets.push(_assets[i]);
             } else {
                 require(
-                    cTokenStored == cTokens[i],
-                    "__borrowAssets: Can only borrow from one cToken for a given underlying"
+                    cTokenStored == cTokens[i], "__borrowAssets: Can only borrow from one cToken for a given underlying"
                 );
             }
 
             require(
-                ICERC20(cTokens[i]).borrow(_amounts[i]) == 0,
-                "__borrowAssets: Problem while borrowing from Compound"
+                ICERC20(cTokens[i]).borrow(_amounts[i]) == 0, "__borrowAssets: Problem while borrowing from Compound"
             );
 
             if (_assets[i] == getWethToken()) {
@@ -137,14 +123,9 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     }
 
     /// @dev Removes assets from collateral
-    function __removeCollateralAssets(address[] memory _assets, uint256[] memory _amounts)
-        private
-    {
+    function __removeCollateralAssets(address[] memory _assets, uint256[] memory _amounts) private {
         for (uint256 i; i < _assets.length; i++) {
-            require(
-                assetIsCollateral(_assets[i]),
-                "__removeCollateralAssets: Asset is not collateral"
-            );
+            require(assetIsCollateral(_assets[i]), "__removeCollateralAssets: Asset is not collateral");
 
             if (ERC20(_assets[i]).balanceOf(address(this)) == _amounts[i]) {
                 // If the full collateral of an asset is removed, it can be removed from collateral assets
@@ -185,21 +166,14 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     }
 
     /// @dev Helper used to repay a borrowed asset to a Compound cToken
-    function __repayBorrowedAsset(
-        address _cToken,
-        address _token,
-        uint256 _amount
-    ) private {
+    function __repayBorrowedAsset(address _cToken, address _token, uint256 _amount) private {
         if (_token == getWethToken()) {
             IWETH(payable(getWethToken())).withdraw(_amount);
             ICEther(_cToken).repayBorrow{value: _amount}();
         } else {
             ERC20(_token).safeApprove(_cToken, _amount);
 
-            require(
-                ICERC20(_cToken).repayBorrow(_amount) == 0,
-                "__repayBorrowedAsset: Error while repaying borrow"
-            );
+            require(ICERC20(_cToken).repayBorrow(_amount) == 0, "__repayBorrowedAsset: Error while repaying borrow");
         }
     }
 
@@ -212,11 +186,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     /// @notice Retrieves the borrowed assets and balances of the current external position
     /// @return assets_ Assets with an active loan
     /// @return amounts_ Amount of assets in external
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = borrowedAssets;
         amounts_ = new uint256[](assets_.length);
 
@@ -231,11 +201,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     /// @notice Retrieves the collateral assets and balances of the current external position
     /// @return assets_ Assets with balance > 0 that are being used as collateral
     /// @return amounts_ Amount of assets being used as collateral
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = collateralAssets;
         amounts_ = new uint256[](collateralAssets.length);
 
@@ -269,12 +235,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     /// @notice Returns the cToken of a given borrowed asset
     /// @param _borrowedAsset The token for which to get the cToken
     /// @return cToken_ The cToken
-    function getCTokenFromBorrowedAsset(address _borrowedAsset)
-        public
-        view
-        override
-        returns (address cToken_)
-    {
+    function getCTokenFromBorrowedAsset(address _borrowedAsset) public view override returns (address cToken_) {
         return borrowedAssetToCToken[_borrowedAsset];
     }
 

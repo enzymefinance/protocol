@@ -19,14 +19,8 @@ import "./SingleUnderlyingDerivativeRegistryMixin.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed base for multiple derivatives that are pegged 1:1 to their underlyings,
 /// and have the same decimals as their underlying
-abstract contract PeggedDerivativesPriceFeedBase is
-    IDerivativePriceFeed,
-    SingleUnderlyingDerivativeRegistryMixin
-{
-    constructor(address _fundDeployer)
-        public
-        SingleUnderlyingDerivativeRegistryMixin(_fundDeployer)
-    {}
+abstract contract PeggedDerivativesPriceFeedBase is IDerivativePriceFeed, SingleUnderlyingDerivativeRegistryMixin {
+    constructor(address _fundDeployer) public SingleUnderlyingDerivativeRegistryMixin(_fundDeployer) {}
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
     /// @param _derivative The derivative to convert
@@ -59,14 +53,9 @@ abstract contract PeggedDerivativesPriceFeedBase is
 
     /// @dev Provides validation that the derivative and underlying have the same decimals.
     /// Can be overrode by the inheriting price feed using super() to implement further validation.
-    function __validateDerivative(address _derivative, address _underlying)
-        internal
-        virtual
-        override
-    {
+    function __validateDerivative(address _derivative, address _underlying) internal virtual override {
         require(
-            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(),
-            "__validateDerivative: Unequal decimals"
+            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "__validateDerivative: Unequal decimals"
         );
     }
 }

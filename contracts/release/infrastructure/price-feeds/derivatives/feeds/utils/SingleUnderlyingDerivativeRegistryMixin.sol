@@ -40,10 +40,7 @@ abstract contract SingleUnderlyingDerivativeRegistryMixin is FundDeployerOwnerMi
         for (uint256 i; i < _derivatives.length; i++) {
             require(_derivatives[i] != address(0), "addDerivatives: Empty derivative");
             require(_underlyings[i] != address(0), "addDerivatives: Empty underlying");
-            require(
-                getUnderlyingForDerivative(_derivatives[i]) == address(0),
-                "addDerivatives: Value already set"
-            );
+            require(getUnderlyingForDerivative(_derivatives[i]) == address(0), "addDerivatives: Value already set");
 
             __validateDerivative(_derivatives[i], _underlyings[i]);
 
@@ -59,10 +56,7 @@ abstract contract SingleUnderlyingDerivativeRegistryMixin is FundDeployerOwnerMi
         require(_derivatives.length > 0, "removeDerivatives: Empty _derivatives");
 
         for (uint256 i; i < _derivatives.length; i++) {
-            require(
-                getUnderlyingForDerivative(_derivatives[i]) != address(0),
-                "removeDerivatives: Value not set"
-            );
+            require(getUnderlyingForDerivative(_derivatives[i]) != address(0), "removeDerivatives: Value not set");
 
             delete derivativeToUnderlying[_derivatives[i]];
 
@@ -82,11 +76,7 @@ abstract contract SingleUnderlyingDerivativeRegistryMixin is FundDeployerOwnerMi
     /// @notice Gets the underlying asset for a given derivative
     /// @param _derivative The derivative for which to get the underlying asset
     /// @return underlying_ The underlying asset
-    function getUnderlyingForDerivative(address _derivative)
-        public
-        view
-        returns (address underlying_)
-    {
+    function getUnderlyingForDerivative(address _derivative) public view returns (address underlying_) {
         return derivativeToUnderlying[_derivative];
     }
 }

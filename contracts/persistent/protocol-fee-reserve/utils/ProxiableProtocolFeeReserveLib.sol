@@ -23,8 +23,8 @@ abstract contract ProxiableProtocolFeeReserveLib is ProtocolFeeProxyConstants {
     /// @dev Updates the target of the proxy to be the contract at _nextProtocolFeeReserveLib
     function __updateCodeAddress(address _nextProtocolFeeReserveLib) internal {
         require(
-            ProxiableProtocolFeeReserveLib(_nextProtocolFeeReserveLib).proxiableUUID() ==
-                bytes32(EIP_1822_PROXIABLE_UUID),
+            ProxiableProtocolFeeReserveLib(_nextProtocolFeeReserveLib).proxiableUUID()
+                == bytes32(EIP_1822_PROXIABLE_UUID),
             "__updateCodeAddress: _nextProtocolFeeReserveLib not compatible"
         );
         assembly {

@@ -31,15 +31,9 @@ abstract contract PricelessAssetBypassMixin {
     address private immutable PRICELESS_ASSET_BYPASS_VALUE_INTERPRETER;
     address private immutable PRICELESS_ASSET_BYPASS_WETH_TOKEN;
 
-    mapping(address => mapping(address => uint256))
-        private comptrollerProxyToAssetToBypassWindowStart;
+    mapping(address => mapping(address => uint256)) private comptrollerProxyToAssetToBypassWindowStart;
 
-    constructor(
-        address _valueInterpreter,
-        address _wethToken,
-        uint256 _timelock,
-        uint256 _timeLimit
-    ) public {
+    constructor(address _valueInterpreter, address _wethToken, uint256 _timelock, uint256 _timeLimit) public {
         PRICELESS_ASSET_BYPASS_TIMELOCK = _timelock;
         PRICELESS_ASSET_BYPASS_TIME_LIMIT = _timeLimit;
         PRICELESS_ASSET_BYPASS_VALUE_INTERPRETER = _valueInterpreter;
@@ -61,18 +55,15 @@ abstract contract PricelessAssetBypassMixin {
             "startAssetBypassTimelock: Sender is not the VaultProxy of the associated ComptrollerProxy"
         );
 
-        try
-            ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
-                _asset,
-                1, // Any value >0 will attempt to retrieve a rate
-                getPricelessAssetBypassWethToken() // Any valid asset would do
-            )
-        {
+        try ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
+            _asset,
+            1, // Any value >0 will attempt to retrieve a rate
+            getPricelessAssetBypassWethToken() // Any valid asset would do
+        ) {
             revert("startAssetBypassTimelock: Asset has a price");
         } catch {
-            comptrollerProxyToAssetToBypassWindowStart[comptrollerProxy][_asset] = block
-                .timestamp
-                .add(getPricelessAssetBypassTimelock());
+            comptrollerProxyToAssetToBypassWindowStart[comptrollerProxy][_asset] =
+                block.timestamp.add(getPricelessAssetBypassTimelock());
 
             emit PricelessAssetTimelockStarted(comptrollerProxy, _asset);
         }
@@ -91,9 +82,7 @@ abstract contract PricelessAssetBypassMixin {
     {
         uint256 windowStart = getAssetBypassWindowStartForFund(_comptrollerProxy, _asset);
 
-        return
-            windowStart <= block.timestamp &&
-            windowStart.add(getPricelessAssetBypassTimeLimit()) >= block.timestamp;
+        return windowStart <= block.timestamp && windowStart.add(getPricelessAssetBypassTimeLimit()) >= block.timestamp;
     }
 
     // INTERNAL FUNCTIONS
@@ -108,10 +97,7 @@ abstract contract PricelessAssetBypassMixin {
         for (uint256 i; i < _baseAssets.length; i++) {
             value_ = value_.add(
                 __calcValueExcludingBypassablePricelessAsset(
-                    _comptrollerProxy,
-                    _baseAssets[i],
-                    _baseAssetAmounts[i],
-                    _quoteAsset
+                    _comptrollerProxy, _baseAssets[i], _baseAssetAmounts[i], _quoteAsset
                 )
             );
         }
@@ -125,13 +111,9 @@ abstract contract PricelessAssetBypassMixin {
         uint256 _baseAssetAmount,
         address _quoteAsset
     ) internal returns (uint256 value_) {
-        try
-            ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
-                _baseAsset,
-                _baseAssetAmount,
-                _quoteAsset
-            )
-        returns (uint256 result) {
+        try ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
+            _baseAsset, _baseAssetAmount, _quoteAsset
+        ) returns (uint256 result) {
             return result;
         } catch {
             require(
@@ -175,11 +157,7 @@ abstract contract PricelessAssetBypassMixin {
 
     /// @notice Gets the `PRICELESS_ASSET_BYPASS_VALUE_INTERPRETER` variable
     /// @return valueInterpreter_ The `PRICELESS_ASSET_BYPASS_VALUE_INTERPRETER` variable value
-    function getPricelessAssetBypassValueInterpreter()
-        public
-        view
-        returns (address valueInterpreter_)
-    {
+    function getPricelessAssetBypassValueInterpreter() public view returns (address valueInterpreter_) {
         return PRICELESS_ASSET_BYPASS_VALUE_INTERPRETER;
     }
 

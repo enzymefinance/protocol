@@ -12,7 +12,8 @@
 pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
+import
+    "../../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
 import "../../../../../../external-interfaces/IAaveAToken.sol";
 import "../AdapterBase.sol";
 
@@ -29,11 +30,7 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
 
     uint256 private constant ROUNDING_BUFFER = 2;
 
-    constructor(
-        address _integrationManager,
-        address _addressListRegistry,
-        uint256 _aTokenListId
-    )
+    constructor(address _integrationManager, address _addressListRegistry, uint256 _aTokenListId)
         public
         AdapterBase(_integrationManager)
         AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _aTokenListId)
@@ -44,18 +41,10 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     ////////////////////////////////
 
     /// @dev Logic to lend underlying for aToken
-    function __lend(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal virtual;
+    function __lend(address _vaultProxy, address _underlying, uint256 _amount) internal virtual;
 
     /// @dev Logic to redeem aToken for underlying
-    function __redeem(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal virtual;
+    function __redeem(address _vaultProxy, address _underlying, uint256 _amount) internal virtual;
 
     /////////////
     // ACTIONS //
@@ -64,53 +53,31 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     /// @notice Lends an amount of a token to AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    ) external onlyIntegrationManager {
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData) external onlyIntegrationManager {
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         // Validate aToken.
         // Must be done here instead of parseAssetsForAction(),
         // since overriding visibility is not allowed.
         __validateAndAddListItemIfUnregistered(incomingAssets[0]);
 
-        __lend({
-            _vaultProxy: _vaultProxy,
-            _underlying: spendAssets[0],
-            _amount: spendAssetAmounts[0]
-        });
+        __lend({_vaultProxy: _vaultProxy, _underlying: spendAssets[0], _amount: spendAssetAmounts[0]});
     }
 
     /// @notice Redeems an amount of aTokens from AAVE
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    ) external onlyIntegrationManager {
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+    function redeem(address _vaultProxy, bytes calldata, bytes calldata _assetData) external onlyIntegrationManager {
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         // Validate aToken.
         // Must be done here instead of parseAssetsForAction(),
         // since overriding visibility is not allowed.
         __validateAndAddListItemIfUnregistered(spendAssets[0]);
 
-        __redeem({
-            _vaultProxy: _vaultProxy,
-            _underlying: incomingAssets[0],
-            _amount: spendAssetAmounts[0]
-        });
+        __redeem({_vaultProxy: _vaultProxy, _underlying: incomingAssets[0], _amount: spendAssetAmounts[0]});
     }
 
     /////////////////////////////
@@ -126,11 +93,7 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -223,11 +186,7 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgs(bytes memory _actionData)
-        private
-        pure
-        returns (address aToken_, uint256 amount_)
-    {
+    function __decodeCallArgs(bytes memory _actionData) private pure returns (address aToken_, uint256 amount_) {
         return abi.decode(_actionData, (address, uint256));
     }
 }

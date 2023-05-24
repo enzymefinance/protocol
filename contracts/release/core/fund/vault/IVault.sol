@@ -18,12 +18,7 @@ import "../../../../persistent/vault/interfaces/IVaultCore.sol";
 
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IVault is
-    IVaultCore,
-    IMigratableVault,
-    IFreelyTransferableSharesVault,
-    IExternalPositionVault
-{
+interface IVault is IVaultCore, IMigratableVault, IFreelyTransferableSharesVault, IExternalPositionVault {
     enum VaultAction {
         None,
         // Shares management
@@ -45,11 +40,7 @@ interface IVault is
 
     function burnShares(address, uint256) external;
 
-    function buyBackProtocolFeeShares(
-        uint256,
-        uint256,
-        uint256
-    ) external;
+    function buyBackProtocolFeeShares(uint256, uint256, uint256) external;
 
     function callOnContract(address, bytes calldata) external returns (bytes memory);
 
@@ -75,15 +66,7 @@ interface IVault is
 
     function setSymbol(string calldata) external;
 
-    function transferShares(
-        address,
-        address,
-        uint256
-    ) external;
+    function transferShares(address, address, uint256) external;
 
-    function withdrawAssetTo(
-        address,
-        address,
-        uint256
-    ) external;
+    function withdrawAssetTo(address, address, uint256) external;
 }

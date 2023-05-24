@@ -16,15 +16,7 @@ pragma solidity >=0.6.0 <0.9.0;
 interface ICompoundV3Comet {
     function baseToken() external view returns (address baseToken_);
 
-    function supplyTo(
-        address _dst,
-        address _asset,
-        uint256 _amount
-    ) external;
+    function supplyTo(address _dst, address _asset, uint256 _amount) external;
 
-    function withdrawTo(
-        address _dst,
-        address _asset,
-        uint256 _amount
-    ) external;
+    function withdrawTo(address _dst, address _asset, uint256 _amount) external;
 }

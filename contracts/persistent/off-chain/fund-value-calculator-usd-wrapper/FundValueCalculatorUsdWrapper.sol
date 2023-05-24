@@ -17,16 +17,7 @@ import "../fund-value-calculator/FundValueCalculatorRouter.sol";
 /// @title IChainlinkAggregatorFundValueCalculatorUsdWrapper Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IChainlinkAggregatorFundValueCalculatorUsdWrapper {
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
-        );
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80);
 }
 
 /// @title FundValueCalculatorUsdWrapper Contract
@@ -63,8 +54,8 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return gav_ The GAV quoted in USD
     function calcGav(address _vaultProxy) external returns (uint256 gav_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
-            .calcGavInAsset(_vaultProxy, getWethToken());
+        uint256 valueInEth =
+            FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGavInAsset(_vaultProxy, getWethToken());
 
         return __convertEthToUsd(valueInEth);
     }
@@ -73,8 +64,9 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return grossShareValue_ The gross share value quoted in USD
     function calcGrossShareValue(address _vaultProxy) external returns (uint256 grossShareValue_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
-            .calcGrossShareValueInAsset(_vaultProxy, getWethToken());
+        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGrossShareValueInAsset(
+            _vaultProxy, getWethToken()
+        );
 
         return __convertEthToUsd(valueInEth);
     }
@@ -83,8 +75,8 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return nav_ The NAV quoted in USD
     function calcNav(address _vaultProxy) external returns (uint256 nav_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
-            .calcNavInAsset(_vaultProxy, getWethToken());
+        uint256 valueInEth =
+            FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNavInAsset(_vaultProxy, getWethToken());
 
         return __convertEthToUsd(valueInEth);
     }
@@ -93,8 +85,9 @@ contract FundValueCalculatorUsdWrapper {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return netShareValue_ The net share value quoted in USD
     function calcNetShareValue(address _vaultProxy) external returns (uint256 netShareValue_) {
-        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter())
-            .calcNetShareValueInAsset(_vaultProxy, getWethToken());
+        uint256 valueInEth = FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcNetShareValueInAsset(
+            _vaultProxy, getWethToken()
+        );
 
         return __convertEthToUsd(valueInEth);
     }
@@ -115,15 +108,11 @@ contract FundValueCalculatorUsdWrapper {
 
     /// @dev Helper to convert an ETH amount to USD
     function __convertEthToUsd(uint256 _ethAmount) private view returns (uint256 usdAmount_) {
-        (, int256 usdPerEthRate, , uint256 updatedAt, ) = getEthUsdAggregatorContract()
-            .latestRoundData();
+        (, int256 usdPerEthRate,, uint256 updatedAt,) = getEthUsdAggregatorContract().latestRoundData();
         require(usdPerEthRate > 0, "__convertEthToUsd: Bad ethUsd rate");
-        require(
-            updatedAt >= block.timestamp.sub(getStaleRateThreshold()),
-            "__convertEthToUsd: Stale rate detected"
-        );
+        require(updatedAt >= block.timestamp.sub(getStaleRateThreshold()), "__convertEthToUsd: Stale rate detected");
 
-        return _ethAmount.mul(uint256(usdPerEthRate)).div(10**ETH_USD_AGGREGATOR_DECIMALS);
+        return _ethAmount.mul(uint256(usdPerEthRate)).div(10 ** ETH_USD_AGGREGATOR_DECIMALS);
     }
 
     ///////////////////
@@ -142,11 +131,7 @@ contract FundValueCalculatorUsdWrapper {
 
     /// @notice Gets the `FUND_VALUE_CALCULATOR_ROUTER` variable
     /// @return fundValueCalculatorRouter_ The `FUND_VALUE_CALCULATOR_ROUTER` variable value
-    function getFundValueCalculatorRouter()
-        public
-        view
-        returns (address fundValueCalculatorRouter_)
-    {
+    function getFundValueCalculatorRouter() public view returns (address fundValueCalculatorRouter_) {
         return FUND_VALUE_CALCULATOR_ROUTER;
     }
 

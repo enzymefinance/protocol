@@ -26,11 +26,7 @@ abstract contract CurveGaugeV2ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to get list of pool-specific rewards tokens
-    function __curveGaugeV2GetRewardsTokens(address _gauge)
-        internal
-        view
-        returns (address[] memory rewardsTokens_)
-    {
+    function __curveGaugeV2GetRewardsTokens(address _gauge) internal view returns (address[] memory rewardsTokens_) {
         address[] memory lpRewardsTokensWithEmpties = new address[](CURVE_GAUGE_V2_MAX_REWARDS);
         uint256 rewardsTokensCount;
         for (uint256 i; i < CURVE_GAUGE_V2_MAX_REWARDS; i++) {
@@ -52,11 +48,7 @@ abstract contract CurveGaugeV2ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to stake LP tokens
-    function __curveGaugeV2Stake(
-        address _gauge,
-        address _lpToken,
-        uint256 _amount
-    ) internal {
+    function __curveGaugeV2Stake(address _gauge, address _lpToken, uint256 _amount) internal {
         __approveAssetMaxAsNeeded(_lpToken, _gauge, _amount);
         ICurveLiquidityGaugeV2(_gauge).deposit(_amount, address(this));
     }

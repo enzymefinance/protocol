@@ -18,11 +18,10 @@ import "./IGlobalConfig1.sol";
 /// @dev Each interface should inherit the previous interface,
 /// e.g., `IGlobalConfig2 is IGlobalConfig1`
 interface IGlobalConfig2 is IGlobalConfig1 {
-    function formatDepositCall(
-        address _vaultProxy,
-        address _depositAsset,
-        uint256 _depositAssetAmount
-    ) external view returns (address target_, bytes memory payload_);
+    function formatDepositCall(address _vaultProxy, address _depositAsset, uint256 _depositAssetAmount)
+        external
+        view
+        returns (address target_, bytes memory payload_);
 
     function formatSingleAssetRedemptionCall(
         address _vaultProxy,

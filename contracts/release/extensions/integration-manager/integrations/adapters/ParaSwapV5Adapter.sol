@@ -51,20 +51,16 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function takeMultipleOrders(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external postActionSpendAssetsTransferHandler(_vaultProxy, _assetData) {
-        (bytes[] memory ordersData, bool allowOrdersToFail) = __decodeTakeMultipleOrdersCallArgs(
-            _actionData
-        );
+    function takeMultipleOrders(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
+    {
+        (bytes[] memory ordersData, bool allowOrdersToFail) = __decodeTakeMultipleOrdersCallArgs(_actionData);
 
         if (allowOrdersToFail) {
             for (uint256 i; i < ordersData.length; i++) {
-                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {} catch (
-                    bytes memory reason
-                ) {
+                try this.takeOrderAndValidateIncoming(_vaultProxy, ordersData[i]) {}
+                catch (bytes memory reason) {
                     emit MultipleOrdersItemFailed(i, reason);
                 }
             }
@@ -80,19 +76,13 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     /// @param _actionData Data specific to this action
     /// @dev ParaSwap v5 completely uses entire outgoing asset balance and incoming asset
     /// is sent directly to the beneficiary (the _vaultProxy)
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external {
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata) external {
         __takeOrder({_vaultProxy: _vaultProxy, _orderData: _actionData});
     }
 
     /// @notice External implementation of __takeOrderAndValidateIncoming(), only intended for internal usage
     /// @dev Necessary for try/catch
-    function takeOrderAndValidateIncoming(address _vaultProxy, bytes calldata _orderData)
-        external
-    {
+    function takeOrderAndValidateIncoming(address _vaultProxy, bytes calldata _orderData) external {
         __takeOrderAndValidateIncoming(_vaultProxy, _orderData);
     }
 
@@ -146,28 +136,17 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     /// but it is consistent with the practice of doing all validations internally also,
     /// which is bypassed during the actions that call this function.
     function __takeOrderAndValidateIncoming(address _vaultProxy, bytes memory _orderData) private {
-        (
-            uint256 minIncomingAssetAmount,
-            ,
-            ,
-            ,
-            ,
-            SwapType swapType,
-            bytes memory swapData
-        ) = __decodeTakeOrderCallArgs(_orderData);
+        (uint256 minIncomingAssetAmount,,,,, SwapType swapType, bytes memory swapData) =
+            __decodeTakeOrderCallArgs(_orderData);
 
-        address incomingAsset = __getIncomingAssetFromSwapData({
-            _swapType: swapType,
-            _swapData: swapData
-        });
+        address incomingAsset = __getIncomingAssetFromSwapData({_swapType: swapType, _swapData: swapData});
 
         uint256 preIncomingAssetBal = ERC20(incomingAsset).balanceOf(_vaultProxy);
 
         __takeOrder({_vaultProxy: _vaultProxy, _orderData: _orderData});
 
         require(
-            ERC20(incomingAsset).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >=
-                minIncomingAssetAmount,
+            ERC20(incomingAsset).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >= minIncomingAssetAmount,
             "__takeOrderAndValidateIncoming: Received incoming asset less than expected"
         );
     }
@@ -185,11 +164,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -209,47 +184,27 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
             SwapType swapType;
             bytes memory swapData;
 
-            (
-                minIncomingAssetAmounts_[0],
-                ,
-                spendAssets_[0],
-                spendAssetAmounts_[0],
-                ,
-                swapType,
-                swapData
-            ) = __decodeTakeOrderCallArgs(_actionData);
+            (minIncomingAssetAmounts_[0],, spendAssets_[0], spendAssetAmounts_[0],, swapType, swapData) =
+                __decodeTakeOrderCallArgs(_actionData);
 
-            incomingAssets_[0] = __getIncomingAssetFromSwapData({
-                _swapType: swapType,
-                _swapData: swapData
-            });
+            incomingAssets_[0] = __getIncomingAssetFromSwapData({_swapType: swapType, _swapData: swapData});
         } else if (_selector == TAKE_MULTIPLE_ORDERS_SELECTOR) {
-            (bytes[] memory ordersData, ) = __decodeTakeMultipleOrdersCallArgs(_actionData);
+            (bytes[] memory ordersData,) = __decodeTakeMultipleOrdersCallArgs(_actionData);
 
             spendAssets_ = new address[](ordersData.length);
             spendAssetAmounts_ = new uint256[](ordersData.length);
             for (uint256 i; i < ordersData.length; i++) {
                 SwapType swapType;
                 bytes memory swapData;
-                (
-                    ,
-                    ,
-                    spendAssets_[i],
-                    spendAssetAmounts_[i],
-                    ,
-                    swapType,
-                    swapData
-                ) = __decodeTakeOrderCallArgs(ordersData[i]);
+                (,, spendAssets_[i], spendAssetAmounts_[i],, swapType, swapData) =
+                    __decodeTakeOrderCallArgs(ordersData[i]);
 
                 // Add unique incoming assets
                 incomingAssets_ = incomingAssets_.addUniqueItem(
                     __getIncomingAssetFromSwapData({_swapType: swapType, _swapData: swapData})
                 );
             }
-            (spendAssets_, spendAssetAmounts_) = __aggregateAssetAmounts(
-                spendAssets_,
-                spendAssetAmounts_
-            );
+            (spendAssets_, spendAssetAmounts_) = __aggregateAssetAmounts(spendAssets_, spendAssetAmounts_);
 
             // Ignores the IntegrationManager's incoming asset amount validations in order
             // to support optional order failure bypass,
@@ -314,11 +269,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
             bytes memory swapData_
         )
     {
-        return
-            abi.decode(
-                _actionData,
-                (uint256, uint256, address, uint256, bytes16, SwapType, bytes)
-            );
+        return abi.decode(_actionData, (uint256, uint256, address, uint256, bytes16, SwapType, bytes));
     }
 
     /// @dev Helper to decode the encoded callOnIntegration call arguments for takeMultipleOrders()
@@ -341,9 +292,7 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
         returns (address incomingAsset_)
     {
         if (_swapType == SwapType.Mega) {
-            IParaSwapV5AugustusSwapper.MegaSwapPath[] memory megaPaths = __decodeMegaSwapData(
-                _swapData
-            );
+            IParaSwapV5AugustusSwapper.MegaSwapPath[] memory megaPaths = __decodeMegaSwapData(_swapData);
             IParaSwapV5AugustusSwapper.Path[] memory paths = megaPaths[0].path;
             incomingAsset_ = paths[paths.length - 1].to;
         } else if (_swapType == SwapType.Multi) {

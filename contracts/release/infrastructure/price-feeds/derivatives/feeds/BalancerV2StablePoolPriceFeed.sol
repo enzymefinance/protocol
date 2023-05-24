@@ -41,7 +41,7 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
     }
 
     // The pricing requires dividing by 1e18 twice, once for converting decimal precision, and then for converting rate precision
-    uint256 private constant RATE_FORMULA_DIVISOR = 10**36;
+    uint256 private constant RATE_FORMULA_DIVISOR = 10 ** 36;
 
     IBalancerV2Vault private immutable BALANCER_VAULT_CONTRACT;
     address private immutable WRAPPED_NATIVE_ASSET;
@@ -86,10 +86,9 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
         underlyingAmounts_ = new uint256[](1);
 
         underlyings_[0] = poolInfo.invariantProxyAsset;
-        underlyingAmounts_[0] = _derivativeAmount
-            .mul(IBalancerV2StablePool(_derivative).getRate())
-            .mul(10**uint256(poolInfo.invariantProxyAssetDecimals))
-            .div(RATE_FORMULA_DIVISOR);
+        underlyingAmounts_[0] = _derivativeAmount.mul(IBalancerV2StablePool(_derivative).getRate()).mul(
+            10 ** uint256(poolInfo.invariantProxyAssetDecimals)
+        ).div(RATE_FORMULA_DIVISOR);
 
         return (underlyings_, underlyingAmounts_);
     }
@@ -113,10 +112,7 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
 
     /// @notice Removes pool factories
     /// @param _poolFactories Pool factories to remove
-    function removePoolFactories(address[] calldata _poolFactories)
-        external
-        onlyFundDeployerOwner
-    {
+    function removePoolFactories(address[] calldata _poolFactories) external onlyFundDeployerOwner {
         for (uint256 i; i < _poolFactories.length; i++) {
             if (poolFactories.removeStorageItem(_poolFactories[i])) {
                 emit PoolFactoryRemoved(_poolFactories[i]);
@@ -155,9 +151,8 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
             require(!isSupportedAsset(_pools[i]), "addPools: Already registered");
             require(__isPoolFromFactory(_pools[i]), "addPools: Invalid factory");
 
-            (address[] memory poolTokens, , ) = BALANCER_VAULT_CONTRACT.getPoolTokens(
-                IBalancerV2StablePool(_pools[i]).getPoolId()
-            );
+            (address[] memory poolTokens,,) =
+                BALANCER_VAULT_CONTRACT.getPoolTokens(IBalancerV2StablePool(_pools[i]).getPoolId());
 
             poolToPoolInfo[_pools[i]] = PoolInfo({
                 invariantProxyAsset: _invariantProxyAssets[i],

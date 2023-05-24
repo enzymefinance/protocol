@@ -19,10 +19,7 @@ import "./IGsnTypes.sol";
 interface IGsnRelayHub {
     function balanceOf(address target) external view returns (uint256);
 
-    function calculateCharge(uint256 gasUsed, IGsnTypes.RelayData calldata relayData)
-        external
-        view
-        returns (uint256);
+    function calculateCharge(uint256 gasUsed, IGsnTypes.RelayData calldata relayData) external view returns (uint256);
 
     function depositFor(address target) external payable;
 

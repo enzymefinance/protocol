@@ -90,10 +90,7 @@ contract ArbitraryLoanPositionLib is
 
         address accountingModuleMem = getAccountingModule();
         if (accountingModuleMem != address(0)) {
-            IArbitraryLoanAccountingModule(accountingModuleMem).preClose(
-                getTotalBorrowed(),
-                getTotalRepaid()
-            );
+            IArbitraryLoanAccountingModule(accountingModuleMem).preClose(getTotalBorrowed(), getTotalRepaid());
         }
 
         __updateBorrowableAmount(0);
@@ -124,9 +121,7 @@ contract ArbitraryLoanPositionLib is
         if (accountingModuleMem != address(0)) {
             accountingModule = accountingModuleMem;
 
-            IArbitraryLoanAccountingModule(accountingModuleMem).configure(
-                accountingModuleConfigData
-            );
+            IArbitraryLoanAccountingModule(accountingModuleMem).configure(accountingModuleConfigData);
         }
 
         emit LoanConfigured(borrowerMem, loanAssetMem, accountingModuleMem, description);
@@ -175,8 +170,7 @@ contract ArbitraryLoanPositionLib is
         ERC20 loanAssetContract = ERC20(getLoanAsset());
 
         require(
-            !_extraAssetsToSweep.contains(address(loanAssetContract)),
-            "__reconcile: Extra assets contains loan asset"
+            !_extraAssetsToSweep.contains(address(loanAssetContract)), "__reconcile: Extra assets contains loan asset"
         );
 
         uint256 loanAssetBalance = loanAssetContract.balanceOf(address(this));
@@ -195,10 +189,7 @@ contract ArbitraryLoanPositionLib is
                 // in which case any excess loanAsset amount would be sent to the vault
                 // without recording it as a repayment.
                 repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem).preReconcile(
-                    getTotalBorrowed(),
-                    totalRepaidMem,
-                    nonBorrowableLoanAssetBal,
-                    _extraAssetsToSweep
+                    getTotalBorrowed(), totalRepaidMem, nonBorrowableLoanAssetBal, _extraAssetsToSweep
                 );
             } else {
                 repayAmount = nonBorrowableLoanAssetBal;
@@ -252,11 +243,7 @@ contract ArbitraryLoanPositionLib is
 
         address accountingModuleMem = getAccountingModule();
         if (accountingModuleMem != address(0)) {
-            IArbitraryLoanAccountingModule(accountingModuleMem).preBorrow(
-                totalBorrowedMem,
-                getTotalRepaid(),
-                _amount
-            );
+            IArbitraryLoanAccountingModule(accountingModuleMem).preBorrow(totalBorrowedMem, getTotalRepaid(), _amount);
         }
 
         // _amount <= borrowableAmount is enforced here
@@ -286,9 +273,7 @@ contract ArbitraryLoanPositionLib is
         if (accountingModuleMem != address(0)) {
             // preRepay() logic should also handle calculating max repayAmount
             repayAmount = IArbitraryLoanAccountingModule(accountingModuleMem).preRepay(
-                getTotalBorrowed(),
-                totalRepaidMem,
-                _amount
+                getTotalBorrowed(), totalRepaidMem, _amount
             );
         } else if (_amount == type(uint256).max) {
             repayAmount = __subOrZero(getTotalBorrowed(), totalRepaidMem);
@@ -300,9 +285,7 @@ contract ArbitraryLoanPositionLib is
         __updateTotalRepaid(totalRepaidMem.add(repayAmount));
 
         ERC20(getLoanAsset()).safeTransferFrom(
-            msg.sender,
-            IExternalPositionProxy(address(this)).getVaultProxy(),
-            repayAmount
+            msg.sender, IExternalPositionProxy(address(this)).getVaultProxy(), repayAmount
         );
     }
 
@@ -313,22 +296,14 @@ contract ArbitraryLoanPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         if (loanIsClosed()) {
             return (assets_, amounts_);
         }
@@ -337,10 +312,8 @@ contract ArbitraryLoanPositionLib is
         uint256 totalBalance;
 
         if (accountingModuleMem != address(0)) {
-            totalBalance = IArbitraryLoanAccountingModule(accountingModuleMem).calcFaceValue(
-                getTotalBorrowed(),
-                getTotalRepaid()
-            );
+            totalBalance =
+                IArbitraryLoanAccountingModule(accountingModuleMem).calcFaceValue(getTotalBorrowed(), getTotalRepaid());
         } else {
             totalBalance = __subOrZero(getTotalBorrowed(), getTotalRepaid());
         }

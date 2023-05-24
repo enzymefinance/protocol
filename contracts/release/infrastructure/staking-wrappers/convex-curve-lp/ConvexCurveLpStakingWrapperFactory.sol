@@ -31,12 +31,10 @@ contract ConvexCurveLpStakingWrapperFactory is BeaconProxyFactory {
         _;
     }
 
-    constructor(
-        address _dispatcher,
-        address _convexBooster,
-        address _crvToken,
-        address _cvxToken
-    ) public BeaconProxyFactory(address(0)) {
+    constructor(address _dispatcher, address _convexBooster, address _crvToken, address _cvxToken)
+        public
+        BeaconProxyFactory(address(0))
+    {
         DISPATCHER_CONTRACT = IDispatcher(_dispatcher);
 
         __setCanonicalLib(
@@ -57,10 +55,7 @@ contract ConvexCurveLpStakingWrapperFactory is BeaconProxyFactory {
     function deploy(uint256 _pid) external returns (address wrapperProxy_) {
         require(getWrapperForConvexPool(_pid) == address(0), "deploy: Wrapper already exists");
 
-        bytes memory constructData = abi.encodeWithSelector(
-            ConvexCurveLpStakingWrapperLib.init.selector,
-            _pid
-        );
+        bytes memory constructData = abi.encodeWithSelector(ConvexCurveLpStakingWrapperLib.init.selector, _pid);
 
         wrapperProxy_ = deployProxy(constructData);
 

@@ -30,11 +30,10 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
     /// @notice Trades assets on UniswapV3
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         (
             address[] memory pathAddresses,
             uint24[] memory pathFees,
@@ -42,13 +41,7 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
             uint256 minIncomingAssetAmount
         ) = __decodeCallArgs(_actionData);
 
-        __uniswapV3Swap(
-            _vaultProxy,
-            pathAddresses,
-            pathFees,
-            outgoingAssetAmount,
-            minIncomingAssetAmount
-        );
+        __uniswapV3Swap(_vaultProxy, pathAddresses, pathFees, outgoingAssetAmount, minIncomingAssetAmount);
     }
 
     /// @notice Parses the expected assets in a particular action
@@ -60,11 +53,7 @@ contract UniswapV3Adapter is AdapterBase, UniswapV3ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override

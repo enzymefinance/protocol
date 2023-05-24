@@ -46,38 +46,22 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData) {
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint128 takerAssetFillAmount,
-            OrderType orderType
-        ) = __decodeTakeOrderCallArgs(_actionData);
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
+    {
+        (bytes memory encodedZeroExOrderArgs, uint128 takerAssetFillAmount, OrderType orderType) =
+            __decodeTakeOrderCallArgs(_actionData);
 
         if (orderType == OrderType.Limit) {
-            (
-                IZeroExV4.LimitOrder memory order,
-                IZeroExV4.Signature memory signature
-            ) = __decodeZeroExLimitOrderArgs(encodedZeroExOrderArgs);
+            (IZeroExV4.LimitOrder memory order, IZeroExV4.Signature memory signature) =
+                __decodeZeroExLimitOrderArgs(encodedZeroExOrderArgs);
 
-            __zeroExV4TakeLimitOrder({
-                _order: order,
-                _signature: signature,
-                _takerAssetFillAmount: takerAssetFillAmount
-            });
+            __zeroExV4TakeLimitOrder({_order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount});
         } else if (orderType == OrderType.Rfq) {
-            (
-                IZeroExV4.RfqOrder memory order,
-                IZeroExV4.Signature memory signature
-            ) = __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
-            __zeroExV4TakeRfqOrder({
-                _order: order,
-                _signature: signature,
-                _takerAssetFillAmount: takerAssetFillAmount
-            });
+            (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) =
+                __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
+            __zeroExV4TakeRfqOrder({_order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount});
         }
     }
 
@@ -94,11 +78,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -112,11 +92,8 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     {
         require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForAction: _selector invalid");
 
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint256 takerAssetFillAmount,
-            OrderType orderType
-        ) = __decodeTakeOrderCallArgs(_actionData);
+        (bytes memory encodedZeroExOrderArgs, uint256 takerAssetFillAmount, OrderType orderType) =
+            __decodeTakeOrderCallArgs(_actionData);
 
         incomingAssets_ = new address[](1);
         minIncomingAssetAmounts_ = new uint256[](1);
@@ -129,9 +106,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         uint256 takerTokenFeeAmount;
 
         if (orderType == OrderType.Limit) {
-            (IZeroExV4.LimitOrder memory order, ) = __decodeZeroExLimitOrderArgs(
-                encodedZeroExOrderArgs
-            );
+            (IZeroExV4.LimitOrder memory order,) = __decodeZeroExLimitOrderArgs(encodedZeroExOrderArgs);
 
             maker = order.maker;
             makerAmount = order.makerAmount;
@@ -140,9 +115,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
             takerAmount = order.takerAmount;
             takerTokenFeeAmount = order.takerTokenFeeAmount;
         } else if (orderType == OrderType.Rfq) {
-            (IZeroExV4.RfqOrder memory order, ) = __decodeZeroExRfqOrderArgs(
-                encodedZeroExOrderArgs
-            );
+            (IZeroExV4.RfqOrder memory order,) = __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
             maker = order.maker;
             makerAmount = order.makerAmount;
             incomingAssets_[0] = order.makerToken;
@@ -190,11 +163,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     function __decodeTakeOrderCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            bytes memory encodedZeroExOrderArgs_,
-            uint128 takerAssetFillAmount_,
-            OrderType orderType
-        )
+        returns (bytes memory encodedZeroExOrderArgs_, uint128 takerAssetFillAmount_, OrderType orderType)
     {
         return abi.decode(_actionData, (bytes, uint128, OrderType));
     }
@@ -225,8 +194,6 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     /// @param _who The account to check
     /// @return isAllowedMaker_ True if _who is an allowed maker
     function isAllowedMaker(address _who) public view returns (bool isAllowedMaker_) {
-        return
-            ALLOWED_MAKERS_LIST_ID == 0 ||
-            ADDRESS_LIST_REGISTRY_CONTRACT.isInList(ALLOWED_MAKERS_LIST_ID, _who);
+        return ALLOWED_MAKERS_LIST_ID == 0 || ADDRESS_LIST_REGISTRY_CONTRACT.isInList(ALLOWED_MAKERS_LIST_ID, _who);
     }
 }

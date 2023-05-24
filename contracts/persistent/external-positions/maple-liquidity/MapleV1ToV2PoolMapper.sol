@@ -11,7 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../release/extensions/external-position-manager/external-positions/maple-liquidity/MapleLiquidityPositionLib.sol";
+import
+    "../../../release/extensions/external-position-manager/external-positions/maple-liquidity/MapleLiquidityPositionLib.sol";
 import "../../dispatcher/IDispatcher.sol";
 
 /// @title MapleV1ToV2PoolMapper Contract
@@ -32,10 +33,7 @@ contract MapleV1ToV2PoolMapper {
     mapping(address => address) private poolTokenV1ToPoolTokenV2;
 
     modifier onlyDispatcherOwner() {
-        require(
-            msg.sender == IDispatcher(DISPATCHER).getOwner(),
-            "Only the Dispatcher owner can call this function"
-        );
+        require(msg.sender == IDispatcher(DISPATCHER).getOwner(), "Only the Dispatcher owner can call this function");
         _;
     }
 
@@ -108,11 +106,7 @@ contract MapleV1ToV2PoolMapper {
     /// @notice Gets the Maple Pool Token v2 associated to a given Maple Pool Token v1
     /// @param _poolTokenV1 The Maple Pool Token v1
     /// @return poolTokenV2_ The Maple Pool Token v2
-    function getPoolTokenV2FromPoolTokenV1(address _poolTokenV1)
-        external
-        view
-        returns (address poolTokenV2_)
-    {
+    function getPoolTokenV2FromPoolTokenV1(address _poolTokenV1) external view returns (address poolTokenV2_) {
         return poolTokenV1ToPoolTokenV2[_poolTokenV1];
     }
 

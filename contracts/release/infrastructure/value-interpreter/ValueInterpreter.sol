@@ -36,11 +36,7 @@ contract ValueInterpreter is
     // when converting values via an inverse rate
     uint256 private constant MIN_INVERSE_RATE_AMOUNT = 10000;
 
-    constructor(
-        address _fundDeployer,
-        address _wethToken,
-        uint256 _chainlinkStaleRateThreshold
-    )
+    constructor(address _fundDeployer, address _wethToken, uint256 _chainlinkStaleRateThreshold)
         public
         FundDeployerOwnerMixin(_fundDeployer)
         ChainlinkPriceFeedMixin(_wethToken, _chainlinkStaleRateThreshold)
@@ -56,19 +52,13 @@ contract ValueInterpreter is
     /// @dev Does not alter protocol state,
     /// but not a view because calls to price feeds can potentially update third party state.
     /// Does not handle a derivative quote asset.
-    function calcCanonicalAssetsTotalValue(
-        address[] memory _baseAssets,
-        uint256[] memory _amounts,
-        address _quoteAsset
-    ) external override returns (uint256 value_) {
-        require(
-            _baseAssets.length == _amounts.length,
-            "calcCanonicalAssetsTotalValue: Arrays unequal lengths"
-        );
-        require(
-            isSupportedPrimitiveAsset(_quoteAsset),
-            "calcCanonicalAssetsTotalValue: Unsupported _quoteAsset"
-        );
+    function calcCanonicalAssetsTotalValue(address[] memory _baseAssets, uint256[] memory _amounts, address _quoteAsset)
+        external
+        override
+        returns (uint256 value_)
+    {
+        require(_baseAssets.length == _amounts.length, "calcCanonicalAssetsTotalValue: Arrays unequal lengths");
+        require(isSupportedPrimitiveAsset(_quoteAsset), "calcCanonicalAssetsTotalValue: Unsupported _quoteAsset");
 
         for (uint256 i; i < _baseAssets.length; i++) {
             uint256 assetValue = __calcAssetValue(_baseAssets[i], _amounts[i], _quoteAsset);
@@ -88,20 +78,18 @@ contract ValueInterpreter is
     /// @dev Does not alter protocol state,
     /// but not a view because calls to price feeds can potentially update third party state.
     /// See also __calcPrimitiveToDerivativeValue() for important notes regarding a derivative _quoteAsset.
-    function calcCanonicalAssetValue(
-        address _baseAsset,
-        uint256 _amount,
-        address _quoteAsset
-    ) external override returns (uint256 value_) {
+    function calcCanonicalAssetValue(address _baseAsset, uint256 _amount, address _quoteAsset)
+        external
+        override
+        returns (uint256 value_)
+    {
         if (_baseAsset == _quoteAsset || _amount == 0) {
             return _amount;
         }
 
         if (isSupportedPrimitiveAsset(_quoteAsset)) {
             return __calcAssetValue(_baseAsset, _amount, _quoteAsset);
-        } else if (
-            isSupportedDerivativeAsset(_quoteAsset) && isSupportedPrimitiveAsset(_baseAsset)
-        ) {
+        } else if (isSupportedDerivativeAsset(_quoteAsset) && isSupportedPrimitiveAsset(_baseAsset)) {
             return __calcPrimitiveToDerivativeValue(_baseAsset, _amount, _quoteAsset);
         }
 
@@ -119,11 +107,10 @@ contract ValueInterpreter is
 
     /// @dev Helper to differentially calculate an asset value
     /// based on if it is a primitive or derivative asset.
-    function __calcAssetValue(
-        address _baseAsset,
-        uint256 _amount,
-        address _quoteAsset
-    ) private returns (uint256 value_) {
+    function __calcAssetValue(address _baseAsset, uint256 _amount, address _quoteAsset)
+        private
+        returns (uint256 value_)
+    {
         if (_baseAsset == _quoteAsset || _amount == 0) {
             return _amount;
         }
@@ -151,22 +138,14 @@ contract ValueInterpreter is
         uint256 _amount,
         address _quoteAsset
     ) private returns (uint256 value_) {
-        (address[] memory underlyings, uint256[] memory underlyingAmounts) = IDerivativePriceFeed(
-            _derivativePriceFeed
-        ).calcUnderlyingValues(_derivative, _amount);
+        (address[] memory underlyings, uint256[] memory underlyingAmounts) =
+            IDerivativePriceFeed(_derivativePriceFeed).calcUnderlyingValues(_derivative, _amount);
 
         require(underlyings.length > 0, "__calcDerivativeValue: No underlyings");
-        require(
-            underlyings.length == underlyingAmounts.length,
-            "__calcDerivativeValue: Arrays unequal lengths"
-        );
+        require(underlyings.length == underlyingAmounts.length, "__calcDerivativeValue: Arrays unequal lengths");
 
         for (uint256 i = 0; i < underlyings.length; i++) {
-            uint256 underlyingValue = __calcAssetValue(
-                underlyings[i],
-                underlyingAmounts[i],
-                _quoteAsset
-            );
+            uint256 underlyingValue = __calcAssetValue(underlyings[i], underlyingAmounts[i], _quoteAsset);
 
             value_ = value_.add(underlyingValue);
         }
@@ -185,15 +164,11 @@ contract ValueInterpreter is
         uint256 _primitiveBaseAssetAmount,
         address _derivativeQuoteAsset
     ) private returns (uint256 value_) {
-        uint256 derivativeUnit = 10**uint256(ERC20(_derivativeQuoteAsset).decimals());
+        uint256 derivativeUnit = 10 ** uint256(ERC20(_derivativeQuoteAsset).decimals());
 
         address derivativePriceFeed = getPriceFeedForDerivative(_derivativeQuoteAsset);
-        uint256 primitiveAmountForDerivativeUnit = __calcDerivativeValue(
-            derivativePriceFeed,
-            _derivativeQuoteAsset,
-            derivativeUnit,
-            _primitiveBaseAsset
-        );
+        uint256 primitiveAmountForDerivativeUnit =
+            __calcDerivativeValue(derivativePriceFeed, _derivativeQuoteAsset, derivativeUnit, _primitiveBaseAsset);
         // Only tolerate a max rounding discrepancy
         require(
             primitiveAmountForDerivativeUnit > MIN_INVERSE_RATE_AMOUNT,
@@ -204,11 +179,7 @@ contract ValueInterpreter is
         // slightly less than the actual value, which is congruent with how all other
         // asset conversions are floored in the protocol.
         return
-            __calcRelativeQuantity(
-                primitiveAmountForDerivativeUnit.add(1),
-                derivativeUnit,
-                _primitiveBaseAssetAmount
-            );
+            __calcRelativeQuantity(primitiveAmountForDerivativeUnit.add(1), derivativeUnit, _primitiveBaseAssetAmount);
     }
 
     ////////////////////////////
@@ -257,12 +228,7 @@ contract ValueInterpreter is
     /// @notice Checks whether an asset is a supported primitive
     /// @param _asset The asset to check
     /// @return isSupported_ True if the asset is a supported primitive
-    function isSupportedPrimitiveAsset(address _asset)
-        public
-        view
-        override
-        returns (bool isSupported_)
-    {
+    function isSupportedPrimitiveAsset(address _asset) public view override returns (bool isSupported_) {
         return _asset == getWethToken() || getAggregatorForPrimitive(_asset) != address(0);
     }
 
@@ -302,12 +268,7 @@ contract ValueInterpreter is
     /// @notice Checks whether an asset is a supported derivative
     /// @param _asset The asset to check
     /// @return isSupported_ True if the asset is a supported derivative
-    function isSupportedDerivativeAsset(address _asset)
-        public
-        view
-        override
-        returns (bool isSupported_)
-    {
+    function isSupportedDerivativeAsset(address _asset) public view override returns (bool isSupported_) {
         return getPriceFeedForDerivative(_asset) != address(0);
     }
 }

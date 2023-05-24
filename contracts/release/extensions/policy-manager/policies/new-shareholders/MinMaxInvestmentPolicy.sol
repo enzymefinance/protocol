@@ -19,11 +19,7 @@ import "../utils/PolicyBase.sol";
 /// @notice A policy that restricts the amount of the fund's denomination asset that a user can
 /// send in a single call to buy shares in a fund
 contract MinMaxInvestmentPolicy is PolicyBase {
-    event FundSettingsSet(
-        address indexed comptrollerProxy,
-        uint256 minInvestmentAmount,
-        uint256 maxInvestmentAmount
-    );
+    event FundSettingsSet(address indexed comptrollerProxy, uint256 minInvestmentAmount, uint256 maxInvestmentAmount);
 
     struct FundSettings {
         uint256 minInvestmentAmount;
@@ -59,12 +55,7 @@ contract MinMaxInvestmentPolicy is PolicyBase {
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
         implementedHooks_[0] = IPolicyManager.PolicyHook.PostBuyShares;
 
@@ -86,15 +77,9 @@ contract MinMaxInvestmentPolicy is PolicyBase {
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _investmentAmount The investment amount for which to check the rule
     /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy, uint256 _investmentAmount)
-        public
-        view
-        returns (bool isValid_)
-    {
-        uint256 minInvestmentAmount = comptrollerProxyToFundSettings[_comptrollerProxy]
-            .minInvestmentAmount;
-        uint256 maxInvestmentAmount = comptrollerProxyToFundSettings[_comptrollerProxy]
-            .maxInvestmentAmount;
+    function passesRule(address _comptrollerProxy, uint256 _investmentAmount) public view returns (bool isValid_) {
+        uint256 minInvestmentAmount = comptrollerProxyToFundSettings[_comptrollerProxy].minInvestmentAmount;
+        uint256 maxInvestmentAmount = comptrollerProxyToFundSettings[_comptrollerProxy].maxInvestmentAmount;
 
         // Both minInvestmentAmount and maxInvestmentAmount can be 0 in order to close the fund
         // temporarily
@@ -103,8 +88,7 @@ contract MinMaxInvestmentPolicy is PolicyBase {
         } else if (maxInvestmentAmount == 0) {
             return _investmentAmount >= minInvestmentAmount;
         }
-        return
-            _investmentAmount >= minInvestmentAmount && _investmentAmount <= maxInvestmentAmount;
+        return _investmentAmount >= minInvestmentAmount && _investmentAmount <= maxInvestmentAmount;
     }
 
     /// @notice Apply the rule with the specified parameters of a PolicyHook
@@ -112,12 +96,12 @@ contract MinMaxInvestmentPolicy is PolicyBase {
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
     /// @dev onlyPolicyManager validation not necessary, as state is not updated and no events are fired
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook,
-        bytes calldata _encodedArgs
-    ) external override returns (bool isValid_) {
-        (, uint256 investmentAmount, , ) = __decodePostBuySharesValidationData(_encodedArgs);
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook, bytes calldata _encodedArgs)
+        external
+        override
+        returns (bool isValid_)
+    {
+        (, uint256 investmentAmount,,) = __decodePostBuySharesValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, investmentAmount);
     }
@@ -126,20 +110,15 @@ contract MinMaxInvestmentPolicy is PolicyBase {
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _encodedSettings Encoded settings to apply to a fund
     function __setFundSettings(address _comptrollerProxy, bytes memory _encodedSettings) private {
-        (uint256 minInvestmentAmount, uint256 maxInvestmentAmount) = abi.decode(
-            _encodedSettings,
-            (uint256, uint256)
-        );
+        (uint256 minInvestmentAmount, uint256 maxInvestmentAmount) = abi.decode(_encodedSettings, (uint256, uint256));
 
         require(
             maxInvestmentAmount == 0 || minInvestmentAmount < maxInvestmentAmount,
             "__setFundSettings: minInvestmentAmount must be less than maxInvestmentAmount"
         );
 
-        comptrollerProxyToFundSettings[_comptrollerProxy]
-            .minInvestmentAmount = minInvestmentAmount;
-        comptrollerProxyToFundSettings[_comptrollerProxy]
-            .maxInvestmentAmount = maxInvestmentAmount;
+        comptrollerProxyToFundSettings[_comptrollerProxy].minInvestmentAmount = minInvestmentAmount;
+        comptrollerProxyToFundSettings[_comptrollerProxy].maxInvestmentAmount = maxInvestmentAmount;
 
         emit FundSettingsSet(_comptrollerProxy, minInvestmentAmount, maxInvestmentAmount);
     }
@@ -151,11 +130,7 @@ contract MinMaxInvestmentPolicy is PolicyBase {
     /// @notice Gets the min and max investment amount for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return fundSettings_ The fund settings
-    function getFundSettings(address _comptrollerProxy)
-        external
-        view
-        returns (FundSettings memory fundSettings_)
-    {
+    function getFundSettings(address _comptrollerProxy) external view returns (FundSettings memory fundSettings_) {
         return comptrollerProxyToFundSettings[_comptrollerProxy];
     }
 }

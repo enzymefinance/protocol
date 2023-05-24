@@ -39,28 +39,15 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @dev Logic to get the BPT address for a given staking token.
     /// Implementations should pre-validate whether the staking token is valid,
     /// when reasonable.
-    function __getBptForStakingToken(address _stakingToken)
-        internal
-        view
-        virtual
-        returns (address bpt_);
+    function __getBptForStakingToken(address _stakingToken) internal view virtual returns (address bpt_);
 
     /// @dev Logic to stake BPT to a given staking token.
     /// Staking is always the last action and thus always sent to the _vaultProxy
     /// (rather than a more generically-named `_recipient`).
-    function __stake(
-        address _vaultProxy,
-        address _stakingToken,
-        uint256 _bptAmount
-    ) internal virtual;
+    function __stake(address _vaultProxy, address _stakingToken, uint256 _bptAmount) internal virtual;
 
     /// @dev Logic to unstake BPT from a given staking token
-    function __unstake(
-        address _from,
-        address _recipient,
-        address _stakingToken,
-        uint256 _bptAmount
-    ) internal virtual;
+    function __unstake(address _from, address _recipient, address _stakingToken, uint256 _bptAmount) internal virtual;
 
     /////////////
     // ACTIONS //
@@ -72,22 +59,20 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @dev Needs `onlyIntegrationManager` because Minter claiming permission is given by the fund
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         __claimRewards(_vaultProxy, __decodeClaimRewardsCallArgs(_actionData));
     }
 
     /// @notice Lends assets for LP tokens, then stakes the received LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function lendAndStake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function lendAndStake(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         (
             address stakingToken,
             bytes32 poolId,
@@ -99,11 +84,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
         __lend(address(this), poolId, spendAssets, spendAssetAmounts, request);
 
-        __stake(
-            _vaultProxy,
-            stakingToken,
-            ERC20(__parseBalancerPoolAddress(poolId)).balanceOf(address(this))
-        );
+        __stake(_vaultProxy, stakingToken, ERC20(__parseBalancerPoolAddress(poolId)).balanceOf(address(this)));
 
         // There can be different join/exit options per Balancer pool type,
         // some of which involve spending only up-to-max amounts
@@ -113,11 +94,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @notice Stakes LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function stake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function stake(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(_actionData);
 
         __stake(_vaultProxy, stakingToken, bptAmount);
@@ -136,11 +113,10 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// `stakingTokens` facilitates "lend and stake" and "unstake and redeem"-like functionality for such pools.
     /// If `stakingTokens[i]` is non-empty, it is considered to be the actual spend/incoming asset
     /// that must be unstaked to / staked from the BPT specified in `assets[i]` before/after the batchSawp().
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         (
             IBalancerV2Vault.SwapKind kind,
             IBalancerV2Vault.BatchSwapStep[] memory swaps,
@@ -193,16 +169,10 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
                 // Re-stake any unused BPT,
                 // only if partial spend was intentional due to specifying exact swap output amounts.
                 // Prevents griefing edge case if `__stake()` reverts.
-                if (
-                    stakingTokens[i] != address(0) && kind == IBalancerV2Vault.SwapKind.GIVEN_OUT
-                ) {
+                if (stakingTokens[i] != address(0) && kind == IBalancerV2Vault.SwapKind.GIVEN_OUT) {
                     uint256 bptAmount = ERC20(assets[i]).balanceOf(address(this));
                     if (bptAmount > 0) {
-                        __stake({
-                            _vaultProxy: _vaultProxy,
-                            _stakingToken: stakingTokens[i],
-                            _bptAmount: bptAmount
-                        });
+                        __stake({_vaultProxy: _vaultProxy, _stakingToken: stakingTokens[i], _bptAmount: bptAmount});
                     }
                 }
 
@@ -229,11 +199,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @notice Unstakes LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function unstake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function unstake(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(_actionData);
 
         __unstake(_vaultProxy, _vaultProxy, stakingToken, bptAmount);
@@ -242,11 +208,10 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @notice Unstakes LP tokens, then redeems them
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function unstakeAndRedeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function unstakeAndRedeem(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         (
             address stakingToken,
             bytes32 poolId,
@@ -282,11 +247,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         IBalancerV2Vault.PoolBalanceChange memory _request
     ) internal {
         for (uint256 i; i < _spendAssets.length; i++) {
-            __approveAssetMaxAsNeeded(
-                _spendAssets[i],
-                address(BALANCER_VAULT_CONTRACT),
-                _spendAssetAmounts[i]
-            );
+            __approveAssetMaxAsNeeded(_spendAssets[i], address(BALANCER_VAULT_CONTRACT), _spendAssetAmounts[i]);
         }
 
         __balancerV2Lend(_poolId, address(this), _recipient, _request);
@@ -301,9 +262,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         IBalancerV2Vault.PoolBalanceChange memory _request
     ) internal {
         __approveAssetMaxAsNeeded(
-            __parseBalancerPoolAddress(_poolId),
-            address(BALANCER_VAULT_CONTRACT),
-            _spendBptAmount
+            __parseBalancerPoolAddress(_poolId), address(BALANCER_VAULT_CONTRACT), _spendBptAmount
         );
 
         // Since we are not parsing request.userData, we do not know with certainty which tokens
@@ -316,9 +275,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             uint256 remainingCount = unusedTokensCount;
             for (uint256 i; remainingCount > 0; i++) {
                 if (!_expectedIncomingTokens.contains(_request.assets[i])) {
-                    preTxTokenBalancesIfUnused[i] = ERC20(_request.assets[i]).balanceOf(
-                        _vaultProxy
-                    );
+                    preTxTokenBalancesIfUnused[i] = ERC20(_request.assets[i]).balanceOf(_vaultProxy);
                     remainingCount--;
                 }
             }
@@ -330,8 +287,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             for (uint256 i; unusedTokensCount > 0; i++) {
                 if (!_expectedIncomingTokens.contains(_request.assets[i])) {
                     require(
-                        ERC20(_request.assets[i]).balanceOf(_vaultProxy) ==
-                            preTxTokenBalancesIfUnused[i],
+                        ERC20(_request.assets[i]).balanceOf(_vaultProxy) == preTxTokenBalancesIfUnused[i],
                         "__balancerRedeem: Unexpected asset received"
                     );
                     unusedTokensCount--;
@@ -353,11 +309,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         public
         view
         virtual
@@ -431,14 +383,8 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         bytes32 poolId;
         address stakingToken;
         IBalancerV2Vault.PoolBalanceChange memory request;
-        (
-            stakingToken,
-            poolId,
-            minIncomingAssetAmounts_[0],
-            spendAssets_,
-            spendAssetAmounts_,
-            request
-        ) = __decodeCombinedActionCallArgs(_encodedCallArgs);
+        (stakingToken, poolId, minIncomingAssetAmounts_[0], spendAssets_, spendAssetAmounts_, request) =
+            __decodeCombinedActionCallArgs(_encodedCallArgs);
 
         __validatePoolForStakingToken(stakingToken, poolId);
         __validateNoInternalBalances(request.useInternalBalance);
@@ -468,9 +414,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(
-            _encodedCallArgs
-        );
+        (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(_encodedCallArgs);
 
         spendAssets_ = new address[](1);
         spendAssetAmounts_ = new uint256[](1);
@@ -505,13 +449,8 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            ,
-            ,
-            address[] memory assets,
-            int256[] memory limits,
-            address[] memory stakingTokens
-        ) = __decodeTakeOrderCallArgs(_encodedCallArgs);
+        (,, address[] memory assets, int256[] memory limits, address[] memory stakingTokens) =
+            __decodeTakeOrderCallArgs(_encodedCallArgs);
 
         // See takeOrder() comments for how spend and incoming assets are parsed
 
@@ -540,8 +479,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
                 if (stakingToken != address(0)) {
                     require(
-                        spendAsset == __getBptForStakingToken(stakingToken),
-                        "__parseAssetsForTakeOrder: BPT mismatch"
+                        spendAsset == __getBptForStakingToken(stakingToken), "__parseAssetsForTakeOrder: BPT mismatch"
                     );
                     spendAsset = stakingToken;
                 }
@@ -590,9 +528,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(
-            _encodedCallArgs
-        );
+        (address stakingToken, uint256 bptAmount) = __decodeStakingActionCallArgs(_encodedCallArgs);
 
         spendAssets_ = new address[](1);
         spendAssetAmounts_ = new uint256[](1);
@@ -634,14 +570,8 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         bytes32 poolId;
         address stakingToken;
         IBalancerV2Vault.PoolBalanceChange memory request;
-        (
-            stakingToken,
-            poolId,
-            spendAssetAmounts_[0],
-            incomingAssets_,
-            minIncomingAssetAmounts_,
-            request
-        ) = __decodeCombinedActionCallArgs(_encodedCallArgs);
+        (stakingToken, poolId, spendAssetAmounts_[0], incomingAssets_, minIncomingAssetAmounts_, request) =
+            __decodeCombinedActionCallArgs(_encodedCallArgs);
 
         __validatePoolForStakingToken(stakingToken, poolId);
         __validateNoInternalBalances(request.useInternalBalance);
@@ -659,11 +589,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
     /// @dev Helper to get a Balancer pool address (i.e., Balancer Pool Token) for a given id.
     /// See: https://github.com/balancer-labs/balancer-v2-monorepo/blob/42906226223f29e4489975eb3c0d5014dea83b66/pkg/vault/contracts/PoolRegistry.sol#L130-L139
-    function __parseBalancerPoolAddress(bytes32 _poolId)
-        internal
-        pure
-        returns (address poolAddress_)
-    {
+    function __parseBalancerPoolAddress(bytes32 _poolId) internal pure returns (address poolAddress_) {
         return address(uint256(_poolId) >> (12 * 8));
     }
 
@@ -699,26 +625,13 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             IBalancerV2Vault.PoolBalanceChange memory request_
         )
     {
-        return
-            abi.decode(
-                _encodedCallArgs,
-                (
-                    address,
-                    bytes32,
-                    uint256,
-                    address[],
-                    uint256[],
-                    IBalancerV2Vault.PoolBalanceChange
-                )
-            );
+        return abi.decode(
+            _encodedCallArgs, (address, bytes32, uint256, address[], uint256[], IBalancerV2Vault.PoolBalanceChange)
+        );
     }
 
     /// @dev Helper to decode the encoded call arguments for claiming rewards
-    function __decodeClaimRewardsCallArgs(bytes memory _actionData)
-        internal
-        pure
-        returns (address stakingToken_)
-    {
+    function __decodeClaimRewardsCallArgs(bytes memory _actionData) internal pure returns (address stakingToken_) {
         return abi.decode(_actionData, (address));
     }
 
@@ -744,16 +657,9 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             address[] memory stakingTokens_
         )
     {
-        return
-            abi.decode(
-                _encodedCallArgs,
-                (
-                    IBalancerV2Vault.SwapKind,
-                    IBalancerV2Vault.BatchSwapStep[],
-                    address[],
-                    int256[],
-                    address[]
-                )
-            );
+        return abi.decode(
+            _encodedCallArgs,
+            (IBalancerV2Vault.SwapKind, IBalancerV2Vault.BatchSwapStep[], address[], int256[], address[])
+        );
     }
 }

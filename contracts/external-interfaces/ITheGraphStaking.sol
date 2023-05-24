@@ -14,26 +14,9 @@ pragma solidity >=0.6.0 <0.9.0;
 interface ITheGraphStaking {
     function delegate(address, uint256) external returns (uint256);
 
-    function delegationPools(address)
-        external
-        view
-        returns (
-            uint32,
-            uint32,
-            uint32,
-            uint256,
-            uint256,
-            uint256
-        );
+    function delegationPools(address) external view returns (uint32, uint32, uint32, uint256, uint256, uint256);
 
-    function getDelegation(address, address)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        );
+    function getDelegation(address, address) external view returns (uint256, uint256, uint256);
 
     function undelegate(address, uint256) external returns (uint256);
 

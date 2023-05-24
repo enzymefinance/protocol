@@ -14,12 +14,5 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title ICurveSwapsEther Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ICurveSwapsEther {
-    function exchange(
-        address,
-        address,
-        address,
-        uint256,
-        uint256,
-        address
-    ) external payable returns (uint256);
+    function exchange(address, address, address, uint256, uint256, address) external payable returns (uint256);
 }

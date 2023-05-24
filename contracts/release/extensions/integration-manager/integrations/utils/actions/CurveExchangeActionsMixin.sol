@@ -22,8 +22,7 @@ import "../../../../../utils/AssetHelpers.sol";
 /// @notice Mixin contract for interacting with the Curve exchange functions
 /// @dev Inheriting contract must have a receive() function
 abstract contract CurveExchangeActionsMixin is AssetHelpers {
-    address private constant CURVE_EXCHANGE_ETH_ADDRESS =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address private constant CURVE_EXCHANGE_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address private immutable CURVE_EXCHANGE_ADDRESS_PROVIDER;
     address private immutable CURVE_EXCHANGE_WETH_TOKEN;
@@ -75,12 +74,7 @@ abstract contract CurveExchangeActionsMixin is AssetHelpers {
             __approveAssetMaxAsNeeded(_outgoingAsset, swaps, _outgoingAssetAmount);
 
             ICurveSwapsERC20(swaps).exchange(
-                _pool,
-                _outgoingAsset,
-                _incomingAsset,
-                _outgoingAssetAmount,
-                _minIncomingAssetAmount,
-                _recipient
+                _pool, _outgoingAsset, _incomingAsset, _outgoingAssetAmount, _minIncomingAssetAmount, _recipient
             );
         }
     }
@@ -91,11 +85,7 @@ abstract contract CurveExchangeActionsMixin is AssetHelpers {
 
     /// @notice Gets the `CURVE_EXCHANGE_ADDRESS_PROVIDER` variable
     /// @return curveExchangeAddressProvider_ The `CURVE_EXCHANGE_ADDRESS_PROVIDER` variable value
-    function getCurveExchangeAddressProvider()
-        public
-        view
-        returns (address curveExchangeAddressProvider_)
-    {
+    function getCurveExchangeAddressProvider() public view returns (address curveExchangeAddressProvider_) {
         return CURVE_EXCHANGE_ADDRESS_PROVIDER;
     }
 

@@ -36,10 +36,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
 
     address private immutable IDLE_PRICE_FEED;
 
-    constructor(address _integrationManager, address _idlePriceFeed)
-        public
-        AdapterBase(_integrationManager)
-    {
+    constructor(address _integrationManager, address _idlePriceFeed) public AdapterBase(_integrationManager) {
         IDLE_PRICE_FEED = _idlePriceFeed;
     }
 
@@ -47,11 +44,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
@@ -66,21 +59,14 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// @notice Lends an amount of a token for idleToken
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    )
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
         // More efficient to parse all from _assetData
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         __idleV4Lend(incomingAssets[0], spendAssets[0], spendAssetAmounts[0]);
     }
@@ -94,16 +80,12 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// for the corner case of a prior balance existing in the current contract, which would
     /// throw off the per-user avg price of the IdleToken used by Idle, and would leave the
     /// initial token balance in the current contract post-tx.
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        (address idleToken, , ) = __decodeRedeemCallArgs(_actionData);
+        (address idleToken,,) = __decodeRedeemCallArgs(_actionData);
 
         __idleV4Redeem(idleToken, ERC20(idleToken).balanceOf(address(this)));
 
@@ -111,11 +93,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     }
 
     /// @dev Helper to get the underlying for a given IdleToken
-    function __getUnderlyingForIdleToken(address _idleToken)
-        private
-        view
-        returns (address underlying_)
-    {
+    function __getUnderlyingForIdleToken(address _idleToken) private view returns (address underlying_) {
         return IdlePriceFeed(IDLE_PRICE_FEED).getUnderlyingForDerivative(_idleToken);
     }
 
@@ -132,11 +110,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address _vaultProxy,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address _vaultProxy, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -175,8 +149,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
         address idleToken = __decodeClaimRewardsCallArgs(_actionData);
 
         require(
-            __getUnderlyingForIdleToken(idleToken) != address(0),
-            "__parseAssetsForClaimRewards: Unsupported idleToken"
+            __getUnderlyingForIdleToken(idleToken) != address(0), "__parseAssetsForClaimRewards: Unsupported idleToken"
         );
 
         spendAssets_ = new address[](1);
@@ -207,11 +180,8 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            address idleToken,
-            uint256 outgoingUnderlyingAmount,
-            uint256 minIncomingIdleTokenAmount
-        ) = __decodeLendCallArgs(_actionData);
+        (address idleToken, uint256 outgoingUnderlyingAmount, uint256 minIncomingIdleTokenAmount) =
+            __decodeLendCallArgs(_actionData);
 
         address underlying = __getUnderlyingForIdleToken(idleToken);
         require(underlying != address(0), "__parseAssetsForLend: Unsupported idleToken");
@@ -250,11 +220,8 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            address idleToken,
-            uint256 outgoingIdleTokenAmount,
-            uint256 minIncomingUnderlyingAmount
-        ) = __decodeRedeemCallArgs(_actionData);
+        (address idleToken, uint256 outgoingIdleTokenAmount, uint256 minIncomingUnderlyingAmount) =
+            __decodeRedeemCallArgs(_actionData);
 
         address underlying = __getUnderlyingForIdleToken(idleToken);
         require(underlying != address(0), "__parseAssetsForRedeem: Unsupported idleToken");
@@ -285,11 +252,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     ///////////////////////
 
     /// @dev Helper to decode callArgs for claiming rewards tokens
-    function __decodeClaimRewardsCallArgs(bytes memory _actionData)
-        private
-        pure
-        returns (address idleToken_)
-    {
+    function __decodeClaimRewardsCallArgs(bytes memory _actionData) private pure returns (address idleToken_) {
         return abi.decode(_actionData, (address));
     }
 
@@ -297,11 +260,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     function __decodeLendCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            address idleToken_,
-            uint256 outgoingUnderlyingAmount_,
-            uint256 minIncomingIdleTokenAmount_
-        )
+        returns (address idleToken_, uint256 outgoingUnderlyingAmount_, uint256 minIncomingIdleTokenAmount_)
     {
         return abi.decode(_actionData, (address, uint256, uint256));
     }
@@ -310,11 +269,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     function __decodeRedeemCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            address idleToken_,
-            uint256 outgoingIdleTokenAmount_,
-            uint256 minIncomingUnderlyingAmount_
-        )
+        returns (address idleToken_, uint256 outgoingIdleTokenAmount_, uint256 minIncomingUnderlyingAmount_)
     {
         return abi.decode(_actionData, (address, uint256, uint256));
     }

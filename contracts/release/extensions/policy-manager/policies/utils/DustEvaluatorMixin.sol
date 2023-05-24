@@ -26,10 +26,7 @@ abstract contract DustEvaluatorMixin is FundDeployerOwnerMixin {
 
     /// @notice Sets the dustToleranceInWeth variable value
     /// @param _nextDustToleranceInWeth The next dustToleranceInWeth value
-    function setDustToleranceInWeth(uint256 _nextDustToleranceInWeth)
-        external
-        onlyFundDeployerOwner
-    {
+    function setDustToleranceInWeth(uint256 _nextDustToleranceInWeth) external onlyFundDeployerOwner {
         dustToleranceInWeth = _nextDustToleranceInWeth;
 
         emit DustToleranceInWethSet(_nextDustToleranceInWeth);

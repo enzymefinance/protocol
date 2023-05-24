@@ -31,32 +31,14 @@ abstract contract CompoundV3ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to execute lending on Compound V3
-    function __compoundV3Lend(
-        address _underlying,
-        address _cToken,
-        address _recipient,
-        uint256 _amount
-    ) internal {
+    function __compoundV3Lend(address _underlying, address _cToken, address _recipient, uint256 _amount) internal {
         __approveAssetMaxAsNeeded({_asset: _underlying, _target: _cToken, _neededAmount: _amount});
 
-        ICompoundV3Comet(_cToken).supplyTo({
-            _asset: _underlying,
-            _amount: _amount,
-            _dst: _recipient
-        });
+        ICompoundV3Comet(_cToken).supplyTo({_asset: _underlying, _amount: _amount, _dst: _recipient});
     }
 
     /// @dev Helper to execute redeeming on Compound V3
-    function __compoundV3Redeem(
-        address _cToken,
-        address _underlying,
-        address _recipient,
-        uint256 _amount
-    ) internal {
-        ICompoundV3Comet(_cToken).withdrawTo({
-            _asset: _underlying,
-            _amount: _amount,
-            _dst: _recipient
-        });
+    function __compoundV3Redeem(address _cToken, address _underlying, address _recipient, uint256 _amount) internal {
+        ICompoundV3Comet(_cToken).withdrawTo({_asset: _underlying, _amount: _amount, _dst: _recipient});
     }
 }

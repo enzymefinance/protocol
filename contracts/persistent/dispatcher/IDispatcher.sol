@@ -18,21 +18,15 @@ interface IDispatcher {
 
     function claimOwnership() external;
 
-    function deployVaultProxy(
-        address _vaultLib,
-        address _owner,
-        address _vaultAccessor,
-        string calldata _fundName
-    ) external returns (address vaultProxy_);
+    function deployVaultProxy(address _vaultLib, address _owner, address _vaultAccessor, string calldata _fundName)
+        external
+        returns (address vaultProxy_);
 
     function executeMigration(address _vaultProxy, bool _bypassFailure) external;
 
     function getCurrentFundDeployer() external view returns (address currentFundDeployer_);
 
-    function getFundDeployerForVaultProxy(address _vaultProxy)
-        external
-        view
-        returns (address fundDeployer_);
+    function getFundDeployerForVaultProxy(address _vaultProxy) external view returns (address fundDeployer_);
 
     function getMigrationRequestDetailsForVaultProxy(address _vaultProxy)
         external
@@ -57,15 +51,9 @@ interface IDispatcher {
         view
         returns (uint256 secondsRemaining_);
 
-    function hasExecutableMigrationRequest(address _vaultProxy)
-        external
-        view
-        returns (bool hasExecutableRequest_);
+    function hasExecutableMigrationRequest(address _vaultProxy) external view returns (bool hasExecutableRequest_);
 
-    function hasMigrationRequest(address _vaultProxy)
-        external
-        view
-        returns (bool hasMigrationRequest_);
+    function hasMigrationRequest(address _vaultProxy) external view returns (bool hasMigrationRequest_);
 
     function removeNominatedOwner() external;
 

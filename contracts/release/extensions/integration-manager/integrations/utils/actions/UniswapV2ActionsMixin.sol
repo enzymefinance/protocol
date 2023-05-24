@@ -64,13 +64,7 @@ abstract contract UniswapV2ActionsMixin is AssetHelpers {
 
         // Execute redeem on Uniswap
         IUniswapV2Router2(UNISWAP_V2_ROUTER2).removeLiquidity(
-            _tokenA,
-            _tokenB,
-            _poolTokenAmount,
-            _amountAMin,
-            _amountBMin,
-            _recipient,
-            __uniswapV2GetActionDeadline()
+            _tokenA, _tokenB, _poolTokenAmount, _amountAMin, _amountBMin, _recipient, __uniswapV2GetActionDeadline()
         );
     }
 
@@ -84,14 +78,9 @@ abstract contract UniswapV2ActionsMixin is AssetHelpers {
         __approveAssetMaxAsNeeded(_path[0], UNISWAP_V2_ROUTER2, _outgoingAssetAmount);
 
         // Execute fill
-        IUniswapV2Router2(UNISWAP_V2_ROUTER2)
-            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                _outgoingAssetAmount,
-                _minIncomingAssetAmount,
-                _path,
-                _recipient,
-                __uniswapV2GetActionDeadline()
-            );
+        IUniswapV2Router2(UNISWAP_V2_ROUTER2).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            _outgoingAssetAmount, _minIncomingAssetAmount, _path, _recipient, __uniswapV2GetActionDeadline()
+        );
     }
 
     /// @dev Helper to swap many assets to a single target asset.
@@ -104,15 +93,13 @@ abstract contract UniswapV2ActionsMixin is AssetHelpers {
         address _incomingAsset,
         address _intermediaryAsset
     ) internal {
-        bool noIntermediary = _intermediaryAsset == address(0) ||
-            _intermediaryAsset == _incomingAsset;
+        bool noIntermediary = _intermediaryAsset == address(0) || _intermediaryAsset == _incomingAsset;
         for (uint256 i; i < _outgoingAssets.length; i++) {
             // Skip cases where outgoing and incoming assets are the same, or
             // there is no specified outgoing asset or amount
             if (
-                _outgoingAssetAmounts[i] == 0 ||
-                _outgoingAssets[i] == address(0) ||
-                _outgoingAssets[i] == _incomingAsset
+                _outgoingAssetAmounts[i] == 0 || _outgoingAssets[i] == address(0)
+                    || _outgoingAssets[i] == _incomingAsset
             ) {
                 continue;
             }

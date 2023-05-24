@@ -20,10 +20,7 @@ import "../../utils/beacon-proxy/BeaconProxyFactory.sol";
 contract GasRelayPaymasterFactory is BeaconProxyFactory {
     address private immutable DISPATCHER;
 
-    constructor(address _dispatcher, address _paymasterLib)
-        public
-        BeaconProxyFactory(_paymasterLib)
-    {
+    constructor(address _dispatcher, address _paymasterLib) public BeaconProxyFactory(_paymasterLib) {
         DISPATCHER = _dispatcher;
     }
 

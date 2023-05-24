@@ -31,11 +31,7 @@ contract ArbitraryLoanPositionParser is IExternalPositionParser, ArbitraryLoanPo
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -45,9 +41,7 @@ contract ArbitraryLoanPositionParser is IExternalPositionParser, ArbitraryLoanPo
         )
     {
         if (_actionId == uint256(IArbitraryLoanPosition.Actions.ConfigureLoan)) {
-            (, address asset, uint256 amount, , , ) = __decodeConfigureLoanActionArgs(
-                _encodedActionArgs
-            );
+            (, address asset, uint256 amount,,,) = __decodeConfigureLoanActionArgs(_encodedActionArgs);
 
             if (amount > 0) {
                 assetsToTransfer_ = new address[](1);

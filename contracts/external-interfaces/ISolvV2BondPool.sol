@@ -41,17 +41,11 @@ interface ISolvV2BondPool {
 
     function getSlotDetail(uint256 _slot) external view returns (SlotDetail memory slotDetail_);
 
-    function getWithdrawableAmount(uint256 _slot)
-        external
-        view
-        returns (uint256 withdrawTokenAmount_);
+    function getWithdrawableAmount(uint256 _slot) external view returns (uint256 withdrawTokenAmount_);
 
     function refund(uint256 _slot) external;
 
-    function slotBalances(uint256 _slotId, address _currency)
-        external
-        view
-        returns (uint256 balance_);
+    function slotBalances(uint256 _slotId, address _currency) external view returns (uint256 balance_);
 
     function valueDecimals() external view returns (uint8 decimals_);
 

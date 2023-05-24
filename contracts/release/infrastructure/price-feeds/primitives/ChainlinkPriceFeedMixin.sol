@@ -23,12 +23,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
 
-    event PrimitiveAdded(
-        address indexed primitive,
-        address aggregator,
-        RateAsset rateAsset,
-        uint256 unit
-    );
+    event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset, uint256 unit);
 
     event PrimitiveRemoved(address indexed primitive);
 
@@ -42,7 +37,7 @@ abstract contract ChainlinkPriceFeedMixin {
         RateAsset rateAsset;
     }
 
-    uint256 private constant ETH_UNIT = 10**18;
+    uint256 private constant ETH_UNIT = 10 ** 18;
 
     uint256 private immutable STALE_RATE_THRESHOLD;
     address private immutable WETH_TOKEN;
@@ -63,11 +58,11 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @param _baseAssetAmount The base asset amount to convert
     /// @param _quoteAsset The quote asset
     /// @return quoteAssetAmount_ The equivalent quote asset amount
-    function __calcCanonicalValue(
-        address _baseAsset,
-        uint256 _baseAssetAmount,
-        address _quoteAsset
-    ) internal view returns (uint256 quoteAssetAmount_) {
+    function __calcCanonicalValue(address _baseAsset, uint256 _baseAssetAmount, address _quoteAsset)
+        internal
+        view
+        returns (uint256 quoteAssetAmount_)
+    {
         // Case where _baseAsset == _quoteAsset is handled by ValueInterpreter
 
         int256 baseAssetRate = __getLatestRateData(_baseAsset);
@@ -76,23 +71,15 @@ abstract contract ChainlinkPriceFeedMixin {
         int256 quoteAssetRate = __getLatestRateData(_quoteAsset);
         require(quoteAssetRate > 0, "__calcCanonicalValue: Invalid quote asset rate");
 
-        return
-            __calcConversionAmount(
-                _baseAsset,
-                _baseAssetAmount,
-                uint256(baseAssetRate),
-                _quoteAsset,
-                uint256(quoteAssetRate)
-            );
+        return __calcConversionAmount(
+            _baseAsset, _baseAssetAmount, uint256(baseAssetRate), _quoteAsset, uint256(quoteAssetRate)
+        );
     }
 
     /// @dev Helper to set the `ethUsdAggregator` value
     function __setEthUsdAggregator(address _nextEthUsdAggregator) internal {
         address prevEthUsdAggregator = getEthUsdAggregator();
-        require(
-            _nextEthUsdAggregator != prevEthUsdAggregator,
-            "__setEthUsdAggregator: Value already set"
-        );
+        require(_nextEthUsdAggregator != prevEthUsdAggregator, "__setEthUsdAggregator: Value already set");
 
         __validateAggregator(_nextEthUsdAggregator);
 
@@ -118,45 +105,27 @@ abstract contract ChainlinkPriceFeedMixin {
 
         // If rates are both in ETH or both in USD
         if (baseAssetRateAsset == quoteAssetRateAsset) {
-            return
-                __calcConversionAmountSameRateAsset(
-                    _baseAssetAmount,
-                    baseAssetUnit,
-                    _baseAssetRate,
-                    quoteAssetUnit,
-                    _quoteAssetRate
-                );
+            return __calcConversionAmountSameRateAsset(
+                _baseAssetAmount, baseAssetUnit, _baseAssetRate, quoteAssetUnit, _quoteAssetRate
+            );
         }
 
-        (, int256 ethPerUsdRate, , uint256 ethPerUsdRateLastUpdatedAt, ) = IChainlinkAggregator(
-            getEthUsdAggregator()
-        ).latestRoundData();
+        (, int256 ethPerUsdRate,, uint256 ethPerUsdRateLastUpdatedAt,) =
+            IChainlinkAggregator(getEthUsdAggregator()).latestRoundData();
         require(ethPerUsdRate > 0, "__calcConversionAmount: Bad ethUsd rate");
         __validateRateIsNotStale(ethPerUsdRateLastUpdatedAt);
 
         // If _baseAsset's rate is in ETH and _quoteAsset's rate is in USD
         if (baseAssetRateAsset == RateAsset.ETH) {
-            return
-                __calcConversionAmountEthRateAssetToUsdRateAsset(
-                    _baseAssetAmount,
-                    baseAssetUnit,
-                    _baseAssetRate,
-                    quoteAssetUnit,
-                    _quoteAssetRate,
-                    uint256(ethPerUsdRate)
-                );
+            return __calcConversionAmountEthRateAssetToUsdRateAsset(
+                _baseAssetAmount, baseAssetUnit, _baseAssetRate, quoteAssetUnit, _quoteAssetRate, uint256(ethPerUsdRate)
+            );
         }
 
         // If _baseAsset's rate is in USD and _quoteAsset's rate is in ETH
-        return
-            __calcConversionAmountUsdRateAssetToEthRateAsset(
-                _baseAssetAmount,
-                baseAssetUnit,
-                _baseAssetRate,
-                quoteAssetUnit,
-                _quoteAssetRate,
-                uint256(ethPerUsdRate)
-            );
+        return __calcConversionAmountUsdRateAssetToEthRateAsset(
+            _baseAssetAmount, baseAssetUnit, _baseAssetRate, quoteAssetUnit, _quoteAssetRate, uint256(ethPerUsdRate)
+        );
     }
 
     /// @dev Helper to convert amounts where the base asset has an ETH rate and the quote asset has a USD rate
@@ -170,9 +139,7 @@ abstract contract ChainlinkPriceFeedMixin {
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow.
         // Intermediate step needed to resolve stack-too-deep error.
-        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_ethPerUsdRate).div(
-            ETH_UNIT
-        );
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_ethPerUsdRate).div(ETH_UNIT);
 
         return intermediateStep.mul(_quoteAssetUnit).div(_baseAssetUnit).div(_quoteAssetRate);
     }
@@ -186,10 +153,7 @@ abstract contract ChainlinkPriceFeedMixin {
         uint256 _quoteAssetRate
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow
-        return
-            _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(
-                _baseAssetUnit.mul(_quoteAssetRate)
-            );
+        return _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(_baseAssetUnit.mul(_quoteAssetRate));
     }
 
     /// @dev Helper to convert amounts where the base asset has a USD rate and the quote asset has an ETH rate
@@ -203,9 +167,7 @@ abstract contract ChainlinkPriceFeedMixin {
     ) private pure returns (uint256 quoteAssetAmount_) {
         // Only allows two consecutive multiplication operations to avoid potential overflow
         // Intermediate step needed to resolve stack-too-deep error.
-        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(
-            _ethPerUsdRate
-        );
+        uint256 intermediateStep = _baseAssetAmount.mul(_baseAssetRate).mul(_quoteAssetUnit).div(_ethPerUsdRate);
 
         return intermediateStep.mul(ETH_UNIT).div(_baseAssetUnit).div(_quoteAssetRate);
     }
@@ -220,7 +182,7 @@ abstract contract ChainlinkPriceFeedMixin {
         require(aggregator != address(0), "__getLatestRateData: Primitive does not exist");
 
         uint256 rateUpdatedAt;
-        (, rate_, , rateUpdatedAt, ) = IChainlinkAggregator(aggregator).latestRoundData();
+        (, rate_,, rateUpdatedAt,) = IChainlinkAggregator(aggregator).latestRoundData();
         __validateRateIsNotStale(rateUpdatedAt);
 
         return rate_;
@@ -257,20 +219,15 @@ abstract contract ChainlinkPriceFeedMixin {
         );
 
         for (uint256 i; i < _primitives.length; i++) {
-            require(
-                getAggregatorForPrimitive(_primitives[i]) == address(0),
-                "__addPrimitives: Value already set"
-            );
+            require(getAggregatorForPrimitive(_primitives[i]) == address(0), "__addPrimitives: Value already set");
 
             __validateAggregator(_aggregators[i]);
 
-            primitiveToAggregatorInfo[_primitives[i]] = AggregatorInfo({
-                aggregator: _aggregators[i],
-                rateAsset: _rateAssets[i]
-            });
+            primitiveToAggregatorInfo[_primitives[i]] =
+                AggregatorInfo({aggregator: _aggregators[i], rateAsset: _rateAssets[i]});
 
             // Store the amount that makes up 1 unit given the asset's decimals
-            uint256 unit = 10**uint256(ERC20(_primitives[i]).decimals());
+            uint256 unit = 10 ** uint256(ERC20(_primitives[i]).decimals());
             primitiveToUnit[_primitives[i]] = unit;
 
             emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i], unit);
@@ -282,8 +239,7 @@ abstract contract ChainlinkPriceFeedMixin {
     function __removePrimitives(address[] calldata _primitives) internal {
         for (uint256 i; i < _primitives.length; i++) {
             require(
-                getAggregatorForPrimitive(_primitives[i]) != address(0),
-                "__removePrimitives: Primitive not yet added"
+                getAggregatorForPrimitive(_primitives[i]) != address(0), "__removePrimitives: Primitive not yet added"
             );
 
             delete primitiveToAggregatorInfo[_primitives[i]];
@@ -297,8 +253,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
     /// @dev Helper to validate an aggregator by checking its return values for the expected interface
     function __validateAggregator(address _aggregator) private view {
-        (, int256 answer, , uint256 updatedAt, ) = IChainlinkAggregator(_aggregator)
-            .latestRoundData();
+        (, int256 answer,, uint256 updatedAt,) = IChainlinkAggregator(_aggregator).latestRoundData();
         require(answer > 0, "__validateAggregator: No rate detected");
         __validateRateIsNotStale(updatedAt);
     }
@@ -310,11 +265,7 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @notice Gets the aggregator for a primitive
     /// @param _primitive The primitive asset for which to get the aggregator value
     /// @return aggregator_ The aggregator address
-    function getAggregatorForPrimitive(address _primitive)
-        public
-        view
-        returns (address aggregator_)
-    {
+    function getAggregatorForPrimitive(address _primitive) public view returns (address aggregator_) {
         return primitiveToAggregatorInfo[_primitive].aggregator;
     }
 
@@ -329,11 +280,7 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @dev This isn't strictly necessary as WETH_TOKEN will be undefined and thus
     /// the RateAsset will be the 0-position of the enum (i.e. ETH), but it makes the
     /// behavior more explicit
-    function getRateAssetForPrimitive(address _primitive)
-        public
-        view
-        returns (RateAsset rateAsset_)
-    {
+    function getRateAssetForPrimitive(address _primitive) public view returns (RateAsset rateAsset_) {
         if (_primitive == getWethToken()) {
             return RateAsset.ETH;
         }

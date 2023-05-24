@@ -50,10 +50,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     address private immutable WETH_TOKEN;
 
     modifier onlyComptroller() {
-        require(
-            msg.sender == getParentComptroller(),
-            "Can only be called by the parent comptroller"
-        );
+        require(msg.sender == getParentComptroller(), "Can only be called by the parent comptroller");
         _;
     }
 
@@ -102,44 +99,22 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// @param _relayRequest The full relay request structure
     /// @return context_ The tx signer and the fn sig, encoded so that it can be passed to `postRelayCall`
     /// @return rejectOnRecipientRevert_ Always false
-    function preRelayedCall(
-        IGsnTypes.RelayRequest calldata _relayRequest,
-        bytes calldata,
-        bytes calldata,
-        uint256
-    )
+    function preRelayedCall(IGsnTypes.RelayRequest calldata _relayRequest, bytes calldata, bytes calldata, uint256)
         external
         override
         relayHubOnly
         returns (bytes memory context_, bool rejectOnRecipientRevert_)
     {
-        require(
-            _relayRequest.relayData.forwarder == TRUSTED_FORWARDER,
-            "preRelayedCall: Unauthorized forwarder"
-        );
-        require(
-            _relayRequest.relayData.baseRelayFee <= RELAY_FEE_MAX_BASE,
-            "preRelayedCall: High baseRelayFee"
-        );
-        require(
-            _relayRequest.relayData.pctRelayFee <= RELAY_FEE_MAX_PERCENT,
-            "preRelayedCall: High pctRelayFee"
-        );
+        require(_relayRequest.relayData.forwarder == TRUSTED_FORWARDER, "preRelayedCall: Unauthorized forwarder");
+        require(_relayRequest.relayData.baseRelayFee <= RELAY_FEE_MAX_BASE, "preRelayedCall: High baseRelayFee");
+        require(_relayRequest.relayData.pctRelayFee <= RELAY_FEE_MAX_PERCENT, "preRelayedCall: High pctRelayFee");
 
         address vaultProxy = getParentVault();
-        require(
-            IVault(vaultProxy).canRelayCalls(_relayRequest.request.from),
-            "preRelayedCall: Unauthorized caller"
-        );
+        require(IVault(vaultProxy).canRelayCalls(_relayRequest.request.from), "preRelayedCall: Unauthorized caller");
 
         bytes4 selector = __parseTxDataFunctionSelector(_relayRequest.request.data);
         require(
-            __isAllowedCall(
-                vaultProxy,
-                _relayRequest.request.to,
-                selector,
-                _relayRequest.request.data
-            ),
+            __isAllowedCall(vaultProxy, _relayRequest.request.to, selector, _relayRequest.request.data),
             "preRelayedCall: Function call not permitted"
         );
 
@@ -150,12 +125,11 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// @param _context The context constructed by preRelayedCall (used to pass data from pre to post relayed call)
     /// @param _success Whether or not the relayed tx succeed
     /// @param _relayData The relay params of the request. can be used by relayHub.calculateCharge()
-    function postRelayedCall(
-        bytes calldata _context,
-        bool _success,
-        uint256,
-        IGsnTypes.RelayData calldata _relayData
-    ) external override relayHubOnly {
+    function postRelayedCall(bytes calldata _context, bool _success, uint256, IGsnTypes.RelayData calldata _relayData)
+        external
+        override
+        relayHubOnly
+    {
         bool shouldTopUpDeposit = abi.decode(_relayData.paymasterData, (bool));
         if (shouldTopUpDeposit) {
             __depositMax();
@@ -169,8 +143,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     function withdrawBalance() external override {
         address vaultProxy = getParentVault();
         require(
-            msg.sender == IVault(vaultProxy).getOwner() ||
-                msg.sender == __getComptrollerForVault(vaultProxy),
+            msg.sender == IVault(vaultProxy).getOwner() || msg.sender == __getComptrollerForVault(vaultProxy),
             "withdrawBalance: Only owner or comptroller is authorized"
         );
 
@@ -219,11 +192,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     }
 
     /// @dev Helper to get the ComptrollerProxy for a given VaultProxy
-    function __getComptrollerForVault(address _vaultProxy)
-        private
-        view
-        returns (address comptrollerProxy_)
-    {
+    function __getComptrollerForVault(address _vaultProxy) private view returns (address comptrollerProxy_) {
         return IVault(_vaultProxy).getAccessor();
     }
 
@@ -233,12 +202,11 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// - ComptrollerProxy
     /// - PolicyManager
     /// - FundDeployer
-    function __isAllowedCall(
-        address _vaultProxy,
-        address _contract,
-        bytes4 _selector,
-        bytes calldata _txData
-    ) private view returns (bool allowed_) {
+    function __isAllowedCall(address _vaultProxy, address _contract, bytes4 _selector, bytes calldata _txData)
+        private
+        view
+        returns (bool allowed_)
+    {
         if (_contract == _vaultProxy) {
             // All calls to the VaultProxy are allowed
             return true;
@@ -247,27 +215,27 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
         address parentComptroller = __getComptrollerForVault(_vaultProxy);
         if (_contract == parentComptroller) {
             if (
-                _selector == ComptrollerLib.callOnExtension.selector ||
-                _selector == ComptrollerLib.vaultCallOnContract.selector ||
-                _selector == ComptrollerLib.buyBackProtocolFeeShares.selector ||
-                _selector == ComptrollerLib.depositToGasRelayPaymaster.selector ||
-                _selector == ComptrollerLib.setAutoProtocolFeeSharesBuyback.selector
+                _selector == ComptrollerLib.callOnExtension.selector
+                    || _selector == ComptrollerLib.vaultCallOnContract.selector
+                    || _selector == ComptrollerLib.buyBackProtocolFeeShares.selector
+                    || _selector == ComptrollerLib.depositToGasRelayPaymaster.selector
+                    || _selector == ComptrollerLib.setAutoProtocolFeeSharesBuyback.selector
             ) {
                 return true;
             }
         } else if (_contract == ComptrollerLib(parentComptroller).getPolicyManager()) {
             if (
-                _selector == PolicyManager.updatePolicySettingsForFund.selector ||
-                _selector == PolicyManager.enablePolicyForFund.selector ||
-                _selector == PolicyManager.disablePolicyForFund.selector
+                _selector == PolicyManager.updatePolicySettingsForFund.selector
+                    || _selector == PolicyManager.enablePolicyForFund.selector
+                    || _selector == PolicyManager.disablePolicyForFund.selector
             ) {
                 return __parseTxDataFirstParameterAsAddress(_txData) == getParentComptroller();
             }
         } else if (_contract == ComptrollerLib(parentComptroller).getFundDeployer()) {
             if (
-                _selector == FundDeployer.createReconfigurationRequest.selector ||
-                _selector == FundDeployer.executeReconfiguration.selector ||
-                _selector == FundDeployer.cancelReconfiguration.selector
+                _selector == FundDeployer.createReconfigurationRequest.selector
+                    || _selector == FundDeployer.executeReconfiguration.selector
+                    || _selector == FundDeployer.cancelReconfiguration.selector
             ) {
                 return __parseTxDataFirstParameterAsAddress(_txData) == getParentVault();
             }
@@ -284,10 +252,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
         pure
         returns (address retrievedAddress_)
     {
-        require(
-            _txData.length >= 36,
-            "__parseTxDataFirstParameterAsAddress: _txData is not a valid length"
-        );
+        require(_txData.length >= 36, "__parseTxDataFirstParameterAsAddress: _txData is not a valid length");
 
         return abi.decode(_txData[4:36], (address));
     }
@@ -295,22 +260,12 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// @notice Parses the function selector from tx data
     /// @param _txData The tx data
     /// @return functionSelector_ The extracted function selector
-    function __parseTxDataFunctionSelector(bytes calldata _txData)
-        private
-        pure
-        returns (bytes4 functionSelector_)
-    {
+    function __parseTxDataFunctionSelector(bytes calldata _txData) private pure returns (bytes4 functionSelector_) {
         /// convert bytes[:4] to bytes4
-        require(
-            _txData.length >= 4,
-            "__parseTxDataFunctionSelector: _txData is not a valid length"
-        );
+        require(_txData.length >= 4, "__parseTxDataFunctionSelector: _txData is not a valid length");
 
         functionSelector_ =
-            _txData[0] |
-            (bytes4(_txData[1]) >> 8) |
-            (bytes4(_txData[2]) >> 16) |
-            (bytes4(_txData[3]) >> 24);
+            _txData[0] | (bytes4(_txData[1]) >> 8) | (bytes4(_txData[2]) >> 16) | (bytes4(_txData[3]) >> 24);
 
         return functionSelector_;
     }
@@ -321,19 +276,10 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets gas limits used by the relay hub for the pre and post relay calls
     /// @return limits_ `GasAndDataLimits(PAYMASTER_ACCEPTANCE_BUDGET, PRE_RELAYED_CALL_GAS_LIMIT, POST_RELAYED_CALL_GAS_LIMIT, CALLDATA_SIZE_LIMIT)`
-    function getGasAndDataLimits()
-        external
-        view
-        override
-        returns (IGsnPaymaster.GasAndDataLimits memory limits_)
-    {
-        return
-            IGsnPaymaster.GasAndDataLimits(
-                PAYMASTER_ACCEPTANCE_BUDGET,
-                PRE_RELAYED_CALL_GAS_LIMIT,
-                POST_RELAYED_CALL_GAS_LIMIT,
-                CALLDATA_SIZE_LIMIT
-            );
+    function getGasAndDataLimits() external view override returns (IGsnPaymaster.GasAndDataLimits memory limits_) {
+        return IGsnPaymaster.GasAndDataLimits(
+            PAYMASTER_ACCEPTANCE_BUDGET, PRE_RELAYED_CALL_GAS_LIMIT, POST_RELAYED_CALL_GAS_LIMIT, CALLDATA_SIZE_LIMIT
+        );
     }
 
     /// @notice Gets the `RELAY_HUB` variable value

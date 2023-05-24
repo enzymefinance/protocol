@@ -17,8 +17,5 @@ pragma solidity 0.6.12;
 /// are guaranteed to be freely transferable.
 /// @dev DO NOT EDIT CONTRACT
 interface IFreelyTransferableSharesVault {
-    function sharesAreFreelyTransferable()
-        external
-        view
-        returns (bool sharesAreFreelyTransferable_);
+    function sharesAreFreelyTransferable() external view returns (bool sharesAreFreelyTransferable_);
 }

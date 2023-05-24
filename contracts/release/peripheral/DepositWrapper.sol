@@ -69,10 +69,7 @@ contract DepositWrapper is AssetHelpers {
 
         // Deny access to privileged core calls originating from this contract
         bytes4 exchangeSelector = abi.decode(_exchangeData, (bytes4));
-        require(
-            exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR,
-            "exchangeEthAndBuyShares: Disallowed selector"
-        );
+        require(exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR, "exchangeEthAndBuyShares: Disallowed selector");
 
         // Exchange ETH to the fund's denomination asset
         __approveAssetMaxAsNeeded(getWethToken(), _exchangeApproveTarget, msg.value);
@@ -81,21 +78,13 @@ contract DepositWrapper is AssetHelpers {
 
         // Confirm the amount received in the exchange is above the min acceptable amount
         uint256 investmentAmount = ERC20(denominationAsset).balanceOf(address(this));
-        require(
-            investmentAmount >= _minInvestmentAmount,
-            "exchangeEthAndBuyShares: _minInvestmentAmount not met"
-        );
+        require(investmentAmount >= _minInvestmentAmount, "exchangeEthAndBuyShares: _minInvestmentAmount not met");
 
         // Give the ComptrollerProxy max allowance for its denomination asset as necessary
         __approveAssetMaxAsNeeded(denominationAsset, _comptrollerProxy, investmentAmount);
 
         // Buy fund shares
-        sharesReceived_ = __buyShares(
-            _comptrollerProxy,
-            msg.sender,
-            investmentAmount,
-            _minSharesQuantity
-        );
+        sharesReceived_ = __buyShares(_comptrollerProxy, msg.sender, investmentAmount, _minSharesQuantity);
 
         // Unwrap and refund any remaining WETH not used in the exchange
         uint256 remainingWeth = ERC20(getWethToken()).balanceOf(address(this));
@@ -118,11 +107,7 @@ contract DepositWrapper is AssetHelpers {
         uint256 _minSharesQuantity
     ) private returns (uint256 sharesReceived_) {
         ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        sharesReceived_ = comptrollerProxyContract.buySharesOnBehalf(
-            _buyer,
-            _investmentAmount,
-            _minSharesQuantity
-        );
+        sharesReceived_ = comptrollerProxyContract.buySharesOnBehalf(_buyer, _investmentAmount, _minSharesQuantity);
 
         return sharesReceived_;
     }

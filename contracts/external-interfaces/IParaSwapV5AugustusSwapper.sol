@@ -86,15 +86,9 @@ interface IParaSwapV5AugustusSwapper {
         bytes16 uuid;
     }
 
-    function megaSwap(MegaSwapSellData calldata data)
-        external
-        payable
-        returns (uint256 receivedAmount_);
+    function megaSwap(MegaSwapSellData calldata data) external payable returns (uint256 receivedAmount_);
 
     function multiSwap(SellData calldata data) external payable returns (uint256 receivedAmount_);
 
-    function simpleSwap(SimpleData calldata data)
-        external
-        payable
-        returns (uint256 receivedAmount_);
+    function simpleSwap(SimpleData calldata data) external payable returns (uint256 receivedAmount_);
 }

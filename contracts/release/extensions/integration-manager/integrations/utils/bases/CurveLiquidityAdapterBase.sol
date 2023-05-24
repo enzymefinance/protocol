@@ -18,11 +18,11 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
 
     address private immutable CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS;
 
-    constructor(
-        address _integrationManager,
-        address _wrappedNativeAsset,
-        address _nativeAssetAddress
-    ) public AdapterBase(_integrationManager) CurveLiquidityActionsMixin(_wrappedNativeAsset) {
+    constructor(address _integrationManager, address _wrappedNativeAsset, address _nativeAssetAddress)
+        public
+        AdapterBase(_integrationManager)
+        CurveLiquidityActionsMixin(_wrappedNativeAsset)
+    {
         CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS = _nativeAssetAddress;
     }
 
@@ -32,11 +32,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
     // INTERNAL FUNCTIONS
 
     /// @dev Helper to return the wrappedNativeAsset if the input is the native asset
-    function __castWrappedIfNativeAsset(address _tokenOrNativeAsset)
-        internal
-        view
-        returns (address token_)
-    {
+    function __castWrappedIfNativeAsset(address _tokenOrNativeAsset) internal view returns (address token_) {
         if (_tokenOrNativeAsset == CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS) {
             return getCurveLiquidityWrappedNativeAsset();
         }
@@ -53,17 +49,11 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         bytes memory _incomingAssetsData
     ) internal {
         if (_redeemType == RedeemType.OneCoin) {
-            (
-                uint256 incomingAssetPoolIndex,
-                uint256 minIncomingAssetAmount
-            ) = __decodeIncomingAssetsDataRedeemOneCoin(_incomingAssetsData);
+            (uint256 incomingAssetPoolIndex, uint256 minIncomingAssetAmount) =
+                __decodeIncomingAssetsDataRedeemOneCoin(_incomingAssetsData);
 
             __curveRemoveLiquidityOneCoin(
-                _pool,
-                _outgoingLpTokenAmount,
-                int128(incomingAssetPoolIndex),
-                minIncomingAssetAmount,
-                _useUnderlyings
+                _pool, _outgoingLpTokenAmount, int128(incomingAssetPoolIndex), minIncomingAssetAmount, _useUnderlyings
             );
         } else {
             __curveRemoveLiquidity(
@@ -81,16 +71,10 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
         bool _useUnderlyings,
         RedeemType _redeemType,
         bytes memory _incomingAssetsData
-    )
-        internal
-        view
-        returns (address[] memory incomingAssets_, uint256[] memory minIncomingAssetAmounts_)
-    {
+    ) internal view returns (address[] memory incomingAssets_, uint256[] memory minIncomingAssetAmounts_) {
         if (_redeemType == RedeemType.OneCoin) {
-            (
-                uint256 incomingAssetPoolIndex,
-                uint256 minIncomingAssetAmount
-            ) = __decodeIncomingAssetsDataRedeemOneCoin(_incomingAssetsData);
+            (uint256 incomingAssetPoolIndex, uint256 minIncomingAssetAmount) =
+                __decodeIncomingAssetsDataRedeemOneCoin(_incomingAssetsData);
 
             // No need to validate incomingAssetPoolIndex,
             // as an out-of-bounds index will fail in the call to Curve
@@ -100,9 +84,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
             minIncomingAssetAmounts_ = new uint256[](1);
             minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
         } else {
-            minIncomingAssetAmounts_ = __decodeIncomingAssetsDataRedeemStandard(
-                _incomingAssetsData
-            );
+            minIncomingAssetAmounts_ = __decodeIncomingAssetsDataRedeemStandard(_incomingAssetsData);
 
             // No need to validate minIncomingAssetAmounts_.length,
             // as an incorrect length will fail with the wrong n_tokens in the call to Curve
@@ -147,15 +129,13 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
     }
 
     /// @dev Helper to get a pool asset at a given index
-    function __getPoolAsset(
-        address _pool,
-        uint256 _index,
-        bool _useUnderlying
-    ) internal view returns (address asset_) {
+    function __getPoolAsset(address _pool, uint256 _index, bool _useUnderlying)
+        internal
+        view
+        returns (address asset_)
+    {
         if (_useUnderlying) {
-            try ICurveLiquidityPool(_pool).underlying_coins(_index) returns (
-                address underlyingCoin
-            ) {
+            try ICurveLiquidityPool(_pool).underlying_coins(_index) returns (address underlyingCoin) {
                 asset_ = underlyingCoin;
             } catch {
                 asset_ = ICurveLiquidityPool(_pool).underlying_coins(int128(_index));
@@ -180,11 +160,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
     // consistent for all inheriting adapters.
 
     /// @dev Helper to decode the encoded call arguments for claiming rewards
-    function __decodeClaimRewardsCallArgs(bytes memory _actionData)
-        internal
-        pure
-        returns (address stakingToken_)
-    {
+    function __decodeClaimRewardsCallArgs(bytes memory _actionData) internal pure returns (address stakingToken_) {
         return abi.decode(_actionData, (address));
     }
 
@@ -254,11 +230,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
     function __decodeStakeCallArgs(bytes memory _actionData)
         internal
         pure
-        returns (
-            address pool_,
-            address incomingStakingToken_,
-            uint256 amount_
-        )
+        returns (address pool_, address incomingStakingToken_, uint256 amount_)
     {
         return abi.decode(_actionData, (address, address, uint256));
     }
@@ -283,11 +255,7 @@ abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityAction
     function __decodeUnstakeCallArgs(bytes memory _actionData)
         internal
         pure
-        returns (
-            address pool_,
-            address outgoingStakingToken_,
-            uint256 amount_
-        )
+        returns (address pool_, address outgoingStakingToken_, uint256 amount_)
     {
         return abi.decode(_actionData, (address, address, uint256));
     }

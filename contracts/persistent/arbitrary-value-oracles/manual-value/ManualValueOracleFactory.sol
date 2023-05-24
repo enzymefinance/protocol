@@ -29,17 +29,9 @@ contract ManualValueOracleFactory {
     /// @param _updater The updater of the oracle
     /// @param _description A short encoded description for the oracle
     /// @return proxy_ The deployed ManualValueOracleProxy address
-    function deploy(
-        address _owner,
-        address _updater,
-        bytes32 _description
-    ) external returns (address proxy_) {
-        bytes memory constructData = abi.encodeWithSelector(
-            ManualValueOracleLib.init.selector,
-            _owner,
-            _updater,
-            _description
-        );
+    function deploy(address _owner, address _updater, bytes32 _description) external returns (address proxy_) {
+        bytes memory constructData =
+            abi.encodeWithSelector(ManualValueOracleLib.init.selector, _owner, _updater, _description);
 
         proxy_ = address(new ManualValueOracleProxy(constructData, LIB));
 

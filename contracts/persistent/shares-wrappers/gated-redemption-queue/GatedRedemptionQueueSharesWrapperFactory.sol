@@ -53,8 +53,7 @@ contract GatedRedemptionQueueSharesWrapperFactory is IBeacon {
         GatedRedemptionQueueSharesWrapperLibBase1.RedemptionWindowConfig calldata _windowConfig
     ) external returns (address wrapperProxy_) {
         require(
-            DISPATCHER_CONTRACT.getFundDeployerForVaultProxy(_vaultProxy) != address(0),
-            "_vaultProxy: Invalid vault"
+            DISPATCHER_CONTRACT.getFundDeployerForVaultProxy(_vaultProxy) != address(0), "_vaultProxy: Invalid vault"
         );
 
         bytes memory constructData = abi.encodeWithSelector(

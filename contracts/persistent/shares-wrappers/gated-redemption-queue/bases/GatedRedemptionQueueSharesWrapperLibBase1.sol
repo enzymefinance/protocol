@@ -30,19 +30,12 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
     event DepositApproval(address indexed user, address indexed asset, uint256 amount);
 
     event Deposited(
-        address indexed user,
-        address indexed depositToken,
-        uint256 depositTokenAmount,
-        uint256 sharesReceived
+        address indexed user, address indexed depositToken, uint256 depositTokenAmount, uint256 sharesReceived
     );
 
     event DepositModeSet(DepositMode mode);
 
-    event DepositRequestAdded(
-        address indexed user,
-        address indexed depositAsset,
-        uint256 depositAssetAmount
-    );
+    event DepositRequestAdded(address indexed user, address indexed depositAsset, uint256 depositAssetAmount);
 
     event DepositRequestRemoved(address indexed user, address indexed depositAsset);
 
@@ -65,10 +58,7 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
     event RedemptionRequestRemoved(address indexed user);
 
     event RedemptionWindowConfigSet(
-        uint256 firstWindowStart,
-        uint256 frequency,
-        uint256 duration,
-        uint256 relativeSharesCap
+        uint256 firstWindowStart, uint256 frequency, uint256 duration, uint256 relativeSharesCap
     );
 
     event TransferApproval(address indexed sender, address indexed recipient, uint256 amount);

@@ -25,10 +25,7 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
 
     mapping(address => uint256[]) private comptrollerProxyToListIds;
 
-    constructor(address _policyManager, address _addressListRegistry)
-        public
-        PolicyBase(_policyManager)
-    {
+    constructor(address _policyManager, address _addressListRegistry) public PolicyBase(_policyManager) {
         ADDRESS_LIST_REGISTRY = _addressListRegistry;
     }
 
@@ -53,17 +50,9 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
         internal
         returns (uint256 listId_)
     {
-        (
-            AddressListRegistry.UpdateType updateType,
-            address[] memory initialItems
-        ) = __decodeNewListData(_newListData);
+        (AddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
 
-        return
-            AddressListRegistry(getAddressListRegistry()).createList(
-                _vaultProxy,
-                updateType,
-                initialItems
-            );
+        return AddressListRegistry(getAddressListRegistry()).createList(_vaultProxy, updateType, initialItems);
     }
 
     /// @dev Helper to decode new list data
@@ -78,13 +67,9 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
     /// @dev Helper to set the lists to be used by a given fund.
     /// This is done in a simple manner rather than the most gas-efficient way possible
     /// (e.g., comparing already-stored items with an updated list would save on storage operations during updates).
-    function __updateListsForFund(address _comptrollerProxy, bytes calldata _encodedSettings)
-        internal
-    {
-        (uint256[] memory existingListIds, bytes[] memory newListsData) = abi.decode(
-            _encodedSettings,
-            (uint256[], bytes[])
-        );
+    function __updateListsForFund(address _comptrollerProxy, bytes calldata _encodedSettings) internal {
+        (uint256[] memory existingListIds, bytes[] memory newListsData) =
+            abi.decode(_encodedSettings, (uint256[], bytes[]));
 
         uint256[] memory nextListIds = new uint256[](existingListIds.length + newListsData.length);
         require(nextListIds.length != 0, "__updateListsForFund: No lists specified");
@@ -106,10 +91,7 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
             address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
             for (uint256 i; i < newListsData.length; i++) {
                 uint256 nextListIdsIndex = existingListIds.length + i;
-                nextListIds[nextListIdsIndex] = __createAddressListFromData(
-                    vaultProxy,
-                    newListsData[i]
-                );
+                nextListIds[nextListIdsIndex] = __createAddressListFromData(vaultProxy, newListsData[i]);
                 comptrollerProxyToListIds[_comptrollerProxy].push(nextListIds[nextListIdsIndex]);
             }
         }
@@ -130,11 +112,7 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
     /// @notice Gets the list ids used by a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return listIds_ The list ids
-    function getListIdsForFund(address _comptrollerProxy)
-        public
-        view
-        returns (uint256[] memory listIds_)
-    {
+    function getListIdsForFund(address _comptrollerProxy) public view returns (uint256[] memory listIds_) {
         return comptrollerProxyToListIds[_comptrollerProxy];
     }
 }

@@ -42,7 +42,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
 
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant RESET_HWM_FLAG = type(uint256).max;
-    uint256 private constant SHARE_UNIT = 10**18;
+    uint256 private constant SHARE_UNIT = 10 ** 18;
 
     mapping(address => FeeInfo) private comptrollerProxyToFeeInfo;
 
@@ -93,21 +93,11 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     /// @return settlementType_ The type of settlement
     /// @return (unused) The payer of shares due
     /// @return sharesDue_ The amount of shares due
-    function settle(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        IFeeManager.FeeHook,
-        bytes calldata,
-        uint256 _gav
-    )
+    function settle(address _comptrollerProxy, address _vaultProxy, IFeeManager.FeeHook, bytes calldata, uint256 _gav)
         external
         override
         onlyFeeManager
-        returns (
-            IFeeManager.SettlementType settlementType_,
-            address,
-            uint256 sharesDue_
-        )
+        returns (IFeeManager.SettlementType settlementType_, address, uint256 sharesDue_)
     {
         uint256 sharePrice;
         (sharePrice, sharesDue_) = __calcSharesDue(_comptrollerProxy, _vaultProxy, _gav);
@@ -127,16 +117,10 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     /// @param _hook The FeeHook
     /// @return settles_ True if the fee settles on the _hook
     /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        override
-        returns (bool settles_, bool usesGav_)
-    {
+    function settlesOnHook(IFeeManager.FeeHook _hook) external view override returns (bool settles_, bool usesGav_) {
         if (
-            _hook == IFeeManager.FeeHook.PreBuyShares ||
-            _hook == IFeeManager.FeeHook.PreRedeemShares ||
-            _hook == IFeeManager.FeeHook.Continuous
+            _hook == IFeeManager.FeeHook.PreBuyShares || _hook == IFeeManager.FeeHook.PreRedeemShares
+                || _hook == IFeeManager.FeeHook.Continuous
         ) {
             return (true, true);
         }
@@ -148,19 +132,14 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _gav The GAV of the fund
-    function update(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        IFeeManager.FeeHook,
-        bytes calldata,
-        uint256 _gav
-    ) external override onlyFeeManager {
+    function update(address _comptrollerProxy, address _vaultProxy, IFeeManager.FeeHook, bytes calldata, uint256 _gav)
+        external
+        override
+        onlyFeeManager
+    {
         if (comptrollerProxyToFeeInfo[_comptrollerProxy].highWaterMark == RESET_HWM_FLAG) {
-            uint256 nextHWM = __calcGrossShareValueForComptrollerProxy(
-                _comptrollerProxy,
-                _gav,
-                ERC20(_vaultProxy).totalSupply()
-            );
+            uint256 nextHWM =
+                __calcGrossShareValueForComptrollerProxy(_comptrollerProxy, _gav, ERC20(_vaultProxy).totalSupply());
             comptrollerProxyToFeeInfo[_comptrollerProxy].highWaterMark = nextHWM;
 
             emit HighWaterMarkUpdated(_comptrollerProxy, nextHWM);
@@ -171,16 +150,10 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     /// @param _hook The FeeHook
     /// @return updates_ True if the fee updates on the _hook
     /// @return usesGav_ True if the fee uses GAV during update() for the _hook
-    function updatesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        override
-        returns (bool updates_, bool usesGav_)
-    {
+    function updatesOnHook(IFeeManager.FeeHook _hook) external view override returns (bool updates_, bool usesGav_) {
         if (
-            _hook == IFeeManager.FeeHook.PostBuyShares ||
-            _hook == IFeeManager.FeeHook.PreRedeemShares ||
-            _hook == IFeeManager.FeeHook.Continuous
+            _hook == IFeeManager.FeeHook.PostBuyShares || _hook == IFeeManager.FeeHook.PreRedeemShares
+                || _hook == IFeeManager.FeeHook.Continuous
         ) {
             return (true, true);
         }
@@ -206,17 +179,13 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
 
     /// @dev Helper for calculating the gross share value.
     /// Logic mimics ComptrollerLib.__calcGrossShareValue().
-    function __calcGrossShareValueForComptrollerProxy(
-        address _comptrollerProxy,
-        uint256 _gav,
-        uint256 _sharesSupply
-    ) private view returns (uint256 grossShareValue_) {
+    function __calcGrossShareValueForComptrollerProxy(address _comptrollerProxy, uint256 _gav, uint256 _sharesSupply)
+        private
+        view
+        returns (uint256 grossShareValue_)
+    {
         if (_sharesSupply == 0) {
-            return
-                10 **
-                    uint256(
-                        ERC20(ComptrollerLib(_comptrollerProxy).getDenominationAsset()).decimals()
-                    );
+            return 10 ** uint256(ERC20(ComptrollerLib(_comptrollerProxy).getDenominationAsset()).decimals());
         }
 
         return _gav.mul(SHARE_UNIT).div(_sharesSupply);
@@ -224,11 +193,11 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
 
     /// @dev Helper to calculate shares due.
     /// Avoids the stack-too-deep error.
-    function __calcSharesDue(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        uint256 _gav
-    ) private view returns (uint256 sharePrice_, uint256 sharesDue_) {
+    function __calcSharesDue(address _comptrollerProxy, address _vaultProxy, uint256 _gav)
+        private
+        view
+        returns (uint256 sharePrice_, uint256 sharesDue_)
+    {
         if (_gav == 0) {
             return (0, 0);
         }
@@ -239,11 +208,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         }
 
         // Check if current share price is greater than the HWM
-        sharePrice_ = __calcGrossShareValueForComptrollerProxy(
-            _comptrollerProxy,
-            _gav,
-            sharesSupply
-        );
+        sharePrice_ = __calcGrossShareValueForComptrollerProxy(_comptrollerProxy, _gav, sharesSupply);
         uint256 HWM = comptrollerProxyToFeeInfo[_comptrollerProxy].highWaterMark;
         if (sharePrice_ <= HWM) {
             return (0, 0);
@@ -251,11 +216,9 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
 
         // Calculate the shares due, inclusive of inflation
         uint256 priceIncrease = sharePrice_.sub(HWM);
-        uint256 rawValueDue = priceIncrease
-            .mul(sharesSupply)
-            .mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate)
-            .div(ONE_HUNDRED_PERCENT)
-            .div(SHARE_UNIT);
+        uint256 rawValueDue = priceIncrease.mul(sharesSupply).mul(comptrollerProxyToFeeInfo[_comptrollerProxy].rate).div(
+            ONE_HUNDRED_PERCENT
+        ).div(SHARE_UNIT);
         sharesDue_ = rawValueDue.mul(sharesSupply).div(_gav.sub(rawValueDue));
 
         return (sharePrice_, sharesDue_);
@@ -268,11 +231,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     /// @notice Gets the feeInfo for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy contract of the fund
     /// @return feeInfo_ The feeInfo
-    function getFeeInfoForFund(address _comptrollerProxy)
-        external
-        view
-        returns (FeeInfo memory feeInfo_)
-    {
+    function getFeeInfoForFund(address _comptrollerProxy) external view returns (FeeInfo memory feeInfo_) {
         return comptrollerProxyToFeeInfo[_comptrollerProxy];
     }
 }

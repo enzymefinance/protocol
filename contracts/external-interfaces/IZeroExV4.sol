@@ -58,15 +58,12 @@ interface IZeroExV4 {
         bytes32 s;
     }
 
-    function fillOrKillLimitOrder(
-        LimitOrder memory _order,
-        Signature memory _signature,
-        uint128 _takerTokenFillAmount
-    ) external payable returns (uint128 makerTokenFilledAmount_);
+    function fillOrKillLimitOrder(LimitOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
+        external
+        payable
+        returns (uint128 makerTokenFilledAmount_);
 
-    function fillOrKillRfqOrder(
-        RfqOrder memory _order,
-        Signature memory _signature,
-        uint128 _takerTokenFillAmount
-    ) external returns (uint128 makerTokenFilledAmount_);
+    function fillOrKillRfqOrder(RfqOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
+        external
+        returns (uint128 makerTokenFilledAmount_);
 }

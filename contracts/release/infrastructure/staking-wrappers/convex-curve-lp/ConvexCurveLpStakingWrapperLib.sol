@@ -29,12 +29,10 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     uint256 private convexPoolId;
     address private curveLPToken;
 
-    constructor(
-        address _owner,
-        address _convexBooster,
-        address _crvToken,
-        address _cvxToken
-    ) public StakingWrapperBase(_owner, "", "") {
+    constructor(address _owner, address _convexBooster, address _crvToken, address _cvxToken)
+        public
+        StakingWrapperBase(_owner, "", "")
+    {
         CONVEX_BOOSTER_CONTRACT = IConvexBooster(_convexBooster);
         CRV_TOKEN = _crvToken;
         CVX_TOKEN = _cvxToken;
@@ -73,9 +71,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
         uint256 extraRewardsCount = convexPoolContract.extraRewardsLength();
         for (uint256 i; i < extraRewardsCount; i++) {
             // __addRewardToken silently ignores duplicates
-            __addRewardToken(
-                IConvexVirtualBalanceRewardPool(convexPoolContract.extraRewards(i)).rewardToken()
-            );
+            __addRewardToken(IConvexVirtualBalanceRewardPool(convexPoolContract.extraRewards(i)).rewardToken());
         }
     }
 

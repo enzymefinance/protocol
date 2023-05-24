@@ -22,12 +22,9 @@ import "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
 contract IdlePriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivativeRegistryMixin {
     using SafeMath for uint256;
 
-    uint256 private constant IDLE_TOKEN_UNIT = 10**18;
+    uint256 private constant IDLE_TOKEN_UNIT = 10 ** 18;
 
-    constructor(address _fundDeployer)
-        public
-        SingleUnderlyingDerivativeRegistryMixin(_fundDeployer)
-    {}
+    constructor(address _fundDeployer) public SingleUnderlyingDerivativeRegistryMixin(_fundDeployer) {}
 
     /// @notice Converts a given amount of a derivative to its underlying asset values
     /// @param _derivative The derivative to convert
@@ -44,9 +41,7 @@ contract IdlePriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivativeRegist
         require(underlyings_[0] != address(0), "calcUnderlyingValues: Unsupported derivative");
 
         underlyingAmounts_ = new uint256[](1);
-        underlyingAmounts_[0] = _derivativeAmount.mul(IIdleTokenV4(_derivative).tokenPrice()).div(
-            IDLE_TOKEN_UNIT
-        );
+        underlyingAmounts_[0] = _derivativeAmount.mul(IIdleTokenV4(_derivative).tokenPrice()).div(IDLE_TOKEN_UNIT);
     }
 
     /// @notice Checks if an asset is supported by the price feed
@@ -60,8 +55,7 @@ contract IdlePriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivativeRegist
     /// Inherited from SingleUnderlyingDerivativeRegistryMixin.
     function __validateDerivative(address _derivative, address _underlying) internal override {
         require(
-            IIdleTokenV4(_derivative).token() == _underlying,
-            "__validateDerivative: Invalid underlying for IdleToken"
+            IIdleTokenV4(_derivative).token() == _underlying, "__validateDerivative: Invalid underlying for IdleToken"
         );
     }
 }

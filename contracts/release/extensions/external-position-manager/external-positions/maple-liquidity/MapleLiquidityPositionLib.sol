@@ -39,7 +39,7 @@ contract MapleLiquidityPositionLib is
     using SafeMath for uint256;
     using Uint256ArrayLib for uint256[];
 
-    uint256 private constant MPT_V1_DECIMALS_FACTOR = 10**18;
+    uint256 private constant MPT_V1_DECIMALS_FACTOR = 10 ** 18;
 
     MapleV1ToV2PoolMapper private immutable MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT;
 
@@ -136,11 +136,7 @@ contract MapleLiquidityPositionLib is
     function __redeemV2Action(bytes memory _actionArgs) private {
         (address pool, uint256 poolTokenAmount) = __decodeRedeemV2ActionArgs(_actionArgs);
 
-        IMapleV2Pool(pool).redeem({
-            _shares: poolTokenAmount,
-            _receiver: msg.sender,
-            _owner: address(this)
-        });
+        IMapleV2Pool(pool).redeem({_shares: poolTokenAmount, _receiver: msg.sender, _owner: address(this)});
 
         // If the full amount of pool tokens has been redeemed, it can be removed from usedLendingPoolsV2
         if (__getTotalPoolTokenV2Balance(pool) == 0) {
@@ -171,11 +167,7 @@ contract MapleLiquidityPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
@@ -184,11 +176,7 @@ contract MapleLiquidityPositionLib is
     /// @return amounts_ Managed asset amounts
     /// @dev Since lending is not allowed until all v1 pools are migrated,
     /// tracked pools will either be all v1 or all v2, never a mix
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         uint256 poolsV1Length = usedLendingPoolsV1.length;
         if (poolsV1Length > 0) {
             if (MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed()) {
@@ -230,9 +218,7 @@ contract MapleLiquidityPositionLib is
                 address poolV2 = poolsV2[i];
 
                 assets_[i] = IMapleV2Pool(poolV2).asset();
-                amounts_[i] = IMapleV2Pool(poolV2).convertToExitAssets(
-                    __getTotalPoolTokenV2Balance(poolV2)
-                );
+                amounts_[i] = IMapleV2Pool(poolV2).convertToExitAssets(__getTotalPoolTokenV2Balance(poolV2));
             }
         }
 
@@ -251,11 +237,9 @@ contract MapleLiquidityPositionLib is
 
         // According to Maple's WithdrawalManager code comments, IMapleV2PoolManager.withdrawalManager
         // can be set to address(0) in order to pause redemptions, which would cause this to revert.
-        address withdrawalManager = IMapleV2PoolManager(IMapleV2Pool(_pool).manager())
-            .withdrawalManager();
+        address withdrawalManager = IMapleV2PoolManager(IMapleV2Pool(_pool).manager()).withdrawalManager();
 
-        return
-            balance_.add(IMapleV2WithdrawalManager(withdrawalManager).lockedShares(address(this)));
+        return balance_.add(IMapleV2WithdrawalManager(withdrawalManager).lockedShares(address(this)));
     }
 
     ////////////////////////
@@ -292,30 +276,21 @@ contract MapleLiquidityPositionLib is
     /// taken prior to migration
     /// @param _poolV1 The Maple Pool v1
     /// @return valueSnapshot_ The snapshotted Maple Pool Token v1 value
-    function getPreMigrationValueSnapshotOfPoolTokenV1(address _poolV1)
-        public
-        view
-        returns (uint256 valueSnapshot_)
-    {
+    function getPreMigrationValueSnapshotOfPoolTokenV1(address _poolV1) public view returns (uint256 valueSnapshot_) {
         return poolTokenV1ToPreMigrationValueSnapshot[_poolV1];
     }
 
     /// @notice Migrates tracked v1 pools to tracked v2 pools
     /// @dev Callable by anybody.
     function migratePoolsV1ToV2() public {
-        require(
-            MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed(),
-            "migratePoolsV1ToV2: Migration not allowed"
-        );
+        require(MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.migrationIsAllowed(), "migratePoolsV1ToV2: Migration not allowed");
 
         address[] memory poolsV1 = getUsedLendingPoolsV1();
         uint256 poolsV1Length = poolsV1.length;
 
         for (uint256 i; i < poolsV1Length; i++) {
             address poolV1 = poolsV1[i];
-            address poolV2 = MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.getPoolTokenV2FromPoolTokenV1(
-                poolV1
-            );
+            address poolV2 = MAPLE_V1_TO_V2_POOL_MAPPER_CONTRACT.getPoolTokenV2FromPoolTokenV1(poolV1);
             require(poolV2 != address(0), "migratePoolsV1ToV2: No mapping");
 
             __addUsedPoolV2IfUntracked(poolV2);
@@ -332,15 +307,14 @@ contract MapleLiquidityPositionLib is
     // PRIVATE FUNCTIONS
 
     /// @dev Calculates the value of pool tokens referenced in liquidityAsset
-    function __calcLiquidityAssetValueOfPoolTokensV1(
-        address _liquidityAsset,
-        uint256 _poolTokenAmount
-    ) private view returns (uint256 liquidityValue_) {
-        uint256 liquidityAssetDecimalsFactor = 10**(uint256(ERC20(_liquidityAsset).decimals()));
+    function __calcLiquidityAssetValueOfPoolTokensV1(address _liquidityAsset, uint256 _poolTokenAmount)
+        private
+        view
+        returns (uint256 liquidityValue_)
+    {
+        uint256 liquidityAssetDecimalsFactor = 10 ** (uint256(ERC20(_liquidityAsset).decimals()));
 
-        liquidityValue_ = _poolTokenAmount.mul(liquidityAssetDecimalsFactor).div(
-            MPT_V1_DECIMALS_FACTOR
-        );
+        liquidityValue_ = _poolTokenAmount.mul(liquidityAssetDecimalsFactor).div(MPT_V1_DECIMALS_FACTOR);
 
         return liquidityValue_;
     }
@@ -353,8 +327,7 @@ contract MapleLiquidityPositionLib is
         // The liquidity asset balance is derived from the pool token balance (which is stored as a wad),
         // while interest and losses are already returned in terms of the liquidity asset (not pool token)
         uint256 liquidityAssetBalance = __calcLiquidityAssetValueOfPoolTokensV1(
-            poolContract.liquidityAsset(),
-            ERC20(_pool).balanceOf(address(this))
+            poolContract.liquidityAsset(), ERC20(_pool).balanceOf(address(this))
         );
 
         uint256 accumulatedInterest = poolContract.withdrawableFundsOf(address(this));

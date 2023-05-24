@@ -10,6 +10,7 @@
 */
 
 pragma solidity >=0.6.0 <0.9.0;
+
 import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
 
 /// @title IIdleTokenV4 Interface
@@ -20,11 +21,7 @@ interface IIdleTokenV4 {
 
     function govTokens(uint256) external view returns (address);
 
-    function mintIdleToken(
-        uint256,
-        bool,
-        address
-    ) external returns (uint256);
+    function mintIdleToken(uint256, bool, address) external returns (uint256);
 
     function redeemIdleToken(uint256) external returns (uint256);
 

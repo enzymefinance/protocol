@@ -23,11 +23,10 @@ import "./utils/AddOnlyAddressListOwnerBase.sol";
 contract AaveV3ATokenListOwner is AddOnlyAddressListOwnerBase {
     IAaveV3PoolAddressProvider private immutable POOL_ADDRESS_PROVIDER_CONTRACT;
 
-    constructor(
-        address _addressListRegistry,
-        string memory _listDescription,
-        address _poolAddressProvider
-    ) public AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription) {
+    constructor(address _addressListRegistry, string memory _listDescription, address _poolAddressProvider)
+        public
+        AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription)
+    {
         POOL_ADDRESS_PROVIDER_CONTRACT = IAaveV3PoolAddressProvider(_poolAddressProvider);
     }
 
@@ -39,10 +38,7 @@ contract AaveV3ATokenListOwner is AddOnlyAddressListOwnerBase {
             address aToken = _items[i];
 
             require(
-                aToken ==
-                    poolContract
-                        .getReserveData(IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS())
-                        .aTokenAddress,
+                aToken == poolContract.getReserveData(IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS()).aTokenAddress,
                 "__validateItems: Invalid aToken"
             );
         }

@@ -23,21 +23,17 @@ import "./utils/AddOnlyAddressListOwnerBase.sol";
 contract AaveV2ATokenListOwner is AddOnlyAddressListOwnerBase {
     IAaveV2LendingPoolAddressProvider private immutable LENDING_POOL_ADDRESS_PROVIDER_CONTRACT;
 
-    constructor(
-        address _addressListRegistry,
-        string memory _listDescription,
-        address _lendingPoolAddressProvider
-    ) public AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription) {
-        LENDING_POOL_ADDRESS_PROVIDER_CONTRACT = IAaveV2LendingPoolAddressProvider(
-            _lendingPoolAddressProvider
-        );
+    constructor(address _addressListRegistry, string memory _listDescription, address _lendingPoolAddressProvider)
+        public
+        AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription)
+    {
+        LENDING_POOL_ADDRESS_PROVIDER_CONTRACT = IAaveV2LendingPoolAddressProvider(_lendingPoolAddressProvider);
     }
 
     /// @dev Required virtual helper to validate items prior to adding them to the list
     function __validateItems(address[] calldata _items) internal override {
-        IAaveV2LendingPool lendingPoolContract = IAaveV2LendingPool(
-            LENDING_POOL_ADDRESS_PROVIDER_CONTRACT.getLendingPool()
-        );
+        IAaveV2LendingPool lendingPoolContract =
+            IAaveV2LendingPool(LENDING_POOL_ADDRESS_PROVIDER_CONTRACT.getLendingPool());
 
         for (uint256 i; i < _items.length; i++) {
             address aToken = _items[i];

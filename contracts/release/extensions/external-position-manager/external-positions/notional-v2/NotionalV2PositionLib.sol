@@ -22,16 +22,12 @@ import "./NotionalV2PositionDataDecoder.sol";
 /// @title NotionalV2PositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Notional V2 Positions
-contract NotionalV2PositionLib is
-    INotionalV2Position,
-    NotionalV2PositionDataDecoder,
-    AssetHelpers
-{
+contract NotionalV2PositionLib is INotionalV2Position, NotionalV2PositionDataDecoder, AssetHelpers {
     using SafeERC20 for ERC20;
     using SafeMath for uint256;
 
     uint16 private constant ETH_CURRENCY_ID = 1;
-    uint256 private constant FCASH_DECIMALS_FACTOR = 10**8;
+    uint256 private constant FCASH_DECIMALS_FACTOR = 10 ** 8;
 
     INotionalV2Router private immutable NOTIONAL_V2_ROUTER_CONTRACT;
     address private immutable WETH_TOKEN;
@@ -65,21 +61,15 @@ contract NotionalV2PositionLib is
 
     /// @dev Adds collateral to Notional V2 account
     function __actionAddCollateral(bytes memory _actionArgs) private {
-        (uint16 currencyId, uint256 collateralAssetAmount) = __decodeAddCollateralActionArgs(
-            _actionArgs
-        );
+        (uint16 currencyId, uint256 collateralAssetAmount) = __decodeAddCollateralActionArgs(_actionArgs);
 
         __addCollateral(currencyId, collateralAssetAmount);
     }
 
     /// @dev Borrows assets from a Notional V2 market
     function __actionBorrow(bytes memory _actionArgs) private {
-        (
-            uint16 borrowCurrencyId,
-            bytes32 encodedTrade,
-            uint16 collateralCurrencyId,
-            uint256 collateralAssetAmount
-        ) = __decodeBorrowActionArgs(_actionArgs);
+        (uint16 borrowCurrencyId, bytes32 encodedTrade, uint16 collateralCurrencyId, uint256 collateralAssetAmount) =
+            __decodeBorrowActionArgs(_actionArgs);
 
         if (collateralAssetAmount > 0) {
             __addCollateral(collateralCurrencyId, collateralAssetAmount);
@@ -88,8 +78,8 @@ contract NotionalV2PositionLib is
         bytes32[] memory encodedTrades = new bytes32[](1);
         encodedTrades[0] = encodedTrade;
 
-        INotionalV2Router.BalanceActionWithTrades[]
-            memory actionsWithTrades = new INotionalV2Router.BalanceActionWithTrades[](1);
+        INotionalV2Router.BalanceActionWithTrades[] memory actionsWithTrades =
+            new INotionalV2Router.BalanceActionWithTrades[](1);
 
         // `withdrawEntireCashBalance: true` sends the borrowed asset to this contract
         // `redeemToUnderlying: true` sends the borrowed asset as the underlying token (e.g., DAI rather than cDAI)
@@ -113,30 +103,25 @@ contract NotionalV2PositionLib is
             // Send borrowed ETH to the vault wrapped as WETH
             ERC20(WETH_TOKEN).safeTransfer(msg.sender, etherBalance);
         } else {
-            (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT
-                .getCurrency(borrowCurrencyId);
+            (, INotionalV2Router.Token memory underlyingAsset) =
+                NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(borrowCurrencyId);
 
             // Send borrowed asset tokens to the vault
             ERC20(underlyingAsset.tokenAddress).safeTransfer(
-                msg.sender,
-                ERC20(underlyingAsset.tokenAddress).balanceOf(address(this))
+                msg.sender, ERC20(underlyingAsset.tokenAddress).balanceOf(address(this))
             );
         }
     }
 
     /// @dev Lends assets to a Notional V2 market
     function __actionLend(bytes memory _actionArgs) private {
-        (
-            uint16 currencyId,
-            uint256 underlyingAssetAmount,
-            bytes32 encodedTrade
-        ) = __decodeLendActionArgs(_actionArgs);
+        (uint16 currencyId, uint256 underlyingAssetAmount, bytes32 encodedTrade) = __decodeLendActionArgs(_actionArgs);
 
         bytes32[] memory encodedTrades = new bytes32[](1);
         encodedTrades[0] = encodedTrade;
 
-        INotionalV2Router.BalanceActionWithTrades[]
-            memory actionsWithTrades = new INotionalV2Router.BalanceActionWithTrades[](1);
+        INotionalV2Router.BalanceActionWithTrades[] memory actionsWithTrades =
+            new INotionalV2Router.BalanceActionWithTrades[](1);
 
         // It is recommended that `depositActionAmount` is larger than the desired amount to lend,
         // as rates can change between blocks. `withdrawEntireCashBalance = true` will send any
@@ -155,8 +140,7 @@ contract NotionalV2PositionLib is
             IWETH(payable(address(WETH_TOKEN))).withdraw(underlyingAssetAmount);
 
             NOTIONAL_V2_ROUTER_CONTRACT.batchBalanceAndTradeAction{value: underlyingAssetAmount}(
-                address(this),
-                actionsWithTrades
+                address(this), actionsWithTrades
             );
 
             uint256 etherBalance = payable(address(this)).balance;
@@ -168,30 +152,19 @@ contract NotionalV2PositionLib is
                 ERC20(WETH_TOKEN).safeTransfer(msg.sender, etherBalance);
             }
         } else {
-            (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT
-                .getCurrency(currencyId);
+            (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(currencyId);
 
             __approveAssetMaxAsNeeded(
-                underlyingAsset.tokenAddress,
-                address(NOTIONAL_V2_ROUTER_CONTRACT),
-                underlyingAssetAmount
+                underlyingAsset.tokenAddress, address(NOTIONAL_V2_ROUTER_CONTRACT), underlyingAssetAmount
             );
 
-            NOTIONAL_V2_ROUTER_CONTRACT.batchBalanceAndTradeAction(
-                address(this),
-                actionsWithTrades
-            );
+            NOTIONAL_V2_ROUTER_CONTRACT.batchBalanceAndTradeAction(address(this), actionsWithTrades);
 
-            uint256 underlyingAssetBalance = ERC20(underlyingAsset.tokenAddress).balanceOf(
-                address(this)
-            );
+            uint256 underlyingAssetBalance = ERC20(underlyingAsset.tokenAddress).balanceOf(address(this));
 
             if (underlyingAssetBalance > 0) {
                 // Send residual underlying asset tokens back to the vault
-                ERC20(underlyingAsset.tokenAddress).safeTransfer(
-                    msg.sender,
-                    underlyingAssetBalance
-                );
+                ERC20(underlyingAsset.tokenAddress).safeTransfer(msg.sender, underlyingAssetBalance);
             }
         }
     }
@@ -208,12 +181,10 @@ contract NotionalV2PositionLib is
 
             ERC20(WETH_TOKEN).safeTransfer(msg.sender, ERC20(WETH_TOKEN).balanceOf(address(this)));
         } else {
-            (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT
-                .getCurrency(currencyId);
+            (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(currencyId);
 
             ERC20(underlyingAsset.tokenAddress).safeTransfer(
-                msg.sender,
-                ERC20(underlyingAsset.tokenAddress).balanceOf(address(this))
+                msg.sender, ERC20(underlyingAsset.tokenAddress).balanceOf(address(this))
             );
         }
     }
@@ -223,25 +194,12 @@ contract NotionalV2PositionLib is
         if (_currencyId == ETH_CURRENCY_ID) {
             IWETH(payable(address(WETH_TOKEN))).withdraw(_amount);
 
-            NOTIONAL_V2_ROUTER_CONTRACT.depositUnderlyingToken{value: _amount}(
-                address(this),
-                _currencyId,
-                _amount
-            );
+            NOTIONAL_V2_ROUTER_CONTRACT.depositUnderlyingToken{value: _amount}(address(this), _currencyId, _amount);
         } else {
-            (, INotionalV2Router.Token memory collateralAsset) = NOTIONAL_V2_ROUTER_CONTRACT
-                .getCurrency(_currencyId);
+            (, INotionalV2Router.Token memory collateralAsset) = NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(_currencyId);
 
-            __approveAssetMaxAsNeeded(
-                collateralAsset.tokenAddress,
-                address(NOTIONAL_V2_ROUTER_CONTRACT),
-                _amount
-            );
-            NOTIONAL_V2_ROUTER_CONTRACT.depositUnderlyingToken(
-                address(this),
-                _currencyId,
-                _amount
-            );
+            __approveAssetMaxAsNeeded(collateralAsset.tokenAddress, address(NOTIONAL_V2_ROUTER_CONTRACT), _amount);
+            NOTIONAL_V2_ROUTER_CONTRACT.depositUnderlyingToken(address(this), _currencyId, _amount);
         }
     }
 
@@ -254,11 +212,7 @@ contract NotionalV2PositionLib is
     /// @return amounts_ Debt asset amounts
     /// @dev Debt assets are composed by two type of balances: account portfolio and account assets
     /// Both concepts can be found here: https://docs.notional.finance/developer-documentation/how-to/lend-and-borrow-fcash
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         (assets_, amounts_) = __getPositiveOrNegativeAssets(false);
         return (assets_, amounts_);
     }
@@ -268,11 +222,7 @@ contract NotionalV2PositionLib is
     /// @return amounts_ Managed asset amounts
     /// @dev Managed assets are composed by two type of balances: account portfolio and account assets
     /// Both concepts can be found here: https://docs.notional.finance/developer-documentation/how-to/lend-and-borrow-fcash
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return __getPositiveOrNegativeAssets(true);
     }
 
@@ -338,30 +288,24 @@ contract NotionalV2PositionLib is
 
         for (uint256 i; i < portfolioAssets.length; i++) {
             if (
-                (_positiveAssets && portfolioAssets[i].notional > 0) ||
-                (!_positiveAssets && portfolioAssets[i].notional < 0)
+                (_positiveAssets && portfolioAssets[i].notional > 0)
+                    || (!_positiveAssets && portfolioAssets[i].notional < 0)
             ) {
                 uint16 currencyId = uint16(portfolioAssets[i].currencyId);
 
-                (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT
-                    .getCurrency(currencyId);
+                (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(currencyId);
 
                 assets_[assetsIndexCounter] = underlyingAsset.tokenAddress;
 
                 int256 presentValue;
 
-                uint256 underlyingAssetDecimalsFactor = 10 **
-                    uint256(ERC20(underlyingAsset.tokenAddress).decimals());
+                uint256 underlyingAssetDecimalsFactor = 10 ** uint256(ERC20(underlyingAsset.tokenAddress).decimals());
 
                 if (block.timestamp >= portfolioAssets[i].maturity) {
                     presentValue = portfolioAssets[i].notional;
                 } else {
                     presentValue = NOTIONAL_V2_ROUTER_CONTRACT.getPresentfCashValue(
-                        currencyId,
-                        portfolioAssets[i].maturity,
-                        portfolioAssets[i].notional,
-                        block.timestamp,
-                        false
+                        currencyId, portfolioAssets[i].maturity, portfolioAssets[i].notional, block.timestamp, false
                     );
                 }
 
@@ -370,9 +314,8 @@ contract NotionalV2PositionLib is
                     presentValue = -presentValue;
                 }
 
-                amounts_[assetsIndexCounter] = uint256(presentValue)
-                    .mul(underlyingAssetDecimalsFactor)
-                    .div(FCASH_DECIMALS_FACTOR);
+                amounts_[assetsIndexCounter] =
+                    uint256(presentValue).mul(underlyingAssetDecimalsFactor).div(FCASH_DECIMALS_FACTOR);
 
                 assetsIndexCounter++;
             }
@@ -387,11 +330,11 @@ contract NotionalV2PositionLib is
             }
 
             if (
-                (_positiveAssets && accountBalances[i].cashBalance > 0) ||
-                (!_positiveAssets && accountBalances[i].cashBalance < 0)
+                (_positiveAssets && accountBalances[i].cashBalance > 0)
+                    || (!_positiveAssets && accountBalances[i].cashBalance < 0)
             ) {
-                (INotionalV2Router.Token memory cashToken, ) = NOTIONAL_V2_ROUTER_CONTRACT
-                    .getCurrency(accountBalances[i].currencyId);
+                (INotionalV2Router.Token memory cashToken,) =
+                    NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(accountBalances[i].currencyId);
 
                 assets_[assetsIndexCounter] = cashToken.tokenAddress;
 

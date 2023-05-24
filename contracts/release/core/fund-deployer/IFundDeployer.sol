@@ -20,9 +20,5 @@ interface IFundDeployer {
 
     function isAllowedBuySharesOnBehalfCaller(address) external view returns (bool);
 
-    function isAllowedVaultCall(
-        address,
-        bytes4,
-        bytes32
-    ) external view returns (bool);
+    function isAllowedVaultCall(address, bytes4, bytes32) external view returns (bool);
 }

@@ -27,11 +27,7 @@ abstract contract IdleV4ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to get all rewards tokens for a specified idleToken
-    function __idleV4GetRewardsTokens(address _idleToken)
-        internal
-        view
-        returns (address[] memory rewardsTokens_)
-    {
+    function __idleV4GetRewardsTokens(address _idleToken) internal view returns (address[] memory rewardsTokens_) {
         IIdleTokenV4 idleTokenContract = IIdleTokenV4(_idleToken);
 
         rewardsTokens_ = new address[](idleTokenContract.getGovTokensAmounts(address(0)).length);
@@ -43,11 +39,7 @@ abstract contract IdleV4ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to lend underlying for IdleToken
-    function __idleV4Lend(
-        address _idleToken,
-        address _underlying,
-        uint256 _underlyingAmount
-    ) internal {
+    function __idleV4Lend(address _idleToken, address _underlying, uint256 _underlyingAmount) internal {
         __approveAssetMaxAsNeeded(_underlying, _idleToken, _underlyingAmount);
         IIdleTokenV4(_idleToken).mintIdleToken(_underlyingAmount, true, IDLE_V4_REFERRAL_ACCOUNT);
     }

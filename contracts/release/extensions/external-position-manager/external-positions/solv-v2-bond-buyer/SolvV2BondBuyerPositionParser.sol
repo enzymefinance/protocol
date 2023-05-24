@@ -21,19 +21,13 @@ pragma experimental ABIEncoderV2;
 /// @title SolvV2BondBuyerPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Solv Bond Buyer positions
-contract SolvV2BondBuyerPositionParser is
-    IExternalPositionParser,
-    SolvV2BondBuyerPositionDataDecoder
-{
+contract SolvV2BondBuyerPositionParser is IExternalPositionParser, SolvV2BondBuyerPositionDataDecoder {
     using SafeMath for uint256;
 
-    ISolvV2InitialConvertibleOfferingMarket
-        private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
+    ISolvV2InitialConvertibleOfferingMarket private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
 
     constructor(address _initialBondOfferingMarket) public {
-        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(
-            _initialBondOfferingMarket
-        );
+        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(_initialBondOfferingMarket);
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
@@ -42,11 +36,7 @@ contract SolvV2BondBuyerPositionParser is
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -58,21 +48,21 @@ contract SolvV2BondBuyerPositionParser is
         if (_actionId == uint256(ISolvV2BondBuyerPosition.Actions.BuyOffering)) {
             (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_encodedActionArgs);
 
-            ISolvV2InitialConvertibleOfferingMarket.Offering
-                memory offering = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
+            ISolvV2InitialConvertibleOfferingMarket.Offering memory offering =
+                INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
             uint256 voucherPrice = INITIAL_BOND_OFFERING_MARKET_CONTRACT.getPrice(offerId);
 
-            ISolvV2InitialConvertibleOfferingMarket.Market
-                memory market = INITIAL_BOND_OFFERING_MARKET_CONTRACT.markets(offering.voucher);
-            uint256 amount = uint256(units).mul(voucherPrice).div(10**uint256(market.decimals));
+            ISolvV2InitialConvertibleOfferingMarket.Market memory market =
+                INITIAL_BOND_OFFERING_MARKET_CONTRACT.markets(offering.voucher);
+            uint256 amount = uint256(units).mul(voucherPrice).div(10 ** uint256(market.decimals));
 
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = offering.currency;
             amountsToTransfer_ = new uint256[](1);
             amountsToTransfer_[0] = amount;
         } else if (_actionId == uint256(ISolvV2BondBuyerPosition.Actions.Claim)) {
-            (address voucher, uint256 tokenId, ) = __decodeClaimActionArgs(_encodedActionArgs);
+            (address voucher, uint256 tokenId,) = __decodeClaimActionArgs(_encodedActionArgs);
 
             ISolvV2BondVoucher voucherContract = ISolvV2BondVoucher(voucher);
 

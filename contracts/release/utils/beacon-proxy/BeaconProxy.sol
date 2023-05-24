@@ -22,9 +22,7 @@ contract BeaconProxy {
     constructor(bytes memory _constructData, address _beacon) public {
         BEACON = _beacon;
 
-        (bool success, bytes memory returnData) = IBeacon(_beacon).getCanonicalLib().delegatecall(
-            _constructData
-        );
+        (bool success, bytes memory returnData) = IBeacon(_beacon).getCanonicalLib().delegatecall(_constructData);
         require(success, string(returnData));
     }
 
@@ -33,23 +31,12 @@ contract BeaconProxy {
         address contractLogic = IBeacon(BEACON).getCanonicalLib();
         assembly {
             calldatacopy(0x0, 0x0, calldatasize())
-            let success := delegatecall(
-                sub(gas(), 10000),
-                contractLogic,
-                0x0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(sub(gas(), 10000), contractLogic, 0x0, calldatasize(), 0, 0)
             let retSz := returndatasize()
             returndatacopy(0, 0, retSz)
             switch success
-            case 0 {
-                revert(0, retSz)
-            }
-            default {
-                return(0, retSz)
-            }
+            case 0 { revert(0, retSz) }
+            default { return(0, retSz) }
         }
     }
 

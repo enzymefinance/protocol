@@ -52,23 +52,11 @@ interface IZeroExV2 {
 
     function getAssetProxy(bytes4) external view returns (address);
 
-    function isValidSignature(
-        bytes32,
-        address,
-        bytes calldata
-    ) external view returns (bool);
+    function isValidSignature(bytes32, address, bytes calldata) external view returns (bool);
 
-    function preSign(
-        bytes32,
-        address,
-        bytes calldata
-    ) external;
+    function preSign(bytes32, address, bytes calldata) external;
 
     function cancelOrder(Order calldata) external;
 
-    function fillOrder(
-        Order calldata,
-        uint256,
-        bytes calldata
-    ) external returns (FillResults memory);
+    function fillOrder(Order calldata, uint256, bytes calldata) external returns (FillResults memory);
 }

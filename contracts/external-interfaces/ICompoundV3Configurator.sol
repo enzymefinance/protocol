@@ -50,8 +50,5 @@ interface ICompoundV3Configurator {
         uint128 supplyCap;
     }
 
-    function getConfiguration(address _cToken)
-        external
-        view
-        returns (Configuration memory configuration_);
+    function getConfiguration(address _cToken) external view returns (Configuration memory configuration_);
 }

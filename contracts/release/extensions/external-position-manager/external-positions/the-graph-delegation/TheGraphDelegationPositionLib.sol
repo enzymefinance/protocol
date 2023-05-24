@@ -83,10 +83,7 @@ contract TheGraphDelegationPositionLib is
     function __withdraw(bytes memory _actionArgs) private {
         (address indexer, address nextIndexer) = __decodeWithdrawActionArgs(_actionArgs);
         GRAPH_STAKING_CONTRACT.withdrawDelegated(indexer, nextIndexer);
-        (uint256 delegationShares, uint256 tokensLocked, ) = GRAPH_STAKING_CONTRACT.getDelegation(
-            indexer,
-            address(this)
-        );
+        (uint256 delegationShares, uint256 tokensLocked,) = GRAPH_STAKING_CONTRACT.getDelegation(indexer, address(this));
 
         // If delegation is fully withdrawn, remove indexer from indexers
         if (delegationShares == 0 && tokensLocked == 0) {
@@ -98,10 +95,7 @@ contract TheGraphDelegationPositionLib is
         if (nextIndexer != address(0)) {
             __addIndexer(nextIndexer);
         } else {
-            GRT_TOKEN_CONTRACT.safeTransfer(
-                msg.sender,
-                GRT_TOKEN_CONTRACT.balanceOf(address(this))
-            );
+            GRT_TOKEN_CONTRACT.safeTransfer(msg.sender, GRT_TOKEN_CONTRACT.balanceOf(address(this)));
         }
     }
 
@@ -120,22 +114,14 @@ contract TheGraphDelegationPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         address[] memory indexers = getIndexers();
         uint256 indexersLength = indexers.length;
         if (indexersLength == 0) {
@@ -158,14 +144,10 @@ contract TheGraphDelegationPositionLib is
     /// @param _indexer Address of the indexer
     /// @return grtValue_ GRT value of the delegation
     function getDelegationGrtValue(address _indexer) public view returns (uint256 grtValue_) {
-        (uint256 delegationShares, uint256 tokensLocked, ) = GRAPH_STAKING_CONTRACT.getDelegation(
-            _indexer,
-            address(this)
-        );
+        (uint256 delegationShares, uint256 tokensLocked,) =
+            GRAPH_STAKING_CONTRACT.getDelegation(_indexer, address(this));
 
-        (, , , , uint256 poolTokens, uint256 poolShares) = GRAPH_STAKING_CONTRACT.delegationPools(
-            _indexer
-        );
+        (,,,, uint256 poolTokens, uint256 poolShares) = GRAPH_STAKING_CONTRACT.delegationPools(_indexer);
 
         if (delegationShares > 0) {
             return delegationShares.mul(poolTokens).div(poolShares).add(tokensLocked);

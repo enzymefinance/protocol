@@ -29,11 +29,7 @@ abstract contract UniswapV3LiquidityPositionDataDecoder {
     }
 
     /// @dev Helper to decode args used during the Collect action
-    function __decodeCollectActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (uint256 nftId_)
-    {
+    function __decodeCollectActionArgs(bytes memory _actionArgs) internal pure returns (uint256 nftId_) {
         return abi.decode(_actionArgs, (uint256));
     }
 
@@ -53,23 +49,14 @@ abstract contract UniswapV3LiquidityPositionDataDecoder {
             uint256 amount1Min_
         )
     {
-        return
-            abi.decode(
-                _actionArgs,
-                (address, address, uint24, int24, int24, uint256, uint256, uint256, uint256)
-            );
+        return abi.decode(_actionArgs, (address, address, uint24, int24, int24, uint256, uint256, uint256, uint256));
     }
 
     /// @dev Helper to decode args used during the Purge action
     function __decodePurgeActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 nftId_,
-            uint128 liquidity_,
-            uint256 amount0Min_,
-            uint256 amount1Min_
-        )
+        returns (uint256 nftId_, uint128 liquidity_, uint256 amount0Min_, uint256 amount1Min_)
     {
         return abi.decode(_actionArgs, (uint256, uint128, uint256, uint256));
     }
@@ -78,12 +65,7 @@ abstract contract UniswapV3LiquidityPositionDataDecoder {
     function __decodeRemoveLiquidityActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 nftId_,
-            uint128 liquidity_,
-            uint256 amount0Min_,
-            uint256 amount1Min_
-        )
+        returns (uint256 nftId_, uint128 liquidity_, uint256 amount0Min_, uint256 amount1Min_)
     {
         return abi.decode(_actionArgs, (uint256, uint128, uint256, uint256));
     }

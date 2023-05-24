@@ -20,10 +20,7 @@ library AddressArrayLib {
     /////////////
 
     /// @dev Helper to remove an item from a storage array
-    function removeStorageItem(address[] storage _self, address _itemToRemove)
-        internal
-        returns (bool removed_)
-    {
+    function removeStorageItem(address[] storage _self, address _itemToRemove) internal returns (bool removed_) {
         uint256 itemCount = _self.length;
         for (uint256 i; i < itemCount; i++) {
             if (_self[i] == _itemToRemove) {
@@ -40,11 +37,7 @@ library AddressArrayLib {
     }
 
     /// @dev Helper to verify if a storage array contains a particular value
-    function storageArrayContains(address[] storage _self, address _target)
-        internal
-        view
-        returns (bool doesContain_)
-    {
+    function storageArrayContains(address[] storage _self, address _target) internal view returns (bool doesContain_) {
         uint256 arrLength = _self.length;
         for (uint256 i; i < arrLength; i++) {
             if (_target == _self[i]) {
@@ -59,11 +52,7 @@ library AddressArrayLib {
     ////////////
 
     /// @dev Helper to add an item to an array. Does not assert uniqueness of the new item.
-    function addItem(address[] memory _self, address _itemToAdd)
-        internal
-        pure
-        returns (address[] memory nextArray_)
-    {
+    function addItem(address[] memory _self, address _itemToAdd) internal pure returns (address[] memory nextArray_) {
         nextArray_ = new address[](_self.length + 1);
         for (uint256 i; i < _self.length; i++) {
             nextArray_[i] = _self[i];
@@ -87,11 +76,7 @@ library AddressArrayLib {
     }
 
     /// @dev Helper to verify if an array contains a particular value
-    function contains(address[] memory _self, address _target)
-        internal
-        pure
-        returns (bool doesContain_)
-    {
+    function contains(address[] memory _self, address _target) internal pure returns (bool doesContain_) {
         for (uint256 i; i < _self.length; i++) {
             if (_target == _self[i]) {
                 return true;

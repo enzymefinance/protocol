@@ -83,16 +83,14 @@ interface INotionalV2Router {
         uint256 maxCollateralBalance;
     }
 
-    function batchBalanceAndTradeAction(
-        address _account,
-        BalanceActionWithTrades[] calldata _actions
-    ) external payable;
+    function batchBalanceAndTradeAction(address _account, BalanceActionWithTrades[] calldata _actions)
+        external
+        payable;
 
-    function depositUnderlyingToken(
-        address _account,
-        uint16 _currencyId,
-        uint256 _amountExternalPrecision
-    ) external payable returns (uint256);
+    function depositUnderlyingToken(address _account, uint16 _currencyId, uint256 _amountExternalPrecision)
+        external
+        payable
+        returns (uint256);
 
     function getAccount(address _account)
         external
@@ -106,16 +104,9 @@ interface INotionalV2Router {
     function getAccountBalance(uint16 _currencyId, address _account)
         external
         view
-        returns (
-            int256 cashBalance_,
-            int256 nTokenBalance_,
-            uint256 lastClaimTime_
-        );
+        returns (int256 cashBalance_, int256 nTokenBalance_, uint256 lastClaimTime_);
 
-    function getAccountPortfolio(address _account)
-        external
-        view
-        returns (PortfolioAsset[] memory portfolio_);
+    function getAccountPortfolio(address _account) external view returns (PortfolioAsset[] memory portfolio_);
 
     function getCurrency(uint16 _currencyId)
         external
@@ -130,9 +121,7 @@ interface INotionalV2Router {
         bool _riskAdjusted
     ) external view returns (int256 presentValue_);
 
-    function withdraw(
-        uint16 _currencyId,
-        uint88 _amountInternalPrecision,
-        bool _redeemToUnderlying
-    ) external returns (uint256 amount_);
+    function withdraw(uint16 _currencyId, uint88 _amountInternalPrecision, bool _redeemToUnderlying)
+        external
+        returns (uint256 amount_);
 }

@@ -27,21 +27,28 @@ abstract contract MakerDaoMath {
     // prettier-ignore
     function __rpow(uint256 _x, uint256 _n, uint256 _base) internal pure returns (uint256 z_) {
         assembly {
-            switch _x case 0 {switch _n case 0 {z_ := _base} default {z_ := 0}}
+            switch _x
+            case 0 {
+                switch _n
+                case 0 { z_ := _base }
+                default { z_ := 0 }
+            }
             default {
-                switch mod(_n, 2) case 0 { z_ := _base } default { z_ := _x }
+                switch mod(_n, 2)
+                case 0 { z_ := _base }
+                default { z_ := _x }
                 let half := div(_base, 2)
-                for { _n := div(_n, 2) } _n { _n := div(_n,2) } {
+                for { _n := div(_n, 2) } _n { _n := div(_n, 2) } {
                     let xx := mul(_x, _x)
-                    if iszero(eq(div(xx, _x), _x)) { revert(0,0) }
+                    if iszero(eq(div(xx, _x), _x)) { revert(0, 0) }
                     let xxRound := add(xx, half)
-                    if lt(xxRound, xx) { revert(0,0) }
+                    if lt(xxRound, xx) { revert(0, 0) }
                     _x := div(xxRound, _base)
-                    if mod(_n,2) {
+                    if mod(_n, 2) {
                         let zx := mul(z_, _x)
-                        if and(iszero(iszero(_x)), iszero(eq(div(zx, _x), z_))) { revert(0,0) }
+                        if and(iszero(iszero(_x)), iszero(eq(div(zx, _x), z_))) { revert(0, 0) }
                         let zxRound := add(zx, half)
-                        if lt(zxRound, zx) { revert(0,0) }
+                        if lt(zxRound, zx) { revert(0, 0) }
                         z_ := div(zxRound, _base)
                     }
                 }

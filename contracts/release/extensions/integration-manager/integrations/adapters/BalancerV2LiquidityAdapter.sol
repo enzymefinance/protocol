@@ -17,16 +17,8 @@ import "../utils/bases/BalancerV2LiquidityAdapterBase.sol";
 /// @title BalancerV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Balancer V2 pool liquidity provision and native staking
-contract BalancerV2LiquidityAdapter is
-    BalancerV2LiquidityAdapterBase,
-    CurveGaugeV2RewardsHandlerMixin
-{
-    constructor(
-        address _integrationManager,
-        address _balancerVault,
-        address _balancerMinter,
-        address _balToken
-    )
+contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaugeV2RewardsHandlerMixin {
+    constructor(address _integrationManager, address _balancerVault, address _balancerMinter, address _balToken)
         public
         BalancerV2LiquidityAdapterBase(_integrationManager, _balancerVault)
         CurveGaugeV2RewardsHandlerMixin(_balancerMinter, _balToken)
@@ -44,35 +36,21 @@ contract BalancerV2LiquidityAdapter is
     /// @dev Logic to get the BPT address for a given staking token.
     /// For this adapter, the staking token is not validated herein to be a real Balancer gauge,
     /// only to have the required interface.
-    function __getBptForStakingToken(address _stakingToken)
-        internal
-        view
-        override
-        returns (address bpt_)
-    {
+    function __getBptForStakingToken(address _stakingToken) internal view override returns (address bpt_) {
         return IBalancerV2LiquidityGauge(_stakingToken).lp_token();
     }
 
     /// @dev Logic to stake BPT to a given staking token.
     /// Staking is always the last action and thus always sent to the _vaultProxy
     /// (rather than a more generically-named `_recipient`).
-    function __stake(
-        address _vaultProxy,
-        address _stakingToken,
-        uint256 _bptAmount
-    ) internal override {
+    function __stake(address _vaultProxy, address _stakingToken, uint256 _bptAmount) internal override {
         __curveGaugeV2Stake(_stakingToken, __getBptForStakingToken(_stakingToken), _bptAmount);
 
         ERC20(_stakingToken).safeTransfer(_vaultProxy, _bptAmount);
     }
 
     /// @dev Logic to unstake BPT from a given staking token
-    function __unstake(
-        address,
-        address _recipient,
-        address _stakingToken,
-        uint256 _bptAmount
-    ) internal override {
+    function __unstake(address, address _recipient, address _stakingToken, uint256 _bptAmount) internal override {
         __curveGaugeV2Unstake(_stakingToken, _bptAmount);
 
         if (_recipient != address(this)) {
@@ -87,11 +65,7 @@ contract BalancerV2LiquidityAdapter is
     /// @notice Lends assets for pool tokens on BalancerV2
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (
             bytes32 poolId,
             ,
@@ -110,11 +84,7 @@ contract BalancerV2LiquidityAdapter is
     /// @notice Redeems pool tokens on BalancerV2
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (
             bytes32 poolId,
             uint256 spendBptAmount,
@@ -144,11 +114,7 @@ contract BalancerV2LiquidityAdapter is
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address _vaultProxy,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address _vaultProxy, bytes4 _selector, bytes calldata _actionData)
         public
         view
         override
@@ -187,13 +153,8 @@ contract BalancerV2LiquidityAdapter is
 
         bytes32 poolId;
         IBalancerV2Vault.PoolBalanceChange memory request;
-        (
-            poolId,
-            minIncomingAssetAmounts_[0],
-            spendAssets_,
-            spendAssetAmounts_,
-            request
-        ) = __decodeLpActionCallArgs(_encodedCallArgs);
+        (poolId, minIncomingAssetAmounts_[0], spendAssets_, spendAssetAmounts_, request) =
+            __decodeLpActionCallArgs(_encodedCallArgs);
 
         __validateNoInternalBalances(request.useInternalBalance);
 
@@ -226,13 +187,8 @@ contract BalancerV2LiquidityAdapter is
 
         bytes32 poolId;
         IBalancerV2Vault.PoolBalanceChange memory request;
-        (
-            poolId,
-            spendAssetAmounts_[0],
-            incomingAssets_,
-            minIncomingAssetAmounts_,
-            request
-        ) = __decodeLpActionCallArgs(_encodedCallArgs);
+        (poolId, spendAssetAmounts_[0], incomingAssets_, minIncomingAssetAmounts_, request) =
+            __decodeLpActionCallArgs(_encodedCallArgs);
 
         __validateNoInternalBalances(request.useInternalBalance);
 
@@ -264,9 +220,6 @@ contract BalancerV2LiquidityAdapter is
         )
     {
         return
-            abi.decode(
-                _encodedCallArgs,
-                (bytes32, uint256, address[], uint256[], IBalancerV2Vault.PoolBalanceChange)
-            );
+            abi.decode(_encodedCallArgs, (bytes32, uint256, address[], uint256[], IBalancerV2Vault.PoolBalanceChange));
     }
 }

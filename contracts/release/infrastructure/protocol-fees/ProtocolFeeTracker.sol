@@ -30,11 +30,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
 
     event FeePaidForVault(address indexed vaultProxy, uint256 sharesAmount, uint256 secondsPaid);
 
-    event LastPaidSetForVault(
-        address indexed vaultProxy,
-        uint256 prevTimestamp,
-        uint256 nextTimestamp
-    );
+    event LastPaidSetForVault(address indexed vaultProxy, uint256 prevTimestamp, uint256 nextTimestamp);
 
     uint256 private constant MAX_BPS = 10000;
     uint256 private constant SECONDS_IN_YEAR = 31557600; // 60*60*24*365.25
@@ -45,10 +41,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
 
     constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {
         // Validate constants
-        require(
-            SECONDS_IN_YEAR == (60 * 60 * 24 * 36525) / 100,
-            "constructor: Incorrect SECONDS_IN_YEAR"
-        );
+        require(SECONDS_IN_YEAR == (60 * 60 * 24 * 36525) / 100, "constructor: Incorrect SECONDS_IN_YEAR");
     }
 
     // EXTERNAL FUNCTIONS
@@ -119,11 +112,8 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     {
         uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
 
-        uint256 rawSharesDue = sharesSupply
-            .mul(getFeeBpsForVault(_vaultProxy))
-            .mul(_secondsDue)
-            .div(SECONDS_IN_YEAR)
-            .div(MAX_BPS);
+        uint256 rawSharesDue =
+            sharesSupply.mul(getFeeBpsForVault(_vaultProxy)).mul(_secondsDue).div(SECONDS_IN_YEAR).div(MAX_BPS);
 
         uint256 supplyNetRawSharesDue = sharesSupply.sub(rawSharesDue);
         if (supplyNetRawSharesDue == 0) {
@@ -169,10 +159,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @notice Sets the lastPaid timestamp for a specified VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @param _nextTimestamp The lastPaid timestamp to set
-    function setLastPaidForVault(address _vaultProxy, uint256 _nextTimestamp)
-        external
-        onlyFundDeployerOwner
-    {
+    function setLastPaidForVault(address _vaultProxy, uint256 _nextTimestamp) external onlyFundDeployerOwner {
         uint256 prevTimestamp = getLastPaidForVault(_vaultProxy);
         require(prevTimestamp > 0, "setLastPaidForVault: _vaultProxy not initialized");
         require(
@@ -198,11 +185,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @notice Gets the feeBpsOverride value for the given VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @return feeBpsOverride_ The feeBpsOverride value
-    function getFeeBpsOverrideForVault(address _vaultProxy)
-        public
-        view
-        returns (uint256 feeBpsOverride_)
-    {
+    function getFeeBpsOverrideForVault(address _vaultProxy) public view returns (uint256 feeBpsOverride_) {
         return vaultProxyToFeeBpsOverride[_vaultProxy];
     }
 

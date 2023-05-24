@@ -22,11 +22,7 @@ import "./KilnStakingPositionDataDecoder.sol";
 /// @title KilnStakingPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Kiln Staking Positions
-contract KilnStakingPositionLib is
-    IKilnStakingPosition,
-    KilnStakingPositionDataDecoder,
-    KilnStakingPositionLibBase1
-{
+contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionDataDecoder, KilnStakingPositionLibBase1 {
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
@@ -58,11 +54,8 @@ contract KilnStakingPositionLib is
 
     /// @dev Claims Fees generated from a given validator
     function __claimFees(bytes memory _actionArgs) private {
-        (
-            address stakingContractAddress,
-            bytes[] memory publicKeys,
-            IKilnStakingPosition.ClaimFeeTypes claimFeesType
-        ) = __decodeClaimFeesAction(_actionArgs);
+        (address stakingContractAddress, bytes[] memory publicKeys, IKilnStakingPosition.ClaimFeeTypes claimFeesType) =
+            __decodeClaimFeesAction(_actionArgs);
 
         if (claimFeesType == ClaimFeeTypes.ExecutionLayer) {
             for (uint256 i; i < publicKeys.length; i++) {
@@ -85,9 +78,7 @@ contract KilnStakingPositionLib is
 
     /// @dev Stakes ETH to Kiln deposit contract
     function __stake(bytes memory _actionArgs) private {
-        (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(
-            _actionArgs
-        );
+        (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(_actionArgs);
 
         uint256 amountStaked = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
 
@@ -116,22 +107,14 @@ contract KilnStakingPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = new address[](1);
         amounts_ = new uint256[](1);
 

@@ -26,11 +26,7 @@ abstract contract SolvV2BondBuyerPositionDataDecoder {
     function __decodeClaimActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            address voucher_,
-            uint32 tokenId_,
-            uint256 units_
-        )
+        returns (address voucher_, uint32 tokenId_, uint256 units_)
     {
         return abi.decode(_actionArgs, (address, uint32, uint256));
     }

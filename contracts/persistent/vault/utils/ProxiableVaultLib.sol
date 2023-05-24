@@ -21,16 +21,13 @@ abstract contract ProxiableVaultLib {
     /// @dev Updates the target of the proxy to be the contract at _nextVaultLib
     function __updateCodeAddress(address _nextVaultLib) internal {
         require(
-            bytes32(0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5) ==
-                ProxiableVaultLib(_nextVaultLib).proxiableUUID(),
+            bytes32(0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5)
+                == ProxiableVaultLib(_nextVaultLib).proxiableUUID(),
             "__updateCodeAddress: _nextVaultLib not compatible"
         );
         assembly {
             // solium-disable-line
-            sstore(
-                0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc,
-                _nextVaultLib
-            )
+            sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, _nextVaultLib)
         }
     }
 

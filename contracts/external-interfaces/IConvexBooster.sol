@@ -22,11 +22,7 @@ interface IConvexBooster {
         bool shutdown;
     }
 
-    function deposit(
-        uint256,
-        uint256,
-        bool
-    ) external returns (bool);
+    function deposit(uint256, uint256, bool) external returns (bool);
 
     function poolInfo(uint256) external view returns (PoolInfo memory);
 }

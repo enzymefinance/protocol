@@ -14,13 +14,9 @@ pragma solidity 0.6.12;
 /// @title IFundValueCalculator interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IFundValueCalculator {
-    function calcGav(address _vaultProxy)
-        external
-        returns (address denominationAsset_, uint256 gav_);
+    function calcGav(address _vaultProxy) external returns (address denominationAsset_, uint256 gav_);
 
-    function calcGavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        returns (uint256 gav_);
+    function calcGavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 gav_);
 
     function calcGrossShareValue(address _vaultProxy)
         external
@@ -30,13 +26,9 @@ interface IFundValueCalculator {
         external
         returns (uint256 grossShareValue_);
 
-    function calcNav(address _vaultProxy)
-        external
-        returns (address denominationAsset_, uint256 nav_);
+    function calcNav(address _vaultProxy) external returns (address denominationAsset_, uint256 nav_);
 
-    function calcNavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        returns (uint256 nav_);
+    function calcNavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 nav_);
 
     function calcNetShareValue(address _vaultProxy)
         external
@@ -50,9 +42,7 @@ interface IFundValueCalculator {
         external
         returns (address denominationAsset_, uint256 netValue_);
 
-    function calcNetValueForSharesHolderInAsset(
-        address _vaultProxy,
-        address _sharesHolder,
-        address _quoteAsset
-    ) external returns (uint256 netValue_);
+    function calcNetValueForSharesHolderInAsset(address _vaultProxy, address _sharesHolder, address _quoteAsset)
+        external
+        returns (uint256 netValue_);
 }

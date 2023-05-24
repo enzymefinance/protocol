@@ -21,11 +21,10 @@ import "./utils/AddOnlyAddressListOwnerBase.sol";
 contract CompoundV3CTokenListOwner is AddOnlyAddressListOwnerBase {
     ICompoundV3Configurator private immutable CONFIGURATOR_CONTRACT;
 
-    constructor(
-        address _addressListRegistry,
-        string memory _listDescription,
-        address _compoundV3Configurator
-    ) public AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription) {
+    constructor(address _addressListRegistry, string memory _listDescription, address _compoundV3Configurator)
+        public
+        AddOnlyAddressListOwnerBase(_addressListRegistry, _listDescription)
+    {
         CONFIGURATOR_CONTRACT = ICompoundV3Configurator(_compoundV3Configurator);
     }
 

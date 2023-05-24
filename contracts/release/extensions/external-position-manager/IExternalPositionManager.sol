@@ -19,6 +19,7 @@ interface IExternalPositionManager {
         address parser;
         address lib;
     }
+
     enum ExternalPositionManagerActions {
         CreateExternalPosition,
         CallOnExternalPosition,

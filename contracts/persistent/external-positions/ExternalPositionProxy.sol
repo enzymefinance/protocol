@@ -23,12 +23,7 @@ contract ExternalPositionProxy is IExternalPositionProxy {
     /// @dev Needed to receive ETH on external positions
     receive() external payable {}
 
-    constructor(
-        address _vaultProxy,
-        uint256 _typeId,
-        address _constructLib,
-        bytes memory _constructData
-    ) public {
+    constructor(address _vaultProxy, uint256 _typeId, address _constructLib, bytes memory _constructData) public {
         VAULT_PROXY = _vaultProxy;
         EXTERNAL_POSITION_TYPE = _typeId;
 
@@ -39,42 +34,27 @@ contract ExternalPositionProxy is IExternalPositionProxy {
 
     // solhint-disable-next-line no-complex-fallback
     fallback() external payable {
-        address contractLogic = IExternalPositionVault(getVaultProxy())
-            .getExternalPositionLibForType(getExternalPositionType());
+        address contractLogic =
+            IExternalPositionVault(getVaultProxy()).getExternalPositionLibForType(getExternalPositionType());
         assembly {
             calldatacopy(0x0, 0x0, calldatasize())
-            let success := delegatecall(
-                sub(gas(), 10000),
-                contractLogic,
-                0x0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(sub(gas(), 10000), contractLogic, 0x0, calldatasize(), 0, 0)
             let retSz := returndatasize()
             returndatacopy(0, 0, retSz)
             switch success
-            case 0 {
-                revert(0, retSz)
-            }
-            default {
-                return(0, retSz)
-            }
+            case 0 { revert(0, retSz) }
+            default { return(0, retSz) }
         }
     }
 
     /// @notice Delegates call to IExternalPosition.receiveCallFromVault
     /// @param _data The bytes data variable to be decoded at the External Position
     function receiveCallFromVault(bytes calldata _data) external {
-        require(
-            msg.sender == getVaultProxy(),
-            "receiveCallFromVault: Only the vault can make this call"
-        );
-        address contractLogic = IExternalPositionVault(getVaultProxy())
-            .getExternalPositionLibForType(getExternalPositionType());
-        (bool success, bytes memory returnData) = contractLogic.delegatecall(
-            abi.encodeWithSelector(IExternalPosition.receiveCallFromVault.selector, _data)
-        );
+        require(msg.sender == getVaultProxy(), "receiveCallFromVault: Only the vault can make this call");
+        address contractLogic =
+            IExternalPositionVault(getVaultProxy()).getExternalPositionLibForType(getExternalPositionType());
+        (bool success, bytes memory returnData) =
+            contractLogic.delegatecall(abi.encodeWithSelector(IExternalPosition.receiveCallFromVault.selector, _data));
 
         require(success, string(returnData));
     }
@@ -85,12 +65,7 @@ contract ExternalPositionProxy is IExternalPositionProxy {
 
     /// @notice Gets the `EXTERNAL_POSITION_TYPE` variable
     /// @return externalPositionType_ The `EXTERNAL_POSITION_TYPE` variable value
-    function getExternalPositionType()
-        public
-        view
-        override
-        returns (uint256 externalPositionType_)
-    {
+    function getExternalPositionType() public view override returns (uint256 externalPositionType_) {
         return EXTERNAL_POSITION_TYPE;
     }
 

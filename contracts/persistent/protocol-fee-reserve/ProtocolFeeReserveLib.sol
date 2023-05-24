@@ -34,11 +34,11 @@ contract ProtocolFeeReserveLib is IProtocolFeeReserve1, ProtocolFeeReserveLibBas
     /// This contract only needs to provide the discounted MLN amount to burn.
     /// Though it is currently unused, passing in GAV would allow creating a tiered system of
     /// discounts in a new library, for example.
-    function buyBackSharesViaTrustedVaultProxy(
-        uint256 _sharesAmount,
-        uint256 _mlnValue,
-        uint256
-    ) external override returns (uint256 mlnAmountToBurn_) {
+    function buyBackSharesViaTrustedVaultProxy(uint256 _sharesAmount, uint256 _mlnValue, uint256)
+        external
+        override
+        returns (uint256 mlnAmountToBurn_)
+    {
         mlnAmountToBurn_ = _mlnValue.div(BUYBACK_DISCOUNT_DIVISOR);
 
         if (mlnAmountToBurn_ == 0) {
@@ -57,10 +57,7 @@ contract ProtocolFeeReserveLib is IProtocolFeeReserve1, ProtocolFeeReserveLibBas
     /// @notice Makes an arbitrary call with this contract as the sender
     /// @param _contract The contract to call
     /// @param _callData The call data for the call
-    function callOnContract(address _contract, bytes calldata _callData)
-        external
-        onlyDispatcherOwner
-    {
+    function callOnContract(address _contract, bytes calldata _callData) external onlyDispatcherOwner {
         (bool success, bytes memory returnData) = _contract.call(_callData);
         require(success, string(returnData));
     }

@@ -26,8 +26,8 @@ contract VaultProxy {
         // "0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5" corresponds to
         // `bytes32(keccak256('mln.proxiable.vaultlib'))`
         require(
-            bytes32(0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5) ==
-                ProxiableVaultLib(_vaultLib).proxiableUUID(),
+            bytes32(0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5)
+                == ProxiableVaultLib(_vaultLib).proxiableUUID(),
             "constructor: _vaultLib not compatible"
         );
 
@@ -43,27 +43,14 @@ contract VaultProxy {
     fallback() external payable {
         assembly {
             // solium-disable-line
-            let contractLogic := sload(
-                0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
-            )
+            let contractLogic := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
             calldatacopy(0x0, 0x0, calldatasize())
-            let success := delegatecall(
-                sub(gas(), 10000),
-                contractLogic,
-                0x0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(sub(gas(), 10000), contractLogic, 0x0, calldatasize(), 0, 0)
             let retSz := returndatasize()
             returndatacopy(0, 0, retSz)
             switch success
-            case 0 {
-                revert(0, retSz)
-            }
-            default {
-                return(0, retSz)
-            }
+            case 0 { revert(0, retSz) }
+            default { return(0, retSz) }
         }
     }
 }

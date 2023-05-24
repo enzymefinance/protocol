@@ -32,16 +32,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     using AddressArrayLib for address[];
 
     event PolicyDisabledOnHookForFund(
-        address indexed comptrollerProxy,
-        address indexed policy,
-        PolicyHook indexed hook
+        address indexed comptrollerProxy, address indexed policy, PolicyHook indexed hook
     );
 
-    event PolicyEnabledForFund(
-        address indexed comptrollerProxy,
-        address indexed policy,
-        bytes settingsData
-    );
+    event PolicyEnabledForFund(address indexed comptrollerProxy, address indexed policy, bytes settingsData);
 
     uint256 private constant POLICY_HOOK_COUNT = 10;
 
@@ -92,9 +86,8 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
 
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
-            bool disabled = comptrollerProxyToHookToPolicies[_comptrollerProxy][
-                implementedHooks[i]
-            ].removeStorageItem(_policy);
+            bool disabled =
+                comptrollerProxyToHookToPolicies[_comptrollerProxy][implementedHooks[i]].removeStorageItem(_policy);
             if (disabled) {
                 emit PolicyDisabledOnHookForFund(_comptrollerProxy, _policy, implementedHooks[i]);
             }
@@ -108,11 +101,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @dev Disabling a policy does not delete fund config on the policy, so if a policy is
     /// disabled and then enabled again, its initial state will be the previous config. It is the
     /// policy's job to determine how to merge that config with the _settingsData param in this function.
-    function enablePolicyForFund(
-        address _comptrollerProxy,
-        address _policy,
-        bytes calldata _settingsData
-    ) external onlyFundOwner(_comptrollerProxy) {
+    function enablePolicyForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
+        external
+        onlyFundOwner(_comptrollerProxy)
+    {
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
         for (uint256 i; i < implementedHooks.length; i++) {
             require(
@@ -130,11 +122,11 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
-    function setConfigForFund(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        bytes calldata _configData
-    ) external override onlyFundDeployer {
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata _configData)
+        external
+        override
+        onlyFundDeployer
+    {
         __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
 
         // In case there are no policies yet
@@ -142,24 +134,17 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
             return;
         }
 
-        (address[] memory policies, bytes[] memory settingsData) = abi.decode(
-            _configData,
-            (address[], bytes[])
-        );
+        (address[] memory policies, bytes[] memory settingsData) = abi.decode(_configData, (address[], bytes[]));
 
         // Sanity check
         require(
-            policies.length == settingsData.length,
-            "setConfigForFund: policies and settingsData array lengths unequal"
+            policies.length == settingsData.length, "setConfigForFund: policies and settingsData array lengths unequal"
         );
 
         // Enable each policy with settings
         for (uint256 i; i < policies.length; i++) {
             __enablePolicyForFund(
-                _comptrollerProxy,
-                policies[i],
-                settingsData[i],
-                IPolicy(policies[i]).implementedHooks()
+                _comptrollerProxy, policies[i], settingsData[i], IPolicy(policies[i]).implementedHooks()
             );
         }
     }
@@ -168,11 +153,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _policy The Policy contract to update
     /// @param _settingsData The encoded settings data with which to update the policy config
-    function updatePolicySettingsForFund(
-        address _comptrollerProxy,
-        address _policy,
-        bytes calldata _settingsData
-    ) external onlyFundOwner(_comptrollerProxy) {
+    function updatePolicySettingsForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
+        external
+        onlyFundOwner(_comptrollerProxy)
+    {
         IPolicy(_policy).updateFundSettings(_comptrollerProxy, _settingsData);
     }
 
@@ -180,11 +164,10 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _hook The PolicyHook for which to validate policies
     /// @param _validationData The encoded data with which to validate the filtered policies
-    function validatePolicies(
-        address _comptrollerProxy,
-        PolicyHook _hook,
-        bytes calldata _validationData
-    ) external override {
+    function validatePolicies(address _comptrollerProxy, PolicyHook _hook, bytes calldata _validationData)
+        external
+        override
+    {
         // Return as quickly as possible if no policies to run
         address[] memory policies = getEnabledPoliciesOnHookForFund(_comptrollerProxy, _hook);
         if (policies.length == 0) {
@@ -193,21 +176,15 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
 
         // Limit calls to trusted components, in case policies update local storage upon runs
         require(
-            msg.sender == _comptrollerProxy ||
-                msg.sender == IComptroller(_comptrollerProxy).getIntegrationManager() ||
-                msg.sender == IComptroller(_comptrollerProxy).getExternalPositionManager(),
+            msg.sender == _comptrollerProxy || msg.sender == IComptroller(_comptrollerProxy).getIntegrationManager()
+                || msg.sender == IComptroller(_comptrollerProxy).getExternalPositionManager(),
             "validatePolicies: Caller not allowed"
         );
 
         for (uint256 i; i < policies.length; i++) {
             require(
                 IPolicy(policies[i]).validateRule(_comptrollerProxy, _hook, _validationData),
-                string(
-                    abi.encodePacked(
-                        "Rule evaluated to false: ",
-                        IPolicy(policies[i]).identifier()
-                    )
-                )
+                string(abi.encodePacked("Rule evaluated to false: ", IPolicy(policies[i]).identifier()))
             );
         }
     }
@@ -244,11 +221,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     }
 
     /// @dev Helper to get all the hooks available to policies
-    function __getAllPolicyHooks()
-        private
-        pure
-        returns (PolicyHook[POLICY_HOOK_COUNT] memory hooks_)
-    {
+    function __getAllPolicyHooks() private pure returns (PolicyHook[POLICY_HOOK_COUNT] memory hooks_) {
         return [
             PolicyHook.PostBuyShares,
             PolicyHook.PostCallOnIntegration,
@@ -270,9 +243,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
         pure
         returns (bool restrictsActions_)
     {
-        return
-            _hook == PolicyHook.PreTransferShares ||
-            _hook == PolicyHook.RedeemSharesForSpecificAssets;
+        return _hook == PolicyHook.PreTransferShares || _hook == PolicyHook.RedeemSharesForSpecificAssets;
     }
 
     ///////////////////
@@ -290,9 +261,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
         PolicyHook[POLICY_HOOK_COUNT] memory hooks = __getAllPolicyHooks();
 
         for (uint256 i; i < hooks.length; i++) {
-            enabledPolicies_ = enabledPolicies_.mergeArray(
-                getEnabledPoliciesOnHookForFund(_comptrollerProxy, hooks[i])
-            );
+            enabledPolicies_ = enabledPolicies_.mergeArray(getEnabledPoliciesOnHookForFund(_comptrollerProxy, hooks[i]));
         }
 
         return enabledPolicies_;
@@ -315,11 +284,11 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @param _hook The PolicyHook
     /// @param _policy The policy
     /// @return isEnabled_ True if the policy is enabled
-    function policyIsEnabledOnHookForFund(
-        address _comptrollerProxy,
-        PolicyHook _hook,
-        address _policy
-    ) public view returns (bool isEnabled_) {
+    function policyIsEnabledOnHookForFund(address _comptrollerProxy, PolicyHook _hook, address _policy)
+        public
+        view
+        returns (bool isEnabled_)
+    {
         return getEnabledPoliciesOnHookForFund(_comptrollerProxy, _hook).contains(_policy);
     }
 }

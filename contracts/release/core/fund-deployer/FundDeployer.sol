@@ -42,48 +42,29 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         uint256 sharesActionTimelock
     );
 
-    event GasLimitsForDestructCallSet(
-        uint256 nextDeactivateFeeManagerGasLimit,
-        uint256 nextPayProtocolFeeGasLimit
-    );
+    event GasLimitsForDestructCallSet(uint256 nextDeactivateFeeManagerGasLimit, uint256 nextPayProtocolFeeGasLimit);
 
-    event MigrationRequestCreated(
-        address indexed creator,
-        address indexed vaultProxy,
-        address comptrollerProxy
-    );
+    event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
 
     event ProtocolFeeTrackerSet(address protocolFeeTracker);
 
-    event ReconfigurationRequestCancelled(
-        address indexed vaultProxy,
-        address indexed nextComptrollerProxy
-    );
+    event ReconfigurationRequestCancelled(address indexed vaultProxy, address indexed nextComptrollerProxy);
 
     event ReconfigurationRequestCreated(
-        address indexed creator,
-        address indexed vaultProxy,
-        address comptrollerProxy,
-        uint256 executableTimestamp
+        address indexed creator, address indexed vaultProxy, address comptrollerProxy, uint256 executableTimestamp
     );
 
     event ReconfigurationRequestExecuted(
-        address indexed vaultProxy,
-        address indexed prevComptrollerProxy,
-        address indexed nextComptrollerProxy
+        address indexed vaultProxy, address indexed prevComptrollerProxy, address indexed nextComptrollerProxy
     );
 
     event ReconfigurationTimelockSet(uint256 nextTimelock);
 
     event ReleaseIsLive();
 
-    event VaultCallDeregistered(
-        address indexed contractAddress,
-        bytes4 selector,
-        bytes32 dataHash
-    );
+    event VaultCallDeregistered(address indexed contractAddress, bytes4 selector, bytes32 dataHash);
 
     event VaultCallRegistered(address indexed contractAddress, bytes4 selector, bytes32 dataHash);
 
@@ -96,8 +77,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     // Constants
     // keccak256(abi.encodePacked("mln.vaultCall.any")
-    bytes32 private constant ANY_VAULT_CALL =
-        0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
+    bytes32 private constant ANY_VAULT_CALL = 0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
 
     address private immutable CREATOR;
     address private immutable DISPATCHER;
@@ -148,10 +128,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     }
 
     function __assertIsMigrator(address _vaultProxy, address _who) private view {
-        require(
-            IVault(_vaultProxy).canMigrate(_who),
-            "Only a permissioned migrator can call this function"
-        );
+        require(IVault(_vaultProxy).canMigrate(_who), "Only a permissioned migrator can call this function");
     }
 
     constructor(address _dispatcher, address _gasRelayPaymasterFactory)
@@ -160,8 +137,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     {
         // Validate constants
         require(
-            ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")),
-            "constructor: Incorrect ANY_VAULT_CALL"
+            ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")), "constructor: Incorrect ANY_VAULT_CALL"
         );
 
         CREATOR = msg.sender;
@@ -183,11 +159,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Sets the ComptrollerLib
     /// @param _comptrollerLib The ComptrollerLib contract address
-    function setComptrollerLib(address _comptrollerLib)
-        external
-        onlyOwner
-        pseudoConstant(getComptrollerLib())
-    {
+    function setComptrollerLib(address _comptrollerLib) external onlyOwner pseudoConstant(getComptrollerLib()) {
         comptrollerLib = _comptrollerLib;
 
         emit ComptrollerLibSet(_comptrollerLib);
@@ -232,10 +204,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @notice Sets the amounts of gas to forward to each of the ComptrollerLib.destructActivated() external calls
     /// @param _nextDeactivateFeeManagerGasLimit The amount of gas to forward to deactivate the FeeManager
     /// @param _nextPayProtocolFeeGasLimit The amount of gas to forward to pay the protocol fee
-    function setGasLimitsForDestructCall(
-        uint32 _nextDeactivateFeeManagerGasLimit,
-        uint32 _nextPayProtocolFeeGasLimit
-    ) external onlyOwner {
+    function setGasLimitsForDestructCall(uint32 _nextDeactivateFeeManagerGasLimit, uint32 _nextPayProtocolFeeGasLimit)
+        external
+        onlyOwner
+    {
         require(
             _nextDeactivateFeeManagerGasLimit > 0 && _nextPayProtocolFeeGasLimit > 0,
             "setGasLimitsForDestructCall: Zero value not allowed"
@@ -244,28 +216,19 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         gasLimitForDestructCallToDeactivateFeeManager = _nextDeactivateFeeManagerGasLimit;
         gasLimitForDestructCallToPayProtocolFee = _nextPayProtocolFeeGasLimit;
 
-        emit GasLimitsForDestructCallSet(
-            _nextDeactivateFeeManagerGasLimit,
-            _nextPayProtocolFeeGasLimit
-        );
+        emit GasLimitsForDestructCallSet(_nextDeactivateFeeManagerGasLimit, _nextPayProtocolFeeGasLimit);
     }
 
     /// @notice Sets the release as live
     /// @dev A live release allows funds to be created and migrated once this contract
     /// is set as the Dispatcher.currentFundDeployer
     function setReleaseLive() external {
-        require(
-            msg.sender == getCreator(),
-            "setReleaseLive: Only the creator can call this function"
-        );
+        require(msg.sender == getCreator(), "setReleaseLive: Only the creator can call this function");
         require(!releaseIsLive(), "setReleaseLive: Already live");
 
         // All pseudo-constants should be set
         require(getComptrollerLib() != address(0), "setReleaseLive: comptrollerLib is not set");
-        require(
-            getProtocolFeeTracker() != address(0),
-            "setReleaseLive: protocolFeeTracker is not set"
-        );
+        require(getProtocolFeeTracker() != address(0), "setReleaseLive: protocolFeeTracker is not set");
         require(getVaultLib() != address(0), "setReleaseLive: vaultLib is not set");
 
         isLive = true;
@@ -275,14 +238,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @dev Helper to call ComptrollerProxy.destructActivated() with the correct params
     function __destructActivatedComptrollerProxy(address _comptrollerProxy) private {
-        (
-            uint256 deactivateFeeManagerGasLimit,
-            uint256 payProtocolFeeGasLimit
-        ) = getGasLimitsForDestructCall();
-        IComptroller(_comptrollerProxy).destructActivated(
-            deactivateFeeManagerGasLimit,
-            payProtocolFeeGasLimit
-        );
+        (uint256 deactivateFeeManagerGasLimit, uint256 payProtocolFeeGasLimit) = getGasLimitsForDestructCall();
+        IComptroller(_comptrollerProxy).destructActivated(deactivateFeeManagerGasLimit, payProtocolFeeGasLimit);
     }
 
     ///////////////////
@@ -305,12 +262,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData,
         bool _bypassPrevReleaseFailure
-    )
-        external
-        onlyLiveRelease
-        onlyMigratorNotRelayable(_vaultProxy)
-        returns (address comptrollerProxy_)
-    {
+    ) external onlyLiveRelease onlyMigratorNotRelayable(_vaultProxy) returns (address comptrollerProxy_) {
         // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
 
         require(
@@ -318,26 +270,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "createMigrationRequest: A MigrationRequest already exists"
         );
 
-        comptrollerProxy_ = __deployComptrollerProxy(
-            msg.sender,
-            _denominationAsset,
-            _sharesActionTimelock
-        );
+        comptrollerProxy_ = __deployComptrollerProxy(msg.sender, _denominationAsset, _sharesActionTimelock);
 
         IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
 
-        __configureExtensions(
-            comptrollerProxy_,
-            _vaultProxy,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
+        __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
         IDispatcher(getDispatcher()).signalMigration(
-            _vaultProxy,
-            comptrollerProxy_,
-            getVaultLib(),
-            _bypassPrevReleaseFailure
+            _vaultProxy, comptrollerProxy_, getVaultLib(), _bypassPrevReleaseFailure
         );
 
         emit MigrationRequestCreated(msg.sender, _vaultProxy, comptrollerProxy_);
@@ -367,23 +307,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // _fundOwner is validated by VaultLib.__setOwner()
         address canonicalSender = __msgSender();
 
-        comptrollerProxy_ = __deployComptrollerProxy(
-            canonicalSender,
-            _denominationAsset,
-            _sharesActionTimelock
-        );
+        comptrollerProxy_ = __deployComptrollerProxy(canonicalSender, _denominationAsset, _sharesActionTimelock);
 
         vaultProxy_ = __deployVaultProxy(_fundOwner, comptrollerProxy_, _fundName, _fundSymbol);
 
         IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
         comptrollerContract.setVaultProxy(vaultProxy_);
 
-        __configureExtensions(
-            comptrollerProxy_,
-            vaultProxy_,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
+        __configureExtensions(comptrollerProxy_, vaultProxy_, _feeManagerConfigData, _policyManagerConfigData);
 
         comptrollerContract.activate(false);
 
@@ -412,8 +343,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address canonicalSender = __msgSender();
         __assertIsMigrator(_vaultProxy, canonicalSender);
         require(
-            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) ==
-                address(this),
+            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
             "createReconfigurationRequest: VaultProxy not on this release"
         );
         require(
@@ -421,33 +351,17 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "createReconfigurationRequest: VaultProxy has a pending reconfiguration request"
         );
 
-        comptrollerProxy_ = __deployComptrollerProxy(
-            canonicalSender,
-            _denominationAsset,
-            _sharesActionTimelock
-        );
+        comptrollerProxy_ = __deployComptrollerProxy(canonicalSender, _denominationAsset, _sharesActionTimelock);
 
         IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
 
-        __configureExtensions(
-            comptrollerProxy_,
-            _vaultProxy,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
+        __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
         uint256 executableTimestamp = block.timestamp + getReconfigurationTimelock();
-        vaultProxyToReconfigurationRequest[_vaultProxy] = ReconfigurationRequest({
-            nextComptrollerProxy: comptrollerProxy_,
-            executableTimestamp: executableTimestamp
-        });
+        vaultProxyToReconfigurationRequest[_vaultProxy] =
+            ReconfigurationRequest({nextComptrollerProxy: comptrollerProxy_, executableTimestamp: executableTimestamp});
 
-        emit ReconfigurationRequestCreated(
-            canonicalSender,
-            _vaultProxy,
-            comptrollerProxy_,
-            executableTimestamp
-        );
+        emit ReconfigurationRequestCreated(canonicalSender, _vaultProxy, comptrollerProxy_, executableTimestamp);
 
         return comptrollerProxy_;
     }
@@ -462,28 +376,20 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
         if (_feeManagerConfigData.length > 0) {
             IExtension(IComptroller(_comptrollerProxy).getFeeManager()).setConfigForFund(
-                _comptrollerProxy,
-                _vaultProxy,
-                _feeManagerConfigData
+                _comptrollerProxy, _vaultProxy, _feeManagerConfigData
             );
         }
 
         // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
         // In the future, we can consider caching conditionally.
         IExtension(IComptroller(_comptrollerProxy).getExternalPositionManager()).setConfigForFund(
-            _comptrollerProxy,
-            _vaultProxy,
-            ""
+            _comptrollerProxy, _vaultProxy, ""
         );
         IExtension(IComptroller(_comptrollerProxy).getIntegrationManager()).setConfigForFund(
-            _comptrollerProxy,
-            _vaultProxy,
-            ""
+            _comptrollerProxy, _vaultProxy, ""
         );
         IExtension(IComptroller(_comptrollerProxy).getPolicyManager()).setConfigForFund(
-            _comptrollerProxy,
-            _vaultProxy,
-            _policyManagerConfigData
+            _comptrollerProxy, _vaultProxy, _policyManagerConfigData
         );
     }
 
@@ -495,19 +401,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     ) private returns (address comptrollerProxy_) {
         // _denominationAsset is validated by ComptrollerLib.init()
 
-        bytes memory constructData = abi.encodeWithSelector(
-            IComptroller.init.selector,
-            _denominationAsset,
-            _sharesActionTimelock
-        );
+        bytes memory constructData =
+            abi.encodeWithSelector(IComptroller.init.selector, _denominationAsset, _sharesActionTimelock);
         comptrollerProxy_ = address(new ComptrollerProxy(constructData, getComptrollerLib()));
 
-        emit ComptrollerProxyDeployed(
-            _canonicalSender,
-            comptrollerProxy_,
-            _denominationAsset,
-            _sharesActionTimelock
-        );
+        emit ComptrollerProxyDeployed(_canonicalSender, comptrollerProxy_, _denominationAsset, _sharesActionTimelock);
 
         return comptrollerProxy_;
     }
@@ -520,12 +418,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         string calldata _fundName,
         string calldata _fundSymbol
     ) private returns (address vaultProxy_) {
-        vaultProxy_ = IDispatcher(getDispatcher()).deployVaultProxy(
-            getVaultLib(),
-            _fundOwner,
-            _comptrollerProxy,
-            _fundName
-        );
+        vaultProxy_ =
+            IDispatcher(getDispatcher()).deployVaultProxy(getVaultLib(), _fundOwner, _comptrollerProxy, _fundName);
         if (bytes(_fundSymbol).length != 0) {
             IVault(vaultProxy_).setSymbol(_fundSymbol);
         }
@@ -540,8 +434,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @notice Cancels a pending reconfiguration request
     /// @param _vaultProxy The VaultProxy contract for which to cancel the reconfiguration request
     function cancelReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
-        address nextComptrollerProxy = vaultProxyToReconfigurationRequest[_vaultProxy]
-            .nextComptrollerProxy;
+        address nextComptrollerProxy = vaultProxyToReconfigurationRequest[_vaultProxy].nextComptrollerProxy;
         require(
             nextComptrollerProxy != address(0),
             "cancelReconfiguration: No reconfiguration request exists for _vaultProxy"
@@ -561,9 +454,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @dev ProtocolFeeTracker.initializeForVault() does not need to be included in a reconfiguration,
     /// as it refers to the vault and not the new ComptrollerProxy
     function executeReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
-        ReconfigurationRequest memory request = getReconfigurationRequestForVaultProxy(
-            _vaultProxy
-        );
+        ReconfigurationRequest memory request = getReconfigurationRequestForVaultProxy(_vaultProxy);
         require(
             request.nextComptrollerProxy != address(0),
             "executeReconfiguration: No reconfiguration request exists for _vaultProxy"
@@ -574,8 +465,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         );
         // Not technically necessary, but a nice assurance
         require(
-            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) ==
-                address(this),
+            IDispatcher(getDispatcher()).getFundDeployerForVaultProxy(_vaultProxy) == address(this),
             "executeReconfiguration: _vaultProxy is no longer on this release"
         );
 
@@ -596,11 +486,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
 
-        emit ReconfigurationRequestExecuted(
-            _vaultProxy,
-            prevComptrollerProxy,
-            request.nextComptrollerProxy
-        );
+        emit ReconfigurationRequestExecuted(_vaultProxy, prevComptrollerProxy, request.nextComptrollerProxy);
     }
 
     /// @notice Sets a new reconfiguration timelock
@@ -634,8 +520,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     {
         IDispatcher dispatcherContract = IDispatcher(getDispatcher());
 
-        (, address comptrollerProxy, , ) = dispatcherContract
-            .getMigrationRequestDetailsForVaultProxy(_vaultProxy);
+        (, address comptrollerProxy,,) = dispatcherContract.getMigrationRequestDetailsForVaultProxy(_vaultProxy);
 
         dispatcherContract.executeMigration(_vaultProxy, _bypassPrevReleaseFailure);
 
@@ -646,12 +531,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Executes logic when a migration is canceled on the Dispatcher
     /// @param _nextComptrollerProxy The ComptrollerProxy created on this release
-    function invokeMigrationInCancelHook(
-        address,
-        address,
-        address _nextComptrollerProxy,
-        address
-    ) external override onlyDispatcher {
+    function invokeMigrationInCancelHook(address, address, address _nextComptrollerProxy, address)
+        external
+        override
+        onlyDispatcher
+    {
         IComptroller(_nextComptrollerProxy).destructUnactivated();
     }
 
@@ -662,13 +546,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @notice Allows "hooking into" specific moments in the migration pipeline
     /// to execute arbitrary logic during a migration out of this release
     /// @param _vaultProxy The VaultProxy being migrated
-    function invokeMigrationOutHook(
-        MigrationOutHook _hook,
-        address _vaultProxy,
-        address,
-        address,
-        address
-    ) external override onlyDispatcher {
+    function invokeMigrationOutHook(MigrationOutHook _hook, address _vaultProxy, address, address, address)
+        external
+        override
+        onlyDispatcher
+    {
         if (_hook != MigrationOutHook.PreMigrate) {
             return;
         }
@@ -743,9 +625,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
                 "deregisterVaultCalls: Call not registered"
             );
 
-            vaultCallToPayloadToIsAllowed[
-                keccak256(abi.encodePacked(_contracts[i], _selectors[i]))
-            ][_dataHashes[i]] = false;
+            vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contracts[i], _selectors[i]))][_dataHashes[i]] =
+                false;
 
             emit VaultCallDeregistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
@@ -773,9 +654,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
                 "registerVaultCalls: Call already registered"
             );
 
-            vaultCallToPayloadToIsAllowed[
-                keccak256(abi.encodePacked(_contracts[i], _selectors[i]))
-            ][_dataHashes[i]] = true;
+            vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contracts[i], _selectors[i]))][_dataHashes[i]] =
+                true;
 
             emit VaultCallRegistered(_contracts[i], _selectors[i], _dataHashes[i]);
         }
@@ -794,16 +674,16 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @return isAllowed_ True if the call is allowed
     /// @dev A vault call is allowed if the _dataHash is specifically allowed,
     /// or if any _dataHash is allowed
-    function isAllowedVaultCall(
-        address _contract,
-        bytes4 _selector,
-        bytes32 _dataHash
-    ) external view override returns (bool isAllowed_) {
+    function isAllowedVaultCall(address _contract, bytes4 _selector, bytes32 _dataHash)
+        external
+        view
+        override
+        returns (bool isAllowed_)
+    {
         bytes32 contractFunctionHash = keccak256(abi.encodePacked(_contract, _selector));
 
-        return
-            vaultCallToPayloadToIsAllowed[contractFunctionHash][_dataHash] ||
-            vaultCallToPayloadToIsAllowed[contractFunctionHash][ANY_VAULT_CALL];
+        return vaultCallToPayloadToIsAllowed[contractFunctionHash][_dataHash]
+            || vaultCallToPayloadToIsAllowed[contractFunctionHash][ANY_VAULT_CALL];
     }
 
     // PUBLIC FUNCTIONS
@@ -834,10 +714,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         view
         returns (uint256 deactivateFeeManagerGasLimit_, uint256 payProtocolFeeGasLimit_)
     {
-        return (
-            gasLimitForDestructCallToDeactivateFeeManager,
-            gasLimitForDestructCallToPayProtocolFee
-        );
+        return (gasLimitForDestructCallToDeactivateFeeManager, gasLimitForDestructCallToPayProtocolFee);
     }
 
     /// @notice Gets the `protocolFeeTracker` variable value
@@ -884,12 +761,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @notice Checks if an account is an allowed caller of ComptrollerProxy.buySharesOnBehalf()
     /// @param _who The account to check
     /// @return isAllowed_ True if the account is an allowed caller
-    function isAllowedBuySharesOnBehalfCaller(address _who)
-        public
-        view
-        override
-        returns (bool isAllowed_)
-    {
+    function isAllowedBuySharesOnBehalfCaller(address _who) public view override returns (bool isAllowed_) {
         return acctToIsAllowedBuySharesOnBehalfCaller[_who];
     }
 
@@ -898,15 +770,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _selector The selector of the call to check
     /// @param _dataHash The keccak call data hash of the call to check
     /// @return isRegistered_ True if the call is registered
-    function isRegisteredVaultCall(
-        address _contract,
-        bytes4 _selector,
-        bytes32 _dataHash
-    ) public view returns (bool isRegistered_) {
-        return
-            vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contract, _selector))][
-                _dataHash
-            ];
+    function isRegisteredVaultCall(address _contract, bytes4 _selector, bytes32 _dataHash)
+        public
+        view
+        returns (bool isRegistered_)
+    {
+        return vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contract, _selector))][_dataHash];
     }
 
     /// @notice Gets the `isLive` variable value

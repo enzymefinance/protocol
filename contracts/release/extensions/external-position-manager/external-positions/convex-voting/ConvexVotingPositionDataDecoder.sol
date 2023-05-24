@@ -28,19 +28,11 @@ abstract contract ConvexVotingPositionDataDecoder {
             bool unstakeCvxCrv_
         )
     {
-        return
-            abi.decode(
-                _actionArgs,
-                (address[], bool, address[], IVotiumMultiMerkleStash.ClaimParam[], bool)
-            );
+        return abi.decode(_actionArgs, (address[], bool, address[], IVotiumMultiMerkleStash.ClaimParam[], bool));
     }
 
     /// @dev Helper to decode args used during the Delegate action
-    function __decodeDelegateActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (address delegatee_)
-    {
+    function __decodeDelegateActionArgs(bytes memory _actionArgs) internal pure returns (address delegatee_) {
         return abi.decode(_actionArgs, (address));
     }
 

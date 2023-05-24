@@ -31,12 +31,9 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
     uint256 private immutable PARA_SWAP_V5_FEE_PERCENT;
     address private immutable PARA_SWAP_V5_TOKEN_TRANSFER_PROXY;
 
-    constructor(
-        address _augustusSwapper,
-        address _tokenTransferProxy,
-        address _feePartner,
-        uint256 _feePercent
-    ) public {
+    constructor(address _augustusSwapper, address _tokenTransferProxy, address _feePartner, uint256 _feePercent)
+        public
+    {
         PARA_SWAP_V5_AUGUSTUS_SWAPPER = _augustusSwapper;
         PARA_SWAP_V5_FEE_PARTNER = payable(_feePartner);
         PARA_SWAP_V5_FEE_PERCENT = _feePercent;
@@ -56,20 +53,19 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
     ) internal {
         __approveAssetMaxAsNeeded(_fromToken, getParaSwapV5TokenTransferProxy(), _fromAmount);
 
-        IParaSwapV5AugustusSwapper.MegaSwapSellData memory sellData = IParaSwapV5AugustusSwapper
-            .MegaSwapSellData({
-                fromToken: _fromToken,
-                fromAmount: _fromAmount,
-                toAmount: _toAmount,
-                expectedAmount: _expectedAmount,
-                beneficiary: _beneficiary,
-                path: _path,
-                partner: PARA_SWAP_V5_FEE_PARTNER,
-                feePercent: PARA_SWAP_V5_FEE_PERCENT,
-                permit: "",
-                deadline: block.timestamp,
-                uuid: _uuid // Purely for data tracking by ParaSwap
-            });
+        IParaSwapV5AugustusSwapper.MegaSwapSellData memory sellData = IParaSwapV5AugustusSwapper.MegaSwapSellData({
+            fromToken: _fromToken,
+            fromAmount: _fromAmount,
+            toAmount: _toAmount,
+            expectedAmount: _expectedAmount,
+            beneficiary: _beneficiary,
+            path: _path,
+            partner: PARA_SWAP_V5_FEE_PARTNER,
+            feePercent: PARA_SWAP_V5_FEE_PERCENT,
+            permit: "",
+            deadline: block.timestamp,
+            uuid: _uuid // Purely for data tracking by ParaSwap
+        });
 
         IParaSwapV5AugustusSwapper(getParaSwapV5AugustusSwapper()).megaSwap(sellData);
     }
@@ -117,24 +113,23 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
     ) internal {
         __approveAssetMaxAsNeeded(_fromToken, getParaSwapV5TokenTransferProxy(), _fromAmount);
 
-        IParaSwapV5AugustusSwapper.SimpleData memory sellData = IParaSwapV5AugustusSwapper
-            .SimpleData({
-                fromToken: _fromToken,
-                toToken: _simpleSwapParams.incomingAsset,
-                fromAmount: _fromAmount,
-                toAmount: _toAmount,
-                expectedAmount: _expectedAmount,
-                callees: _simpleSwapParams.callees,
-                exchangeData: _simpleSwapParams.exchangeData,
-                startIndexes: _simpleSwapParams.startIndexes,
-                values: _simpleSwapParams.values,
-                beneficiary: _beneficiary,
-                partner: PARA_SWAP_V5_FEE_PARTNER,
-                feePercent: PARA_SWAP_V5_FEE_PERCENT,
-                permit: "",
-                deadline: block.timestamp,
-                uuid: _uuid // Purely for data tracking by ParaSwap;
-            });
+        IParaSwapV5AugustusSwapper.SimpleData memory sellData = IParaSwapV5AugustusSwapper.SimpleData({
+            fromToken: _fromToken,
+            toToken: _simpleSwapParams.incomingAsset,
+            fromAmount: _fromAmount,
+            toAmount: _toAmount,
+            expectedAmount: _expectedAmount,
+            callees: _simpleSwapParams.callees,
+            exchangeData: _simpleSwapParams.exchangeData,
+            startIndexes: _simpleSwapParams.startIndexes,
+            values: _simpleSwapParams.values,
+            beneficiary: _beneficiary,
+            partner: PARA_SWAP_V5_FEE_PARTNER,
+            feePercent: PARA_SWAP_V5_FEE_PERCENT,
+            permit: "",
+            deadline: block.timestamp,
+            uuid: _uuid // Purely for data tracking by ParaSwap;
+        });
 
         IParaSwapV5AugustusSwapper(getParaSwapV5AugustusSwapper()).simpleSwap(sellData);
     }

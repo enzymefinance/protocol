@@ -31,11 +31,7 @@ contract ManualValueOracleLib is IArbitraryValueOracle, NominatedOwnerMixin {
     /// @param _owner The owner of the oracle
     /// @param _updater The updater of the oracle value
     /// @param _description A short encoded description for the oracle
-    function init(
-        address _owner,
-        address _updater,
-        bytes32 _description
-    ) external {
+    function init(address _owner, address _updater, bytes32 _description) external {
         require(getOwner() == address(0), "init: Already initialized");
         require(_owner != address(0), "init: Empty _owner");
 
@@ -83,12 +79,7 @@ contract ManualValueOracleLib is IArbitraryValueOracle, NominatedOwnerMixin {
     /// @notice Gets the oracle value with last updated timestamp
     /// @return value_ The value
     /// @return lastUpdated_ The timestamp of the last update
-    function getValueWithTimestamp()
-        external
-        view
-        override
-        returns (int256 value_, uint256 lastUpdated_)
-    {
+    function getValueWithTimestamp() external view override returns (int256 value_, uint256 lastUpdated_) {
         return (getValue(), getLastUpdated());
     }
 

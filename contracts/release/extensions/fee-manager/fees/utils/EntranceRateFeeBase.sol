@@ -29,13 +29,9 @@ abstract contract EntranceRateFeeBase is FeeBase {
 
     mapping(address => uint256) private comptrollerProxyToRate;
 
-    constructor(address _feeManager, IFeeManager.SettlementType _settlementType)
-        public
-        FeeBase(_feeManager)
-    {
+    constructor(address _feeManager, IFeeManager.SettlementType _settlementType) public FeeBase(_feeManager) {
         require(
-            _settlementType == IFeeManager.SettlementType.Burn ||
-                _settlementType == IFeeManager.SettlementType.Direct,
+            _settlementType == IFeeManager.SettlementType.Burn || _settlementType == IFeeManager.SettlementType.Direct,
             "constructor: Invalid _settlementType"
         );
         SETTLEMENT_TYPE = _settlementType;
@@ -67,24 +63,14 @@ abstract contract EntranceRateFeeBase is FeeBase {
     /// @return settlementType_ The type of settlement
     /// @return payer_ The payer of shares due
     /// @return sharesDue_ The amount of shares due
-    function settle(
-        address _comptrollerProxy,
-        address,
-        IFeeManager.FeeHook,
-        bytes calldata _settlementData,
-        uint256
-    )
+    function settle(address _comptrollerProxy, address, IFeeManager.FeeHook, bytes calldata _settlementData, uint256)
         external
         override
         onlyFeeManager
-        returns (
-            IFeeManager.SettlementType settlementType_,
-            address payer_,
-            uint256 sharesDue_
-        )
+        returns (IFeeManager.SettlementType settlementType_, address payer_, uint256 sharesDue_)
     {
         uint256 sharesBought;
-        (payer_, , sharesBought) = __decodePostBuySharesSettlementData(_settlementData);
+        (payer_,, sharesBought) = __decodePostBuySharesSettlementData(_settlementData);
 
         uint256 rate = comptrollerProxyToRate[_comptrollerProxy];
         sharesDue_ = sharesBought.mul(rate).div(ONE_HUNDRED_PERCENT);
@@ -102,12 +88,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
     /// @param _hook The FeeHook
     /// @return settles_ True if the fee settles on the _hook
     /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        override
-        returns (bool settles_, bool usesGav_)
-    {
+    function settlesOnHook(IFeeManager.FeeHook _hook) external view override returns (bool settles_, bool usesGav_) {
         if (_hook == IFeeManager.FeeHook.PostBuyShares) {
             return (true, false);
         }
@@ -128,11 +109,7 @@ abstract contract EntranceRateFeeBase is FeeBase {
 
     /// @notice Gets the `SETTLEMENT_TYPE` variable
     /// @return settlementType_ The `SETTLEMENT_TYPE` variable value
-    function getSettlementType()
-        external
-        view
-        returns (IFeeManager.SettlementType settlementType_)
-    {
+    function getSettlementType() external view returns (IFeeManager.SettlementType settlementType_) {
         return SETTLEMENT_TYPE;
     }
 }

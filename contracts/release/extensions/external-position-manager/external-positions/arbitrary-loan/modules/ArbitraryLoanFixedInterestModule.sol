@@ -21,11 +21,7 @@ import "./IArbitraryLoanAccountingModule.sol";
 /// @title ArbitraryLoanFixedInterestModule Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An accounting module for a loan to apply fixed interest tracking
-contract ArbitraryLoanFixedInterestModule is
-    IArbitraryLoanAccountingModule,
-    MakerDaoMath,
-    MathHelpers
-{
+contract ArbitraryLoanFixedInterestModule is IArbitraryLoanAccountingModule, MakerDaoMath, MathHelpers {
     using SafeCast for uint256;
     using SafeMath for uint256;
 
@@ -64,7 +60,7 @@ contract ArbitraryLoanFixedInterestModule is
         bool faceValueIsPrincipalOnly;
     }
 
-    uint256 private constant INTEREST_SCALED_PER_SECOND_RATE_BASE = 10**27;
+    uint256 private constant INTEREST_SCALED_PER_SECOND_RATE_BASE = 10 ** 27;
 
     mapping(address => AccountingInfo) private loanToAccountingInfo;
 
@@ -89,14 +85,11 @@ contract ArbitraryLoanFixedInterestModule is
             return _totalBorrowed.sub(accountingInfo.totalPrincipalRepaid);
         }
 
-        return
-            __calcLoanBalance(
-                _totalBorrowed,
-                _totalRepaid,
-                uint256(accountingInfo.totalInterestCached).add(
-                    __calcUncachedInterest(loan, _totalBorrowed, _totalRepaid)
-                )
-            );
+        return __calcLoanBalance(
+            _totalBorrowed,
+            _totalRepaid,
+            uint256(accountingInfo.totalInterestCached).add(__calcUncachedInterest(loan, _totalBorrowed, _totalRepaid))
+        );
     }
 
     /// @notice Configures options per-loan
@@ -114,9 +107,8 @@ contract ArbitraryLoanFixedInterestModule is
         // Maturity should either be empty or in the future.
         // If empty, then force pre- and post-maturity rates to be the same for clarity.
         require(
-            maturity > block.timestamp ||
-                (maturity == 0 &&
-                    scaledPerSecondRatePreMaturity == scaledPerSecondRatePostMaturity),
+            maturity > block.timestamp
+                || (maturity == 0 && scaledPerSecondRatePreMaturity == scaledPerSecondRatePostMaturity),
             "configure: Post-maturity rate without valid maturity"
         );
 
@@ -150,11 +142,7 @@ contract ArbitraryLoanFixedInterestModule is
     /// @notice Implements logic immediately prior to effects and interactions during a borrow
     /// @param _prevTotalBorrowed The total borrowed amount not including the new borrow amount
     /// @param _totalRepaid The total repaid amount
-    function preBorrow(
-        uint256 _prevTotalBorrowed,
-        uint256 _totalRepaid,
-        uint256
-    ) external override {
+    function preBorrow(uint256 _prevTotalBorrowed, uint256 _totalRepaid, uint256) external override {
         __checkpointInterest(msg.sender, _prevTotalBorrowed, _totalRepaid);
     }
 
@@ -180,11 +168,8 @@ contract ArbitraryLoanFixedInterestModule is
 
         __checkpointInterest(loan, _totalBorrowed, _prevTotalRepaid);
 
-        uint256 loanBalance = __calcLoanBalance(
-            _totalBorrowed,
-            _prevTotalRepaid,
-            getAccountingInfoForLoan(loan).totalInterestCached
-        );
+        uint256 loanBalance =
+            __calcLoanBalance(_totalBorrowed, _prevTotalRepaid, getAccountingInfoForLoan(loan).totalInterestCached);
 
         if (_repayableLoanAssetAmount > loanBalance) {
             // Don't allow an overpayment, to keep principal-based face value sensible
@@ -204,20 +189,17 @@ contract ArbitraryLoanFixedInterestModule is
     /// @param _prevTotalRepaid The total repaid amount not including the new repay amount
     /// @param _repayAmountInput The user-input repay amount
     /// @param repayAmount_ The formatted amount to repay
-    function preRepay(
-        uint256 _totalBorrowed,
-        uint256 _prevTotalRepaid,
-        uint256 _repayAmountInput
-    ) external override returns (uint256 repayAmount_) {
+    function preRepay(uint256 _totalBorrowed, uint256 _prevTotalRepaid, uint256 _repayAmountInput)
+        external
+        override
+        returns (uint256 repayAmount_)
+    {
         address loan = msg.sender;
 
         __checkpointInterest(loan, _totalBorrowed, _prevTotalRepaid);
 
-        uint256 loanBalance = __calcLoanBalance(
-            _totalBorrowed,
-            _prevTotalRepaid,
-            getAccountingInfoForLoan(loan).totalInterestCached
-        );
+        uint256 loanBalance =
+            __calcLoanBalance(_totalBorrowed, _prevTotalRepaid, getAccountingInfoForLoan(loan).totalInterestCached);
 
         // Calc actual repay amount based on user input
         if (_repayAmountInput == type(uint256).max) {
@@ -243,18 +225,12 @@ contract ArbitraryLoanFixedInterestModule is
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to checkpoint total interest
-    function __checkpointInterest(
-        address _loan,
-        uint256 _totalBorrowed,
-        uint256 _totalRepaid
-    ) private {
+    function __checkpointInterest(address _loan, uint256 _totalBorrowed, uint256 _totalRepaid) private {
         AccountingInfo storage accountingInfo = loanToAccountingInfo[_loan];
 
         uint256 uncachedInterest = __calcUncachedInterest(_loan, _totalBorrowed, _totalRepaid);
         if (uncachedInterest > 0) {
-            uint256 totalInterest = uint256(accountingInfo.totalInterestCached).add(
-                uncachedInterest
-            );
+            uint256 totalInterest = uint256(accountingInfo.totalInterestCached).add(uncachedInterest);
 
             accountingInfo.totalInterestCached = totalInterest.toUint128();
 
@@ -291,20 +267,15 @@ contract ArbitraryLoanFixedInterestModule is
             if (_repayAmount >= principalOutstanding) {
                 nextTotalPrincipalRepaid = _totalBorrowed;
             } else {
-                nextTotalPrincipalRepaid = uint256(accountingInfo.totalPrincipalRepaid).add(
-                    _repayAmount
-                );
+                nextTotalPrincipalRepaid = uint256(accountingInfo.totalPrincipalRepaid).add(_repayAmount);
             }
         } else {
             // RepaymentTrackingType.InterestFirst
             // Simulate the effect of repaying interest before the principal
 
             // totalInterestCached is already updated
-            uint256 prevLoanBalance = __calcLoanBalance(
-                _totalBorrowed,
-                _prevTotalRepaid,
-                accountingInfo.totalInterestCached
-            );
+            uint256 prevLoanBalance =
+                __calcLoanBalance(_totalBorrowed, _prevTotalRepaid, accountingInfo.totalInterestCached);
 
             if (_repayAmount >= prevLoanBalance) {
                 // Repayment covers full remaining balance
@@ -314,17 +285,14 @@ contract ArbitraryLoanFixedInterestModule is
                 uint256 interestRemaining = prevLoanBalance.sub(principalOutstanding);
 
                 if (_repayAmount > interestRemaining) {
-                    nextTotalPrincipalRepaid = uint256(accountingInfo.totalPrincipalRepaid)
-                        .add(_repayAmount)
-                        .sub(interestRemaining);
+                    nextTotalPrincipalRepaid =
+                        uint256(accountingInfo.totalPrincipalRepaid).add(_repayAmount).sub(interestRemaining);
                 }
             }
         }
 
         if (nextTotalPrincipalRepaid > 0) {
-            loanToAccountingInfo[_loan].totalPrincipalRepaid = __safeCastUint112(
-                nextTotalPrincipalRepaid
-            );
+            loanToAccountingInfo[_loan].totalPrincipalRepaid = __safeCastUint112(nextTotalPrincipalRepaid);
 
             emit TotalPrincipalRepaidUpdatedForLoan(_loan, nextTotalPrincipalRepaid);
         }
@@ -332,7 +300,7 @@ contract ArbitraryLoanFixedInterestModule is
 
     /// @dev Mimics SafeCast logic for uint112
     function __safeCastUint112(uint256 value) private pure returns (uint112 castedValue_) {
-        require(value < 2**112, "__safeCastUint112: Value doesn't fit in 112 bits");
+        require(value < 2 ** 112, "__safeCastUint112: Value doesn't fit in 112 bits");
 
         return uint112(value);
     }
@@ -351,43 +319,36 @@ contract ArbitraryLoanFixedInterestModule is
             return 0;
         }
 
-        return
-            _loanBalance
-                .mul(
-                    __rpow(
-                        _scaledPerSecondRate,
-                        _secondsSinceCheckpoint,
-                        INTEREST_SCALED_PER_SECOND_RATE_BASE
-                    ).sub(INTEREST_SCALED_PER_SECOND_RATE_BASE)
-                )
-                .div(INTEREST_SCALED_PER_SECOND_RATE_BASE);
+        return _loanBalance.mul(
+            __rpow(_scaledPerSecondRate, _secondsSinceCheckpoint, INTEREST_SCALED_PER_SECOND_RATE_BASE).sub(
+                INTEREST_SCALED_PER_SECOND_RATE_BASE
+            )
+        ).div(INTEREST_SCALED_PER_SECOND_RATE_BASE);
     }
 
     /// @dev Helper to calculate the total loan balance. Ignores over-repayment.
-    function __calcLoanBalance(
-        uint256 _totalBorrowed,
-        uint256 _totalRepaid,
-        uint256 _totalInterest
-    ) private pure returns (uint256 balance_) {
+    function __calcLoanBalance(uint256 _totalBorrowed, uint256 _totalRepaid, uint256 _totalInterest)
+        private
+        pure
+        returns (uint256 balance_)
+    {
         return __subOrZero(_totalBorrowed.add(_totalInterest), _totalRepaid);
     }
 
     /// @dev Helper to calculate uncached interest
-    function __calcUncachedInterest(
-        address _loan,
-        uint256 _totalBorrowed,
-        uint256 _totalRepaid
-    ) private view returns (uint256 uncachedInterest_) {
+    function __calcUncachedInterest(address _loan, uint256 _totalBorrowed, uint256 _totalRepaid)
+        private
+        view
+        returns (uint256 uncachedInterest_)
+    {
         AccountingInfo memory accountingInfo = getAccountingInfoForLoan(_loan);
 
         if (accountingInfo.totalInterestCachedTimestamp == block.timestamp) {
             return 0;
         }
 
-        uint256 loanBalanceAtCheckpoint = __subOrZero(
-            _totalBorrowed.add(accountingInfo.totalInterestCached),
-            _totalRepaid
-        );
+        uint256 loanBalanceAtCheckpoint =
+            __subOrZero(_totalBorrowed.add(accountingInfo.totalInterestCached), _totalRepaid);
         if (loanBalanceAtCheckpoint == 0) {
             return 0;
         }
@@ -397,26 +358,23 @@ contract ArbitraryLoanFixedInterestModule is
         // Use pre-maturity rate if immature or same rates.
         // If maturity == 0, rates will be the same.
         if (
-            block.timestamp <= accountingInfo.maturity ||
-            accountingInfo.scaledPerSecondRatePreMaturity ==
-            accountingInfo.scaledPerSecondRatePostMaturity
+            block.timestamp <= accountingInfo.maturity
+                || accountingInfo.scaledPerSecondRatePreMaturity == accountingInfo.scaledPerSecondRatePostMaturity
         ) {
-            return
-                __calcContinuouslyCompoundedInterest(
-                    loanBalanceAtCheckpoint,
-                    accountingInfo.scaledPerSecondRatePreMaturity,
-                    block.timestamp.sub(accountingInfo.totalInterestCachedTimestamp)
-                );
+            return __calcContinuouslyCompoundedInterest(
+                loanBalanceAtCheckpoint,
+                accountingInfo.scaledPerSecondRatePreMaturity,
+                block.timestamp.sub(accountingInfo.totalInterestCachedTimestamp)
+            );
         }
 
         // Use post-maturity rate if last checkpoint was also beyond maturity
         if (accountingInfo.totalInterestCachedTimestamp >= accountingInfo.maturity) {
-            return
-                __calcContinuouslyCompoundedInterest(
-                    loanBalanceAtCheckpoint,
-                    accountingInfo.scaledPerSecondRatePostMaturity,
-                    block.timestamp.sub(accountingInfo.totalInterestCachedTimestamp)
-                );
+            return __calcContinuouslyCompoundedInterest(
+                loanBalanceAtCheckpoint,
+                accountingInfo.scaledPerSecondRatePostMaturity,
+                block.timestamp.sub(accountingInfo.totalInterestCachedTimestamp)
+            );
         }
 
         // At this point, block.timestamp != maturity and totalInterestCachedTimestamp != maturity
@@ -444,11 +402,7 @@ contract ArbitraryLoanFixedInterestModule is
     /// @notice Gets the AccountingInfo for a given loan
     /// @param _loan The loan address
     /// @return accountingInfo_ The accounting info
-    function getAccountingInfoForLoan(address _loan)
-        public
-        view
-        returns (AccountingInfo memory accountingInfo_)
-    {
+    function getAccountingInfoForLoan(address _loan) public view returns (AccountingInfo memory accountingInfo_) {
         return loanToAccountingInfo[_loan];
     }
 }

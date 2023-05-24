@@ -27,13 +27,10 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
 
     /// @dev Provides a standard implementation for transferring incoming assets
     /// from an adapter to a VaultProxy at the end of an adapter action
-    modifier postActionIncomingAssetsTransferHandler(
-        address _vaultProxy,
-        bytes memory _assetData
-    ) {
+    modifier postActionIncomingAssetsTransferHandler(address _vaultProxy, bytes memory _assetData) {
         _;
 
-        (, , address[] memory incomingAssets) = __decodeAssetData(_assetData);
+        (,, address[] memory incomingAssets) = __decodeAssetData(_assetData);
 
         __pushFullAssetBalances(_vaultProxy, incomingAssets);
     }
@@ -43,16 +40,13 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
     modifier postActionSpendAssetsTransferHandler(address _vaultProxy, bytes memory _assetData) {
         _;
 
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
         __pushFullAssetBalances(_vaultProxy, spendAssets);
     }
 
     modifier onlyIntegrationManager() {
-        require(
-            msg.sender == INTEGRATION_MANAGER,
-            "Only the IntegrationManager can call this function"
-        );
+        require(msg.sender == INTEGRATION_MANAGER, "Only the IntegrationManager can call this function");
         _;
     }
 
@@ -66,11 +60,7 @@ abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, Asse
     function __decodeAssetData(bytes memory _assetData)
         internal
         pure
-        returns (
-            address[] memory spendAssets_,
-            uint256[] memory spendAssetAmounts_,
-            address[] memory incomingAssets_
-        )
+        returns (address[] memory spendAssets_, uint256[] memory spendAssetAmounts_, address[] memory incomingAssets_)
     {
         return abi.decode(_assetData, (address[], uint256[], address[]));
     }

@@ -45,11 +45,7 @@ abstract contract GasRelayRecipientMixin {
 
     /// @notice Gets the `GAS_RELAY_PAYMASTER_FACTORY` variable
     /// @return gasRelayPaymasterFactory_ The `GAS_RELAY_PAYMASTER_FACTORY` variable value
-    function getGasRelayPaymasterFactory()
-        public
-        view
-        returns (address gasRelayPaymasterFactory_)
-    {
+    function getGasRelayPaymasterFactory() public view returns (address gasRelayPaymasterFactory_) {
         return GAS_RELAY_PAYMASTER_FACTORY;
     }
 
@@ -57,8 +53,6 @@ abstract contract GasRelayRecipientMixin {
     /// @return trustedForwarder_ The trusted forwarder
     function getGasRelayTrustedForwarder() public view returns (address trustedForwarder_) {
         return
-            IGasRelayPaymaster(
-                IBeaconProxyFactory(getGasRelayPaymasterFactory()).getCanonicalLib()
-            ).trustedForwarder();
+            IGasRelayPaymaster(IBeaconProxyFactory(getGasRelayPaymasterFactory()).getCanonicalLib()).trustedForwarder();
     }
 }

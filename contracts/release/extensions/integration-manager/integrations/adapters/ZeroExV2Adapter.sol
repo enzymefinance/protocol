@@ -28,12 +28,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
 
     // Gas could be optimized for the end-user by also storing an immutable ZRX_ASSET_DATA,
     // for example, but in the narrow OTC use-case of this adapter, taker fees are unlikely.
-    constructor(
-        address _integrationManager,
-        address _exchange,
-        address _fundDeployer,
-        address[] memory _allowedMakers
-    )
+    constructor(address _integrationManager, address _exchange, address _fundDeployer, address[] memory _allowedMakers)
         public
         AdapterBase(_integrationManager)
         FundDeployerOwnerMixin(_fundDeployer)
@@ -50,22 +45,15 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function takeOrder(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function takeOrder(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderCallArgs(_actionData);
+        (bytes memory encodedZeroExOrderArgs, uint256 takerAssetFillAmount) = __decodeTakeOrderCallArgs(_actionData);
 
         IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
-        (, , , bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
+        (,,, bytes memory signature) = __decodeZeroExOrderArgs(encodedZeroExOrderArgs);
 
         __zeroExV2TakeOrder(order, takerAssetFillAmount, signature);
     }
@@ -83,11 +71,7 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -101,16 +85,10 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
     {
         require(_selector == TAKE_ORDER_SELECTOR, "parseAssetsForAction: _selector invalid");
 
-        (
-            bytes memory encodedZeroExOrderArgs,
-            uint256 takerAssetFillAmount
-        ) = __decodeTakeOrderCallArgs(_actionData);
+        (bytes memory encodedZeroExOrderArgs, uint256 takerAssetFillAmount) = __decodeTakeOrderCallArgs(_actionData);
         IZeroExV2.Order memory order = __constructOrderStruct(encodedZeroExOrderArgs);
 
-        require(
-            isAllowedMaker(order.makerAddress),
-            "parseAssetsForAction: Order maker is not allowed"
-        );
+        require(isAllowedMaker(order.makerAddress), "parseAssetsForAction: Order maker is not allowed");
         require(
             takerAssetFillAmount <= order.takerAssetAmount,
             "parseAssetsForAction: Taker asset fill amount greater than available"
@@ -123,26 +101,17 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = makerAsset;
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = __calcRelativeQuantity(
-            order.takerAssetAmount,
-            order.makerAssetAmount,
-            takerAssetFillAmount
-        );
+        minIncomingAssetAmounts_[0] =
+            __calcRelativeQuantity(order.takerAssetAmount, order.makerAssetAmount, takerAssetFillAmount);
 
         if (order.takerFee > 0) {
-            address takerFeeAsset = __getAssetAddress(
-                IZeroExV2(getZeroExV2Exchange()).ZRX_ASSET_DATA()
-            );
-            uint256 takerFeeFillAmount = __calcRelativeQuantity(
-                order.takerAssetAmount,
-                order.takerFee,
-                takerAssetFillAmount
-            ); // fee calculated relative to taker fill amount
+            address takerFeeAsset = __getAssetAddress(IZeroExV2(getZeroExV2Exchange()).ZRX_ASSET_DATA());
+            uint256 takerFeeFillAmount =
+                __calcRelativeQuantity(order.takerAssetAmount, order.takerFee, takerAssetFillAmount); // fee calculated relative to taker fill amount
 
             if (takerFeeAsset == makerAsset) {
                 require(
-                    order.takerFee < order.makerAssetAmount,
-                    "parseAssetsForAction: Fee greater than makerAssetAmount"
+                    order.takerFee < order.makerAssetAmount, "parseAssetsForAction: Fee greater than makerAssetAmount"
                 );
 
                 spendAssets_ = new address[](1);
@@ -210,17 +179,11 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
 
     /// @notice Removes accounts from the list of allowed 0x order makers
     /// @param _accountsToRemove Accounts to remove
-    function removeAllowedMakers(address[] calldata _accountsToRemove)
-        external
-        onlyFundDeployerOwner
-    {
+    function removeAllowedMakers(address[] calldata _accountsToRemove) external onlyFundDeployerOwner {
         require(_accountsToRemove.length > 0, "removeAllowedMakers: Empty _accountsToRemove");
 
         for (uint256 i; i < _accountsToRemove.length; i++) {
-            require(
-                isAllowedMaker(_accountsToRemove[i]),
-                "removeAllowedMakers: Account is not an allowed maker"
-            );
+            require(isAllowedMaker(_accountsToRemove[i]), "removeAllowedMakers: Account is not an allowed maker");
 
             makerToIsAllowed[_accountsToRemove[i]] = false;
 
@@ -247,28 +210,23 @@ contract ZeroExV2Adapter is AdapterBase, FundDeployerOwnerMixin, ZeroExV2Actions
         pure
         returns (IZeroExV2.Order memory order_)
     {
-        (
-            address[4] memory orderAddresses,
-            uint256[6] memory orderValues,
-            bytes[2] memory orderData,
+        (address[4] memory orderAddresses, uint256[6] memory orderValues, bytes[2] memory orderData,) =
+            __decodeZeroExOrderArgs(_encodedOrderArgs);
 
-        ) = __decodeZeroExOrderArgs(_encodedOrderArgs);
-
-        return
-            IZeroExV2.Order({
-                makerAddress: orderAddresses[0],
-                takerAddress: orderAddresses[1],
-                feeRecipientAddress: orderAddresses[2],
-                senderAddress: orderAddresses[3],
-                makerAssetAmount: orderValues[0],
-                takerAssetAmount: orderValues[1],
-                makerFee: orderValues[2],
-                takerFee: orderValues[3],
-                expirationTimeSeconds: orderValues[4],
-                salt: orderValues[5],
-                makerAssetData: orderData[0],
-                takerAssetData: orderData[1]
-            });
+        return IZeroExV2.Order({
+            makerAddress: orderAddresses[0],
+            takerAddress: orderAddresses[1],
+            feeRecipientAddress: orderAddresses[2],
+            senderAddress: orderAddresses[3],
+            makerAssetAmount: orderValues[0],
+            takerAssetAmount: orderValues[1],
+            makerFee: orderValues[2],
+            takerFee: orderValues[3],
+            expirationTimeSeconds: orderValues[4],
+            salt: orderValues[5],
+            makerAssetData: orderData[0],
+            takerAssetData: orderData[1]
+        });
     }
 
     /// @dev Decode the parameters of a 0x order

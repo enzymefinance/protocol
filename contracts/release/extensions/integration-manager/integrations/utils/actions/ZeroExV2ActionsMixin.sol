@@ -27,16 +27,12 @@ abstract contract ZeroExV2ActionsMixin is AssetHelpers, MathHelpers {
     }
 
     /// @dev Helper to execute takeOrder
-    function __zeroExV2TakeOrder(
-        IZeroExV2.Order memory _order,
-        uint256 _takerAssetFillAmount,
-        bytes memory _signature
-    ) internal {
+    function __zeroExV2TakeOrder(IZeroExV2.Order memory _order, uint256 _takerAssetFillAmount, bytes memory _signature)
+        internal
+    {
         // Approve spend assets as needed
         __approveAssetMaxAsNeeded(
-            __getAssetAddress(_order.takerAssetData),
-            __getAssetProxy(_order.takerAssetData),
-            _takerAssetFillAmount
+            __getAssetAddress(_order.takerAssetData), __getAssetProxy(_order.takerAssetData), _takerAssetFillAmount
         );
         // Ignores whether makerAsset or takerAsset overlap with the takerFee asset for simplicity
         if (_order.takerFee > 0) {
@@ -44,11 +40,7 @@ abstract contract ZeroExV2ActionsMixin is AssetHelpers, MathHelpers {
             __approveAssetMaxAsNeeded(
                 __getAssetAddress(zrxData),
                 __getAssetProxy(zrxData),
-                __calcRelativeQuantity(
-                    _order.takerAssetAmount,
-                    _order.takerFee,
-                    _takerAssetFillAmount
-                ) // fee calculated relative to taker fill amount
+                __calcRelativeQuantity(_order.takerAssetAmount, _order.takerFee, _takerAssetFillAmount) // fee calculated relative to taker fill amount
             );
         }
 
@@ -57,11 +49,7 @@ abstract contract ZeroExV2ActionsMixin is AssetHelpers, MathHelpers {
     }
 
     /// @dev Parses the asset address from 0x assetData
-    function __getAssetAddress(bytes memory _assetData)
-        internal
-        pure
-        returns (address assetAddress_)
-    {
+    function __getAssetAddress(bytes memory _assetData) internal pure returns (address assetAddress_) {
         assembly {
             assetAddress_ := mload(add(_assetData, 36))
         }
@@ -72,10 +60,8 @@ abstract contract ZeroExV2ActionsMixin is AssetHelpers, MathHelpers {
         bytes4 assetProxyId;
 
         assembly {
-            assetProxyId := and(
-                mload(add(_assetData, 32)),
-                0xFFFFFFFF00000000000000000000000000000000000000000000000000000000
-            )
+            assetProxyId :=
+                and(mload(add(_assetData, 32)), 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000)
         }
         assetProxy_ = IZeroExV2(getZeroExV2Exchange()).getAssetProxy(assetProxyId);
     }

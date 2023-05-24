@@ -14,16 +14,5 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title ISynthetixExchanger Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ISynthetixExchanger {
-    function getAmountsForExchange(
-        uint256,
-        bytes32,
-        bytes32
-    )
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        );
+    function getAmountsForExchange(uint256, bytes32, bytes32) external view returns (uint256, uint256, uint256);
 }

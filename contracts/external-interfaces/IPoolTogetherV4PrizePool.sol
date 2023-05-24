@@ -16,11 +16,7 @@ pragma solidity >=0.6.0 <0.9.0;
 interface IPoolTogetherV4PrizePool {
     function getToken() external view returns (address);
 
-    function depositToAndDelegate(
-        address,
-        uint256,
-        address
-    ) external;
+    function depositToAndDelegate(address, uint256, address) external;
 
     function withdrawFrom(address, uint256) external returns (uint256);
 }

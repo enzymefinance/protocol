@@ -20,17 +20,10 @@ import "./FeeBase.sol";
 abstract contract ExitRateFeeBase is FeeBase {
     using SafeMath for uint256;
 
-    event FundSettingsAdded(
-        address indexed comptrollerProxy,
-        uint256 inKindRate,
-        uint256 specificAssetsRate
-    );
+    event FundSettingsAdded(address indexed comptrollerProxy, uint256 inKindRate, uint256 specificAssetsRate);
 
     event Settled(
-        address indexed comptrollerProxy,
-        address indexed payer,
-        uint256 sharesQuantity,
-        bool indexed forSpecificAssets
+        address indexed comptrollerProxy, address indexed payer, uint256 sharesQuantity, bool indexed forSpecificAssets
     );
 
     struct FeeInfo {
@@ -43,13 +36,9 @@ abstract contract ExitRateFeeBase is FeeBase {
 
     mapping(address => FeeInfo) private comptrollerProxyToFeeInfo;
 
-    constructor(address _feeManager, IFeeManager.SettlementType _settlementType)
-        public
-        FeeBase(_feeManager)
-    {
+    constructor(address _feeManager, IFeeManager.SettlementType _settlementType) public FeeBase(_feeManager) {
         require(
-            _settlementType == IFeeManager.SettlementType.Burn ||
-                _settlementType == IFeeManager.SettlementType.Direct,
+            _settlementType == IFeeManager.SettlementType.Burn || _settlementType == IFeeManager.SettlementType.Direct,
             "constructor: Invalid _settlementType"
         );
         SETTLEMENT_TYPE = _settlementType;
@@ -66,20 +55,12 @@ abstract contract ExitRateFeeBase is FeeBase {
         override
         onlyFeeManager
     {
-        (uint16 inKindRate, uint16 specificAssetsRate) = abi.decode(
-            _settingsData,
-            (uint16, uint16)
-        );
+        (uint16 inKindRate, uint16 specificAssetsRate) = abi.decode(_settingsData, (uint16, uint16));
         require(inKindRate < ONE_HUNDRED_PERCENT, "addFundSettings: inKindRate max exceeded");
-        require(
-            specificAssetsRate < ONE_HUNDRED_PERCENT,
-            "addFundSettings: specificAssetsRate max exceeded"
-        );
+        require(specificAssetsRate < ONE_HUNDRED_PERCENT, "addFundSettings: specificAssetsRate max exceeded");
 
-        comptrollerProxyToFeeInfo[_comptrollerProxy] = FeeInfo({
-            inKindRate: inKindRate,
-            specificAssetsRate: specificAssetsRate
-        });
+        comptrollerProxyToFeeInfo[_comptrollerProxy] =
+            FeeInfo({inKindRate: inKindRate, specificAssetsRate: specificAssetsRate});
 
         emit FundSettingsAdded(_comptrollerProxy, inKindRate, specificAssetsRate);
     }
@@ -90,27 +71,15 @@ abstract contract ExitRateFeeBase is FeeBase {
     /// @return settlementType_ The type of settlement
     /// @return payer_ The payer of shares due
     /// @return sharesDue_ The amount of shares due
-    function settle(
-        address _comptrollerProxy,
-        address,
-        IFeeManager.FeeHook,
-        bytes calldata _settlementData,
-        uint256
-    )
+    function settle(address _comptrollerProxy, address, IFeeManager.FeeHook, bytes calldata _settlementData, uint256)
         external
         override
         onlyFeeManager
-        returns (
-            IFeeManager.SettlementType settlementType_,
-            address payer_,
-            uint256 sharesDue_
-        )
+        returns (IFeeManager.SettlementType settlementType_, address payer_, uint256 sharesDue_)
     {
         bool forSpecificAssets;
         uint256 sharesRedeemed;
-        (payer_, sharesRedeemed, forSpecificAssets) = __decodePreRedeemSharesSettlementData(
-            _settlementData
-        );
+        (payer_, sharesRedeemed, forSpecificAssets) = __decodePreRedeemSharesSettlementData(_settlementData);
 
         uint256 rate;
         if (forSpecificAssets) {
@@ -134,12 +103,7 @@ abstract contract ExitRateFeeBase is FeeBase {
     /// @param _hook The FeeHook
     /// @return settles_ True if the fee settles on the _hook
     /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        override
-        returns (bool settles_, bool usesGav_)
-    {
+    function settlesOnHook(IFeeManager.FeeHook _hook) external view override returns (bool settles_, bool usesGav_) {
         if (_hook == IFeeManager.FeeHook.PreRedeemShares) {
             return (true, false);
         }
@@ -167,11 +131,7 @@ abstract contract ExitRateFeeBase is FeeBase {
     /// @notice Gets the fee rate for a specific assets redemption
     /// @param _comptrollerProxy The ComptrollerProxy contract for the fund
     /// @return rate_ The fee rate
-    function getSpecificAssetsRateForFund(address _comptrollerProxy)
-        public
-        view
-        returns (uint256 rate_)
-    {
+    function getSpecificAssetsRateForFund(address _comptrollerProxy) public view returns (uint256 rate_) {
         return comptrollerProxyToFeeInfo[_comptrollerProxy].specificAssetsRate;
     }
 }

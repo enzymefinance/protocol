@@ -18,20 +18,19 @@ import "../utils/bases/CompoundAdapterBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Compound <https://compound.finance/>
 contract CompoundAdapter is CompoundAdapterBase {
-    constructor(
-        address _integrationManager,
-        address _compoundPriceFeed,
-        address _wethToken
-    ) public CompoundAdapterBase(_integrationManager, _compoundPriceFeed, _wethToken) {}
+    constructor(address _integrationManager, address _compoundPriceFeed, address _wethToken)
+        public
+        CompoundAdapterBase(_integrationManager, _compoundPriceFeed, _wethToken)
+    {}
 
     /// @notice Claims rewards from Compound's Comptroller
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external override onlyIntegrationManager {
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        override
+        onlyIntegrationManager
+    {
         (address[] memory cTokens, address compoundComptroller) = __decodeClaimArgs(_actionData);
         ICompoundComptroller(compoundComptroller).claimComp(_vaultProxy, cTokens);
     }

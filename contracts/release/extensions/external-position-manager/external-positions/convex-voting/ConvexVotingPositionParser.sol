@@ -31,11 +31,7 @@ contract ConvexVotingPositionParser is IExternalPositionParser, ConvexVotingPosi
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -45,7 +41,7 @@ contract ConvexVotingPositionParser is IExternalPositionParser, ConvexVotingPosi
         )
     {
         if (_actionId == uint256(IConvexVotingPosition.Actions.Lock)) {
-            (uint256 amount, ) = __decodeLockActionArgs(_encodedActionArgs);
+            (uint256 amount,) = __decodeLockActionArgs(_encodedActionArgs);
 
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = CVX_TOKEN;

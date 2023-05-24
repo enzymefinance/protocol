@@ -13,7 +13,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
-import "../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
+import
+    "../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
 import "../../../../../external-interfaces/ICompoundV3Configurator.sol";
 import "../utils/actions/CompoundV3ActionsMixin.sol";
 import "../utils/AdapterBase.sol";
@@ -26,11 +27,7 @@ import "../utils/AdapterBase.sol";
 /// which would otherwise lead to tx failures during IntegrationManager validation of incoming asset amounts.
 /// Due to this workaround, a `cTokenV3` value less than `ROUNDING_BUFFER` is not usable in this adapter,
 /// which is fine because those values would not make sense (gas-wise) to lend or redeem.
-contract CompoundV3Adapter is
-    AdapterBase,
-    AddOnlyAddressListOwnerConsumerMixin,
-    CompoundV3ActionsMixin
-{
+contract CompoundV3Adapter is AdapterBase, AddOnlyAddressListOwnerConsumerMixin, CompoundV3ActionsMixin {
     uint256 internal constant ROUNDING_BUFFER = 2;
 
     ICompoundV3Configurator private immutable CONFIGURATOR_CONTRACT;
@@ -53,11 +50,7 @@ contract CompoundV3Adapter is
     /// @notice Claims rewards from Compound's V3 Rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external {
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata) external {
         address[] memory cTokens = __decodeClaimArgs(_actionData);
 
         for (uint256 i; i < cTokens.length; i++) {
@@ -68,15 +61,9 @@ contract CompoundV3Adapter is
     /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    ) external {
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData) external {
         // More efficient to parse all from _assetData
-        (address[] memory spendAssets, , address[] memory incomingAssets) = __decodeAssetData(
-            _assetData
-        );
+        (address[] memory spendAssets,, address[] memory incomingAssets) = __decodeAssetData(_assetData);
 
         // Validate cToken.
         // Must be done here instead of parseAssetsForAction(),
@@ -94,15 +81,9 @@ contract CompoundV3Adapter is
     /// @notice Redeems an amount of cTokens from Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    ) external {
+    function redeem(address _vaultProxy, bytes calldata, bytes calldata _assetData) external {
         // More efficient to parse all from _assetData
-        (address[] memory spendAssets, , address[] memory incomingAssets) = __decodeAssetData(
-            _assetData
-        );
+        (address[] memory spendAssets,, address[] memory incomingAssets) = __decodeAssetData(_assetData);
 
         // Validate cToken.
         // Must be done here instead of parseAssetsForAction(),
@@ -131,11 +112,7 @@ contract CompoundV3Adapter is
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address _vaultProxy,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address _vaultProxy, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -258,11 +235,7 @@ contract CompoundV3Adapter is
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode actionData for claimRewards
-    function __decodeClaimArgs(bytes memory _actionData)
-        private
-        pure
-        returns (address[] memory cTokens_)
-    {
+    function __decodeClaimArgs(bytes memory _actionData) private pure returns (address[] memory cTokens_) {
         return abi.decode(_actionData, (address[]));
     }
 

@@ -21,9 +21,7 @@ abstract contract OneInchV5ActionsMixin is AssetHelpers {
     IOneInchV5AggregationRouter public immutable ONE_INCH_V5_AGGREGATION_ROUTER_CONTRACT;
 
     constructor(address _oneInchV5AggregationRouter) public {
-        ONE_INCH_V5_AGGREGATION_ROUTER_CONTRACT = IOneInchV5AggregationRouter(
-            _oneInchV5AggregationRouter
-        );
+        ONE_INCH_V5_AGGREGATION_ROUTER_CONTRACT = IOneInchV5AggregationRouter(_oneInchV5AggregationRouter);
     }
 
     /// @dev Helper to execute a swap() order.

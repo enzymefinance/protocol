@@ -39,11 +39,10 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @dev Pool must have an ERC20 liquidity gauge (e.g., v2, v3, v4) or an ERC20 wrapper (e.g., v1)
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         __curveGaugeV2ClaimAllRewards(__decodeClaimRewardsCallArgs(_actionData), _vaultProxy);
     }
 
@@ -51,11 +50,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -66,26 +61,16 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             uint256 minIncomingLpTokenAmount,
             bool useUnderlyings
         ) = __decodeLendCallArgs(_actionData);
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
-        __curveAddLiquidity(
-            pool,
-            spendAssets,
-            orderedOutgoingAssetAmounts,
-            minIncomingLpTokenAmount,
-            useUnderlyings
-        );
+        __curveAddLiquidity(pool, spendAssets, orderedOutgoingAssetAmounts, minIncomingLpTokenAmount, useUnderlyings);
     }
 
     /// @notice Lends assets for LP tokens, then stakes the received LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lendAndStake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function lendAndStake(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -97,34 +82,22 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             uint256 minIncomingStakingTokenAmount,
             bool useUnderlyings
         ) = __decodeLendAndStakeCallArgs(_actionData);
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
         address lpToken = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         __curveAddLiquidity(
-            pool,
-            spendAssets,
-            orderedOutgoingAssetAmounts,
-            minIncomingStakingTokenAmount,
-            useUnderlyings
+            pool, spendAssets, orderedOutgoingAssetAmounts, minIncomingStakingTokenAmount, useUnderlyings
         );
 
-        __curveGaugeV2Stake(
-            incomingStakingToken,
-            lpToken,
-            ERC20(lpToken).balanceOf(address(this))
-        );
+        __curveGaugeV2Stake(incomingStakingToken, lpToken, ERC20(lpToken).balanceOf(address(this)));
     }
 
     /// @notice Redeems LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -143,20 +116,13 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @notice Stakes LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function stake(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    )
+    function stake(address _vaultProxy, bytes calldata, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         __curveGaugeV2Stake(incomingAssets[0], spendAssets[0], spendAssetAmounts[0]);
     }
@@ -165,11 +131,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function unstake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function unstake(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -183,11 +145,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function unstakeAndRedeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function unstakeAndRedeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -203,13 +161,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
 
         __curveGaugeV2Unstake(outgoingStakingToken, outgoingStakingTokenAmount);
 
-        __curveRedeem(
-            pool,
-            outgoingStakingTokenAmount,
-            useUnderlyings,
-            redeemType,
-            incomingAssetsData
-        );
+        __curveRedeem(pool, outgoingStakingTokenAmount, useUnderlyings, redeemType, incomingAssetsData);
     }
 
     /////////////////////////////
@@ -225,11 +177,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -309,11 +257,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = minIncomingLpTokenAmount;
 
-        (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            pool,
-            orderedOutgoingAssetAmounts,
-            useUnderlyings
-        );
+        (spendAssets_, spendAssetAmounts_) =
+            __parseSpendAssetsForLendingCalls(pool, orderedOutgoingAssetAmounts, useUnderlyings);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -347,11 +292,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
 
         __validatePoolForGauge(pool, incomingStakingToken);
 
-        (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            pool,
-            orderedOutgoingAssetAmounts,
-            useUnderlyings
-        );
+        (spendAssets_, spendAssetAmounts_) =
+            __parseSpendAssetsForLendingCalls(pool, orderedOutgoingAssetAmounts, useUnderlyings);
 
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = incomingStakingToken;
@@ -395,12 +337,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = outgoingLpTokenAmount;
 
-        (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            pool,
-            useUnderlyings,
-            redeemType,
-            incomingAssetsData
-        );
+        (incomingAssets_, minIncomingAssetAmounts_) =
+            __parseIncomingAssetsForRedemptionCalls(pool, useUnderlyings, redeemType, incomingAssetsData);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -424,9 +362,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address pool, address incomingStakingToken, uint256 amount) = __decodeStakeCallArgs(
-            _actionData
-        );
+        (address pool, address incomingStakingToken, uint256 amount) = __decodeStakeCallArgs(_actionData);
 
         __validatePoolForGauge(pool, incomingStakingToken);
 
@@ -464,9 +400,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address pool, address outgoingStakingToken, uint256 amount) = __decodeUnstakeCallArgs(
-            _actionData
-        );
+        (address pool, address outgoingStakingToken, uint256 amount) = __decodeUnstakeCallArgs(_actionData);
 
         __validatePoolForGauge(pool, outgoingStakingToken);
 
@@ -521,12 +455,8 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = outgoingStakingTokenAmount;
 
-        (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            pool,
-            useUnderlyings,
-            redeemType,
-            incomingAssetsData
-        );
+        (incomingAssets_, minIncomingAssetAmounts_) =
+            __parseIncomingAssetsForRedemptionCalls(pool, useUnderlyings, redeemType, incomingAssetsData);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -539,9 +469,6 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
 
     /// @dev Helper to validate that a gauge belongs to a given pool
     function __validatePoolForGauge(address _pool, address _gauge) private view {
-        require(
-            CURVE_PRICE_FEED_CONTRACT.getPoolForDerivative(_gauge) == _pool,
-            "__validateGauge: Invalid"
-        );
+        require(CURVE_PRICE_FEED_CONTRACT.getPoolForDerivative(_gauge) == _pool, "__validateGauge: Invalid");
     }
 }

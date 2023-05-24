@@ -27,11 +27,7 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    event OracleSetForLoan(
-        address indexed loan,
-        address indexed oracle,
-        uint32 stalenessThreshold
-    );
+    event OracleSetForLoan(address indexed loan, address indexed oracle, uint32 stalenessThreshold);
 
     struct OracleInfo {
         address oracle;
@@ -64,21 +60,14 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
         (address oracle, uint32 stalenessThreshold) = abi.decode(_configData, (address, uint32));
         require(oracle != address(0), "configure: Empty oracle");
 
-        loanToOracleInfo[loan] = OracleInfo({
-            oracle: oracle,
-            stalenessThreshold: stalenessThreshold
-        });
+        loanToOracleInfo[loan] = OracleInfo({oracle: oracle, stalenessThreshold: stalenessThreshold});
 
         emit OracleSetForLoan(loan, oracle, stalenessThreshold);
     }
 
     /// @notice Implements logic immediately prior to effects and interactions during a borrow
     /// @dev Unimplemented
-    function preBorrow(
-        uint256,
-        uint256,
-        uint256
-    ) external override {}
+    function preBorrow(uint256, uint256, uint256) external override {}
 
     /// @notice Implements logic immediately prior to effects and interactions when closing a loan
     /// @dev Unimplemented
@@ -90,12 +79,11 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
     /// @return repayAmount_ The formatted amount to consider as repayment in terms of the loanAsset
     /// @dev Should not revert in case of over-repayment.
     /// Instead, it is recommended to return the full loan balance as repayAmount_ where necessary.
-    function preReconcile(
-        uint256,
-        uint256,
-        uint256 _repayableLoanAssetAmount,
-        address[] calldata
-    ) external override returns (uint256 repayAmount_) {
+    function preReconcile(uint256, uint256, uint256 _repayableLoanAssetAmount, address[] calldata)
+        external
+        override
+        returns (uint256 repayAmount_)
+    {
         return _repayableLoanAssetAmount;
     }
 
@@ -105,11 +93,11 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
     /// @param _prevTotalRepaid The total repaid amount not including the new repay amount
     /// @param _repayAmountInput The user-input repay amount
     /// @param repayAmount_ The formatted amount to repay
-    function preRepay(
-        uint256 _totalBorrowed,
-        uint256 _prevTotalRepaid,
-        uint256 _repayAmountInput
-    ) external override returns (uint256 repayAmount_) {
+    function preRepay(uint256 _totalBorrowed, uint256 _prevTotalRepaid, uint256 _repayAmountInput)
+        external
+        override
+        returns (uint256 repayAmount_)
+    {
         // Calc actual repay amount based on user input
         if (_repayAmountInput == type(uint256).max) {
             return __calcLoanBalance(msg.sender, _totalBorrowed, _prevTotalRepaid);
@@ -127,24 +115,22 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to calculate the loan balance
-    function __calcLoanBalance(
-        address _loan,
-        uint256 _totalBorrowed,
-        uint256 _totalRepaid
-    ) private view returns (uint256 balance_) {
+    function __calcLoanBalance(address _loan, uint256 _totalBorrowed, uint256 _totalRepaid)
+        private
+        view
+        returns (uint256 balance_)
+    {
         OracleInfo memory oracleInfo = getOracleInfoForLoan(_loan);
         int256 oracleValue;
 
         // Query value and handle staleness threshold as-necessary
         if (oracleInfo.stalenessThreshold > 0) {
             uint256 lastUpdated;
-            (oracleValue, lastUpdated) = IArbitraryValueOracle(oracleInfo.oracle)
-                .getValueWithTimestamp();
+            (oracleValue, lastUpdated) = IArbitraryValueOracle(oracleInfo.oracle).getValueWithTimestamp();
 
             // Does not assert the staleness threshold if the oracle value is 0
             require(
-                oracleInfo.stalenessThreshold >= block.timestamp.sub(lastUpdated) ||
-                    oracleValue == 0,
+                oracleInfo.stalenessThreshold >= block.timestamp.sub(lastUpdated) || oracleValue == 0,
                 "calcFaceValue: Stale oracle"
             );
         } else {
@@ -166,11 +152,7 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
     /// @notice Gets the OracleInfo for a given loan
     /// @param _loan The loan address
     /// @return oracleInfo_ The oracle info
-    function getOracleInfoForLoan(address _loan)
-        public
-        view
-        returns (OracleInfo memory oracleInfo_)
-    {
+    function getOracleInfoForLoan(address _loan) public view returns (OracleInfo memory oracleInfo_) {
         return loanToOracleInfo[_loan];
     }
 }

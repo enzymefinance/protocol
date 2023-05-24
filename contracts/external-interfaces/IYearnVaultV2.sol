@@ -21,9 +21,5 @@ interface IYearnVaultV2 {
 
     function token() external view returns (address);
 
-    function withdraw(
-        uint256,
-        address,
-        uint256
-    ) external returns (uint256);
+    function withdraw(uint256, address, uint256) external returns (uint256);
 }

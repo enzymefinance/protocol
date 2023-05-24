@@ -47,14 +47,13 @@ abstract contract UniswapV3ActionsMixin is AssetHelpers {
             }
         }
 
-        IUniswapV3SwapRouter.ExactInputParams memory input = IUniswapV3SwapRouter
-            .ExactInputParams({
-                path: encodedPath,
-                recipient: _recipient,
-                deadline: block.timestamp + 1,
-                amountIn: _outgoingAssetAmount,
-                amountOutMinimum: _minIncomingAssetAmount
-            });
+        IUniswapV3SwapRouter.ExactInputParams memory input = IUniswapV3SwapRouter.ExactInputParams({
+            path: encodedPath,
+            recipient: _recipient,
+            deadline: block.timestamp + 1,
+            amountIn: _outgoingAssetAmount,
+            amountOutMinimum: _minIncomingAssetAmount
+        });
 
         // Execute fill
         IUniswapV3SwapRouter(UNISWAP_V3_ROUTER).exactInput(input);

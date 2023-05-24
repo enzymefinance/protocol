@@ -23,11 +23,11 @@ abstract contract MathHelpers {
     /// Caller is responsible as-necessary for:
     /// 1. validating _quantity1 to be non-zero
     /// 2. validating relativeQuantity2_ to be non-zero
-    function __calcRelativeQuantity(
-        uint256 _quantity1,
-        uint256 _quantity2,
-        uint256 _relativeQuantity1
-    ) internal pure returns (uint256 relativeQuantity2_) {
+    function __calcRelativeQuantity(uint256 _quantity1, uint256 _quantity2, uint256 _relativeQuantity1)
+        internal
+        pure
+        returns (uint256 relativeQuantity2_)
+    {
         return _relativeQuantity1.mul(_quantity2).div(_quantity1);
     }
 

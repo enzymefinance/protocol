@@ -19,29 +19,11 @@ interface ILiquityBorrowerOperations {
 
     function closeTrove() external;
 
-    function openTrove(
-        uint256,
-        uint256,
-        address,
-        address
-    ) external payable;
+    function openTrove(uint256, uint256, address, address) external payable;
 
-    function repayLUSD(
-        uint256,
-        address,
-        address
-    ) external;
+    function repayLUSD(uint256, address, address) external;
 
-    function withdrawColl(
-        uint256,
-        address,
-        address
-    ) external;
+    function withdrawColl(uint256, address, address) external;
 
-    function withdrawLUSD(
-        uint256,
-        uint256,
-        address,
-        address
-    ) external;
+    function withdrawLUSD(uint256, uint256, address, address) external;
 }

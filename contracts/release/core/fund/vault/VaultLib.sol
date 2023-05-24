@@ -108,10 +108,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         override
         returns (address externalPositionLib_)
     {
-        return
-            IExternalPositionManager(getExternalPositionManager()).getExternalPositionLibForType(
-                _typeId
-            );
+        return IExternalPositionManager(getExternalPositionManager()).getExternalPositionLibForType(_typeId);
     }
 
     /// @notice Sets shares as (permanently) freely transferable
@@ -171,10 +168,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Claim ownership of the contract
     function claimOwnership() external {
         address nextOwner = nominatedOwner;
-        require(
-            msg.sender == nextOwner,
-            "claimOwnership: Only the nominatedOwner can call this function"
-        );
+        require(msg.sender == nextOwner, "claimOwnership: Only the nominatedOwner can call this function");
 
         delete nominatedOwner;
 
@@ -199,10 +193,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Revoke the nomination of a new contract owner
     function removeNominatedOwner() external onlyOwner {
         address removedNominatedOwner = nominatedOwner;
-        require(
-            removedNominatedOwner != address(0),
-            "removeNominatedOwner: There is no nominated owner"
-        );
+        require(removedNominatedOwner != address(0), "removeNominatedOwner: There is no nominated owner");
 
         delete nominatedOwner;
 
@@ -225,18 +216,9 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @param _nextNominatedOwner The account to nominate
     /// @dev Does not prohibit overwriting the current nominatedOwner
     function setNominatedOwner(address _nextNominatedOwner) external onlyOwner {
-        require(
-            _nextNominatedOwner != address(0),
-            "setNominatedOwner: _nextNominatedOwner cannot be empty"
-        );
-        require(
-            _nextNominatedOwner != owner,
-            "setNominatedOwner: _nextNominatedOwner is already the owner"
-        );
-        require(
-            _nextNominatedOwner != nominatedOwner,
-            "setNominatedOwner: _nextNominatedOwner is already nominated"
-        );
+        require(_nextNominatedOwner != address(0), "setNominatedOwner: _nextNominatedOwner cannot be empty");
+        require(_nextNominatedOwner != owner, "setNominatedOwner: _nextNominatedOwner is already the owner");
+        require(_nextNominatedOwner != nominatedOwner, "setNominatedOwner: _nextNominatedOwner is already nominated");
 
         nominatedOwner = _nextNominatedOwner;
 
@@ -279,13 +261,14 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @dev Since the vault controls both the MLN to burn and the admin function to burn any user's
     /// fund shares, there is no need to transfer assets back-and-forth with the ProtocolFeeReserve.
     /// We only need to know the correct discounted amount of MLN to burn.
-    function buyBackProtocolFeeShares(
-        uint256 _sharesAmount,
-        uint256 _mlnValue,
-        uint256 _gav
-    ) external override onlyAccessor {
-        uint256 mlnAmountToBurn = IProtocolFeeReserve1(getProtocolFeeReserve())
-            .buyBackSharesViaTrustedVaultProxy(_sharesAmount, _mlnValue, _gav);
+    function buyBackProtocolFeeShares(uint256 _sharesAmount, uint256 _mlnValue, uint256 _gav)
+        external
+        override
+        onlyAccessor
+    {
+        uint256 mlnAmountToBurn = IProtocolFeeReserve1(getProtocolFeeReserve()).buyBackSharesViaTrustedVaultProxy(
+            _sharesAmount, _mlnValue, _gav
+        );
 
         if (mlnAmountToBurn == 0) {
             return;
@@ -347,11 +330,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @param _amount The amount of shares to transfer
     /// @dev For protocol use only, all other transfers should operate
     /// via standard ERC20 functions
-    function transferShares(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) external override onlyAccessor {
+    function transferShares(address _from, address _to, uint256 _amount) external override onlyAccessor {
         __transfer(_from, _to, _amount);
     }
 
@@ -359,11 +338,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @param _asset The asset to withdraw
     /// @param _target The account to which to withdraw the asset
     /// @param _amount The amount of asset to withdraw
-    function withdrawAssetTo(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) external override onlyAccessor {
+    function withdrawAssetTo(address _asset, address _target, uint256 _amount) external override onlyAccessor {
         __withdrawAssetTo(_asset, _target, _amount);
     }
 
@@ -414,10 +389,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @dev Helper to decode actionData and execute VaultAction.ApproveAssetSpender
     function __executeVaultActionApproveAssetSpender(bytes memory _actionData) private {
-        (address asset, address target, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
+        (address asset, address target, uint256 amount) = abi.decode(_actionData, (address, address, uint256));
 
         __approveAssetSpender(asset, target, amount);
     }
@@ -440,11 +412,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         ) = abi.decode(_actionData, (address, bytes, address[], uint256[], address[]));
 
         __callOnExternalPosition(
-            externalPosition,
-            callOnExternalPositionActionData,
-            assetsToTransfer,
-            amountsToTransfer,
-            assetsToReceive
+            externalPosition, callOnExternalPositionActionData, assetsToTransfer, amountsToTransfer, assetsToReceive
         );
     }
 
@@ -467,20 +435,14 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @dev Helper to decode actionData and execute VaultAction.TransferShares
     function __executeVaultActionTransferShares(bytes memory _actionData) private {
-        (address from, address to, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
+        (address from, address to, uint256 amount) = abi.decode(_actionData, (address, address, uint256));
 
         __transfer(from, to, amount);
     }
 
     /// @dev Helper to decode actionData and execute VaultAction.WithdrawAssetTo
     function __executeVaultActionWithdrawAssetTo(bytes memory _actionData) private {
-        (address asset, address target, uint256 amount) = abi.decode(
-            _actionData,
-            (address, address, uint256)
-        );
+        (address asset, address target, uint256 amount) = abi.decode(_actionData, (address, address, uint256));
 
         __withdrawAssetTo(asset, target, amount);
     }
@@ -514,11 +476,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     }
 
     /// @dev Helper to grant an allowance to a spender to use a vault asset
-    function __approveAssetSpender(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) private notShares(_asset) {
+    function __approveAssetSpender(address _asset, address _target, uint256 _amount) private notShares(_asset) {
         ERC20 assetContract = ERC20(_asset);
         if (assetContract.allowance(address(this), _target) > 0) {
             assetContract.safeApprove(_target, 0);
@@ -540,8 +498,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         address[] memory _assetsToReceive
     ) private {
         require(
-            isActiveExternalPosition(_externalPosition),
-            "__callOnExternalPosition: Not an active external position"
+            isActiveExternalPosition(_externalPosition), "__callOnExternalPosition: Not an active external position"
         );
 
         for (uint256 i; i < _assetsToTransfer.length; i++) {
@@ -591,11 +548,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     }
 
     /// @dev Helper to withdraw an asset from the vault to a specified recipient
-    function __withdrawAssetTo(
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) private notShares(_asset) {
+    function __withdrawAssetTo(address _asset, address _target, uint256 _amount) private notShares(_asset) {
         ERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
@@ -619,11 +572,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @dev Standard implementation of ERC20's transfer().
     /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
-    function transfer(address _recipient, uint256 _amount)
-        public
-        override
-        returns (bool success_)
-    {
+    function transfer(address _recipient, uint256 _amount) public override returns (bool success_) {
         __invokePreTransferSharesHook(msg.sender, _recipient, _amount);
 
         return super.transfer(_recipient, _amount);
@@ -631,22 +580,18 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @dev Standard implementation of ERC20's transferFrom().
     /// Overridden to allow arbitrary logic in ComptrollerProxy prior to transfer.
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) public override returns (bool success_) {
+    function transferFrom(address _sender, address _recipient, uint256 _amount)
+        public
+        override
+        returns (bool success_)
+    {
         __invokePreTransferSharesHook(_sender, _recipient, _amount);
 
         return super.transferFrom(_sender, _recipient, _amount);
     }
 
     /// @dev Helper to call the relevant preTransferShares hook
-    function __invokePreTransferSharesHook(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) private {
+    function __invokePreTransferSharesHook(address _sender, address _recipient, uint256 _amount) private {
         if (sharesAreFreelyTransferable()) {
             IComptroller(accessor).preTransferSharesHookFreelyTransferable(_sender);
         } else {
@@ -698,12 +643,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the `activeExternalPositions` variable
     /// @return activeExternalPositions_ The `activeExternalPositions` variable value
-    function getActiveExternalPositions()
-        external
-        view
-        override
-        returns (address[] memory activeExternalPositions_)
-    {
+    function getActiveExternalPositions() external view override returns (address[] memory activeExternalPositions_) {
         return activeExternalPositions;
     }
 
@@ -791,12 +731,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Checks whether shares are (permanently) freely transferable
     /// @return sharesAreFreelyTransferable_ True if shares are (permanently) freely transferable
-    function sharesAreFreelyTransferable()
-        public
-        view
-        override
-        returns (bool sharesAreFreelyTransferable_)
-    {
+    function sharesAreFreelyTransferable() public view override returns (bool sharesAreFreelyTransferable_) {
         return freelyTransferableShares;
     }
 

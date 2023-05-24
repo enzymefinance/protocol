@@ -42,7 +42,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     uint256 private constant ADDRESS_PROVIDER_METAPOOL_FACTORY_ID = 3;
     uint256 private constant VIRTUAL_PRICE_DEVIATION_DIVISOR = 10000;
-    uint256 private constant VIRTUAL_PRICE_UNIT = 10**18;
+    uint256 private constant VIRTUAL_PRICE_UNIT = 10 ** 18;
 
     ICurveAddressProvider private immutable ADDRESS_PROVIDER_CONTRACT;
     uint256 private immutable VIRTUAL_PRICE_DEVIATION_THRESHOLD;
@@ -101,11 +101,8 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         /// This is an optimization to save gas on validating non-reentrancy during the virtual price query,
         /// since the virtual price increases relatively slowly as the pool accrues fees over time.
         if (
-            poolInfo.lastValidatedVirtualPrice > 0 &&
-            __virtualPriceDiffExceedsThreshold(
-                virtualPrice,
-                uint256(poolInfo.lastValidatedVirtualPrice)
-            )
+            poolInfo.lastValidatedVirtualPrice > 0
+                && __virtualPriceDiffExceedsThreshold(virtualPrice, uint256(poolInfo.lastValidatedVirtualPrice))
         ) {
             __updateValidatedVirtualPrice(pool, virtualPrice);
         }
@@ -117,11 +114,9 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         if (poolInfo.invariantProxyAssetDecimals == 18) {
             underlyingAmounts_[0] = _derivativeAmount.mul(virtualPrice).div(VIRTUAL_PRICE_UNIT);
         } else {
-            underlyingAmounts_[0] = _derivativeAmount
-                .mul(virtualPrice)
-                .mul(10**uint256(poolInfo.invariantProxyAssetDecimals))
-                .div(VIRTUAL_PRICE_UNIT)
-                .div(VIRTUAL_PRICE_UNIT);
+            underlyingAmounts_[0] = _derivativeAmount.mul(virtualPrice).mul(
+                10 ** uint256(poolInfo.invariantProxyAssetDecimals)
+            ).div(VIRTUAL_PRICE_UNIT).div(VIRTUAL_PRICE_UNIT);
         }
 
         return (underlyings_, underlyingAmounts_);
@@ -174,10 +169,10 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// e.g., a wrapper for non-tokenized gauges.
     /// All params are corresponding, equal length arrays.
     /// _pools must already have been added via an addPools~() function.
-    function addGaugeTokensWithoutValidation(
-        address[] calldata _gaugeTokens,
-        address[] calldata _pools
-    ) external onlyFundDeployerOwner {
+    function addGaugeTokensWithoutValidation(address[] calldata _gaugeTokens, address[] calldata _pools)
+        external
+        onlyFundDeployerOwner
+    {
         __addGaugeTokens(_gaugeTokens, _pools);
     }
 
@@ -217,24 +212,14 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
                 // get_n_coins() is arbitrarily used to validate the pool is on this registry
 
                 if (_gaugeTokens[i] != address(0)) {
-                    __validateGaugeMetapoolFactoryRegistry(
-                        _gaugeTokens[i],
-                        _pools[i],
-                        factoryContract
-                    );
+                    __validateGaugeMetapoolFactoryRegistry(_gaugeTokens[i], _pools[i], factoryContract);
                 }
             } else {
                 revert("addPools: Invalid inputs");
             }
         }
 
-        __addPools(
-            _pools,
-            _invariantProxyAssets,
-            _reentrantVirtualPrices,
-            _lpTokens,
-            _gaugeTokens
-        );
+        __addPools(_pools, _invariantProxyAssets, _reentrantVirtualPrices, _lpTokens, _gaugeTokens);
     }
 
     /// @notice Adds unvalidated Curve pool info, lpTokens, and gaugeTokens to the price feed
@@ -256,13 +241,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         address[] calldata _lpTokens,
         address[] calldata _gaugeTokens
     ) external onlyFundDeployerOwner {
-        __addPools(
-            _pools,
-            _invariantProxyAssets,
-            _reentrantVirtualPrices,
-            _lpTokens,
-            _gaugeTokens
-        );
+        __addPools(_pools, _invariantProxyAssets, _reentrantVirtualPrices, _lpTokens, _gaugeTokens);
     }
 
     /// @notice Removes derivatives from the price feed
@@ -308,8 +287,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         bool[] calldata _reentrantVirtualPrices
     ) external onlyFundDeployerOwner {
         require(
-            _pools.length == _invariantProxyAssets.length &&
-                _pools.length == _reentrantVirtualPrices.length,
+            _pools.length == _invariantProxyAssets.length && _pools.length == _reentrantVirtualPrices.length,
             "updatePoolInfo: Unequal arrays"
         );
 
@@ -322,10 +300,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     /// @dev Helper to add a derivative to the price feed
     function __addDerivative(address _derivative, address _pool) private {
-        require(
-            getPoolForDerivative(_derivative) == address(0),
-            "__addDerivative: Already exists"
-        );
+        require(getPoolForDerivative(_derivative) == address(0), "__addDerivative: Already exists");
 
         // Assert that the assumption that all Curve pool tokens are 18 decimals
         require(ERC20(_derivative).decimals() == 18, "__addDerivative: Not 18-decimal");
@@ -340,10 +315,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         require(_gaugeTokens.length == _pools.length, "__addGaugeTokens: Unequal arrays");
 
         for (uint256 i; i < _gaugeTokens.length; i++) {
-            require(
-                getLpTokenForPool(_pools[i]) != address(0),
-                "__addGaugeTokens: Pool not registered"
-            );
+            require(getLpTokenForPool(_pools[i]) != address(0), "__addGaugeTokens: Pool not registered");
             // Not-yet-registered _gaugeTokens[i] tested in __addDerivative()
 
             __addDerivative(_gaugeTokens[i], _pools[i]);
@@ -359,10 +331,8 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         address[] calldata _gaugeTokens
     ) private {
         require(
-            _pools.length == _invariantProxyAssets.length &&
-                _pools.length == _reentrantVirtualPrices.length &&
-                _pools.length == _lpTokens.length &&
-                _pools.length == _gaugeTokens.length,
+            _pools.length == _invariantProxyAssets.length && _pools.length == _reentrantVirtualPrices.length
+                && _pools.length == _lpTokens.length && _pools.length == _gaugeTokens.length,
             "__addPools: Unequal arrays"
         );
 
@@ -394,15 +364,9 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to get the Curve metapool factory registry contract
-    function __getRegistryMetapoolFactoryContract()
-        private
-        view
-        returns (ICurveRegistryMetapoolFactory contract_)
-    {
+    function __getRegistryMetapoolFactoryContract() private view returns (ICurveRegistryMetapoolFactory contract_) {
         return
-            ICurveRegistryMetapoolFactory(
-                ADDRESS_PROVIDER_CONTRACT.get_address(ADDRESS_PROVIDER_METAPOOL_FACTORY_ID)
-            );
+            ICurveRegistryMetapoolFactory(ADDRESS_PROVIDER_CONTRACT.get_address(ADDRESS_PROVIDER_METAPOOL_FACTORY_ID));
     }
 
     /// @dev Helper to call a known non-reenterable pool function
@@ -418,11 +382,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to set the PoolInfo for a given pool
-    function __setPoolInfo(
-        address _pool,
-        address _invariantProxyAsset,
-        bool _reentrantVirtualPrice
-    ) private {
+    function __setPoolInfo(address _pool, address _invariantProxyAsset, bool _reentrantVirtualPrice) private {
         uint256 lastValidatedVirtualPrice;
         if (_reentrantVirtualPrice) {
             // Validate the virtual price by calling a non-reentrant pool function
@@ -454,12 +414,11 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     }
 
     /// @dev Helper to validate a gauge on the main Curve registry
-    function __validateGaugeMainRegistry(
-        address _gauge,
-        address _pool,
-        ICurveRegistryMain _mainRegistryContract
-    ) private view {
-        (address[10] memory gauges, ) = _mainRegistryContract.get_gauges(_pool);
+    function __validateGaugeMainRegistry(address _gauge, address _pool, ICurveRegistryMain _mainRegistryContract)
+        private
+        view
+    {
+        (address[10] memory gauges,) = _mainRegistryContract.get_gauges(_pool);
         for (uint256 i; i < gauges.length; i++) {
             if (_gauge == gauges[i]) {
                 return;
@@ -484,18 +443,16 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
     /// @dev Helper to validate a pool's compatibility with the price feed.
     /// Pool must implement expected get_virtual_price() function.
     function __validatePoolCompatibility(address _pool) private view {
-        require(
-            ICurveLiquidityPool(_pool).get_virtual_price() > 0,
-            "__validatePoolCompatibility: Incompatible"
-        );
+        require(ICurveLiquidityPool(_pool).get_virtual_price() > 0, "__validatePoolCompatibility: Incompatible");
     }
 
     /// @dev Helper to check if the difference between lastValidatedVirtualPrice and the current virtual price
     /// exceeds the allowed threshold before the current virtual price must be validated and stored
-    function __virtualPriceDiffExceedsThreshold(
-        uint256 _currentVirtualPrice,
-        uint256 _lastValidatedVirtualPrice
-    ) private view returns (bool exceedsThreshold_) {
+    function __virtualPriceDiffExceedsThreshold(uint256 _currentVirtualPrice, uint256 _lastValidatedVirtualPrice)
+        private
+        view
+        returns (bool exceedsThreshold_)
+    {
         // Uses the absolute delta between current and last validated virtual prices for the rare
         // case where a virtual price might have decreased (e.g., rounding, slashing, yet unknown
         // manipulation vector, etc)
@@ -506,11 +463,8 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
             absDiff = _lastValidatedVirtualPrice.sub(_currentVirtualPrice);
         }
 
-        return
-            absDiff >
-            _lastValidatedVirtualPrice.mul(VIRTUAL_PRICE_DEVIATION_THRESHOLD).div(
-                VIRTUAL_PRICE_DEVIATION_DIVISOR
-            );
+        return absDiff
+            > _lastValidatedVirtualPrice.mul(VIRTUAL_PRICE_DEVIATION_THRESHOLD).div(VIRTUAL_PRICE_DEVIATION_DIVISOR);
     }
 
     ///////////////////

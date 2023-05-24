@@ -25,14 +25,9 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         address _wrappedNativeAsset,
         address _stakingWrapperFactory,
         address _nativeAssetAddress
-    )
-        public
-        CurveLiquidityAdapterBase(_integrationManager, _wrappedNativeAsset, _nativeAssetAddress)
-    {
+    ) public CurveLiquidityAdapterBase(_integrationManager, _wrappedNativeAsset, _nativeAssetAddress) {
         CURVE_PRICE_FEED_CONTRACT = CurvePriceFeed(_curvePriceFeed);
-        STAKING_WRAPPER_FACTORY_CONTRACT = ConvexCurveLpStakingWrapperFactory(
-            _stakingWrapperFactory
-        );
+        STAKING_WRAPPER_FACTORY_CONTRACT = ConvexCurveLpStakingWrapperFactory(_stakingWrapperFactory);
     }
 
     // EXTERNAL FUNCTIONS
@@ -40,11 +35,10 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @notice Claims all rewards for a given staking token
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function claimRewards(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata)
+        external
+        onlyIntegrationManager
+    {
         __stakingWrapperClaimRewardsFor(__decodeClaimRewardsCallArgs(_actionData), _vaultProxy);
     }
 
@@ -52,11 +46,10 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lendAndStake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external onlyIntegrationManager {
+    function lendAndStake(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+    {
         (
             address pool,
             uint256[] memory orderedOutgoingAssetAmounts,
@@ -64,38 +57,28 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
             uint256 minIncomingStakingTokenAmount,
             bool useUnderlyings
         ) = __decodeLendAndStakeCallArgs(_actionData);
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
         address lpToken = CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(pool);
 
         __curveAddLiquidity(
-            pool,
-            spendAssets,
-            orderedOutgoingAssetAmounts,
-            minIncomingStakingTokenAmount,
-            useUnderlyings
+            pool, spendAssets, orderedOutgoingAssetAmounts, minIncomingStakingTokenAmount, useUnderlyings
         );
 
-        __stakingWrapperStake(
-            incomingStakingToken,
-            _vaultProxy,
-            ERC20(lpToken).balanceOf(address(this)),
-            lpToken
-        );
+        __stakingWrapperStake(incomingStakingToken, _vaultProxy, ERC20(lpToken).balanceOf(address(this)), lpToken);
     }
 
     /// @notice Stakes LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function stake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external onlyIntegrationManager {
+    function stake(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+    {
         (, address incomingStakingToken, uint256 amount) = __decodeStakeCallArgs(_actionData);
 
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
         __stakingWrapperStake(incomingStakingToken, _vaultProxy, amount, spendAssets[0]);
     }
@@ -103,11 +86,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @notice Unstakes LP tokens
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function unstake(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function unstake(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (, address outgoingStakingToken, uint256 amount) = __decodeUnstakeCallArgs(_actionData);
 
         __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, _vaultProxy, amount, false);
@@ -117,11 +96,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function unstakeAndRedeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function unstakeAndRedeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
@@ -135,21 +110,9 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
             bytes memory incomingAssetsData
         ) = __decodeUnstakeAndRedeemCallArgs(_actionData);
 
-        __stakingWrapperUnstake(
-            outgoingStakingToken,
-            _vaultProxy,
-            address(this),
-            outgoingStakingTokenAmount,
-            false
-        );
+        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, address(this), outgoingStakingTokenAmount, false);
 
-        __curveRedeem(
-            pool,
-            outgoingStakingTokenAmount,
-            useUnderlyings,
-            redeemType,
-            incomingAssetsData
-        );
+        __curveRedeem(pool, outgoingStakingTokenAmount, useUnderlyings, redeemType, incomingAssetsData);
     }
 
     /////////////////////////////
@@ -165,11 +128,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -242,11 +201,8 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
 
         __validatePoolForWrapper(pool, incomingStakingToken);
 
-        (spendAssets_, spendAssetAmounts_) = __parseSpendAssetsForLendingCalls(
-            pool,
-            orderedOutgoingAssetAmounts,
-            useUnderlyings
-        );
+        (spendAssets_, spendAssetAmounts_) =
+            __parseSpendAssetsForLendingCalls(pool, orderedOutgoingAssetAmounts, useUnderlyings);
 
         incomingAssets_ = new address[](1);
         incomingAssets_[0] = incomingStakingToken;
@@ -279,9 +235,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         (, address incomingStakingToken, uint256 amount) = __decodeStakeCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(
-            incomingStakingToken
-        );
+        spendAssets_[0] = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(incomingStakingToken);
 
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = amount;
@@ -323,9 +277,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         spendAssetAmounts_[0] = amount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(
-            outgoingStakingToken
-        );
+        incomingAssets_[0] = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(outgoingStakingToken);
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = amount;
@@ -370,12 +322,8 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         spendAssetAmounts_ = new uint256[](1);
         spendAssetAmounts_[0] = outgoingStakingTokenAmount;
 
-        (incomingAssets_, minIncomingAssetAmounts_) = __parseIncomingAssetsForRedemptionCalls(
-            pool,
-            useUnderlyings,
-            redeemType,
-            incomingAssetsData
-        );
+        (incomingAssets_, minIncomingAssetAmounts_) =
+            __parseIncomingAssetsForRedemptionCalls(pool, useUnderlyings, redeemType, incomingAssetsData);
 
         // SpendAssetsHandleType is `Approve`, since staking wrapper allows unstaking on behalf
         return (
@@ -390,9 +338,6 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     /// @dev Helper to validate a given Curve `pool` for a given convex staking wrapper
     function __validatePoolForWrapper(address _pool, address _wrapper) private view {
         address lpToken = STAKING_WRAPPER_FACTORY_CONTRACT.getCurveLpTokenForWrapper(_wrapper);
-        require(
-            lpToken == CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(_pool),
-            "__validatePoolForWrapper: Invalid"
-        );
+        require(lpToken == CURVE_PRICE_FEED_CONTRACT.getLpTokenForPool(_pool), "__validatePoolForWrapper: Invalid");
     }
 }

@@ -33,16 +33,9 @@ abstract contract AggregatedDerivativePriceFeedMixin {
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
         address derivativePriceFeed = getPriceFeedForDerivative(_derivative);
-        require(
-            derivativePriceFeed != address(0),
-            "calcUnderlyingValues: _derivative is not supported"
-        );
+        require(derivativePriceFeed != address(0), "calcUnderlyingValues: _derivative is not supported");
 
-        return
-            IDerivativePriceFeed(derivativePriceFeed).calcUnderlyingValues(
-                _derivative,
-                _derivativeAmount
-            );
+        return IDerivativePriceFeed(derivativePriceFeed).calcUnderlyingValues(_derivative, _derivativeAmount);
     }
 
     //////////////////////////
@@ -52,19 +45,14 @@ abstract contract AggregatedDerivativePriceFeedMixin {
     /// @notice Adds a list of derivatives with the given price feed values
     /// @param _derivatives The derivatives to add
     /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
-    function __addDerivatives(address[] memory _derivatives, address[] memory _priceFeeds)
-        internal
-    {
+    function __addDerivatives(address[] memory _derivatives, address[] memory _priceFeeds) internal {
         require(
             _derivatives.length == _priceFeeds.length,
             "__addDerivatives: Unequal _derivatives and _priceFeeds array lengths"
         );
 
         for (uint256 i = 0; i < _derivatives.length; i++) {
-            require(
-                getPriceFeedForDerivative(_derivatives[i]) == address(0),
-                "__addDerivatives: Already added"
-            );
+            require(getPriceFeedForDerivative(_derivatives[i]) == address(0), "__addDerivatives: Already added");
 
             __validateDerivativePriceFeed(_derivatives[i], _priceFeeds[i]);
 
@@ -79,8 +67,7 @@ abstract contract AggregatedDerivativePriceFeedMixin {
     function __removeDerivatives(address[] memory _derivatives) internal {
         for (uint256 i = 0; i < _derivatives.length; i++) {
             require(
-                getPriceFeedForDerivative(_derivatives[i]) != address(0),
-                "removeDerivatives: Derivative not yet added"
+                getPriceFeedForDerivative(_derivatives[i]) != address(0), "removeDerivatives: Derivative not yet added"
             );
 
             delete derivativeToPriceFeed[_derivatives[i]];
@@ -105,11 +92,7 @@ abstract contract AggregatedDerivativePriceFeedMixin {
 
     /// @notice Gets the registered price feed for a given derivative
     /// @return priceFeed_ The price feed contract address
-    function getPriceFeedForDerivative(address _derivative)
-        public
-        view
-        returns (address priceFeed_)
-    {
+    function getPriceFeedForDerivative(address _derivative) public view returns (address priceFeed_) {
         return derivativeToPriceFeed[_derivative];
     }
 }

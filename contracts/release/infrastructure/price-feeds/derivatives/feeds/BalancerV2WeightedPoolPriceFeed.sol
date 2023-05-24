@@ -33,7 +33,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
 
     event PoolFactoryRemoved(address poolFactory);
 
-    uint256 private constant POOL_TOKEN_UNIT = 10**18;
+    uint256 private constant POOL_TOKEN_UNIT = 10 ** 18;
 
     IBalancerV2Vault private immutable BALANCER_VAULT_CONTRACT;
     address private immutable INTERMEDIARY_ASSET;
@@ -73,9 +73,8 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
         // It prevents important pricing functions from being called during a Balancer pool join/exit.
         BALANCER_VAULT_CONTRACT.setRelayerApproval(address(this), address(0), false);
 
-        (address[] memory poolTokens, , ) = BALANCER_VAULT_CONTRACT.getPoolTokens(
-            IBalancerV2WeightedPool(_derivative).getPoolId()
-        );
+        (address[] memory poolTokens,,) =
+            BALANCER_VAULT_CONTRACT.getPoolTokens(IBalancerV2WeightedPool(_derivative).getPoolId());
 
         underlyings_ = new address[](1);
         underlyingAmounts_ = new uint256[](1);
@@ -89,13 +88,10 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
 
         for (uint256 i; i < poolTokens.length; i++) {
             uint256 price = VALUE_INTERPRETER_CONTRACT.calcCanonicalAssetValue(
-                poolTokens[i],
-                10**(uint256(ERC20(poolTokens[i]).decimals())),
-                INTERMEDIARY_ASSET
+                poolTokens[i], 10 ** (uint256(ERC20(poolTokens[i]).decimals())), INTERMEDIARY_ASSET
             );
-            geometricWeightedMean = geometricWeightedMean.mulUp(
-                (price.pow(weights[i])).divUp(weights[i].pow(weights[i]))
-            );
+            geometricWeightedMean =
+                geometricWeightedMean.mulUp((price.pow(weights[i])).divUp(weights[i].pow(weights[i])));
         }
 
         uint256 priceLP = geometricWeightedMean.mulUp(invariant).divUp(totalSupply);
@@ -127,10 +123,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
 
     /// @notice Removes pool factories
     /// @param _poolFactories pool factories to remove
-    function removePoolFactories(address[] calldata _poolFactories)
-        external
-        onlyFundDeployerOwner
-    {
+    function removePoolFactories(address[] calldata _poolFactories) external onlyFundDeployerOwner {
         for (uint256 i; i < _poolFactories.length; i++) {
             if (poolFactories.removeStorageItem(_poolFactories[i])) {
                 emit PoolFactoryRemoved(_poolFactories[i]);

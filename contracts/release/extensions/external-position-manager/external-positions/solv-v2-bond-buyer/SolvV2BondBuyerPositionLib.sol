@@ -36,13 +36,10 @@ contract SolvV2BondBuyerPositionLib is
     using SafeMath for uint256;
     using Uint256ArrayLib for uint256[];
 
-    ISolvV2InitialConvertibleOfferingMarket
-        private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
+    ISolvV2InitialConvertibleOfferingMarket private immutable INITIAL_BOND_OFFERING_MARKET_CONTRACT;
 
     constructor(address _initialBondOfferingMarket) public {
-        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(
-            _initialBondOfferingMarket
-        );
+        INITIAL_BOND_OFFERING_MARKET_CONTRACT = ISolvV2InitialConvertibleOfferingMarket(_initialBondOfferingMarket);
     }
 
     /// @notice Initializes the external position
@@ -67,17 +64,14 @@ contract SolvV2BondBuyerPositionLib is
     function __actionBuyOffering(bytes memory _actionArgs) private {
         (uint24 offerId, uint128 units) = __decodeBuyOfferingActionArgs(_actionArgs);
 
-        ISolvV2InitialConvertibleOfferingMarket.Offering
-            memory offering = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
+        ISolvV2InitialConvertibleOfferingMarket.Offering memory offering =
+            INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
         ISolvV2BondVoucher voucherContract = ISolvV2BondVoucher(offering.voucher);
         uint32 nextTokenId = voucherContract.nextTokenId();
 
         ERC20 currencyToken = ERC20(offering.currency);
-        currencyToken.safeApprove(
-            address(INITIAL_BOND_OFFERING_MARKET_CONTRACT),
-            type(uint256).max
-        );
+        currencyToken.safeApprove(address(INITIAL_BOND_OFFERING_MARKET_CONTRACT), type(uint256).max);
 
         INITIAL_BOND_OFFERING_MARKET_CONTRACT.buy(offerId, units);
 
@@ -132,32 +126,22 @@ contract SolvV2BondBuyerPositionLib is
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         // Held vouchers
         VoucherTokenId[] memory voucherTokenIds = getVoucherTokenIds();
         uint256 tokenIdsLength = voucherTokenIds.length;
         for (uint256 i; i < tokenIdsLength; i++) {
             VoucherTokenId memory voucherTokenId = voucherTokenIds[i];
 
-            (address[] memory assets, uint256[] memory amounts) = __getClaimableAmounts(
-                voucherTokenId.voucher,
-                voucherTokenId.tokenId
-            );
+            (address[] memory assets, uint256[] memory amounts) =
+                __getClaimableAmounts(voucherTokenId.voucher, voucherTokenId.tokenId);
 
             for (uint256 j; j < assets.length; j++) {
                 assets_ = assets_.addItem(assets[j]);
@@ -189,14 +173,12 @@ contract SolvV2BondBuyerPositionLib is
         uint256 claimTokenAmount;
 
         if (slotDetail.isIssuerRefunded) {
-            claimCurrencyAmount = tokenBalance
-                .mul(10**uint256(ERC20(slotDetail.fundCurrency).decimals()))
-                .div(10**uint256(poolContract.valueDecimals()));
+            claimCurrencyAmount = tokenBalance.mul(10 ** uint256(ERC20(slotDetail.fundCurrency).decimals())).div(
+                10 ** uint256(poolContract.valueDecimals())
+            );
 
             if (settlePrice > slotDetail.highestPrice) {
-                claimTokenAmount = tokenBalance.div(slotDetail.highestPrice).sub(
-                    tokenBalance.div(settlePrice)
-                );
+                claimTokenAmount = tokenBalance.div(slotDetail.highestPrice).sub(tokenBalance.div(settlePrice));
             }
         } else {
             if (settlePrice < slotDetail.lowestPrice) {
@@ -208,10 +190,7 @@ contract SolvV2BondBuyerPositionLib is
         }
 
         if (claimCurrencyAmount > 0) {
-            uint256 reservedCurrencyAmount = poolContract.slotBalances(
-                slotId,
-                slotDetail.fundCurrency
-            );
+            uint256 reservedCurrencyAmount = poolContract.slotBalances(slotId, slotDetail.fundCurrency);
 
             if (claimCurrencyAmount > reservedCurrencyAmount) {
                 claimCurrencyAmount = reservedCurrencyAmount;
@@ -222,10 +201,7 @@ contract SolvV2BondBuyerPositionLib is
         }
 
         if (claimTokenAmount > 0) {
-            uint256 reservedTokenAmount = poolContract.slotBalances(
-                slotId,
-                voucherContract.underlying()
-            );
+            uint256 reservedTokenAmount = poolContract.slotBalances(slotId, voucherContract.underlying());
 
             if (claimTokenAmount > reservedTokenAmount) {
                 claimTokenAmount = reservedTokenAmount;
@@ -256,13 +232,11 @@ contract SolvV2BondBuyerPositionLib is
     /// @return selector_ `b382cdcd  = onVNFTReceived(address,address,uint256,uint256,bytes)`
     /// @dev ERC-3525 spec: https://eips.ethereum.org/EIPS/eip-3525#erc-3525-token-receiver
     /// @dev Implementation for vouchers: https://github.com/solv-finance/solv-v2-ivo/blob/main/vouchers/vnft-core/contracts/VNFTCoreV2.sol#L318
-    function onVNFTReceived(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4 selector_) {
+    function onVNFTReceived(address, address, uint256, uint256, bytes calldata)
+        public
+        pure
+        returns (bytes4 selector_)
+    {
         return bytes4(keccak256("onVNFTReceived(address,address,uint256,uint256,bytes)"));
     }
 }

@@ -42,11 +42,7 @@ abstract contract VaultLibBaseCore is IMigratableVault, ProxiableVaultLib, Share
     /// @param _accessor The address to set as the permissioned accessor of the VaultLib
     /// @param _fundName The name of the fund
     /// @dev Serves as a per-proxy pseudo-constructor
-    function init(
-        address _owner,
-        address _accessor,
-        string calldata _fundName
-    ) external override {
+    function init(address _owner, address _accessor, string calldata _fundName) external override {
         require(creator == address(0), "init: Proxy already initialized");
         creator = msg.sender;
         sharesName = _fundName;

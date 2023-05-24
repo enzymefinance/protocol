@@ -21,11 +21,11 @@ import "../utils/AdapterBase.sol";
 contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     address private immutable FACTORY;
 
-    constructor(
-        address _integrationManager,
-        address _router,
-        address _factory
-    ) public AdapterBase(_integrationManager) UniswapV2ActionsMixin(_router) {
+    constructor(address _integrationManager, address _router, address _factory)
+        public
+        AdapterBase(_integrationManager)
+        UniswapV2ActionsMixin(_router)
+    {
         FACTORY = _factory;
     }
 
@@ -34,16 +34,11 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     /// @notice Lends assets for pool tokens on Uniswap
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
-    function lend(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata
-    ) external onlyIntegrationManager {
+    function lend(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (
             address[2] memory outgoingAssets,
             uint256[2] memory maxOutgoingAssetAmounts,
             uint256[2] memory minOutgoingAssetAmounts,
-
         ) = __decodeLendCallArgs(_actionData);
 
         __uniswapV2Lend(
@@ -61,19 +56,15 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _actionData Data specific to this action
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    ) external onlyIntegrationManager {
-        (
-            uint256 outgoingAssetAmount,
-            address[2] memory incomingAssets,
-            uint256[2] memory minIncomingAssetAmounts
-        ) = __decodeRedeemCallArgs(_actionData);
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+    {
+        (uint256 outgoingAssetAmount, address[2] memory incomingAssets, uint256[2] memory minIncomingAssetAmounts) =
+            __decodeRedeemCallArgs(_actionData);
 
         // More efficient to parse pool token from _assetData than external call
-        (address[] memory spendAssets, , ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets,,) = __decodeAssetData(_assetData);
 
         __uniswapV2Redeem(
             _vaultProxy,
@@ -99,11 +90,7 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -137,12 +124,8 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            address[2] memory outgoingAssets,
-            uint256[2] memory maxOutgoingAssetAmounts,
-            ,
-            uint256 minIncomingAssetAmount
-        ) = __decodeLendCallArgs(_actionData);
+        (address[2] memory outgoingAssets, uint256[2] memory maxOutgoingAssetAmounts,, uint256 minIncomingAssetAmount) =
+            __decodeLendCallArgs(_actionData);
 
         spendAssets_ = new address[](2);
         spendAssets_[0] = outgoingAssets[0];
@@ -154,10 +137,7 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
 
         incomingAssets_ = new address[](1);
         // No need to validate not address(0), this will be caught in IntegrationManager
-        incomingAssets_[0] = IUniswapV2Factory(FACTORY).getPair(
-            outgoingAssets[0],
-            outgoingAssets[1]
-        );
+        incomingAssets_[0] = IUniswapV2Factory(FACTORY).getPair(outgoingAssets[0], outgoingAssets[1]);
 
         minIncomingAssetAmounts_ = new uint256[](1);
         minIncomingAssetAmounts_[0] = minIncomingAssetAmount;
@@ -184,11 +164,8 @@ contract UniswapV2LiquidityAdapter is AdapterBase, UniswapV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            uint256 outgoingAssetAmount,
-            address[2] memory incomingAssets,
-            uint256[2] memory minIncomingAssetAmounts
-        ) = __decodeRedeemCallArgs(_actionData);
+        (uint256 outgoingAssetAmount, address[2] memory incomingAssets, uint256[2] memory minIncomingAssetAmounts) =
+            __decodeRedeemCallArgs(_actionData);
 
         spendAssets_ = new address[](1);
         // No need to validate not address(0), this will be caught in IntegrationManager

@@ -19,11 +19,7 @@ import "../utils/PolicyBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A policy that sets min remaining balance limits on assets specified during specific assets redemption
 contract MinAssetBalancesPostRedemptionPolicy is PolicyBase {
-    event MinAssetBalanceAddedForFund(
-        address indexed comptrollerProxy,
-        address indexed asset,
-        uint256 minBalance
-    );
+    event MinAssetBalanceAddedForFund(address indexed comptrollerProxy, address indexed asset, uint256 minBalance);
 
     constructor(address _policyManager) public PolicyBase(_policyManager) {}
 
@@ -39,10 +35,7 @@ contract MinAssetBalancesPostRedemptionPolicy is PolicyBase {
         override
         onlyPolicyManager
     {
-        (address[] memory assets, uint256[] memory minBalances) = abi.decode(
-            _encodedSettings,
-            (address[], uint256[])
-        );
+        (address[] memory assets, uint256[] memory minBalances) = abi.decode(_encodedSettings, (address[], uint256[]));
         require(assets.length == minBalances.length, "addFundSettings: Unequal array lengths");
 
         for (uint256 i; i < assets.length; i++) {
@@ -66,12 +59,7 @@ contract MinAssetBalancesPostRedemptionPolicy is PolicyBase {
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
         implementedHooks_[0] = IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets;
 
@@ -83,21 +71,16 @@ contract MinAssetBalancesPostRedemptionPolicy is PolicyBase {
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
     /// @dev onlyPolicyManager validation not necessary, as state is not updated and no events are fired
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook,
-        bytes calldata _encodedArgs
-    ) external override returns (bool isValid_) {
-        (, , , address[] memory assets, , ) = __decodeRedeemSharesForSpecificAssetsValidationData(
-            _encodedArgs
-        );
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook, bytes calldata _encodedArgs)
+        external
+        override
+        returns (bool isValid_)
+    {
+        (,,, address[] memory assets,,) = __decodeRedeemSharesForSpecificAssetsValidationData(_encodedArgs);
 
         address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
         for (uint256 i; i < assets.length; i++) {
-            if (
-                ERC20(assets[i]).balanceOf(vaultProxy) <
-                getMinAssetBalanceForFund(_comptrollerProxy, assets[i])
-            ) {
+            if (ERC20(assets[i]).balanceOf(vaultProxy) < getMinAssetBalanceForFund(_comptrollerProxy, assets[i])) {
                 return false;
             }
         }

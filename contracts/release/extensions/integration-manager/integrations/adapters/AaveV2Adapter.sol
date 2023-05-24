@@ -18,12 +18,7 @@ import "../utils/bases/AaveAdapterBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Aave v2 lending
 contract AaveV2Adapter is AaveAdapterBase, AaveV2ActionsMixin {
-    constructor(
-        address _integrationManager,
-        address _addressListRegistry,
-        uint256 _aTokenListId,
-        address _lendingPool
-    )
+    constructor(address _integrationManager, address _addressListRegistry, uint256 _aTokenListId, address _lendingPool)
         public
         AaveAdapterBase(_integrationManager, _addressListRegistry, _aTokenListId)
         AaveV2ActionsMixin(_lendingPool)
@@ -34,20 +29,12 @@ contract AaveV2Adapter is AaveAdapterBase, AaveV2ActionsMixin {
     ////////////////////////////////
 
     /// @dev Logic to lend underlying for aToken
-    function __lend(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal override {
+    function __lend(address _vaultProxy, address _underlying, uint256 _amount) internal override {
         __aaveV2Lend({_recipient: _vaultProxy, _underlying: _underlying, _amount: _amount});
     }
 
     /// @dev Logic to redeem aToken for underlying
-    function __redeem(
-        address _vaultProxy,
-        address _underlying,
-        uint256 _amount
-    ) internal override {
+    function __redeem(address _vaultProxy, address _underlying, uint256 _amount) internal override {
         __aaveV2Redeem({_recipient: _vaultProxy, _underlying: _underlying, _amount: _amount});
     }
 }

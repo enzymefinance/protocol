@@ -27,16 +27,8 @@ abstract contract AaveV3ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to execute lending on Aave v3
-    function __aaveV3Lend(
-        address _recipient,
-        address _underlying,
-        uint256 _amount
-    ) internal {
-        __approveAssetMaxAsNeeded({
-            _asset: _underlying,
-            _target: address(AAVE_V3_POOL_CONTRACT),
-            _neededAmount: _amount
-        });
+    function __aaveV3Lend(address _recipient, address _underlying, uint256 _amount) internal {
+        __approveAssetMaxAsNeeded({_asset: _underlying, _target: address(AAVE_V3_POOL_CONTRACT), _neededAmount: _amount});
 
         AAVE_V3_POOL_CONTRACT.supply({
             _underlying: _underlying,
@@ -47,15 +39,7 @@ abstract contract AaveV3ActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to execute redeeming aTokens on Aave v3
-    function __aaveV3Redeem(
-        address _recipient,
-        address _underlying,
-        uint256 _amount
-    ) internal {
-        AAVE_V3_POOL_CONTRACT.withdraw({
-            _underlying: _underlying,
-            _amount: _amount,
-            _to: _recipient
-        });
+    function __aaveV3Redeem(address _recipient, address _underlying, uint256 _amount) internal {
+        AAVE_V3_POOL_CONTRACT.withdraw({_underlying: _underlying, _amount: _amount, _to: _recipient});
     }
 }

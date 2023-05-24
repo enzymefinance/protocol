@@ -62,11 +62,7 @@ abstract contract SolvV2BondIssuerPositionDataDecoder {
     }
 
     /// @dev Helper to decode args used during the RemoveOffer action
-    function __decodeRemoveOfferActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (uint24 offerId_)
-    {
+    function __decodeRemoveOfferActionArgs(bytes memory _actionArgs) internal pure returns (uint24 offerId_) {
         return (abi.decode(_actionArgs, (uint24)));
     }
 

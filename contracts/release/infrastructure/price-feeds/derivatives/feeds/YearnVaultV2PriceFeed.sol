@@ -48,9 +48,9 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
         require(underlyings_[0] != address(0), "calcUnderlyingValues: Unsupported derivative");
 
         underlyingAmounts_ = new uint256[](1);
-        underlyingAmounts_[0] = _derivativeAmount
-            .mul(IYearnVaultV2(_derivative).pricePerShare())
-            .div(10**uint256(ERC20(_derivative).decimals()));
+        underlyingAmounts_[0] = _derivativeAmount.mul(IYearnVaultV2(_derivative).pricePerShare()).div(
+            10 ** uint256(ERC20(_derivative).decimals())
+        );
     }
 
     /// @notice Checks if an asset is supported by the price feed
@@ -66,9 +66,7 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
         // Only validate that the _derivative is a valid yVault using the V2 contract,
         // not that it is the latest vault for a particular _underlying
         bool isValidYearnVaultV2;
-        IYearnVaultV2Registry yearnRegistryContract = IYearnVaultV2Registry(
-            getYearnVaultV2Registry()
-        );
+        IYearnVaultV2Registry yearnRegistryContract = IYearnVaultV2Registry(getYearnVaultV2Registry());
         for (uint256 i; i < yearnRegistryContract.numVaults(_underlying); i++) {
             if (yearnRegistryContract.vaults(_underlying, i) == _derivative) {
                 isValidYearnVaultV2 = true;
@@ -79,8 +77,7 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
 
         // Validates our assumption that yVaults and underlyings will have the same decimals
         require(
-            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(),
-            "__validateDerivative: Incongruent decimals"
+            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "__validateDerivative: Incongruent decimals"
         );
     }
 

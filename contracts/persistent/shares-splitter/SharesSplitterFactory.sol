@@ -34,11 +34,7 @@ contract SharesSplitterFactory {
     {
         require(_users.length == _splitPercentages.length, "deploy: Unequal arrays");
 
-        bytes memory constructData = abi.encodeWithSelector(
-            SharesSplitterLib.init.selector,
-            _users,
-            _splitPercentages
-        );
+        bytes memory constructData = abi.encodeWithSelector(SharesSplitterLib.init.selector, _users, _splitPercentages);
 
         sharesSplitter_ = address(new SharesSplitterProxy(constructData, SHARES_SPLITTER));
 

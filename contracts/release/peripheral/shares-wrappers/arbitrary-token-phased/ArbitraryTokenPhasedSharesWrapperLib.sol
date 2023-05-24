@@ -73,12 +73,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
     event TotalDepositMaxSet(uint256 totalDepositMax);
 
-    event Withdrawn(
-        address indexed user,
-        uint256 amount,
-        address[] claimedAssets,
-        uint256[] claimedAssetAmounts
-    );
+    event Withdrawn(address indexed user, uint256 amount, address[] claimedAssets, uint256[] claimedAssetAmounts);
 
     uint256 private constant MAX_BPS = 10000;
     uint256 private constant SECONDS_IN_YEAR = 31557600; // 60*60*24*365.25
@@ -176,8 +171,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         // Only allow if the vault is on v4.
         // Also validates that _vaultProxy != address(0).
         require(
-            DISPATCHER_CONTRACT.getFundDeployerForVaultProxy(_vaultProxy) == FUND_DEPLOYER_V4,
-            "init: Bad vault version"
+            DISPATCHER_CONTRACT.getFundDeployerForVaultProxy(_vaultProxy) == FUND_DEPLOYER_V4, "init: Bad vault version"
         );
 
         depositToken = _depositToken;
@@ -216,12 +210,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         }
 
         emit Initialized(
-            _vaultProxy,
-            _depositToken,
-            _transfersAllowed,
-            _feeRecipient,
-            _feeBps,
-            _feeExcludesDepositTokenPrincipal
+            _vaultProxy, _depositToken, _transfersAllowed, _feeRecipient, _feeBps, _feeExcludesDepositTokenPrincipal
         );
     }
 
@@ -296,11 +285,12 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
     /// @dev Standard implementation of ERC20's transferFrom().
     /// Blocks transfers if not allowed.
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) public override onlyTransfersAllowed returns (bool success_) {
+    function transferFrom(address _sender, address _recipient, uint256 _amount)
+        public
+        override
+        onlyTransfersAllowed
+        returns (bool success_)
+    {
         return super.transferFrom(_sender, _recipient, _amount);
     }
 
@@ -389,9 +379,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         claimedAssetAmounts_ = new uint256[](claimedAssets_.length);
         for (uint256 i; i < claimedAssets_.length; i++) {
             ERC20 assetContract = ERC20(claimedAssets_[i]);
-            claimedAssetAmounts_[i] = assetContract.balanceOf(address(this)).mul(_amount).div(
-                wrappedSharesSupply
-            );
+            claimedAssetAmounts_[i] = assetContract.balanceOf(address(this)).mul(_amount).div(wrappedSharesSupply);
 
             if (claimedAssetAmounts_[i] > 0) {
                 assetContract.safeTransfer(msg.sender, claimedAssetAmounts_[i]);
@@ -419,9 +407,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         require(getState() == State.Deposit, "enterLockedState: Invalid state");
 
         // Buy shares from the fund, using whatever amount of the denomination asset is in the current contract
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(
-            VaultLib(payable(vaultProxyMem)).getAccessor()
-        );
+        ComptrollerLib comptrollerProxyContract = ComptrollerLib(VaultLib(payable(vaultProxyMem)).getAccessor());
         ERC20 denominationAssetContract = ERC20(comptrollerProxyContract.getDenominationAsset());
         uint256 investmentAmount = denominationAssetContract.balanceOf(address(this));
 
@@ -441,10 +427,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Send deposit tokens to vault
         ERC20 depositTokenContract = ERC20(getDepositToken());
-        depositTokenContract.safeTransfer(
-            vaultProxyMem,
-            depositTokenContract.balanceOf(address(this))
-        );
+        depositTokenContract.safeTransfer(vaultProxyMem, depositTokenContract.balanceOf(address(this)));
     }
 
     /// @notice Enters Redeem state, redeeming all vault shares and paying out both protocol and wrapper fees
@@ -459,36 +442,23 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Validate that there are no active external positions that contain value.
         // Allows a fund to keep an external position active, so long as it has been emptied.
-        address[] memory externalPositions = VaultLib(payable(vaultProxyMem))
-            .getActiveExternalPositions();
+        address[] memory externalPositions = VaultLib(payable(vaultProxyMem)).getActiveExternalPositions();
         for (uint256 i; i < externalPositions.length; i++) {
-            (, uint256[] memory managedAssetAmounts) = IExternalPosition(externalPositions[i])
-                .getManagedAssets();
+            (, uint256[] memory managedAssetAmounts) = IExternalPosition(externalPositions[i]).getManagedAssets();
             for (uint256 j; j < managedAssetAmounts.length; j++) {
-                require(
-                    managedAssetAmounts[j] == 0,
-                    "enterRedeemState: Non-zero value external position"
-                );
+                require(managedAssetAmounts[j] == 0, "enterRedeemState: Non-zero value external position");
             }
         }
 
         // Redeem all fund shares, receiving an in-kind distribution of vault holdings
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(
-            VaultLib(payable(getVaultProxy())).getAccessor()
-        );
+        ComptrollerLib comptrollerProxyContract = ComptrollerLib(VaultLib(payable(getVaultProxy())).getAccessor());
         // Always includes the deposit token as an "additional asset" to claim,
         // in case it is untracked in the vault
-        address[] memory additionalAssetsToClaim = _untrackedAssetsToClaim.addUniqueItem(
-            getDepositToken()
-        );
+        address[] memory additionalAssetsToClaim = _untrackedAssetsToClaim.addUniqueItem(getDepositToken());
 
-        (address[] memory payoutAssets, uint256[] memory payoutAmounts) = comptrollerProxyContract
-            .redeemSharesInKind(
-                address(this),
-                type(uint256).max,
-                additionalAssetsToClaim,
-                new address[](0)
-            );
+        (address[] memory payoutAssets, uint256[] memory payoutAmounts) = comptrollerProxyContract.redeemSharesInKind(
+            address(this), type(uint256).max, additionalAssetsToClaim, new address[](0)
+        );
 
         // Filter out any zero-balance assets
         address[] memory nonEmptyAssets;
@@ -531,10 +501,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
                 // totalSupply() represents the total amount of depositToken principal,
                 // since wrapped shares are minted 1:1 with the depositToken.
                 // The total supply in excess of the asset balance is a gain on principal.
-                feeChargeableBalance = __subOrZero(
-                    assetContract.balanceOf(address(this)),
-                    totalSupply()
-                );
+                feeChargeableBalance = __subOrZero(assetContract.balanceOf(address(this)), totalSupply());
             } else {
                 feeChargeableBalance = assetContract.balanceOf(address(this));
             }
@@ -554,12 +521,8 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         uint256 protocolFeeSecs = block.timestamp.sub(getProtocolFeeStart());
 
         for (uint256 i; i < _assets.length; i++) {
-            uint256 feeAmount = ERC20(_assets[i])
-                .balanceOf(address(this))
-                .mul(PROTOCOL_FEE_BPS)
-                .mul(protocolFeeSecs)
-                .div(MAX_BPS)
-                .div(SECONDS_IN_YEAR);
+            uint256 feeAmount = ERC20(_assets[i]).balanceOf(address(this)).mul(PROTOCOL_FEE_BPS).mul(protocolFeeSecs)
+                .div(MAX_BPS).div(SECONDS_IN_YEAR);
             if (feeAmount > 0) {
                 ERC20(_assets[i]).safeTransfer(PROTOCOL_FEE_RECIPIENT, feeAmount);
 

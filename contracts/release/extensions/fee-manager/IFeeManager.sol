@@ -32,9 +32,5 @@ interface IFeeManager {
         BurnSharesOutstanding
     }
 
-    function invokeHook(
-        FeeHook,
-        bytes calldata,
-        uint256
-    ) external;
+    function invokeHook(FeeHook, bytes calldata, uint256) external;
 }

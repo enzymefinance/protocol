@@ -20,11 +20,7 @@ import "../IDerivativePriceFeed.sol";
 /// while allowing an asset to continue to be in the asset universe
 contract RevertingPriceFeed is IDerivativePriceFeed {
     /// @notice Converts a given amount of a derivative to its underlying asset values
-    function calcUnderlyingValues(address, uint256)
-        external
-        override
-        returns (address[] memory, uint256[] memory)
-    {
+    function calcUnderlyingValues(address, uint256) external override returns (address[] memory, uint256[] memory) {
         revert("calcUnderlyingValues: RevertingPriceFeed");
     }
 

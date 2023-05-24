@@ -73,11 +73,7 @@ abstract contract AssetHelpers {
     /// @dev Helper to approve a target account with the max amount of an asset.
     /// This is helpful for fully trusted contracts, such as adapters that
     /// interact with external protocol like Uniswap, Compound, etc.
-    function __approveAssetMaxAsNeeded(
-        address _asset,
-        address _target,
-        uint256 _neededAmount
-    ) internal {
+    function __approveAssetMaxAsNeeded(address _asset, address _target, uint256 _neededAmount) internal {
         uint256 allowance = ERC20(_asset).allowance(address(this), _target);
         if (allowance < _neededAmount) {
             if (allowance > 0) {
@@ -88,10 +84,7 @@ abstract contract AssetHelpers {
     }
 
     /// @dev Helper to transfer full asset balance from the current contract to a target
-    function __pushFullAssetBalance(address _target, address _asset)
-        internal
-        returns (uint256 amountTransferred_)
-    {
+    function __pushFullAssetBalance(address _target, address _asset) internal returns (uint256 amountTransferred_) {
         amountTransferred_ = ERC20(_asset).balanceOf(address(this));
         if (amountTransferred_ > 0) {
             ERC20(_asset).safeTransfer(_target, amountTransferred_);

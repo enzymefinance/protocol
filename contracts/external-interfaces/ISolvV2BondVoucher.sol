@@ -20,11 +20,7 @@ interface ISolvV2BondVoucher {
 
     function bondPool() external view returns (address bondPool_);
 
-    function claimTo(
-        uint256 _tokenId,
-        address _to,
-        uint256 _claimUnits
-    ) external;
+    function claimTo(uint256 _tokenId, address _to, uint256 _claimUnits) external;
 
     function getSlot(
         address _issuer,
@@ -35,10 +31,7 @@ interface ISolvV2BondVoucher {
         uint64 _maturity
     ) external view returns (uint256 slot_);
 
-    function getSlotDetail(uint256 _slot)
-        external
-        view
-        returns (ISolvV2BondPool.SlotDetail memory slotDetail_);
+    function getSlotDetail(uint256 _slot) external view returns (ISolvV2BondPool.SlotDetail memory slotDetail_);
 
     function nextTokenId() external view returns (uint32 nextTokenId_);
 

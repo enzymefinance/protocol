@@ -22,14 +22,7 @@ interface ICompoundV3CometRewards {
         bool shouldUpscale;
     }
 
-    function claim(
-        address _cToken,
-        address _src,
-        bool _shouldAccrue
-    ) external;
+    function claim(address _cToken, address _src, bool _shouldAccrue) external;
 
-    function rewardConfig(address _cToken)
-        external
-        view
-        returns (RewardConfig memory rewardConfig_);
+    function rewardConfig(address _cToken) external view returns (RewardConfig memory rewardConfig_);
 }

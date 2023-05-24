@@ -17,8 +17,5 @@ import "./utils/ExitRateFeeBase.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An ExitRateFee that burns the fee shares
 contract ExitRateBurnFee is ExitRateFeeBase {
-    constructor(address _feeManager)
-        public
-        ExitRateFeeBase(_feeManager, IFeeManager.SettlementType.Burn)
-    {}
+    constructor(address _feeManager) public ExitRateFeeBase(_feeManager, IFeeManager.SettlementType.Burn) {}
 }

@@ -134,44 +134,32 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     }
 
     /// @notice Standard implementation of ERC20's transfer() with additional validations
-    function transfer(address _recipient, uint256 _amount)
-        public
-        override
-        returns (bool success_)
-    {
+    function transfer(address _recipient, uint256 _amount) public override returns (bool success_) {
         __preProcessTransfer({_sender: msg.sender, _recipient: _recipient, _amount: _amount});
 
         return super.transfer(_recipient, _amount);
     }
 
     /// @notice Standard implementation of ERC20's transferFrom() with additional validations
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) public override returns (bool success_) {
+    function transferFrom(address _sender, address _recipient, uint256 _amount)
+        public
+        override
+        returns (bool success_)
+    {
         __preProcessTransfer({_sender: _sender, _recipient: _recipient, _amount: _amount});
 
         return super.transferFrom(_sender, _recipient, _amount);
     }
 
     /// @dev Helper to validate transfer
-    function __preProcessTransfer(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) private {
+    function __preProcessTransfer(address _sender, address _recipient, uint256 _amount) private {
         require(
-            _amount <=
-                balanceOf(_sender).sub(redemptionQueue.userToRequest[_sender].sharesPending),
+            _amount <= balanceOf(_sender).sub(redemptionQueue.userToRequest[_sender].sharesPending),
             "__preProcessTransfer: In redemption queue"
         );
 
         if (transferApprovalsAreUsed()) {
-            uint256 transferApproval = getTransferApproval({
-                _sender: _sender,
-                _recipient: _recipient
-            });
+            uint256 transferApproval = getTransferApproval({_sender: _sender, _recipient: _recipient});
 
             if (transferApproval != type(uint256).max) {
                 require(transferApproval == _amount, "__preProcessTransfer: Approval mismatch");
@@ -194,22 +182,18 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @return sharesReceived_ The amount of wrapped shares received
     /// @dev Does not support deposits in fee-on-transfer tokens.
     /// Can specify _depositAsset == NATIVE_ASSET to wrap and deposit native asset.
-    function deposit(
-        address _depositAsset,
-        uint256 _depositAssetAmount,
-        uint256 _minSharesAmount
-    ) external payable nonReentrant returns (uint256 sharesReceived_) {
+    function deposit(address _depositAsset, uint256 _depositAssetAmount, uint256 _minSharesAmount)
+        external
+        payable
+        nonReentrant
+        returns (uint256 sharesReceived_)
+    {
         require(getDepositMode() == DepositMode.Direct, "deposit: Wrong mode");
 
-        _depositAsset = __preDeposit({
-            _depositAssetOrNativeAsset: _depositAsset,
-            _depositAssetAmount: _depositAssetAmount
-        });
+        _depositAsset =
+            __preDeposit({_depositAssetOrNativeAsset: _depositAsset, _depositAssetAmount: _depositAssetAmount});
 
-        sharesReceived_ = __depositToVault({
-            _depositAsset: _depositAsset,
-            _depositAssetAmount: _depositAssetAmount
-        });
+        sharesReceived_ = __depositToVault({_depositAsset: _depositAsset, _depositAssetAmount: _depositAssetAmount});
         require(sharesReceived_ >= _minSharesAmount, "deposit: Insufficient shares");
 
         // Mint wrapped shares for the actual shares received
@@ -233,10 +217,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             _depositAsset = address(WRAPPED_NATIVE_ASSET_CONTRACT);
         }
 
-        uint256 depositAssetAmount = getDepositQueueUserRequest({
-            _depositAsset: _depositAsset,
-            _user: msg.sender
-        }).assetAmount;
+        uint256 depositAssetAmount =
+            getDepositQueueUserRequest({_depositAsset: _depositAsset, _user: msg.sender}).assetAmount;
 
         __removeDepositRequest({_user: msg.sender, _depositAsset: _depositAsset});
 
@@ -258,10 +240,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         // Require amount >0 so we can assume a DepositRequest with amount =0 means empty
         require(_depositAssetAmount > 0, "requestDeposit: Missing amount");
 
-        _depositAsset = __preDeposit({
-            _depositAssetOrNativeAsset: _depositAsset,
-            _depositAssetAmount: _depositAssetAmount
-        });
+        _depositAsset =
+            __preDeposit({_depositAssetOrNativeAsset: _depositAsset, _depositAssetAmount: _depositAssetAmount});
 
         DepositQueue storage queue = depositAssetToQueue[_depositAsset];
         DepositRequest storage request = queue.userToRequest[msg.sender];
@@ -301,12 +281,11 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         uint256 preSharesBal = sharesTokenContract.balanceOf(address(this));
 
         // Format the call to deposit for shares
-        (address depositTarget, bytes memory depositPayload) = GLOBAL_CONFIG_CONTRACT
-            .formatDepositCall({
-                _vaultProxy: address(sharesTokenContract),
-                _depositAsset: _depositAsset,
-                _depositAssetAmount: _depositAssetAmount
-            });
+        (address depositTarget, bytes memory depositPayload) = GLOBAL_CONFIG_CONTRACT.formatDepositCall({
+            _vaultProxy: address(sharesTokenContract),
+            _depositAsset: _depositAsset,
+            _depositAssetAmount: _depositAssetAmount
+        });
 
         // Approve the deposit target as necessary
         if (ERC20(_depositAsset).allowance(address(this), depositTarget) == 0) {
@@ -343,10 +322,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
         // Handle deposit approval
         if (depositApprovalsAreUsed()) {
-            uint256 depositApproval = getDepositApproval({
-                _user: msg.sender,
-                _asset: depositAsset_
-            });
+            uint256 depositApproval = getDepositApproval({_user: msg.sender, _asset: depositAsset_});
 
             // If deposit approval is not max, validate and remove exact approval
             if (depositApproval != type(uint256).max) {
@@ -435,9 +411,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         uint256 totalDepositAmount;
         for (uint256 i; i < usersCount; i++) {
             address user = _users[i];
-            uint256 userDepositAmount = depositAssetToQueue[_depositAsset]
-                .userToRequest[user]
-                .assetAmount;
+            uint256 userDepositAmount = depositAssetToQueue[_depositAsset].userToRequest[user].assetAmount;
 
             userDepositAmounts[i] = userDepositAmount;
             totalDepositAmount = totalDepositAmount.add(userDepositAmount);
@@ -446,10 +420,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         }
 
         // Deposit the total amount to the vault
-        uint256 totalSharesReceived = __depositToVault({
-            _depositAsset: _depositAsset,
-            _depositAssetAmount: totalDepositAmount
-        });
+        uint256 totalSharesReceived =
+            __depositToVault({_depositAsset: _depositAsset, _depositAssetAmount: totalDepositAmount});
 
         // Distribute wrapped shares pro-rata to depositors
         for (uint256 i; i < _users.length; i++) {
@@ -458,9 +430,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
             // Flooring each user's pro-rata shares potentially leaves unwrapped vault shares dust,
             // but since it is an insignificant amount, that dust is not dealt with
-            uint256 userSharesReceived = totalSharesReceived.mul(userDepositAmount).div(
-                totalDepositAmount
-            );
+            uint256 userSharesReceived = totalSharesReceived.mul(userDepositAmount).div(totalDepositAmount);
             userSharesReceived_[i] = userSharesReceived;
 
             // Mint wrapped shares for the actual shares received
@@ -478,19 +448,14 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Cancels the caller's redemption request
     function cancelRequestRedeem() external nonReentrant {
-        require(
-            !__isInLatestRedemptionWindow(block.timestamp),
-            "cancelRequestRedeem: Inside redemption window"
-        );
+        require(!__isInLatestRedemptionWindow(block.timestamp), "cancelRequestRedeem: Inside redemption window");
 
         RedemptionQueue storage queue = redemptionQueue;
         uint256 userSharesPending = queue.userToRequest[msg.sender].sharesPending;
         require(userSharesPending > 0, "cancelRequestRedeem: No request");
 
         // Remove user from queue
-        queue.totalSharesPending = uint256(queue.totalSharesPending)
-            .sub(userSharesPending)
-            .toUint128();
+        queue.totalSharesPending = uint256(queue.totalSharesPending).sub(userSharesPending).toUint128();
 
         __removeRedemptionRequest({_user: msg.sender, _queueLength: queue.users.length});
     }
@@ -499,10 +464,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _sharesAmount The amount of shares to add to the queue
     /// @dev Each request is additive
     function requestRedeem(uint256 _sharesAmount) external nonReentrant {
-        require(
-            !__isInLatestRedemptionWindow(block.timestamp),
-            "requestRedeem: Inside redemption window"
-        );
+        require(!__isInLatestRedemptionWindow(block.timestamp), "requestRedeem: Inside redemption window");
 
         // Validate user redemption approval and revoke remaining approval
         if (redemptionApprovalsAreUsed()) {
@@ -582,11 +544,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
         (uint256 windowStart, uint256 windowEnd) = calcLatestRedemptionWindow();
         require(
-            __isWithinRange({
-                _value: block.timestamp,
-                _rangeStart: windowStart,
-                _rangeEnd: windowEnd
-            }),
+            __isWithinRange({_value: block.timestamp, _rangeStart: windowStart, _rangeEnd: windowEnd}),
             "redeemFromQueue: Outside redemption window"
         );
 
@@ -617,11 +575,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             RedemptionRequest storage request = queue.userToRequest[user];
 
             require(
-                !__isWithinRange({
-                    _value: request.lastRedeemed,
-                    _rangeStart: windowStart,
-                    _rangeEnd: windowEnd
-                }),
+                !__isWithinRange({_value: request.lastRedeemed, _rangeStart: windowStart, _rangeEnd: windowEnd}),
                 "redeemFromQueue: Already redeemed in window"
             );
 
@@ -632,9 +586,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             if (throttled) {
                 uint256 userSharesPending = request.sharesPending;
 
-                userRedemptionAmount =
-                    userSharesPending.mul(queue.relativeSharesAllowed) /
-                    ONE_HUNDRED_PERCENT;
+                userRedemptionAmount = userSharesPending.mul(queue.relativeSharesAllowed) / ONE_HUNDRED_PERCENT;
 
                 request.sharesPending = userSharesPending.sub(userRedemptionAmount).toUint128();
                 request.lastRedeemed = uint64(block.timestamp);
@@ -658,9 +610,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         }
 
         // Update queue
-        queue.totalSharesPending = uint256(queue.totalSharesPending)
-            .sub(totalSharesRedeemed)
-            .toUint128();
+        queue.totalSharesPending = uint256(queue.totalSharesPending).sub(totalSharesRedeemed).toUint128();
 
         // Check whether native asset is to be dispersed
         bool disperseNativeAsset;
@@ -675,9 +625,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
         __redeemCall({_recipient: address(this), _sharesAmount: totalSharesRedeemed});
 
-        balanceToDisperse = redemptionAssetContract.balanceOf(address(this)).sub(
-            balanceToDisperse
-        );
+        balanceToDisperse = redemptionAssetContract.balanceOf(address(this)).sub(balanceToDisperse);
 
         // Disperse received asset
         if (disperseNativeAsset) {
@@ -685,15 +633,10 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         }
 
         for (uint256 i; i < usersRedeemed_.length; i++) {
-            uint256 userAmountToDisperse = balanceToDisperse.mul(sharesRedeemed_[i]).div(
-                totalSharesRedeemed
-            );
+            uint256 userAmountToDisperse = balanceToDisperse.mul(sharesRedeemed_[i]).div(totalSharesRedeemed);
 
             if (disperseNativeAsset) {
-                Address.sendValue({
-                    recipient: payable(usersRedeemed_[i]),
-                    amount: userAmountToDisperse
-                });
+                Address.sendValue({recipient: payable(usersRedeemed_[i]), amount: userAmountToDisperse});
             } else {
                 redemptionAssetContract.safeTransfer(usersRedeemed_[i], userAmountToDisperse);
             }
@@ -709,24 +652,18 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         RedemptionQueue storage queue = redemptionQueue;
 
         // Skip if nothing in queue, or if already checkpointed in last window
-        if (
-            queue.totalSharesPending == 0 ||
-            __isInLatestRedemptionWindow(queue.relativeSharesCheckpointed)
-        ) {
+        if (queue.totalSharesPending == 0 || __isInLatestRedemptionWindow(queue.relativeSharesCheckpointed)) {
             return;
         }
 
         // Calculate fresh if first redemption in window.
         // Use wrapped shares supply only instead of vault supply to prevent fee-related supply movements
         // between final request and first redemption.
-        uint256 absoluteCap = totalSupply().mul(getRedemptionWindowConfig().relativeSharesCap) /
-            ONE_HUNDRED_PERCENT;
+        uint256 absoluteCap = totalSupply().mul(getRedemptionWindowConfig().relativeSharesCap) / ONE_HUNDRED_PERCENT;
 
         uint256 nextRelativeSharesAllowed;
         if (queue.totalSharesPending > absoluteCap) {
-            nextRelativeSharesAllowed = ONE_HUNDRED_PERCENT.mul(absoluteCap).div(
-                queue.totalSharesPending
-            );
+            nextRelativeSharesAllowed = ONE_HUNDRED_PERCENT.mul(absoluteCap).div(queue.totalSharesPending);
         } else {
             nextRelativeSharesAllowed = ONE_HUNDRED_PERCENT;
         }
@@ -742,14 +679,13 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             assetToReceive = address(WRAPPED_NATIVE_ASSET_CONTRACT);
         }
 
-        (address target, bytes memory payload) = GLOBAL_CONFIG_CONTRACT
-            .formatSingleAssetRedemptionCall({
-                _vaultProxy: getVaultProxy(),
-                _recipient: _recipient,
-                _asset: assetToReceive,
-                _amount: _sharesAmount,
-                _amountIsShares: true
-            });
+        (address target, bytes memory payload) = GLOBAL_CONFIG_CONTRACT.formatSingleAssetRedemptionCall({
+            _vaultProxy: getVaultProxy(),
+            _recipient: _recipient,
+            _asset: assetToReceive,
+            _amount: _sharesAmount,
+            _amountIsShares: true
+        });
 
         target.functionCall(payload);
     }
@@ -778,9 +714,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         RedemptionQueue storage queue = redemptionQueue;
         uint256 userSharesPending = queue.userToRequest[_user].sharesPending;
         if (userSharesPending > 0) {
-            queue.totalSharesPending = uint256(queue.totalSharesPending)
-                .sub(userSharesPending)
-                .toUint128();
+            queue.totalSharesPending = uint256(queue.totalSharesPending).sub(userSharesPending).toUint128();
             __removeRedemptionRequest({_user: _user, _queueLength: queue.users.length});
         }
     }
@@ -794,55 +728,40 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @return windowEnd_ The end of the latest window
     /// @dev Prior to first redemption window, returns no window (i.e., start and end are 0).
     /// After that, returns the last (or current) window, until a new window is reached.
-    function calcLatestRedemptionWindow()
-        public
-        view
-        returns (uint256 windowStart_, uint256 windowEnd_)
-    {
+    function calcLatestRedemptionWindow() public view returns (uint256 windowStart_, uint256 windowEnd_) {
         RedemptionWindowConfig memory windowConfig = getRedemptionWindowConfig();
 
         // Return early if no window has been reached
-        if (
-            block.timestamp < windowConfig.firstWindowStart || windowConfig.firstWindowStart == 0
-        ) {
+        if (block.timestamp < windowConfig.firstWindowStart || windowConfig.firstWindowStart == 0) {
             return (0, 0);
         }
 
-        uint256 cyclesCompleted = (block.timestamp.sub(windowConfig.firstWindowStart)).div(
-            windowConfig.frequency
-        );
+        uint256 cyclesCompleted = (block.timestamp.sub(windowConfig.firstWindowStart)).div(windowConfig.frequency);
 
-        windowStart_ = uint256(windowConfig.firstWindowStart).add(
-            cyclesCompleted.mul(windowConfig.frequency)
-        );
+        windowStart_ = uint256(windowConfig.firstWindowStart).add(cyclesCompleted.mul(windowConfig.frequency));
         windowEnd_ = windowStart_.add(windowConfig.duration);
 
         return (windowStart_, windowEnd_);
     }
 
     /// @dev Helper to check whether a timestamp is in the current redemption window
-    function __isInLatestRedemptionWindow(uint256 _timestamp)
-        private
-        view
-        returns (bool inWindow_)
-    {
+    function __isInLatestRedemptionWindow(uint256 _timestamp) private view returns (bool inWindow_) {
         (uint256 windowStart, uint256 windowEnd) = calcLatestRedemptionWindow();
 
         if (windowStart == 0) {
             return false;
         }
 
-        return
-            __isWithinRange({_value: _timestamp, _rangeStart: windowStart, _rangeEnd: windowEnd});
+        return __isWithinRange({_value: _timestamp, _rangeStart: windowStart, _rangeEnd: windowEnd});
     }
 
     /// @dev Helper to check whether a value is between two ends of a range.
     /// Used for efficiency when the redemption window start and end are already in memory.
-    function __isWithinRange(
-        uint256 _value,
-        uint256 _rangeStart,
-        uint256 _rangeEnd
-    ) private pure returns (bool withinRange_) {
+    function __isWithinRange(uint256 _value, uint256 _rangeStart, uint256 _rangeEnd)
+        private
+        pure
+        returns (bool withinRange_)
+    {
         return _value >= _rangeStart && _value <= _rangeEnd;
     }
 
@@ -860,16 +779,13 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _users The users
     /// @param _assets The deposit token for each approval
     /// @param _amounts The amount of each approval
-    function setDepositApprovals(
-        address[] calldata _users,
-        address[] calldata _assets,
-        uint256[] calldata _amounts
-    ) external {
+    function setDepositApprovals(address[] calldata _users, address[] calldata _assets, uint256[] calldata _amounts)
+        external
+    {
         __onlyManagerOrOwner();
 
         require(
-            _users.length == _assets.length && _users.length == _amounts.length,
-            "setDepositApprovals: Unequal arrays"
+            _users.length == _assets.length && _users.length == _amounts.length, "setDepositApprovals: Unequal arrays"
         );
 
         for (uint256 i; i < _users.length; i++) {
@@ -882,9 +798,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @notice Sets redemption approvals for a list of users
     /// @param _users The users
     /// @param _amounts The amount of each approval
-    function setRedemptionApprovals(address[] calldata _users, uint256[] calldata _amounts)
-        external
-    {
+    function setRedemptionApprovals(address[] calldata _users, uint256[] calldata _amounts) external {
         __onlyManagerOrOwner();
 
         require(_users.length == _amounts.length, "setRedemptionApprovals: Unequal arrays");
@@ -980,9 +894,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Sets the configuration for the redemption window
     /// @param _nextWindowConfig The RedemptionWindowConfig
-    function setRedemptionWindowConfig(RedemptionWindowConfig calldata _nextWindowConfig)
-        external
-    {
+    function setRedemptionWindowConfig(RedemptionWindowConfig calldata _nextWindowConfig) external {
         __onlyManagerOrOwner();
 
         __setRedemptionWindowConfig(_nextWindowConfig);
@@ -1017,10 +929,10 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     function __setRedemptionWindowConfig(RedemptionWindowConfig memory _nextWindowConfig) private {
         // Config can either be all empty, or all valid
         if (
-            !(_nextWindowConfig.firstWindowStart == 0 &&
-                _nextWindowConfig.duration == 0 &&
-                _nextWindowConfig.frequency == 0 &&
-                _nextWindowConfig.relativeSharesCap == 0)
+            !(
+                _nextWindowConfig.firstWindowStart == 0 && _nextWindowConfig.duration == 0
+                    && _nextWindowConfig.frequency == 0 && _nextWindowConfig.relativeSharesCap == 0
+            )
         ) {
             require(
                 _nextWindowConfig.firstWindowStart > block.timestamp,
@@ -1068,10 +980,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _sender From whom
     /// @param _recipient To whom
     /// @dev Fully removes _sender from the redemption queue prior to transfer
-    function forceTransfer(address _sender, address _recipient)
-        external
-        returns (uint256 amount_)
-    {
+    function forceTransfer(address _sender, address _recipient) external returns (uint256 amount_) {
         __onlyOwner();
 
         __removeUserFromRedemptionQueue(_sender);
@@ -1123,11 +1032,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @notice Gets the list of all users in the given asset's deposit queue
     /// @param _depositAsset The deposit asset
     /// @return users_ The list of users
-    function getDepositQueueUsers(address _depositAsset)
-        external
-        view
-        returns (address[] memory users_)
-    {
+    function getDepositQueueUsers(address _depositAsset) external view returns (address[] memory users_) {
         return depositAssetToQueue[_depositAsset].users;
     }
 
@@ -1139,11 +1044,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     function getRedemptionQueue()
         external
         view
-        returns (
-            uint256 totalSharesPending_,
-            uint256 relativeSharesAllowed_,
-            uint256 relativeSharesCheckpointed_
-        )
+        returns (uint256 totalSharesPending_, uint256 relativeSharesAllowed_, uint256 relativeSharesCheckpointed_)
     {
         return (
             redemptionQueue.totalSharesPending,
@@ -1162,11 +1063,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @notice Gets the redemption request for a specified user
     /// @param _user The user
     /// @return request_ The RedemptionRequest
-    function getRedemptionQueueUserRequest(address _user)
-        external
-        view
-        returns (RedemptionRequest memory request_)
-    {
+    function getRedemptionQueueUserRequest(address _user) external view returns (RedemptionRequest memory request_) {
         return redemptionQueue.userToRequest[_user];
     }
 
@@ -1194,11 +1091,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _user The user
     /// @param _asset The asset
     /// @return amount_ The approval amount
-    function getDepositApproval(address _user, address _asset)
-        public
-        view
-        returns (uint256 amount_)
-    {
+    function getDepositApproval(address _user, address _asset) public view returns (uint256 amount_) {
         return userToAssetToDepositApproval[_user][_asset];
     }
 
@@ -1235,11 +1128,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     /// @notice Gets the redemption window configuration
     /// @return redemptionWindowConfig_ The RedemptionWindowConfig
-    function getRedemptionWindowConfig()
-        public
-        view
-        returns (RedemptionWindowConfig memory redemptionWindowConfig_)
-    {
+    function getRedemptionWindowConfig() public view returns (RedemptionWindowConfig memory redemptionWindowConfig_) {
         return redemptionWindowConfig;
     }
 
@@ -1247,11 +1136,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
     /// @param _sender The sender
     /// @param _recipient The recipient
     /// @return amount_ The approval amount
-    function getTransferApproval(address _sender, address _recipient)
-        public
-        view
-        returns (uint256 amount_)
-    {
+    function getTransferApproval(address _sender, address _recipient) public view returns (uint256 amount_) {
         return userToRecipientToTransferApproval[_sender][_recipient];
     }
 

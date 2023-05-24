@@ -34,13 +34,7 @@ contract MinSharesSupplyFee is FeeBase {
 
     /// @notice Gets the recipient of the fee for a given fund
     /// @return recipient_ The recipient
-    function getRecipientForFund(address)
-        external
-        view
-        virtual
-        override
-        returns (address recipient_)
-    {
+    function getRecipientForFund(address) external view virtual override returns (address recipient_) {
         return LOCKED_SHARES_ADDRESS;
     }
 
@@ -61,11 +55,7 @@ contract MinSharesSupplyFee is FeeBase {
         external
         override
         onlyFeeManager
-        returns (
-            IFeeManager.SettlementType settlementType_,
-            address payer_,
-            uint256 sharesDue_
-        )
+        returns (IFeeManager.SettlementType settlementType_, address payer_, uint256 sharesDue_)
     {
         uint256 lockedShares = ERC20(_vaultProxy).balanceOf(LOCKED_SHARES_ADDRESS);
         if (lockedShares >= MIN_SHARES_SUPPLY) {
@@ -74,7 +64,7 @@ contract MinSharesSupplyFee is FeeBase {
 
         // lockedShares < MIN_SHARES_SUPPLY
         sharesDue_ = MIN_SHARES_SUPPLY - lockedShares;
-        (payer_, , ) = __decodePostBuySharesSettlementData(_settlementData);
+        (payer_,,) = __decodePostBuySharesSettlementData(_settlementData);
 
         emit Settled(_comptrollerProxy, payer_, sharesDue_);
 
@@ -85,12 +75,7 @@ contract MinSharesSupplyFee is FeeBase {
     /// @param _hook The FeeHook
     /// @return settles_ True if the fee settles on the _hook
     /// @return usesGav_ True if the fee uses GAV during settle() for the _hook
-    function settlesOnHook(IFeeManager.FeeHook _hook)
-        external
-        view
-        override
-        returns (bool settles_, bool usesGav_)
-    {
+    function settlesOnHook(IFeeManager.FeeHook _hook) external view override returns (bool settles_, bool usesGav_) {
         if (_hook == IFeeManager.FeeHook.PostBuyShares) {
             return (true, false);
         }

@@ -32,9 +32,5 @@ interface IPolicyManager {
         ReactivateExternalPosition
     }
 
-    function validatePolicies(
-        address,
-        PolicyHook,
-        bytes calldata
-    ) external;
+    function validatePolicies(address, PolicyHook, bytes calldata) external;
 }

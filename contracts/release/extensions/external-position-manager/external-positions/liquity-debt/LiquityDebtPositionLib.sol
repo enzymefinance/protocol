@@ -29,12 +29,9 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     address private immutable LUSD_TOKEN;
     address private immutable WETH_TOKEN;
 
-    constructor(
-        address _liquityBorrowerOperations,
-        address _liquityTroveManager,
-        address _lusd,
-        address _weth
-    ) public {
+    constructor(address _liquityBorrowerOperations, address _liquityTroveManager, address _lusd, address _weth)
+        public
+    {
         LIQUITY_BORROWER_OPERATIONS = _liquityBorrowerOperations;
         LIQUITY_TROVE_MANAGER = _liquityTroveManager;
         LUSD_TOKEN = _lusd;
@@ -60,33 +57,19 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
             ) = __decodeOpenTroveArgs(actionArgs);
             __openTrove(maxFeePercentage, collateralAmount, lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.AddCollateral)) {
-            (
-                uint256 collateralAmount,
-                address upperHint,
-                address lowerHint
-            ) = __decodeAddCollateralActionArgs(actionArgs);
+            (uint256 collateralAmount, address upperHint, address lowerHint) =
+                __decodeAddCollateralActionArgs(actionArgs);
             __addCollateral(collateralAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.RemoveCollateral)) {
-            (
-                uint256 collateralAmount,
-                address upperHint,
-                address lowerHint
-            ) = __decodeRemoveCollateralActionArgs(actionArgs);
+            (uint256 collateralAmount, address upperHint, address lowerHint) =
+                __decodeRemoveCollateralActionArgs(actionArgs);
             __removeCollateral(collateralAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.Borrow)) {
-            (
-                uint256 maxFeePercentage,
-                uint256 lusdAmount,
-                address upperHint,
-                address lowerHint
-            ) = __decodeBorrowActionArgs(actionArgs);
+            (uint256 maxFeePercentage, uint256 lusdAmount, address upperHint, address lowerHint) =
+                __decodeBorrowActionArgs(actionArgs);
             __borrow(maxFeePercentage, lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.RepayBorrow)) {
-            (
-                uint256 lusdAmount,
-                address upperHint,
-                address lowerHint
-            ) = __decodeRepayBorrowActionArgs(actionArgs);
+            (uint256 lusdAmount, address upperHint, address lowerHint) = __decodeRepayBorrowActionArgs(actionArgs);
             __repayBorrow(lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.CloseTrove)) {
             __closeTrove();
@@ -96,31 +79,16 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     }
 
     /// @dev Adds ETH as collateral
-    function __addCollateral(
-        uint256 _amount,
-        address _upperHint,
-        address _lowerHint
-    ) private {
+    function __addCollateral(uint256 _amount, address _upperHint, address _lowerHint) private {
         IWETH(WETH_TOKEN).withdraw(_amount);
 
-        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).addColl{value: _amount}(
-            _upperHint,
-            _lowerHint
-        );
+        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).addColl{value: _amount}(_upperHint, _lowerHint);
     }
 
     /// @dev Borrows LUSD using the available collateral
-    function __borrow(
-        uint256 _maxFeePercentage,
-        uint256 _amount,
-        address _upperHint,
-        address _lowerHint
-    ) private {
+    function __borrow(uint256 _maxFeePercentage, uint256 _amount, address _upperHint, address _lowerHint) private {
         ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).withdrawLUSD(
-            _maxFeePercentage,
-            _amount,
-            _upperHint,
-            _lowerHint
+            _maxFeePercentage, _amount, _upperHint, _lowerHint
         );
 
         ERC20(LUSD_TOKEN).safeTransfer(msg.sender, _amount);
@@ -150,24 +118,16 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     ) private {
         IWETH(WETH_TOKEN).withdraw(_collateralAmount);
 
-        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).openTrove{
-            value: _collateralAmount
-        }(_maxFeePercentage, _lusdAmount, _upperHint, _lowerHint);
+        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).openTrove{value: _collateralAmount}(
+            _maxFeePercentage, _lusdAmount, _upperHint, _lowerHint
+        );
 
         ERC20(LUSD_TOKEN).safeTransfer(msg.sender, _lusdAmount);
     }
 
     /// @dev Removes ETH as collateral
-    function __removeCollateral(
-        uint256 _amount,
-        address _upperHint,
-        address _lowerHint
-    ) private {
-        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).withdrawColl(
-            _amount,
-            _upperHint,
-            _lowerHint
-        );
+    function __removeCollateral(uint256 _amount, address _upperHint, address _lowerHint) private {
+        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).withdrawColl(_amount, _upperHint, _lowerHint);
 
         IWETH(WETH_TOKEN).deposit{value: _amount}();
         ERC20(WETH_TOKEN).safeTransfer(msg.sender, _amount);
@@ -175,17 +135,9 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
 
     /// @dev Repays borrowed LUSD, reducing the borrow balance
     /// It doesn't require to approve LUSD since the balance is directly managed by the borower operations contract.
-    function __repayBorrow(
-        uint256 _amount,
-        address _upperHint,
-        address _lowerHint
-    ) private {
+    function __repayBorrow(uint256 _amount, address _upperHint, address _lowerHint) private {
         // Reverts if _amount > total trove debt - min trove debt
-        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).repayLUSD(
-            _amount,
-            _upperHint,
-            _lowerHint
-        );
+        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).repayLUSD(_amount, _upperHint, _lowerHint);
     }
 
     ///////////////////
@@ -197,11 +149,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         amounts_ = new uint256[](1);
         amounts_[0] = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveDebt(address(this));
 
@@ -219,11 +167,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets()
-        external
-        override
-        returns (address[] memory assets_, uint256[] memory amounts_)
-    {
+    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         amounts_ = new uint256[](1);
         amounts_[0] = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveColl(address(this));
 

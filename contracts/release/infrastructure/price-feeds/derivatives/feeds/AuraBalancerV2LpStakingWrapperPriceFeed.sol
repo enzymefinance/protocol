@@ -17,8 +17,5 @@ import "./ConvexCurveLpStakingWrapperPriceFeed.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for wrapped Aura-staked Balancer pool tokens
 contract AuraBalancerV2LpStakingWrapperPriceFeed is ConvexCurveLpStakingWrapperPriceFeed {
-    constructor(address _wrapperFactory)
-        public
-        ConvexCurveLpStakingWrapperPriceFeed(_wrapperFactory)
-    {}
+    constructor(address _wrapperFactory) public ConvexCurveLpStakingWrapperPriceFeed(_wrapperFactory) {}
 }

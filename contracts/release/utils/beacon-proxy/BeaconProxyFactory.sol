@@ -52,10 +52,7 @@ abstract contract BeaconProxyFactory is IBeaconProxyFactory {
     /// @notice Sets the next canonical lib used by all proxies
     /// @param _nextCanonicalLib The next canonical lib
     function setCanonicalLib(address _nextCanonicalLib) public override {
-        require(
-            msg.sender == getOwner(),
-            "setCanonicalLib: Only the owner can call this function"
-        );
+        require(msg.sender == getOwner(), "setCanonicalLib: Only the owner can call this function");
 
         __setCanonicalLib(_nextCanonicalLib);
     }

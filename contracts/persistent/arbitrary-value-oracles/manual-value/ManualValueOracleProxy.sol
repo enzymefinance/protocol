@@ -17,8 +17,5 @@ import "../../../release/utils/NonUpgradableProxy.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Proxy contract for all ManualValueOracle instances
 contract ManualValueOracleProxy is NonUpgradableProxy {
-    constructor(bytes memory _constructData, address _lib)
-        public
-        NonUpgradableProxy(_constructData, _lib)
-    {}
+    constructor(bytes memory _constructData, address _lib) public NonUpgradableProxy(_constructData, _lib) {}
 }

@@ -38,10 +38,7 @@ abstract contract AddOnlyAddressListOwnerBase {
         listIds[0] = listId;
         descriptions[0] = _listDescription;
 
-        AddressListRegistry(_addressListRegistry).attestLists({
-            _ids: listIds,
-            _descriptions: descriptions
-        });
+        AddressListRegistry(_addressListRegistry).attestLists({_ids: listIds, _descriptions: descriptions});
     }
 
     /// @notice Add items to the list after subjecting them to validation

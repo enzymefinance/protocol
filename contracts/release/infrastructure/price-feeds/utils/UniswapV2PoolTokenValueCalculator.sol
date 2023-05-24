@@ -24,7 +24,7 @@ import "../../../../external-interfaces/IUniswapV2Pair.sol";
 abstract contract UniswapV2PoolTokenValueCalculator {
     using SafeMath for uint256;
 
-    uint256 internal constant UNISWAP_V2_POOL_TOKEN_UNIT = 10**18;
+    uint256 internal constant UNISWAP_V2_POOL_TOKEN_UNIT = 10 ** 18;
 
     // INTERNAL FUNCTIONS
 
@@ -37,11 +37,8 @@ abstract contract UniswapV2PoolTokenValueCalculator {
         uint256 _token0TrustedRateAmount,
         uint256 _token1TrustedRateAmount
     ) internal view returns (uint256 token0Amount_, uint256 token1Amount_) {
-        (uint256 reserve0, uint256 reserve1) = __calcReservesAfterArbitrage(
-            _pair,
-            _token0TrustedRateAmount,
-            _token1TrustedRateAmount
-        );
+        (uint256 reserve0, uint256 reserve1) =
+            __calcReservesAfterArbitrage(_pair, _token0TrustedRateAmount, _token1TrustedRateAmount);
 
         return __calcPoolTokenValue(_factory, _pair, reserve0, reserve1);
     }
@@ -49,12 +46,11 @@ abstract contract UniswapV2PoolTokenValueCalculator {
     // PRIVATE FUNCTIONS
 
     /// @dev Computes liquidity value given all the parameters of the pair
-    function __calcPoolTokenValue(
-        address _factory,
-        address _pair,
-        uint256 _reserve0,
-        uint256 _reserve1
-    ) private view returns (uint256 token0Amount_, uint256 token1Amount_) {
+    function __calcPoolTokenValue(address _factory, address _pair, uint256 _reserve0, uint256 _reserve1)
+        private
+        view
+        returns (uint256 token0Amount_, uint256 token1Amount_)
+    {
         IUniswapV2Pair pairContract = IUniswapV2Pair(_pair);
         uint256 totalSupply = pairContract.totalSupply();
 
@@ -84,23 +80,18 @@ abstract contract UniswapV2PoolTokenValueCalculator {
         uint256 _reserve0,
         uint256 _reserve1
     ) private pure returns (bool token0ToToken1_, uint256 amountIn_) {
-        token0ToToken1_ =
-            _reserve0.mul(_token1TrustedRateAmount).div(_reserve1) < _token0TrustedRateAmount;
+        token0ToToken1_ = _reserve0.mul(_token1TrustedRateAmount).div(_reserve1) < _token0TrustedRateAmount;
 
         uint256 leftSide;
         uint256 rightSide;
         if (token0ToToken1_) {
             leftSide = __uniswapSqrt(
-                _reserve0.mul(_reserve1).mul(_token0TrustedRateAmount).mul(1000).div(
-                    _token1TrustedRateAmount.mul(997)
-                )
+                _reserve0.mul(_reserve1).mul(_token0TrustedRateAmount).mul(1000).div(_token1TrustedRateAmount.mul(997))
             );
             rightSide = _reserve0.mul(1000).div(997);
         } else {
             leftSide = __uniswapSqrt(
-                _reserve0.mul(_reserve1).mul(_token1TrustedRateAmount).mul(1000).div(
-                    _token0TrustedRateAmount.mul(997)
-                )
+                _reserve0.mul(_reserve1).mul(_token1TrustedRateAmount).mul(1000).div(_token0TrustedRateAmount.mul(997))
             );
             rightSide = _reserve1.mul(1000).div(997);
         }
@@ -123,18 +114,14 @@ abstract contract UniswapV2PoolTokenValueCalculator {
         uint256 _token0TrustedRateAmount,
         uint256 _token1TrustedRateAmount
     ) private view returns (uint256 reserve0_, uint256 reserve1_) {
-        (reserve0_, reserve1_, ) = IUniswapV2Pair(_pair).getReserves();
+        (reserve0_, reserve1_,) = IUniswapV2Pair(_pair).getReserves();
 
         // Skip checking whether the reserve is 0, as this is extremely unlikely given how
         // initial pool liquidity is locked, and since we maintain a list of registered pool tokens
 
         // Calculate how much to swap to arb to the trusted price
-        (bool token0ToToken1, uint256 amountIn) = __calcProfitMaximizingTrade(
-            _token0TrustedRateAmount,
-            _token1TrustedRateAmount,
-            reserve0_,
-            reserve1_
-        );
+        (bool token0ToToken1, uint256 amountIn) =
+            __calcProfitMaximizingTrade(_token0TrustedRateAmount, _token1TrustedRateAmount, reserve0_, reserve1_);
         if (amountIn == 0) {
             return (reserve0_, reserve1_);
         }
@@ -173,11 +160,11 @@ abstract contract UniswapV2PoolTokenValueCalculator {
 
     /// @dev Simplified version of UniswapV2Library's getAmountOut() function. See:
     /// https://github.com/Uniswap/uniswap-v2-periphery/blob/87edfdcaf49ccc52591502993db4c8c08ea9eec0/contracts/libraries/UniswapV2Library.sol#L42-L50
-    function __uniswapV2GetAmountOut(
-        uint256 _amountIn,
-        uint256 _reserveIn,
-        uint256 _reserveOut
-    ) private pure returns (uint256 amountOut_) {
+    function __uniswapV2GetAmountOut(uint256 _amountIn, uint256 _reserveIn, uint256 _reserveOut)
+        private
+        pure
+        returns (uint256 amountOut_)
+    {
         uint256 amountInWithFee = _amountIn.mul(997);
         uint256 numerator = amountInWithFee.mul(_reserveOut);
         uint256 denominator = _reserveIn.mul(1000).add(amountInWithFee);

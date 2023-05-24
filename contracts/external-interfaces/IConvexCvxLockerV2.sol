@@ -14,11 +14,7 @@ pragma solidity >=0.6.0 <0.9.0;
 interface IConvexCvxLockerV2 {
     function getReward(address) external;
 
-    function lock(
-        address,
-        uint256,
-        uint256
-    ) external;
+    function lock(address, uint256, uint256) external;
 
     function lockedBalanceOf(address) external view returns (uint256);
 

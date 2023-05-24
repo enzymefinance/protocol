@@ -19,8 +19,7 @@ import "./TreasurySplitterMixin.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Library contract for a SharesSplitter
 contract SharesSplitterLib is TreasurySplitterMixin {
-    address internal constant NO_VALIDATION_DUMMY_ADDRESS =
-        0x000000000000000000000000000000000000aaaa;
+    address internal constant NO_VALIDATION_DUMMY_ADDRESS = 0x000000000000000000000000000000000000aaaa;
 
     IGlobalConfig1 private immutable GLOBAL_CONFIG_CONTRACT;
     address private immutable INITIALIZER;
@@ -64,20 +63,13 @@ contract SharesSplitterLib is TreasurySplitterMixin {
         // No need to validate the recipient.
         require(
             GLOBAL_CONFIG_CONTRACT.isValidRedeemSharesCall(
-                _vaultProxy,
-                NO_VALIDATION_DUMMY_ADDRESS,
-                sharesRedeemed_,
-                _redeemContract,
-                _redeemSelector,
-                _redeemData
+                _vaultProxy, NO_VALIDATION_DUMMY_ADDRESS, sharesRedeemed_, _redeemContract, _redeemSelector, _redeemData
             ),
             "redeemShares: Invalid redeem call"
         );
 
         // Make validated redeem shares call
-        (bool success, bytes memory returnData) = _redeemContract.call(
-            abi.encodePacked(_redeemSelector, _redeemData)
-        );
+        (bool success, bytes memory returnData) = _redeemContract.call(abi.encodePacked(_redeemSelector, _redeemData));
         require(success, string(returnData));
 
         return sharesRedeemed_;

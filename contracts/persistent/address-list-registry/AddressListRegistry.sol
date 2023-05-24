@@ -31,20 +31,11 @@ contract AddressListRegistry {
 
     event ListAttested(uint256 indexed id, string description);
 
-    event ListCreated(
-        address indexed creator,
-        address indexed owner,
-        uint256 id,
-        UpdateType updateType
-    );
+    event ListCreated(address indexed creator, address indexed owner, uint256 id, UpdateType updateType);
 
     event ListOwnerSet(uint256 indexed id, address indexed nextOwner);
 
-    event ListUpdateTypeSet(
-        uint256 indexed id,
-        UpdateType prevUpdateType,
-        UpdateType indexed nextUpdateType
-    );
+    event ListUpdateTypeSet(uint256 indexed id, UpdateType prevUpdateType, UpdateType indexed nextUpdateType);
 
     struct ListInfo {
         address owner;
@@ -76,8 +67,7 @@ contract AddressListRegistry {
     function addToList(uint256 _id, address[] calldata _items) external onlyListOwner(_id) {
         UpdateType updateType = getListUpdateType(_id);
         require(
-            updateType == UpdateType.AddOnly || updateType == UpdateType.AddAndRemove,
-            "addToList: Cannot add to list"
+            updateType == UpdateType.AddOnly || updateType == UpdateType.AddAndRemove, "addToList: Cannot add to list"
         );
 
         __addToList(_id, _items);
@@ -93,10 +83,7 @@ contract AddressListRegistry {
         require(_ids.length == _descriptions.length, "attestLists: Unequal arrays");
 
         for (uint256 i; i < _ids.length; i++) {
-            require(
-                __isListOwner(msg.sender, _ids[i]),
-                "attestLists: Only callable by list owner"
-            );
+            require(__isListOwner(msg.sender, _ids[i]), "attestLists: Only callable by list owner");
 
             emit ListAttested(_ids[i], _descriptions[i]);
         }
@@ -108,11 +95,10 @@ contract AddressListRegistry {
     /// @param _initialItems The initial items to add to the list
     /// @return id_ The id of the newly-created list
     /// @dev Specify the DISPATCHER as the _owner to make the Enzyme Council the owner
-    function createList(
-        address _owner,
-        UpdateType _updateType,
-        address[] calldata _initialItems
-    ) external returns (uint256 id_) {
+    function createList(address _owner, UpdateType _updateType, address[] calldata _initialItems)
+        external
+        returns (uint256 id_)
+    {
         id_ = getListCount();
 
         lists.push(ListInfo({owner: _owner, updateType: _updateType}));
@@ -157,10 +143,7 @@ contract AddressListRegistry {
     /// @param _id The id of the list
     /// @param _nextUpdateType The UpdateType to set
     /// @dev Can only change to a less mutable option (e.g., both add and remove => add only)
-    function setListUpdateType(uint256 _id, UpdateType _nextUpdateType)
-        external
-        onlyListOwner(_id)
-    {
+    function setListUpdateType(uint256 _id, UpdateType _nextUpdateType) external onlyListOwner(_id) {
         UpdateType prevUpdateType = getListUpdateType(_id);
         require(
             _nextUpdateType == UpdateType.None || prevUpdateType == UpdateType.AddAndRemove,
@@ -188,9 +171,7 @@ contract AddressListRegistry {
     /// @dev Helper to check if an account is the owner of a given list
     function __isListOwner(address _who, uint256 _id) private view returns (bool isListOwner_) {
         address owner = getListOwner(_id);
-        return
-            _who == owner ||
-            (owner == getDispatcher() && _who == IDispatcher(getDispatcher()).getOwner());
+        return _who == owner || (owner == getDispatcher() && _who == IDispatcher(getDispatcher()).getOwner());
     }
 
     /////////////////
@@ -208,11 +189,7 @@ contract AddressListRegistry {
     /// @param _id The list id
     /// @param _items The items to check
     /// @return areAllInList_ True if all items are in the list
-    function areAllInList(uint256 _id, address[] memory _items)
-        external
-        view
-        returns (bool areAllInList_)
-    {
+    function areAllInList(uint256 _id, address[] memory _items) external view returns (bool areAllInList_) {
         for (uint256 i; i < _items.length; i++) {
             if (!isInList(_id, _items[i])) {
                 return false;
@@ -226,11 +203,7 @@ contract AddressListRegistry {
     /// @param _id The list id
     /// @param _items The items to check
     /// @return areAllNotInList_ True if no items are in the list
-    function areAllNotInList(uint256 _id, address[] memory _items)
-        external
-        view
-        returns (bool areAllNotInList_)
-    {
+    function areAllNotInList(uint256 _id, address[] memory _items) external view returns (bool areAllNotInList_) {
         for (uint256 i; i < _items.length; i++) {
             if (isInList(_id, _items[i])) {
                 return false;
@@ -304,11 +277,7 @@ contract AddressListRegistry {
     /// @param _ids The list ids
     /// @param _item The item to check
     /// @return isInAllLists_ True if item is in all of the lists
-    function isInAllLists(uint256[] memory _ids, address _item)
-        public
-        view
-        returns (bool isInAllLists_)
-    {
+    function isInAllLists(uint256[] memory _ids, address _item) public view returns (bool isInAllLists_) {
         for (uint256 i; i < _ids.length; i++) {
             if (!isInList(_ids[i], _item)) {
                 return false;
@@ -322,11 +291,7 @@ contract AddressListRegistry {
     /// @param _ids The list ids
     /// @param _item The item to check
     /// @return isInSomeOfLists_ True if item is in one of the lists
-    function isInSomeOfLists(uint256[] memory _ids, address _item)
-        public
-        view
-        returns (bool isInSomeOfLists_)
-    {
+    function isInSomeOfLists(uint256[] memory _ids, address _item) public view returns (bool isInSomeOfLists_) {
         for (uint256 i; i < _ids.length; i++) {
             if (isInList(_ids[i], _item)) {
                 return true;

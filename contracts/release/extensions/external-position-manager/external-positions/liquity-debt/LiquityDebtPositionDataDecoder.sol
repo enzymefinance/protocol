@@ -17,11 +17,7 @@ abstract contract LiquityDebtPositionDataDecoder {
     function __decodeAddCollateralActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 collateralAmount_,
-            address upperHint_,
-            address lowerHint_
-        )
+        returns (uint256 collateralAmount_, address upperHint_, address lowerHint_)
     {
         return abi.decode(_actionArgs, (uint256, address, address));
     }
@@ -30,22 +26,13 @@ abstract contract LiquityDebtPositionDataDecoder {
     function __decodeBorrowActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 maxFeePercentage_,
-            uint256 lusdAmount_,
-            address upperHint_,
-            address lowerHint_
-        )
+        returns (uint256 maxFeePercentage_, uint256 lusdAmount_, address upperHint_, address lowerHint_)
     {
         return abi.decode(_actionArgs, (uint256, uint256, address, address));
     }
 
     /// @dev Helper to decode args used during the CloseTrove action
-    function __decodeCloseTroveActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (uint256 lusdAmount_)
-    {
+    function __decodeCloseTroveActionArgs(bytes memory _actionArgs) internal pure returns (uint256 lusdAmount_) {
         return abi.decode(_actionArgs, (uint256));
     }
 
@@ -68,11 +55,7 @@ abstract contract LiquityDebtPositionDataDecoder {
     function __decodeRemoveCollateralActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 collateralAmount_,
-            address upperHint_,
-            address lowerHint_
-        )
+        returns (uint256 collateralAmount_, address upperHint_, address lowerHint_)
     {
         return abi.decode(_actionArgs, (uint256, address, address));
     }
@@ -81,11 +64,7 @@ abstract contract LiquityDebtPositionDataDecoder {
     function __decodeRepayBorrowActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (
-            uint256 lusdAmount_,
-            address upperHint_,
-            address lowerHint_
-        )
+        returns (uint256 lusdAmount_, address upperHint_, address lowerHint_)
     {
         return abi.decode(_actionArgs, (uint256, address, address));
     }

@@ -16,10 +16,7 @@ pragma solidity 0.6.12;
 /// @title TheGraphDelegationPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for The Graph Delegation positions
-contract TheGraphDelegationPositionParser is
-    IExternalPositionParser,
-    TheGraphDelegationPositionDataDecoder
-{
+contract TheGraphDelegationPositionParser is IExternalPositionParser, TheGraphDelegationPositionDataDecoder {
     address private immutable GRT_TOKEN;
 
     constructor(address _grtToken) public {
@@ -32,11 +29,7 @@ contract TheGraphDelegationPositionParser is
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (

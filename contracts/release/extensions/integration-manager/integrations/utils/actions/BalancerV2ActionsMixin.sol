@@ -38,15 +38,14 @@ abstract contract BalancerV2ActionsMixin {
             toInternalBalance: false
         });
 
-        return
-            BALANCER_VAULT_CONTRACT.batchSwap({
-                _kind: _kind,
-                _swaps: _swaps,
-                _assets: _assets,
-                _funds: funds,
-                _limits: _limits,
-                _deadline: block.timestamp
-            });
+        return BALANCER_VAULT_CONTRACT.batchSwap({
+            _kind: _kind,
+            _swaps: _swaps,
+            _assets: _assets,
+            _funds: funds,
+            _limits: _limits,
+            _deadline: block.timestamp
+        });
     }
 
     /// @dev Helper to add liquidity

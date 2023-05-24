@@ -20,10 +20,7 @@ abstract contract FundDeployerOwnerMixin {
     address internal immutable FUND_DEPLOYER;
 
     modifier onlyFundDeployerOwner() {
-        require(
-            msg.sender == getOwner(),
-            "onlyFundDeployerOwner: Only the FundDeployer owner can call this function"
-        );
+        require(msg.sender == getOwner(), "onlyFundDeployerOwner: Only the FundDeployer owner can call this function");
         _;
     }
 

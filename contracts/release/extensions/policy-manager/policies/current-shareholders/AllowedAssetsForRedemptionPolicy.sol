@@ -39,12 +39,7 @@ contract AllowedAssetsForRedemptionPolicy is AddressListRegistryPolicyBase {
 
     /// @notice Gets the implemented PolicyHooks for a policy
     /// @return implementedHooks_ The implemented PolicyHooks
-    function implementedHooks()
-        external
-        pure
-        override
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_)
-    {
+    function implementedHooks() external pure override returns (IPolicyManager.PolicyHook[] memory implementedHooks_) {
         implementedHooks_ = new IPolicyManager.PolicyHook[](1);
         implementedHooks_[0] = IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets;
 
@@ -56,14 +51,12 @@ contract AllowedAssetsForRedemptionPolicy is AddressListRegistryPolicyBase {
     /// @param _encodedArgs Encoded args with which to validate the rule
     /// @return isValid_ True if the rule passes
     /// @dev onlyPolicyManager validation not necessary, as state is not updated and no events are fired
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook,
-        bytes calldata _encodedArgs
-    ) external override returns (bool isValid_) {
-        (, , , address[] memory assets, , ) = __decodeRedeemSharesForSpecificAssetsValidationData(
-            _encodedArgs
-        );
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook, bytes calldata _encodedArgs)
+        external
+        override
+        returns (bool isValid_)
+    {
+        (,,, address[] memory assets,,) = __decodeRedeemSharesForSpecificAssetsValidationData(_encodedArgs);
 
         return passesRule(_comptrollerProxy, assets);
     }
@@ -74,15 +67,9 @@ contract AllowedAssetsForRedemptionPolicy is AddressListRegistryPolicyBase {
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     /// @param _assets The assets for which to check the rule
     /// @return isValid_ True if the rule passes
-    function passesRule(address _comptrollerProxy, address[] memory _assets)
-        public
-        view
-        returns (bool isValid_)
-    {
-        return
-            AddressListRegistry(getAddressListRegistry()).areAllInSomeOfLists(
-                getListIdsForFund(_comptrollerProxy),
-                _assets
-            );
+    function passesRule(address _comptrollerProxy, address[] memory _assets) public view returns (bool isValid_) {
+        return AddressListRegistry(getAddressListRegistry()).areAllInSomeOfLists(
+            getListIdsForFund(_comptrollerProxy), _assets
+        );
     }
 }

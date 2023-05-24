@@ -34,17 +34,13 @@ contract FundValueCalculator is IFundValueCalculator {
     uint256 private constant BUYBACK_DISCOUNT_DIVISOR = 2;
 
     // Shares-related constants
-    uint256 private constant SHARES_UNIT = 10**18;
+    uint256 private constant SHARES_UNIT = 10 ** 18;
 
     address private immutable FEE_MANAGER;
     address private immutable PROTOCOL_FEE_TRACKER;
     address private immutable VALUE_INTERPRETER;
 
-    constructor(
-        address _feeManager,
-        address _protocolFeeTracker,
-        address _valueInterpreter
-    ) public {
+    constructor(address _feeManager, address _protocolFeeTracker, address _valueInterpreter) public {
         FEE_MANAGER = _feeManager;
         PROTOCOL_FEE_TRACKER = _protocolFeeTracker;
         VALUE_INTERPRETER = _valueInterpreter;
@@ -56,19 +52,12 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return gav_ The GAV quoted in _quoteAsset
-    function calcGavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        override
-        returns (uint256 gav_)
-    {
+    function calcGavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 gav_) {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcGav(_vaultProxy);
 
-        return
-            ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAsset,
-                valueInDenominationAsset,
-                _quoteAsset
-            );
+        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAsset, valueInDenominationAsset, _quoteAsset
+        );
     }
 
     /// @notice Calculates the gross value of one shares unit (10 ** 18) for a given fund, quoted in a given asset
@@ -80,35 +69,23 @@ contract FundValueCalculator is IFundValueCalculator {
         override
         returns (uint256 grossShareValue_)
     {
-        (address denominationAsset, uint256 valueInDenominationAsset) = calcGrossShareValue(
-            _vaultProxy
-        );
+        (address denominationAsset, uint256 valueInDenominationAsset) = calcGrossShareValue(_vaultProxy);
 
-        return
-            ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAsset,
-                valueInDenominationAsset,
-                _quoteAsset
-            );
+        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAsset, valueInDenominationAsset, _quoteAsset
+        );
     }
 
     /// @notice Calculates the NAV for a given fund, quoted in a given asset
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return nav_ The NAV quoted in _quoteAsset
-    function calcNavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        override
-        returns (uint256 nav_)
-    {
+    function calcNavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 nav_) {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcNav(_vaultProxy);
 
-        return
-            ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAsset,
-                valueInDenominationAsset,
-                _quoteAsset
-            );
+        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAsset, valueInDenominationAsset, _quoteAsset
+        );
     }
 
     /// @notice Calculates the net value of one shares unit (10 ** 18) for a given fund, quoted in a given asset
@@ -120,16 +97,11 @@ contract FundValueCalculator is IFundValueCalculator {
         override
         returns (uint256 netShareValue_)
     {
-        (address denominationAsset, uint256 valueInDenominationAsset) = calcNetShareValue(
-            _vaultProxy
-        );
+        (address denominationAsset, uint256 valueInDenominationAsset) = calcNetShareValue(_vaultProxy);
 
-        return
-            ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAsset,
-                valueInDenominationAsset,
-                _quoteAsset
-            );
+        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAsset, valueInDenominationAsset, _quoteAsset
+        );
     }
 
     /// @notice Calculates the net value of all shares held by a specified account, quoted in a given asset
@@ -137,22 +109,17 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @param _sharesHolder The account holding shares
     /// @param _quoteAsset The quote asset
     /// @return netValue_ The net value of all shares held by _sharesHolder quoted in _quoteAsset
-    function calcNetValueForSharesHolderInAsset(
-        address _vaultProxy,
-        address _sharesHolder,
-        address _quoteAsset
-    ) external override returns (uint256 netValue_) {
-        (
-            address denominationAsset,
-            uint256 valueInDenominationAsset
-        ) = calcNetValueForSharesHolder(_vaultProxy, _sharesHolder);
+    function calcNetValueForSharesHolderInAsset(address _vaultProxy, address _sharesHolder, address _quoteAsset)
+        external
+        override
+        returns (uint256 netValue_)
+    {
+        (address denominationAsset, uint256 valueInDenominationAsset) =
+            calcNetValueForSharesHolder(_vaultProxy, _sharesHolder);
 
-        return
-            ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAsset,
-                valueInDenominationAsset,
-                _quoteAsset
-            );
+        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAsset, valueInDenominationAsset, _quoteAsset
+        );
     }
 
     // PUBLIC FUNCTIONS
@@ -161,17 +128,10 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return gav_ The GAV quoted in the denomination asset
-    function calcGav(address _vaultProxy)
-        public
-        override
-        returns (address denominationAsset_, uint256 gav_)
-    {
+    function calcGav(address _vaultProxy) public override returns (address denominationAsset_, uint256 gav_) {
         ComptrollerLib comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
 
-        return (
-            comptrollerProxyContract.getDenominationAsset(),
-            comptrollerProxyContract.calcGav()
-        );
+        return (comptrollerProxyContract.getDenominationAsset(), comptrollerProxyContract.calcGav());
     }
 
     /// @notice Calculates the gross value of one shares unit (10 ** 18) for a given fund
@@ -185,10 +145,7 @@ contract FundValueCalculator is IFundValueCalculator {
     {
         ComptrollerLib comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
 
-        return (
-            comptrollerProxyContract.getDenominationAsset(),
-            comptrollerProxyContract.calcGrossShareValue()
-        );
+        return (comptrollerProxyContract.getDenominationAsset(), comptrollerProxyContract.calcGrossShareValue());
     }
 
     /// @notice Calculates the NAV for a given fund
@@ -198,11 +155,7 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @dev This value should only be consumed from off-chain,
     /// as the NAV is only valid for the shares quantity prior to the settlement of fees,
     /// and this function actually settles fund-level fees, so the NAV would no longer be valid
-    function calcNav(address _vaultProxy)
-        public
-        override
-        returns (address denominationAsset_, uint256 nav_)
-    {
+    function calcNav(address _vaultProxy) public override returns (address denominationAsset_, uint256 nav_) {
         uint256 preSharesSupply = ERC20(_vaultProxy).totalSupply();
 
         uint256 netShareValue;
@@ -266,15 +219,9 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @return sharesDue_ The protocol fee shares due
     /// @dev Mostly copy-paste from ProtocolFeeTracker.payFee() and its helpers.
     /// Includes the 50% buyback discount.
-    function calcProtocolFeeDueForFund(address _vaultProxy)
-        public
-        view
-        returns (uint256 sharesDue_)
-    {
+    function calcProtocolFeeDueForFund(address _vaultProxy) public view returns (uint256 sharesDue_) {
         // 1. Calc seconds since last payment
-        uint256 lastPaid = ProtocolFeeTracker(getProtocolFeeTracker()).getLastPaidForVault(
-            _vaultProxy
-        );
+        uint256 lastPaid = ProtocolFeeTracker(getProtocolFeeTracker()).getLastPaidForVault(_vaultProxy);
         if (lastPaid >= block.timestamp || lastPaid == 0) {
             return 0;
         }
@@ -284,33 +231,28 @@ contract FundValueCalculator is IFundValueCalculator {
         // 2. Calc shares due as a proportion of annualized fee bps
         uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
 
-        uint256 rawSharesDue = sharesSupply
-            .mul(ProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy))
-            .mul(secondsDue)
-            .div(SECONDS_IN_YEAR)
-            .div(MAX_BPS);
+        uint256 rawSharesDue = sharesSupply.mul(
+            ProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy)
+        ).mul(secondsDue).div(SECONDS_IN_YEAR).div(MAX_BPS);
 
         uint256 supplyNetRawSharesDue = sharesSupply.sub(rawSharesDue);
         if (supplyNetRawSharesDue == 0) {
             return 0;
         }
 
-        return
-            rawSharesDue.mul(sharesSupply).div(supplyNetRawSharesDue).div(
-                BUYBACK_DISCOUNT_DIVISOR
-            );
+        return rawSharesDue.mul(sharesSupply).div(supplyNetRawSharesDue).div(BUYBACK_DISCOUNT_DIVISOR);
     }
 
     // PRIVATE FUNCTIONS
 
     /// @dev Helper for calculating the share value
-    function __calcShareValue(
-        address _denominationAsset,
-        uint256 _assetsValue,
-        uint256 _sharesSupply
-    ) private view returns (uint256 shareValue_) {
+    function __calcShareValue(address _denominationAsset, uint256 _assetsValue, uint256 _sharesSupply)
+        private
+        view
+        returns (uint256 shareValue_)
+    {
         if (_sharesSupply == 0) {
-            return 10**uint256(ERC20(_denominationAsset).decimals());
+            return 10 ** uint256(ERC20(_denominationAsset).decimals());
         }
 
         return _assetsValue.mul(SHARES_UNIT).div(_sharesSupply);

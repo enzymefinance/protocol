@@ -24,8 +24,7 @@ abstract contract GlobalConfigLibBaseCore is ProxiableGlobalConfigLib {
 
     modifier onlyDispatcherOwner() {
         require(
-            msg.sender == IDispatcher(getDispatcher()).getOwner(),
-            "Only the Dispatcher owner can call this function"
+            msg.sender == IDispatcher(getDispatcher()).getOwner(), "Only the Dispatcher owner can call this function"
         );
 
         _;

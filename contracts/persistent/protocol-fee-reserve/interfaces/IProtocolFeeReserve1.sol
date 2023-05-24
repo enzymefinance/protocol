@@ -16,9 +16,7 @@ pragma solidity 0.6.12;
 /// @dev Each interface should inherit the previous interface,
 /// e.g., `IProtocolFeeReserve2 is IProtocolFeeReserve1`
 interface IProtocolFeeReserve1 {
-    function buyBackSharesViaTrustedVaultProxy(
-        uint256 _sharesAmount,
-        uint256 _mlnValue,
-        uint256 _gav
-    ) external returns (uint256 mlnAmountToBurn_);
+    function buyBackSharesViaTrustedVaultProxy(uint256 _sharesAmount, uint256 _mlnValue, uint256 _gav)
+        external
+        returns (uint256 mlnAmountToBurn_);
 }

@@ -24,17 +24,11 @@ interface IPolicy {
 
     function identifier() external pure returns (string memory identifier_);
 
-    function implementedHooks()
+    function implementedHooks() external pure returns (IPolicyManager.PolicyHook[] memory implementedHooks_);
+
+    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings) external;
+
+    function validateRule(address _comptrollerProxy, IPolicyManager.PolicyHook _hook, bytes calldata _encodedArgs)
         external
-        pure
-        returns (IPolicyManager.PolicyHook[] memory implementedHooks_);
-
-    function updateFundSettings(address _comptrollerProxy, bytes calldata _encodedSettings)
-        external;
-
-    function validateRule(
-        address _comptrollerProxy,
-        IPolicyManager.PolicyHook _hook,
-        bytes calldata _encodedArgs
-    ) external returns (bool isValid_);
+        returns (bool isValid_);
 }

@@ -64,11 +64,7 @@ abstract contract PolicyBase is IPolicy {
     function __decodeCreateExternalPositionValidationData(bytes memory _validationData)
         internal
         pure
-        returns (
-            address caller_,
-            uint256 typeId_,
-            bytes memory initializationData_
-        )
+        returns (address caller_, uint256 typeId_, bytes memory initializationData_)
     {
         return abi.decode(_validationData, (address, uint256, bytes));
     }
@@ -77,11 +73,7 @@ abstract contract PolicyBase is IPolicy {
     function __decodePreTransferSharesValidationData(bytes memory _validationData)
         internal
         pure
-        returns (
-            address sender_,
-            address recipient_,
-            uint256 amount_
-        )
+        returns (address sender_, address recipient_, uint256 amount_)
     {
         return abi.decode(_validationData, (address, address, uint256));
     }
@@ -90,12 +82,7 @@ abstract contract PolicyBase is IPolicy {
     function __decodePostBuySharesValidationData(bytes memory _validationData)
         internal
         pure
-        returns (
-            address buyer_,
-            uint256 investmentAmount_,
-            uint256 sharesIssued_,
-            uint256 gav_
-        )
+        returns (address buyer_, uint256 investmentAmount_, uint256 sharesIssued_, uint256 gav_)
     {
         return abi.decode(_validationData, (address, uint256, uint256, uint256));
     }
@@ -113,11 +100,7 @@ abstract contract PolicyBase is IPolicy {
             bytes memory encodedActionData_
         )
     {
-        return
-            abi.decode(
-                _validationData,
-                (address, address, address[], uint256[], address[], bytes)
-            );
+        return abi.decode(_validationData, (address, address, address[], uint256[], address[], bytes));
     }
 
     /// @dev Helper to parse validation arguments from encoded data for PostCallOnIntegration policy hook
@@ -134,11 +117,7 @@ abstract contract PolicyBase is IPolicy {
             uint256[] memory spendAssetAmounts_
         )
     {
-        return
-            abi.decode(
-                _validationData,
-                (address, address, bytes4, address[], uint256[], address[], uint256[])
-            );
+        return abi.decode(_validationData, (address, address, bytes4, address[], uint256[], address[], uint256[]));
     }
 
     /// @dev Helper to parse validation arguments from encoded data for ReactivateExternalPosition policy hook
@@ -163,11 +142,7 @@ abstract contract PolicyBase is IPolicy {
             uint256 gavPreRedeem_
         )
     {
-        return
-            abi.decode(
-                _validationData,
-                (address, address, uint256, address[], uint256[], uint256)
-            );
+        return abi.decode(_validationData, (address, address, uint256, address[], uint256[], uint256));
     }
 
     /// @dev Helper to parse validation arguments from encoded data for RemoveExternalPosition policy hook

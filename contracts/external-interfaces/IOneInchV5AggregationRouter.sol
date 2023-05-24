@@ -25,10 +25,8 @@ interface IOneInchV5AggregationRouter {
         uint256 flags;
     }
 
-    function swap(
-        address _executor,
-        SwapDescription calldata _desc,
-        bytes calldata _permit,
-        bytes calldata _data
-    ) external payable returns (uint256 returnAmount_, uint256 spentAmount_);
+    function swap(address _executor, SwapDescription calldata _desc, bytes calldata _permit, bytes calldata _data)
+        external
+        payable
+        returns (uint256 returnAmount_, uint256 spentAmount_);
 }

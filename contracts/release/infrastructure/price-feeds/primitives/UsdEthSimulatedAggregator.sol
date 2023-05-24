@@ -21,7 +21,7 @@ contract UsdEthSimulatedAggregator {
     // both in terms of a mocked Chainlink aggregator and for greater precision
     uint8 private constant DECIMALS = 18;
     // 10 ** (Local precision (DECIMALS) + EthUsd aggregator decimals)
-    int256 private constant INVERSE_RATE_NUMERATOR = 10**26;
+    int256 private constant INVERSE_RATE_NUMERATOR = 10 ** 26;
 
     IChainlinkAggregator private immutable ETH_USD_AGGREGATOR_CONTRACT;
 
@@ -47,22 +47,11 @@ contract UsdEthSimulatedAggregator {
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId_,
-            int256 answer_,
-            uint256 startedAt_,
-            uint256 updatedAt_,
-            uint80 answeredInRound_
-        )
+        returns (uint80 roundId_, int256 answer_, uint256 startedAt_, uint256 updatedAt_, uint80 answeredInRound_)
     {
         int256 ethUsdAnswer;
-        (
-            roundId_,
-            ethUsdAnswer,
-            startedAt_,
-            updatedAt_,
-            answeredInRound_
-        ) = ETH_USD_AGGREGATOR_CONTRACT.latestRoundData();
+        (roundId_, ethUsdAnswer, startedAt_, updatedAt_, answeredInRound_) =
+            ETH_USD_AGGREGATOR_CONTRACT.latestRoundData();
 
         // Does not attempt to make sense of a negative answer
         if (ethUsdAnswer > 0) {

@@ -47,19 +47,12 @@ abstract contract SharesTokenBase {
     }
 
     /// @dev Standard implementation of ERC20's transferFrom(). Can be overridden.
-    function transferFrom(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) public virtual returns (bool) {
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public virtual returns (bool) {
         __transfer(_sender, _recipient, _amount);
         __approve(
             _sender,
             msg.sender,
-            sharesAllowances[_sender][msg.sender].sub(
-                _amount,
-                "ERC20: transfer amount exceeds allowance"
-            )
+            sharesAllowances[_sender][msg.sender].sub(_amount, "ERC20: transfer amount exceeds allowance")
         );
         return true;
     }
@@ -99,11 +92,7 @@ abstract contract SharesTokenBase {
     // INTERNAL FUNCTIONS
 
     /// @dev Helper for approve(). Can be overridden.
-    function __approve(
-        address _owner,
-        address _spender,
-        uint256 _amount
-    ) internal virtual {
+    function __approve(address _owner, address _spender, uint256 _amount) internal virtual {
         require(_owner != address(0), "ERC20: approve from the zero address");
         require(_spender != address(0), "ERC20: approve to the zero address");
 
@@ -115,10 +104,7 @@ abstract contract SharesTokenBase {
     function __burn(address _account, uint256 _amount) internal virtual {
         require(_account != address(0), "ERC20: burn from the zero address");
 
-        sharesBalances[_account] = sharesBalances[_account].sub(
-            _amount,
-            "ERC20: burn amount exceeds balance"
-        );
+        sharesBalances[_account] = sharesBalances[_account].sub(_amount, "ERC20: burn amount exceeds balance");
         sharesTotalSupply = sharesTotalSupply.sub(_amount);
         emit Transfer(_account, address(0), _amount);
     }
@@ -133,18 +119,11 @@ abstract contract SharesTokenBase {
     }
 
     /// @dev Helper to transfer tokens between accounts. Can be overridden.
-    function __transfer(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) internal virtual {
+    function __transfer(address _sender, address _recipient, uint256 _amount) internal virtual {
         require(_sender != address(0), "ERC20: transfer from the zero address");
         require(_recipient != address(0), "ERC20: transfer to the zero address");
 
-        sharesBalances[_sender] = sharesBalances[_sender].sub(
-            _amount,
-            "ERC20: transfer amount exceeds balance"
-        );
+        sharesBalances[_sender] = sharesBalances[_sender].sub(_amount, "ERC20: transfer amount exceeds balance");
         sharesBalances[_recipient] = sharesBalances[_recipient].add(_amount);
         emit Transfer(_sender, _recipient, _amount);
     }

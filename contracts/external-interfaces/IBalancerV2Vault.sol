@@ -51,32 +51,17 @@ interface IBalancerV2Vault {
         uint256 _deadline
     ) external returns (int256[] memory assetDeltas_);
 
-    function exitPool(
-        bytes32 _poolId,
-        address _sender,
-        address payable _recipient,
-        PoolBalanceChange memory _request
-    ) external;
+    function exitPool(bytes32 _poolId, address _sender, address payable _recipient, PoolBalanceChange memory _request)
+        external;
 
     function getPoolTokens(bytes32 _poolId)
         external
         view
-        returns (
-            address[] memory tokens_,
-            uint256[] memory balances_,
-            uint256 lastChangeBlock_
-        );
+        returns (address[] memory tokens_, uint256[] memory balances_, uint256 lastChangeBlock_);
 
-    function joinPool(
-        bytes32 _poolId,
-        address _sender,
-        address _recipient,
-        PoolBalanceChange memory _request
-    ) external payable;
+    function joinPool(bytes32 _poolId, address _sender, address _recipient, PoolBalanceChange memory _request)
+        external
+        payable;
 
-    function setRelayerApproval(
-        address _sender,
-        address _relayer,
-        bool _approved
-    ) external;
+    function setRelayerApproval(address _sender, address _relayer, bool _approved) external;
 }

@@ -40,10 +40,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
 
     event BuyBackMaxProtocolFeeSharesFailed(
-        bytes indexed failureReturnData,
-        uint256 sharesAmount,
-        uint256 buybackValueInMln,
-        uint256 gav
+        bytes indexed failureReturnData, uint256 sharesAmount, uint256 buybackValueInMln, uint256 gav
     );
     event DeactivateFeeManagerFailed();
 
@@ -53,20 +50,11 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     event PayProtocolFeeDuringDestructFailed();
 
-    event PreRedeemSharesHookFailed(
-        bytes indexed failureReturnData,
-        address indexed redeemer,
-        uint256 sharesAmount
-    );
+    event PreRedeemSharesHookFailed(bytes indexed failureReturnData, address indexed redeemer, uint256 sharesAmount);
 
     event RedeemSharesInKindCalcGavFailed();
 
-    event SharesBought(
-        address indexed buyer,
-        uint256 investmentAmount,
-        uint256 sharesIssued,
-        uint256 sharesReceived
-    );
+    event SharesBought(address indexed buyer, uint256 investmentAmount, uint256 sharesIssued, uint256 sharesReceived);
 
     event SharesRedeemed(
         address indexed redeemer,
@@ -80,7 +68,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     // Constants and immutables - shared by all proxies
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
-    uint256 private constant SHARES_UNIT = 10**18;
+    uint256 private constant SHARES_UNIT = 10 ** 18;
     address private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS =
         0x000000000000000000000000000000000000aaaa;
     address private immutable DISPATCHER;
@@ -138,6 +126,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         __assertIsFundDeployer();
         _;
     }
+
     modifier onlyGasRelayPaymaster() {
         __assertIsGasRelayPaymaster();
         _;
@@ -178,16 +167,13 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         require(!permissionedVaultActionAllowed, "Vault action re-entrance");
     }
 
-    function __assertSharesActionNotTimelocked(address _vaultProxy, address _account)
-        private
-        view
-    {
+    function __assertSharesActionNotTimelocked(address _vaultProxy, address _account) private view {
         uint256 lastSharesBoughtTimestamp = getLastSharesBoughtTimestampForAccount(_account);
 
         require(
-            lastSharesBoughtTimestamp == 0 ||
-                block.timestamp.sub(lastSharesBoughtTimestamp) >= getSharesActionTimelock() ||
-                __hasPendingMigrationOrReconfiguration(_vaultProxy),
+            lastSharesBoughtTimestamp == 0
+                || block.timestamp.sub(lastSharesBoughtTimestamp) >= getSharesActionTimelock()
+                || __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
     }
@@ -229,15 +215,15 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
     /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
     /// during calls originating from this function.
-    function callOnExtension(
-        address _extension,
-        uint256 _actionId,
-        bytes calldata _callArgs
-    ) external override locksReentrance allowsPermissionedVaultAction {
+    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs)
+        external
+        override
+        locksReentrance
+        allowsPermissionedVaultAction
+    {
         require(
-            _extension == getFeeManager() ||
-                _extension == getIntegrationManager() ||
-                _extension == getExternalPositionManager(),
+            _extension == getFeeManager() || _extension == getIntegrationManager()
+                || _extension == getExternalPositionManager(),
             "callOnExtension: _extension invalid"
         );
 
@@ -249,25 +235,17 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _selector The selector to call
     /// @param _encodedArgs The encoded arguments for the call
     /// @return returnData_ The data returned by the call
-    function vaultCallOnContract(
-        address _contract,
-        bytes4 _selector,
-        bytes calldata _encodedArgs
-    ) external onlyOwner returns (bytes memory returnData_) {
+    function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
+        external
+        onlyOwner
+        returns (bytes memory returnData_)
+    {
         require(
-            IFundDeployer(getFundDeployer()).isAllowedVaultCall(
-                _contract,
-                _selector,
-                keccak256(_encodedArgs)
-            ),
+            IFundDeployer(getFundDeployer()).isAllowedVaultCall(_contract, _selector, keccak256(_encodedArgs)),
             "vaultCallOnContract: Not allowed"
         );
 
-        return
-            IVault(getVaultProxy()).callOnContract(
-                _contract,
-                abi.encodePacked(_selector, _encodedArgs)
-            );
+        return IVault(getVaultProxy()).callOnContract(_contract, abi.encodePacked(_selector, _encodedArgs));
     }
 
     /// @dev Helper to check if a VaultProxy has a pending migration or reconfiguration request
@@ -276,9 +254,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         view
         returns (bool hasPendingMigrationOrReconfiguration)
     {
-        return
-            IDispatcher(getDispatcher()).hasMigrationRequest(_vaultProxy) ||
-            IFundDeployer(getFundDeployer()).hasReconfigurationRequest(_vaultProxy);
+        return IDispatcher(getDispatcher()).hasMigrationRequest(_vaultProxy)
+            || IFundDeployer(getFundDeployer()).hasReconfigurationRequest(_vaultProxy);
     }
 
     //////////////////
@@ -289,27 +266,19 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _sharesAmount The amount of shares to buy back
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external {
         address vaultProxyCopy = vaultProxy;
-        require(
-            IVault(vaultProxyCopy).canManageAssets(__msgSender()),
-            "buyBackProtocolFeeShares: Unauthorized"
-        );
+        require(IVault(vaultProxyCopy).canManageAssets(__msgSender()), "buyBackProtocolFeeShares: Unauthorized");
 
         uint256 gav = calcGav();
 
         IVault(vaultProxyCopy).buyBackProtocolFeeShares(
-            _sharesAmount,
-            __getBuybackValueInMln(vaultProxyCopy, _sharesAmount, gav),
-            gav
+            _sharesAmount, __getBuybackValueInMln(vaultProxyCopy, _sharesAmount, gav), gav
         );
     }
 
     /// @notice Sets whether to attempt to buyback protocol fee shares immediately when collected
     /// @param _nextAutoProtocolFeeSharesBuyback True if protocol fee shares should be attempted
     /// to be bought back immediately when collected
-    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback)
-        external
-        onlyOwner
-    {
+    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external onlyOwner {
         autoProtocolFeeSharesBuyback = _nextAutoProtocolFeeSharesBuyback;
 
         emit AutoProtocolFeeSharesBuybackSet(_nextAutoProtocolFeeSharesBuyback);
@@ -320,37 +289,28 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
         uint256 buybackValueInMln = __getBuybackValueInMln(_vaultProxy, sharesAmount, _gav);
 
-        try
-            IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav)
-        {} catch (bytes memory reason) {
+        try IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav) {}
+        catch (bytes memory reason) {
             emit BuyBackMaxProtocolFeeSharesFailed(reason, sharesAmount, buybackValueInMln, _gav);
         }
     }
 
     /// @dev Helper to buyback the max available protocol fee shares
-    function __getBuybackValueInMln(
-        address _vaultProxy,
-        uint256 _sharesAmount,
-        uint256 _gav
-    ) private returns (uint256 buybackValueInMln_) {
+    function __getBuybackValueInMln(address _vaultProxy, uint256 _sharesAmount, uint256 _gav)
+        private
+        returns (uint256 buybackValueInMln_)
+    {
         address denominationAssetCopy = getDenominationAsset();
 
         uint256 grossShareValue = __calcGrossShareValue(
-            _gav,
-            ERC20(_vaultProxy).totalSupply(),
-            10**uint256(ERC20(denominationAssetCopy).decimals())
+            _gav, ERC20(_vaultProxy).totalSupply(), 10 ** uint256(ERC20(denominationAssetCopy).decimals())
         );
 
-        uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(
-            SHARES_UNIT
-        );
+        uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(SHARES_UNIT);
 
-        return
-            IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAssetCopy,
-                buybackValueInDenominationAsset,
-                getMlnToken()
-            );
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+            denominationAssetCopy, buybackValueInDenominationAsset, getMlnToken()
+        );
     }
 
     ////////////////////////////////
@@ -360,10 +320,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
-    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData)
-        external
-        override
-    {
+    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external override {
         __assertPermissionedVaultAction(msg.sender, _action);
 
         // Validate action as needed
@@ -379,35 +336,30 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction.
     /// Uses this pattern rather than multiple `require` statements to save on contract size.
-    function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action)
-        private
-        view
-    {
+    function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action) private view {
         bool validAction;
         if (permissionedVaultActionAllowed) {
             // Calls are roughly ordered by likely frequency
             if (_caller == getIntegrationManager()) {
                 if (
-                    _action == IVault.VaultAction.AddTrackedAsset ||
-                    _action == IVault.VaultAction.RemoveTrackedAsset ||
-                    _action == IVault.VaultAction.WithdrawAssetTo ||
-                    _action == IVault.VaultAction.ApproveAssetSpender
+                    _action == IVault.VaultAction.AddTrackedAsset || _action == IVault.VaultAction.RemoveTrackedAsset
+                        || _action == IVault.VaultAction.WithdrawAssetTo
+                        || _action == IVault.VaultAction.ApproveAssetSpender
                 ) {
                     validAction = true;
                 }
             } else if (_caller == getFeeManager()) {
                 if (
-                    _action == IVault.VaultAction.MintShares ||
-                    _action == IVault.VaultAction.BurnShares ||
-                    _action == IVault.VaultAction.TransferShares
+                    _action == IVault.VaultAction.MintShares || _action == IVault.VaultAction.BurnShares
+                        || _action == IVault.VaultAction.TransferShares
                 ) {
                     validAction = true;
                 }
             } else if (_caller == getExternalPositionManager()) {
                 if (
-                    _action == IVault.VaultAction.CallOnExternalPosition ||
-                    _action == IVault.VaultAction.AddExternalPosition ||
-                    _action == IVault.VaultAction.RemoveExternalPosition
+                    _action == IVault.VaultAction.CallOnExternalPosition
+                        || _action == IVault.VaultAction.AddExternalPosition
+                        || _action == IVault.VaultAction.RemoveExternalPosition
                 ) {
                     validAction = true;
                 }
@@ -463,11 +415,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             // to payout fee shares owed during migration, these shares are not lost.
             uint256 sharesDue = ERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
             if (sharesDue > 0) {
-                IVault(vaultProxyCopy).transferShares(
-                    vaultProxyCopy,
-                    IVault(vaultProxyCopy).getOwner(),
-                    sharesDue
-                );
+                IVault(vaultProxyCopy).transferShares(vaultProxyCopy, IVault(vaultProxyCopy).getOwner(), sharesDue);
 
                 emit MigratedSharesDuePaid(sharesDue);
             }
@@ -487,13 +435,16 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// Uses the try/catch pattern throughout out of an abundance of caution for the function's success.
     /// All external calls must use limited forwarded gas to ensure that a migration to another release
     /// does not get bricked by logic that consumes too much gas for the block limit.
-    function destructActivated(
-        uint256 _deactivateFeeManagerGasLimit,
-        uint256 _payProtocolFeeGasLimit
-    ) external override onlyFundDeployer allowsPermissionedVaultAction {
+    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit)
+        external
+        override
+        onlyFundDeployer
+        allowsPermissionedVaultAction
+    {
         // Forwarding limited gas here also protects fee recipients by guaranteeing that fee payout logic
         // will run in the next function call
-        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}() {} catch {
+        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}() {}
+        catch {
             emit PayProtocolFeeDuringDestructFailed();
         }
 
@@ -503,9 +454,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // Deactivate extensions only as-necessary
 
         // Pays out shares outstanding for fees
-        try
-            IExtension(getFeeManager()).deactivateForFund{gas: _deactivateFeeManagerGasLimit}()
-        {} catch {
+        try IExtension(getFeeManager()).deactivateForFund{gas: _deactivateFeeManagerGasLimit}() {}
+        catch {
             emit DeactivateFeeManagerFailed();
         }
 
@@ -536,8 +486,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     function calcGav() public override returns (uint256 gav_) {
         address vaultProxyAddress = getVaultProxy();
         address[] memory assets = IVault(vaultProxyAddress).getTrackedAssets();
-        address[] memory externalPositions = IVault(vaultProxyAddress)
-            .getActiveExternalPositions();
+        address[] memory externalPositions = IVault(vaultProxyAddress).getActiveExternalPositions();
 
         if (assets.length == 0 && externalPositions.length == 0) {
             return 0;
@@ -549,9 +498,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         }
 
         gav_ = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
-            assets,
-            balances,
-            getDenominationAsset()
+            assets, balances, getDenominationAsset()
         );
 
         if (externalPositions.length > 0) {
@@ -572,34 +519,26 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 gav = calcGav();
 
         grossShareValue_ = __calcGrossShareValue(
-            gav,
-            ERC20(getVaultProxy()).totalSupply(),
-            10**uint256(ERC20(getDenominationAsset()).decimals())
+            gav, ERC20(getVaultProxy()).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
         );
 
         return grossShareValue_;
     }
 
     // @dev Helper for calculating a external position value. Prevents from stack too deep
-    function __calcExternalPositionValue(address _externalPosition)
-        private
-        returns (uint256 value_)
-    {
-        (address[] memory managedAssets, uint256[] memory managedAmounts) = IExternalPosition(
-            _externalPosition
-        ).getManagedAssets();
+    function __calcExternalPositionValue(address _externalPosition) private returns (uint256 value_) {
+        (address[] memory managedAssets, uint256[] memory managedAmounts) =
+            IExternalPosition(_externalPosition).getManagedAssets();
 
-        uint256 managedValue = IValueInterpreter(getValueInterpreter())
-            .calcCanonicalAssetsTotalValue(managedAssets, managedAmounts, getDenominationAsset());
+        uint256 managedValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
+            managedAssets, managedAmounts, getDenominationAsset()
+        );
 
-        (address[] memory debtAssets, uint256[] memory debtAmounts) = IExternalPosition(
-            _externalPosition
-        ).getDebtAssets();
+        (address[] memory debtAssets, uint256[] memory debtAmounts) =
+            IExternalPosition(_externalPosition).getDebtAssets();
 
         uint256 debtValue = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
-            debtAssets,
-            debtAmounts,
-            getDenominationAsset()
+            debtAssets, debtAmounts, getDenominationAsset()
         );
 
         if (managedValue > debtValue) {
@@ -610,11 +549,11 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     }
 
     /// @dev Helper for calculating the gross share value
-    function __calcGrossShareValue(
-        uint256 _gav,
-        uint256 _sharesSupply,
-        uint256 _denominationAssetUnit
-    ) private pure returns (uint256 grossShareValue_) {
+    function __calcGrossShareValue(uint256 _gav, uint256 _sharesSupply, uint256 _denominationAssetUnit)
+        private
+        pure
+        returns (uint256 grossShareValue_)
+    {
         if (_sharesSupply == 0) {
             return _denominationAssetUnit;
         }
@@ -636,28 +575,20 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @dev This function is freely callable if there is no sharesActionTimelock set, but it is
     /// limited to a list of trusted callers otherwise, in order to prevent a griefing attack
     /// where the caller buys shares for a _buyer, thereby resetting their lastSharesBought value.
-    function buySharesOnBehalf(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _minSharesQuantity
-    ) external returns (uint256 sharesReceived_) {
+    function buySharesOnBehalf(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
+        external
+        returns (uint256 sharesReceived_)
+    {
         bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
         address canonicalSender = __msgSender();
 
         require(
-            !hasSharesActionTimelock ||
-                IFundDeployer(getFundDeployer()).isAllowedBuySharesOnBehalfCaller(canonicalSender),
+            !hasSharesActionTimelock
+                || IFundDeployer(getFundDeployer()).isAllowedBuySharesOnBehalfCaller(canonicalSender),
             "buySharesOnBehalf: Unauthorized"
         );
 
-        return
-            __buyShares(
-                _buyer,
-                _investmentAmount,
-                _minSharesQuantity,
-                hasSharesActionTimelock,
-                canonicalSender
-            );
+        return __buyShares(_buyer, _investmentAmount, _minSharesQuantity, hasSharesActionTimelock, canonicalSender);
     }
 
     /// @notice Buys shares
@@ -672,14 +603,9 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
         address canonicalSender = __msgSender();
 
-        return
-            __buyShares(
-                canonicalSender,
-                _investmentAmount,
-                _minSharesQuantity,
-                hasSharesActionTimelock,
-                canonicalSender
-            );
+        return __buyShares(
+            canonicalSender, _investmentAmount, _minSharesQuantity, hasSharesActionTimelock, canonicalSender
+        );
     }
 
     /// @dev Helper for buy shares logic
@@ -718,17 +644,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // Does not follow the checks-effects-interactions pattern, but it is necessary to
         // do this delta balance calculation before calculating shares to mint.
         uint256 receivedInvestmentAmount = __transferFromWithReceivedAmount(
-            getDenominationAsset(),
-            _canonicalSender,
-            vaultProxyCopy,
-            _investmentAmount
+            getDenominationAsset(), _canonicalSender, vaultProxyCopy, _investmentAmount
         );
 
         // Calculate the amount of shares to issue with the investment amount
         uint256 sharePrice = __calcGrossShareValue(
-            gav,
-            ERC20(vaultProxyCopy).totalSupply(),
-            10**uint256(ERC20(getDenominationAsset()).decimals())
+            gav, ERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
         );
         uint256 sharesIssued = receivedInvestmentAmount.mul(SHARES_UNIT).div(sharePrice);
 
@@ -742,10 +663,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
         sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer).sub(prevBuyerShares);
-        require(
-            sharesReceived_ >= _minSharesQuantity,
-            "__buyShares: Shares received < _minSharesQuantity"
-        );
+        require(sharesReceived_ >= _minSharesQuantity, "__buyShares: Shares received < _minSharesQuantity");
 
         if (_hasSharesActionTimelock) {
             acctToLastSharesBoughtTimestamp[_buyer] = block.timestamp;
@@ -757,15 +675,9 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     }
 
     /// @dev Helper for Extension actions immediately prior to issuing shares
-    function __preBuySharesHook(
-        address _buyer,
-        uint256 _investmentAmount,
-        uint256 _gav
-    ) private {
+    function __preBuySharesHook(address _buyer, uint256 _investmentAmount, uint256 _gav) private {
         IFeeManager(getFeeManager()).invokeHook(
-            IFeeManager.FeeHook.PreBuyShares,
-            abi.encode(_buyer, _investmentAmount),
-            _gav
+            IFeeManager.FeeHook.PreBuyShares, abi.encode(_buyer, _investmentAmount), _gav
         );
     }
 
@@ -781,9 +693,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     ) private {
         uint256 gav = _preBuySharesGav.add(_investmentAmount);
         IFeeManager(getFeeManager()).invokeHook(
-            IFeeManager.FeeHook.PostBuyShares,
-            abi.encode(_buyer, _investmentAmount, _sharesIssued),
-            gav
+            IFeeManager.FeeHook.PostBuyShares, abi.encode(_buyer, _investmentAmount, _sharesIssued), gav
         );
 
         IPolicyManager(getPolicyManager()).validatePolicies(
@@ -826,25 +736,14 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256[] calldata _payoutAssetPercentages
     ) external locksReentrance returns (uint256[] memory payoutAmounts_) {
         address canonicalSender = __msgSender();
-        require(
-            _payoutAssets.length == _payoutAssetPercentages.length,
-            "redeemSharesForSpecificAssets: Unequal arrays"
-        );
-        require(
-            _payoutAssets.isUniqueSet(),
-            "redeemSharesForSpecificAssets: Duplicate payout asset"
-        );
+        require(_payoutAssets.length == _payoutAssetPercentages.length, "redeemSharesForSpecificAssets: Unequal arrays");
+        require(_payoutAssets.isUniqueSet(), "redeemSharesForSpecificAssets: Duplicate payout asset");
 
         uint256 gav = calcGav();
 
         IVault vaultProxyContract = IVault(getVaultProxy());
-        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
-            vaultProxyContract,
-            canonicalSender,
-            _sharesQuantity,
-            true,
-            gav
-        );
+        (uint256 sharesToRedeem, uint256 sharesSupply) =
+            __redeemSharesSetup(vaultProxyContract, canonicalSender, _sharesQuantity, true, gav);
 
         payoutAmounts_ = __payoutSpecifiedAssetPercentages(
             vaultProxyContract,
@@ -856,21 +755,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         // Run post-redemption in order to have access to the payoutAmounts
         __postRedeemSharesForSpecificAssetsHook(
-            canonicalSender,
-            _recipient,
-            sharesToRedeem,
-            _payoutAssets,
-            payoutAmounts_,
-            gav
+            canonicalSender, _recipient, sharesToRedeem, _payoutAssets, payoutAmounts_, gav
         );
 
-        emit SharesRedeemed(
-            canonicalSender,
-            _recipient,
-            sharesToRedeem,
-            _payoutAssets,
-            payoutAmounts_
-        );
+        emit SharesRedeemed(canonicalSender, _recipient, sharesToRedeem, _payoutAssets, payoutAmounts_);
 
         return payoutAmounts_;
     }
@@ -899,31 +787,18 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
-    )
-        external
-        locksReentrance
-        returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
-    {
+    ) external locksReentrance returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
         address canonicalSender = __msgSender();
-        require(
-            _additionalAssets.isUniqueSet(),
-            "redeemSharesInKind: _additionalAssets contains duplicates"
-        );
-        require(
-            _assetsToSkip.isUniqueSet(),
-            "redeemSharesInKind: _assetsToSkip contains duplicates"
-        );
+        require(_additionalAssets.isUniqueSet(), "redeemSharesInKind: _additionalAssets contains duplicates");
+        require(_assetsToSkip.isUniqueSet(), "redeemSharesInKind: _assetsToSkip contains duplicates");
 
         // Parse the payout assets given optional params to add or skip assets.
         // Note that there is no validation that the _additionalAssets are known assets to
         // the protocol. This means that the redeemer could specify a malicious asset,
         // but since all state-changing, user-callable functions on this contract share the
         // non-reentrant modifier, there is nowhere to perform a reentrancy attack.
-        payoutAssets_ = __parseRedemptionPayoutAssets(
-            IVault(vaultProxy).getTrackedAssets(),
-            _additionalAssets,
-            _assetsToSkip
-        );
+        payoutAssets_ =
+            __parseRedemptionPayoutAssets(IVault(vaultProxy).getTrackedAssets(), _additionalAssets, _assetsToSkip);
 
         // If protocol fee shares will be auto-bought back, attempt to calculate GAV to pass into fees,
         // as we will require GAV later during the buyback.
@@ -938,39 +813,21 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             }
         }
 
-        (uint256 sharesToRedeem, uint256 sharesSupply) = __redeemSharesSetup(
-            IVault(vaultProxy),
-            canonicalSender,
-            _sharesQuantity,
-            false,
-            gavOrZero
-        );
+        (uint256 sharesToRedeem, uint256 sharesSupply) =
+            __redeemSharesSetup(IVault(vaultProxy), canonicalSender, _sharesQuantity, false, gavOrZero);
 
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
-            payoutAmounts_[i] = ERC20(payoutAssets_[i])
-                .balanceOf(vaultProxy)
-                .mul(sharesToRedeem)
-                .div(sharesSupply);
+            payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(vaultProxy).mul(sharesToRedeem).div(sharesSupply);
 
             // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {
-                IVault(vaultProxy).withdrawAssetTo(
-                    payoutAssets_[i],
-                    _recipient,
-                    payoutAmounts_[i]
-                );
+                IVault(vaultProxy).withdrawAssetTo(payoutAssets_[i], _recipient, payoutAmounts_[i]);
             }
         }
 
-        emit SharesRedeemed(
-            canonicalSender,
-            _recipient,
-            sharesToRedeem,
-            payoutAssets_,
-            payoutAmounts_
-        );
+        emit SharesRedeemed(canonicalSender, _recipient, sharesToRedeem, payoutAssets_, payoutAmounts_);
 
         return (payoutAssets_, payoutAmounts_);
     }
@@ -1042,18 +899,12 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             );
             // Guards against corner case of primitive-to-derivative asset conversion that floors to 0,
             // or redeeming a very low shares amount and/or percentage where asset value owed is 0
-            require(
-                payoutAmounts_[i] > 0,
-                "__payoutSpecifiedAssetPercentages: Zero amount for asset"
-            );
+            require(payoutAmounts_[i] > 0, "__payoutSpecifiedAssetPercentages: Zero amount for asset");
 
             vaultProxyContract.withdrawAssetTo(_payoutAssets[i], _recipient, payoutAmounts_[i]);
         }
 
-        require(
-            percentagesTotal == ONE_HUNDRED_PERCENT,
-            "__payoutSpecifiedAssetPercentages: Percents must total 100%"
-        );
+        require(percentagesTotal == ONE_HUNDRED_PERCENT, "__payoutSpecifiedAssetPercentages: Percents must total 100%");
 
         return payoutAmounts_;
     }
@@ -1066,13 +917,11 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         bool _forSpecifiedAssets,
         uint256 _gavIfCalculated
     ) private allowsPermissionedVaultAction {
-        try
-            IFeeManager(getFeeManager()).invokeHook(
-                IFeeManager.FeeHook.PreRedeemShares,
-                abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
-                _gavIfCalculated
-            )
-        {} catch (bytes memory reason) {
+        try IFeeManager(getFeeManager()).invokeHook(
+            IFeeManager.FeeHook.PreRedeemShares,
+            abi.encode(_redeemer, _sharesToRedeem, _forSpecifiedAssets),
+            _gavIfCalculated
+        ) {} catch (bytes memory reason) {
             emit PreRedeemSharesHookFailed(reason, _redeemer, _sharesToRedeem);
         }
     }
@@ -1090,14 +939,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         IPolicyManager(getPolicyManager()).validatePolicies(
             address(this),
             IPolicyManager.PolicyHook.RedeemSharesForSpecificAssets,
-            abi.encode(
-                _redeemer,
-                _recipient,
-                _sharesToRedeemPostFees,
-                _assets,
-                _assetAmounts,
-                _gavPreRedeem
-            )
+            abi.encode(_redeemer, _recipient, _sharesToRedeemPostFees, _assets, _assetAmounts, _gavPreRedeem)
         );
     }
 
@@ -1129,9 +971,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         if (_sharesQuantityInput == type(uint256).max) {
             sharesToRedeem_ = postFeesRedeemerSharesBalance;
         } else if (postFeesRedeemerSharesBalance < preFeesRedeemerSharesBalance) {
-            sharesToRedeem_ = sharesToRedeem_.sub(
-                preFeesRedeemerSharesBalance.sub(postFeesRedeemerSharesBalance)
-            );
+            sharesToRedeem_ = sharesToRedeem_.sub(preFeesRedeemerSharesBalance.sub(postFeesRedeemerSharesBalance));
         }
 
         // Pay the protocol fee after running other fees, but before burning shares
@@ -1154,19 +994,13 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _sender The sender of the shares
     /// @param _recipient The recipient of the shares
     /// @param _amount The amount of shares
-    function preTransferSharesHook(
-        address _sender,
-        address _recipient,
-        uint256 _amount
-    ) external override {
+    function preTransferSharesHook(address _sender, address _recipient, uint256 _amount) external override {
         address vaultProxyCopy = getVaultProxy();
         require(msg.sender == vaultProxyCopy, "preTransferSharesHook: Only VaultProxy callable");
         __assertSharesActionNotTimelocked(vaultProxyCopy, _sender);
 
         IPolicyManager(getPolicyManager()).validatePolicies(
-            address(this),
-            IPolicyManager.PolicyHook.PreTransferShares,
-            abi.encode(_sender, _recipient, _amount)
+            address(this), IPolicyManager.PolicyHook.PreTransferShares, abi.encode(_sender, _recipient, _amount)
         );
     }
 
@@ -1183,15 +1017,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Deploys a paymaster contract and deposits WETH, enabling gas relaying
     function deployGasRelayPaymaster() external onlyOwnerNotRelayable {
-        require(
-            getGasRelayPaymaster() == address(0),
-            "deployGasRelayPaymaster: Paymaster already deployed"
-        );
+        require(getGasRelayPaymaster() == address(0), "deployGasRelayPaymaster: Paymaster already deployed");
 
         bytes memory constructData = abi.encodeWithSignature("init(address)", getVaultProxy());
-        address paymaster = IBeaconProxyFactory(getGasRelayPaymasterFactory()).deployProxy(
-            constructData
-        );
+        address paymaster = IBeaconProxyFactory(getGasRelayPaymasterFactory()).deployProxy(constructData);
 
         __setGasRelayPaymaster(paymaster);
 
@@ -1211,11 +1040,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Sets the gasRelayPaymaster variable value
     /// @param _nextGasRelayPaymaster The next gasRelayPaymaster value
-    function setGasRelayPaymaster(address _nextGasRelayPaymaster)
-        external
-        override
-        onlyFundDeployer
-    {
+    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external override onlyFundDeployer {
         __setGasRelayPaymaster(_nextGasRelayPaymaster);
     }
 
@@ -1257,12 +1082,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
     /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
-    function getExternalPositionManager()
-        public
-        view
-        override
-        returns (address externalPositionManager_)
-    {
+    function getExternalPositionManager() public view override returns (address externalPositionManager_) {
         return EXTERNAL_POSITION_MANAGER;
     }
 

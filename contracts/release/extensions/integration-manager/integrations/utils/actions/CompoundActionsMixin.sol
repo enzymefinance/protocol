@@ -28,11 +28,7 @@ abstract contract CompoundActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to execute lending
-    function __compoundLend(
-        address _outgoingAsset,
-        uint256 _outgoingAssetAmount,
-        address _incomingAsset
-    ) internal {
+    function __compoundLend(address _outgoingAsset, uint256 _outgoingAssetAmount, address _incomingAsset) internal {
         if (_outgoingAsset == COMPOUND_WETH_TOKEN) {
             IWETH(COMPOUND_WETH_TOKEN).withdraw(_outgoingAssetAmount);
             ICEther(_incomingAsset).mint{value: _outgoingAssetAmount}();
@@ -43,11 +39,7 @@ abstract contract CompoundActionsMixin is AssetHelpers {
     }
 
     /// @dev Helper to execute redeeming
-    function __compoundRedeem(
-        address _outgoingAsset,
-        uint256 _outgoingAssetAmount,
-        address _incomingAsset
-    ) internal {
+    function __compoundRedeem(address _outgoingAsset, uint256 _outgoingAssetAmount, address _incomingAsset) internal {
         ICERC20(_outgoingAsset).redeem(_outgoingAssetAmount);
 
         if (_incomingAsset == COMPOUND_WETH_TOKEN) {

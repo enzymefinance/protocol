@@ -26,8 +26,7 @@ abstract contract ProtocolFeeReserveLibBaseCore is ProxiableProtocolFeeReserveLi
 
     modifier onlyDispatcherOwner() {
         require(
-            msg.sender == IDispatcher(getDispatcher()).getOwner(),
-            "Only the Dispatcher owner can call this function"
+            msg.sender == IDispatcher(getDispatcher()).getOwner(), "Only the Dispatcher owner can call this function"
         );
 
         _;
@@ -49,10 +48,7 @@ abstract contract ProtocolFeeReserveLibBaseCore is ProxiableProtocolFeeReserveLi
     /// @dev This function is absolutely critical. __updateCodeAddress() validates that the
     /// target is a valid Proxiable contract instance.
     /// Does not block _nextProtocolFeeReserveLib from being the same as the current ProtocolFeeReserveLib
-    function setProtocolFeeReserveLib(address _nextProtocolFeeReserveLib)
-        external
-        onlyDispatcherOwner
-    {
+    function setProtocolFeeReserveLib(address _nextProtocolFeeReserveLib) external onlyDispatcherOwner {
         __updateCodeAddress(_nextProtocolFeeReserveLib);
 
         emit ProtocolFeeReserveLibSet(_nextProtocolFeeReserveLib);

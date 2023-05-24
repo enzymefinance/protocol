@@ -59,5 +59,4 @@ jobs:
         uses: actions/setup-node@v3
 
       - name: Check linting & formatting
-        # TODO: Remove `|| true` once `forge fmt` has been applied to all source contracts.
-        run: make lint || true
+        run: make lint

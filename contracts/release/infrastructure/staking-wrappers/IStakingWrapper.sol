@@ -37,18 +37,9 @@ interface IStakingWrapper {
         external
         returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_);
 
-    function withdrawTo(
-        address _to,
-        uint256 _amount,
-        bool _claimRewardsToHolder
-    ) external;
+    function withdrawTo(address _to, uint256 _amount, bool _claimRewardsToHolder) external;
 
-    function withdrawToOnBehalf(
-        address _onBehalf,
-        address _to,
-        uint256 _amount,
-        bool _claimRewardsToHolder
-    ) external;
+    function withdrawToOnBehalf(address _onBehalf, address _to, uint256 _amount, bool _claimRewardsToHolder) external;
 
     // STATE GETTERS
 

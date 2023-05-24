@@ -32,11 +32,7 @@ contract FiduPriceFeed is IDerivativePriceFeed {
     IGoldfinchSeniorPool private immutable GOLDFINCH_SENIOR_POOL_CONTRACT;
     address private immutable USDC;
 
-    constructor(
-        address _fidu,
-        address _goldfinchSeniorPool,
-        address _usdc
-    ) public {
+    constructor(address _fidu, address _goldfinchSeniorPool, address _usdc) public {
         FIDU = _fidu;
         GOLDFINCH_SENIOR_POOL_CONTRACT = IGoldfinchSeniorPool(_goldfinchSeniorPool);
         USDC = _usdc;
@@ -54,12 +50,11 @@ contract FiduPriceFeed is IDerivativePriceFeed {
     {
         require(isSupportedAsset(_derivative), "calcUnderlyingValues: Unsupported derivative");
 
-        uint256 usdcRawAmount = _derivativeAmount
-            .mul(GOLDFINCH_SENIOR_POOL_CONTRACT.sharePrice())
-            .div(FIDU_TO_USDC_DIVISOR);
+        uint256 usdcRawAmount =
+            _derivativeAmount.mul(GOLDFINCH_SENIOR_POOL_CONTRACT.sharePrice()).div(FIDU_TO_USDC_DIVISOR);
 
-        uint256 withdrawFeeDenominator = IGoldfinchConfig(GOLDFINCH_SENIOR_POOL_CONTRACT.config())
-            .getNumber(WITHDRAW_FEE_DENOMINATOR_CONFIG_INDEX);
+        uint256 withdrawFeeDenominator =
+            IGoldfinchConfig(GOLDFINCH_SENIOR_POOL_CONTRACT.config()).getNumber(WITHDRAW_FEE_DENOMINATOR_CONFIG_INDEX);
         uint256 usdcWithdrawFee = usdcRawAmount.div(withdrawFeeDenominator);
 
         underlyings_ = new address[](1);

@@ -66,19 +66,13 @@ interface ISolvV2InitialConvertibleOfferingMarket {
         bool isValid;
     }
 
-    function buy(uint24 _offeringId, uint128 _units)
-        external
-        payable
-        returns (uint256 amount_, uint128 fee_);
+    function buy(uint24 _offeringId, uint128 _units) external payable returns (uint256 amount_, uint128 fee_);
 
     function getPrice(uint24 _offeringId) external view returns (uint256 price_);
 
     function markets(address _voucher) external view returns (Market memory market_);
 
-    function mintParameters(uint24 _offeringId)
-        external
-        view
-        returns (MintParameter memory mintParameter_);
+    function mintParameters(uint24 _offeringId) external view returns (MintParameter memory mintParameter_);
 
     function offer(
         address _voucher,

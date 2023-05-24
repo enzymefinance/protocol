@@ -25,10 +25,7 @@ abstract contract ArbitraryLoanPositionLibBase1 {
     event LoanClosed();
 
     event LoanConfigured(
-        address indexed borrower,
-        address indexed loanAsset,
-        address indexed accountingModule,
-        bytes32 description
+        address indexed borrower, address indexed loanAsset, address indexed accountingModule, bytes32 description
     );
 
     event TotalBorrowedUpdated(uint256 totalBorrowed);

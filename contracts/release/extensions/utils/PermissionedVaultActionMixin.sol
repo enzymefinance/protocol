@@ -23,8 +23,7 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _externalPosition The external position to be added
     function __addExternalPosition(address _comptrollerProxy, address _externalPosition) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.AddExternalPosition,
-            abi.encode(_externalPosition)
+            IVault.VaultAction.AddExternalPosition, abi.encode(_externalPosition)
         );
     }
 
@@ -32,10 +31,7 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _asset The asset to add
     function __addTrackedAsset(address _comptrollerProxy, address _asset) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.AddTrackedAsset,
-            abi.encode(_asset)
-        );
+        IComptroller(_comptrollerProxy).permissionedVaultAction(IVault.VaultAction.AddTrackedAsset, abi.encode(_asset));
     }
 
     /// @notice Grants an allowance to a spender to use a fund's asset
@@ -43,15 +39,11 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _asset The asset for which to grant an allowance
     /// @param _target The spender of the allowance
     /// @param _amount The amount of the allowance
-    function __approveAssetSpender(
-        address _comptrollerProxy,
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) internal {
+    function __approveAssetSpender(address _comptrollerProxy, address _asset, address _target, uint256 _amount)
+        internal
+    {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.ApproveAssetSpender,
-            abi.encode(_asset, _target, _amount)
+            IVault.VaultAction.ApproveAssetSpender, abi.encode(_asset, _target, _amount)
         );
     }
 
@@ -59,14 +51,9 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _target The account for which to burn shares
     /// @param _amount The amount of shares to burn
-    function __burnShares(
-        address _comptrollerProxy,
-        address _target,
-        uint256 _amount
-    ) internal {
+    function __burnShares(address _comptrollerProxy, address _target, uint256 _amount) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.BurnShares,
-            abi.encode(_target, _amount)
+            IVault.VaultAction.BurnShares, abi.encode(_target, _amount)
         );
     }
 
@@ -74,36 +61,25 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _data The encoded data for the call
     function __callOnExternalPosition(address _comptrollerProxy, bytes memory _data) internal {
-        IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.CallOnExternalPosition,
-            _data
-        );
+        IComptroller(_comptrollerProxy).permissionedVaultAction(IVault.VaultAction.CallOnExternalPosition, _data);
     }
 
     /// @notice Mints fund shares to a particular account
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _target The account to which to mint shares
     /// @param _amount The amount of shares to mint
-    function __mintShares(
-        address _comptrollerProxy,
-        address _target,
-        uint256 _amount
-    ) internal {
+    function __mintShares(address _comptrollerProxy, address _target, uint256 _amount) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.MintShares,
-            abi.encode(_target, _amount)
+            IVault.VaultAction.MintShares, abi.encode(_target, _amount)
         );
     }
 
     /// @notice Removes an external position from the vaultProxy
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @param _externalPosition The ExternalPosition to remove
-    function __removeExternalPosition(address _comptrollerProxy, address _externalPosition)
-        internal
-    {
+    function __removeExternalPosition(address _comptrollerProxy, address _externalPosition) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.RemoveExternalPosition,
-            abi.encode(_externalPosition)
+            IVault.VaultAction.RemoveExternalPosition, abi.encode(_externalPosition)
         );
     }
 
@@ -112,8 +88,7 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _asset The asset to remove
     function __removeTrackedAsset(address _comptrollerProxy, address _asset) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.RemoveTrackedAsset,
-            abi.encode(_asset)
+            IVault.VaultAction.RemoveTrackedAsset, abi.encode(_asset)
         );
     }
 
@@ -122,15 +97,9 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _from The account from which to transfer shares
     /// @param _to The account to which to transfer shares
     /// @param _amount The amount of shares to transfer
-    function __transferShares(
-        address _comptrollerProxy,
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal {
+    function __transferShares(address _comptrollerProxy, address _from, address _to, uint256 _amount) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.TransferShares,
-            abi.encode(_from, _to, _amount)
+            IVault.VaultAction.TransferShares, abi.encode(_from, _to, _amount)
         );
     }
 
@@ -139,15 +108,9 @@ abstract contract PermissionedVaultActionMixin {
     /// @param _asset The asset to withdraw
     /// @param _target The account to which to withdraw the asset
     /// @param _amount The amount of asset to withdraw
-    function __withdrawAssetTo(
-        address _comptrollerProxy,
-        address _asset,
-        address _target,
-        uint256 _amount
-    ) internal {
+    function __withdrawAssetTo(address _comptrollerProxy, address _asset, address _target, uint256 _amount) internal {
         IComptroller(_comptrollerProxy).permissionedVaultAction(
-            IVault.VaultAction.WithdrawAssetTo,
-            abi.encode(_asset, _target, _amount)
+            IVault.VaultAction.WithdrawAssetTo, abi.encode(_asset, _target, _amount)
         );
     }
 }

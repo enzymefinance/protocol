@@ -21,29 +21,16 @@ import "../../../../../utils/AssetHelpers.sol";
 /// @notice Mixin contract for interacting with the PoolTogether lending functions
 abstract contract PoolTogetherV4ActionsMixin is AssetHelpers {
     /// @dev Helper to execute lending
-    function __poolTogetherV4Lend(
-        address _recipient,
-        address _token,
-        uint256 _amount,
-        address _ptToken
-    ) internal {
+    function __poolTogetherV4Lend(address _recipient, address _token, uint256 _amount, address _ptToken) internal {
         address prizePoolAddress = IPoolTogetherV4Ticket(_ptToken).controller();
 
         __approveAssetMaxAsNeeded(_token, prizePoolAddress, _amount);
 
-        IPoolTogetherV4PrizePool(prizePoolAddress).depositToAndDelegate(
-            _recipient,
-            _amount,
-            _recipient
-        );
+        IPoolTogetherV4PrizePool(prizePoolAddress).depositToAndDelegate(_recipient, _amount, _recipient);
     }
 
     /// @dev Helper to execute redeeming
-    function __poolTogetherV4Redeem(
-        address _recipient,
-        address _ptToken,
-        uint256 _amount
-    ) internal {
+    function __poolTogetherV4Redeem(address _recipient, address _ptToken, uint256 _amount) internal {
         address prizePoolAddress = IPoolTogetherV4Ticket(_ptToken).controller();
 
         IPoolTogetherV4PrizePool(prizePoolAddress).withdrawFrom(_recipient, _amount);
@@ -56,10 +43,6 @@ abstract contract PoolTogetherV4ActionsMixin is AssetHelpers {
         uint32[] memory _drawIds,
         bytes memory _winningPicks
     ) internal {
-        IPoolTogetherV4PrizeDistributor(_prizeDistributorAddress).claim(
-            _recipient,
-            _drawIds,
-            _winningPicks
-        );
+        IPoolTogetherV4PrizeDistributor(_prizeDistributorAddress).claim(_recipient, _drawIds, _winningPicks);
     }
 }

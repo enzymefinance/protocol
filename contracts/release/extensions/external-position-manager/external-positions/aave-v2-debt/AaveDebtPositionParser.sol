@@ -33,11 +33,7 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(
-        address _externalPosition,
-        uint256 _actionId,
-        bytes memory _encodedActionArgs
-    )
+    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         override
         returns (
@@ -49,32 +45,28 @@ contract AaveDebtPositionParser is IExternalPositionParser, AaveDebtPositionData
         if (_actionId == uint256(IAaveDebtPosition.Actions.AddCollateral)) {
             // No need to validate aTokens, as the worst case would be that this function is used
             // to indirectly add and track a misc supported asset
-            (assetsToTransfer_, amountsToTransfer_) = __decodeAddCollateralActionArgs(
-                _encodedActionArgs
-            );
+            (assetsToTransfer_, amountsToTransfer_) = __decodeAddCollateralActionArgs(_encodedActionArgs);
             __validateSupportedAssets(assetsToTransfer_);
         } else if (_actionId == uint256(IAaveDebtPosition.Actions.Borrow)) {
             // No need to validate tokens, as `borrow()` call to Aave will fail for invalid tokens,
             // and even if Aave logic changes to fail silently, the worst case would be that
             // this function is used to indirectly add and track a misc supported asset
-            (assetsToReceive_, ) = __decodeBorrowActionArgs(_encodedActionArgs);
+            (assetsToReceive_,) = __decodeBorrowActionArgs(_encodedActionArgs);
             __validateSupportedAssets(assetsToReceive_);
         } else if (_actionId == uint256(IAaveDebtPosition.Actions.RemoveCollateral)) {
             // Lib validates that each is a valid collateral asset
-            (assetsToReceive_, ) = __decodeRemoveCollateralActionArgs(_encodedActionArgs);
+            (assetsToReceive_,) = __decodeRemoveCollateralActionArgs(_encodedActionArgs);
         } else if (_actionId == uint256(IAaveDebtPosition.Actions.RepayBorrow)) {
             // Lib validates that each is a valid borrowed asset
-            (assetsToTransfer_, amountsToTransfer_) = __decodeRepayBorrowActionArgs(
-                _encodedActionArgs
-            );
+            (assetsToTransfer_, amountsToTransfer_) = __decodeRepayBorrowActionArgs(_encodedActionArgs);
 
             for (uint256 i; i < assetsToTransfer_.length; i++) {
                 if (amountsToTransfer_[i] == type(uint256).max) {
                     // Transfers the full repay amount to the external position,
                     // which will still call `repay()` on the lending pool with max uint.
                     // This is fine, because `repay()` only uses up to the full repay amount.
-                    address debtToken = IAaveDebtPosition(_externalPosition)
-                        .getDebtTokenForBorrowedAsset(assetsToTransfer_[i]);
+                    address debtToken =
+                        IAaveDebtPosition(_externalPosition).getDebtTokenForBorrowedAsset(assetsToTransfer_[i]);
                     amountsToTransfer_[i] = ERC20(debtToken).balanceOf(_externalPosition);
                 }
             }

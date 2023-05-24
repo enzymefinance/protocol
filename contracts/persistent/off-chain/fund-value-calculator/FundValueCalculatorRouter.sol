@@ -27,11 +27,7 @@ contract FundValueCalculatorRouter {
 
     mapping(address => address) private fundDeployerToFundValueCalculator;
 
-    constructor(
-        address _dispatcher,
-        address[] memory _fundDeployers,
-        address[] memory _fundValueCalculators
-    ) public {
+    constructor(address _dispatcher, address[] memory _fundDeployers, address[] memory _fundValueCalculators) public {
         DISPATCHER = _dispatcher;
 
         __setFundValueCalculators(_fundDeployers, _fundValueCalculators);
@@ -43,10 +39,7 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return gav_ The GAV quoted in the denomination asset
-    function calcGav(address _vaultProxy)
-        external
-        returns (address denominationAsset_, uint256 gav_)
-    {
+    function calcGav(address _vaultProxy) external returns (address denominationAsset_, uint256 gav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcGav(_vaultProxy);
     }
 
@@ -54,12 +47,8 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return gav_ The GAV quoted in _quoteAsset
-    function calcGavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        returns (uint256 gav_)
-    {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcGavInAsset(_vaultProxy, _quoteAsset);
+    function calcGavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 gav_) {
+        return getFundValueCalculatorForVault(_vaultProxy).calcGavInAsset(_vaultProxy, _quoteAsset);
     }
 
     /// @notice Calculates the gross value of one shares unit (10 ** 18) for a given fund
@@ -81,21 +70,14 @@ contract FundValueCalculatorRouter {
         external
         returns (uint256 grossShareValue_)
     {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcGrossShareValueInAsset(
-                _vaultProxy,
-                _quoteAsset
-            );
+        return getFundValueCalculatorForVault(_vaultProxy).calcGrossShareValueInAsset(_vaultProxy, _quoteAsset);
     }
 
     /// @notice Calculates the NAV for a given fund
     /// @param _vaultProxy The VaultProxy of the fund
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return nav_ The NAV quoted in the denomination asset
-    function calcNav(address _vaultProxy)
-        external
-        returns (address denominationAsset_, uint256 nav_)
-    {
+    function calcNav(address _vaultProxy) external returns (address denominationAsset_, uint256 nav_) {
         return getFundValueCalculatorForVault(_vaultProxy).calcNav(_vaultProxy);
     }
 
@@ -103,12 +85,8 @@ contract FundValueCalculatorRouter {
     /// @param _vaultProxy The VaultProxy of the fund
     /// @param _quoteAsset The quote asset
     /// @return nav_ The NAV quoted in _quoteAsset
-    function calcNavInAsset(address _vaultProxy, address _quoteAsset)
-        external
-        returns (uint256 nav_)
-    {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcNavInAsset(_vaultProxy, _quoteAsset);
+    function calcNavInAsset(address _vaultProxy, address _quoteAsset) external returns (uint256 nav_) {
+        return getFundValueCalculatorForVault(_vaultProxy).calcNavInAsset(_vaultProxy, _quoteAsset);
     }
 
     /// @notice Calculates the net value of one shares unit (10 ** 18) for a given fund
@@ -130,11 +108,7 @@ contract FundValueCalculatorRouter {
         external
         returns (uint256 netShareValue_)
     {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcNetShareValueInAsset(
-                _vaultProxy,
-                _quoteAsset
-            );
+        return getFundValueCalculatorForVault(_vaultProxy).calcNetShareValueInAsset(_vaultProxy, _quoteAsset);
     }
 
     /// @notice Calculates the net value of all shares held by a specified account
@@ -146,11 +120,7 @@ contract FundValueCalculatorRouter {
         external
         returns (address denominationAsset_, uint256 netValue_)
     {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolder(
-                _vaultProxy,
-                _sharesHolder
-            );
+        return getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolder(_vaultProxy, _sharesHolder);
     }
 
     /// @notice Calculates the net value of all shares held by a specified account, quoted in a given asset
@@ -158,17 +128,13 @@ contract FundValueCalculatorRouter {
     /// @param _sharesHolder The account holding shares
     /// @param _quoteAsset The quote asset
     /// @return netValue_ The net value of all shares held by _sharesHolder quoted in _quoteAsset
-    function calcNetValueForSharesHolderInAsset(
-        address _vaultProxy,
-        address _sharesHolder,
-        address _quoteAsset
-    ) external returns (uint256 netValue_) {
-        return
-            getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolderInAsset(
-                _vaultProxy,
-                _sharesHolder,
-                _quoteAsset
-            );
+    function calcNetValueForSharesHolderInAsset(address _vaultProxy, address _sharesHolder, address _quoteAsset)
+        external
+        returns (uint256 netValue_)
+    {
+        return getFundValueCalculatorForVault(_vaultProxy).calcNetValueForSharesHolderInAsset(
+            _vaultProxy, _sharesHolder, _quoteAsset
+        );
     }
 
     // PUBLIC FUNCTIONS
@@ -185,10 +151,7 @@ contract FundValueCalculatorRouter {
         require(fundDeployer != address(0), "getFundValueCalculatorForVault: Invalid _vaultProxy");
 
         address fundValueCalculator = getFundValueCalculatorForFundDeployer(fundDeployer);
-        require(
-            fundValueCalculator != address(0),
-            "getFundValueCalculatorForVault: No FundValueCalculator set"
-        );
+        require(fundValueCalculator != address(0), "getFundValueCalculatorForVault: No FundValueCalculator set");
 
         return IFundValueCalculator(fundValueCalculator);
     }
@@ -201,26 +164,22 @@ contract FundValueCalculatorRouter {
     /// @param _fundDeployers The FundDeployer instances
     /// @param _fundValueCalculators The FundValueCalculator instances corresponding
     /// to each instance in _fundDeployers
-    function setFundValueCalculators(
-        address[] memory _fundDeployers,
-        address[] memory _fundValueCalculators
-    ) external {
+    function setFundValueCalculators(address[] memory _fundDeployers, address[] memory _fundValueCalculators)
+        external
+    {
         require(
-            msg.sender == IDispatcher(getDispatcher()).getOwner(),
-            "Only the Dispatcher owner can call this function"
+            msg.sender == IDispatcher(getDispatcher()).getOwner(), "Only the Dispatcher owner can call this function"
         );
 
         __setFundValueCalculators(_fundDeployers, _fundValueCalculators);
     }
 
     /// @dev Helper to set FundValueCalculator addresses respectively for given FundDeployers
-    function __setFundValueCalculators(
-        address[] memory _fundDeployers,
-        address[] memory _fundValueCalculators
-    ) private {
+    function __setFundValueCalculators(address[] memory _fundDeployers, address[] memory _fundValueCalculators)
+        private
+    {
         require(
-            _fundDeployers.length == _fundValueCalculators.length,
-            "__setFundValueCalculators: Unequal array lengths"
+            _fundDeployers.length == _fundValueCalculators.length, "__setFundValueCalculators: Unequal array lengths"
         );
 
         for (uint256 i; i < _fundDeployers.length; i++) {

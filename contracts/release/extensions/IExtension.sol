@@ -19,15 +19,7 @@ interface IExtension {
 
     function deactivateForFund() external;
 
-    function receiveCallFromComptroller(
-        address _caller,
-        uint256 _actionId,
-        bytes calldata _callArgs
-    ) external;
+    function receiveCallFromComptroller(address _caller, uint256 _actionId, bytes calldata _callArgs) external;
 
-    function setConfigForFund(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        bytes calldata _configData
-    ) external;
+    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata _configData) external;
 }

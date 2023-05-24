@@ -21,10 +21,7 @@ import "../utils/AdapterBase.sol";
 contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     address private immutable YEARN_VAULT_V2_PRICE_FEED;
 
-    constructor(address _integrationManager, address _yearnVaultV2PriceFeed)
-        public
-        AdapterBase(_integrationManager)
-    {
+    constructor(address _integrationManager, address _yearnVaultV2PriceFeed) public AdapterBase(_integrationManager) {
         YEARN_VAULT_V2_PRICE_FEED = _yearnVaultV2PriceFeed;
     }
 
@@ -35,21 +32,14 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     /// yVault v2 contracts can update logic, this protects against a future implementation in
     /// which a partial underlying deposit amount is used if the desired amount exceeds the
     /// deposit limit, for example.
-    function lend(
-        address _vaultProxy,
-        bytes calldata,
-        bytes calldata _assetData
-    )
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
         // More efficient to parse all from _assetData
-        (
-            address[] memory spendAssets,
-            uint256[] memory spendAssetAmounts,
-            address[] memory incomingAssets
-        ) = __decodeAssetData(_assetData);
+        (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
+            __decodeAssetData(_assetData);
 
         __yearnVaultV2Lend(_vaultProxy, incomingAssets[0], spendAssets[0], spendAssetAmounts[0]);
     }
@@ -61,34 +51,20 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     /// @dev The amount of yVault shares to be redeemed can be adjusted in yVault.withdraw()
     /// depending on the available underlying balance, so we must send unredeemed yVault shares
     /// back to the _vaultProxy
-    function redeem(
-        address _vaultProxy,
-        bytes calldata _actionData,
-        bytes calldata _assetData
-    )
+    function redeem(address _vaultProxy, bytes calldata _actionData, bytes calldata _assetData)
         external
         onlyIntegrationManager
         postActionSpendAssetsTransferHandler(_vaultProxy, _assetData)
     {
-        (
-            address yVault,
-            uint256 maxOutgoingYVaultSharesAmount,
-            ,
-            uint256 slippageToleranceBps
-        ) = __decodeRedeemCallArgs(_actionData);
+        (address yVault, uint256 maxOutgoingYVaultSharesAmount,, uint256 slippageToleranceBps) =
+            __decodeRedeemCallArgs(_actionData);
 
-        __yearnVaultV2Redeem(
-            _vaultProxy,
-            yVault,
-            maxOutgoingYVaultSharesAmount,
-            slippageToleranceBps
-        );
+        __yearnVaultV2Redeem(_vaultProxy, yVault, maxOutgoingYVaultSharesAmount, slippageToleranceBps);
     }
 
     /// @dev Helper to get the underlying for a given Yearn Vault
     function __getUnderlyingForYVault(address _yVault) private view returns (address underlying_) {
-        return
-            YearnVaultV2PriceFeed(getYearnVaultV2PriceFeed()).getUnderlyingForDerivative(_yVault);
+        return YearnVaultV2PriceFeed(getYearnVaultV2PriceFeed()).getUnderlyingForDerivative(_yVault);
     }
 
     /////////////////////////////
@@ -104,11 +80,7 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     /// @return spendAssetAmounts_ The max asset amounts to spend in the call
     /// @return incomingAssets_ The assets to receive in the call
     /// @return minIncomingAssetAmounts_ The min asset amounts to receive in the call
-    function parseAssetsForAction(
-        address,
-        bytes4 _selector,
-        bytes calldata _actionData
-    )
+    function parseAssetsForAction(address, bytes4 _selector, bytes calldata _actionData)
         external
         view
         override
@@ -142,11 +114,8 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            address yVault,
-            uint256 outgoingUnderlyingAmount,
-            uint256 minIncomingYVaultSharesAmount
-        ) = __decodeLendCallArgs(_actionData);
+        (address yVault, uint256 outgoingUnderlyingAmount, uint256 minIncomingYVaultSharesAmount) =
+            __decodeLendCallArgs(_actionData);
 
         address underlying = __getUnderlyingForYVault(yVault);
         require(underlying != address(0), "__parseAssetsForLend: Unsupported yVault");
@@ -185,12 +154,8 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (
-            address yVault,
-            uint256 maxOutgoingYVaultSharesAmount,
-            uint256 minIncomingUnderlyingAmount,
-
-        ) = __decodeRedeemCallArgs(_actionData);
+        (address yVault, uint256 maxOutgoingYVaultSharesAmount, uint256 minIncomingUnderlyingAmount,) =
+            __decodeRedeemCallArgs(_actionData);
 
         address underlying = __getUnderlyingForYVault(yVault);
         require(underlying != address(0), "__parseAssetsForRedeem: Unsupported yVault");
@@ -224,11 +189,7 @@ contract YearnVaultV2Adapter is AdapterBase, YearnVaultV2ActionsMixin {
     function __decodeLendCallArgs(bytes memory _actionData)
         private
         pure
-        returns (
-            address yVault_,
-            uint256 outgoingUnderlyingAmount_,
-            uint256 minIncomingYVaultSharesAmount_
-        )
+        returns (address yVault_, uint256 outgoingUnderlyingAmount_, uint256 minIncomingYVaultSharesAmount_)
     {
         return abi.decode(_actionData, (address, uint256, uint256));
     }

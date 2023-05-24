@@ -20,8 +20,7 @@ import "./GlobalConfigLibBaseCore.sol";
 /// e.g., `GlobalConfigLibBase2 is GlobalConfigLibBase1`
 /// DO NOT EDIT CONTRACT.
 abstract contract GlobalConfigLibBase1 is GlobalConfigLibBaseCore {
-    address internal constant NO_VALIDATION_DUMMY_ADDRESS =
-        0x000000000000000000000000000000000000aaaa;
+    address internal constant NO_VALIDATION_DUMMY_ADDRESS = 0x000000000000000000000000000000000000aaaa;
     // Don't use max, since a max value can be valid
     uint256 internal constant NO_VALIDATION_DUMMY_AMOUNT = type(uint256).max - 1;
 }

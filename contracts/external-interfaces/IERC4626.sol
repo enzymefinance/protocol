@@ -23,17 +23,9 @@ interface IERC4626 is IERC20 {
 
     function mint(uint256 shares_, address _receiver) external returns (uint256 assets_);
 
-    function redeem(
-        uint256 _shares,
-        address _receiver,
-        address _owner
-    ) external returns (uint256 assets_);
+    function redeem(uint256 _shares, address _receiver, address _owner) external returns (uint256 assets_);
 
-    function withdraw(
-        uint256 _assets,
-        address _receiver,
-        address _owner
-    ) external returns (uint256 shares_);
+    function withdraw(uint256 _assets, address _receiver, address _owner) external returns (uint256 shares_);
 
     function convertToAssets(uint256 _shares) external view returns (uint256 assets_);
 

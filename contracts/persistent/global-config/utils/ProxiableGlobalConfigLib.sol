@@ -21,8 +21,7 @@ abstract contract ProxiableGlobalConfigLib is GlobalConfigProxyConstants {
     /// @dev Updates the target of the proxy to be the contract at _nextGlobalConfigLib
     function __updateCodeAddress(address _nextGlobalConfigLib) internal {
         require(
-            ProxiableGlobalConfigLib(_nextGlobalConfigLib).proxiableUUID() ==
-                bytes32(EIP_1822_PROXIABLE_UUID),
+            ProxiableGlobalConfigLib(_nextGlobalConfigLib).proxiableUUID() == bytes32(EIP_1822_PROXIABLE_UUID),
             "__updateCodeAddress: _nextGlobalConfigLib not compatible"
         );
         assembly {
