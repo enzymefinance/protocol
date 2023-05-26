@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";

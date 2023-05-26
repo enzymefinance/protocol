@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -24,10 +24,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Set up node
+        uses: actions/setup-node@v3
+
       - name: Install foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Display config
+        run: forge config
 
       - name: Compile contracts
         run: make artifacts
@@ -40,23 +46,6 @@ jobs:
         env:
           ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
           ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
-
-      - name: Install foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Set up node
-        uses: actions/setup-node@v3
 
       - name: Check linting & formatting
         run: make lint

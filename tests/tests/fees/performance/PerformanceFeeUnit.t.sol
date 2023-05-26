@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-solc-0.8/token/ERC20/IERC20.sol";
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";

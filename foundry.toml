@@ -1,10 +1,12 @@
 [profile.default]
+auto_detect_remappings = false
 libs = ["lib"]
 src = "contracts"
 test = "tests"
 out = "artifacts"
 cache_path = "cache"
 bytecode_hash = "none"
+cbor_metadata = false
 verbosity = 3
 fs_permissions = [{ access = "read", path = "./artifacts"}]
 

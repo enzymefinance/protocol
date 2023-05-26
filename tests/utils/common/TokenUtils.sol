@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import {ERC20 as ERC20Base} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {Test} from "forge-std/Test.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import {ErrorUtils} from "tests/utils/common/ErrorUtils.sol";
 import {EventUtils} from "tests/utils/common/EventUtils.sol";

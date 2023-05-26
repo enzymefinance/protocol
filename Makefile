@@ -17,6 +17,7 @@ ifeq ($(origin .RECIPEPREFIX), undefined)
 endif
 .RECIPEPREFIX = >
 
+GIT := git
 NPX := npx
 CAST := cast
 FORGE := forge
@@ -26,13 +27,18 @@ CONTRACTS_DIR := contracts
 ARTIFACTS_DIR := artifacts
 INTERFACES_DIR := $(TESTS_DIR)/interfaces/internal
 INTERFACES_LICENSE_HEADER := // SPDX-License-Identifier: Unlicense
+INTERFACES_PRAGMA := >=0.6.0 <0.9.0
 
 .PHONY: help
 help: ## Describe useful make targets
 > grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %s\n", $$1, $$2}'
 
 .PHONY: all
-all: build lint test ## Run build, lint & test (default)
+all: install format build ## Run install, format & build (default)
+
+.PHONY: install
+install: ## Install all dependencies
+> $(GIT) submodule update --init --recursive
 
 .PHONY: build
 build: artifacts interfaces ## Build all contract artifacts & interfaces
@@ -57,22 +63,25 @@ format: ## Apply formatting to all contract source files
 > $(FORGE) fmt $(CONTRACTS_DIR) $(TESTS_DIR)
 
 .PHONY: clean
-clean: ## Remove all untracked files and directories
-> git clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache
+clean: ## Remove all untracked files and directories and bust any caches
+> $(GIT) clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache
+> $(FORGE) clean
 
 $(ARTIFACTS_DIR)/: Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > mkdir -p $(@D)
 > # Remove this once the `forge build` command supports a more capable version of the `--skip` option.
 > export FOUNDRY_TEST=this-directory-does-not-exist
-> $(FORGE) build --extra-output-files abi
-> touch $@ 
+> $(FORGE) build --sizes --extra-output-files abi
+> touch $@
 
-$(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR) interfaces.txt
+$(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR)/ interfaces.txt
 > mkdir -p $(@D)
 >
 > # Remove all existing interfaces and abis.
 > find $(INTERFACES_DIR) -type f -name "*.sol" -delete
 > find $(INTERFACES_DIR) -type f -name "*.abi.json" -delete
+>
+> echo "Generating interfaces ..."
 >
 > # Read interfaces.txt line by line and use `cast interface` to generate the interfaces.
 > while read -r line; do
@@ -85,14 +94,14 @@ $(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR) interfaces.txt
 >   output="$$(echo $$line | cut -d ':' -f1 | xargs)"
 >   input="$$(echo $$line | cut -d ':' -f2 | xargs)"
 >   if [[ -z "$$output" || -z "$$input" ]]; then
->     echo "Invalid line format n interfaces.txt ($$line)"     
+>     echo "Invalid line format n interfaces.txt ($$line)"
 >     exit 1;
 >   fi
 >
 >   # Extract the output name of the interface from the output path.
 >   name="$$(basename $$output | cut -d '.' -f1)"
 >   if [[ -z "$$name" ]]; then
->     echo "Invalid output $$output in interfaces.txt"  
+>     echo "Invalid output $$output in interfaces.txt"
 >     exit 1
 >   fi
 >
@@ -116,15 +125,11 @@ $(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR) interfaces.txt
 >     exit 1
 >   fi
 >
->   dir="$$(dirname $$output)"
->   abi="$$dir/$$name.abi.json"
->
->   # Create the parent directory and copy the abi file over.
->   mkdir -p "$$dir"
->   cp "$$path" "$$abi"
+>   # Create the parent directory.
+>   mkdir -p "$$(dirname $$output)"
 >
 >   # Generate the interface using `cast interface`.
->   $(CAST) interface "$$abi" -o "$$output" -n "$$name"
+>   $(CAST) interface "$$path" -o "$$output" -n "$$name" --pragma "$(INTERFACES_PRAGMA)" > /dev/null
 >
 >   # Add a license header to the generated interface.
 >   echo -e "$(INTERFACES_LICENSE_HEADER)\n$$(cat $$output)" > $$output
