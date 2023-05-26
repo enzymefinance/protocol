@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {TokenUtils} from "tests/utils/common/TokenUtils.sol";
+import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IChainlinkAggregator} from "tests/interfaces/external/IChainlinkAggregator.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -13,7 +12,7 @@ enum ChainlinkRateAsset {
     USD
 }
 
-abstract contract AssetUniverseUtils is Test, TokenUtils {
+abstract contract AssetUniverseUtils is CoreUtilsBase {
     function createTestAggregator(uint256 _price) internal returns (IChainlinkAggregator aggregator_) {
         return IChainlinkAggregator(address(new TestAggregator(_price)));
     }

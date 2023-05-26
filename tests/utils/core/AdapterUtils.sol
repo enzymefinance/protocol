@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {TokenUtils} from "tests/utils/common/TokenUtils.sol";
+import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
+import {CommonUtils} from "tests/utils/CommonUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
@@ -14,7 +14,7 @@ enum SpendAssetsHandleType {
     Transfer
 }
 
-abstract contract AdapterUtils is Test {
+abstract contract AdapterUtils is CoreUtilsBase {
     function callOnIntegration(
         IIntegrationManager _integrationManager,
         IComptroller _comptrollerProxy,
@@ -28,12 +28,12 @@ abstract contract AdapterUtils is Test {
         _comptrollerProxy.callOnExtension(integrationManager, actionId, _callArgs);
     }
 
-    function deployMockedAdapter() public returns (MockedAdapter) {
+    function deployMockedAdapter() internal returns (MockedAdapter) {
         return new MockedAdapter();
     }
 }
 
-contract MockedAdapter is TokenUtils {
+contract MockedAdapter is CommonUtils {
     constructor() {}
 
     function encodeAssetsForAction(

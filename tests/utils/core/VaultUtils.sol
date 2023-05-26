@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
@@ -18,7 +18,7 @@ enum MigrationOutHook {
     PostCancel
 }
 
-abstract contract VaultUtils is Test {
+abstract contract VaultUtils is CoreUtilsBase {
     function seedVault(IVault _vaultProxy, IERC20 _dealToken, uint256 _dealAmount) internal {
         deal(address(_vaultProxy), address(_dealToken), _dealAmount);
     }
@@ -131,7 +131,7 @@ abstract contract VaultUtils is Test {
     }
 
     function createVaultFromMockFundDeployer(IDispatcher _dispatcher, address _vaultLibAddress)
-        public
+        internal
         returns (address vaultProxyAddress_)
     {
         address mockFundDeployerAddress = makeAddr("createVaultFromMockFundDeployer: MockFundDeployer");

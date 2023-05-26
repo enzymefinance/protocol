@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IWETH} from "tests/interfaces/external/IWETH.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IExternalPositionFactory} from "tests/interfaces/internal/IExternalPositionFactory.sol";
@@ -28,8 +27,8 @@ interface ICoreDeployment {
     }
 
     struct Config {
-        IWETH wrappedNativeToken;
-        IWETH wethToken;
+        IERC20 wrappedNativeToken;
+        IERC20 wethToken;
         IERC20 mlnToken;
         address gasRelayHub;
         address gasRelayTrustedForwarder;
@@ -67,7 +66,7 @@ interface ICoreDeployment {
     }
 }
 
-abstract contract DeploymentUtils is Test {
+abstract contract DeploymentUtils is CoreUtilsBase {
     function deployRelease(ICoreDeployment.Deployment memory _previousDeployment)
         internal
         returns (ICoreDeployment.Deployment memory)
@@ -115,8 +114,8 @@ abstract contract DeploymentUtils is Test {
     }
 
     function deployRelease(
-        IWETH _wrappedNativeToken,
-        IWETH _wethToken,
+        IERC20 _wrappedNativeToken,
+        IERC20 _wethToken,
         IERC20 _mlnToken,
         address _gasRelayHub,
         address _gasRelayTrustedForwarder,
@@ -328,7 +327,7 @@ abstract contract DeploymentUtils is Test {
     }
 
     function deployGasRelayPaymasterLib(
-        IWETH _wrappedNativeToken,
+        IERC20 _wrappedNativeToken,
         address _gasRelayHub,
         address _gasRelayTrustedForwarder,
         uint256 _gasRelayDepositCooldown,
@@ -397,7 +396,7 @@ abstract contract DeploymentUtils is Test {
         IPolicyManager policyManager;
         IGasRelayPaymasterFactory gasRelayPaymasterFactory;
         IERC20 mlnToken;
-        IWETH wrappedNativeToken;
+        IERC20 wrappedNativeToken;
     }
 
     function deployComptrollerLib(ComptrollerLibParams memory params) internal returns (address) {
@@ -467,10 +466,11 @@ abstract contract DeploymentUtils is Test {
         return IProtocolFeeTracker(addr);
     }
 
-    function deployValueInterpreter(IWETH _wethToken, IFundDeployer _fundDeployer, uint256 _chainlinkStaleRateThreshold)
-        internal
-        returns (IValueInterpreter)
-    {
+    function deployValueInterpreter(
+        IERC20 _wethToken,
+        IFundDeployer _fundDeployer,
+        uint256 _chainlinkStaleRateThreshold
+    ) internal returns (IValueInterpreter) {
         bytes memory args = abi.encode(_fundDeployer, _wethToken, _chainlinkStaleRateThreshold);
         address addr = deployCode("ValueInterpreter.sol", args);
         return IValueInterpreter(addr);
@@ -479,7 +479,7 @@ abstract contract DeploymentUtils is Test {
     function deployVaultLib(
         IERC20 _mlnToken,
         address _vaultMlnBurner,
-        IWETH _wrappedNativeToken,
+        IERC20 _wrappedNativeToken,
         uint256 _vaultPositionsLimit,
         IExternalPositionManager _externalPositionManager,
         IGasRelayPaymasterFactory _gasRelayPaymasterFactory,

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
-abstract contract EventUtils is Test {
+import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
+
+abstract contract EventUtils is CommonUtilsBase {
     function expectEmit(address _emitter) internal {
         vm.expectEmit(true, true, true, true, _emitter);
     }

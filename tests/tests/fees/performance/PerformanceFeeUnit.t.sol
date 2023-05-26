@@ -52,14 +52,14 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
     function test_addFundSettings_failsWithRateOverOneHundredPercent() public {
         vm.expectRevert("addFundSettings: feeRate max exceeded");
         vm.prank(feeManager);
-        performanceFee.addFundSettings(address(0), abi.encode(ONE_HUNDRED_PERCENT + 1, address(0)));
+        performanceFee.addFundSettings(address(0), abi.encode(BPS_ONE_HUNDRED_PERCENT + 1, address(0)));
     }
 
     function test_addFundSettings_success(uint256 _feeRate) public {
         address feeRecipient = makeAddr("FeeRecipient");
         address comptrollerProxy = makeAddr("ComptrollerProxy");
 
-        _feeRate = bound(_feeRate, 1, ONE_HUNDRED_PERCENT);
+        _feeRate = bound(_feeRate, 1, BPS_ONE_HUNDRED_PERCENT);
 
         expectEmit(address(performanceFee));
         emit FundSettingsAdded(comptrollerProxy, _feeRate);

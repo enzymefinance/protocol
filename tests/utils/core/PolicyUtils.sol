@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
-abstract contract PolicyUtils is Test {
+abstract contract PolicyUtils is CoreUtilsBase {
     function encodePolicyManagerConfigData(address[] memory _policies, bytes[] memory _settingsData)
         internal
         pure

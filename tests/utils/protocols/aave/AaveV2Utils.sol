@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {AddOnUtilsBase} from "tests/utils/bases/AddOnUtilsBase.sol";
 
 import {IAaveV2LendingPool} from "tests/interfaces/external/IAaveV2LendingPool.sol";
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
@@ -17,13 +17,13 @@ address constant LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_ETHEREUM = 0xB53C1a33016B
 address constant LENDING_POOL_ADDRESS_POLYGON = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
 address constant LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_POLYGON = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
 
-abstract contract AaveV2Utils is Test {
+abstract contract AaveV2Utils is AddOnUtilsBase {
     function deployAaveV2ATokenListOwnerAndAdapter(
         IAddressListRegistry _addressListRegistry,
         IIntegrationManager _integrationManager,
         address _lendingPool,
         address _lendingPoolAddressProvider
-    ) public returns (IAaveV2Adapter aaveV2Adapter_, IAaveV2ATokenListOwner aaveV2ATokenListOwner_) {
+    ) internal returns (IAaveV2Adapter aaveV2Adapter_, IAaveV2ATokenListOwner aaveV2ATokenListOwner_) {
         uint256 aTokenListId = _addressListRegistry.getListCount();
 
         aaveV2ATokenListOwner_ = deployAaveV2ATokenListOwner({
@@ -47,7 +47,7 @@ abstract contract AaveV2Utils is Test {
         IAddressListRegistry _addressListRegistry,
         uint256 _aTokenListId,
         address _lendingPool
-    ) public returns (IAaveV2Adapter) {
+    ) internal returns (IAaveV2Adapter) {
         bytes memory args = abi.encode(_integrationManager, _addressListRegistry, _aTokenListId, _lendingPool);
         address addr = deployCode("AaveV2Adapter.sol", args);
         return IAaveV2Adapter(addr);
@@ -57,7 +57,7 @@ abstract contract AaveV2Utils is Test {
         IAddressListRegistry _addressListRegistry,
         string memory _listDescription,
         address _lendingPoolAddressProvider
-    ) public returns (IAaveV2ATokenListOwner) {
+    ) internal returns (IAaveV2ATokenListOwner) {
         bytes memory args = abi.encode(_addressListRegistry, _listDescription, _lendingPoolAddressProvider);
         address addr = deployCode("AaveV2ATokenListOwner.sol", args);
         return IAaveV2ATokenListOwner(addr);

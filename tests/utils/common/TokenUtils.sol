@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import {ERC20 as ERC20Base} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {Test} from "forge-std/Test.sol";
-
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
-abstract contract TokenUtils is Test {
+abstract contract TokenUtils is CommonUtilsBase {
     function createTestToken(uint8 _decimals, string memory _name, string memory _symbol)
         internal
         returns (IERC20 token_)

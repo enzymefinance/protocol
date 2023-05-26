@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-/// @title IAaveV2LendingPool interface
-/// @author Enzyme Council <security@enzyme.finance>
 interface IAaveV2LendingPool {
     struct ReserveConfigurationMap {
         //bit 0-15: LTV

@@ -61,11 +61,11 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
         });
 
         // bump performance by sending denom asset to vault
-        uint256 performanceBumpPercent = ONE_PERCENT * 20;
+        uint256 performanceBumpPercent = BPS_ONE_PERCENT * 20;
         deal(
             address(denominationAsset),
             address(vaultProxy),
-            (depositAmount * performanceBumpPercent) / ONE_HUNDRED_PERCENT
+            (depositAmount * performanceBumpPercent) / BPS_ONE_HUNDRED_PERCENT
         );
 
         // redeem some more shares

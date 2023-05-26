@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {ExternalPositionUtils} from "tests/utils/core/ExternalPositionUtils.sol";
+import {AddOnUtilsBase} from "tests/utils/bases/AddOnUtilsBase.sol";
 import {UpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 
-import {IWETH} from "tests/interfaces/external/IWETH.sol";
+import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
@@ -15,75 +13,65 @@ import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStaking
 enum Actions {
     Stake,
     ClaimFees,
-    WithdrawEth
+    SweepEth
+}
+
+enum ClaimFeeTypes {
+    ExecutionLayer,
+    ConsensusLayer,
+    All
 }
 
 address constant STAKING_CONTRACT_ADDRESS_ETHEREUM = 0x0816DF553a89c4bFF7eBfD778A9706a989Dd3Ce3;
 
-abstract contract KilnUtils is Test, ExternalPositionUtils {
-    function deployKilnStaking(
-        address _stakingContract,
-        IWETH _wethToken,
-        IDispatcher _dispatcher,
-        IExternalPositionManager _externalPositionManager,
-        IAddressListRegistry _addressListRegistry
-    )
-        public
-        returns (
-            IKilnStakingPositionLib kilnStakingPositionLib_,
-            IKilnStakingPositionParser kilnStakingPositionParser_,
-            uint256 typeId_
-        )
-    {
-        address[] memory initialItems = new address[](1);
+abstract contract KilnDeploymentUtils is AddOnUtilsBase {
+    function deployKilnStakingPositionLib(IERC20 _wethToken) internal returns (IKilnStakingPositionLib lib_) {
+        bytes memory args = abi.encode(_wethToken);
 
-        initialItems[0] = _stakingContract;
-
-        uint256 stakingContractsListId = _addressListRegistry.createList({
-            _owner: address(_dispatcher),
-            _updateType: uint8(UpdateType.AddAndRemove),
-            _initialItems: initialItems
-        });
-
-        kilnStakingPositionLib_ = deployKilnStakingPositionLib(_wethToken);
-        kilnStakingPositionParser_ = deployKilnStakingPositionParser({
-            _wethToken: _wethToken,
-            _addressListRegistry: _addressListRegistry,
-            _stakingContractsListId: stakingContractsListId
-        });
-
-        string[] memory labels = new string[](1);
-        labels[0] = "KILN_STAKING";
-
-        address[] memory libs = new address[](1);
-        libs[0] = address(kilnStakingPositionLib_);
-
-        address[] memory parsers = new address[](1);
-        parsers[0] = address(kilnStakingPositionParser_);
-
-        uint256[] memory typeIds = registerExternalPositions({
-            _labels: labels,
-            _libs: libs,
-            _parsers: parsers,
-            _externalPositionManager: _externalPositionManager
-        });
-
-        return (kilnStakingPositionLib_, kilnStakingPositionParser_, typeIds[0]);
+        return IKilnStakingPositionLib(deployCode("KilnStakingPositionLib.sol", args));
     }
 
     function deployKilnStakingPositionParser(
         IAddressListRegistry _addressListRegistry,
         uint256 _stakingContractsListId,
-        IWETH _wethToken
-    ) public returns (IKilnStakingPositionParser) {
+        IERC20 _wethToken
+    ) internal returns (IKilnStakingPositionParser parser_) {
         bytes memory args = abi.encode(_addressListRegistry, _stakingContractsListId, _wethToken);
-        address addr = deployCode("KilnStakingPositionParser.sol", args);
-        return IKilnStakingPositionParser(addr);
+
+        return IKilnStakingPositionParser(deployCode("KilnStakingPositionParser.sol", args));
     }
 
-    function deployKilnStakingPositionLib(IWETH _weth) public returns (IKilnStakingPositionLib) {
-        bytes memory args = abi.encode(_weth);
-        address addr = deployCode("KilnStakingPositionLib.sol", args);
-        return IKilnStakingPositionLib(addr);
+    function deployKilnStakingPositionType(
+        IAddressListRegistry _addressListRegistry,
+        IExternalPositionManager _externalPositionManager,
+        address _stakingContract,
+        IERC20 _wethToken
+    ) internal returns (uint256 typeId_, uint256 stakingPositionsListId_) {
+        // Create a new AddressListRegistry list for Kiln StakingContract instances
+        stakingPositionsListId_ = _addressListRegistry.createList({
+            _owner: makeAddr("deployKilnStakingPosition: StakingContractsListOwner"),
+            _updateType: uint8(UpdateType.AddAndRemove),
+            _initialItems: toArray(_stakingContract)
+        });
+
+        // Deploy KilnStakingPosition type contracts
+        address kilnStakingPositionLibAddress = address(deployKilnStakingPositionLib(_wethToken));
+        address kilnStakingPositionParserAddress = address(
+            deployKilnStakingPositionParser({
+                _wethToken: _wethToken,
+                _addressListRegistry: _addressListRegistry,
+                _stakingContractsListId: stakingPositionsListId_
+            })
+        );
+
+        // Register KilnStakingPosition type
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: _externalPositionManager,
+            _label: "KILN_STAKING",
+            _lib: kilnStakingPositionLibAddress,
+            _parser: kilnStakingPositionParserAddress
+        });
+
+        return (typeId_, stakingPositionsListId_);
     }
 }

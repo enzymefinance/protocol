@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import {AddOnUtilsBase} from "tests/utils/bases/AddOnUtilsBase.sol";
 
-import {IWETH} from "tests/interfaces/external/IWETH.sol";
+import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {ICumulativeSlippageTolerancePolicy} from "tests/interfaces/internal/ICumulativeSlippageTolerancePolicy.sol";
 import {IPolicyManager} from "tests/interfaces/internal/IPolicyManager.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
-abstract contract CumulativeSlippageTolerancePolicyUtils is Test {
+abstract contract CumulativeSlippageTolerancePolicyUtils is AddOnUtilsBase {
     function encodeCumulativeSlippageTolerancePolicySettings(uint64 _tolerance)
-        public
+        internal
         pure
         returns (bytes memory settingsData_)
     {
@@ -22,12 +22,12 @@ abstract contract CumulativeSlippageTolerancePolicyUtils is Test {
         IPolicyManager _policyManager,
         IAddressListRegistry _addressListRegistry,
         IValueInterpreter _valueInterpreter,
-        IWETH _wethToken,
+        IERC20 _wethToken,
         uint256 _bypassableAdaptersListId,
         uint256 _tolerancePeriodDuration,
         uint256 _pricelessAssetBypassTimelock,
         uint256 _pricelessAssetBypassTimeLimit
-    ) public returns (ICumulativeSlippageTolerancePolicy) {
+    ) internal returns (ICumulativeSlippageTolerancePolicy) {
         return ICumulativeSlippageTolerancePolicy(
             deployCode(
                 "CumulativeSlippageTolerancePolicy.sol",

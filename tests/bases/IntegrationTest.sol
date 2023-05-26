@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-
-import {CommonUtils} from "tests/utils/CommonUtils.sol";
-import {CoreUtils, ICoreDeployment} from "tests/utils/CoreUtils.sol";
+import {CoreUtils} from "tests/utils/CoreUtils.sol";
+import {ICoreDeployment} from "tests/utils/core/DeploymentUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IWETH} from "tests/interfaces/external/IWETH.sol";
 
-abstract contract IntegrationTest is Test, CoreUtils, CommonUtils {
+abstract contract IntegrationTest is CoreUtils {
     IERC20 internal mlnToken;
-    IWETH internal wethToken;
-    IWETH internal wrappedNativeToken;
+    IERC20 internal wethToken;
+    IERC20 internal wrappedNativeToken;
 
     IERC20 internal standardPrimitive;
     IERC20 internal nonStandardPrimitive;
@@ -23,8 +20,16 @@ abstract contract IntegrationTest is Test, CoreUtils, CommonUtils {
         setUpStandaloneEnvironment();
     }
 
+    function setUpMainnetEnvironment() internal {
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_LATEST, true);
+    }
+
     function setUpMainnetEnvironment(uint256 _forkBlock) internal {
         setUpMainnetEnvironment(_forkBlock, true);
+    }
+
+    function setUpPolygonEnvironment() internal {
+        setUpPolygonEnvironment(POLYGON_BLOCK_LATEST, true);
     }
 
     function setUpPolygonEnvironment(uint256 _forkBlock) internal {
@@ -116,8 +121,8 @@ abstract contract IntegrationTest is Test, CoreUtils, CommonUtils {
         address _ethUsdAggregator
     ) private {
         mlnToken = IERC20(_mlnToken);
-        wethToken = IWETH(_wethToken);
-        wrappedNativeToken = IWETH(_wrappedNativeToken);
+        wethToken = IERC20(_wethToken);
+        wrappedNativeToken = IERC20(_wrappedNativeToken);
 
         vm.label(_mlnToken, "MLN");
         vm.label(_wethToken, "WETH");

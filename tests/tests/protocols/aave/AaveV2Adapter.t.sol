@@ -73,7 +73,7 @@ contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
         lendingPool = LENDING_POOL_ADDRESS_ETHEREUM;
         lendingPoolAddressProvider = LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_ETHEREUM;
 
-        setUpMainnetEnvironment(16733210);
+        setUpMainnetEnvironment();
         setUpAave();
     }
 }
@@ -83,7 +83,7 @@ contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
         lendingPool = LENDING_POOL_ADDRESS_POLYGON;
         lendingPoolAddressProvider = LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_POLYGON;
 
-        setUpPolygonEnvironment(39841068);
+        setUpPolygonEnvironment();
         setUpAave();
     }
 }
