@@ -117,8 +117,7 @@ IKilnStakingPositionLib.sol: KilnStakingPositionLib.abi.json
 IKilnStakingPositionParser.sol: KilnStakingPositionParser.abi.json
 ILiquityDebtPositionLib.sol: LiquityDebtPositionLib.abi.json
 ILiquityDebtPositionParser.sol: LiquityDebtPositionParser.abi.json
-INotionalV2PositionLib.sol: NotionalV2PositionLib.abi.json
-INotionalV2PositionParser.sol: NotionalV2PositionParser.abi.json
+INotionalV3PositionLib.sol: NotionalV2PositionLib.abi.json
 ITheGraphDelegationPositionLib.sol: TheGraphDelegationPositionLib.abi.json
 ITheGraphDelegationPositionParser.sol: TheGraphDelegationPositionParser.abi.json
 IMapleLiquidityPositionLib.sol: MapleLiquidityPositionLib.abi.json

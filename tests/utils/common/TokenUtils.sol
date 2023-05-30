@@ -6,6 +6,10 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TokenUtils is CommonUtilsBase {
+    function assetUnit(IERC20 _asset) internal view returns (uint256 unit_) {
+        return 10 ** _asset.decimals();
+    }
+
     function createTestToken(uint8 _decimals, string memory _name, string memory _symbol)
         internal
         returns (IERC20 token_)

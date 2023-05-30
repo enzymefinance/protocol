@@ -45,9 +45,9 @@ abstract contract IntegrationTest is CoreUtils {
 
         setUpEnvironment({
             _setReleaseLive: _setReleaseLive,
-            _wethToken: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
-            _mlnToken: 0xec67005c4E498Ec7f55E092bd1d35cbC47C91892,
-            _wrappedNativeToken: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,
+            _wethToken: ETHEREUM_WETH,
+            _mlnToken: ETHEREUM_MLN,
+            _wrappedNativeToken: ETHEREUM_WETH,
             _gasRelayHub: 0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D,
             _gasRelayTrustedForwarder: 0xca57e5D6218AeB093D76372B51Ba355CfB3C6Cd0,
             _gasRelayDepositCooldown: 1 days,
@@ -57,7 +57,7 @@ abstract contract IntegrationTest is CoreUtils {
             _vaultMlnBurner: address(0), // TODO: This requires per-network config
             _vaultPositionsLimit: 20,
             _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+            _ethUsdAggregator: ETHEREUM_ETH_USD_AGGREGATOR
         });
     }
 
@@ -66,9 +66,9 @@ abstract contract IntegrationTest is CoreUtils {
 
         setUpEnvironment({
             _setReleaseLive: _setReleaseLive,
-            _wethToken: 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619,
-            _mlnToken: 0xa9f37D84c856fDa3812ad0519Dad44FA0a3Fe207,
-            _wrappedNativeToken: 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270,
+            _wethToken: POLYGON_WETH,
+            _mlnToken: POLYGON_MLN,
+            _wrappedNativeToken: POLYGON_WMATIC,
             _gasRelayHub: address(0),
             _gasRelayTrustedForwarder: address(0),
             _gasRelayDepositCooldown: 1 days,
@@ -78,7 +78,7 @@ abstract contract IntegrationTest is CoreUtils {
             _vaultMlnBurner: address(0), // TODO: This requires per-network config
             _vaultPositionsLimit: 20,
             _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: 0xF9680D99D6C9589e2a93a78A04A279e509205945
+            _ethUsdAggregator: POLYGON_ETH_USD_AGGREGATOR
         });
     }
 
