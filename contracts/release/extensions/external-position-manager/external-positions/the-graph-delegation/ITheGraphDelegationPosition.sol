@@ -9,7 +9,7 @@
 
 import "../../../../../persistent/external-positions/IExternalPosition.sol";
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.0 <0.9.0;
 
 /// @title ITheGraphDelegationPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>

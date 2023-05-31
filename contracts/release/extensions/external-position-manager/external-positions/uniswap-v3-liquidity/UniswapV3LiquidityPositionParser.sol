@@ -10,9 +10,9 @@
 */
 
 import "openzeppelin-solc-0.7/token/ERC721/ERC721.sol";
-import "./interfaces/IExternalPositionParserUniswapV3LiquidityPosition.sol";
-import "./interfaces/IUniswapV3LiquidityPosition.sol";
-import "./interfaces/IValueInterpreterUniswapV3LiquidityPosition.sol";
+import "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import "../IExternalPositionParser.sol";
+import "./IUniswapV3LiquidityPosition.sol";
 import "./UniswapV3LiquidityPositionDataDecoder.sol";
 
 pragma solidity 0.7.6;
@@ -20,10 +20,7 @@ pragma solidity 0.7.6;
 /// @title UniswapV3LiquidityPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for UniswapV3 Liquidity Positions
-contract UniswapV3LiquidityPositionParser is
-    IExternalPositionParserUniswapV3LiquidityPosition,
-    UniswapV3LiquidityPositionDataDecoder
-{
+contract UniswapV3LiquidityPositionParser is IExternalPositionParser, UniswapV3LiquidityPositionDataDecoder {
     address private immutable UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER;
     address private immutable VALUE_INTERPRETER;
 
@@ -106,8 +103,7 @@ contract UniswapV3LiquidityPositionParser is
     /// is available for its underlying token pair. Both of the underlying tokens must be supported,
     /// and at least one must be a supported primitive asset.
     function __poolIsSupportable(address _tokenA, address _tokenB) private view returns (bool isSupportable_) {
-        IValueInterpreterUniswapV3LiquidityPosition valueInterpreterContract =
-            IValueInterpreterUniswapV3LiquidityPosition(getValueInterpreter());
+        IValueInterpreter valueInterpreterContract = IValueInterpreter(getValueInterpreter());
 
         if (valueInterpreterContract.isSupportedPrimitiveAsset(_tokenA)) {
             if (valueInterpreterContract.isSupportedAsset(_tokenB)) {

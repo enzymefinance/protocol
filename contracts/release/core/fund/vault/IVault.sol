@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.0 <0.9.0;
 
 import "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
 import "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";

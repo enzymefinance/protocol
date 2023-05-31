@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 /// @title FeeManager Interface

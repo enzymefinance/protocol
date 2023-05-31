@@ -7,13 +7,13 @@
     file that was distributed with this source code.
 */
 
-import "./IExternalPositionUniswapV3LiquidityPosition.sol";
+import "../../../../../persistent/external-positions/IExternalPosition.sol";
 
-pragma solidity 0.7.6;
+pragma solidity >=0.6.0 <0.9.0;
 
-/// @title IUnis`wapV3LiquidityPosition Interface
+/// @title IUniswapV3LiquidityPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface IUniswapV3LiquidityPosition is IExternalPositionUniswapV3LiquidityPosition {
+interface IUniswapV3LiquidityPosition is IExternalPosition {
     enum UniswapV3LiquidityPositionActions {
         Mint,
         AddLiquidity,

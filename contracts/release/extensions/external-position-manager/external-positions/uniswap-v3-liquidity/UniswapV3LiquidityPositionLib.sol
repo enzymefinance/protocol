@@ -16,8 +16,8 @@ import "openzeppelin-solc-0.7/token/ERC20/SafeERC20.sol";
 import "uniswap-v3-periphery/interfaces/INonfungiblePositionManager.sol";
 import "uniswap-v3-periphery/libraries/PositionValue.sol";
 import "../../../../../persistent/external-positions/uniswap-v3-liquidity/UniswapV3LiquidityPositionLibBase1.sol";
-import "./interfaces/IUniswapV3LiquidityPosition.sol";
-import "./interfaces/IValueInterpreterUniswapV3LiquidityPosition.sol";
+import "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import "./IUniswapV3LiquidityPosition.sol";
 import "./UniswapV3LiquidityPositionDataDecoder.sol";
 
 /// @title UniswapV3LiquidityPositionLib Contract
@@ -303,8 +303,9 @@ contract UniswapV3LiquidityPositionLib is
             }
 
             if (sqrtPriceX96 == 0) {
-                uint256 token0VirtualReserves = IValueInterpreterUniswapV3LiquidityPosition(VALUE_INTERPRETER)
-                    .calcCanonicalAssetValue(token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0);
+                uint256 token0VirtualReserves = IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(
+                    token1, TRUSTED_RATE_INITIAL_VIRTUAL_BALANCE, token0
+                );
 
                 // Adapted from UniswapV3 white paper formula 6.4 <https://uniswap.org/whitepaper-v3.pdf>
                 sqrtPriceX96 = uint160(

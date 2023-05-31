@@ -25,6 +25,7 @@ FORGE := forge
 TESTS_DIR := tests
 CONTRACTS_DIR := contracts
 ARTIFACTS_DIR := artifacts
+INTERFACES_FILE := $(TESTS_DIR)/interfaces/interfaces.txt
 INTERFACES_DIR := $(TESTS_DIR)/interfaces/internal
 INTERFACES_LICENSE_HEADER := // SPDX-License-Identifier: Unlicense
 INTERFACES_PRAGMA := >=0.6.0 <0.9.0
@@ -74,7 +75,7 @@ $(ARTIFACTS_DIR)/: Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > $(FORGE) build --sizes --extra-output-files abi
 > touch $@
 
-$(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR)/ interfaces.txt
+$(INTERFACES_DIR)/: Makefile $(INTERFACES_FILE) $(ARTIFACTS_DIR)/
 > mkdir -p $(@D)
 >
 > # Remove all existing interfaces and abis.
@@ -94,14 +95,14 @@ $(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR)/ interfaces.txt
 >   output="$$(echo $$line | cut -d ':' -f1 | xargs)"
 >   input="$$(echo $$line | cut -d ':' -f2 | xargs)"
 >   if [[ -z "$$output" || -z "$$input" ]]; then
->     echo "Invalid line format n interfaces.txt ($$line)"
+>     echo "Invalid line format in $(INTERFACES_FILE) ($$line)"
 >     exit 1;
 >   fi
 >
 >   # Extract the output name of the interface from the output path.
 >   name="$$(basename $$output | cut -d '.' -f1)"
 >   if [[ -z "$$name" ]]; then
->     echo "Invalid output $$output in interfaces.txt"
+>     echo "Invalid output $$output in $(INTERFACES_FILE)"
 >     exit 1
 >   fi
 >
@@ -119,10 +120,15 @@ $(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR)/ interfaces.txt
 >     path="$$(find $(ARTIFACTS_DIR) -type f -name $$input | head -n 1)"
 >   fi
 >
->   # Check if the source file was found.
+>   # Check if the source file was found. If not, try alternative files based on a pattern (e.g. `Dispatcher.*.abi.json` instead of `Dispatcher.abi.json`).
 >   if [[ -z "$$path" || ! -f "$$path" ]]; then
->     echo "Failed to locate source file for $$input"
->     exit 1
+>     alternative="$$(find $(ARTIFACTS_DIR) -type f -name "$$(basename $$input .abi.json).*.abi.json" | sort -Vr | head -n 1)"
+>     if [[ -z "$$alternative" || ! -f "$$alternative" ]]; then
+>       echo "Failed to locate source file for $$input"
+>       exit 1
+>     else
+>       path="$$alternative"
+>     fi
 >   fi
 >
 >   # Create the parent directory.
@@ -133,6 +139,6 @@ $(INTERFACES_DIR)/: Makefile $(ARTIFACTS_DIR)/ interfaces.txt
 >
 >   # Add a license header to the generated interface.
 >   echo -e "$(INTERFACES_LICENSE_HEADER)\n$$(cat $$output)" > $$output
-> done < "interfaces.txt"
+> done < "$(INTERFACES_FILE)"
 >
 > touch $@
