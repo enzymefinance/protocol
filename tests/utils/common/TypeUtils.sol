@@ -30,6 +30,16 @@ abstract contract TypeUtils is CommonUtilsBase {
         return array_;
     }
 
+    function toArray(address _0, address _1, address _2, address _3) internal pure returns (address[] memory array_) {
+        array_ = new address[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
+
+        return array_;
+    }
+
     // toArray() - uint256
 
     function toArray(uint256 _0) internal pure returns (uint256[] memory array_) {
@@ -52,6 +62,16 @@ abstract contract TypeUtils is CommonUtilsBase {
         array_[0] = _0;
         array_[1] = _1;
         array_[2] = _2;
+
+        return array_;
+    }
+
+    function toArray(uint256 _0, uint256 _1, uint256 _2, uint256 _3) internal pure returns (uint256[] memory array_) {
+        array_ = new uint256[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
 
         return array_;
     }
@@ -82,6 +102,16 @@ abstract contract TypeUtils is CommonUtilsBase {
         return array_;
     }
 
+    function toArray(bytes32 _0, bytes32 _1, bytes32 _2, bytes32 _3) internal pure returns (bytes32[] memory array_) {
+        array_ = new bytes32[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
+
+        return array_;
+    }
+
     // toArray() - bytes
 
     function toArray(bytes memory _0) internal pure returns (bytes[] memory array_) {
@@ -104,6 +134,20 @@ abstract contract TypeUtils is CommonUtilsBase {
         array_[0] = _0;
         array_[1] = _1;
         array_[2] = _2;
+
+        return array_;
+    }
+
+    function toArray(bytes memory _0, bytes memory _1, bytes memory _2, bytes memory _3)
+        internal
+        pure
+        returns (bytes[] memory array_)
+    {
+        array_ = new bytes[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
 
         return array_;
     }
@@ -134,6 +178,20 @@ abstract contract TypeUtils is CommonUtilsBase {
         array_[0] = _0;
         array_[1] = _1;
         array_[2] = _2;
+
+        return array_;
+    }
+
+    function toArray(string memory _0, string memory _1, string memory _2, string memory _3)
+        internal
+        pure
+        returns (string[] memory array_)
+    {
+        array_ = new string[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
 
         return array_;
     }
