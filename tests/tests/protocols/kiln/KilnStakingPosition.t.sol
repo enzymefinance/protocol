@@ -37,6 +37,33 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
         // Switch to a specific block if this becomes an issue.
         setUpMainnetEnvironment();
 
+        // TODO: REMOVE THIS AFTER SUCCESSFUL CONTRACT UPGRADE ON MAINNET
+        // Update our Kiln contracts to their latest versions
+        address councilSafeAddress = 0xb270FE91e8E4b80452fBF1b4704208792A350f53;
+        vm.startPrank(councilSafeAddress);
+        // Upgrade CLFeeDispatcher
+        {
+            address clFeeDispatcherAddress = 0x1c4Ad85fF36D76172Eb8015a3B36858197bb1320;
+            address nextCLFeeDispatcherImplementation = 0x462Dd07A79e5DDfBe0C171449C5c01788d5d03C3;
+            (bool success,) = clFeeDispatcherAddress.call(
+                abi.encodeWithSignature("upgradeTo(address)", nextCLFeeDispatcherImplementation)
+            );
+            require(success);
+        }
+        // Upgrade StakingContract
+        {
+            address nextStakingContractImplementation = 0x0A7272e8573aea8359FEC143ac02AED90F822bD0;
+            bytes memory nextStakingContractUpgradeData =
+                abi.encodeWithSignature("initialize_2(uint256,uint256)", 10000, 10000);
+            (bool success,) = address(stakingContract).call(
+                abi.encodeWithSignature(
+                    "upgradeToAndCall(address,bytes)", nextStakingContractImplementation, nextStakingContractUpgradeData
+                )
+            );
+            require(success);
+        }
+        vm.stopPrank();
+
         // Create a fund, seeded with WETH
         fundOwner = makeAddr("FundOwner");
         (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
@@ -268,36 +295,34 @@ contract ClaimFeesTest is PostStakeTestBase {
         });
     }
 
-    // TODO: Once consensus layer rewards are enabled, activate these tests:
+    function test_successWithAll() public {
+        vm.prank(fundOwner);
+        __claimFees({
+            _stakingContractAddress: address(stakingContract),
+            _publicKeys: toArray(validatorKeyWithRewards),
+            _claimFeesType: ClaimFeeTypes.All
+        });
 
-    // function test_successWithAll() public {
-    //     vm.prank(fundOwner);
-    //     __claimFees({
-    //         _stakingContractAddress: address(stakingContract),
-    //         _publicKeys: toArray(validatorKeyWithRewards),
-    //         _claimFeesType: ClaimFeeTypes.All
-    //     });
+        // Assert vault received the fees, minus operator fee
+        uint256 kilnClFee = __calcKilnFeeForRewardAmount(clRewardAmount);
+        uint256 kilnElFee = __calcKilnFeeForRewardAmount(elRewardAmount);
+        uint256 netFees = (clRewardAmount - kilnClFee) + (elRewardAmount - kilnElFee);
+        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
+    }
 
-    //     // Assert vault received the fees, minus operator fee
-    //     uint256 kilnClFee = __calcKilnFeeForRewardAmount(clRewardAmount);
-    //     uint256 kilnElFee = __calcKilnFeeForRewardAmount(elRewardAmount);
-    //     uint256 netFees = (clRewardAmount - kilnClFee) + (elRewardAmount - kilnElFee);
-    //     assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
-    // }
+    function test_successWithConsensusLayer() public {
+        vm.prank(fundOwner);
+        __claimFees({
+            _stakingContractAddress: address(stakingContract),
+            _publicKeys: toArray(validatorKeyWithRewards),
+            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+        });
 
-    // function test_successWithConsensusLayer() public {
-    //     vm.prank(fundOwner);
-    //     __claimFees({
-    //         _stakingContractAddress: address(stakingContract),
-    //         _publicKeys: toArray(validatorKeyWithRewards),
-    //         _claimFeesType: ClaimFeeTypes.ConsensusLayer
-    //     });
-
-    //     // Assert vault received the fees, minus operator fee
-    //     uint256 kilnFee = __calcKilnFeeForRewardAmount(clRewardAmount);
-    //     uint256 netFees = clRewardAmount - kilnFee;
-    //     assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
-    // }
+        // Assert vault received the fees, minus operator fee
+        uint256 kilnFee = __calcKilnFeeForRewardAmount(clRewardAmount);
+        uint256 netFees = clRewardAmount - kilnFee;
+        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
+    }
 
     function test_successWithExecutionLayer() public {
         vm.prank(fundOwner);
