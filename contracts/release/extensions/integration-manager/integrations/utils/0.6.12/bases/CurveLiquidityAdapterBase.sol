@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../../../../../../external-interfaces/ICurveLiquidityPool.sol";
+import "../../../../../../../external-interfaces/ICurveLiquidityPool.sol";
 import "../actions/CurveLiquidityActionsMixin.sol";
 import "../AdapterBase.sol";
 

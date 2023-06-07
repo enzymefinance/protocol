@@ -9,7 +9,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../release/utils/NominatedOwnerMixin.sol";
+import "../../../utils/0.6.12/NominatedOwnerMixin.sol";
 import "../IArbitraryValueOracle.sol";
 
 /// @title ManualValueOracleLib Contract

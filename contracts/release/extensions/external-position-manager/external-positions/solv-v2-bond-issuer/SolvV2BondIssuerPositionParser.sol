@@ -10,7 +10,7 @@
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/ISolvV2BondPool.sol";
 import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import "../../../../utils/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import "../IExternalPositionParser.sol";
 import "./ISolvV2BondIssuerPosition.sol";
 import "./SolvV2BondIssuerPositionDataDecoder.sol";

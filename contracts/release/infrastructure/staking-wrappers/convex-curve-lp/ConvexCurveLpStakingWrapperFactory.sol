@@ -11,7 +11,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../utils/beacon-proxy/BeaconProxyFactory.sol";
+import "../../../../utils/0.6.12/beacon-proxy/BeaconProxyFactory.sol";
 import "./ConvexCurveLpStakingWrapperLib.sol";
 
 /// @title ConvexCurveLpStakingWrapperFactory Contract

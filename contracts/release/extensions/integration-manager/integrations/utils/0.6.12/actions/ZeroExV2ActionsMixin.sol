@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../../external-interfaces/IZeroExV2.sol";
-import "../../../../../utils/AssetHelpers.sol";
-import "../../../../../utils/MathHelpers.sol";
+import "../../../../../../../external-interfaces/IZeroExV2.sol";
+import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import "../../../../../../../utils/0.6.12/MathHelpers.sol";
 
 /// @title ZeroExV2ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

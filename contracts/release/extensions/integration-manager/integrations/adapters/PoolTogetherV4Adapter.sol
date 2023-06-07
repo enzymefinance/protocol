@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/PoolTogetherV4PriceFeed.sol";
-import "../utils/actions/PoolTogetherV4ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/PoolTogetherV4ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title PoolTogetherV4Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

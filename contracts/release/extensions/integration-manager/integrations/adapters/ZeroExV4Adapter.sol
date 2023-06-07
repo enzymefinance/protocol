@@ -13,9 +13,9 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
-import "../../../../utils/MathHelpers.sol";
-import "../utils/actions/ZeroExV4ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../../../../../utils/0.6.12/MathHelpers.sol";
+import "../utils/0.6.12/actions/ZeroExV4ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title ZeroExV4Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

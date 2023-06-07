@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../utils/FundDeployerOwnerMixin.sol";
-import "../utils/actions/ZeroExV2ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import "../utils/0.6.12/actions/ZeroExV2ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title ZeroExV2Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

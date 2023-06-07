@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../utils/AddressArrayLib.sol";
-import "../utils/actions/ParaSwapV5ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../utils/0.6.12/actions/ParaSwapV5ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title ParaSwapV5Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

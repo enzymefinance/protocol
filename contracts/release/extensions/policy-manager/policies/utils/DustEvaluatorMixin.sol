@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 
 /// @title DustEvaluatorMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

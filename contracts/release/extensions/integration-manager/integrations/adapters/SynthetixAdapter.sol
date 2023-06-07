@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "../utils/actions/SynthetixActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/SynthetixActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

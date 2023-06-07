@@ -13,9 +13,9 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../utils/AssetHelpers.sol";
-import "../IIntegrationAdapter.sol";
-import "./IntegrationSelectors.sol";
+import "../../../../../../utils/0.6.12/AssetHelpers.sol";
+import "../../IIntegrationAdapter.sol";
+import "./../IntegrationSelectors.sol";
 
 /// @title AdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -13,8 +13,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
-import "../../utils/MathHelpers.sol";
+import "../../../utils/0.6.12/MathHelpers.sol";
+import "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
 import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";

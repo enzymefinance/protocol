@@ -16,7 +16,7 @@ import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
-import "../../utils/AddressArrayLib.sol";
+import "../../../utils/0.6.12/AddressArrayLib.sol";
 import "./IStakingWrapper.sol";
 
 /// @title StakingWrapperBase Contract

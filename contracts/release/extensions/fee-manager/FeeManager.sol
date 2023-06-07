@@ -13,9 +13,9 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "../../../utils/0.6.12/AddressArrayLib.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
-import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";
 import "./IFee.sol";

@@ -16,8 +16,8 @@ import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
 import
     "../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
 import "../../../../../external-interfaces/ICompoundV3Configurator.sol";
-import "../utils/actions/CompoundV3ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/CompoundV3ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title CompoundV3Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

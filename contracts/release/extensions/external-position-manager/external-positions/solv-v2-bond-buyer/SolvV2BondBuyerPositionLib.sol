@@ -13,12 +13,12 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../persistent/external-positions/solv-v2-bond-buyer/SolvV2BondBuyerPositionLibBase1.sol";
 import "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import "../../../../utils/AddressArrayLib.sol";
-import "../../../../utils/AssetHelpers.sol";
-import "../../../../utils/Uint256ArrayLib.sol";
+import "../../../../../persistent/external-positions/solv-v2-bond-buyer/SolvV2BondBuyerPositionLibBase1.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/AssetHelpers.sol";
+import "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
 import "./ISolvV2BondBuyerPosition.sol";
 import "./SolvV2BondBuyerPositionDataDecoder.sol";
 

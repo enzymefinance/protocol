@@ -9,7 +9,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../external-interfaces/IBalancerV2Vault.sol";
+import "../../../../../../../external-interfaces/IBalancerV2Vault.sol";
 
 /// @title BalancerV2ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

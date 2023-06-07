@@ -11,13 +11,13 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
 import "../../../../../external-interfaces/IAaveV2IncentivesController.sol";
 import "../../../../../external-interfaces/IAaveV2LendingPool.sol";
 import "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
 import "../../../../../external-interfaces/IAaveV2ProtocolDataProvider.sol";
-import "../../../../utils/AddressArrayLib.sol";
-import "../../../../utils/AssetHelpers.sol";
+import "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/AssetHelpers.sol";
 import "./AaveDebtPositionDataDecoder.sol";
 import "./IAaveDebtPosition.sol";
 

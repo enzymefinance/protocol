@@ -14,15 +14,15 @@ pragma solidity 0.6.12;
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import "../../../../external-interfaces/IWETH.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
 import "../../../../persistent/external-positions/IExternalPosition.sol";
 import "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import "../../../../persistent/vault/VaultLibBase2.sol";
+import "../../../../utils/0.6.12/AddressArrayLib.sol";
 import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
-import "../../../../external-interfaces/IWETH.sol";
-import "../../../utils/AddressArrayLib.sol";
 import "../comptroller/IComptroller.sol";
 import "./IVault.sol";
 

@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../external-interfaces/ICurveMinter.sol";
-import "../../../../../utils/AddressArrayLib.sol";
+import "../../../../../../../external-interfaces/ICurveMinter.sol";
+import "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
 import "./CurveGaugeV2ActionsMixin.sol";
 
 /// @title CurveGaugeV2RewardsHandlerMixin Contract

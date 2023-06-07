@@ -12,10 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "../../../utils/0.6.12/AddressArrayLib.sol";
 import "../../core/fund/comptroller/IComptroller.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import "../../utils/AddressArrayLib.sol";
 import "../utils/ExtensionBase.sol";
 import "./IPolicy.sol";
 import "./IPolicyManager.sol";

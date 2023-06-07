@@ -11,74 +11,61 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import
-    "../../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
-import "../../../../../../external-interfaces/IAaveAToken.sol";
+import "../../../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
+import "../actions/CompoundActionsMixin.sol";
 import "../AdapterBase.sol";
 
-/// @title AaveAdapterBase Contract
+/// @title CompoundAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Base contract for Aave V2 and V3 lending adapters
-/// @dev When lending and redeeming, a small `ROUNDING_BUFFER` is subtracted from the min incoming asset amount.
-/// This is a workaround for problematic quirks in `aToken` balance rounding (due to RayMath and rebasing logic),
-/// which would otherwise lead to tx failures during IntegrationManager validation of incoming asset amounts.
-/// Due to this workaround, an `aToken` value less than `ROUNDING_BUFFER` is not usable in this adapter,
-/// which is fine because those values would not make sense (gas-wise) to lend or redeem.
-abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsumerMixin {
-    using SafeMath for uint256;
+/// @notice Adapter base for Compound v2 and its forks <https://compound.finance/>
+abstract contract CompoundAdapterBase is AdapterBase, CompoundActionsMixin {
+    address private immutable COMPOUND_PRICE_FEED;
 
-    uint256 private constant ROUNDING_BUFFER = 2;
-
-    constructor(address _integrationManager, address _addressListRegistry, uint256 _aTokenListId)
+    constructor(address _integrationManager, address _compoundPriceFeed, address _wethToken)
         public
         AdapterBase(_integrationManager)
-        AddOnlyAddressListOwnerConsumerMixin(_addressListRegistry, _aTokenListId)
-    {}
+        CompoundActionsMixin(_wethToken)
+    {
+        COMPOUND_PRICE_FEED = _compoundPriceFeed;
+    }
 
-    ////////////////////////////////
-    // REQUIRED VIRTUAL FUNCTIONS //
-    ////////////////////////////////
+    /// @dev Needed to receive ETH during cEther lend/redeem
+    receive() external payable {}
 
-    /// @dev Logic to lend underlying for aToken
-    function __lend(address _vaultProxy, address _underlying, uint256 _amount) internal virtual;
-
-    /// @dev Logic to redeem aToken for underlying
-    function __redeem(address _vaultProxy, address _underlying, uint256 _amount) internal virtual;
-
-    /////////////
-    // ACTIONS //
-    /////////////
-
-    /// @notice Lends an amount of a token to AAVE
+    /// @notice Lends an amount of a token to Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData) external onlyIntegrationManager {
+    function lend(address _vaultProxy, bytes calldata, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
+    {
+        // More efficient to parse all from _assetData
         (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
             __decodeAssetData(_assetData);
 
-        // Validate aToken.
-        // Must be done here instead of parseAssetsForAction(),
-        // since overriding visibility is not allowed.
-        __validateAndAddListItemIfUnregistered(incomingAssets[0]);
-
-        __lend({_vaultProxy: _vaultProxy, _underlying: spendAssets[0], _amount: spendAssetAmounts[0]});
+        __compoundLend(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
 
-    /// @notice Redeems an amount of aTokens from AAVE
+    /// @notice Redeems an amount of cTokens from Compound
     /// @param _vaultProxy The VaultProxy of the calling fund
     /// @param _assetData Parsed spend assets and incoming assets data for this action
-    function redeem(address _vaultProxy, bytes calldata, bytes calldata _assetData) external onlyIntegrationManager {
+    function redeem(address _vaultProxy, bytes calldata, bytes calldata _assetData)
+        external
+        onlyIntegrationManager
+        postActionIncomingAssetsTransferHandler(_vaultProxy, _assetData)
+    {
+        // More efficient to parse all from _assetData
         (address[] memory spendAssets, uint256[] memory spendAssetAmounts, address[] memory incomingAssets) =
             __decodeAssetData(_assetData);
 
-        // Validate aToken.
-        // Must be done here instead of parseAssetsForAction(),
-        // since overriding visibility is not allowed.
-        __validateAndAddListItemIfUnregistered(spendAssets[0]);
-
-        __redeem({_vaultProxy: _vaultProxy, _underlying: incomingAssets[0], _amount: spendAssetAmounts[0]});
+        __compoundRedeem(spendAssets[0], spendAssetAmounts[0], incomingAssets[0]);
     }
+
+    /// @notice Claims rewards from the cTokens comptroller
+    /// @param _vaultProxy The VaultProxy of the calling fund
+    /// @param _actionData Data specific to this action
+    function claimRewards(address _vaultProxy, bytes calldata _actionData, bytes calldata) external virtual;
 
     /////////////////////////////
     // PARSE ASSETS FOR METHOD //
@@ -109,9 +96,17 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
             return __parseAssetsForLend(_actionData);
         } else if (_selector == REDEEM_SELECTOR) {
             return __parseAssetsForRedeem(_actionData);
+        } else if (_selector == CLAIM_REWARDS_SELECTOR) {
+            return (
+                IIntegrationManager.SpendAssetsHandleType.None,
+                spendAssets_,
+                spendAssetAmounts_,
+                incomingAssets_,
+                minIncomingAssetAmounts_
+            );
+        } else {
+            revert("parseAssetsForAction: _selector invalid");
         }
-
-        revert("parseAssetsForAction: _selector invalid");
     }
 
     /// @dev Helper function to parse spend and incoming assets from encoded call args
@@ -127,17 +122,19 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address aToken, uint256 amount) = __decodeCallArgs(_actionData);
+        (address cToken, uint256 tokenAmount, uint256 minCTokenAmount) = __decodeCallArgs(_actionData);
+        address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
+        require(token != address(0), "__parseAssetsForLend: Unsupported cToken");
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+        spendAssets_[0] = token;
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = amount;
+        spendAssetAmounts_[0] = tokenAmount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = aToken;
+        incomingAssets_[0] = cToken;
         minIncomingAssetAmounts_ = new uint256[](1);
-        minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
+        minIncomingAssetAmounts_[0] = minCTokenAmount;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -161,18 +158,19 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (address aToken, uint256 amount) = __decodeCallArgs(_actionData);
+        (address cToken, uint256 cTokenAmount, uint256 minTokenAmount) = __decodeCallArgs(_actionData);
+        address token = CompoundPriceFeed(COMPOUND_PRICE_FEED).getTokenFromCToken(cToken);
+        require(token != address(0), "__parseAssetsForRedeem: Unsupported cToken");
 
         spendAssets_ = new address[](1);
-        spendAssets_[0] = aToken;
+        spendAssets_[0] = cToken;
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = amount;
+        spendAssetAmounts_[0] = cTokenAmount;
 
         incomingAssets_ = new address[](1);
-        incomingAssets_[0] = IAaveAToken(aToken).UNDERLYING_ASSET_ADDRESS();
+        incomingAssets_[0] = token;
         minIncomingAssetAmounts_ = new uint256[](1);
-        // The `ROUNDING_BUFFER` is overly cautious in this case, but it comes at minimal expense
-        minIncomingAssetAmounts_[0] = amount.sub(ROUNDING_BUFFER);
+        minIncomingAssetAmounts_[0] = minTokenAmount;
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,
@@ -186,7 +184,21 @@ abstract contract AaveAdapterBase is AdapterBase, AddOnlyAddressListOwnerConsume
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to decode callArgs for lend and redeem
-    function __decodeCallArgs(bytes memory _actionData) private pure returns (address aToken_, uint256 amount_) {
-        return abi.decode(_actionData, (address, uint256));
+    function __decodeCallArgs(bytes memory _actionData)
+        private
+        pure
+        returns (address cToken_, uint256 outgoingAssetAmount_, uint256 minIncomingAssetAmount_)
+    {
+        return abi.decode(_actionData, (address, uint256, uint256));
+    }
+
+    ///////////////////
+    // STATE GETTERS //
+    ///////////////////
+
+    /// @notice Gets the `COMPOUND_PRICE_FEED` variable
+    /// @return compoundPriceFeed_ The `COMPOUND_PRICE_FEED` variable value
+    function getCompoundPriceFeed() external view returns (address compoundPriceFeed_) {
+        return COMPOUND_PRICE_FEED;
     }
 }

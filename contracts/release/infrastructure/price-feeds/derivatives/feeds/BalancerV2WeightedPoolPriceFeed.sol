@@ -11,13 +11,13 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../utils/AddressArrayLib.sol";
-import "../../../../utils/FundDeployerOwnerMixin.sol";
-import "../../../../utils/BalancerV2LogExpMath.sol";
-import "../../../../utils/BalancerV2FixedPoint.sol";
 import "../../../../../external-interfaces/IBalancerV2WeightedPool.sol";
 import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
 import "../../../../../external-interfaces/IBalancerV2Vault.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/BalancerV2LogExpMath.sol";
+import "../../../../../utils/0.6.12/BalancerV2FixedPoint.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
 import "../IDerivativePriceFeed.sol";
 

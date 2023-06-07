@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../utils/FundDeployerOwnerMixin.sol";
+import "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "./IProtocolFeeTracker.sol";
 
 /// @title ProtocolFeeTracker Contract

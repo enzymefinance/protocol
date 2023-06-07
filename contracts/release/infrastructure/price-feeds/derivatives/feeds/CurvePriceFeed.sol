@@ -19,7 +19,7 @@ import "../../../../../external-interfaces/ICurveLiquidityPool.sol";
 import "../../../../../external-interfaces/ICurvePoolOwner.sol";
 import "../../../../../external-interfaces/ICurveRegistryMain.sol";
 import "../../../../../external-interfaces/ICurveRegistryMetapoolFactory.sol";
-import "../../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CurvePriceFeed Contract

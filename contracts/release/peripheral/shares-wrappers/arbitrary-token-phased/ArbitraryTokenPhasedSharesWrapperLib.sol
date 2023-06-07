@@ -15,11 +15,11 @@ import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import "../../../../persistent/address-list-registry/AddressListRegistry.sol";
 import "../../../../persistent/dispatcher/IDispatcher.sol";
+import "../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../utils/0.6.12/AssetHelpers.sol";
+import "../../../../utils/0.6.12/MathHelpers.sol";
 import "../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../core/fund/vault/VaultLib.sol";
-import "../../../utils/AddressArrayLib.sol";
-import "../../../utils/AssetHelpers.sol";
-import "../../../utils/MathHelpers.sol";
 
 /// @title ArbitraryTokenPhasedSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

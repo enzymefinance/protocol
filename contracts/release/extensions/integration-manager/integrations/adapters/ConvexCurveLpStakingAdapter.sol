@@ -3,8 +3,8 @@ pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import "../../../../infrastructure/staking-wrappers/convex-curve-lp/ConvexCurveLpStakingWrapperFactory.sol";
-import "../utils/actions/StakingWrapperActionsMixin.sol";
-import "../utils/bases/CurveLiquidityAdapterBase.sol";
+import "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
+import "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
 
 /// @title ConvexCurveLpStakingAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

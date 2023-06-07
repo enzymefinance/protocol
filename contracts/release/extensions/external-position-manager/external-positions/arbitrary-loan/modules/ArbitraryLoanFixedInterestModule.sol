@@ -14,8 +14,8 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "openzeppelin-solc-0.6/utils/SafeCast.sol";
-import "../../../../../utils/MakerDaoMath.sol";
-import "../../../../../utils/MathHelpers.sol";
+import "../../../../../../utils/0.6.12/MakerDaoMath.sol";
+import "../../../../../../utils/0.6.12/MathHelpers.sol";
 import "./IArbitraryLoanAccountingModule.sol";
 
 /// @title ArbitraryLoanFixedInterestModule Contract

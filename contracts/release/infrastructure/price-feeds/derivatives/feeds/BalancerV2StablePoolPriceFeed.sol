@@ -14,8 +14,8 @@ import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
 import "../../../../../external-interfaces/IBalancerV2StablePool.sol";
 import "../../../../../external-interfaces/IBalancerV2Vault.sol";
-import "../../../../utils/AddressArrayLib.sol";
-import "../../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title BalancerV2StablePoolPriceFeed Contract

@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../utils/actions/UniswapV3ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/UniswapV3ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title UniswapV3SwapAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

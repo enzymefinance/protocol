@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../utils/actions/CurveExchangeActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/CurveExchangeActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title CurveExchangeAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

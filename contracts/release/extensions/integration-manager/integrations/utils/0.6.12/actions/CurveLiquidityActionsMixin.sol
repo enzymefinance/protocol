@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/utils/Strings.sol";
-import "../../../../../../external-interfaces/IWETH.sol";
-import "../../../../../utils/AssetHelpers.sol";
+import "../../../../../../../external-interfaces/IWETH.sol";
+import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CurveLiquidityActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

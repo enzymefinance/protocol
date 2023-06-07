@@ -3,8 +3,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../../infrastructure/staking-wrappers/aura-balancer-v2-lp/AuraBalancerV2LpStakingWrapperFactory.sol";
-import "../utils/actions/StakingWrapperActionsMixin.sol";
-import "../utils/bases/BalancerV2LiquidityAdapterBase.sol";
+import "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
+import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 
 /// @title AuraBalancerV2LpStakingAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

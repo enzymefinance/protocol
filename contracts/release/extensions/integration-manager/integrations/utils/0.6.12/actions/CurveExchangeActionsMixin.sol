@@ -11,11 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../external-interfaces/ICurveAddressProvider.sol";
-import "../../../../../../external-interfaces/ICurveSwapsERC20.sol";
-import "../../../../../../external-interfaces/ICurveSwapsEther.sol";
-import "../../../../../../external-interfaces/IWETH.sol";
-import "../../../../../utils/AssetHelpers.sol";
+import "../../../../../../../external-interfaces/ICurveAddressProvider.sol";
+import "../../../../../../../external-interfaces/ICurveSwapsERC20.sol";
+import "../../../../../../../external-interfaces/ICurveSwapsEther.sol";
+import "../../../../../../../external-interfaces/IWETH.sol";
+import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CurveExchangeActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

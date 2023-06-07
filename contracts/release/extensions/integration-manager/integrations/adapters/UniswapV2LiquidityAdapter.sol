@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 
 import "../../../../../external-interfaces/IUniswapV2Factory.sol";
-import "../utils/actions/UniswapV2ActionsMixin.sol";
-import "../utils/AdapterBase.sol";
+import "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
+import "../utils/0.6.12/AdapterBase.sol";
 
 /// @title UniswapV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

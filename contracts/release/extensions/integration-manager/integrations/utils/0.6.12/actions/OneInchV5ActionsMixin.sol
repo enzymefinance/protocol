@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../external-interfaces/IOneInchV5AggregationRouter.sol";
-import "../../../../../utils/AssetHelpers.sol";
+import "../../../../../../../external-interfaces/IOneInchV5AggregationRouter.sol";
+import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title OneInchV5ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -17,7 +17,7 @@ import "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
 import "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
 import "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
 import "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
-import "../../../../utils/AssetHelpers.sol";
+import "../../../../../utils/0.6.12/AssetHelpers.sol";
 import "./ConvexVotingPositionDataDecoder.sol";
 import "./IConvexVotingPosition.sol";
 

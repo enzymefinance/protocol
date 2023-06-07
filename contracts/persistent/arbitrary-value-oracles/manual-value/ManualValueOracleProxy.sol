@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../release/utils/NonUpgradableProxy.sol";
+import "../../../utils/0.6.12/NonUpgradableProxy.sol";
 
 /// @title ManualValueOracleProxy Contract
 /// @author Enzyme Council <security@enzyme.finance>

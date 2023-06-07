@@ -11,7 +11,7 @@
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
-import "../../../../utils/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import "../IExternalPositionParser.sol";
 import "./IArbitraryLoanPosition.sol";
 import "./ArbitraryLoanPositionDataDecoder.sol";

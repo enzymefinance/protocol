@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../../../../external-interfaces/ICERC20.sol";
-import "../../../../utils/FundDeployerOwnerMixin.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title CompoundPriceFeed Contract

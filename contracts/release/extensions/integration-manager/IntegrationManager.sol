@@ -13,10 +13,10 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import "../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../utils/0.6.12/AssetHelpers.sol";
 import "../../core/fund/vault/IVault.sol";
 import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "../../utils/AddressArrayLib.sol";
-import "../../utils/AssetHelpers.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
 import "../utils/PermissionedVaultActionMixin.sol";

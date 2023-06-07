@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import "../core/fund/comptroller/ComptrollerLib.sol";
 import "../../external-interfaces/IWETH.sol";
-import "../utils/AssetHelpers.sol";
+import "../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title DepositWrapper Contract
 /// @author Enzyme Council <security@enzyme.finance>

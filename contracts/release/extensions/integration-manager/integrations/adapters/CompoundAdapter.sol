@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import "../../../../../external-interfaces/ICompoundComptroller.sol";
-import "../utils/bases/CompoundAdapterBase.sol";
+import "../utils/0.6.12/bases/CompoundAdapterBase.sol";
 
 /// @title CompoundAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

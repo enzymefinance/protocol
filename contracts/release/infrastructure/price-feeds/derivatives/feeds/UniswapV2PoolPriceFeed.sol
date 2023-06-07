@@ -14,8 +14,8 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../../external-interfaces/IUniswapV2Pair.sol";
-import "../../../../utils/FundDeployerOwnerMixin.sol";
-import "../../../../utils/MathHelpers.sol";
+import "../../../../../utils/0.6.12/MathHelpers.sol";
+import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import "../../../value-interpreter/ValueInterpreter.sol";
 import "../../utils/UniswapV2PoolTokenValueCalculator.sol";
 import "../IDerivativePriceFeed.sol";

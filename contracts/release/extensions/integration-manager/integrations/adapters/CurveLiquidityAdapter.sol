@@ -2,8 +2,8 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
-import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
-import "../utils/bases/CurveLiquidityAdapterBase.sol";
+import "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
+import "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
 
 /// @title CurveLiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

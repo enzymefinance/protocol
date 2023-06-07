@@ -11,8 +11,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
-import "../utils/actions/CurveGaugeV2RewardsHandlerMixin.sol";
-import "../utils/bases/BalancerV2LiquidityAdapterBase.sol";
+import "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
+import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 
 /// @title BalancerV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
