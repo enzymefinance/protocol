@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {SafeMath} from "openzeppelin-solc-0.8/utils/math/SafeMath.sol";
 import {ERC20 as ERC20Base} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
@@ -28,10 +29,68 @@ abstract contract TokenUtils is CommonUtilsBase {
         return createTestToken(18);
     }
 
+    // NOTE: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
     function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal {
         uint256 balance = _token.balanceOf(_to);
 
         deal(address(_token), _to, balance + _amount);
+    }
+
+    /// @dev Helper to aggregate amounts of the same assets
+    function aggregateAssetAmounts(address[] memory _rawAssets, uint256[] memory _rawAmounts, bool _ceilingAtMax)
+        internal
+        pure
+        returns (address[] memory aggregatedAssets_, uint256[] memory aggregatedAmounts_)
+    {
+        if (_rawAssets.length == 0) {
+            return (aggregatedAssets_, aggregatedAmounts_);
+        }
+
+        uint256 aggregatedAssetCount = 1;
+        for (uint256 i = 1; i < _rawAssets.length; i++) {
+            bool contains;
+            for (uint256 j; j < i; j++) {
+                if (_rawAssets[i] == _rawAssets[j]) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (!contains) {
+                aggregatedAssetCount++;
+            }
+        }
+
+        aggregatedAssets_ = new address[](aggregatedAssetCount);
+        aggregatedAmounts_ = new uint256[](aggregatedAssetCount);
+        uint256 aggregatedAssetIndex;
+        for (uint256 i; i < _rawAssets.length; i++) {
+            bool contains;
+            for (uint256 j; j < aggregatedAssetIndex; j++) {
+                if (_rawAssets[i] == aggregatedAssets_[j]) {
+                    contains = true;
+
+                    // make sure we don't overflow
+                    (bool notOverflowed, uint256 sum) = SafeMath.tryAdd(aggregatedAmounts_[j], _rawAmounts[i]);
+                    if (notOverflowed == true) {
+                        aggregatedAmounts_[j] = sum;
+                    } else {
+                        if (_ceilingAtMax == false) {
+                            revert("TokenUtils: overflow");
+                        }
+                        aggregatedAmounts_[j] = type(uint256).max;
+                    }
+
+                    break;
+                }
+            }
+            if (!contains) {
+                aggregatedAssets_[aggregatedAssetIndex] = _rawAssets[i];
+                aggregatedAmounts_[aggregatedAssetIndex] = _rawAmounts[i];
+                aggregatedAssetIndex++;
+            }
+        }
+
+        return (aggregatedAssets_, aggregatedAmounts_);
     }
 }
 
