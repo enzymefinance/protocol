@@ -217,20 +217,20 @@ abstract contract TestBase is IntegrationTest {
         return aTokens_;
     }
 
-    function __registerTokensAndATokensForThem(address[] memory _tokens) internal {
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addPrimitive({
+    function __registerTokensAndATokensForThem(address[] memory _tokenAddresses) internal {
+        for (uint256 i = 0; i < _tokenAddresses.length; i++) {
+            // Register underlying token
+            addPrimitiveWithTestAggregator({
                 _valueInterpreter: core.release.valueInterpreter,
-                _token: _tokens[i],
-                _aggregator: address(createTestAggregator(1))
+                _tokenAddress: _tokenAddresses[i],
+                _skipIfRegistered: true
             });
-        }
 
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            addPrimitive({
+            // Register aToken
+            addPrimitiveWithTestAggregator({
                 _valueInterpreter: core.release.valueInterpreter,
-                _token: __getATokenAddress({_token: _tokens[i]}),
-                _aggregator: address(createTestAggregator(1))
+                _tokenAddress: __getATokenAddress({_token: _tokenAddresses[i]}),
+                _skipIfRegistered: true
             });
         }
     }

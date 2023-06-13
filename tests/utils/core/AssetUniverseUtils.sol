@@ -13,17 +13,104 @@ enum ChainlinkRateAsset {
 }
 
 abstract contract AssetUniverseUtils is CoreUtilsBase {
+    // AGGREGATORS
+
     function createTestAggregator(uint256 _price) internal returns (IChainlinkAggregator aggregator_) {
         return IChainlinkAggregator(address(new TestAggregator(_price)));
     }
 
-    function updateTestAggregator(IChainlinkAggregator _aggregator, uint256 _price) internal {
-        // TODO: This is a bit of a hack.
-        TestAggregator(address(_aggregator)).setPrice(_price);
+    function deployUsdEthSimulatedAggregator(address _ethUsdAggregatorAddress)
+        internal
+        returns (IChainlinkAggregator aggregator_)
+    {
+        return IChainlinkAggregator(deployCode("UsdEthSimulatedAggregator.sol", abi.encode(_ethUsdAggregatorAddress)));
     }
 
-    function createInvalidPriceTestAggregator() internal returns (IChainlinkAggregator aggregator_) {
-        return IChainlinkAggregator(address(new TestAggregatorInvalidPrice()));
+    // ASSET REGISTRATION
+
+    function addDerivative(
+        IValueInterpreter _valueInterpreter,
+        address _tokenAddress,
+        address _priceFeedAddress,
+        bool _skipIfRegistered
+    ) internal {
+        bool isRegistered = _valueInterpreter.isSupportedAsset(_tokenAddress);
+        if (isRegistered) {
+            if (_skipIfRegistered) {
+                return;
+            } else {
+                revert("addDerivative: already registered");
+            }
+        }
+
+        vm.prank(_valueInterpreter.getOwner());
+
+        _valueInterpreter.addDerivatives(toArray(_tokenAddress), toArray(_priceFeedAddress));
+    }
+
+    function addDerivatives(
+        IValueInterpreter _valueInterpreter,
+        address[] memory _tokenAddresses,
+        address[] memory _priceFeedAddresses,
+        bool _skipIfRegistered
+    ) internal {
+        for (uint256 i; i < _tokenAddresses.length; i++) {
+            addDerivative(_valueInterpreter, _tokenAddresses[i], _priceFeedAddresses[i], _skipIfRegistered);
+        }
+    }
+
+    function addPrimitive(
+        IValueInterpreter _valueInterpreter,
+        address _tokenAddress,
+        address _aggregatorAddress,
+        ChainlinkRateAsset _rateAsset,
+        bool _skipIfRegistered
+    ) internal {
+        bool isRegistered = _valueInterpreter.isSupportedAsset(_tokenAddress);
+        if (isRegistered) {
+            if (_skipIfRegistered) {
+                return;
+            } else {
+                revert("addPrimitive: already registered");
+            }
+        }
+
+        uint8[] memory rateAssetsUint8 = new uint8[](1);
+        rateAssetsUint8[0] = uint8(_rateAsset);
+
+        vm.prank(_valueInterpreter.getOwner());
+
+        _valueInterpreter.addPrimitives({
+            _primitives: toArray(_tokenAddress),
+            _aggregators: toArray(_aggregatorAddress),
+            _rateAssets: rateAssetsUint8
+        });
+    }
+
+    function addPrimitives(
+        IValueInterpreter _valueInterpreter,
+        address[] memory _tokenAddresses,
+        address[] memory _aggregatorAddresses,
+        ChainlinkRateAsset[] memory _rateAssets,
+        bool _skipIfRegistered
+    ) internal {
+        for (uint256 i; i < _tokenAddresses.length; i++) {
+            addPrimitive(
+                _valueInterpreter, _tokenAddresses[i], _aggregatorAddresses[i], _rateAssets[i], _skipIfRegistered
+            );
+        }
+    }
+
+    function addPrimitiveWithTestAggregator(
+        IValueInterpreter _valueInterpreter,
+        address _tokenAddress,
+        bool _skipIfRegistered
+    ) internal returns (TestAggregator aggregator_) {
+        aggregator_ = TestAggregator(address(createTestAggregator(1 ether)));
+
+        addPrimitive(_valueInterpreter, _tokenAddress, address(aggregator_), ChainlinkRateAsset.ETH, _skipIfRegistered);
+
+        return aggregator_;
     }
 
     function createRegisteredPrimitive(IValueInterpreter _valueInterpreter, uint8 _decimals)
@@ -34,93 +121,26 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         addPrimitive({
             _valueInterpreter: _valueInterpreter,
-            _token: address(token_),
-            _aggregator: address(createTestAggregator(1 ether)),
-            _rateAsset: ChainlinkRateAsset.ETH
+            _tokenAddress: address(token_),
+            _aggregatorAddress: address(createTestAggregator(1 ether)),
+            _rateAsset: ChainlinkRateAsset.ETH,
+            _skipIfRegistered: false
         });
 
         return token_;
     }
 
-    function createRegisteredPrimitive(IValueInterpreter _valueInterpreter) internal returns (IERC20 token_) {
-        return createRegisteredPrimitive(_valueInterpreter, 18);
-    }
+    // VALUE CALCS
 
-    function addPrimitive(IValueInterpreter _valueInterpreter, address _token, address _aggregator) internal {
-        addPrimitive(_valueInterpreter, _token, _aggregator, ChainlinkRateAsset.ETH);
-    }
-
-    function addPrimitive(
-        IValueInterpreter _valueInterpreter,
-        address _token,
-        address _aggregator,
-        ChainlinkRateAsset _rateAsset
-    ) internal {
-        address[] memory primitives = new address[](1);
-        primitives[0] = _token;
-
-        address[] memory aggregators = new address[](1);
-        aggregators[0] = _aggregator;
-
-        ChainlinkRateAsset[] memory rateAssets = new ChainlinkRateAsset[](1);
-
-        rateAssets[0] = _rateAsset;
-
-        addPrimitives(_valueInterpreter, primitives, aggregators, rateAssets);
-    }
-
-    function addPrimitives(
-        IValueInterpreter _valueInterpreter,
-        address[] memory _primitives,
-        address[] memory _aggregators,
-        ChainlinkRateAsset[] memory _rateAssets
-    ) internal {
-        uint8[] memory rateAssetsUint8 = new uint8[](_rateAssets.length);
-        for (uint256 i; i < _rateAssets.length; i++) {
-            rateAssetsUint8[i] = uint8(_rateAssets[i]);
-        }
-
-        vm.prank(getValueInterpreterOwner(_valueInterpreter));
-
-        _valueInterpreter.addPrimitives(_primitives, _aggregators, rateAssetsUint8);
-    }
-
-    function addDerivatives(
-        IValueInterpreter _valueInterpreter,
-        address[] memory _derivatives,
-        address[] memory _priceFeeds
-    ) internal {
-        vm.prank(getValueInterpreterOwner(_valueInterpreter));
-
-        _valueInterpreter.addDerivatives(_derivatives, _priceFeeds);
-    }
-
-    function addDerivative(IValueInterpreter _valueInterpreter, address _derivative, address _priceFeed) internal {
-        address[] memory _derivatives = new address[](1);
-        _derivatives[0] = _derivative;
-
-        address[] memory _priceFeeds = new address[](1);
-        _priceFeeds[0] = _priceFeed;
-
-        addDerivatives({_valueInterpreter: _valueInterpreter, _derivatives: _derivatives, _priceFeeds: _priceFeeds});
-    }
-
-    function removePrimitive(IValueInterpreter _valueInterpreter, address _primitive) internal {
-        address[] memory primitives = new address[](1);
-        primitives[0] = _primitive;
-
-        removePrimitives(_valueInterpreter, primitives);
-    }
-
-    function removePrimitives(IValueInterpreter _valueInterpreter, address[] memory _primitives) internal {
-        vm.prank(getValueInterpreterOwner(_valueInterpreter));
-
-        _valueInterpreter.removePrimitives(_primitives);
-    }
-
-    // TODO: Build a proper contract locator util for all contracts that have references between one another.
-    function getValueInterpreterOwner(IValueInterpreter _valueInterpreter) internal view returns (address owner_) {
-        return _valueInterpreter.getOwner();
+    function calcTokenPrice(IValueInterpreter _valueInterpreter, IERC20 _baseAsset, IERC20 _quoteAsset)
+        internal
+        returns (uint256 valueOfOneUnit_)
+    {
+        return _valueInterpreter.calcCanonicalAssetValue({
+            _baseAsset: address(_baseAsset),
+            _amount: assetUnit(_baseAsset),
+            _quoteAsset: address(_quoteAsset)
+        });
     }
 }
 
@@ -137,11 +157,5 @@ contract TestAggregator is IChainlinkAggregator {
 
     function latestRoundData() external view virtual returns (uint80, int256, uint256, uint256, uint80) {
         return (0, int256(price), 0, block.timestamp, 0);
-    }
-}
-
-contract TestAggregatorInvalidPrice is TestAggregator(1) {
-    function latestRoundData() external pure override returns (uint80, int256, uint256, uint256, uint80) {
-        revert("Invalid price");
     }
 }

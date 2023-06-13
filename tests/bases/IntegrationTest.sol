@@ -2,9 +2,17 @@
 pragma solidity 0.8.19;
 
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
+import {ChainlinkRateAsset} from "tests/utils/core/AssetUniverseUtils.sol";
 import {ICoreDeployment} from "tests/utils/core/DeploymentUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+
+struct CorePrimitiveInput {
+    string symbol;
+    address assetAddress;
+    address aggregatorAddress;
+    ChainlinkRateAsset rateAsset;
+}
 
 abstract contract IntegrationTest is CoreUtils {
     IERC20 internal mlnToken;
@@ -15,6 +23,9 @@ abstract contract IntegrationTest is CoreUtils {
     IERC20 internal nonStandardPrimitive;
 
     ICoreDeployment.Deployment internal core;
+    // Don't allow access outside of this contract
+    mapping(string => IERC20) private symbolToCoreToken;
+    mapping(IERC20 => bool) private tokenToIsCore;
 
     function setUp() public virtual {
         setUpStandaloneEnvironment();
@@ -59,6 +70,38 @@ abstract contract IntegrationTest is CoreUtils {
             _chainlinkStaleRateThreshold: 3650 days,
             _ethUsdAggregator: ETHEREUM_ETH_USD_AGGREGATOR
         });
+
+        // Deploy minimal asset universe
+
+        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
+        symbolToCoreToken["WETH"] = IERC20(wethToken);
+        tokenToIsCore[IERC20(wethToken)] = true;
+
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
+
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](3);
+        // System primitives
+        corePrimitives[0] = CorePrimitiveInput({
+            symbol: "MLN",
+            assetAddress: ETHEREUM_MLN,
+            aggregatorAddress: ETHEREUM_MLN_ETH_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        // Extra primitives
+        corePrimitives[1] = CorePrimitiveInput({
+            symbol: "USD",
+            assetAddress: simulatedUsdAddress,
+            aggregatorAddress: simulatedUsdAddress,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        corePrimitives[2] = CorePrimitiveInput({
+            symbol: "USDC",
+            assetAddress: ETHEREUM_USDC,
+            aggregatorAddress: ETHEREUM_USDC_ETH_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+
+        addCorePrimitives(corePrimitives);
     }
 
     function setUpPolygonEnvironment(uint256 _forkBlock, bool _setReleaseLive) internal {
@@ -80,6 +123,40 @@ abstract contract IntegrationTest is CoreUtils {
             _chainlinkStaleRateThreshold: 3650 days,
             _ethUsdAggregator: POLYGON_ETH_USD_AGGREGATOR
         });
+
+        // Deploy minimal asset universe
+
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
+
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](4);
+        // System primitives
+        corePrimitives[0] = CorePrimitiveInput({
+            symbol: "WMATIC",
+            assetAddress: POLYGON_WMATIC,
+            aggregatorAddress: POLYGON_MATIC_USD_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.USD
+        });
+        corePrimitives[1] = CorePrimitiveInput({
+            symbol: "MLN",
+            assetAddress: POLYGON_MLN,
+            aggregatorAddress: POLYGON_MLN_ETH_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        // Extra primitives
+        corePrimitives[2] = CorePrimitiveInput({
+            symbol: "USD",
+            assetAddress: simulatedUsdAddress,
+            aggregatorAddress: simulatedUsdAddress,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        corePrimitives[3] = CorePrimitiveInput({
+            symbol: "USDC",
+            assetAddress: POLYGON_USDC,
+            aggregatorAddress: POLYGON_USDC_USD_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.USD
+        });
+
+        addCorePrimitives(corePrimitives);
     }
 
     function setUpStandaloneEnvironment(bool _setReleaseLive) internal {
@@ -153,5 +230,43 @@ abstract contract IntegrationTest is CoreUtils {
 
         standardPrimitive = createRegisteredPrimitive(core.release.valueInterpreter, 18);
         nonStandardPrimitive = createRegisteredPrimitive(core.release.valueInterpreter, 8);
+    }
+
+    // ASSET UNIVERSE
+
+    /// @dev Keep private to avoid accidental use
+    function addCorePrimitives(CorePrimitiveInput[] memory _primitives) private {
+        for (uint256 i; i < _primitives.length; i++) {
+            CorePrimitiveInput memory primitiveInfo = _primitives[i];
+            IERC20 token = IERC20(primitiveInfo.assetAddress);
+            string memory symbol = primitiveInfo.symbol;
+            address aggregatorAddress = primitiveInfo.aggregatorAddress;
+            ChainlinkRateAsset rateAsset = primitiveInfo.rateAsset;
+
+            // Register primitive.
+            // Don't allow overwriting.
+            addPrimitive({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: address(token),
+                _aggregatorAddress: aggregatorAddress,
+                _rateAsset: rateAsset,
+                _skipIfRegistered: false
+            });
+
+            // Add to list of registered primitives
+            symbolToCoreToken[symbol] = token;
+            tokenToIsCore[token] = true;
+        }
+    }
+
+    function getCoreToken(string memory _symbol) internal view returns (IERC20 token_) {
+        token_ = symbolToCoreToken[_symbol];
+        require(isCoreToken(token_), "getCoreToken: Not registered");
+
+        return token_;
+    }
+
+    function isCoreToken(IERC20 _token) internal view returns (bool isCore_) {
+        return tokenToIsCore[_token];
     }
 }

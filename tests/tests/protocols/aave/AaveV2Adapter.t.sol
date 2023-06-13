@@ -37,10 +37,10 @@ abstract contract AaveV2AdapterTest is IntegrationTest, AaveV2Utils {
         });
 
         aWeth = getATokenAddress({_token: address(wethToken), _lendingPool: lendingPool});
-        addPrimitive({
+        addPrimitiveWithTestAggregator({
             _valueInterpreter: core.release.valueInterpreter,
-            _token: aWeth,
-            _aggregator: address(createTestAggregator(1))
+            _tokenAddress: aWeth,
+            _skipIfRegistered: true
         });
 
         (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({

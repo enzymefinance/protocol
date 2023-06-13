@@ -44,18 +44,13 @@ contract ValueInterpreterTestEthereum is ValueInterpreterTest {
 
     function setUp() public override {
         setUpMainnetEnvironment(16733210);
-        addPrimitive({
-            _valueInterpreter: core.release.valueInterpreter,
-            _token: address(core.config.wethToken),
-            _aggregator: core.config.ethUsdAggregator,
-            _rateAsset: ChainlinkRateAsset.USD
-        });
 
         addPrimitive({
             _valueInterpreter: core.release.valueInterpreter,
-            _token: DAI,
-            _aggregator: DAI_AGGREGATOR,
-            _rateAsset: ChainlinkRateAsset.ETH
+            _tokenAddress: DAI,
+            _aggregatorAddress: DAI_AGGREGATOR,
+            _rateAsset: ChainlinkRateAsset.ETH,
+            _skipIfRegistered: true
         });
     }
 
@@ -79,18 +74,13 @@ contract ValueInterpreterTestPolygon is ValueInterpreterTest {
 
     function setUp() public override {
         setUpPolygonEnvironment(39841068);
-        addPrimitive({
-            _valueInterpreter: core.release.valueInterpreter,
-            _token: address(core.config.wethToken),
-            _aggregator: core.config.ethUsdAggregator,
-            _rateAsset: ChainlinkRateAsset.USD
-        });
 
         addPrimitive({
             _valueInterpreter: core.release.valueInterpreter,
-            _token: DAI,
-            _aggregator: DAI_AGGREGATOR,
-            _rateAsset: ChainlinkRateAsset.USD
+            _tokenAddress: DAI,
+            _aggregatorAddress: DAI_AGGREGATOR,
+            _rateAsset: ChainlinkRateAsset.USD,
+            _skipIfRegistered: true
         });
     }
 

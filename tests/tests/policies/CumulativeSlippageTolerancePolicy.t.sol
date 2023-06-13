@@ -38,22 +38,18 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
 
         fakeToken0 = createTestToken(18, "Fake Token 0", "FK0");
 
-        fakeToken0Aggregator = TestAggregator(address(createTestAggregator(1 ether)));
-
-        addPrimitive({
+        fakeToken0Aggregator = addPrimitiveWithTestAggregator({
             _valueInterpreter: core.release.valueInterpreter,
-            _token: address(fakeToken0),
-            _aggregator: address(fakeToken0Aggregator)
+            _tokenAddress: address(fakeToken0),
+            _skipIfRegistered: false
         });
 
         fakeToken1 = createTestToken(18, "Fake Token 1", "FK1");
 
-        fakeToken1Aggregator = TestAggregator(address(createTestAggregator(1 ether)));
-
-        addPrimitive({
+        fakeToken1Aggregator = addPrimitiveWithTestAggregator({
             _valueInterpreter: core.release.valueInterpreter,
-            _token: address(fakeToken1),
-            _aggregator: address(fakeToken1Aggregator)
+            _tokenAddress: address(fakeToken1),
+            _skipIfRegistered: false
         });
     }
 
