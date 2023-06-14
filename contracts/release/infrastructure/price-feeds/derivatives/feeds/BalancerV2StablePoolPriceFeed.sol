@@ -37,26 +37,21 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
     struct PoolInfo {
         address invariantProxyAsset;
         uint8 invariantProxyAssetDecimals;
-        bool containsNativeAsset;
     }
 
     // The pricing requires dividing by 1e18 twice, once for converting decimal precision, and then for converting rate precision
     uint256 private constant RATE_FORMULA_DIVISOR = 10 ** 36;
 
     IBalancerV2Vault private immutable BALANCER_VAULT_CONTRACT;
-    address private immutable WRAPPED_NATIVE_ASSET;
 
     address[] private poolFactories;
     mapping(address => PoolInfo) private poolToPoolInfo;
 
-    constructor(
-        address _fundDeployer,
-        address _wrappedNativeAsset,
-        address _balancerVault,
-        address[] memory _poolFactories
-    ) public FundDeployerOwnerMixin(_fundDeployer) {
+    constructor(address _fundDeployer, address _balancerVault, address[] memory _poolFactories)
+        public
+        FundDeployerOwnerMixin(_fundDeployer)
+    {
         BALANCER_VAULT_CONTRACT = IBalancerV2Vault(_balancerVault);
-        WRAPPED_NATIVE_ASSET = _wrappedNativeAsset;
 
         __addPoolFactories(_poolFactories);
     }
@@ -71,16 +66,11 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
         override
         returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_)
     {
-        PoolInfo memory poolInfo = getPoolInfo(_derivative);
+        // This is a non-reentrant call that has no state-changing effects given the params used.
+        // It prevents important pricing functions from being called during a Balancer pool join/exit.
+        BALANCER_VAULT_CONTRACT.setRelayerApproval(address(this), address(0), false);
 
-        // Since Balancer pools are already incompatible with reentrant tokens,
-        // the only reentrancy that needs to be considered is a pool containing the native asset,
-        // as Balancer allows wrapping/unwrapping the native asset for join/exit
-        if (poolInfo.containsNativeAsset) {
-            // This is a non-reentrant call that has no state-changing effects given the params used.
-            // It prevents important pricing functions from being called during a Balancer pool join/exit.
-            BALANCER_VAULT_CONTRACT.setRelayerApproval(address(this), address(0), false);
-        }
+        PoolInfo memory poolInfo = getPoolInfo(_derivative);
 
         underlyings_ = new address[](1);
         underlyingAmounts_ = new uint256[](1);
@@ -151,13 +141,9 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
             require(!isSupportedAsset(_pools[i]), "addPools: Already registered");
             require(__isPoolFromFactory(_pools[i]), "addPools: Invalid factory");
 
-            (address[] memory poolTokens,,) =
-                BALANCER_VAULT_CONTRACT.getPoolTokens(IBalancerV2StablePool(_pools[i]).getPoolId());
-
             poolToPoolInfo[_pools[i]] = PoolInfo({
                 invariantProxyAsset: _invariantProxyAssets[i],
-                invariantProxyAssetDecimals: ERC20(_invariantProxyAssets[i]).decimals(),
-                containsNativeAsset: poolTokens.contains(WRAPPED_NATIVE_ASSET)
+                invariantProxyAssetDecimals: ERC20(_invariantProxyAssets[i]).decimals()
             });
 
             emit PoolAdded(_pools[i], _invariantProxyAssets[i]);
