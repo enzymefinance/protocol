@@ -9,30 +9,26 @@
     file that was distributed with this source code.
 */
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
+import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../../external-interfaces/IKilnStakingContract.sol";
 import "../IExternalPositionParser.sol";
 import "./IKilnStakingPosition.sol";
 import "./KilnStakingPositionDataDecoder.sol";
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
 /// @title KilnStakingPositionParser
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Kiln Staking Positions
 contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalPositionParser {
-    using SafeMath for uint256;
-
     uint256 public constant ETH_AMOUNT_PER_NODE = 32 ether;
 
-    AddressListRegistry public immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry public immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 public immutable STAKING_CONTRACTS_LIST_ID;
     address public immutable WETH_TOKEN;
 
-    constructor(address _addressListRegistry, uint256 _stakingContractsListId, address _weth) public {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+    constructor(address _addressListRegistry, uint256 _stakingContractsListId, address _weth) {
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         STAKING_CONTRACTS_LIST_ID = _stakingContractsListId;
         WETH_TOKEN = _weth;
     }
@@ -46,6 +42,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
     /// @return assetsToReceive_ The assets to be received at the Vault
     function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
         external
+        view
         override
         returns (
             address[] memory assetsToTransfer_,
@@ -62,7 +59,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
             amountsToTransfer_ = new uint256[](1);
 
             assetsToTransfer_[0] = WETH_TOKEN;
-            amountsToTransfer_[0] = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
+            amountsToTransfer_[0] = validatorAmount * ETH_AMOUNT_PER_NODE;
         } else if (_actionId == uint256(IKilnStakingPosition.Actions.ClaimFees)) {
             (address stakingContractAddress, bytes[] memory publicKeys,) = __decodeClaimFeesAction(_encodedActionArgs);
 
@@ -88,7 +85,7 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
 
     /// @notice Parse and validate input arguments to be used when initializing a newly-deployed ExternalPositionProxy
     /// @return initArgs_ Parsed and encoded args for ExternalPositionProxy.init()
-    function parseInitArgs(address, bytes memory) external override returns (bytes memory initArgs_) {
+    function parseInitArgs(address, bytes memory) external pure override returns (bytes memory initArgs_) {
         return "";
     }
 

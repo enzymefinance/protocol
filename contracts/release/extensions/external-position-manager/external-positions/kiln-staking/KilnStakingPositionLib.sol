@@ -7,12 +7,10 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
+import "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import "../../../../../persistent/external-positions/kiln-staking/KilnStakingPositionLibBase1.sol";
 import "../../../../../external-interfaces/IKilnStakingContract.sol";
 import "../../../../../external-interfaces/IWETH.sol";
@@ -23,14 +21,13 @@ import "./KilnStakingPositionDataDecoder.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Kiln Staking Positions
 contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionDataDecoder, KilnStakingPositionLibBase1 {
-    using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     uint256 public constant ETH_AMOUNT_PER_NODE = 32 ether;
 
     IWETH public immutable WETH_TOKEN;
 
-    constructor(address _wethToken) public {
+    constructor(address _wethToken) {
         WETH_TOKEN = IWETH(_wethToken);
     }
 
@@ -80,13 +77,13 @@ contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionData
     function __stake(bytes memory _actionArgs) private {
         (address stakingContractAddress, uint256 validatorAmount) = __decodeStakeActionArgs(_actionArgs);
 
-        uint256 amountStaked = validatorAmount.mul(ETH_AMOUNT_PER_NODE);
+        uint256 amountStaked = validatorAmount * ETH_AMOUNT_PER_NODE;
 
         WETH_TOKEN.withdraw(amountStaked);
 
         IKilnStakingContract(stakingContractAddress).deposit{value: amountStaked}();
 
-        validatorCount = validatorCount.add(validatorAmount);
+        validatorCount += validatorAmount;
 
         emit ValidatorsAdded(stakingContractAddress, validatorAmount);
     }
@@ -107,19 +104,19 @@ contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionData
     /// @notice Retrieves the debt assets (negative value) of the external position
     /// @return assets_ Debt assets
     /// @return amounts_ Debt asset amounts
-    function getDebtAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
+    function getDebtAssets() external pure override returns (address[] memory assets_, uint256[] memory amounts_) {
         return (assets_, amounts_);
     }
 
     /// @notice Retrieves the managed assets (positive value) of the external position
     /// @return assets_ Managed assets
     /// @return amounts_ Managed asset amounts
-    function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
+    function getManagedAssets() external view override returns (address[] memory assets_, uint256[] memory amounts_) {
         assets_ = new address[](1);
         amounts_ = new uint256[](1);
 
         assets_[0] = address(WETH_TOKEN);
-        amounts_[0] = (validatorCount.mul(ETH_AMOUNT_PER_NODE)).add(address(this).balance);
+        amounts_[0] = (validatorCount * ETH_AMOUNT_PER_NODE) + address(this).balance;
     }
 
     ///////////////////
