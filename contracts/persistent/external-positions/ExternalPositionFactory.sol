@@ -12,11 +12,12 @@ pragma experimental ABIEncoderV2;
 
 import "../dispatcher/IDispatcher.sol";
 import "./ExternalPositionProxy.sol";
+import "./IExternalPositionFactory.sol";
 
 /// @title ExternalPositionFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract factory for External Positions
-contract ExternalPositionFactory {
+contract ExternalPositionFactory is IExternalPositionFactory {
     event PositionDeployed(
         address indexed vaultProxy, uint256 indexed typeId, address indexed constructLib, bytes constructData
     );
@@ -54,6 +55,7 @@ contract ExternalPositionFactory {
     /// @param _constructLib The external position lib contract that will be used on the constructor
     function deploy(address _vaultProxy, uint256 _typeId, address _constructLib, bytes memory _constructData)
         external
+        override
         returns (address externalPositionProxy_)
     {
         require(isPositionDeployer(msg.sender), "deploy: Only a position deployer can call this function");
@@ -73,7 +75,7 @@ contract ExternalPositionFactory {
 
     /// @notice Adds a set of new position types
     /// @param _labels Labels for each new position type
-    function addNewPositionTypes(string[] calldata _labels) external onlyDispatcherOwner {
+    function addNewPositionTypes(string[] calldata _labels) external override onlyDispatcherOwner {
         for (uint256 i; i < _labels.length; i++) {
             uint256 typeId = getPositionTypeCounter();
             positionTypeCounter++;
@@ -89,6 +91,7 @@ contract ExternalPositionFactory {
     /// @param _labels The updated labels
     function updatePositionTypeLabels(uint256[] calldata _typeIds, string[] calldata _labels)
         external
+        override
         onlyDispatcherOwner
     {
         require(_typeIds.length == _labels.length, "updatePositionTypeLabels: Unequal arrays");
@@ -105,7 +108,7 @@ contract ExternalPositionFactory {
 
     /// @notice Adds a set of new position deployers
     /// @param _accounts Accounts to be added as position deployers
-    function addPositionDeployers(address[] memory _accounts) external onlyDispatcherOwner {
+    function addPositionDeployers(address[] memory _accounts) external override onlyDispatcherOwner {
         for (uint256 i; i < _accounts.length; i++) {
             require(!isPositionDeployer(_accounts[i]), "addPositionDeployers: Account is already a position deployer");
 
@@ -117,7 +120,7 @@ contract ExternalPositionFactory {
 
     /// @notice Removes a set of existing position deployers
     /// @param _accounts Existing position deployers to be removed from their role
-    function removePositionDeployers(address[] memory _accounts) external onlyDispatcherOwner {
+    function removePositionDeployers(address[] memory _accounts) external override onlyDispatcherOwner {
         for (uint256 i; i < _accounts.length; i++) {
             require(isPositionDeployer(_accounts[i]), "removePositionDeployers: Account is not a position deployer");
 
@@ -136,14 +139,14 @@ contract ExternalPositionFactory {
     /// @notice Gets the label for a position type
     /// @param _typeId The position type id
     /// @return label_ The label
-    function getLabelForPositionType(uint256 _typeId) external view returns (string memory label_) {
+    function getLabelForPositionType(uint256 _typeId) external view override returns (string memory label_) {
         return positionTypeIdToLabel[_typeId];
     }
 
     /// @notice Checks if an account is an external position proxy
     /// @param _account The account to check
     /// @return isExternalPositionProxy_ True if the account is an externalPositionProxy
-    function isExternalPositionProxy(address _account) external view returns (bool isExternalPositionProxy_) {
+    function isExternalPositionProxy(address _account) external view override returns (bool isExternalPositionProxy_) {
         return accountToIsExternalPositionProxy[_account];
     }
 
@@ -151,20 +154,20 @@ contract ExternalPositionFactory {
 
     /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value
-    function getDispatcher() public view returns (address dispatcher_) {
+    function getDispatcher() public view override returns (address dispatcher_) {
         return DISPATCHER;
     }
 
     /// @notice Gets the `positionTypeCounter` variable
     /// @return positionTypeCounter_ The `positionTypeCounter` variable value
-    function getPositionTypeCounter() public view returns (uint256 positionTypeCounter_) {
+    function getPositionTypeCounter() public view override returns (uint256 positionTypeCounter_) {
         return positionTypeCounter;
     }
 
     /// @notice Checks if an account is a position deployer
     /// @param _account The account to check
     /// @return isPositionDeployer_ True if the account is a position deployer
-    function isPositionDeployer(address _account) public view returns (bool isPositionDeployer_) {
+    function isPositionDeployer(address _account) public view override returns (bool isPositionDeployer_) {
         return accountToIsPositionDeployer[_account];
     }
 }

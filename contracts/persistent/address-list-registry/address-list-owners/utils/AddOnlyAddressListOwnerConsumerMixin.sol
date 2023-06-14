@@ -11,22 +11,22 @@
 
 pragma solidity 0.6.12;
 
-import "../../AddressListRegistry.sol";
+import "../../IAddressListRegistry.sol";
 import "./AddOnlyAddressListOwnerBase.sol";
 
 /// @title AddOnlyAddressListOwnerConsumerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Mixin contract for interacting with a contract that inherits `AddOnlyAddressListOwnerBase`
 abstract contract AddOnlyAddressListOwnerConsumerMixin {
-    AddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 internal immutable LIST_ID;
     AddOnlyAddressListOwnerBase internal immutable LIST_OWNER_CONTRACT;
 
     constructor(address _addressListRegistry, uint256 _listId) public {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         LIST_ID = _listId;
 
-        address listOwner = AddressListRegistry(_addressListRegistry).getListOwner(_listId);
+        address listOwner = IAddressListRegistry(_addressListRegistry).getListOwner(_listId);
         LIST_OWNER_CONTRACT = AddOnlyAddressListOwnerBase(listOwner);
     }
 

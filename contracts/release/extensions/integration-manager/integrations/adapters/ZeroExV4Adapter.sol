@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
+import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../../utils/0.6.12/MathHelpers.sol";
 import "../utils/0.6.12/actions/ZeroExV4ActionsMixin.sol";
 import "../utils/0.6.12/AdapterBase.sol";
@@ -26,7 +26,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         Rfq
     }
 
-    AddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 private immutable ALLOWED_MAKERS_LIST_ID;
 
     /// @dev _allowedMakersListId of 0 is treated as a special case that allows any maker.
@@ -36,7 +36,7 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         address _addressListRegistry,
         uint256 _allowedMakersListId
     ) public AdapterBase(_integrationManager) ZeroExV4ActionsMixin(_exchange) {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         ALLOWED_MAKERS_LIST_ID = _allowedMakersListId;
     }
 

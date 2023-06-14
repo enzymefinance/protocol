@@ -12,22 +12,22 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../AddressListRegistry.sol";
+import "../../IAddressListRegistry.sol";
 
 /// @title AddOnlyAddressListOwnerBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base contract for an owner of an AddressListRegistry list that is add-only
 abstract contract AddOnlyAddressListOwnerBase {
-    AddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 internal immutable LIST_ID;
 
     constructor(address _addressListRegistry, string memory _listDescription) public {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
 
         // Create new list
-        uint256 listId = AddressListRegistry(_addressListRegistry).createList({
+        uint256 listId = IAddressListRegistry(_addressListRegistry).createList({
             _owner: address(this),
-            _updateType: AddressListRegistry.UpdateType.AddOnly,
+            _updateType: IAddressListRegistry.UpdateType.AddOnly,
             _initialItems: new address[](0)
         });
         LIST_ID = listId;
@@ -38,7 +38,7 @@ abstract contract AddOnlyAddressListOwnerBase {
         listIds[0] = listId;
         descriptions[0] = _listDescription;
 
-        AddressListRegistry(_addressListRegistry).attestLists({_ids: listIds, _descriptions: descriptions});
+        IAddressListRegistry(_addressListRegistry).attestLists({_ids: listIds, _descriptions: descriptions});
     }
 
     /// @notice Add items to the list after subjecting them to validation

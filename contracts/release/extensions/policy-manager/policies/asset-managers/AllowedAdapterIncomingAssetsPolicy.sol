@@ -62,7 +62,7 @@ contract AllowedAdapterIncomingAssetsPolicy is AddressListRegistryPolicyBase {
     /// @param _assets The assets for which to check the rule
     /// @return isValid_ True if the rule passes
     function passesRule(address _comptrollerProxy, address[] memory _assets) public view returns (bool isValid_) {
-        return AddressListRegistry(getAddressListRegistry()).areAllInSomeOfLists(
+        return IAddressListRegistry(getAddressListRegistry()).areAllInSomeOfLists(
             getListIdsForFund(_comptrollerProxy), _assets
         );
     }

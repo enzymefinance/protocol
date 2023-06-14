@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
+import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../utils/PolicyBase.sol";
 
@@ -50,18 +50,18 @@ abstract contract AddressListRegistryPolicyBase is PolicyBase {
         internal
         returns (uint256 listId_)
     {
-        (AddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
+        (IAddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
 
-        return AddressListRegistry(getAddressListRegistry()).createList(_vaultProxy, updateType, initialItems);
+        return IAddressListRegistry(getAddressListRegistry()).createList(_vaultProxy, updateType, initialItems);
     }
 
     /// @dev Helper to decode new list data
     function __decodeNewListData(bytes memory _newListData)
         internal
         pure
-        returns (AddressListRegistry.UpdateType updateType_, address[] memory initialItems_)
+        returns (IAddressListRegistry.UpdateType updateType_, address[] memory initialItems_)
     {
-        return abi.decode(_newListData, (AddressListRegistry.UpdateType, address[]));
+        return abi.decode(_newListData, (IAddressListRegistry.UpdateType, address[]));
     }
 
     /// @dev Helper to set the lists to be used by a given fund.

@@ -13,18 +13,12 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../dispatcher/IDispatcher.sol";
+import "./IAddressListRegistry.sol";
 
 /// @title AddressListRegistry Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A contract for creating and updating lists of addresses
-contract AddressListRegistry {
-    enum UpdateType {
-        None,
-        AddOnly,
-        RemoveOnly,
-        AddAndRemove
-    }
-
+contract AddressListRegistry is IAddressListRegistry {
     event ItemAddedToList(uint256 indexed id, address item);
 
     event ItemRemovedFromList(uint256 indexed id, address item);
@@ -64,7 +58,7 @@ contract AddressListRegistry {
     /// @notice Adds items to a given list
     /// @param _id The id of the list
     /// @param _items The items to add to the list
-    function addToList(uint256 _id, address[] calldata _items) external onlyListOwner(_id) {
+    function addToList(uint256 _id, address[] calldata _items) external override onlyListOwner(_id) {
         UpdateType updateType = getListUpdateType(_id);
         require(
             updateType == UpdateType.AddOnly || updateType == UpdateType.AddAndRemove, "addToList: Cannot add to list"
@@ -79,7 +73,7 @@ contract AddressListRegistry {
     /// @dev Since UserA can create a list on behalf of UserB, this function provides a mechanism
     /// for UserB to attest to their management of the items therein. It will not be visible
     /// on-chain, but will be available in event logs.
-    function attestLists(uint256[] calldata _ids, string[] calldata _descriptions) external {
+    function attestLists(uint256[] calldata _ids, string[] calldata _descriptions) external override {
         require(_ids.length == _descriptions.length, "attestLists: Unequal arrays");
 
         for (uint256 i; i < _ids.length; i++) {
@@ -97,6 +91,7 @@ contract AddressListRegistry {
     /// @dev Specify the DISPATCHER as the _owner to make the Enzyme Council the owner
     function createList(address _owner, UpdateType _updateType, address[] calldata _initialItems)
         external
+        override
         returns (uint256 id_)
     {
         id_ = getListCount();
@@ -113,7 +108,7 @@ contract AddressListRegistry {
     /// @notice Removes items from a given list
     /// @param _id The id of the list
     /// @param _items The items to remove from the list
-    function removeFromList(uint256 _id, address[] calldata _items) external onlyListOwner(_id) {
+    function removeFromList(uint256 _id, address[] calldata _items) external override onlyListOwner(_id) {
         UpdateType updateType = getListUpdateType(_id);
         require(
             updateType == UpdateType.RemoveOnly || updateType == UpdateType.AddAndRemove,
@@ -133,7 +128,7 @@ contract AddressListRegistry {
     /// @notice Sets the owner for a given list
     /// @param _id The id of the list
     /// @param _nextOwner The owner to set
-    function setListOwner(uint256 _id, address _nextOwner) external onlyListOwner(_id) {
+    function setListOwner(uint256 _id, address _nextOwner) external override onlyListOwner(_id) {
         lists[_id].owner = _nextOwner;
 
         emit ListOwnerSet(_id, _nextOwner);
@@ -143,7 +138,7 @@ contract AddressListRegistry {
     /// @param _id The id of the list
     /// @param _nextUpdateType The UpdateType to set
     /// @dev Can only change to a less mutable option (e.g., both add and remove => add only)
-    function setListUpdateType(uint256 _id, UpdateType _nextUpdateType) external onlyListOwner(_id) {
+    function setListUpdateType(uint256 _id, UpdateType _nextUpdateType) external override onlyListOwner(_id) {
         UpdateType prevUpdateType = getListUpdateType(_id);
         require(
             _nextUpdateType == UpdateType.None || prevUpdateType == UpdateType.AddAndRemove,
@@ -189,7 +184,7 @@ contract AddressListRegistry {
     /// @param _id The list id
     /// @param _items The items to check
     /// @return areAllInList_ True if all items are in the list
-    function areAllInList(uint256 _id, address[] memory _items) external view returns (bool areAllInList_) {
+    function areAllInList(uint256 _id, address[] memory _items) external view override returns (bool areAllInList_) {
         for (uint256 i; i < _items.length; i++) {
             if (!isInList(_id, _items[i])) {
                 return false;
@@ -203,7 +198,12 @@ contract AddressListRegistry {
     /// @param _id The list id
     /// @param _items The items to check
     /// @return areAllNotInList_ True if no items are in the list
-    function areAllNotInList(uint256 _id, address[] memory _items) external view returns (bool areAllNotInList_) {
+    function areAllNotInList(uint256 _id, address[] memory _items)
+        external
+        view
+        override
+        returns (bool areAllNotInList_)
+    {
         for (uint256 i; i < _items.length; i++) {
             if (isInList(_id, _items[i])) {
                 return false;
@@ -222,6 +222,7 @@ contract AddressListRegistry {
     function areAllInAllLists(uint256[] memory _ids, address[] memory _items)
         external
         view
+        override
         returns (bool areAllInAllLists_)
     {
         for (uint256 i; i < _items.length; i++) {
@@ -240,6 +241,7 @@ contract AddressListRegistry {
     function areAllInSomeOfLists(uint256[] memory _ids, address[] memory _items)
         external
         view
+        override
         returns (bool areAllInSomeOfLists_)
     {
         for (uint256 i; i < _items.length; i++) {
@@ -258,6 +260,7 @@ contract AddressListRegistry {
     function areAllNotInAnyOfLists(uint256[] memory _ids, address[] memory _items)
         external
         view
+        override
         returns (bool areAllNotInAnyOfLists_)
     {
         for (uint256 i; i < _items.length; i++) {
@@ -277,7 +280,7 @@ contract AddressListRegistry {
     /// @param _ids The list ids
     /// @param _item The item to check
     /// @return isInAllLists_ True if item is in all of the lists
-    function isInAllLists(uint256[] memory _ids, address _item) public view returns (bool isInAllLists_) {
+    function isInAllLists(uint256[] memory _ids, address _item) public view override returns (bool isInAllLists_) {
         for (uint256 i; i < _ids.length; i++) {
             if (!isInList(_ids[i], _item)) {
                 return false;
@@ -291,7 +294,12 @@ contract AddressListRegistry {
     /// @param _ids The list ids
     /// @param _item The item to check
     /// @return isInSomeOfLists_ True if item is in one of the lists
-    function isInSomeOfLists(uint256[] memory _ids, address _item) public view returns (bool isInSomeOfLists_) {
+    function isInSomeOfLists(uint256[] memory _ids, address _item)
+        public
+        view
+        override
+        returns (bool isInSomeOfLists_)
+    {
         for (uint256 i; i < _ids.length; i++) {
             if (isInList(_ids[i], _item)) {
                 return true;
@@ -313,21 +321,21 @@ contract AddressListRegistry {
 
     /// @notice Gets the total count of lists
     /// @return count_ The total count
-    function getListCount() public view returns (uint256 count_) {
+    function getListCount() public view override returns (uint256 count_) {
         return lists.length;
     }
 
     /// @notice Gets the owner of a given list
     /// @param _id The list id
     /// @return owner_ The owner
-    function getListOwner(uint256 _id) public view returns (address owner_) {
+    function getListOwner(uint256 _id) public view override returns (address owner_) {
         return lists[_id].owner;
     }
 
     /// @notice Gets the UpdateType of a given list
     /// @param _id The list id
     /// @return updateType_ The UpdateType
-    function getListUpdateType(uint256 _id) public view returns (UpdateType updateType_) {
+    function getListUpdateType(uint256 _id) public view override returns (UpdateType updateType_) {
         return lists[_id].updateType;
     }
 
@@ -335,7 +343,7 @@ contract AddressListRegistry {
     /// @param _id The list id
     /// @param _item The item to check
     /// @return isInList_ True if the item is in the list
-    function isInList(uint256 _id, address _item) public view returns (bool isInList_) {
+    function isInList(uint256 _id, address _item) public view override returns (bool isInList_) {
         return lists[_id].itemToIsInList[_item];
     }
 }

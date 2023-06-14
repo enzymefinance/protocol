@@ -80,7 +80,7 @@ contract AllowedDepositRecipientsPolicy is AddressListRegistryPolicyBase {
     /// @param _recipient The recipient of shares from the deposit
     /// @return isValid_ True if the rule passes
     function passesRule(address _comptrollerProxy, address _recipient) public view returns (bool isValid_) {
-        return AddressListRegistry(getAddressListRegistry()).isInSomeOfLists(
+        return IAddressListRegistry(getAddressListRegistry()).isInSomeOfLists(
             getListIdsForFund(_comptrollerProxy), _recipient
         );
     }

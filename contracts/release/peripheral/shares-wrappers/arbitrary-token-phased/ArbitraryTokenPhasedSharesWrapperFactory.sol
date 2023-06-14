@@ -9,7 +9,6 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../persistent/address-list-registry/AddressListRegistry.sol";
 import "./ArbitraryTokenPhasedSharesWrapperLib.sol";
 import "./ArbitraryTokenPhasedSharesWrapperProxy.sol";
 

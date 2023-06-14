@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
+import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
 import "../utils/PolicyBase.sol";
@@ -173,7 +173,7 @@ contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMi
 
     /// @dev Helper to determine if an adapter is bypassable
     function __isBypassableAction(address _adapter) private view returns (bool isBypassable_) {
-        return AddressListRegistry(getAddressListRegistry()).isInList(getBypassableAdaptersListId(), _adapter);
+        return IAddressListRegistry(getAddressListRegistry()).isInList(getBypassableAdaptersListId(), _adapter);
     }
 
     /// @dev Helper to update the cumulative slippage for a given fund.

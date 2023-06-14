@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/address-list-registry/AddressListRegistry.sol";
+import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../utils/PolicyBase.sol";
 
@@ -21,12 +21,12 @@ import "../utils/PolicyBase.sol";
 abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
     event ListsSetForFundAndUser(address indexed comptrollerProxy, address indexed user, uint256[] listIds);
 
-    AddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
 
     mapping(address => mapping(address => uint256[])) private comptrollerProxyToUserToListIds;
 
     constructor(address _policyUser, address _addressListRegistry) public PolicyBase(_policyUser) {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
     }
 
     // EXTERNAL FUNCTIONS
@@ -63,7 +63,7 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
         private
         returns (uint256 listId_)
     {
-        (AddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
+        (IAddressListRegistry.UpdateType updateType, address[] memory initialItems) = __decodeNewListData(_newListData);
 
         return ADDRESS_LIST_REGISTRY_CONTRACT.createList(_vaultProxy, updateType, initialItems);
     }
@@ -72,9 +72,9 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
     function __decodeNewListData(bytes memory _newListData)
         private
         pure
-        returns (AddressListRegistry.UpdateType updateType_, address[] memory initialItems_)
+        returns (IAddressListRegistry.UpdateType updateType_, address[] memory initialItems_)
     {
-        return abi.decode(_newListData, (AddressListRegistry.UpdateType, address[]));
+        return abi.decode(_newListData, (IAddressListRegistry.UpdateType, address[]));
     }
 
     /// @dev Helper to parse users and corresponding list data from encoded settings

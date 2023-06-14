@@ -9,7 +9,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/uint-list-registry/UintListRegistry.sol";
+import "../../../../../persistent/uint-list-registry/IUintListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../utils/PolicyBase.sol";
 
@@ -19,12 +19,12 @@ import "../utils/PolicyBase.sol";
 abstract contract UintListRegistryPerUserPolicyBase is PolicyBase {
     event ListsSetForFundAndUser(address indexed comptrollerProxy, address indexed user, uint256[] listIds);
 
-    UintListRegistry internal immutable UINT_LIST_REGISTRY_CONTRACT;
+    IUintListRegistry internal immutable UINT_LIST_REGISTRY_CONTRACT;
 
     mapping(address => mapping(address => uint256[])) private comptrollerProxyToUserToListIds;
 
     constructor(address _policyUser, address _uintListRegistry) public PolicyBase(_policyUser) {
-        UINT_LIST_REGISTRY_CONTRACT = UintListRegistry(_uintListRegistry);
+        UINT_LIST_REGISTRY_CONTRACT = IUintListRegistry(_uintListRegistry);
     }
 
     // EXTERNAL FUNCTIONS
@@ -61,7 +61,7 @@ abstract contract UintListRegistryPerUserPolicyBase is PolicyBase {
         private
         returns (uint256 listId_)
     {
-        (UintListRegistry.UpdateType updateType, uint256[] memory initialItems) = __decodeNewListData(_newListData);
+        (IUintListRegistry.UpdateType updateType, uint256[] memory initialItems) = __decodeNewListData(_newListData);
 
         return UINT_LIST_REGISTRY_CONTRACT.createList(_vaultProxy, updateType, initialItems);
     }
@@ -70,9 +70,9 @@ abstract contract UintListRegistryPerUserPolicyBase is PolicyBase {
     function __decodeNewListData(bytes memory _newListData)
         private
         pure
-        returns (UintListRegistry.UpdateType updateType_, uint256[] memory initialItems_)
+        returns (IUintListRegistry.UpdateType updateType_, uint256[] memory initialItems_)
     {
-        return abi.decode(_newListData, (UintListRegistry.UpdateType, uint256[]));
+        return abi.decode(_newListData, (IUintListRegistry.UpdateType, uint256[]));
     }
 
     /// @dev Helper to parse users and corresponding list data from encoded settings

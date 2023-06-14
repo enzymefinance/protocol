@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../persistent/external-positions/ExternalPositionFactory.sol";
 import "../../../persistent/external-positions/IExternalPosition.sol";
+import "../../../persistent/external-positions/IExternalPositionFactory.sol";
 import "../../../persistent/external-positions/IExternalPositionProxy.sol";
 import "../policy-manager/IPolicyManager.sol";
 import "../utils/ExtensionBase.sol";
@@ -137,7 +137,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
 
         bytes memory constructData = abi.encodeWithSelector(IExternalPosition.init.selector, initArgs);
 
-        address externalPosition = ExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
+        address externalPosition = IExternalPositionFactory(EXTERNAL_POSITION_FACTORY).deploy(
             _vaultProxy, typeId, getExternalPositionLibForType(typeId), constructData
         );
 
@@ -227,7 +227,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
         address externalPosition = abi.decode(_callArgs, (address));
 
         require(
-            ExternalPositionFactory(getExternalPositionFactory()).isExternalPositionProxy(externalPosition),
+            IExternalPositionFactory(getExternalPositionFactory()).isExternalPositionProxy(externalPosition),
             "__reactivateExternalPosition: Account provided is not a valid external position"
         );
 
@@ -265,7 +265,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
 
         for (uint256 i; i < _typeIds.length; i++) {
             require(
-                _typeIds[i] < ExternalPositionFactory(getExternalPositionFactory()).getPositionTypeCounter(),
+                _typeIds[i] < IExternalPositionFactory(getExternalPositionFactory()).getPositionTypeCounter(),
                 "updateExternalPositionTypesInfo: Type does not exist"
             );
 
