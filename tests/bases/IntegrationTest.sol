@@ -79,7 +79,7 @@ abstract contract IntegrationTest is CoreUtils {
 
         address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
 
-        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](3);
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](4);
         // System primitives
         corePrimitives[0] = CorePrimitiveInput({
             symbol: "MLN",
@@ -98,6 +98,12 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "USDC",
             assetAddress: ETHEREUM_USDC,
             aggregatorAddress: ETHEREUM_USDC_ETH_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        corePrimitives[3] = CorePrimitiveInput({
+            symbol: "BAL",
+            assetAddress: ETHEREUM_BAL,
+            aggregatorAddress: ETHEREUM_BAL_ETH_AGGREGATOR,
             rateAsset: ChainlinkRateAsset.ETH
         });
 
@@ -126,9 +132,13 @@ abstract contract IntegrationTest is CoreUtils {
 
         // Deploy minimal asset universe
 
+        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
+        symbolToCoreToken["WETH"] = IERC20(wethToken);
+        tokenToIsCore[IERC20(wethToken)] = true;
+
         address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
 
-        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](4);
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](5);
         // System primitives
         corePrimitives[0] = CorePrimitiveInput({
             symbol: "WMATIC",
@@ -153,6 +163,12 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "USDC",
             assetAddress: POLYGON_USDC,
             aggregatorAddress: POLYGON_USDC_USD_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.USD
+        });
+        corePrimitives[4] = CorePrimitiveInput({
+            symbol: "WBTC",
+            assetAddress: POLYGON_WBTC,
+            aggregatorAddress: POLYGON_WBTC_USD_AGGREGATOR,
             rateAsset: ChainlinkRateAsset.USD
         });
 

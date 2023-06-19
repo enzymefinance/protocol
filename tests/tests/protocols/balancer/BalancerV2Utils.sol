@@ -25,11 +25,14 @@ abstract contract BalancerV2Utils {
     // Factories
     address internal constant ETHEREUM_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS =
         0xdba127fBc23fb20F5929C546af220A991b5C6e01;
+    address internal constant ETHEREUM_WEIGHTED_POOL_2_TOKENS_FACTORY_V1_ADDRESS =
+        0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0;
 
     address internal constant POLYGON_COMPOSABLE_STABLE_POOL_FACTORY_V1_ADDRESS =
         0x136FD06Fa01eCF624C7F2B3CB15742c1339dC2c4;
     address internal constant POLYGON_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS =
         0x7bc6C0E73EDAa66eF3F6E2f27b0EE8661834c6C9;
+    address internal constant POLYGON_WEIGHTED_POOL_FACTORY_V1_ADDRESS = 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9;
 
     // Pools: Composable Stable
 
@@ -59,11 +62,28 @@ abstract contract BalancerV2Utils {
     address internal constant POLYGON_wstETH_BOOSTED_aWETH_POOL_FACTORY_ADDRESS =
         POLYGON_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS;
 
+    // Pools: Weighted
+    // 80-BAL-20-WETH
+    address internal immutable ETHEREUM_80_BAL_20_WETH_POOL_ADDRESS;
+    bytes32 internal constant ETHEREUM_80_BAL_20_WETH_POOL_ID =
+        0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014;
+    address internal constant ETHEREUM_80_BAL_20_WETH_POOL_FACTORY_ADDRESS =
+        ETHEREUM_WEIGHTED_POOL_2_TOKENS_FACTORY_V1_ADDRESS;
+
+    // Tricrypto
+    address internal immutable POLYGON_TRICRYPTO_POOL_ADDRESS;
+    bytes32 internal constant POLYGON_TRICRYPTO_POOL_ID =
+        0x03cd191f589d12b0582a99808cf19851e468e6b500010000000000000000000a;
+    address internal constant POLYGON_TRICRYPTO_POOL_FACTORY_ADDRESS = POLYGON_WEIGHTED_POOL_FACTORY_V1_ADDRESS;
+
     constructor() {
         ETHEREUM_AAVE_BOOSTED_STABLE_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_AAVE_BOOSTED_STABLE_POOL_ID);
         ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_USDC_DAI_USDT_POOL_ID);
+        ETHEREUM_80_BAL_20_WETH_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_80_BAL_20_WETH_POOL_ID);
+
         POLYGON_wMATIC_stMATIC_POOL_ADDRESS = getBalancerV2PoolAddress(POLYGON_wMATIC_stMATIC_POOL_ID);
         POLYGON_wstETH_BOOSTED_aWETH_POOL_ADDRESS = getBalancerV2PoolAddress(POLYGON_wstETH_BOOSTED_aWETH_POOL_ID);
+        POLYGON_TRICRYPTO_POOL_ADDRESS = getBalancerV2PoolAddress(POLYGON_TRICRYPTO_POOL_ID);
     }
 
     function getBalancerV2PoolAddress(bytes32 _poolId) internal pure returns (address poolAddress_) {
