@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../IAddressListRegistry.sol";
-import "./AddOnlyAddressListOwnerBase.sol";
+import "../../../IAddressListRegistry.sol";
+import "../IAddOnlyAddressListOwner.sol";
 
 /// @title AddOnlyAddressListOwnerConsumerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -20,14 +20,14 @@ import "./AddOnlyAddressListOwnerBase.sol";
 abstract contract AddOnlyAddressListOwnerConsumerMixin {
     IAddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 internal immutable LIST_ID;
-    AddOnlyAddressListOwnerBase internal immutable LIST_OWNER_CONTRACT;
+    IAddOnlyAddressListOwner internal immutable LIST_OWNER_CONTRACT;
 
     constructor(address _addressListRegistry, uint256 _listId) public {
         ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         LIST_ID = _listId;
 
         address listOwner = IAddressListRegistry(_addressListRegistry).getListOwner(_listId);
-        LIST_OWNER_CONTRACT = AddOnlyAddressListOwnerBase(listOwner);
+        LIST_OWNER_CONTRACT = IAddOnlyAddressListOwner(listOwner);
     }
 
     /// @dev Helper to lookup an item's existence and then attempt to add it.

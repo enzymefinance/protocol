@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import
-    "../../../../../../../persistent/address-list-registry/address-list-owners/utils/AddOnlyAddressListOwnerConsumerMixin.sol";
+    "../../../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
 import "../../../../../../../external-interfaces/IAaveAToken.sol";
 import "../AdapterBase.sol";
 

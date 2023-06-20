@@ -12,12 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../IAddressListRegistry.sol";
+import "../../../IAddressListRegistry.sol";
+import "../IAddOnlyAddressListOwner.sol";
 
 /// @title AddOnlyAddressListOwnerBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Base contract for an owner of an AddressListRegistry list that is add-only
-abstract contract AddOnlyAddressListOwnerBase {
+abstract contract AddOnlyAddressListOwnerBase is IAddOnlyAddressListOwner {
     IAddressListRegistry internal immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 internal immutable LIST_ID;
 
@@ -44,7 +45,7 @@ abstract contract AddOnlyAddressListOwnerBase {
     /// @notice Add items to the list after subjecting them to validation
     /// @param _items Items to add
     /// @dev Override if access control needed
-    function addValidatedItemsToList(address[] calldata _items) external virtual {
+    function addValidatedItemsToList(address[] calldata _items) external virtual override {
         __validateItems(_items);
 
         ADDRESS_LIST_REGISTRY_CONTRACT.addToList({_id: LIST_ID, _items: _items});

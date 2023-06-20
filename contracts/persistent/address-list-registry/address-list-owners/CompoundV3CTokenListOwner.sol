@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "../../../external-interfaces/ICompoundV3Configurator.sol";
-import "./utils/AddOnlyAddressListOwnerBase.sol";
+import "./utils/0.6.12/AddOnlyAddressListOwnerBase.sol";
 
 /// @title CompoundV3CTokenListOwner Contract
 /// @author Enzyme Council <security@enzyme.finance>

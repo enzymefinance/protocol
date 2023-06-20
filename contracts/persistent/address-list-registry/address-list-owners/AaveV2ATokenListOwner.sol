@@ -15,7 +15,7 @@ pragma experimental ABIEncoderV2;
 import "../../../external-interfaces/IAaveAToken.sol";
 import "../../../external-interfaces/IAaveV2LendingPool.sol";
 import "../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
-import "./utils/AddOnlyAddressListOwnerBase.sol";
+import "./utils/0.6.12/AddOnlyAddressListOwnerBase.sol";
 
 /// @title AaveV2ATokenListOwner Contract
 /// @author Enzyme Council <security@enzyme.finance>
