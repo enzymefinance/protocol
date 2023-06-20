@@ -372,11 +372,19 @@ contract BorrowTest is TestBase {
 
         uint256 preTxVaultBorrowAssetBal = _borrowAsset.balanceOf(address(vaultProxy));
 
+        vm.recordLogs();
+
         __borrow({
             _borrowCurrencyId: _borrowCurrencyId,
             _encodedBorrowTrade: encodedBorrowTrade,
             _collateralCurrencyId: _collateralCurrencyId,
             _collateralAssetAmount: _collateralAmount
+        });
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: toArray(address(_borrowAsset))
         });
 
         // Assert the expected Notional account portfolio state
@@ -447,7 +455,15 @@ contract RedeemTest is TestBase {
 
         uint256 preTxVaultUnderlyingBal = _underlyingAsset.balanceOf(address(vaultProxy));
 
+        vm.recordLogs();
+
         __redeem({_currencyId: _currencyId, _yieldTokenAmount: uint88(uint256(cashBalance))});
+
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: toArray(address(_underlyingAsset))
+        });
 
         uint256 postTxVaultUnderlyingBal = _underlyingAsset.balanceOf(address(vaultProxy));
 

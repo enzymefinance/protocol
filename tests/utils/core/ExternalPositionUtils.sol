@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {VmSafe} from "forge-std/Vm.sol";
+
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
@@ -17,6 +19,8 @@ enum Actions {
 }
 
 abstract contract ExternalPositionUtils is CoreUtilsBase {
+    // ACTIONS
+
     function callOnExternalPosition(
         IExternalPositionManager _externalPositionManager,
         IComptroller _comptrollerProxy,
@@ -85,5 +89,29 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
         });
 
         return typeId_;
+    }
+
+    // MISC
+
+    function assertExternalPositionAssetsToReceive(
+        VmSafe.Log[] memory _logs,
+        IExternalPositionManager _externalPositionManager,
+        address[] memory _assets
+    ) internal {
+        bytes32 selector = bytes32(
+            keccak256(
+                "CallOnExternalPositionExecutedForFund(address,address,address,uint256,bytes,address[],uint256[],address[])"
+            )
+        );
+
+        VmSafe.Log[] memory matchingLogs =
+            filterLogsMatchingSelector({_logs: _logs, _selector: selector, _emitter: address(_externalPositionManager)});
+
+        assertEq(matchingLogs.length, 1, "assertExternalPositionAssetsToReceive: event not found");
+
+        (,,,, address[] memory assetsToReceive) =
+            abi.decode(matchingLogs[0].data, (uint256, bytes, address[], uint256[], address[]));
+
+        assertEq(_assets, assetsToReceive, "assertExternalPositionAssetsToReceive: mismatch");
     }
 }
