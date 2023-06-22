@@ -71,23 +71,23 @@ interface IAaveV3Pool {
         uint256 data;
     }
 
-    function borrow(
-        address _asset,
-        uint256 _amount,
-        uint256 _interestRateMode,
-        uint16 _referralCode,
-        address _onBehalfOf
-    ) external;
+    struct UserConfigurationMap {
+        /**
+         * @dev Bitmap of the users collaterals and borrows. It is divided in pairs of bits, one pair per asset.
+         * The first bit indicates if an asset is used as collateral by the user, the second whether an
+         * asset is borrowed by the user.
+         */
+        uint256 data;
+    }
 
     function getReserveData(address _asset) external returns (ReserveData memory reserveData_);
 
-    function repay(address _asset, uint256 _amount, uint256 _interestRateMode, address _onBehalfOf) external;
+    function getUserConfiguration(address _user)
+        external
+        view
+        returns (UserConfigurationMap memory userConfigurationMap_);
 
-    function setUserEMode(uint8 _categoryId) external;
+    function getUserEMode(address _user) external view returns (uint256 categoryId_);
 
-    function setUserUseReserveAsCollateral(address _asset, bool _useAsCollateral) external;
-
-    function supply(address _underlying, uint256 _amount, address _to, uint16 _referralCode) external;
-
-    function withdraw(address _underlying, uint256 _amount, address _to) external;
+    function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
 }

@@ -40,6 +40,21 @@ abstract contract TypeUtils is CommonUtilsBase {
         return array_;
     }
 
+    function toArray(address _0, address _1, address _2, address _3, address _4)
+        internal
+        pure
+        returns (address[] memory array_)
+    {
+        array_ = new address[](5);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
+        array_[4] = _4;
+
+        return array_;
+    }
+
     // toArray() - uint256
 
     function toArray(uint256 _0) internal pure returns (uint256[] memory array_) {
