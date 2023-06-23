@@ -293,14 +293,21 @@ contract NotionalV2PositionLib is INotionalV2Position, NotionalV2PositionDataDec
             ) {
                 uint16 currencyId = uint16(portfolioAssets[i].currencyId);
 
-                (, INotionalV2Router.Token memory underlyingAsset) = NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(currencyId);
+                // Parse underlying asset and its full unit amount
+                uint256 underlyingAssetDecimalsFactor;
+                if (currencyId == ETH_CURRENCY_ID) {
+                    assets_[assetsIndexCounter] = WETH_TOKEN;
+                    underlyingAssetDecimalsFactor = 10 ** 18;
+                } else {
+                    (, INotionalV2Router.Token memory underlyingAsset) =
+                        NOTIONAL_V2_ROUTER_CONTRACT.getCurrency(currencyId);
 
-                assets_[assetsIndexCounter] = underlyingAsset.tokenAddress;
+                    assets_[assetsIndexCounter] = underlyingAsset.tokenAddress;
+                    underlyingAssetDecimalsFactor = 10 ** uint256(ERC20(underlyingAsset.tokenAddress).decimals());
+                }
 
+                // Get the present value of the notional fCash balance in terms of the underlying
                 int256 presentValue;
-
-                uint256 underlyingAssetDecimalsFactor = 10 ** uint256(ERC20(underlyingAsset.tokenAddress).decimals());
-
                 if (block.timestamp >= portfolioAssets[i].maturity) {
                     presentValue = portfolioAssets[i].notional;
                 } else {

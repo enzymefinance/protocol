@@ -482,139 +482,139 @@ contract RedeemTest is TestBase {
 // POSITION VALUE //
 ////////////////////
 
-// contract PositionValueTest is TestBase {
-//     // Components of asset value:
-//     // - account balance (positive; collateral and matured+settled positive fCash)
-//     // - account balance (negative; matured+settled negative fCash)
-//     // - portfolio asset (positive fCash; non-mature lend)
-//     // - portfolio asset (negative fCash; non-mature borrow)
-//     // "account balances" are in terms of the corresponding cToken ("cash token")
-//     // "portfolio assets" are in fCash, but are converted to their underlying via notionalV3Router.getPresentfCashValue()
-//     // This setup will allow both WETH and ERC20 to be tested as both account balance and portfolio asset:
-//     // 1. collateral: ERC20 (account balance)
-//     // 2. lend: ERC20 (portfolio asset)
-//     // 3. borrow1: WETH (mature, will convert to account balance when settled)
-//     // 4. borrow2: WETH (immature, will remain as portfolio asset)
+contract PositionValueTest is TestBase {
+    // Components of asset value:
+    // - account balance (positive; collateral and matured+settled positive fCash)
+    // - account balance (negative; matured+settled negative fCash)
+    // - portfolio asset (positive fCash; non-mature lend)
+    // - portfolio asset (negative fCash; non-mature borrow)
+    // "account balances" are in terms of the corresponding cToken ("cash token")
+    // "portfolio assets" are in fCash, but are converted to their underlying via notionalV3Router.getPresentfCashValue()
+    // This setup will allow both WETH and ERC20 to be tested as both account balance and portfolio asset:
+    // 1. collateral: ERC20 (account balance)
+    // 2. lend: ERC20 (portfolio asset)
+    // 3. borrow1: WETH (mature, will convert to account balance when settled)
+    // 4. borrow2: WETH (immature, will remain as portfolio asset)
 
-//     // Define a bunch of vars as storage to avoid stack-too-deep
+    // Define a bunch of vars as storage to avoid stack-too-deep
 
-//     INotionalV3Router.MarketIndex internal immatureLendMarketIndex;
-//     INotionalV3Router.MarketIndex internal immatureBorrowMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
-//     INotionalV3Router.MarketIndex internal matureBorrowMarketIndex = INotionalV3Router.MarketIndex.ThreeMonths;
+    INotionalV3Router.MarketIndex internal immatureLendMarketIndex;
+    INotionalV3Router.MarketIndex internal immatureBorrowMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
+    INotionalV3Router.MarketIndex internal matureBorrowMarketIndex = INotionalV3Router.MarketIndex.ThreeMonths;
 
-//     IERC20 internal collateralAsset;
-//     uint16 internal collateralCurrencyId;
-//     address internal collateralAssetCashTokenAddress;
-//     uint256 internal collateralUnits;
+    IERC20 internal collateralAsset;
+    uint16 internal collateralCurrencyId;
+    address internal collateralAssetCashTokenAddress;
+    uint256 internal collateralUnits;
 
-//     IERC20 internal lendAsset;
-//     uint16 internal lendCurrencyId;
-//     uint256 internal lendUnits;
+    IERC20 internal lendAsset;
+    uint16 internal lendCurrencyId;
+    uint256 internal lendUnits;
 
-//     IERC20 internal borrowAsset;
-//     uint16 internal borrowCurrencyId;
-//     address internal borrowAssetCashTokenAddress;
-//     uint256 internal borrowUnits;
+    IERC20 internal borrowAsset;
+    uint16 internal borrowCurrencyId;
+    address internal borrowAssetCashTokenAddress;
+    uint256 internal borrowUnits;
 
-//     uint256 internal collateralAssetAmount;
-//     uint256 internal lendAssetAmount;
-//     uint256 internal borrowAssetAmount;
+    uint256 internal collateralAssetAmount;
+    uint256 internal lendAssetAmount;
+    uint256 internal borrowAssetAmount;
 
-//     function test_success() public {
-//         // Immature markets (lend + immature borrow) must be further from maturity than the mature borrow
-//         immatureLendMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
-//         immatureBorrowMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
-//         matureBorrowMarketIndex = INotionalV3Router.MarketIndex.ThreeMonths;
+    function test_success() public {
+        // Immature markets (lend + immature borrow) must be further from maturity than the mature borrow
+        immatureLendMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
+        immatureBorrowMarketIndex = INotionalV3Router.MarketIndex.SixMonths;
+        matureBorrowMarketIndex = INotionalV3Router.MarketIndex.ThreeMonths;
 
-//         collateralAsset = usdc;
-//         collateralCurrencyId = CURRENCY_ID_USDC;
-//         collateralAssetCashTokenAddress = USDC_CASH_TOKEN_ADDRESS;
-//         collateralUnits = 100_000;
-//         collateralAssetAmount = collateralUnits * assetUnit(collateralAsset);
+        collateralAsset = usdc;
+        collateralCurrencyId = CURRENCY_ID_USDC;
+        collateralAssetCashTokenAddress = USDC_CASH_TOKEN_ADDRESS;
+        collateralUnits = 100_000;
+        collateralAssetAmount = collateralUnits * assetUnit(collateralAsset);
 
-//         lendAsset = dai;
-//         lendCurrencyId = CURRENCY_ID_DAI;
-//         lendUnits = 300_000;
-//         lendAssetAmount = lendUnits * assetUnit(lendAsset);
+        lendAsset = dai;
+        lendCurrencyId = CURRENCY_ID_DAI;
+        lendUnits = 300_000;
+        lendAssetAmount = lendUnits * assetUnit(lendAsset);
 
-//         borrowAsset = wethToken;
-//         borrowCurrencyId = CURRENCY_ID_ETH;
-//         borrowAssetCashTokenAddress = ETH_CASH_TOKEN_ADDRESS;
-//         borrowUnits = 3;
-//         borrowAssetAmount = borrowUnits * assetUnit(borrowAsset);
+        borrowAsset = wethToken;
+        borrowCurrencyId = CURRENCY_ID_ETH;
+        borrowAssetCashTokenAddress = ETH_CASH_TOKEN_ADDRESS;
+        borrowUnits = 3;
+        borrowAssetAmount = borrowUnits * assetUnit(borrowAsset);
 
-//         // Add collateral
+        // Add collateral
 
-//         __addCollateral({_currencyId: collateralCurrencyId, _collateralAssetAmount: collateralAssetAmount});
+        __addCollateral({_currencyId: collateralCurrencyId, _collateralAssetAmount: collateralAssetAmount});
 
-//         // Add fCash position via lending
+        // Add fCash position via lending
 
-//         bytes32 encodedLendTrade = __encodeTrade({
-//             _tradeActionType: INotionalV3Router.TradeActionType.Lend,
-//             _marketIndex: immatureLendMarketIndex,
-//             _fCashAmount: lendUnits * F_CASH_UNIT,
-//             _minSlippage: 0
-//         });
+        bytes32 encodedLendTrade = __encodeTrade({
+            _tradeActionType: INotionalV3Router.TradeActionType.Lend,
+            _marketIndex: immatureLendMarketIndex,
+            _fCashAmount: lendUnits * F_CASH_UNIT,
+            _minSlippage: 0
+        });
 
-//         __lend({
-//             _currencyId: lendCurrencyId,
-//             _underlyingTokenAmount: lendAssetAmount,
-//             _encodedLendTrade: encodedLendTrade
-//         });
+        __lend({
+            _currencyId: lendCurrencyId,
+            _underlyingTokenAmount: lendAssetAmount,
+            _encodedLendTrade: encodedLendTrade
+        });
 
-//         // Add two borrow positions of same asset and amount with different maturities
+        // Add two borrow positions of same asset and amount with different maturities
 
-//         bytes32 encodedImmatureBorrowTrade = __encodeTrade({
-//             _tradeActionType: INotionalV3Router.TradeActionType.Borrow,
-//             _marketIndex: immatureBorrowMarketIndex,
-//             _fCashAmount: borrowUnits * F_CASH_UNIT,
-//             _minSlippage: 0
-//         });
+        bytes32 encodedImmatureBorrowTrade = __encodeTrade({
+            _tradeActionType: INotionalV3Router.TradeActionType.Borrow,
+            _marketIndex: immatureBorrowMarketIndex,
+            _fCashAmount: borrowUnits * F_CASH_UNIT,
+            _minSlippage: 0
+        });
 
-//         bytes32 encodedMatureBorrowTrade = __encodeTrade({
-//             _tradeActionType: INotionalV3Router.TradeActionType.Borrow,
-//             _marketIndex: matureBorrowMarketIndex,
-//             _fCashAmount: borrowUnits * F_CASH_UNIT,
-//             _minSlippage: 0
-//         });
+        bytes32 encodedMatureBorrowTrade = __encodeTrade({
+            _tradeActionType: INotionalV3Router.TradeActionType.Borrow,
+            _marketIndex: matureBorrowMarketIndex,
+            _fCashAmount: borrowUnits * F_CASH_UNIT,
+            _minSlippage: 0
+        });
 
-//         __borrow({
-//             _borrowCurrencyId: borrowCurrencyId,
-//             _encodedBorrowTrade: encodedImmatureBorrowTrade,
-//             _collateralCurrencyId: 0,
-//             _collateralAssetAmount: 0
-//         });
+        __borrow({
+            _borrowCurrencyId: borrowCurrencyId,
+            _encodedBorrowTrade: encodedImmatureBorrowTrade,
+            _collateralCurrencyId: 0,
+            _collateralAssetAmount: 0
+        });
 
-//         __borrow({
-//             _borrowCurrencyId: borrowCurrencyId,
-//             _encodedBorrowTrade: encodedMatureBorrowTrade,
-//             _collateralCurrencyId: 0,
-//             _collateralAssetAmount: 0
-//         });
+        __borrow({
+            _borrowCurrencyId: borrowCurrencyId,
+            _encodedBorrowTrade: encodedMatureBorrowTrade,
+            _collateralCurrencyId: 0,
+            _collateralAssetAmount: 0
+        });
 
-//         // TODO: add more commentary and clear assertions below
+        // TODO: add more commentary and clear assertions below
 
-//         // Warp to maturity and settle the EP's account
-//         vm.warp(__getMarketMaturity({_currencyId: borrowCurrencyId, _marketIndex: matureBorrowMarketIndex}) + 1);
-//         __settleAllMarkets();
+        // Warp to maturity and settle the EP's account
+        vm.warp(__getMarketMaturity({_currencyId: borrowCurrencyId, _marketIndex: matureBorrowMarketIndex}) + 1);
+        __settleAllMarkets();
 
-//         (address[] memory managedAssets, uint256[] memory managedAssetAmounts) = notionalV3Position.getManagedAssets();
-//         assertEq(managedAssets.length, 2);
+        (address[] memory managedAssets, uint256[] memory managedAssetAmounts) = notionalV3Position.getManagedAssets();
+        assertEq(managedAssets.length, 2);
 
-//         assertEq(managedAssets[0], address(lendAsset));
-//         // Value should be within a reasonable range of the underlying, e.g., here using 5%
-//         assertApproxEqRel(managedAssetAmounts[0], lendAssetAmount, WEI_ONE_PERCENT * 5);
-//         assertEq(managedAssets[1], collateralAssetCashTokenAddress);
-//         // TODO: convert the cToken balance to the collateral asset and test that
-//         // assertEq(managedAssetAmounts[1], );
+        assertEq(managedAssets[0], address(lendAsset));
+        // Value should be within a reasonable range of the underlying, e.g., here using 5%
+        assertApproxEqRel(managedAssetAmounts[0], lendAssetAmount, WEI_ONE_PERCENT * 5);
+        assertEq(managedAssets[1], collateralAssetCashTokenAddress);
+        // TODO: convert the cToken balance to the collateral asset and test that
+        // assertEq(managedAssetAmounts[1], );
 
-//         (address[] memory debtAssets, uint256[] memory debtAssetAmounts) = notionalV3Position.getDebtAssets();
-//         assertEq(managedAssets.length, 2);
-//         assertEq(debtAssets[0], address(borrowAsset));
-//         // Value should be within a reasonable range of the underlying, e.g., here using 5%
-//         assertApproxEqRel(debtAssetAmounts[0], borrowAssetAmount, WEI_ONE_PERCENT * 5);
-//         assertEq(debtAssets[1], borrowAssetCashTokenAddress);
-//         // TODO: convert the cToken balance to the borrow asset and test that
-//         // assertEq(debtAssetAmounts[1], );
-//     }
-// }
+        (address[] memory debtAssets, uint256[] memory debtAssetAmounts) = notionalV3Position.getDebtAssets();
+        assertEq(managedAssets.length, 2);
+        assertEq(debtAssets[0], address(borrowAsset));
+        // Value should be within a reasonable range of the underlying, e.g., here using 5%
+        assertApproxEqRel(debtAssetAmounts[0], borrowAssetAmount, WEI_ONE_PERCENT * 5);
+        assertEq(debtAssets[1], borrowAssetCashTokenAddress);
+        // TODO: convert the cToken balance to the borrow asset and test that
+        // assertEq(debtAssetAmounts[1], );
+    }
+}
