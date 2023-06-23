@@ -9,7 +9,7 @@
 
 pragma solidity 0.8.19;
 
-import "./IKilnStakingPosition.sol";
+import {IKilnStakingPosition} from "./IKilnStakingPosition.sol";
 
 /// @title KilnStakingPositionDataDecoder Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -34,5 +34,14 @@ abstract contract KilnStakingPositionDataDecoder {
         returns (address stakingContractAddress_, uint256 validatorAmount_)
     {
         return abi.decode(_actionArgs, (address, uint256));
+    }
+
+    /// @dev Helper to decode args used during the Unstake action
+    function __decodeUnstakeActionArgs(bytes memory _actionArgs)
+        internal
+        pure
+        returns (address stakingContractAddress_, bytes memory publicKeys_)
+    {
+        return abi.decode(_actionArgs, (address, bytes));
     }
 }

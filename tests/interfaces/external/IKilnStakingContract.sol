@@ -8,5 +8,7 @@ interface IKilnStakingContract {
 
     function getELFeeRecipient(bytes calldata _publicKey) external view returns (address feeRecipient_);
 
+    function getExitRequestedFromRoot(bytes32 _publicKeyRoot) external view returns (bool exitRequested_);
+
     function getGlobalFee() external view returns (uint256 globalFee_);
 }

@@ -9,11 +9,10 @@
     file that was distributed with this source code.
 */
 
-import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import "../../../../../external-interfaces/IKilnStakingContract.sol";
-import "../IExternalPositionParser.sol";
-import "./IKilnStakingPosition.sol";
-import "./KilnStakingPositionDataDecoder.sol";
+import {IAddressListRegistry} from "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IKilnStakingPosition} from "./IKilnStakingPosition.sol";
+import {KilnStakingPositionDataDecoder} from "./KilnStakingPositionDataDecoder.sol";
 
 pragma solidity 0.8.19;
 
@@ -34,13 +33,12 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
     }
 
     /// @notice Parses the assets to send and receive for the callOnExternalPosition
-    /// @param _externalPosition The ExternalPositionProxy address
     /// @param _actionId The _actionId for the callOnExternalPosition
     /// @param _encodedActionArgs The encoded parameters for the callOnExternalPosition
     /// @return assetsToTransfer_ The assets to be transferred from the Vault
     /// @return amountsToTransfer_ The amounts to be transferred from the Vault
     /// @return assetsToReceive_ The assets to be received at the Vault
-    function parseAssetsForAction(address _externalPosition, uint256 _actionId, bytes memory _encodedActionArgs)
+    function parseAssetsForAction(address, uint256 _actionId, bytes memory _encodedActionArgs)
         external
         view
         override
@@ -61,21 +59,23 @@ contract KilnStakingPositionParser is KilnStakingPositionDataDecoder, IExternalP
             assetsToTransfer_[0] = WETH_TOKEN;
             amountsToTransfer_[0] = validatorAmount * ETH_AMOUNT_PER_NODE;
         } else if (_actionId == uint256(IKilnStakingPosition.Actions.ClaimFees)) {
-            (address stakingContractAddress, bytes[] memory publicKeys,) = __decodeClaimFeesAction(_encodedActionArgs);
+            (address stakingContractAddress,,) = __decodeClaimFeesAction(_encodedActionArgs);
 
             __validateStakingContract(stakingContractAddress);
 
-            for (uint256 i; i < publicKeys.length; i++) {
-                require(
-                    IKilnStakingContract(stakingContractAddress).getWithdrawer(publicKeys[i]) == _externalPosition,
-                    "parseAssetsForAction: Invalid validator"
-                );
-            }
+            // The StakingContract implementation no longer allows 3rd parties to claim fees on behalf of arbitrary users,
+            // so no further validation is needed here.
 
             assetsToReceive_ = new address[](1);
 
             assetsToReceive_[0] = WETH_TOKEN;
-        } else if (_actionId == uint256(IKilnStakingPosition.Actions.WithdrawEth)) {
+        } else if (_actionId == uint256(IKilnStakingPosition.Actions.Unstake)) {
+            (address stakingContractAddress,) = __decodeUnstakeActionArgs(_encodedActionArgs);
+
+            __validateStakingContract(stakingContractAddress);
+
+            // No ETH is received atomically, as this action simply joins the exit queue
+        } else if (_actionId == uint256(IKilnStakingPosition.Actions.SweepEth)) {
             assetsToReceive_ = new address[](1);
 
             assetsToReceive_[0] = WETH_TOKEN;

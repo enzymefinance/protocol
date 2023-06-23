@@ -16,9 +16,11 @@ pragma solidity >=0.6.0 <0.9.0;
 interface IKilnStakingContract {
     function deposit() external payable;
 
-    function getWithdrawer(bytes calldata _publicKey) external view returns (address withdrawer_);
+    function getCLFeeRecipient(bytes calldata _publicKey) external view returns (address feeRecipient_);
 
-    function withdraw(bytes calldata _publicKey) external;
+    function getWithdrawnFromPublicKeyRoot(bytes32 _publicKeyRoot) external view returns (bool withdrawn_);
+
+    function requestValidatorsExit(bytes calldata _publicKeys) external;
 
     function withdrawCLFee(bytes calldata _publicKey) external;
 

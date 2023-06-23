@@ -4,29 +4,58 @@ pragma solidity 0.8.19;
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {
-    Actions,
-    ClaimFeeTypes,
-    KilnDeploymentUtils,
-    STAKING_CONTRACT_ADDRESS_ETHEREUM
-} from "tests/utils/protocols/kiln/KilnUtils.sol";
 
+import {UpdateType as AddressListUpdateType} from "tests/utils/core/ListRegistryUtils.sol";
+import {BytesArrayLib} from "tests/utils/libs/BytesArrayLib.sol";
+
+import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IKilnStakingContract} from "tests/interfaces/external/IKilnStakingContract.sol";
+
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
+import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
 import {IVault} from "tests/interfaces/internal/IVault.sol";
+
+enum Actions {
+    Stake,
+    ClaimFees,
+    SweepEth,
+    Unstake,
+    PausePositionValue,
+    UnpausePositionValue
+}
+
+enum ClaimFeeTypes {
+    ExecutionLayer,
+    ConsensusLayer,
+    All
+}
+
+address constant STAKING_CONTRACT_ADDRESS_ETHEREUM = 0x0816DF553a89c4bFF7eBfD778A9706a989Dd3Ce3;
 
 ////////////////
 // TEST BASES //
 ////////////////
 
-abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
-    // Kiln StakingContract event
+abstract contract TestBase is IntegrationTest {
+    using BytesArrayLib for bytes[];
+
+    // External Kiln StakingContract events
     event Deposit(address indexed caller, address indexed withdrawer, bytes publicKey, bytes signature);
+
+    // Internal EP events
+    event PositionValuePaused();
+
+    event PositionValueUnpaused();
+
+    event ValidatorsAdded(address stakingContractAddress, uint256 validatorAmount);
+
+    event ValidatorsRemoved(address stakingContractAddress, uint256 validatorAmount);
 
     IKilnStakingContract internal stakingContract = IKilnStakingContract(STAKING_CONTRACT_ADDRESS_ETHEREUM);
     IKilnStakingPositionLib internal kilnStakingPosition;
     uint256 internal stakingPositionsListId;
+    uint256 internal exitedValidatorEthThreshold = 28 ether;
 
     address internal fundOwner;
     IComptroller internal comptrollerProxy;
@@ -76,12 +105,7 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
 
         // Deploy all KilnStakingPosition dependencies
         uint256 typeId;
-        (typeId, stakingPositionsListId) = deployKilnStakingPositionType({
-            _addressListRegistry: core.persistent.addressListRegistry,
-            _externalPositionManager: core.release.externalPositionManager,
-            _stakingContract: address(stakingContract),
-            _wethToken: wethToken
-        });
+        (typeId, stakingPositionsListId) = __deployKilnStakingPositionType();
 
         // Create an empty KilnStakingPosition for the fund
         vm.prank(fundOwner);
@@ -96,6 +120,46 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
         );
     }
 
+    // DEPLOYMENT HELPERS
+
+    function __deployKilnStakingPositionLib() internal returns (address libAddress_) {
+        bytes memory args = abi.encode(wethToken, exitedValidatorEthThreshold);
+
+        return deployCode("KilnStakingPositionLib.sol", args);
+    }
+
+    function __deployKilnStakingPositionParser(uint256 _stakingContractsListId)
+        internal
+        returns (address parserAddress_)
+    {
+        bytes memory args = abi.encode(core.persistent.addressListRegistry, _stakingContractsListId, wethToken);
+
+        return deployCode("KilnStakingPositionParser.sol", args);
+    }
+
+    function __deployKilnStakingPositionType() internal returns (uint256 typeId_, uint256 stakingPositionsListId_) {
+        // Create a new AddressListRegistry list for Kiln StakingContract instances
+        stakingPositionsListId_ = core.persistent.addressListRegistry.createList({
+            _owner: makeAddr("__deployKilnStakingPositionType: StakingContractsListOwner"),
+            _updateType: uint8(AddressListUpdateType.AddAndRemove),
+            _initialItems: toArray(address(stakingContract))
+        });
+
+        // Deploy KilnStakingPosition type contracts
+        address kilnStakingPositionLibAddress = __deployKilnStakingPositionLib();
+        address kilnStakingPositionParserAddress = __deployKilnStakingPositionParser(stakingPositionsListId_);
+
+        // Register KilnStakingPosition type
+        typeId_ = registerExternalPositionType({
+            _externalPositionManager: core.release.externalPositionManager,
+            _label: "KILN_STAKING",
+            _lib: kilnStakingPositionLibAddress,
+            _parser: kilnStakingPositionParserAddress
+        });
+
+        return (typeId_, stakingPositionsListId_);
+    }
+
     // ACTION HELPERS
 
     function __claimFees(address _stakingContractAddress, bytes[] memory _publicKeys, ClaimFeeTypes _claimFeesType)
@@ -103,6 +167,7 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
     {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _publicKeys, _claimFeesType);
 
+        vm.prank(fundOwner);
         callOnExternalPosition({
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
@@ -112,9 +177,21 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
         });
     }
 
+    function __pausePositionValue() internal {
+        vm.prank(fundOwner);
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
+            _externalPositionAddress: address(kilnStakingPosition),
+            _actionId: uint256(Actions.PausePositionValue),
+            _actionArgs: ""
+        });
+    }
+
     function __stake(address _stakingContractAddress, uint256 _validatorAmount) internal {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _validatorAmount);
 
+        vm.prank(fundOwner);
         callOnExternalPosition({
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
@@ -125,12 +202,38 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
     }
 
     function __sweepEth() internal {
+        vm.prank(fundOwner);
         callOnExternalPosition({
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(Actions.SweepEth),
             _actionArgs: ""
+        });
+    }
+
+    function __unpausePositionValue() internal {
+        vm.prank(fundOwner);
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
+            _externalPositionAddress: address(kilnStakingPosition),
+            _actionId: uint256(Actions.UnpausePositionValue),
+            _actionArgs: ""
+        });
+    }
+
+    function __unstake(address _stakingContractAddress, bytes[] memory _publicKeys) internal {
+        bytes memory packedPublicKeys = _publicKeys.encodePacked();
+        bytes memory actionArgs = abi.encode(_stakingContractAddress, packedPublicKeys);
+
+        vm.prank(fundOwner);
+        callOnExternalPosition({
+            _externalPositionManager: core.release.externalPositionManager,
+            _comptrollerProxy: comptrollerProxy,
+            _externalPositionAddress: address(kilnStakingPosition),
+            _actionId: uint256(Actions.Unstake),
+            _actionArgs: actionArgs
         });
     }
 
@@ -149,6 +252,11 @@ abstract contract TestBase is IntegrationTest, KilnDeploymentUtils {
             _id: stakingPositionsListId,
             _items: toArray(address(stakingContract))
         });
+    }
+
+    // Copied verbatim from Kiln StakingContract
+    function __getPubKeyRoot(bytes memory _publicKey) internal pure returns (bytes32 pubKeyRoot_) {
+        return sha256(abi.encodePacked(_publicKey, bytes16(0)));
     }
 
     function __parseValidatorKeysFromDepositEvents(VmSafe.Log[] memory _logs)
@@ -191,7 +299,6 @@ abstract contract PostStakeTestBase is TestBase {
         uint256 validatorAmount = 5;
 
         vm.recordLogs();
-        vm.prank(fundOwner);
         __stake({_stakingContractAddress: address(stakingContract), _validatorAmount: validatorAmount});
 
         validatorKeys = __parseValidatorKeysFromDepositEvents(vm.getRecordedLogs());
@@ -207,7 +314,6 @@ contract StakeTest is TestBase {
         __delistStakingContract();
 
         vm.expectRevert("__validateStakingContract: Invalid staking contract");
-        vm.prank(fundOwner);
         __stake({_stakingContractAddress: address(stakingContract), _validatorAmount: 1});
     }
 
@@ -217,13 +323,26 @@ contract StakeTest is TestBase {
         uint256 validatorAmount = 5;
         uint256 ethAmount = validatorAmount * 32 ether;
 
+        // Setup expected event emissions
+        expectEmit(address(kilnStakingPosition));
+        emit ValidatorsAdded(address(stakingContract), validatorAmount);
+
         vm.recordLogs();
-        vm.prank(fundOwner);
+
         __stake({_stakingContractAddress: address(stakingContract), _validatorAmount: validatorAmount});
+
+        VmSafe.Log[] memory logs = vm.getRecordedLogs();
+
+        // Assert assetsToReceive was correctly formatted (no assets in this case)
+        assertExternalPositionAssetsToReceive({
+            _logs: logs,
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: new address[](0)
+        });
 
         // Assert validators correctly provisioned on Kiln via event emissions.
         // There should be n emissions for n validators.
-        bytes[] memory validatorKeys = __parseValidatorKeysFromDepositEvents(vm.getRecordedLogs());
+        bytes[] memory validatorKeys = __parseValidatorKeysFromDepositEvents(logs);
         assertEq(validatorKeys.length, validatorAmount);
 
         // Assert vault ETH diff
@@ -242,32 +361,104 @@ contract SweepEthTest is TestBase {
 
         uint256 preTxVaultWethBal = wethToken.balanceOf(address(vaultProxy));
 
-        vm.prank(fundOwner);
+        vm.recordLogs();
+
         __sweepEth();
+
+        // Assert assetsToReceive was correctly formatted (ETH only)
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: toArray(address(wethToken))
+        });
 
         // Assert vault ETH diff
         assertEq(wethToken.balanceOf(address(vaultProxy)), preTxVaultWethBal + ethToSweep);
     }
 }
 
+contract PausePositionValueTest is TestBase {
+    function test_failWithAlreadyPaused() public {
+        __pausePositionValue();
+
+        // This doesn't match the error correctly without formatError()
+        vm.expectRevert(formatError("__pausePositionValue: Already paused"));
+        __pausePositionValue();
+    }
+
+    function test_success() public {
+        assertFalse(kilnStakingPosition.positionValueIsPaused(), "already paused");
+
+        expectEmit(address(kilnStakingPosition));
+        emit PositionValuePaused();
+
+        vm.recordLogs();
+
+        __pausePositionValue();
+
+        // Assert assetsToReceive was correctly formatted (no assets in this case)
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: new address[](0)
+        });
+
+        assertTrue(kilnStakingPosition.positionValueIsPaused(), "not paused");
+    }
+}
+
+contract UnpausePositionValueTest is TestBase {
+    function test_failWithNotPaused() public {
+        // This doesn't match the error correctly without formatError()
+        vm.expectRevert(formatError("__unpausePositionValue: Not paused"));
+        __unpausePositionValue();
+    }
+
+    function test_success() public {
+        __pausePositionValue();
+
+        expectEmit(address(kilnStakingPosition));
+        emit PositionValueUnpaused();
+
+        vm.recordLogs();
+
+        __unpausePositionValue();
+
+        // Assert assetsToReceive was correctly formatted (no assets in this case)
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: new address[](0)
+        });
+
+        assertFalse(kilnStakingPosition.positionValueIsPaused(), "not unpaused");
+    }
+}
+
 contract ClaimFeesTest is PostStakeTestBase {
-    bytes internal validatorKeyWithRewards;
-    uint256 internal clRewardAmount;
-    uint256 internal elRewardAmount;
+    bytes[] internal validatorKeysWithRewards;
+    uint256 internal clRewardAmount = 3 ether;
+    uint256 internal elRewardAmount = 2 ether;
+    uint256 internal preClaimValidatorCount;
     uint256 internal preClaimVaultWethBal;
 
     function setUp() public override {
         super.setUp();
 
-        validatorKeyWithRewards = validatorKeys[0];
+        assertTrue(clRewardAmount < exitedValidatorEthThreshold, "CL rewards greater than exited threshold");
 
-        // Seed the validator fee recipients with arbitrary amounts to spoof earned rewards
-        clRewardAmount = 3 ether;
-        elRewardAmount = 5 ether;
-        vm.deal(stakingContract.getCLFeeRecipient(validatorKeyWithRewards), clRewardAmount);
-        vm.deal(stakingContract.getELFeeRecipient(validatorKeyWithRewards), elRewardAmount);
+        validatorKeysWithRewards = toArray(validatorKeys[0], validatorKeys[1]);
 
-        // Record the pre-claim VaultProxy WETH balance
+        for (uint256 i; i < validatorKeysWithRewards.length; i++) {
+            bytes memory validatorKey = validatorKeysWithRewards[i];
+
+            // Seed the validator fee recipients with the arbitrary amounts to spoof earned rewards
+            vm.deal(stakingContract.getCLFeeRecipient(validatorKey), clRewardAmount);
+            vm.deal(stakingContract.getELFeeRecipient(validatorKey), elRewardAmount);
+        }
+
+        // Record pre-claim values
+        preClaimValidatorCount = kilnStakingPosition.getValidatorCount();
         preClaimVaultWethBal = wethToken.balanceOf(address(vaultProxy));
     }
 
@@ -275,67 +466,137 @@ contract ClaimFeesTest is PostStakeTestBase {
         __delistStakingContract();
 
         vm.expectRevert("__validateStakingContract: Invalid staking contract");
-        vm.prank(fundOwner);
         __claimFees({
             _stakingContractAddress: address(stakingContract),
-            _publicKeys: toArray(validatorKeyWithRewards),
-            _claimFeesType: ClaimFeeTypes.All
-        });
-    }
-
-    function test_failWithInvalidValidator() public {
-        bytes memory randomPartyValidator = __stakeForExternalUser();
-
-        vm.expectRevert("parseAssetsForAction: Invalid validator");
-        vm.prank(fundOwner);
-        __claimFees({
-            _stakingContractAddress: address(stakingContract),
-            _publicKeys: toArray(randomPartyValidator),
+            _publicKeys: validatorKeysWithRewards,
             _claimFeesType: ClaimFeeTypes.All
         });
     }
 
     function test_successWithAll() public {
-        vm.prank(fundOwner);
+        vm.recordLogs();
+
         __claimFees({
             _stakingContractAddress: address(stakingContract),
-            _publicKeys: toArray(validatorKeyWithRewards),
+            _publicKeys: validatorKeysWithRewards,
             _claimFeesType: ClaimFeeTypes.All
         });
 
+        // Assert assetsToReceive was correctly formatted (WETH only)
+        // No need to test in subsequent success tests
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: toArray(address(wethToken))
+        });
+
         // Assert vault received the fees, minus operator fee
-        uint256 kilnClFee = __calcKilnFeeForRewardAmount(clRewardAmount);
-        uint256 kilnElFee = __calcKilnFeeForRewardAmount(elRewardAmount);
-        uint256 netFees = (clRewardAmount - kilnClFee) + (elRewardAmount - kilnElFee);
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
+        uint256 totalRewards = (clRewardAmount + elRewardAmount) * validatorKeysWithRewards.length;
+        uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
+        uint256 netRewards = totalRewards - kilnFee;
+        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+
+        // Validator count should be unchanged
+        assertEq(kilnStakingPosition.getValidatorCount(), preClaimValidatorCount, "Validator count");
     }
 
-    function test_successWithConsensusLayer() public {
-        vm.prank(fundOwner);
+    function test_successWithConsensusLayerNotExited() public {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
-            _publicKeys: toArray(validatorKeyWithRewards),
+            _publicKeys: validatorKeysWithRewards,
             _claimFeesType: ClaimFeeTypes.ConsensusLayer
         });
 
         // Assert vault received the fees, minus operator fee
-        uint256 kilnFee = __calcKilnFeeForRewardAmount(clRewardAmount);
-        uint256 netFees = clRewardAmount - kilnFee;
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
+        uint256 totalRewards = clRewardAmount * validatorKeysWithRewards.length;
+        uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
+        uint256 netRewards = totalRewards - kilnFee;
+        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+
+        // Validator count should be unchanged
+        assertEq(kilnStakingPosition.getValidatorCount(), preClaimValidatorCount, "Validator count");
+    }
+
+    function test_successWithConsensusLayerExited() public {
+        // Only tests exited validator detection
+
+        // Set up:
+        uint256 validatorsToRemove = 2;
+        bytes memory requestExitValidatorKey = validatorKeys[0];
+        bytes memory slashedValidatorKey = validatorKeys[1];
+        // (1) A validator that has requested exit
+        __unstake({_stakingContractAddress: address(stakingContract), _publicKeys: toArray(requestExitValidatorKey)});
+        vm.deal(stakingContract.getCLFeeRecipient(requestExitValidatorKey), 32 ether);
+        // (2) A validator that been forcibly exited (i.e., slashed)
+        vm.deal(stakingContract.getCLFeeRecipient(slashedValidatorKey), exitedValidatorEthThreshold);
+
+        // Setup expected event emissions
+        expectEmit(address(kilnStakingPosition));
+        emit ValidatorsRemoved(address(stakingContract), validatorsToRemove);
+
+        // Claim for all validator keys, to loop through some without rewards
+        __claimFees({
+            _stakingContractAddress: address(stakingContract),
+            _publicKeys: toArray(requestExitValidatorKey, slashedValidatorKey),
+            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+        });
+
+        // Validator count should be updated
+        assertEq(
+            kilnStakingPosition.getValidatorCount(), preClaimValidatorCount - validatorsToRemove, "Validator count"
+        );
     }
 
     function test_successWithExecutionLayer() public {
-        vm.prank(fundOwner);
         __claimFees({
             _stakingContractAddress: address(stakingContract),
-            _publicKeys: toArray(validatorKeyWithRewards),
+            _publicKeys: validatorKeysWithRewards,
             _claimFeesType: ClaimFeeTypes.ExecutionLayer
         });
 
         // Assert vault received the fees, minus operator fee
-        uint256 kilnFee = __calcKilnFeeForRewardAmount(elRewardAmount);
-        uint256 netFees = elRewardAmount - kilnFee;
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netFees);
+        uint256 totalRewards = elRewardAmount * validatorKeysWithRewards.length;
+        uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
+        uint256 netRewards = totalRewards - kilnFee;
+        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+    }
+}
+
+contract UnstakeTest is PostStakeTestBase {
+    bytes[] validatorKeysToUnstake;
+
+    function setUp() public override {
+        super.setUp();
+
+        // Choose two arbitrary validators to unstake
+        validatorKeysToUnstake.push(validatorKeys[0]);
+        validatorKeysToUnstake.push(validatorKeys[2]);
+    }
+
+    function test_failWithInvalidStakingContract() public {
+        __delistStakingContract();
+
+        vm.expectRevert("__validateStakingContract: Invalid staking contract");
+        __unstake({_stakingContractAddress: address(stakingContract), _publicKeys: validatorKeysToUnstake});
+    }
+
+    function test_success() public {
+        vm.recordLogs();
+
+        __unstake({_stakingContractAddress: address(stakingContract), _publicKeys: validatorKeysToUnstake});
+
+        // Assert assetsToReceive was correctly formatted (No assets)
+        assertExternalPositionAssetsToReceive({
+            _logs: vm.getRecordedLogs(),
+            _externalPositionManager: core.release.externalPositionManager,
+            _assets: new address[](0)
+        });
+
+        // Assert the validators are marked to be exited on Kiln
+        for (uint256 i; i < validatorKeysToUnstake.length; i++) {
+            bytes32 pubKeyRoot = __getPubKeyRoot(validatorKeysToUnstake[i]);
+            assertTrue(stakingContract.getExitRequestedFromRoot(pubKeyRoot));
+        }
     }
 }
 
@@ -344,6 +605,13 @@ contract ClaimFeesTest is PostStakeTestBase {
 ////////////////////
 
 contract GetManagedAssetsTest is TestBase {
+    function test_failWithPausedPositionValue() public {
+        __pausePositionValue();
+
+        vm.expectRevert("getManagedAssets: Valuation paused");
+        kilnStakingPosition.getManagedAssets();
+    }
+
     function test_success() public {
         // Stakes twice to confirm deposits are tracked additively
 
@@ -351,15 +619,42 @@ contract GetManagedAssetsTest is TestBase {
         uint256 validatorAmount2 = 5;
         uint256 totalEthAmount = (validatorAmount1 + validatorAmount2) * 32 ether;
 
-        vm.startPrank(fundOwner);
+        vm.recordLogs();
+
         __stake({_stakingContractAddress: address(stakingContract), _validatorAmount: validatorAmount1});
         __stake({_stakingContractAddress: address(stakingContract), _validatorAmount: validatorAmount2});
-        vm.stopPrank();
 
-        // Assert EP value
-        (address[] memory assets_, uint256[] memory amounts_) = kilnStakingPosition.getManagedAssets();
+        bytes[] memory allValidatorKeys = __parseValidatorKeysFromDepositEvents(vm.getRecordedLogs());
 
-        assertEq(assets_, toArray(address(wethToken)));
-        assertEq(amounts_, toArray(totalEthAmount));
+        // Assert EP value while all validators are staked
+        {
+            (address[] memory assets, uint256[] memory amounts) = kilnStakingPosition.getManagedAssets();
+            assertEq(assets, toArray(address(wethToken)));
+            assertEq(amounts, toArray(totalEthAmount));
+        }
+
+        // Choose a couple arbitrary validators to exit
+        bytes[] memory validatorKeysToExit = toArray(allValidatorKeys[0], allValidatorKeys[1]);
+
+        // Queue the validators for exit, and then send their fee recipients enough ETH to count as an exit
+        __unstake({_stakingContractAddress: address(stakingContract), _publicKeys: validatorKeysToExit});
+        for (uint256 i; i < validatorKeysToExit.length; i++) {
+            deal(stakingContract.getCLFeeRecipient(validatorKeysToExit[i]), 32 ether);
+        }
+
+        // Claim CL fees to trigger the removal of validators who have exited
+        __claimFees({
+            _stakingContractAddress: address(stakingContract),
+            _publicKeys: validatorKeysToExit,
+            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+        });
+
+        // Assert the final EP value
+        {
+            (address[] memory assets, uint256[] memory amounts) = kilnStakingPosition.getManagedAssets();
+            assertEq(assets, toArray(address(wethToken)));
+            uint256 exitedEthAmount = validatorKeysToExit.length * 32 ether;
+            assertEq(amounts, toArray(totalEthAmount - exitedEthAmount));
+        }
     }
 }
