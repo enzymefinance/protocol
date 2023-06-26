@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {VmSafe} from "forge-std/Vm.sol";
+
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 import {CommonUtils} from "tests/utils/CommonUtils.sol";
+import {Bytes32Lib} from "tests/utils/libs/Bytes32Lib.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
 enum SpendAssetsHandleType {
@@ -15,6 +19,8 @@ enum SpendAssetsHandleType {
 }
 
 abstract contract AdapterUtils is CoreUtilsBase {
+    using Bytes32Lib for bytes32;
+
     function callOnIntegration(
         IIntegrationManager _integrationManager,
         IComptroller _comptrollerProxy,
@@ -30,6 +36,70 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
     function deployMockedAdapter() internal returns (MockedAdapter) {
         return new MockedAdapter();
+    }
+
+    // MISC
+
+    function assertAdapterAssetsForAction(
+        VmSafe.Log[] memory _logs,
+        SpendAssetsHandleType _spendAssetsHandleType,
+        address[] memory _spendAssets,
+        uint256[] memory _maxSpendAssetAmounts,
+        address[] memory _incomingAssets,
+        uint256[] memory _minIncomingAssetAmounts
+    ) internal {
+        // Find target event
+        VmSafe.Log memory targetEvent;
+        {
+            bytes32 eventSelector = bytes32(
+                keccak256(
+                    "CallOnIntegrationExecutedForFund(address,address,address,bytes4,bytes,address[],uint256[],address[],uint256[])"
+                )
+            );
+
+            VmSafe.Log[] memory matchingLogs = filterLogsMatchingSelector({_logs: _logs, _selector: eventSelector});
+            assertEq(matchingLogs.length, 1, "assertAdapterAssetsForAction: event not found");
+
+            targetEvent = matchingLogs[0];
+        }
+
+        // Parse necessary data from event
+        address vaultProxyAddress = IComptroller(targetEvent.topics[1].toAddress()).getVaultProxy();
+        IIntegrationAdapter adapter = IIntegrationAdapter(targetEvent.topics[2].toAddress());
+        bytes4 actionSelector = targetEvent.topics[3].toBytes4();
+        (, bytes memory integrationData,,,,) =
+            abi.decode(targetEvent.data, (address, bytes, address[], uint256[], address[], uint256[]));
+
+        // Simulate actually-called parseAssetsForAction()
+        (
+            uint8 actualSpendAssetsHandleType,
+            address[] memory actualSpendAssets,
+            uint256[] memory actualMaxSpendAssetAmounts,
+            address[] memory actualIncomingAssets,
+            uint256[] memory actualMinIncomingAssetAmounts
+        ) = adapter.parseAssetsForAction({
+            _vaultProxy: vaultProxyAddress,
+            _selector: actionSelector,
+            _encodedCallArgs: integrationData
+        });
+
+        assertEq(
+            uint256(_spendAssetsHandleType),
+            uint256(actualSpendAssetsHandleType),
+            "assertAdapterAssetsForAction: _spendAssetsHandleType mismatch"
+        );
+        assertEq(_spendAssets, actualSpendAssets, "assertAdapterAssetsForAction: _spendAssets mismatch");
+        assertEq(
+            _maxSpendAssetAmounts,
+            actualMaxSpendAssetAmounts,
+            "assertAdapterAssetsForAction: _maxSpendAssetAmounts mismatch"
+        );
+        assertEq(_incomingAssets, actualIncomingAssets, "assertAdapterAssetsForAction: _incomingAssets mismatch");
+        assertEq(
+            _minIncomingAssetAmounts,
+            actualMinIncomingAssetAmounts,
+            "assertAdapterAssetsForAction: _minIncomingAssetAmounts mismatch"
+        );
     }
 }
 
