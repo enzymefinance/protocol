@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 abstract contract Constants {
     // Time
     uint256 internal constant SECONDS_ONE_DAY = 60 * 60 * 24;
+    uint256 internal constant SECONDS_ONE_YEAR = SECONDS_ONE_DAY * 36525 / 100;
 
     // Percentages
     uint256 internal constant BPS_ONE_HUNDRED_PERCENT = 10_000;
@@ -25,6 +26,7 @@ abstract contract Constants {
     uint256 internal constant POLYGON_BLOCK_LATEST_TIME_SENSITIVE = 43179000; // May 26, 2023
 
     // Network assets
+    address internal constant ETHEREUM_AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     address internal constant ETHEREUM_BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
     address internal constant ETHEREUM_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant ETHEREUM_LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
@@ -36,6 +38,7 @@ abstract contract Constants {
     address internal constant ETHEREUM_WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address internal constant ETHEREUM_WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
+    address internal constant POLYGON_BAL = 0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3;
     address internal constant POLYGON_DAI = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
     address internal constant POLYGON_LINK = 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39;
     address internal constant POLYGON_MLN = 0xa9f37D84c856fDa3812ad0519Dad44FA0a3Fe207;

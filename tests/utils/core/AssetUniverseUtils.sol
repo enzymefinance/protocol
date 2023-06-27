@@ -113,6 +113,19 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         return aggregator_;
     }
 
+    function addPrimitivesWithTestAggregator(
+        IValueInterpreter _valueInterpreter,
+        address[] memory _tokenAddresses,
+        bool _skipIfRegistered
+    ) internal returns (TestAggregator[] memory aggregators_) {
+        aggregators_ = new TestAggregator[](_tokenAddresses.length);
+        for (uint256 i; i < _tokenAddresses.length; i++) {
+            aggregators_[i] = addPrimitiveWithTestAggregator(_valueInterpreter, _tokenAddresses[i], _skipIfRegistered);
+        }
+
+        return aggregators_;
+    }
+
     function createRegisteredPrimitive(IValueInterpreter _valueInterpreter, uint8 _decimals)
         internal
         returns (IERC20 token_)

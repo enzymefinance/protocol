@@ -12,6 +12,12 @@ import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
+enum Actions {
+    CallOnIntegration,
+    AddTrackedAssetsToVault,
+    RemoveTrackedAssetsFromVault
+}
+
 enum SpendAssetsHandleType {
     None,
     Approve,
@@ -20,6 +26,18 @@ enum SpendAssetsHandleType {
 
 abstract contract AdapterUtils is CoreUtilsBase {
     using Bytes32Lib for bytes32;
+
+    function callOnIntegration(
+        IIntegrationManager _integrationManager,
+        IComptroller _comptrollerProxy,
+        address _adapter,
+        bytes4 _selector,
+        bytes memory _actionArgs
+    ) internal {
+        bytes memory callArgs = abi.encode(_adapter, _selector, _actionArgs);
+
+        _comptrollerProxy.callOnExtension(address(_integrationManager), uint256(Actions.CallOnIntegration), callArgs);
+    }
 
     function callOnIntegration(
         IIntegrationManager _integrationManager,

@@ -10,6 +10,8 @@ import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
 import {IVault} from "tests/interfaces/internal/IVault.sol";
 
+bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
+
 enum MigrationOutHook {
     PreSignal,
     PostSignal,
@@ -217,6 +219,14 @@ abstract contract VaultUtils is CoreUtilsBase {
 
         vm.prank(_redeemer);
         return _comptrollerProxy.redeemSharesInKind(_redeemer, _sharesQuantity, noAssets, noAssets);
+    }
+
+    function registerVaultCall(IFundDeployer _fundDeployer, address _contract, bytes4 _selector) internal {
+        // bytes4 complains about toArray() usage
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = _selector;
+
+        registerVaultCalls(_fundDeployer, toArray(_contract), selectors, toArray(ANY_VAULT_CALL));
     }
 
     function registerVaultCalls(

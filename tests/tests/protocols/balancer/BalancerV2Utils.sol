@@ -12,6 +12,12 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IDerivativePriceFeed} from "tests/interfaces/internal/IDerivativePriceFeed.sol";
 
+enum ComposableStablePoolExitKind {
+    EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+    BPT_IN_FOR_EXACT_TOKENS_OUT,
+    EXACT_BPT_IN_FOR_ALL_TOKENS_OUT
+}
+
 enum ComposableStablePoolJoinKind {
     INIT,
     EXACT_TOKENS_IN_FOR_BPT_OUT,
@@ -19,7 +25,23 @@ enum ComposableStablePoolJoinKind {
     ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
 }
 
+enum WeightedPoolExitKind {
+    EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+    EXACT_BPT_IN_FOR_TOKENS_OUT,
+    BPT_IN_FOR_EXACT_TOKENS_OUT
+}
+
+enum WeightedPoolJoinKind {
+    INIT,
+    EXACT_TOKENS_IN_FOR_BPT_OUT,
+    TOKEN_IN_FOR_EXACT_BPT_OUT,
+    ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
+}
+
 abstract contract BalancerV2Utils {
+    address internal constant ETHEREUM_AUTHORIZER_ADAPTER_ADDRESS = 0x8F42aDBbA1B16EaAE3BB5754915E0D06059aDd75;
+    address internal constant ETHEREUM_GAUGE_CONTROLLER_ADDRESS = 0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD;
+    address internal constant ETHEREUM_MINTER_ADDRESS = 0x239e55F427D44C3cc793f49bFB507ebe76638a2b;
     address internal constant VAULT_ADDRESS = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
     // Factories
@@ -48,6 +70,8 @@ abstract contract BalancerV2Utils {
         0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7;
     address internal constant ETHEREUM_USDC_DAI_USDT_POOL_FACTORY_ADDRESS =
         ETHEREUM_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS;
+    address internal constant ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS = 0x5612876e6F6cA370d93873FE28c874e89E741fB9;
+    uint256 internal constant ETHEREUM_USDC_DAI_USDT_POOL_AURA_PID = 76;
 
     // wMATIC-stMATIC
     address internal immutable POLYGON_wMATIC_stMATIC_POOL_ADDRESS;
@@ -69,9 +93,9 @@ abstract contract BalancerV2Utils {
         0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014;
     address internal constant ETHEREUM_80_BAL_20_WETH_POOL_FACTORY_ADDRESS =
         ETHEREUM_WEIGHTED_POOL_2_TOKENS_FACTORY_V1_ADDRESS;
-
     // Tricrypto
     address internal immutable POLYGON_TRICRYPTO_POOL_ADDRESS;
+    address internal constant POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS = 0x0F09F70Ed59202c77aC667f574A5f79bC65CeA48;
     bytes32 internal constant POLYGON_TRICRYPTO_POOL_ID =
         0x03cd191f589d12b0582a99808cf19851e468e6b500010000000000000000000a;
     address internal constant POLYGON_TRICRYPTO_POOL_FACTORY_ADDRESS = POLYGON_WEIGHTED_POOL_FACTORY_V1_ADDRESS;
