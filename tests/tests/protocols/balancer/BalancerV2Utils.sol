@@ -25,6 +25,18 @@ enum ComposableStablePoolJoinKind {
     ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
 }
 
+enum LegacyStablePoolExitKind {
+    EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+    EXACT_BPT_IN_FOR_TOKENS_OUT,
+    BPT_IN_FOR_EXACT_TOKENS_OUT
+}
+
+enum LegacyStablePoolJoinKind {
+    INIT,
+    EXACT_TOKENS_IN_FOR_BPT_OUT,
+    TOKEN_IN_FOR_EXACT_BPT_OUT
+}
+
 enum WeightedPoolExitKind {
     EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
     EXACT_BPT_IN_FOR_TOKENS_OUT,
@@ -71,7 +83,6 @@ abstract contract BalancerV2Utils {
     address internal constant ETHEREUM_USDC_DAI_USDT_POOL_FACTORY_ADDRESS =
         ETHEREUM_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS;
     address internal constant ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS = 0x5612876e6F6cA370d93873FE28c874e89E741fB9;
-    uint256 internal constant ETHEREUM_USDC_DAI_USDT_POOL_AURA_PID = 76;
 
     // wMATIC-stMATIC
     address internal immutable POLYGON_wMATIC_stMATIC_POOL_ADDRESS;

@@ -20,21 +20,24 @@ import {
     BalancerV2Utils,
     ComposableStablePoolExitKind,
     ComposableStablePoolJoinKind,
+    LegacyStablePoolExitKind,
+    LegacyStablePoolJoinKind,
     WeightedPoolExitKind,
     WeightedPoolJoinKind
 } from "./BalancerV2Utils.sol";
 
-abstract contract TestBase is IntegrationTest, BalancerV2Utils {
+abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     using AddressArrayLib for address[];
     using Uint256ArrayLib for uint256[];
 
     enum PoolType {
+        None,
         Weighted,
-        ComposableStable
+        ComposableStable,
+        LegacyStable
     }
 
     IBalancerV2Vault internal balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
-    IIntegrationAdapter internal adapter;
 
     address internal vaultOwner = makeAddr("VaultOwner");
     IVault internal vaultProxy;
@@ -43,6 +46,7 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     address[] internal poolAssetAddresses;
 
     // Vars defined by child contract
+    IIntegrationAdapter internal adapter;
     bool internal isAura;
     IERC20 internal balToken;
     IERC20 internal poolBpt;
@@ -51,8 +55,6 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     IERC20 internal stakingToken;
 
     function setUp() public virtual override {
-        adapter = IIntegrationAdapter(__deployAdapter());
-
         // Create fund with arbitrary denomination asset
         (comptrollerProxy, vaultProxy) = createVault({
             _fundDeployer: core.release.fundDeployer,
@@ -73,10 +75,6 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
             _skipIfRegistered: true
         });
     }
-
-    // DEPLOYMENT HELPERS
-
-    function __deployAdapter() internal virtual returns (address adapterAddress_);
 
     // ACTION HELPERS
 
@@ -184,11 +182,8 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
             amountsOutWithoutBpt = amountsOutWithoutBpt.removeAtIndex(bptIndex);
         }
 
-        uint8 exitKindEnum = poolType == PoolType.Weighted
-            ? uint8(WeightedPoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT)
-            : uint8(ComposableStablePoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT);
         // `userData` uses truncated tokens excluding bpt
-        bytes memory userData = abi.encode(exitKindEnum, amountsOutWithoutBpt, _maxBptAmountIn);
+        bytes memory userData = abi.encode(__getExitKindBptInForExactTokensOut(), amountsOutWithoutBpt, _maxBptAmountIn);
 
         return __constructRequest({_limits: _verboseAmountsOut, _userData: userData});
     }
@@ -207,11 +202,8 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
             tokenInIndexWithoutBpt--;
         }
 
-        uint8 joinKindEnum = poolType == PoolType.Weighted
-            ? uint8(WeightedPoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT)
-            : uint8(ComposableStablePoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT);
         // `userData` uses truncated tokens excluding bpt
-        bytes memory userData = abi.encode(joinKindEnum, _bptAmountOut, tokenInIndexWithoutBpt);
+        bytes memory userData = abi.encode(__getJoinKindTokenInForExactBptOut(), _bptAmountOut, tokenInIndexWithoutBpt);
 
         // `limits` uses verbose tokens including bpt
         uint256[] memory limits = new uint256[](poolAssetAddresses.length);
@@ -228,13 +220,102 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
 
         return IERC20(poolAssetAddresses[assetIndex]);
     }
+
+    function __getExitKindBptInForExactTokensOut() internal view returns (uint8 joinKind_) {
+        if (poolType == PoolType.Weighted) {
+            return uint8(WeightedPoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT);
+        } else if (poolType == PoolType.ComposableStable) {
+            return uint8(ComposableStablePoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT);
+        } else if (poolType == PoolType.LegacyStable) {
+            return uint8(LegacyStablePoolExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT);
+        }
+
+        revert("No pool type");
+    }
+
+    function __getExitKindExactBptInForOneTokenOut() internal view returns (uint8 joinKind_) {
+        if (poolType == PoolType.Weighted) {
+            return uint8(WeightedPoolExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT);
+        } else if (poolType == PoolType.ComposableStable) {
+            return uint8(ComposableStablePoolExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT);
+        } else if (poolType == PoolType.LegacyStable) {
+            return uint8(LegacyStablePoolExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT);
+        }
+
+        revert("No pool type");
+    }
+
+    function __getExitKindExactBptInForTokensOut() internal view returns (uint8 joinKind_) {
+        if (poolType == PoolType.Weighted) {
+            return uint8(WeightedPoolExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT);
+        } else if (poolType == PoolType.ComposableStable) {
+            return uint8(ComposableStablePoolExitKind.EXACT_BPT_IN_FOR_ALL_TOKENS_OUT);
+        } else if (poolType == PoolType.LegacyStable) {
+            return uint8(LegacyStablePoolExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT);
+        }
+
+        revert("No pool type");
+    }
+
+    function __getJoinKindExactTokensInForBptOut() internal view returns (uint8 joinKind_) {
+        if (poolType == PoolType.Weighted) {
+            return uint8(WeightedPoolJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+        } else if (poolType == PoolType.ComposableStable) {
+            return uint8(ComposableStablePoolJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+        } else if (poolType == PoolType.LegacyStable) {
+            return uint8(LegacyStablePoolJoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT);
+        }
+
+        revert("No pool type");
+    }
+
+    function __getJoinKindTokenInForExactBptOut() internal view returns (uint8 joinKind_) {
+        if (poolType == PoolType.Weighted) {
+            return uint8(WeightedPoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT);
+        } else if (poolType == PoolType.ComposableStable) {
+            return uint8(ComposableStablePoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT);
+        } else if (poolType == PoolType.LegacyStable) {
+            return uint8(LegacyStablePoolJoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT);
+        }
+
+        revert("No pool type");
+    }
+
+    // Quickly identify if a test is Balancer on mainnet, or Aura/sidechain
+    function __isBalancerMainnetTest() internal view returns (bool isBalancerMainnet_) {
+        return !isAura && address(balToken) == ETHEREUM_BAL;
+    }
 }
 
-abstract contract BalancerAndAuraTest is TestBase {
+abstract contract BalancerAndAuraPoolTest is PoolTestBase {
     using AddressArrayLib for address[];
     using Uint256ArrayLib for uint256[];
 
     function test_claimRewards_success() public {
+        // Setup rewards claiming on the Minter (mainnet Balancer tests only)
+        if (__isBalancerMainnetTest()) {
+            // Approve adapter to call Minter on behalf of the vault
+            registerVaultCall({
+                _fundDeployer: core.release.fundDeployer,
+                _contract: ETHEREUM_MINTER_ADDRESS,
+                _selector: ICurveMinter.toggle_approve_mint.selector
+            });
+            vm.prank(vaultOwner);
+            comptrollerProxy.vaultCallOnContract({
+                _contract: ETHEREUM_MINTER_ADDRESS,
+                _selector: ICurveMinter.toggle_approve_mint.selector,
+                _encodedArgs: abi.encode(address(adapter))
+            });
+
+            // Make sure the gauge has some weight so it earns BAL rewards via the Minter
+            uint256 totalWeight = ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).get_total_weight();
+            vm.prank(ETHEREUM_AUTHORIZER_ADAPTER_ADDRESS);
+            ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).change_gauge_weight({
+                _gauge: address(stakingToken),
+                _weight: totalWeight / 10
+            });
+        }
+
         // Seed the vault with bpt and stake them to start accruing rewards
         uint256 stakingTokenBalance = assetUnit(stakingToken) * 1000;
         deal({token: address(poolBpt), to: address(vaultProxy), give: stakingTokenBalance});
@@ -243,9 +324,11 @@ abstract contract BalancerAndAuraTest is TestBase {
         // Warp ahead in time to accrue significant rewards
         vm.warp(block.timestamp + SECONDS_ONE_YEAR);
 
-        // Seed the staking token with some BAL for rewards (Balancer Polygon and Aura both need this)
+        // Seed the staking token with some BAL for rewards (Balancer sidechains and Aura)
         // Incidentally, this also tests the extra rewards are claimed correctly, since BAL is treated as an extra reward on side-chains
-        increaseTokenBalance({_token: balToken, _to: address(stakingToken), _amount: assetUnit(balToken) * 10_000});
+        if (!__isBalancerMainnetTest()) {
+            increaseTokenBalance({_token: balToken, _to: address(stakingToken), _amount: assetUnit(balToken) * 10_000});
+        }
 
         vm.recordLogs();
 
@@ -439,72 +522,64 @@ abstract contract BalancerAndAuraTest is TestBase {
     // TODO: takeOrder() tests
 }
 
-// TODO: Balancer-only tests
-
-contract EthereumTest is BalancerAndAuraTest {
-    function __deployAdapter() internal override returns (address adapterAddress_) {
-        bytes memory args =
-            abi.encode(core.release.integrationManager, balancerVault, ETHEREUM_MINTER_ADDRESS, ETHEREUM_BAL);
+abstract contract BalancerPoolTest is BalancerAndAuraPoolTest {
+    function __deployAdapter(address _minterAddress) internal returns (address adapterAddress_) {
+        bytes memory args = abi.encode(core.release.integrationManager, balancerVault, _minterAddress, balToken);
 
         return deployCode("BalancerV2LiquidityAdapter.sol", args);
     }
 
-    function setUp() public override {
+    // TODO: add Balancer-only tests here
+}
+
+abstract contract EthereumBalancerPoolTest is BalancerPoolTest {
+    function setUp() public virtual override {
         setUpMainnetEnvironment();
 
-        // Define pools to use throughout
         balToken = IERC20(ETHEREUM_BAL);
+
+        // Deploy the adapter
+        adapter = IIntegrationAdapter(__deployAdapter(ETHEREUM_MINTER_ADDRESS));
+
+        // Run common setup
+        super.setUp();
+    }
+}
+
+abstract contract PolygonBalancerPoolTest is BalancerPoolTest {
+    function setUp() public virtual override {
+        setUpPolygonEnvironment();
+
+        balToken = IERC20(POLYGON_BAL);
+
+        // Deploy the adapter
+        adapter = IIntegrationAdapter(__deployAdapter(address(0)));
+
+        super.setUp();
+    }
+}
+
+// ACTUAL TESTS, RUN PER-POOL
+
+contract EthereumUsdcDaiUsdtPoolTest is EthereumBalancerPoolTest {
+    function setUp() public override {
+        // Define pool before all other setup
         poolId = ETHEREUM_USDC_DAI_USDT_POOL_ID;
         poolBpt = IERC20(ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS);
         poolType = PoolType.ComposableStable;
         stakingToken = IERC20(ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS);
 
-        // Make sure the gauge has some weight so it earns BAL rewards (only relevant on mainnet)
-        uint256 totalWeight = ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).get_total_weight();
-        vm.prank(ETHEREUM_AUTHORIZER_ADAPTER_ADDRESS);
-        ICurveGaugeController(ETHEREUM_GAUGE_CONTROLLER_ADDRESS).change_gauge_weight({
-            _gauge: ETHEREUM_USDC_DAI_USDT_POOL_GAUGE_ADDRESS,
-            _weight: totalWeight / 10
-        });
-
-        // Run common setup
         super.setUp();
-
-        // Approve adapter to call Minter on behalf of the vault (only relevant to Balancer on mainnet)
-        // Dependency: setUp()
-        registerVaultCall({
-            _fundDeployer: core.release.fundDeployer,
-            _contract: ETHEREUM_MINTER_ADDRESS,
-            _selector: ICurveMinter.toggle_approve_mint.selector
-        });
-        vm.prank(vaultOwner);
-        comptrollerProxy.vaultCallOnContract({
-            _contract: ETHEREUM_MINTER_ADDRESS,
-            _selector: ICurveMinter.toggle_approve_mint.selector,
-            _encodedArgs: abi.encode(address(adapter))
-        });
     }
 }
 
-contract PolygonTest is BalancerAndAuraTest {
-    function __deployAdapter() internal override returns (address adapterAddress_) {
-        bytes memory args = abi.encode(core.release.integrationManager, balancerVault, address(0), POLYGON_BAL);
-
-        return deployCode("BalancerV2LiquidityAdapter.sol", args);
-    }
-
+contract PolygonTriCryptoPoolTest is PolygonBalancerPoolTest {
     function setUp() public override {
-        setUpPolygonEnvironment();
-
-        // Define pools to use throughout
-        balToken = IERC20(POLYGON_BAL);
+        // Define pool before all other setup
         poolId = POLYGON_TRICRYPTO_POOL_ID;
         poolBpt = IERC20(POLYGON_TRICRYPTO_POOL_ADDRESS);
         poolType = PoolType.Weighted;
         stakingToken = IERC20(POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS);
-
-        // Seed the gauge with some BAL for rewards
-        increaseTokenBalance({_token: balToken, _to: address(stakingToken), _amount: assetUnit(balToken) * 10_000});
 
         super.setUp();
     }
