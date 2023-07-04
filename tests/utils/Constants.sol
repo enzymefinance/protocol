@@ -28,9 +28,12 @@ abstract contract Constants {
     // Network assets
     address internal constant ETHEREUM_AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     address internal constant ETHEREUM_BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
+    address internal constant ETHEREUM_CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address internal constant ETHEREUM_CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
     address internal constant ETHEREUM_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant ETHEREUM_LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     address internal constant ETHEREUM_MLN = 0xec67005c4E498Ec7f55E092bd1d35cbC47C91892;
+    address internal constant ETHEREUM_STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant ETHEREUM_STKAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
     address internal constant ETHEREUM_USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address internal constant ETHEREUM_USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
@@ -39,6 +42,7 @@ abstract contract Constants {
     address internal constant ETHEREUM_WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
     address internal constant POLYGON_BAL = 0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3;
+    address internal constant POLYGON_CRV = 0x172370d5Cd63279eFa6d502DAB29171933a610AF;
     address internal constant POLYGON_DAI = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
     address internal constant POLYGON_LINK = 0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39;
     address internal constant POLYGON_MLN = 0xa9f37D84c856fDa3812ad0519Dad44FA0a3Fe207;

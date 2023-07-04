@@ -4,6 +4,53 @@ pragma solidity 0.8.19;
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TypeUtils is CommonUtilsBase {
+    // toArray() - bool
+
+    function toArray(bool _0) internal pure returns (bool[] memory array_) {
+        array_ = new bool[](1);
+        array_[0] = _0;
+
+        return array_;
+    }
+
+    function toArray(bool _0, bool _1) internal pure returns (bool[] memory array_) {
+        array_ = new bool[](2);
+        array_[0] = _0;
+        array_[1] = _1;
+
+        return array_;
+    }
+
+    function toArray(bool _0, bool _1, bool _2) internal pure returns (bool[] memory array_) {
+        array_ = new bool[](3);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+
+        return array_;
+    }
+
+    function toArray(bool _0, bool _1, bool _2, bool _3) internal pure returns (bool[] memory array_) {
+        array_ = new bool[](4);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
+
+        return array_;
+    }
+
+    function toArray(bool _0, bool _1, bool _2, bool _3, bool _4) internal pure returns (bool[] memory array_) {
+        array_ = new bool[](5);
+        array_[0] = _0;
+        array_[1] = _1;
+        array_[2] = _2;
+        array_[3] = _3;
+        array_[4] = _4;
+
+        return array_;
+    }
+
     // toArray() - address
 
     function toArray(address _0) internal pure returns (address[] memory array_) {

@@ -29,8 +29,14 @@ abstract contract TokenUtils is CommonUtilsBase {
         return createTestToken(18);
     }
 
+    function increaseNativeAssetBalance(address _to, uint256 _amount) internal virtual {
+        uint256 balance = _to.balance;
+
+        deal(_to, balance + _amount);
+    }
+
     // NOTE: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
-    function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal {
+    function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal virtual {
         uint256 balance = _token.balanceOf(_to);
 
         deal(address(_token), _to, balance + _amount);
