@@ -47,7 +47,9 @@ abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, Reentrancy
 
     event ManagerRemoved(address indexed user);
 
-    event Redeemed(address indexed user, uint256 sharesAmount);
+    event Redeemed(
+        address indexed user, uint256 sharesAmount, address indexed redemptionAsset, uint256 redemptionAssetAmount
+    );
 
     event RedemptionApproval(address indexed user, uint256 amount);
 

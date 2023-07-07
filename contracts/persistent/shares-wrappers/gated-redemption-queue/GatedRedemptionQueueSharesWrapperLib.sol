@@ -605,8 +605,6 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             usersRedeemed_[usersToRedeemCount] = user;
             sharesRedeemed_[usersToRedeemCount] = userRedemptionAmount;
             totalSharesRedeemed = totalSharesRedeemed.add(userRedemptionAmount);
-
-            emit Redeemed(user, userRedemptionAmount);
         }
 
         // Update queue
@@ -640,6 +638,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             } else {
                 redemptionAssetContract.safeTransfer(usersRedeemed_[i], userAmountToDisperse);
             }
+
+            emit Redeemed(usersRedeemed_[i], sharesRedeemed_[i], getRedemptionAsset(), userAmountToDisperse);
         }
 
         return (usersRedeemed_, sharesRedeemed_);
