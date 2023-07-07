@@ -10,6 +10,9 @@ cbor_metadata = false
 verbosity = 3
 fs_permissions = [{ access = "read", path = "./artifacts"}]
 
+# NOTE: Specifying shanghai as the evm_version seems required for the Goerli tests to pass
+evm_version = "shanghai"
+
 # NOTE: Remappings are somewhat limited right now as there's no way to apply them to specific contexts: https://github.com/foundry-rs/foundry/issues/1855
 remappings = [
   # Used by us directly.
@@ -30,6 +33,7 @@ yul = false
 [rpc_endpoints]
 mainnet = "${ETHEREUM_NODE_MAINNET}"
 polygon = "${ETHEREUM_NODE_POLYGON}"
+goerli = "${ETHEREUM_NODE_GOERLI}"
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY_MAINNET}", chain = "mainnet" }

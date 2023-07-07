@@ -47,6 +47,14 @@ abstract contract IntegrationTest is CoreUtils {
         setUpPolygonEnvironment(_forkBlock, true);
     }
 
+    function setUpGoerliEnvironment() internal {
+        setUpGoerliEnvironment(GOERLI_BLOCK_LATEST, true);
+    }
+
+    function setUpGoerliEnvironment(uint256 _forkBlock) internal {
+        setUpGoerliEnvironment(_forkBlock, true);
+    }
+
     function setUpStandaloneEnvironment() internal {
         setUpStandaloneEnvironment(true);
     }
@@ -170,6 +178,47 @@ abstract contract IntegrationTest is CoreUtils {
             assetAddress: POLYGON_WBTC,
             aggregatorAddress: POLYGON_WBTC_USD_AGGREGATOR,
             rateAsset: ChainlinkRateAsset.USD
+        });
+
+        addCorePrimitives(corePrimitives);
+    }
+
+    function setUpGoerliEnvironment(uint256 _forkBlock, bool _setReleaseLive) internal {
+        vm.createSelectFork("goerli", _forkBlock);
+
+        // Test MLN/ETH aggregator.
+        address testMLNETHAggregator = address(createTestAggregator({_price: 0.01 ether}));
+
+        setUpEnvironment({
+            _setReleaseLive: _setReleaseLive,
+            _wethToken: GOERLI_WETH,
+            _mlnToken: GOERLI_MLN,
+            _wrappedNativeToken: GOERLI_WETH,
+            _gasRelayHub: address(0),
+            _gasRelayTrustedForwarder: address(0),
+            _gasRelayDepositCooldown: 1 days,
+            _gasRelayDepositMaxTotal: 1 ether,
+            _gasRelayRelayFeeMaxBase: 0,
+            _gasRelayFeeMaxPercent: 10,
+            _vaultMlnBurner: address(0), // TODO: This requires per-network config
+            _vaultPositionsLimit: 20,
+            _chainlinkStaleRateThreshold: 3650 days,
+            _ethUsdAggregator: address(0)
+        });
+
+        // Deploy minimal asset universe
+
+        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
+        symbolToCoreToken["WETH"] = IERC20(wethToken);
+        tokenToIsCore[IERC20(wethToken)] = true;
+
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](1);
+        // System primitives
+        corePrimitives[0] = CorePrimitiveInput({
+            symbol: "MLN",
+            assetAddress: GOERLI_MLN,
+            aggregatorAddress: testMLNETHAggregator,
+            rateAsset: ChainlinkRateAsset.ETH
         });
 
         addCorePrimitives(corePrimitives);

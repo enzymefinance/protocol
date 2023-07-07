@@ -25,6 +25,9 @@ abstract contract Constants {
     uint256 internal constant POLYGON_BLOCK_LATEST = POLYGON_BLOCK_LATEST_TIME_SENSITIVE;
     uint256 internal constant POLYGON_BLOCK_LATEST_TIME_SENSITIVE = 43179000; // May 26, 2023
 
+    uint256 internal constant GOERLI_BLOCK_LATEST = GOERLI_BLOCK_LATEST_TIME_SENSITIVE;
+    uint256 internal constant GOERLI_BLOCK_LATEST_TIME_SENSITIVE = 9294273; // July 5th, 2023
+
     // Network assets
     address internal constant ETHEREUM_AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     address internal constant ETHEREUM_BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
@@ -52,6 +55,10 @@ abstract contract Constants {
     address internal constant POLYGON_WBTC = 0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6;
     address internal constant POLYGON_WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
     address internal constant POLYGON_WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+
+    // Using Goerli Test Token (TST) for test purposes
+    address internal constant GOERLI_MLN = 0x7af963cF6D228E564e2A0aA0DdBF06210B38615D;
+    address internal constant GOERLI_WETH = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6;
 
     // Network Chainlink aggregators
     address internal constant ETHEREUM_BAL_ETH_AGGREGATOR = 0xC1438AA3823A6Ba0C159CfA8D98dF5A994bA120b;
