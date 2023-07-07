@@ -87,6 +87,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         // lpToken and stakingToken must be registered on the CurvePriceFeed
         // _invariantProxyAssets and _reentrantVirtualPrices are arbitrary
         // _gaugeTokens is not needed for Convex
+        vm.prank(core.release.fundDeployer.getOwner());
         priceFeed.addPools({
             _pools: toArray(poolAddress),
             _invariantProxyAssets: toArray(address(getCoreToken("USD"))),

@@ -66,6 +66,8 @@ abstract contract ConvexUtils is AddOnUtilsBase {
 
         // Deploy and upgrade to the latest version of the wrapper lib
         address lib = deployConvexStakingWrapperLib(stakingWrapperFactory_);
+
+        vm.prank(stakingWrapperFactory_.getOwner());
         stakingWrapperFactory_.setCanonicalLib(lib);
     }
 }

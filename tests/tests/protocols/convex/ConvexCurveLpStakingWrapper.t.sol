@@ -22,12 +22,18 @@ abstract contract ConvexAndAuraTest is IntegrationTest, ConvexUtils {
 
     event RewardTokenRemoved(address token);
 
+    address internal factoryOwner;
+
     // Assigned in child contract setup
     IConvexBooster internal booster;
     IERC20 internal crvToken;
     IERC20 internal cvxToken;
     uint256 internal stashTokenStartPid;
     IConvexCurveLpStakingWrapperFactory internal stakingWrapperFactory;
+
+    function setUp() public virtual override {
+        factoryOwner = stakingWrapperFactory.getOwner();
+    }
 
     // Purpose: test that the wrapper bypasses checkpointing a harvest of a reward token with an unexpected interface
     // during `__checkpoint()`, which is called during `deposit()`
@@ -111,11 +117,15 @@ abstract contract ConvexAndAuraTest is IntegrationTest, ConvexUtils {
         IConvexCurveLpStakingWrapperLib wrapper = IConvexCurveLpStakingWrapperLib(stakingWrapperFactory.deploy(pid));
 
         // Trying to remove either core token (CRV or CVX) should fail
+        vm.startPrank(factoryOwner);
+
         vm.expectRevert("removeExtraRewardToken: Invalid token");
         wrapper.removeExtraRewardToken(address(crvToken));
 
         vm.expectRevert("removeExtraRewardToken: Invalid token");
         wrapper.removeExtraRewardToken(address(cvxToken));
+
+        vm.stopPrank();
     }
 
     function test_removeExtraRewardToken_failWithUnauthorized() public {
@@ -128,8 +138,6 @@ abstract contract ConvexAndAuraTest is IntegrationTest, ConvexUtils {
         // Add any reward token to the wrapper
         address rewardTokenAddress = addBadRewardTokenToStakingWrapper(wrapper);
 
-        address randomUser = makeAddr("RandomUser");
-        vm.prank(randomUser);
         vm.expectRevert("removeExtraRewardToken: Unauthorized");
         wrapper.removeExtraRewardToken(rewardTokenAddress);
     }
@@ -151,6 +159,7 @@ abstract contract ConvexAndAuraTest is IntegrationTest, ConvexUtils {
         emit RewardTokenRemoved(rewardTokenAddress);
 
         // Remove the reward token from the wrapper
+        vm.prank(factoryOwner);
         wrapper.removeExtraRewardToken(rewardTokenAddress);
 
         // Confirm that the reward token was removed from the wrapper
@@ -171,5 +180,7 @@ contract EthereumConvexTest is ConvexAndAuraTest {
         stashTokenStartPid = 151;
 
         stakingWrapperFactory = deployConvexStakingWrapperFactory({_dispatcher: core.persistent.dispatcher});
+
+        super.setUp();
     }
 }

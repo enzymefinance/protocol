@@ -22,5 +22,7 @@ contract EthereumAuraTest is ConvexAndAuraTest, AuraBalancerV2Utils {
         stakingWrapperFactory = IConvexCurveLpStakingWrapperFactory(
             address(deployAuraStakingWrapperFactory({_dispatcher: core.persistent.dispatcher}))
         );
+
+        super.setUp();
     }
 }

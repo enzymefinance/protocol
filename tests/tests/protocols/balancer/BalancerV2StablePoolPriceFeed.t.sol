@@ -15,6 +15,7 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     IBalancerV2Vault constant balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
     IBalancerV2StablePoolPriceFeed internal priceFeed;
+    address internal priceFeedOwner;
 
     // Vars defined by child contract
     // - stable pools info
@@ -32,6 +33,8 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     function setUp() public virtual override {
         // Deploy price feed
         priceFeed = __deployPriceFeed({_poolFactories: new address[](0)});
+
+        priceFeedOwner = core.release.fundDeployer.getOwner();
     }
 
     // DEPLOYMENT HELPERS
@@ -53,11 +56,13 @@ abstract contract ValueTest is TestBase {
         // 1. register the pool factory on the price feed
         // 2. register the pool on the price feed
         // 3. register the bpt (pool) as a derivative on the ValueInterpreter
+        vm.startPrank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
         priceFeed.addPools({
             _pools: toArray(address(poolBpt)),
             _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
         });
+        vm.stopPrank();
         addDerivative({
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: address(poolBpt),
@@ -79,11 +84,13 @@ abstract contract ValueTest is TestBase {
 
     function test_calcCanonicalAssetValue_failWithReentrancy() public {
         // Register the bpt on the price feed
+        vm.startPrank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
         priceFeed.addPools({
             _pools: toArray(address(poolBpt)),
             _invariantProxyAssets: toArray(address(poolInvariantProxyAsset))
         });
+        vm.stopPrank();
 
         // Define an asset and amount to use in the reentrant join
         IERC20 joinAsset;
@@ -146,9 +153,11 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Add the pool factories
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
 
         // Attempt to add a duplicate factory
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(fakePoolFactoryAddresses[0]));
 
         // Assert the factories are now registered, with the duplicate omitted
@@ -163,6 +172,7 @@ abstract contract RegistryTest is TestBase {
 
     function test_removePoolFactories_success() public {
         // Register the factories to remove
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
 
         // Define events to assert
@@ -172,6 +182,7 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Remove the pool factories
+        vm.prank(priceFeedOwner);
         priceFeed.removePoolFactories(fakePoolFactoryAddresses);
 
         // Assert the factories have been deregistered
@@ -188,10 +199,13 @@ abstract contract RegistryTest is TestBase {
     function test_addPools_failWithInvalidFactory() public {
         // Attempting to add the pool without the factory registered should fail
         vm.expectRevert("addPools: Invalid factory");
+        vm.prank(priceFeedOwner);
         priceFeed.addPools(toArray(address(poolBpt)), toArray(address(poolInvariantProxyAsset)));
     }
 
     function test_addPools_failWithDuplicate() public {
+        vm.startPrank(priceFeedOwner);
+
         // Add the pool's factory to the price feed
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
 
@@ -201,6 +215,8 @@ abstract contract RegistryTest is TestBase {
         // Attempting to add the pool again should fail
         vm.expectRevert("addPools: Already registered");
         priceFeed.addPools(toArray(address(poolBpt)), toArray(address(poolInvariantProxyAsset)));
+
+        vm.stopPrank();
     }
 
     function test_addPools_success() public {
@@ -214,6 +230,7 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Add the pools factories to the price feed
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress, pool2FactoryAddress));
 
         // Define events to assert
@@ -223,6 +240,7 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Add the pools to the price feed
+        vm.prank(priceFeedOwner);
         priceFeed.addPools(pools, invariantProxyAssets);
 
         // Assert the pools are now registered

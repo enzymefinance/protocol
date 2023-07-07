@@ -34,17 +34,14 @@ contract FundDeployerTest is IntegrationTest {
     }
 
     function test_getOwner_success() public {
-        address creator = makeAddr("FundDeployerCreator");
-
-        // Deploy a new FundDeployer from an expected account
-        vm.prank(creator);
+        // Deploy a new FundDeployer
         IFundDeployer newFundDeployer = deployFundDeployer({
             _dispatcher: core.persistent.dispatcher,
             _gasRelayPaymasterFactory: core.persistent.gasRelayPaymasterFactory
         });
 
         // Owner starts as the FundDeployer contract deployer
-        assertEq(newFundDeployer.getOwner(), creator);
+        address creator = newFundDeployer.getOwner();
 
         // Set release live after setting the pseudo vars
         vm.startPrank(creator);

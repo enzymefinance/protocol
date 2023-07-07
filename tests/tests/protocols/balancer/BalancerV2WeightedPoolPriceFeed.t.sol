@@ -15,6 +15,7 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     IBalancerV2Vault constant balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
     IBalancerV2WeightedPoolPriceFeed internal priceFeed;
+    address internal priceFeedOwner;
 
     // Vars defined by child contract
     // - price feed config
@@ -29,6 +30,8 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
     function setUp() public virtual override {
         // Deploy price feed
         priceFeed = __deployPriceFeed();
+
+        priceFeedOwner = core.release.fundDeployer.getOwner();
     }
 
     // DEPLOYMENT HELPERS
@@ -52,6 +55,7 @@ abstract contract ValueTest is TestBase {
         // Register the bpt:
         // 1. register the pool factory on the price feed
         // 2. register the bpt (pool) as a derivative on the ValueInterpreter
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
         addDerivative({
             _valueInterpreter: core.release.valueInterpreter,
@@ -74,6 +78,7 @@ abstract contract ValueTest is TestBase {
 
     function test_calcCanonicalAssetValue_failWithReentrancy() public {
         // Register the bpt factory on the price feed
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
 
         // Define an asset and amount to use in the reentrant join
@@ -134,9 +139,11 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Add the pool factories
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
 
         // Attempt to add a duplicate factory
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(fakePoolFactoryAddresses[0]));
 
         // Assert the factories are now registered, with the duplicate omitted
@@ -148,6 +155,7 @@ abstract contract RegistryTest is TestBase {
         assertFalse(priceFeed.isSupportedAsset(address(poolBpt)), "bpt already supported");
 
         // Add the bpt's factory
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(toArray(poolFactoryAddress));
 
         // The bpt should now be supported
@@ -162,6 +170,7 @@ abstract contract RegistryTest is TestBase {
 
     function test_removePoolFactories_success() public {
         // Register the factories to remove
+        vm.prank(priceFeedOwner);
         priceFeed.addPoolFactories(fakePoolFactoryAddresses);
 
         // Define events to assert
@@ -171,6 +180,7 @@ abstract contract RegistryTest is TestBase {
         }
 
         // Remove the pool factories
+        vm.prank(priceFeedOwner);
         priceFeed.removePoolFactories(fakePoolFactoryAddresses);
 
         // Assert the factories have been deregistered

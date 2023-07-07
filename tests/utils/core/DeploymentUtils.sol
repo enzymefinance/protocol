@@ -316,7 +316,11 @@ abstract contract DeploymentUtils is CoreUtilsBase {
     // Persistent
 
     function deployDispatcher() internal returns (IDispatcher) {
+        // Deploy from an account other than the test contract since the initial owner is the deployer
+        address owner = makeAddr("deployDispatcher: DispatcherOwner");
+        vm.prank(owner);
         address addr = deployCode("Dispatcher.sol");
+
         return IDispatcher(addr);
     }
 
@@ -437,6 +441,11 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         returns (IFundDeployer)
     {
         bytes memory args = abi.encode(_dispatcher, _gasRelayPaymasterFactory);
+
+        // Deploy from an account other than the test contract since the initial owner is the deployer
+        address owner = makeAddr("deployFundDeployer: FundDeployerOwner");
+        vm.prank(owner);
+
         address addr = deployCode("FundDeployer.sol", args);
         return IFundDeployer(addr);
     }
