@@ -32,11 +32,15 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
 
     event Deposited(address indexed from, address indexed to, uint256 amount);
 
+    event HarvestUpdateBypassed(address indexed rewardToken);
+
     event PauseToggled(bool isPaused);
 
     event RewardsClaimed(address caller, address indexed user, address[] rewardTokens, uint256[] claimedAmounts);
 
     event RewardTokenAdded(address token);
+
+    event RewardTokenRemoved(address token);
 
     event TotalHarvestIntegralUpdated(address indexed rewardToken, uint256 integral);
 
@@ -57,6 +61,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     address[] private rewardTokens;
     mapping(address => TotalHarvestData) private rewardTokenToTotalHarvestData;
     mapping(address => mapping(address => UserHarvestData)) private rewardTokenToUserToHarvestData;
+
+    modifier onlyInternal() {
+        require(msg.sender == address(this), "Only internal");
+        _;
+    }
 
     modifier onlyOwner() {
         require(msg.sender == OWNER, "Only owner callable");
@@ -207,6 +216,13 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         }
     }
 
+    /// @dev Helper to remove a reward token
+    function __removeRewardToken(address _rewardToken) internal {
+        require(rewardTokens.removeStorageItem(_rewardToken), "__removeRewardToken: No match");
+
+        emit RewardTokenRemoved(_rewardToken);
+    }
+
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to calculate an unaccounted for reward amount due to a user based on integral values
@@ -234,6 +250,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         return 0;
     }
 
+    // During the `checkpoint` functions, if an update fails for a single reward token,
+    // continue to the next reward token. This means that there is some error with the reward token,
+    // e.g., poorly registered, deflationary, or otherwise not respecting ERC20.
+    // Worst case is that users do not get their claim to the failing reward token.
+
     /// @dev Helper to checkpoint harvest data for specified accounts.
     /// Harvests all rewards prior to checkpoint.
     function __checkpoint(address[2] memory _accounts) private {
@@ -246,7 +267,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
 
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
-            __updateHarvest(rewardTokens[i], _accounts, supply);
+            try this.updateHarvest(rewardTokens[i], _accounts, supply) {}
+            catch {
+                emit HarvestUpdateBypassed(rewardTokens[i]);
+                continue;
+            }
         }
     }
 
@@ -266,7 +291,12 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         rewardTokens_ = rewardTokens;
         claimedAmounts_ = new uint256[](rewardTokens_.length);
         for (uint256 i; i < rewardTokens_.length; i++) {
-            claimedAmounts_[i] = __updateHarvestAndClaim(rewardTokens_[i], _account, supply);
+            try this.updateHarvestAndClaim(rewardTokens_[i], _account, supply) returns (uint256 claimedAmount) {
+                claimedAmounts_[i] = claimedAmount;
+            } catch {
+                emit HarvestUpdateBypassed(rewardTokens_[i]);
+                continue;
+            }
         }
 
         emit RewardsClaimed(msg.sender, _account, rewardTokens_, claimedAmounts_);
@@ -274,8 +304,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         return (rewardTokens_, claimedAmounts_);
     }
 
-    /// @dev Helper to update harvest data
-    function __updateHarvest(address _rewardToken, address[2] memory _accounts, uint256 _supply) private {
+    // PSEUDO-INTERNAL FUNCTIONS
+
+    /// @dev Helper to update harvest data.
+    /// Made external to allow try/catch per reward token.
+    function updateHarvest(address _rewardToken, address[2] memory _accounts, uint256 _supply) external onlyInternal {
         TotalHarvestData storage totalHarvestData = rewardTokenToTotalHarvestData[_rewardToken];
 
         uint256 totalIntegral = totalHarvestData.integral;
@@ -310,9 +343,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         }
     }
 
-    /// @dev Helper to update harvest data and claim all rewards to holder
-    function __updateHarvestAndClaim(address _rewardToken, address _account, uint256 _supply)
-        private
+    /// @dev Helper to update harvest data and claim all rewards to holder.
+    /// Made external to allow try/catch per reward token.
+    function updateHarvestAndClaim(address _rewardToken, address _account, uint256 _supply)
+        external
+        onlyInternal
         returns (uint256 claimedAmount_)
     {
         TotalHarvestData storage totalHarvestData = rewardTokenToTotalHarvestData[_rewardToken];

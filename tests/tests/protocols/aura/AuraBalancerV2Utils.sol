@@ -9,19 +9,37 @@ import {IAuraBalancerV2LpStakingWrapperFactory} from
     "tests/interfaces/internal/IAuraBalancerV2LpStakingWrapperFactory.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 
+address constant ETHEREUM_BOOSTER_ADDRESS = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
+
+// Pools: Composable Stable
+// USDC-DAI-USDT
+uint256 constant ETHEREUM_USDC_DAI_USDT_POOL_PID = 76;
+
+// Pools: Misc Stable
+// stETH
+uint256 constant ETHEREUM_STETH_POOL_PID = 115;
+
 abstract contract AuraBalancerV2Utils is AddOnUtilsBase {
-    address internal constant ETHEREUM_BOOSTER_ADDRESS = 0xA57b8d98dAE62B26Ec3bcC4a365338157060B234;
+    function deployAuraStakingWrapperLib(IAuraBalancerV2LpStakingWrapperFactory _factory)
+        internal
+        returns (address libAddress_)
+    {
+        bytes memory args = abi.encode(_factory, ETHEREUM_BOOSTER_ADDRESS, ETHEREUM_BAL, ETHEREUM_AURA);
 
-    // Pools: Composable Stable
-    // USDC-DAI-USDT
-    uint256 internal constant ETHEREUM_USDC_DAI_USDT_POOL_PID = 76;
+        return deployCode("AuraBalancerV2LpStakingWrapperLib.sol", args);
+    }
 
-    function deployStakingWrapperFactory(IDispatcher _dispatcher)
+    function deployAuraStakingWrapperFactory(IDispatcher _dispatcher)
         internal
         returns (IAuraBalancerV2LpStakingWrapperFactory stakingWrapperFactory_)
     {
         bytes memory args = abi.encode(_dispatcher, ETHEREUM_BOOSTER_ADDRESS, ETHEREUM_BAL, ETHEREUM_AURA);
 
-        return IAuraBalancerV2LpStakingWrapperFactory(deployCode("AuraBalancerV2LpStakingWrapperFactory.sol", args));
+        stakingWrapperFactory_ =
+            IAuraBalancerV2LpStakingWrapperFactory(deployCode("AuraBalancerV2LpStakingWrapperFactory.sol", args));
+
+        // Deploy and upgrade to the latest version of the wrapper lib
+        address lib = deployAuraStakingWrapperLib(stakingWrapperFactory_);
+        stakingWrapperFactory_.setCanonicalLib(lib);
     }
 }

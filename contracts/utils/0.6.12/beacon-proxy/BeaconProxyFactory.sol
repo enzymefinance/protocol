@@ -47,7 +47,7 @@ abstract contract BeaconProxyFactory is IBeaconProxyFactory {
 
     /// @notice Gets the contract owner
     /// @return owner_ The contract owner
-    function getOwner() public view virtual returns (address owner_);
+    function getOwner() public view virtual override returns (address owner_);
 
     /// @notice Sets the next canonical lib used by all proxies
     /// @param _nextCanonicalLib The next canonical lib

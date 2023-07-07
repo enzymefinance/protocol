@@ -18,5 +18,7 @@ pragma solidity 0.6.12;
 interface IBeaconProxyFactory is IBeacon {
     function deployProxy(bytes memory _constructData) external returns (address proxy_);
 
+    function getOwner() external view returns (address owner_);
+
     function setCanonicalLib(address _canonicalLib) external;
 }

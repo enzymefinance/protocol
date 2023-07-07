@@ -97,6 +97,12 @@ abstract contract BalancerV2Utils {
     address internal constant POLYGON_wstETH_BOOSTED_aWETH_POOL_FACTORY_ADDRESS =
         POLYGON_COMPOSABLE_STABLE_POOL_FACTORY_V3_ADDRESS;
 
+    // Pools: Misc stable
+    // STETH
+    address internal immutable ETHEREUM_STETH_POOL_ADDRESS;
+    bytes32 internal constant ETHEREUM_STETH_POOL_ID =
+        0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080;
+
     // Pools: Weighted
     // 80-BAL-20-WETH
     address internal immutable ETHEREUM_80_BAL_20_WETH_POOL_ADDRESS;
@@ -113,6 +119,7 @@ abstract contract BalancerV2Utils {
 
     constructor() {
         ETHEREUM_AAVE_BOOSTED_STABLE_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_AAVE_BOOSTED_STABLE_POOL_ID);
+        ETHEREUM_STETH_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_STETH_POOL_ID);
         ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_USDC_DAI_USDT_POOL_ID);
         ETHEREUM_80_BAL_20_WETH_POOL_ADDRESS = getBalancerV2PoolAddress(ETHEREUM_80_BAL_20_WETH_POOL_ID);
 

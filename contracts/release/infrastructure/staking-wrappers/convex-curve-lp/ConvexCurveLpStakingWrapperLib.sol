@@ -12,15 +12,20 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "openzeppelin-solc-0.6/utils/Address.sol";
 import "../../../../external-interfaces/IConvexBaseRewardPool.sol";
 import "../../../../external-interfaces/IConvexBooster.sol";
+import "../../../../external-interfaces/IConvexStashTokenWrapper.sol";
 import "../../../../external-interfaces/IConvexVirtualBalanceRewardPool.sol";
+import "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
 import "../StakingWrapperLibBase.sol";
 
 /// @title ConvexCurveLpStakingWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library contract for ConvexCurveLpStakingWrapper instances
 contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
+    event AddExtraRewardsBypassed();
+
     IConvexBooster private immutable CONVEX_BOOSTER_CONTRACT;
     address private immutable CRV_TOKEN;
     address private immutable CVX_TOKEN;
@@ -66,18 +71,53 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     /// Is called prior to every new harvest.
     function addExtraRewards() public {
         IConvexBaseRewardPool convexPoolContract = IConvexBaseRewardPool(getConvexPool());
-        // Could probably exit early after validating that extraRewardsCount + 2 <= rewardsTokens.length,
-        // but this protects against a reward token being removed that still needs to be paid out
+
         uint256 extraRewardsCount = convexPoolContract.extraRewardsLength();
         for (uint256 i; i < extraRewardsCount; i++) {
+            address rewardToken = IConvexVirtualBalanceRewardPool(convexPoolContract.extraRewards(i)).rewardToken();
+
+            // Handle wrapped reward tokens ("stash tokens")
+            if (convexPoolId >= __stashTokenStartPid()) {
+                (bytes memory returnData) = Address.functionStaticCall({
+                    target: rewardToken,
+                    data: abi.encodeWithSelector(__stashTokenUnderlyingSelector())
+                });
+
+                rewardToken = abi.decode(returnData, (address));
+            }
+
             // __addRewardToken silently ignores duplicates
-            __addRewardToken(IConvexVirtualBalanceRewardPool(convexPoolContract.extraRewards(i)).rewardToken());
+            __addRewardToken(rewardToken);
         }
+    }
+
+    /// @notice Removes (un-tracks) a reward tokens from the wrapper
+    /// @param _token The token to remove
+    function removeExtraRewardToken(address _token) external {
+        // Defers to owner of the wrapper factory (i.e., the Dispatcher owner), which is the `OWNER` of this contract
+        require(msg.sender == IBeaconProxyFactory(OWNER).getOwner(), "removeExtraRewardToken: Unauthorized");
+
+        // Don't allow removing the core reward tokens since those are not re-addable
+        require(_token != CRV_TOKEN && _token != CVX_TOKEN, "removeExtraRewardToken: Invalid token");
+
+        __removeRewardToken(_token);
     }
 
     /// @notice Sets necessary ERC20 approvals, as-needed
     function setApprovals() public {
         ERC20(getCurveLpToken()).safeApprove(address(CONVEX_BOOSTER_CONTRACT), type(uint256).max);
+    }
+
+    /// @dev Helper to get the pool id at which stash tokens are exclusively used for extra rewards.
+    /// In Convex, this is the case for pools with pid >= 151.
+    /// See https://github.com/convex-eth/platform/blob/25d5eafb75fe497c2aee6ce99f3f4f465209c886/contracts/contracts/wrappers/ConvexStakingWrapper.sol#L187-L190
+    function __stashTokenStartPid() internal pure virtual returns (uint256 startPid_) {
+        return 151;
+    }
+
+    /// @dev Helper to get the selector for querying the underlying token of a stash token
+    function __stashTokenUnderlyingSelector() internal pure virtual returns (bytes4 selector_) {
+        return IConvexStashTokenWrapper.token.selector;
     }
 
     ////////////////////////////////
@@ -96,9 +136,12 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     /// Do not checkpoint, only harvest the rewards.
     function __harvestRewardsLogic() internal override {
         // It's probably overly-cautious to check rewards on every call,
-        // but even when the pool has 1 extra reward token (most have 0) it only adds ~10-15k gas units,
-        // so more convenient to always check than to monitor for rewards changes.
-        addExtraRewards();
+        // but more convenient to always check than to monitor for rewards changes.
+        try this.addExtraRewards() {}
+        catch {
+            emit AddExtraRewardsBypassed();
+        }
+
         IConvexBaseRewardPool(getConvexPool()).getReward();
     }
 
