@@ -3,8 +3,10 @@ pragma solidity 0.8.19;
 
 import {SafeMath} from "openzeppelin-solc-0.8/utils/math/SafeMath.sol";
 import {ERC20 as ERC20Base} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {IERC20} from "tests/interfaces/external/IERC20.sol";
+
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
+
+import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 abstract contract TokenUtils is CommonUtilsBase {
     function assetUnit(IERC20 _asset) internal view returns (uint256 unit_) {
@@ -27,19 +29,6 @@ abstract contract TokenUtils is CommonUtilsBase {
 
     function createTestToken() internal returns (IERC20 token_) {
         return createTestToken(18);
-    }
-
-    function increaseNativeAssetBalance(address _to, uint256 _amount) internal virtual {
-        uint256 balance = _to.balance;
-
-        deal(_to, balance + _amount);
-    }
-
-    // NOTE: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
-    function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal virtual {
-        uint256 balance = _token.balanceOf(_to);
-
-        deal(address(_token), _to, balance + _amount);
     }
 
     /// @dev Helper to aggregate amounts of the same assets
@@ -98,6 +87,21 @@ abstract contract TokenUtils is CommonUtilsBase {
 
         return (aggregatedAssets_, aggregatedAmounts_);
     }
+
+    // function increaseNativeAssetBalance(address _to, uint256 _amount) internal {
+    //     uint256 balance = _to.balance;
+
+    //     deal(_to, balance + _amount);
+    // }
+
+    // /// @dev The default `deal()` implementation doesn't work with rebasing tokens, tokens using storage packing for balances, etc.
+    // /// e.g., Aave aTokens, Lido stETH, etc. See: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
+    // /// As a workaround, inheriting utils can override this function to handle the various non-standard tokens per-network.
+    // function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal {
+    //     uint256 balance = _token.balanceOf(_to);
+
+    //     deal(address(_token), _to, balance + _amount);
+    // }
 }
 
 contract TestToken is ERC20Base {

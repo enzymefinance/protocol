@@ -80,7 +80,7 @@ interface IAaveV3Pool {
         uint256 data;
     }
 
-    function getReserveData(address _asset) external returns (ReserveData memory reserveData_);
+    function getReserveData(address _asset) external view returns (ReserveData memory reserveData_);
 
     function getUserConfiguration(address _user)
         external
@@ -89,5 +89,5 @@ interface IAaveV3Pool {
 
     function getUserEMode(address _user) external view returns (uint256 categoryId_);
 
-    function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+    function supply(address _asset, uint256 _amount, address _onBehalfOf, uint16 _referralCode) external;
 }

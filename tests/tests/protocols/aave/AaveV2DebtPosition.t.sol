@@ -204,11 +204,11 @@ abstract contract TestBase is IntegrationTest {
 
     // MISC HELPERS
 
-    function __getATokenAddress(address _token) internal returns (address) {
+    function __getATokenAddress(address _token) internal view returns (address) {
         return lendingPool.getReserveData(_token).aTokenAddress;
     }
 
-    function __getATokensAddresses(address[] memory _tokens) internal returns (address[] memory aTokens_) {
+    function __getATokensAddresses(address[] memory _tokens) internal view returns (address[] memory aTokens_) {
         aTokens_ = new address[](_tokens.length);
 
         for (uint256 i = 0; i < _tokens.length; i++) {

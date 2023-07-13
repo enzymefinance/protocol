@@ -45,7 +45,7 @@ interface IAaveV2LendingPool {
 
     function deposit(address _underlying, uint256 _amount, address _to, uint16 _referralCode) external;
 
-    function getReserveData(address _asset) external returns (ReserveData memory reserveData_);
+    function getReserveData(address _asset) external view returns (ReserveData memory reserveData_);
 
     function repay(address _underlying, uint256 _amount, uint256 _rateMode, address _to)
         external

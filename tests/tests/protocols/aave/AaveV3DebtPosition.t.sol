@@ -16,13 +16,14 @@ import {IVault} from "tests/interfaces/internal/IVault.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
+
 import {
-    AaveV3Utils,
     ETHEREUM_POOL_ADDRESS_PROVIDER,
     ETHEREUM_PROTOCOL_DATA_PROVIDER,
     POLYGON_POOL_ADDRESS_PROVIDER,
     POLYGON_PROTOCOL_DATA_PROVIDER
-} from "tests/utils/protocols/aave/AaveV3Utils.sol";
+} from "tests/utils/protocols/aave/AaveV3Constants.sol";
+import {AaveV3Utils} from "tests/utils/protocols/aave/AaveV3Utils.sol";
 
 enum Actions {
     AddCollateral,
@@ -223,11 +224,11 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     // MISC HELPERS
 
-    function __getATokenAddress(address _underlying) internal returns (address aTokenAddress_) {
+    function __getATokenAddress(address _underlying) internal view returns (address aTokenAddress_) {
         return getATokenAddress({_lendingPool: lendingPool, _underlying: _underlying});
     }
 
-    function __getATokensAddresses(address[] memory _underlyings) internal returns (address[] memory aTokens_) {
+    function __getATokensAddresses(address[] memory _underlyings) internal view returns (address[] memory aTokens_) {
         aTokens_ = new address[](_underlyings.length);
 
         for (uint256 i = 0; i < _underlyings.length; i++) {

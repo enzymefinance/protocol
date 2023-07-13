@@ -9,14 +9,6 @@ import {IAaveV2ATokenListOwner} from "tests/interfaces/internal/IAaveV2ATokenLis
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
-// Ethereum
-address constant LENDING_POOL_ADDRESS_ETHEREUM = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
-address constant LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_ETHEREUM = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
-
-// Polygon
-address constant LENDING_POOL_ADDRESS_POLYGON = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
-address constant LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_POLYGON = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
-
 abstract contract AaveV2Utils is AddOnUtilsBase {
     function deployAaveV2ATokenListOwnerAndAdapter(
         IAddressListRegistry _addressListRegistry,
@@ -63,7 +55,7 @@ abstract contract AaveV2Utils is AddOnUtilsBase {
         return IAaveV2ATokenListOwner(addr);
     }
 
-    function getATokenAddress(address _token, address _lendingPool) internal returns (address) {
+    function getATokenAddress(address _token, address _lendingPool) internal view returns (address) {
         return IAaveV2LendingPool(_lendingPool).getReserveData(_token).aTokenAddress;
     }
 }

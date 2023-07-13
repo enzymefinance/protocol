@@ -13,6 +13,11 @@ abstract contract Constants {
     uint256 internal constant WEI_ONE_HUNDRED_PERCENT = 10 ** 18;
     uint256 internal constant WEI_ONE_PERCENT = WEI_ONE_HUNDRED_PERCENT / 100;
 
+    // Network ChainIDs
+    uint256 internal constant ETHEREUM_CHAIN_ID = 1;
+    uint256 internal constant GOERLI_CHAIN_ID = 5;
+    uint256 internal constant POLYGON_CHAIN_ID = 137;
+
     // Network blocks (for fork tests)
     // Some tests may require specific blocks to guarantee a required setup,
     // expected exchange rates, etc.

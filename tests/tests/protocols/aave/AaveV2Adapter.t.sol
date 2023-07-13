@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {
-    AaveV2Utils,
-    LENDING_POOL_ADDRESS_ETHEREUM,
-    LENDING_POOL_ADDRESS_POLYGON,
-    LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_ETHEREUM,
-    LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_POLYGON
-} from "tests/utils/protocols/aave/AaveV2Utils.sol";
+    ETHEREUM_LENDING_POOL_ADDRESS,
+    ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
+    POLYGON_LENDING_POOL_ADDRESS,
+    POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS
+} from "tests/utils/protocols/aave/AaveV2Constants.sol";
+import {AaveV2Utils} from "tests/utils/protocols/aave/AaveV2Utils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
@@ -70,8 +70,8 @@ abstract contract AaveV2AdapterTest is IntegrationTest, AaveV2Utils {
 
 contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
     function setUp() public override {
-        lendingPool = LENDING_POOL_ADDRESS_ETHEREUM;
-        lendingPoolAddressProvider = LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_ETHEREUM;
+        lendingPool = ETHEREUM_LENDING_POOL_ADDRESS;
+        lendingPoolAddressProvider = ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
 
         setUpMainnetEnvironment();
         setUpAave();
@@ -80,8 +80,8 @@ contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
 
 contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
     function setUp() public override {
-        lendingPool = LENDING_POOL_ADDRESS_POLYGON;
-        lendingPoolAddressProvider = LENDING_POOL_ADDRESS_PROVIDER_ADDRESS_POLYGON;
+        lendingPool = POLYGON_LENDING_POOL_ADDRESS;
+        lendingPoolAddressProvider = POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
 
         setUpPolygonEnvironment();
         setUpAave();
