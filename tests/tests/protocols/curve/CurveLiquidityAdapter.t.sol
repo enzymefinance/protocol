@@ -5,10 +5,6 @@ import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {
-    ETHEREUM_LENDING_POOL_ADDRESS as ETHEREUM_AAVE_V2_POOL_ADDRESS,
-    POLYGON_LENDING_POOL_ADDRESS as POLYGON_AAVE_V2_POOL_ADDRESS
-} from "tests/utils/protocols/aave/AaveV2Constants.sol";
 import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
 

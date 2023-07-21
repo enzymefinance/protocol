@@ -31,6 +31,10 @@ abstract contract TokenUtils is CommonUtilsBase {
         return createTestToken(18);
     }
 
+    function createTestToken(string memory _name) internal returns (IERC20 token_) {
+        return createTestToken(18, _name, "TEST");
+    }
+
     /// @dev Helper to aggregate amounts of the same assets
     function aggregateAssetAmounts(address[] memory _rawAssets, uint256[] memory _rawAmounts, bool _ceilingAtMax)
         internal

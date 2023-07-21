@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
+
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
+import {IAaveV3Adapter} from "tests/interfaces/internal/IAaveV3Adapter.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
-import {IAaveV2ATokenListOwner} from "tests/interfaces/internal/IAaveV2ATokenListOwner.sol";
+import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
 import {AaveAdapterTest} from "./AaveAdapterTest.sol";
+import {AaveV3Utils} from "./AaveV3Utils.sol";
 import {
-    ETHEREUM_LENDING_POOL_ADDRESS,
-    ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
-    POLYGON_LENDING_POOL_ADDRESS,
-    POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS
-} from "./AaveV2Constants.sol";
-import {AaveV2Utils} from "./AaveV2Utils.sol";
+    ETHEREUM_POOL_ADDRESS,
+    ETHEREUM_POOL_ADDRESS_PROVIDER,
+    POLYGON_POOL_ADDRESS,
+    POLYGON_POOL_ADDRESS_PROVIDER
+} from "./AaveV3Constants.sol";
 
-abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
+abstract contract AaveV3AdapterTest is AaveAdapterTest, AaveV3Utils {
     function setUp() public virtual override {
-        (IAaveV2Adapter aaveV2Adapter,) = __deployATokenListOwnerAndAdapter({
+        (IAaveV3Adapter aaveV2Adapter,) = __deployATokenListOwnerAndAdapter({
             _addressListRegistry: core.persistent.addressListRegistry,
             _integrationManager: core.release.integrationManager,
             _lendingPool: lendingPool,
@@ -36,23 +38,21 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
         IIntegrationManager _integrationManager,
         address _lendingPool,
         address _lendingPoolAddressProvider
-    ) internal returns (IAaveV2Adapter aaveV2Adapter_, IAaveV2ATokenListOwner aaveV2ATokenListOwner_) {
-        uint256 aTokenListId = _addressListRegistry.getListCount();
-
-        aaveV2ATokenListOwner_ = deployAaveV2ATokenListOwner({
+    ) internal returns (IAaveV3Adapter aaveV3Adapter_, IAaveV3ATokenListOwner aaveV3ATokenListOwner_) {
+        uint256 aTokenListId;
+        (aaveV3ATokenListOwner_, aTokenListId) = deployAaveV3ATokenListOwner({
             _addressListRegistry: _addressListRegistry,
-            _listDescription: "",
             _lendingPoolAddressProvider: _lendingPoolAddressProvider
         });
 
-        aaveV2Adapter_ = __deployAdapter({
+        aaveV3Adapter_ = __deployAdapter({
             _integrationManager: _integrationManager,
             _addressListRegistry: _addressListRegistry,
             _aTokenListId: aTokenListId,
             _lendingPool: _lendingPool
         });
 
-        return (aaveV2Adapter_, aaveV2ATokenListOwner_);
+        return (aaveV3Adapter_, aaveV3ATokenListOwner_);
     }
 
     function __deployAdapter(
@@ -60,10 +60,12 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
         IAddressListRegistry _addressListRegistry,
         uint256 _aTokenListId,
         address _lendingPool
-    ) internal returns (IAaveV2Adapter) {
-        bytes memory args = abi.encode(_integrationManager, _addressListRegistry, _aTokenListId, _lendingPool);
-        address addr = deployCode("AaveV2Adapter.sol", args);
-        return IAaveV2Adapter(addr);
+    ) internal returns (IAaveV3Adapter) {
+        uint16 referralCode = 0;
+        bytes memory args =
+            abi.encode(_integrationManager, _addressListRegistry, _aTokenListId, _lendingPool, referralCode);
+        address addr = deployCode("AaveV3Adapter.sol", args);
+        return IAaveV3Adapter(addr);
     }
 
     // MISC HELPERS
@@ -81,10 +83,10 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
     }
 }
 
-contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
+contract AaveV3AdapterTestEthereum is AaveV3AdapterTest {
     function setUp() public override {
-        lendingPool = ETHEREUM_LENDING_POOL_ADDRESS;
-        lendingPoolAddressProvider = ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
+        lendingPool = ETHEREUM_POOL_ADDRESS;
+        lendingPoolAddressProvider = ETHEREUM_POOL_ADDRESS_PROVIDER;
 
         setUpMainnetEnvironment();
 
@@ -97,10 +99,10 @@ contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
     }
 }
 
-contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
+contract AaveV3AdapterTestPolygon is AaveV3AdapterTest {
     function setUp() public override {
-        lendingPool = POLYGON_LENDING_POOL_ADDRESS;
-        lendingPoolAddressProvider = POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
+        lendingPool = POLYGON_POOL_ADDRESS;
+        lendingPoolAddressProvider = POLYGON_POOL_ADDRESS_PROVIDER;
 
         setUpPolygonEnvironment();
 

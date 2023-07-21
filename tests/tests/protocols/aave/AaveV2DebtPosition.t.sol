@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-
 import {IAaveV2IncentivesController} from "tests/interfaces/external/IAaveV2IncentivesController.sol";
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IAaveV2LendingPoolAddressProvider} from "tests/interfaces/external/IAaveV2LendingPoolAddressProvider.sol";
@@ -15,6 +14,15 @@ import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
 import {IVault} from "tests/interfaces/internal/IVault.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {AaveV2Utils} from "./AaveV2Utils.sol";
+import {
+    ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
+    ETHEREUM_INCENTIVES_CONTROLLER,
+    ETHEREUM_PROTOCOL_DATA_PROVIDER,
+    POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS,
+    POLYGON_INCENTIVES_CONTROLLER,
+    POLYGON_PROTOCOL_DATA_PROVIDER
+} from "./AaveV2Constants.sol";
 
 enum Actions {
     AddCollateral,
@@ -24,15 +32,7 @@ enum Actions {
     ClaimRewards
 }
 
-address constant ETHEREUM_POOL_ADDRESS_PROVIDER = 0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5;
-address constant ETHEREUM_PROTOCOL_DATA_PROVIDER = 0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d;
-address constant ETHEREUM_INCENTIVES_CONTROLLER = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
-
-address constant POLYGON_POOL_ADDRESS_PROVIDER = 0xd05e3E715d945B59290df0ae8eF85c1BdB684744;
-address constant POLYGON_PROTOCOL_DATA_PROVIDER = 0x7551b5D2763519d4e37e8B81929D336De671d46d;
-address constant POLYGON_INCENTIVES_CONTROLLER = 0x357D51124f59836DeD84c8a1730D72B749d8BC23;
-
-abstract contract TestBase is IntegrationTest {
+abstract contract TestBase is AaveV2Utils, IntegrationTest {
     event BorrowedAssetAdded(address indexed asset);
     event BorrowedAssetRemoved(address indexed asset);
     event CollateralAssetAdded(address indexed asset);
@@ -49,16 +49,8 @@ abstract contract TestBase is IntegrationTest {
     IAaveV2LendingPool internal lendingPool;
     IAaveV2IncentivesController internal incentivesController;
 
-    function setUpTestBase(
-        address _poolAddressProvider,
-        address _protocolDataProvider,
-        address _incentivesController,
-        address[] memory _tokens
-    ) internal {
-        poolAddressProvider = IAaveV2LendingPoolAddressProvider(_poolAddressProvider);
-        protocolDataProvider = IAaveV2ProtocolDataProvider(_protocolDataProvider);
+    function setUp() public virtual override {
         lendingPool = poolAddressProvider.getLendingPool();
-        incentivesController = IAaveV2IncentivesController(_incentivesController);
 
         (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
             _fundDeployer: core.release.fundDeployer,
@@ -87,8 +79,6 @@ abstract contract TestBase is IntegrationTest {
                 _callOnExternalPositionCallArgs: ""
             })
         );
-
-        __registerTokensAndATokensForThem(_tokens);
     }
 
     // DEPLOYMENT HELPERS
@@ -163,8 +153,8 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __borrowAssets(address[] memory _tokens, uint256[] memory _amounts) internal {
-        bytes memory actionArgs = abi.encode(_tokens, _amounts);
+    function __borrowAssets(address[] memory _underlyings, uint256[] memory _amounts) internal {
+        bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
         callOnExternalPosition({
@@ -176,8 +166,8 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __repayBorrowedAssets(address[] memory _tokens, uint256[] memory _amounts) internal {
-        bytes memory actionArgs = abi.encode(_tokens, _amounts);
+    function __repayBorrowedAssets(address[] memory _underlyings, uint256[] memory _amounts) internal {
+        bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
         callOnExternalPosition({
@@ -204,51 +194,31 @@ abstract contract TestBase is IntegrationTest {
 
     // MISC HELPERS
 
-    function __getATokenAddress(address _token) internal view returns (address) {
-        return lendingPool.getReserveData(_token).aTokenAddress;
+    function __getATokenAddress(address _underlying) internal view returns (address) {
+        return lendingPool.getReserveData(_underlying).aTokenAddress;
     }
 
-    function __getATokensAddresses(address[] memory _tokens) internal view returns (address[] memory aTokens_) {
-        aTokens_ = new address[](_tokens.length);
+    function __getATokensAddresses(address[] memory _underlyings) internal view returns (address[] memory aTokens_) {
+        aTokens_ = new address[](_underlyings.length);
 
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            aTokens_[i] = __getATokenAddress({_token: _tokens[i]});
+        for (uint256 i = 0; i < _underlyings.length; i++) {
+            aTokens_[i] = __getATokenAddress({_underlying: _underlyings[i]});
         }
         return aTokens_;
     }
 
-    function __registerTokensAndATokensForThem(address[] memory _tokenAddresses) internal {
-        for (uint256 i = 0; i < _tokenAddresses.length; i++) {
-            // Register underlying token
-            addPrimitiveWithTestAggregator({
-                _valueInterpreter: core.release.valueInterpreter,
-                _tokenAddress: _tokenAddresses[i],
-                _skipIfRegistered: true
-            });
-
-            // Register aToken
-            addPrimitiveWithTestAggregator({
-                _valueInterpreter: core.release.valueInterpreter,
-                _tokenAddress: __getATokenAddress({_token: _tokenAddresses[i]}),
-                _skipIfRegistered: true
-            });
-        }
-    }
-
-    function __increaseATokenBalance(IAaveAToken _aToken, address _to, uint256 _amount) internal {
-        IERC20 underlyingToken = IERC20(_aToken.UNDERLYING_ASSET_ADDRESS());
-
-        increaseTokenBalance(underlyingToken, _to, _amount);
-        vm.startPrank(_to);
-        underlyingToken.approve(address(lendingPool), _amount);
-        lendingPool.deposit(address(underlyingToken), _amount, _to, 0);
-        vm.stopPrank();
+    function __registerUnderlyingsAndATokensForThem(address[] memory _underlyingAddresses) internal {
+        registerUnderlyingsAndATokensForThem({
+            _valueInterpreter: core.release.valueInterpreter,
+            _underlyings: _underlyingAddresses,
+            _lendingPool: address(lendingPool)
+        });
     }
 
     function __dealATokenAndAddCollateral(address[] memory _aTokens, uint256[] memory _amounts) internal {
-        // increase tokens balance for vault with amounts
+        // increase underlyings balance for vault with amounts
         for (uint256 i = 0; i < _aTokens.length; i++) {
-            __increaseATokenBalance({_aToken: IAaveAToken(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
+            increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
         }
 
         __addCollateral({_aTokens: _aTokens, _amounts: _amounts});
@@ -256,16 +226,16 @@ abstract contract TestBase is IntegrationTest {
 }
 
 abstract contract AddCollateralTest is TestBase {
-    function __test_successAddCollateral(address[] memory _aTokens, uint256[] memory _amounts) internal {
-        // increase tokens balance for vault with amounts
+    function __test_addCollateral_success(address[] memory _aTokens, uint256[] memory _amounts) internal {
+        // increase underlyings balance for vault with amounts
         for (uint256 i = 0; i < _aTokens.length; i++) {
-            __increaseATokenBalance({_aToken: IAaveAToken(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
+            increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
         }
 
         (address[] memory uniqueATokens, uint256[] memory uniqueATokensAmounts) =
             aggregateAssetAmounts({_rawAssets: _aTokens, _rawAmounts: _amounts, _ceilingAtMax: true});
 
-        // expect emit add collateral event for every added token
+        // expect emit add collateral event for every added underlying
         for (uint256 i = 0; i < uniqueATokens.length; i++) {
             expectEmit(address(aaveDebtPosition));
             emit CollateralAssetAdded(uniqueATokens[i]);
@@ -287,7 +257,7 @@ abstract contract AddCollateralTest is TestBase {
         }
     }
 
-    function test_failNotSupportedAssetAddCollateral() public {
+    function test_addCollateral_failNotSupportedAssetAddCollateral() public {
         vm.expectRevert("__validateSupportedAssets: Unsupported asset");
 
         __addCollateral({_aTokens: toArray(makeAddr("UnsupportedAsset")), _amounts: toArray(1)});
@@ -295,7 +265,7 @@ abstract contract AddCollateralTest is TestBase {
 }
 
 abstract contract RemoveCollateralTest is TestBase {
-    function __test_successRemoveCollateral(
+    function __test_removeCollateral_success(
         address[] memory _aTokens,
         uint256[] memory _amountsToAdd,
         uint256[] memory _amountsToRemove
@@ -309,7 +279,7 @@ abstract contract RemoveCollateralTest is TestBase {
             aggregateAssetAmounts({_rawAssets: _aTokens, _rawAmounts: _amountsToRemove, _ceilingAtMax: true});
 
         for (uint256 i = 0; i < uniqueATokensToRemove.length; i++) {
-            // expect emit remove collateral event for every fully-removed token
+            // expect emit remove collateral event for every fully-removed underlying
             if (uniqueAmountsToRemove[i] == uniqueAmountsToAdd[i] || uniqueAmountsToRemove[i] == type(uint256).max) {
                 expectEmit(address(aaveDebtPosition));
                 emit CollateralAssetRemoved(uniqueATokensToRemove[i]);
@@ -319,7 +289,7 @@ abstract contract RemoveCollateralTest is TestBase {
         __removeCollateral({_aTokens: _aTokens, _amounts: _amountsToRemove});
 
         for (uint256 i = 0; i < uniqueATokensToRemove.length; i++) {
-            // assert external position storage removes collateral asset for every fully-removed token
+            // assert external position storage removes collateral asset for every fully-removed underlying
             // and check the external position balances are reflecting the removed collateral
 
             if (uniqueAmountsToRemove[i] == uniqueAmountsToAdd[i] || uniqueAmountsToRemove[i] == type(uint256).max) {
@@ -341,7 +311,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
     }
 
-    function test_failInvalidCollateralAsset() public {
+    function test_removeCollateral_failInvalidCollateralAsset() public {
         vm.expectRevert(formatError("__removeCollateralAssets: Invalid collateral asset"));
 
         __removeCollateral({_aTokens: toArray(makeAddr("InvalidCollateralAsset")), _amounts: toArray(1)});
@@ -349,27 +319,27 @@ abstract contract RemoveCollateralTest is TestBase {
 }
 
 abstract contract BorrowTest is TestBase {
-    function __test_successBorrow(
+    function __test_borrow_success(
         address[] memory _aTokensCollateral,
         uint256[] memory _aTokensCollateralAmounts,
-        address[] memory _tokensToBorrow,
-        uint256[] memory _tokensToBorrowAmounts
+        address[] memory _underlyingsToBorrow,
+        uint256[] memory _underlyingsToBorrowAmounts
     ) internal {
         __dealATokenAndAddCollateral({_aTokens: _aTokensCollateral, _amounts: _aTokensCollateralAmounts});
 
         (address[] memory uniqueTokensToBorrow, uint256[] memory uniqueTokensToBorrowAmounts) = aggregateAssetAmounts({
-            _rawAssets: _tokensToBorrow,
-            _rawAmounts: _tokensToBorrowAmounts,
+            _rawAssets: _underlyingsToBorrow,
+            _rawAmounts: _underlyingsToBorrowAmounts,
             _ceilingAtMax: false
         });
 
-        // expect the correct event for every unique borrowed token
+        // expect the correct event for every unique borrowed underlying
         for (uint256 i = 0; i < uniqueTokensToBorrow.length; i++) {
             expectEmit(address(aaveDebtPosition));
             emit BorrowedAssetAdded(uniqueTokensToBorrow[i]);
         }
 
-        __borrowAssets({_tokens: _tokensToBorrow, _amounts: _tokensToBorrowAmounts});
+        __borrowAssets({_underlyings: _underlyingsToBorrow, _amounts: _underlyingsToBorrowAmounts});
 
         // assert external position storage saves the borrowed assets
         for (uint256 i = 0; i < uniqueTokensToBorrow.length; i++) {
@@ -397,84 +367,86 @@ abstract contract BorrowTest is TestBase {
         }
     }
 
-    function test_failNotSupportedAssetBorrow() public {
+    function test_borrow_failNotSupportedAssetBorrow() public {
         vm.expectRevert("__validateSupportedAssets: Unsupported asset");
 
-        __borrowAssets({_tokens: toArray(makeAddr("UnsupportedAsset")), _amounts: toArray(1)});
+        __borrowAssets({_underlyings: toArray(makeAddr("UnsupportedAsset")), _amounts: toArray(1)});
     }
 }
 
 abstract contract RepayBorrowTest is TestBase {
-    function __test_successRepayBorrow(
+    function __test_repayBorrow_success(
         address[] memory _aTokensCollateral,
         uint256[] memory _aTokensCollateralAmounts,
-        address[] memory _tokensToBorrowAndRepay,
-        uint256[] memory _tokensToBorrowAmounts,
-        uint256[] memory _tokensVaultAmounts,
-        uint256[] memory _tokensToRepayAmounts
+        address[] memory _underlyingsToBorrowAndRepay,
+        uint256[] memory _underlyingsToBorrowAmounts,
+        uint256[] memory _underlyingsVaultAmounts,
+        uint256[] memory _underlyingsToRepayAmounts
     ) internal {
         __dealATokenAndAddCollateral({_aTokens: _aTokensCollateral, _amounts: _aTokensCollateralAmounts});
 
-        __borrowAssets({_tokens: _tokensToBorrowAndRepay, _amounts: _tokensToBorrowAmounts});
+        __borrowAssets({_underlyings: _underlyingsToBorrowAndRepay, _amounts: _underlyingsToBorrowAmounts});
 
-        for (uint256 i = 0; i < _tokensToBorrowAndRepay.length; i++) {
+        for (uint256 i = 0; i < _underlyingsToBorrowAndRepay.length; i++) {
             // set vault balances with amounts
-            deal({token: _tokensToBorrowAndRepay[i], give: _tokensVaultAmounts[i], to: address(vaultProxy)});
+            deal({token: _underlyingsToBorrowAndRepay[i], give: _underlyingsVaultAmounts[i], to: address(vaultProxy)});
         }
 
-        // expect emit borrowed asset removed event for every fully-repaid token
-        for (uint256 i = 0; i < _tokensToBorrowAndRepay.length; i++) {
-            if (_tokensToBorrowAmounts[i] <= _tokensToRepayAmounts[i]) {
+        // expect emit borrowed asset removed event for every fully-repaid underlying
+        for (uint256 i = 0; i < _underlyingsToBorrowAndRepay.length; i++) {
+            if (_underlyingsToBorrowAmounts[i] <= _underlyingsToRepayAmounts[i]) {
                 expectEmit(address(aaveDebtPosition));
-                emit BorrowedAssetRemoved(_tokensToBorrowAndRepay[i]);
+                emit BorrowedAssetRemoved(_underlyingsToBorrowAndRepay[i]);
             }
         }
 
-        __repayBorrowedAssets({_tokens: _tokensToBorrowAndRepay, _amounts: _tokensToRepayAmounts});
+        __repayBorrowedAssets({_underlyings: _underlyingsToBorrowAndRepay, _amounts: _underlyingsToRepayAmounts});
 
-        for (uint256 i = 0; i < _tokensToBorrowAndRepay.length; i++) {
+        for (uint256 i = 0; i < _underlyingsToBorrowAndRepay.length; i++) {
             // check the vault balance is correct after repay
             // if the repay amount is greater than the borrowed amount the vault balance should be decreased by the borrowed amount
             // if the repay amount is less than the borrowed amount the vault balance should be decreased by the repay amount
             // 1 wei difference is allowed because of the interest accrued
             assertApproxEqAbs(
-                IERC20(_tokensToBorrowAndRepay[i]).balanceOf(address(vaultProxy)),
-                _tokensVaultAmounts[i] - Math.min(_tokensToBorrowAmounts[i], _tokensToRepayAmounts[i]),
+                IERC20(_underlyingsToBorrowAndRepay[i]).balanceOf(address(vaultProxy)),
+                _underlyingsVaultAmounts[i] - Math.min(_underlyingsToBorrowAmounts[i], _underlyingsToRepayAmounts[i]),
                 1,
                 "Vault balance is not correct after repay"
             );
 
-            if (_tokensToRepayAmounts[i] >= _tokensToBorrowAmounts[i]) {
-                // check that the EP no longer considers fully-repaid tokens as borrowed
-                assertFalse(aaveDebtPosition.assetIsBorrowed(_tokensToBorrowAndRepay[i]), "Asset is still borrowed");
+            if (_underlyingsToRepayAmounts[i] >= _underlyingsToBorrowAmounts[i]) {
+                // check that the EP no longer considers fully-repaid underlyings as borrowed
+                assertFalse(
+                    aaveDebtPosition.assetIsBorrowed(_underlyingsToBorrowAndRepay[i]), "Asset is still borrowed"
+                );
             } else {
                 // check that the debt decreased
                 // 1 wei difference is allowed because of the interest accrued if the colletaral is supplied is the same as borrowed asset
                 assertApproxEqAbs(
-                    IERC20(aaveDebtPosition.getDebtTokenForBorrowedAsset(_tokensToBorrowAndRepay[i])).balanceOf(
+                    IERC20(aaveDebtPosition.getDebtTokenForBorrowedAsset(_underlyingsToBorrowAndRepay[i])).balanceOf(
                         address(aaveDebtPosition)
                     ),
-                    _tokensToBorrowAmounts[i] - _tokensToRepayAmounts[i],
+                    _underlyingsToBorrowAmounts[i] - _underlyingsToRepayAmounts[i],
                     1,
                     "Invalid debt amount"
                 );
-                // check that the EP has still not fully-repaid tokens as borrowed
-                assertTrue(aaveDebtPosition.assetIsBorrowed(_tokensToBorrowAndRepay[i]), "Asset is not borrowed");
+                // check that the EP has still not fully-repaid underlyings as borrowed
+                assertTrue(aaveDebtPosition.assetIsBorrowed(_underlyingsToBorrowAndRepay[i]), "Asset is not borrowed");
             }
         }
     }
 
-    function test_failRepayTokenNotBorrowed() public {
+    function test_repayBorrow_failRepayTokenNotBorrowed() public {
         IERC20 invalidAsset = createTestToken();
 
         vm.expectRevert(formatError("__repayBorrowedAssets: Invalid borrowed asset"));
 
-        __repayBorrowedAssets({_tokens: toArray(address(invalidAsset)), _amounts: toArray(uint256(0))});
+        __repayBorrowedAssets({_underlyings: toArray(address(invalidAsset)), _amounts: toArray(uint256(0))});
     }
 }
 
 abstract contract ClaimRewardsTest is TestBase {
-    function __test_successClaimRewards(address[] memory _aTokens, uint256[] memory _amounts, address _rewardToken)
+    function __test_claimRewards_success(address[] memory _aTokens, uint256[] memory _amounts, address _rewardToken)
         internal
     {
         // resurrect incentives controller rewards, as they have already finished for aave V2
@@ -499,7 +471,7 @@ abstract contract ClaimRewardsTest is TestBase {
 
         uint256 rewardAmount = IERC20(_rewardToken).balanceOf(address(vaultProxy));
 
-        // check that some amount of reward token was claimed and transferred to the vault
+        // check that some amount of reward underlying was claimed and transferred to the vault
         assertGt(rewardAmount, 0, "No rewards claimed");
     }
 }
@@ -518,27 +490,29 @@ abstract contract AaveV2DebtPositionTest is
 contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
     function setUp() public override {
         setUpMainnetEnvironment();
-        setUpTestBase({
-            _poolAddressProvider: ETHEREUM_POOL_ADDRESS_PROVIDER,
-            _protocolDataProvider: ETHEREUM_PROTOCOL_DATA_PROVIDER,
-            _incentivesController: ETHEREUM_INCENTIVES_CONTROLLER,
-            // set up all tokens used in test cases
-            _tokens: toArray(ETHEREUM_WBTC, ETHEREUM_LINK, ETHEREUM_DAI, ETHEREUM_USDC)
-        });
+
+        poolAddressProvider = IAaveV2LendingPoolAddressProvider(ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS);
+        protocolDataProvider = IAaveV2ProtocolDataProvider(ETHEREUM_PROTOCOL_DATA_PROVIDER);
+        incentivesController = IAaveV2IncentivesController(ETHEREUM_INCENTIVES_CONTROLLER);
+
+        super.setUp();
+
+        // set up all underlyings used in test cases
+        __registerUnderlyingsAndATokensForThem(toArray(ETHEREUM_WBTC, ETHEREUM_LINK, ETHEREUM_DAI, ETHEREUM_USDC));
     }
 
-    function test_successAddCollateral() public {
-        address[] memory tokens = toArray(ETHEREUM_WBTC, ETHEREUM_DAI, ETHEREUM_DAI);
+    function test_addCollateral_success() public {
+        address[] memory underlyings = toArray(ETHEREUM_WBTC, ETHEREUM_DAI, ETHEREUM_DAI);
 
-        uint256[] memory amounts = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            amounts[i] = (i + 1) * assetUnit(IERC20(tokens[i]));
+        uint256[] memory amounts = new uint256[](underlyings.length);
+        for (uint256 i = 0; i < underlyings.length; i++) {
+            amounts[i] = (i + 1) * assetUnit(IERC20(underlyings[i]));
         }
 
-        __test_successAddCollateral({_aTokens: __getATokensAddresses(tokens), _amounts: amounts});
+        __test_addCollateral_success({_aTokens: __getATokensAddresses(underlyings), _amounts: amounts});
     }
 
-    function test_successRemoveCollateral() public {
+    function test_removeCollateral_success() public {
         address[] memory aTokens = new address[](5);
         aTokens[0] = __getATokenAddress(ETHEREUM_WBTC);
         aTokens[1] = __getATokenAddress(ETHEREUM_LINK);
@@ -560,73 +534,73 @@ contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
         amountsToRemove[3] = type(uint256).max;
         amountsToRemove[4] = 10_000 * assetUnit(IERC20(aTokens[4]));
 
-        __test_successRemoveCollateral({
+        __test_removeCollateral_success({
             _aTokens: aTokens,
             _amountsToAdd: amountsToAdd,
             _amountsToRemove: amountsToRemove
         });
     }
 
-    function test_successBorrow() public {
+    function test_borrow_success() public {
         address[] memory aTokensCollateral = toArray(__getATokenAddress(ETHEREUM_WBTC));
 
         uint256[] memory aTokensCollateralAmounts = toArray(1 * assetUnit(IERC20(aTokensCollateral[0])));
 
-        address[] memory tokensToBorrow = new address[](3);
-        tokensToBorrow[0] = ETHEREUM_USDC;
-        tokensToBorrow[1] = ETHEREUM_DAI;
-        tokensToBorrow[2] = ETHEREUM_DAI;
+        address[] memory underlyingsToBorrow = new address[](3);
+        underlyingsToBorrow[0] = ETHEREUM_USDC;
+        underlyingsToBorrow[1] = ETHEREUM_DAI;
+        underlyingsToBorrow[2] = ETHEREUM_DAI;
 
-        uint256[] memory tokensToBorrowAmounts = new uint256[](3);
-        tokensToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(tokensToBorrow[0]));
-        tokensToBorrowAmounts[1] = 5_000 * assetUnit(IERC20(tokensToBorrow[1]));
-        tokensToBorrowAmounts[2] = 2_000 * assetUnit(IERC20(tokensToBorrow[2]));
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(underlyingsToBorrow[0]));
+        underlyingsToBorrowAmounts[1] = 5_000 * assetUnit(IERC20(underlyingsToBorrow[1]));
+        underlyingsToBorrowAmounts[2] = 2_000 * assetUnit(IERC20(underlyingsToBorrow[2]));
 
-        __test_successBorrow({
+        __test_borrow_success({
             _aTokensCollateral: aTokensCollateral,
             _aTokensCollateralAmounts: aTokensCollateralAmounts,
-            _tokensToBorrow: tokensToBorrow,
-            _tokensToBorrowAmounts: tokensToBorrowAmounts
+            _underlyingsToBorrow: underlyingsToBorrow,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts
         });
     }
 
-    function test_successRepayBorrow() public {
+    function test_repayBorrow_success() public {
         address[] memory aTokensCollateral = toArray(__getATokenAddress(ETHEREUM_WBTC));
 
         uint256[] memory aTokensCollateralAmounts = toArray(4 * assetUnit(IERC20(aTokensCollateral[0])));
 
-        address[] memory tokensToBorrowAndRepay = new address[](3);
-        tokensToBorrowAndRepay[0] = ETHEREUM_USDC;
-        tokensToBorrowAndRepay[1] = ETHEREUM_DAI;
-        tokensToBorrowAndRepay[2] = ETHEREUM_WBTC;
+        address[] memory underlyingsToBorrowAndRepay = new address[](3);
+        underlyingsToBorrowAndRepay[0] = ETHEREUM_USDC;
+        underlyingsToBorrowAndRepay[1] = ETHEREUM_DAI;
+        underlyingsToBorrowAndRepay[2] = ETHEREUM_WBTC;
 
-        uint256[] memory tokensToBorrowAmounts = new uint256[](3);
-        tokensToBorrowAmounts[0] = 1_000 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensToBorrowAmounts[1] = 2_000 * assetUnit(IERC20(tokensToBorrowAndRepay[1]));
-        tokensToBorrowAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 1_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToBorrowAmounts[1] = 2_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsToBorrowAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        uint256[] memory tokensVaultAmounts = new uint256[](3);
-        tokensVaultAmounts[0] = 500 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensVaultAmounts[1] = 2_000 * assetUnit(IERC20(tokensToBorrowAndRepay[1]));
-        tokensVaultAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsVaultAmounts = new uint256[](3);
+        underlyingsVaultAmounts[0] = 500 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsVaultAmounts[1] = 2_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsVaultAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        uint256[] memory tokensToRepayAmounts = new uint256[](3);
-        tokensToRepayAmounts[0] = 500 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensToRepayAmounts[1] = type(uint256).max;
-        tokensToRepayAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsToRepayAmounts = new uint256[](3);
+        underlyingsToRepayAmounts[0] = 500 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToRepayAmounts[1] = type(uint256).max;
+        underlyingsToRepayAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        __test_successRepayBorrow({
+        __test_repayBorrow_success({
             _aTokensCollateral: aTokensCollateral,
             _aTokensCollateralAmounts: aTokensCollateralAmounts,
-            _tokensToBorrowAndRepay: tokensToBorrowAndRepay,
-            _tokensToBorrowAmounts: tokensToBorrowAmounts,
-            _tokensVaultAmounts: tokensVaultAmounts,
-            _tokensToRepayAmounts: tokensToRepayAmounts
+            _underlyingsToBorrowAndRepay: underlyingsToBorrowAndRepay,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts,
+            _underlyingsVaultAmounts: underlyingsVaultAmounts,
+            _underlyingsToRepayAmounts: underlyingsToRepayAmounts
         });
     }
 
-    function test_successClaimRewards() public {
-        __test_successClaimRewards({
+    function test_claimRewards_success() public {
+        __test_claimRewards_success({
             _aTokens: toArray(__getATokenAddress(ETHEREUM_WBTC), __getATokenAddress(ETHEREUM_DAI)),
             _amounts: toArray(
                 1 * assetUnit(IERC20(__getATokenAddress(ETHEREUM_WBTC))),
@@ -640,27 +614,29 @@ contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
 contract AaveV2DebtPositionTestPolygon is AaveV2DebtPositionTest {
     function setUp() public override {
         setUpPolygonEnvironment();
-        setUpTestBase({
-            _poolAddressProvider: POLYGON_POOL_ADDRESS_PROVIDER,
-            _protocolDataProvider: POLYGON_PROTOCOL_DATA_PROVIDER,
-            _incentivesController: POLYGON_INCENTIVES_CONTROLLER,
-            // set up all tokens used in test cases
-            _tokens: toArray(POLYGON_WBTC, POLYGON_WMATIC, POLYGON_DAI, POLYGON_USDC)
-        });
+
+        poolAddressProvider = IAaveV2LendingPoolAddressProvider(POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS);
+        protocolDataProvider = IAaveV2ProtocolDataProvider(POLYGON_PROTOCOL_DATA_PROVIDER);
+        incentivesController = IAaveV2IncentivesController(POLYGON_INCENTIVES_CONTROLLER);
+
+        super.setUp();
+
+        // set up all underlyings used in test cases
+        __registerUnderlyingsAndATokensForThem(toArray(POLYGON_WBTC, POLYGON_WMATIC, POLYGON_DAI, POLYGON_USDC));
     }
 
-    function test_successAddCollateral() public {
-        address[] memory tokens = toArray(POLYGON_WMATIC, POLYGON_DAI, POLYGON_DAI);
+    function test_addCollateral_success() public {
+        address[] memory underlyings = toArray(POLYGON_WMATIC, POLYGON_DAI, POLYGON_DAI);
 
-        uint256[] memory amounts = new uint256[](tokens.length);
-        for (uint256 i = 0; i < tokens.length; i++) {
-            amounts[i] = (i + 1) * assetUnit(IERC20(tokens[i]));
+        uint256[] memory amounts = new uint256[](underlyings.length);
+        for (uint256 i = 0; i < underlyings.length; i++) {
+            amounts[i] = (i + 1) * assetUnit(IERC20(underlyings[i]));
         }
 
-        __test_successAddCollateral({_aTokens: __getATokensAddresses(tokens), _amounts: amounts});
+        __test_addCollateral_success({_aTokens: __getATokensAddresses(underlyings), _amounts: amounts});
     }
 
-    function test_successRemoveCollateral() public {
+    function test_removeCollateral_success() public {
         address[] memory aTokens = new address[](5);
         aTokens[0] = __getATokenAddress(POLYGON_WBTC);
         aTokens[1] = __getATokenAddress(POLYGON_WMATIC);
@@ -682,73 +658,73 @@ contract AaveV2DebtPositionTestPolygon is AaveV2DebtPositionTest {
         amountsToRemove[3] = type(uint256).max;
         amountsToRemove[4] = 10_000 * assetUnit(IERC20(aTokens[4]));
 
-        __test_successRemoveCollateral({
+        __test_removeCollateral_success({
             _aTokens: aTokens,
             _amountsToAdd: amountsToAdd,
             _amountsToRemove: amountsToRemove
         });
     }
 
-    function test_successBorrow() public {
+    function test_borrow_success() public {
         address[] memory aTokensCollateral = toArray(__getATokenAddress(POLYGON_WBTC));
 
         uint256[] memory aTokensCollateralAmounts = toArray(1 * assetUnit(IERC20(aTokensCollateral[0])));
 
-        address[] memory tokensToBorrow = new address[](3);
-        tokensToBorrow[0] = POLYGON_USDC;
-        tokensToBorrow[1] = POLYGON_WMATIC;
-        tokensToBorrow[2] = POLYGON_WMATIC;
+        address[] memory underlyingsToBorrow = new address[](3);
+        underlyingsToBorrow[0] = POLYGON_USDC;
+        underlyingsToBorrow[1] = POLYGON_WMATIC;
+        underlyingsToBorrow[2] = POLYGON_WMATIC;
 
-        uint256[] memory tokensToBorrowAmounts = new uint256[](3);
-        tokensToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(tokensToBorrow[0]));
-        tokensToBorrowAmounts[1] = 1 * assetUnit(IERC20(tokensToBorrow[1]));
-        tokensToBorrowAmounts[2] = 2 * assetUnit(IERC20(tokensToBorrow[2]));
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(underlyingsToBorrow[0]));
+        underlyingsToBorrowAmounts[1] = 1 * assetUnit(IERC20(underlyingsToBorrow[1]));
+        underlyingsToBorrowAmounts[2] = 2 * assetUnit(IERC20(underlyingsToBorrow[2]));
 
-        __test_successBorrow({
+        __test_borrow_success({
             _aTokensCollateral: aTokensCollateral,
             _aTokensCollateralAmounts: aTokensCollateralAmounts,
-            _tokensToBorrow: tokensToBorrow,
-            _tokensToBorrowAmounts: tokensToBorrowAmounts
+            _underlyingsToBorrow: underlyingsToBorrow,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts
         });
     }
 
-    function test_successRepayBorrow() public {
+    function test_repayBorrow_success() public {
         address[] memory aTokensCollateral = toArray(__getATokenAddress(POLYGON_WBTC));
 
         uint256[] memory aTokensCollateralAmounts = toArray(4 * assetUnit(IERC20(aTokensCollateral[0])));
 
-        address[] memory tokensToBorrowAndRepay = new address[](3);
-        tokensToBorrowAndRepay[0] = POLYGON_USDC;
-        tokensToBorrowAndRepay[1] = POLYGON_WMATIC;
-        tokensToBorrowAndRepay[2] = POLYGON_WBTC;
+        address[] memory underlyingsToBorrowAndRepay = new address[](3);
+        underlyingsToBorrowAndRepay[0] = POLYGON_USDC;
+        underlyingsToBorrowAndRepay[1] = POLYGON_WMATIC;
+        underlyingsToBorrowAndRepay[2] = POLYGON_WBTC;
 
-        uint256[] memory tokensToBorrowAmounts = new uint256[](3);
-        tokensToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensToBorrowAmounts[1] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[1]));
-        tokensToBorrowAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToBorrowAmounts[1] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsToBorrowAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        uint256[] memory tokensVaultAmounts = new uint256[](3);
-        tokensVaultAmounts[0] = 5_000 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensVaultAmounts[1] = 3 * assetUnit(IERC20(tokensToBorrowAndRepay[1]));
-        tokensVaultAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsVaultAmounts = new uint256[](3);
+        underlyingsVaultAmounts[0] = 5_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsVaultAmounts[1] = 3 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsVaultAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        uint256[] memory tokensToRepayAmounts = new uint256[](3);
-        tokensToRepayAmounts[0] = 5_000 * assetUnit(IERC20(tokensToBorrowAndRepay[0]));
-        tokensToRepayAmounts[1] = type(uint256).max;
-        tokensToRepayAmounts[2] = 1 * assetUnit(IERC20(tokensToBorrowAndRepay[2]));
+        uint256[] memory underlyingsToRepayAmounts = new uint256[](3);
+        underlyingsToRepayAmounts[0] = 5_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToRepayAmounts[1] = type(uint256).max;
+        underlyingsToRepayAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
 
-        __test_successRepayBorrow({
+        __test_repayBorrow_success({
             _aTokensCollateral: aTokensCollateral,
             _aTokensCollateralAmounts: aTokensCollateralAmounts,
-            _tokensToBorrowAndRepay: tokensToBorrowAndRepay,
-            _tokensToBorrowAmounts: tokensToBorrowAmounts,
-            _tokensVaultAmounts: tokensVaultAmounts,
-            _tokensToRepayAmounts: tokensToRepayAmounts
+            _underlyingsToBorrowAndRepay: underlyingsToBorrowAndRepay,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts,
+            _underlyingsVaultAmounts: underlyingsVaultAmounts,
+            _underlyingsToRepayAmounts: underlyingsToRepayAmounts
         });
     }
 
-    function test_successClaimRewards() public {
-        __test_successClaimRewards({
+    function test_claimRewards_success() public {
+        __test_claimRewards_success({
             _aTokens: toArray(__getATokenAddress(POLYGON_WBTC), __getATokenAddress(POLYGON_DAI)),
             _amounts: toArray(
                 1 * assetUnit(IERC20(__getATokenAddress(POLYGON_WBTC))),

@@ -7,11 +7,11 @@ import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 import {
     ETHEREUM_LENDING_POOL_ADDRESS as ETHEREUM_AAVE_V2_LENDING_POOL_ADDRESS,
     POLYGON_LENDING_POOL_ADDRESS as POLYGON_AAVE_V2_LENDING_POOL_ADDRESS
-} from "tests/utils/protocols/aave/AaveV2Constants.sol";
+} from "tests/tests/protocols/aave/AaveV2Constants.sol";
 import {
     ETHEREUM_POOL_ADDRESS as ETHEREUM_AAVE_V3_POOL_ADDRESS,
     POLYGON_POOL_ADDRESS as POLYGON_AAVE_V3_POOL_ADDRESS
-} from "tests/utils/protocols/aave/AaveV3Constants.sol";
+} from "tests/tests/protocols/aave/AaveV3Constants.sol";
 
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IAaveV2LendingPool} from "tests/interfaces/external/IAaveV2LendingPool.sol";
