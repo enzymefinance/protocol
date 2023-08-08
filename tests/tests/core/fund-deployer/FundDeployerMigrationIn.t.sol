@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IVaultCore} from "tests/interfaces/internal/IVaultCore.sol";
 
 contract FundDeployerMigrationInTest is IntegrationTest {
@@ -16,7 +16,7 @@ contract FundDeployerMigrationInTest is IntegrationTest {
     IVaultCore internal vaultProxyCore;
 
     function setUp() public virtual override {
-        setUpStandaloneEnvironment(false);
+        setUpStandaloneEnvironment();
 
         // Create VaultProxy attached to another release
         vaultProxyCore = IVaultCore(
@@ -30,30 +30,29 @@ contract FundDeployerMigrationInTest is IntegrationTest {
         // Set the `migrator` role on the vault
         migrator = makeAddr("Migrator");
         vm.prank(vaultProxyCore.getOwner());
-        IVault(address(vaultProxyCore)).setMigrator(migrator);
+        IVaultLib(address(vaultProxyCore)).setMigrator(migrator);
     }
 }
 
 contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
 
-    function test_failWithNonLiveRelease() public {
-        vm.expectRevert("Release is not yet live");
-        vm.prank(vaultOwner);
+    // TODO: use newFundDeployer instead of core.release.fundDeployer
+    // function test_failWithNonLiveRelease() public {
+    //     vm.expectRevert("Release is not yet live");
+    //     vm.prank(vaultOwner);
 
-        core.release.fundDeployer.createMigrationRequest({
-            _vaultProxy: address(vaultProxyCore),
-            _denominationAsset: address(standardPrimitive),
-            _sharesActionTimelock: 123,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: "",
-            _bypassPrevReleaseFailure: bypassPrevReleaseFailure
-        });
-    }
+    //     core.release.fundDeployer.createMigrationRequest({
+    //         _vaultProxy: address(vaultProxyCore),
+    //         _denominationAsset: address(standardPrimitive),
+    //         _sharesActionTimelock: 123,
+    //         _feeManagerConfigData: "",
+    //         _policyManagerConfigData: "",
+    //         _bypassPrevReleaseFailure: bypassPrevReleaseFailure
+    //     });
+    // }
 
     function test_failWithNonMigrator() public {
-        setReleaseLive(core);
-
         address randomSigner = makeAddr("RandomSigner");
 
         vm.expectRevert("Only a permissioned migrator can call this function");
@@ -70,8 +69,6 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     }
 
     function test_success() public {
-        setReleaseLive(core);
-
         address expectedComptrollerProxy = predictComptrollerProxyAddress(core.release.fundDeployer);
 
         // Define migration request params
@@ -85,7 +82,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
 
         // Create migration request
         vm.prank(migrationRequestCaller);
-        IComptroller comptrollerProxy = IComptroller(
+        IComptrollerLib comptrollerProxy = IComptrollerLib(
             core.release.fundDeployer.createMigrationRequest({
                 _vaultProxy: address(vaultProxyCore),
                 _denominationAsset: denominationAsset,
@@ -113,8 +110,6 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
     }
 
     function test_successWithMigratorCaller() public {
-        setReleaseLive(core);
-
         address expectedComptrollerProxy = predictComptrollerProxyAddress(core.release.fundDeployer);
 
         // Prepare event assertions
@@ -139,9 +134,6 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
 
     function setUp() public virtual override {
         super.setUp();
-
-        // Set release live
-        setReleaseLive(core);
 
         // Create migration request
         vm.prank(vaultOwner);
@@ -177,7 +169,7 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
             )
         );
         // Assert ComptrollerProxy.destructUnactivated() will be called
-        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptroller.destructUnactivated.selector));
+        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.destructUnactivated.selector));
         vm.prank(vaultOwner);
 
         core.release.fundDeployer.cancelMigration({
@@ -219,9 +211,6 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
 
     function setUp() public virtual override {
         super.setUp();
-
-        // Set release live
-        setReleaseLive(core);
 
         // Create migration request
         vm.prank(vaultOwner);
@@ -266,7 +255,7 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
             abi.encodeWithSelector(core.release.protocolFeeTracker.initializeForVault.selector, address(vaultProxyCore))
         );
         // Assert ComptrollerProxy.activate() will be called correctly
-        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptroller.activate.selector, true));
+        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.activate.selector, true));
 
         vm.prank(vaultOwner);
 

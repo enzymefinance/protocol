@@ -5,8 +5,8 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 abstract contract AaveAdapterTestBase is IntegrationTest {
@@ -15,8 +15,8 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     address internal vaultOwner = makeAddr("VaultOwner");
     address internal sharesBuyer = makeAddr("SharesBuyer");
 
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     address internal adapter;
     address internal lendingPool;

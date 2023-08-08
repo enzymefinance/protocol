@@ -5,11 +5,11 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IExternalPositionFactory} from "tests/interfaces/internal/IExternalPositionFactory.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 enum Actions {
     CreateExternalPosition,
@@ -23,7 +23,7 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
 
     function callOnExternalPosition(
         IExternalPositionManager _externalPositionManager,
-        IComptroller _comptrollerProxy,
+        IComptrollerLib _comptrollerProxy,
         address _externalPositionAddress,
         uint256 _actionId,
         bytes memory _actionArgs
@@ -39,7 +39,7 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
 
     function createExternalPosition(
         IExternalPositionManager _externalPositionManager,
-        IComptroller _comptrollerProxy,
+        IComptrollerLib _comptrollerProxy,
         uint256 _typeId,
         bytes memory _initializationData,
         bytes memory _callOnExternalPositionCallArgs
@@ -54,7 +54,7 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
         });
 
         // Find the external position by taking the last-activated external position for the relevant vault
-        IVault vaultProxy = IVault(_comptrollerProxy.getVaultProxy());
+        IVaultLib vaultProxy = IVaultLib(_comptrollerProxy.getVaultProxy());
         address[] memory activeExternalPositions = vaultProxy.getActiveExternalPositions();
 
         return activeExternalPositions[activeExternalPositions.length - 1];

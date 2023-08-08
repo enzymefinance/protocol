@@ -11,10 +11,10 @@ import {BytesArrayLib} from "tests/utils/libs/BytesArrayLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IKilnStakingContract} from "tests/interfaces/external/IKilnStakingContract.sol";
 
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 enum Actions {
     Stake,
@@ -58,8 +58,8 @@ abstract contract TestBase is IntegrationTest {
     uint256 internal exitedValidatorEthThreshold = 28 ether;
 
     address internal fundOwner;
-    IComptroller internal comptrollerProxy;
-    IVault internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
 
     function setUp() public virtual override {
         // Must be a block when there are enough validators provisioned in StakingContract.

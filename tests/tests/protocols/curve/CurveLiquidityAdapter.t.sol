@@ -15,11 +15,11 @@ import {ICurveLiquidityPool} from "tests/interfaces/external/ICurveLiquidityPool
 import {ICurveMinter} from "tests/interfaces/external/ICurveMinter.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {ICurveLiquidityAdapter} from "tests/interfaces/internal/ICurveLiquidityAdapter.sol";
 import {ICurvePriceFeed} from "tests/interfaces/internal/ICurvePriceFeed.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {CurveUtils} from "./CurveUtils.sol";
 
@@ -40,8 +40,8 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     ICurvePriceFeed internal priceFeed;
 
     address internal vaultOwner = makeAddr("VaultOwner");
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     address[] internal poolAssetAddresses;
     address[] internal poolUnderlyingAddresses;

@@ -3,7 +3,18 @@ pragma solidity 0.8.19;
 
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
 import {ChainlinkRateAsset} from "tests/utils/core/AssetUniverseUtils.sol";
-import {ICoreDeployment} from "tests/utils/core/DeploymentUtils.sol";
+
+import {
+    Contracts as PersistentContracts,
+    getMainnetDeployment as getMainnetPersistentContracts,
+    getPolygonDeployment as getPolygonPersistentContracts
+} from "tests/utils/core/deployment/PersistentContracts.sol";
+import {ReleaseConfig} from "tests/utils/core/deployment/DeploymentUtils.sol";
+import {
+    Contracts as ReleaseContracts,
+    getMainnetDeployment as getMainnetReleaseContracts,
+    getPolygonDeployment as getPolygonReleaseContracts
+} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
@@ -14,6 +25,12 @@ struct CorePrimitiveInput {
     ChainlinkRateAsset rateAsset;
 }
 
+struct Deployment {
+    ReleaseConfig lastReleaseConfig;
+    ReleaseContracts release;
+    PersistentContracts persistent;
+}
+
 abstract contract IntegrationTest is CoreUtils {
     IERC20 internal mlnToken;
     IERC20 internal wethToken;
@@ -22,62 +39,71 @@ abstract contract IntegrationTest is CoreUtils {
     IERC20 internal standardPrimitive;
     IERC20 internal nonStandardPrimitive;
 
-    ICoreDeployment.Deployment internal core;
+    Deployment internal core;
     // Don't allow access outside of this contract
     mapping(string => IERC20) private symbolToCoreToken;
     mapping(IERC20 => bool) private tokenToIsCore;
+
+    // Default setup()
 
     function setUp() public virtual {
         setUpStandaloneEnvironment();
     }
 
-    function setUpMainnetEnvironment() internal {
-        setUpMainnetEnvironment(ETHEREUM_BLOCK_LATEST, true);
+    // Live deployments
+
+    function setUpLiveMainnetEnvironment(uint256 _forkBlock) internal {
+        vm.createSelectFork("mainnet", _forkBlock);
+
+        core.persistent = getMainnetPersistentContracts();
+        core.release = getMainnetReleaseContracts();
     }
 
-    function setUpMainnetEnvironment(uint256 _forkBlock) internal {
-        setUpMainnetEnvironment(_forkBlock, true);
+    function setUpLivePolygonEnvironment(uint256 _forkBlock) internal {
+        vm.createSelectFork("polygon", _forkBlock);
+
+        core.persistent = getPolygonPersistentContracts();
+        core.release = getPolygonReleaseContracts();
+    }
+
+    // Partially-live deployments (persistent layer only)
+
+    function setUpLiveMainnetEnvironmentWithNewRelease(uint256 _forkBlock) internal {
+        vm.createSelectFork("mainnet", _forkBlock);
+
+        core.persistent = getMainnetPersistentContracts();
+
+        __setUpEnvironment({_config: getDefaultMainnetConfig(), _persistentContractsAlreadySet: true});
+    }
+
+    function setUpLivePolygonEnvironmentWithNewRelease(uint256 _forkBlock) internal {
+        vm.createSelectFork("polygon", _forkBlock);
+
+        core.persistent = getPolygonPersistentContracts();
+
+        __setUpEnvironment({_config: getDefaultPolygonConfig(), _persistentContractsAlreadySet: true});
+    }
+
+    // New deployments
+
+    function setUpMainnetEnvironment() internal {
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_LATEST);
     }
 
     function setUpPolygonEnvironment() internal {
-        setUpPolygonEnvironment(POLYGON_BLOCK_LATEST, true);
-    }
-
-    function setUpPolygonEnvironment(uint256 _forkBlock) internal {
-        setUpPolygonEnvironment(_forkBlock, true);
+        setUpPolygonEnvironment(POLYGON_BLOCK_LATEST);
     }
 
     function setUpGoerliEnvironment() internal {
-        setUpGoerliEnvironment(GOERLI_BLOCK_LATEST, true);
+        setUpGoerliEnvironment(GOERLI_BLOCK_LATEST);
     }
 
-    function setUpGoerliEnvironment(uint256 _forkBlock) internal {
-        setUpGoerliEnvironment(_forkBlock, true);
-    }
-
-    function setUpStandaloneEnvironment() internal {
-        setUpStandaloneEnvironment(true);
-    }
-
-    function setUpMainnetEnvironment(uint256 _forkBlock, bool _setReleaseLive) internal {
+    function setUpMainnetEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("mainnet", _forkBlock);
 
-        setUpEnvironment({
-            _setReleaseLive: _setReleaseLive,
-            _wethToken: ETHEREUM_WETH,
-            _mlnToken: ETHEREUM_MLN,
-            _wrappedNativeToken: ETHEREUM_WETH,
-            _gasRelayHub: 0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D,
-            _gasRelayTrustedForwarder: 0xca57e5D6218AeB093D76372B51Ba355CfB3C6Cd0,
-            _gasRelayDepositCooldown: 1 days,
-            _gasRelayDepositMaxTotal: 1 ether,
-            _gasRelayRelayFeeMaxBase: 0,
-            _gasRelayFeeMaxPercent: 10,
-            _vaultMlnBurner: address(0), // TODO: This requires per-network config
-            _vaultPositionsLimit: 20,
-            _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: ETHEREUM_ETH_USD_AGGREGATOR
-        });
+        ReleaseConfig memory config = getDefaultMainnetConfig();
+
+        __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
 
         // Deploy minimal asset universe
 
@@ -85,7 +111,7 @@ abstract contract IntegrationTest is CoreUtils {
         symbolToCoreToken["WETH"] = IERC20(wethToken);
         tokenToIsCore[IERC20(wethToken)] = true;
 
-        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(config.chainlinkEthUsdAggregatorAddress));
 
         CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](4);
         // System primitives
@@ -115,28 +141,15 @@ abstract contract IntegrationTest is CoreUtils {
             rateAsset: ChainlinkRateAsset.ETH
         });
 
-        addCorePrimitives(corePrimitives);
+        __addCorePrimitives(corePrimitives);
     }
 
-    function setUpPolygonEnvironment(uint256 _forkBlock, bool _setReleaseLive) internal {
+    function setUpPolygonEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("polygon", _forkBlock);
 
-        setUpEnvironment({
-            _setReleaseLive: _setReleaseLive,
-            _wethToken: POLYGON_WETH,
-            _mlnToken: POLYGON_MLN,
-            _wrappedNativeToken: POLYGON_WMATIC,
-            _gasRelayHub: address(0),
-            _gasRelayTrustedForwarder: address(0),
-            _gasRelayDepositCooldown: 1 days,
-            _gasRelayDepositMaxTotal: 1 ether,
-            _gasRelayRelayFeeMaxBase: 0,
-            _gasRelayFeeMaxPercent: 10,
-            _vaultMlnBurner: address(0), // TODO: This requires per-network config
-            _vaultPositionsLimit: 20,
-            _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: POLYGON_ETH_USD_AGGREGATOR
-        });
+        ReleaseConfig memory config = getDefaultPolygonConfig();
+
+        __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
 
         // Deploy minimal asset universe
 
@@ -144,7 +157,7 @@ abstract contract IntegrationTest is CoreUtils {
         symbolToCoreToken["WETH"] = IERC20(wethToken);
         tokenToIsCore[IERC20(wethToken)] = true;
 
-        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(core.config.ethUsdAggregator));
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(config.chainlinkEthUsdAggregatorAddress));
 
         CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](5);
         // System primitives
@@ -180,31 +193,33 @@ abstract contract IntegrationTest is CoreUtils {
             rateAsset: ChainlinkRateAsset.USD
         });
 
-        addCorePrimitives(corePrimitives);
+        __addCorePrimitives(corePrimitives);
     }
 
-    function setUpGoerliEnvironment(uint256 _forkBlock, bool _setReleaseLive) internal {
+    function setUpGoerliEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("goerli", _forkBlock);
 
-        // Test MLN/ETH aggregator.
-        address testMLNETHAggregator = address(createTestAggregator({_price: 0.01 ether}));
-
-        setUpEnvironment({
-            _setReleaseLive: _setReleaseLive,
-            _wethToken: GOERLI_WETH,
-            _mlnToken: GOERLI_MLN,
-            _wrappedNativeToken: GOERLI_WETH,
-            _gasRelayHub: address(0),
-            _gasRelayTrustedForwarder: address(0),
-            _gasRelayDepositCooldown: 1 days,
-            _gasRelayDepositMaxTotal: 1 ether,
-            _gasRelayRelayFeeMaxBase: 0,
-            _gasRelayFeeMaxPercent: 10,
-            _vaultMlnBurner: address(0), // TODO: This requires per-network config
-            _vaultPositionsLimit: 20,
-            _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: address(0)
+        ReleaseConfig memory config = ReleaseConfig({
+            // Chainlink
+            chainlinkEthUsdAggregatorAddress: address(0), // TODO: lookup real address
+            chainlinkStaleRateThreshold: 3650 days,
+            // Tokens
+            mlnTokenAddress: GOERLI_MLN, // TODO: is this actually what we use as "MLN" on Goerli?
+            wethTokenAddress: GOERLI_WETH,
+            wrappedNativeTokenAddress: GOERLI_WETH,
+            // Gas relayer
+            gasRelayDepositCooldown: 1 days,
+            gasRelayDepositMaxTotal: 1 ether,
+            gasRelayFeeMaxPercent: 10,
+            gasRelayHubAddress: address(0), // TODO: lookup real address
+            gasRelayRelayFeeMaxBase: 0,
+            gasRelayTrustedForwarderAddress: address(0), // TODO: lookup/deploy real address
+            // Vault settings
+            vaultMlnBurner: address(0), // TODO: MLN must be burnable
+            vaultPositionsLimit: 20
         });
+
+        __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
 
         // Deploy minimal asset universe
 
@@ -214,93 +229,133 @@ abstract contract IntegrationTest is CoreUtils {
 
         CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](1);
         // System primitives
+        address testMlnEthAggregator = address(createTestAggregator({_price: 0.01 ether}));
         corePrimitives[0] = CorePrimitiveInput({
             symbol: "MLN",
             assetAddress: GOERLI_MLN,
-            aggregatorAddress: testMLNETHAggregator,
+            aggregatorAddress: testMlnEthAggregator,
             rateAsset: ChainlinkRateAsset.ETH
         });
 
-        addCorePrimitives(corePrimitives);
+        __addCorePrimitives(corePrimitives);
     }
 
-    function setUpStandaloneEnvironment(bool _setReleaseLive) internal {
+    function setUpStandaloneEnvironment() internal {
+        uint256 chainlinkStaleRateThreshold = 3650 days;
+
         // Warp beyond Chainlink aggregator staleness threshold
-        skip(3650 days);
+        skip(chainlinkStaleRateThreshold);
 
-        setUpEnvironment({
-            _setReleaseLive: _setReleaseLive,
-            _wethToken: makeAddr("WethToken"), // TODO: Deploy a mock
-            _mlnToken: makeAddr("MlnToken"), // TODO: Deploy a mock
-            _wrappedNativeToken: makeAddr("WrappedNativeToken"), // TODO: Deploy a mock
-            _gasRelayHub: makeAddr("GasRelayHub"), // TODO: Deploy a mock
-            _gasRelayTrustedForwarder: makeAddr("GasRelayTrustedForwarder"), // TODO: Deploy a mock
-            _gasRelayDepositCooldown: 1 days,
-            _gasRelayDepositMaxTotal: 1 ether,
-            _gasRelayRelayFeeMaxBase: 0,
-            _gasRelayFeeMaxPercent: 10,
-            _vaultMlnBurner: makeAddr("VaultMlnBurner"), // TODO: Deploy a mock
-            _vaultPositionsLimit: 20,
-            _chainlinkStaleRateThreshold: 3650 days,
-            _ethUsdAggregator: address(0) // TODO: Deploy a mock
+        __setUpEnvironment({
+            _config: ReleaseConfig({
+                // Chainlink
+                chainlinkEthUsdAggregatorAddress: address(0), // TODO: Deploy a mock
+                chainlinkStaleRateThreshold: chainlinkStaleRateThreshold,
+                // Tokens
+                mlnTokenAddress: makeAddr("MlnToken"), // TODO: Deploy a mock
+                wethTokenAddress: makeAddr("WethToken"), // TODO: Deploy a mock
+                wrappedNativeTokenAddress: makeAddr("WrappedNativeToken"), // TODO: Deploy a mock
+                // Gas relayer
+                gasRelayDepositCooldown: 1 days,
+                gasRelayDepositMaxTotal: 1 ether,
+                gasRelayFeeMaxPercent: 10,
+                gasRelayHubAddress: makeAddr("GasRelayHub"), // TODO: Deploy a mock
+                gasRelayRelayFeeMaxBase: 0,
+                gasRelayTrustedForwarderAddress: makeAddr("GasRelayTrustedForwarder"), // TODO: Deploy a mock
+                // Vault settings
+                vaultMlnBurner: makeAddr("VaultMlnBurner"), // TODO: Deploy a mock
+                vaultPositionsLimit: 20
+            }),
+            _persistentContractsAlreadySet: false
         });
     }
 
-    function setUpEnvironment(
-        bool _setReleaseLive,
-        address _wethToken,
-        address _mlnToken,
-        address _wrappedNativeToken,
-        address _gasRelayHub,
-        address _gasRelayTrustedForwarder,
-        uint256 _gasRelayDepositCooldown,
-        uint256 _gasRelayDepositMaxTotal,
-        uint256 _gasRelayRelayFeeMaxBase,
-        uint256 _gasRelayFeeMaxPercent,
-        address _vaultMlnBurner,
-        uint256 _vaultPositionsLimit,
-        uint256 _chainlinkStaleRateThreshold,
-        address _ethUsdAggregator
-    ) private {
-        mlnToken = IERC20(_mlnToken);
-        wethToken = IERC20(_wethToken);
-        wrappedNativeToken = IERC20(_wrappedNativeToken);
+    function __setUpEnvironment(ReleaseConfig memory _config, bool _persistentContractsAlreadySet) private {
+        mlnToken = IERC20(_config.mlnTokenAddress);
+        wethToken = IERC20(_config.wethTokenAddress);
+        wrappedNativeToken = IERC20(_config.wrappedNativeTokenAddress);
 
-        vm.label(_mlnToken, "MLN");
-        vm.label(_wethToken, "WETH");
+        vm.label(_config.mlnTokenAddress, "MLN");
+        vm.label(_config.wethTokenAddress, "WETH");
 
-        if (_wethToken != _wrappedNativeToken) {
-            vm.label(_wrappedNativeToken, "WrappedNativeToken");
+        if (_config.wethTokenAddress != _config.wrappedNativeTokenAddress) {
+            vm.label(_config.wrappedNativeTokenAddress, "WrappedNativeToken");
         }
 
-        core = deployRelease({
-            _wethToken: wethToken,
-            _mlnToken: mlnToken,
-            _wrappedNativeToken: wrappedNativeToken,
-            _gasRelayHub: _gasRelayHub,
-            _gasRelayTrustedForwarder: _gasRelayTrustedForwarder,
-            _gasRelayDepositCooldown: _gasRelayDepositCooldown,
-            _gasRelayDepositMaxTotal: _gasRelayDepositMaxTotal,
-            _gasRelayRelayFeeMaxBase: _gasRelayRelayFeeMaxBase,
-            _gasRelayFeeMaxPercent: _gasRelayFeeMaxPercent,
-            _vaultMlnBurner: _vaultMlnBurner,
-            _vaultPositionsLimit: _vaultPositionsLimit,
-            _chainlinkStaleRateThreshold: _chainlinkStaleRateThreshold,
-            _ethUsdAggregator: _ethUsdAggregator
-        });
+        if (!_persistentContractsAlreadySet) {
+            // Deploy persistent contracts
+            core.persistent = deployPersistentCore();
 
-        if (_setReleaseLive) {
-            setReleaseLive(core);
+            // Change the Dispatcher owner to an account other than the original deployer
+            address dispatcherOwner = core.persistent.dispatcher.getOwner();
+            address nextDispatcherOwner = makeAddr("__setUpEnvironment: DispatcherOwner");
+            vm.prank(dispatcherOwner);
+            core.persistent.dispatcher.setNominatedOwner(nextDispatcherOwner);
+            vm.prank(nextDispatcherOwner);
+            core.persistent.dispatcher.claimOwnership();
         }
 
+        // Deploy release contracts and post-deployment setup
+        core.lastReleaseConfig = _config;
+        core.release = deployReleaseCore({_config: _config, _persistentContracts: core.persistent});
+
+        // Add a couple generic tokens
         standardPrimitive = createRegisteredPrimitive(core.release.valueInterpreter, 18);
         nonStandardPrimitive = createRegisteredPrimitive(core.release.valueInterpreter, 8);
+    }
+
+    // DEFAULT CONFIG
+
+    function getDefaultMainnetConfig() internal pure returns (ReleaseConfig memory) {
+        return ReleaseConfig({
+            // Chainlink
+            chainlinkEthUsdAggregatorAddress: ETHEREUM_ETH_USD_AGGREGATOR,
+            chainlinkStaleRateThreshold: 3650 days,
+            // Tokens
+            mlnTokenAddress: ETHEREUM_MLN,
+            wethTokenAddress: ETHEREUM_WETH,
+            wrappedNativeTokenAddress: ETHEREUM_WETH,
+            // Gas relayer
+            gasRelayDepositCooldown: 1 days,
+            gasRelayDepositMaxTotal: 1 ether,
+            gasRelayFeeMaxPercent: 10,
+            gasRelayHubAddress: 0x9e59Ea5333cD4f402dAc320a04fafA023fe3810D,
+            gasRelayRelayFeeMaxBase: 0,
+            gasRelayTrustedForwarderAddress: 0xca57e5D6218AeB093D76372B51Ba355CfB3C6Cd0,
+            // Vault settings
+            vaultMlnBurner: address(0),
+            vaultPositionsLimit: 20
+        });
+    }
+
+    function getDefaultPolygonConfig() internal returns (ReleaseConfig memory) {
+        address mlnBurner = makeAddr("MlnBurner");
+
+        return ReleaseConfig({
+            // Chainlink
+            chainlinkEthUsdAggregatorAddress: POLYGON_ETH_USD_AGGREGATOR,
+            chainlinkStaleRateThreshold: 3650 days,
+            // Tokens
+            mlnTokenAddress: POLYGON_MLN,
+            wethTokenAddress: POLYGON_WETH,
+            wrappedNativeTokenAddress: POLYGON_WMATIC,
+            // Gas relayer
+            gasRelayDepositCooldown: 1 days,
+            gasRelayDepositMaxTotal: 1 ether,
+            gasRelayFeeMaxPercent: 10,
+            gasRelayHubAddress: address(0), // TODO: lookup real value
+            gasRelayRelayFeeMaxBase: 0,
+            gasRelayTrustedForwarderAddress: address(0), // TODO: lookup real value
+            // Vault settings
+            vaultMlnBurner: mlnBurner,
+            vaultPositionsLimit: 20
+        });
     }
 
     // ASSET UNIVERSE
 
     /// @dev Keep private to avoid accidental use
-    function addCorePrimitives(CorePrimitiveInput[] memory _primitives) private {
+    function __addCorePrimitives(CorePrimitiveInput[] memory _primitives) private {
         for (uint256 i; i < _primitives.length; i++) {
             CorePrimitiveInput memory primitiveInfo = _primitives[i];
             IERC20 token = IERC20(primitiveInfo.assetAddress);

@@ -5,9 +5,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {PerformanceFeeUtils} from "tests/utils/fees/PerformanceFeeUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IPerformanceFee} from "tests/interfaces/internal/IPerformanceFee.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
     IPerformanceFee internal performanceFee;
@@ -37,7 +37,7 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
 
         bytes memory feeManagerConfigData = abi.encode(fees, settings);
 
-        (IComptroller comptrollerProxy, IVault vaultProxy) = createVault({
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy) = createVault({
             _fundDeployer: core.release.fundDeployer,
             _vaultOwner: vaultOwner,
             _denominationAsset: address(denominationAsset),

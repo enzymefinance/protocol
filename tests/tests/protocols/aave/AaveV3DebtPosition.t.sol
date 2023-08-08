@@ -9,8 +9,8 @@ import {IAaveV3Pool} from "tests/interfaces/external/IAaveV3Pool.sol";
 import {IAaveV3ProtocolDataProvider} from "tests/interfaces/external/IAaveV3ProtocolDataProvider.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPositionLib.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
@@ -39,8 +39,8 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     address internal fundOwner = makeAddr("fundOwner");
 
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     IAaveV3DebtPositionLib internal aaveV3DebtPosition;
     IAaveV3PoolAddressProvider internal poolAddressProvider;

@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IStakeWiseV3EthVault} from "tests/interfaces/external/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3StakingPositionLib} from "tests/interfaces/internal/IStakeWiseV3StakingPositionLib.sol";
 import {IStakeWiseV3StakingPositionParser} from "tests/interfaces/internal/IStakeWiseV3StakingPositionParser.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 enum Actions {
     Stake,
@@ -45,8 +45,8 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     address internal stakeWiseV3RegistryAddress;
     IStakeWiseV3EthVault internal stakeWiseV3Vault;
 
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     function setUp() public virtual override {
         (stakeWiseV3StakingPositionLib, stakeWiseV3StakingPositionParser, stakeWiseV3StakingTypeId) =

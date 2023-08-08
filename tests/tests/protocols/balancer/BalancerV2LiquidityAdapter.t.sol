@@ -12,9 +12,9 @@ import {ICurveMinter} from "tests/interfaces/external/ICurveMinter.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IBalancerV2LiquidityAdapter} from "tests/interfaces/internal/IBalancerV2LiquidityAdapter.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {
     BalancerV2Utils,
@@ -40,8 +40,8 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     IBalancerV2Vault internal balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
     address internal vaultOwner = makeAddr("VaultOwner");
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     address[] internal poolAssetAddresses;
 

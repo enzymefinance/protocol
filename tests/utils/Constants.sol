@@ -3,7 +3,9 @@ pragma solidity 0.8.19;
 
 abstract contract Constants {
     // Time
-    uint256 internal constant SECONDS_ONE_DAY = 60 * 60 * 24;
+    uint256 internal constant SECONDS_ONE_MINUTE = 60;
+    uint256 internal constant SECONDS_ONE_HOUR = SECONDS_ONE_MINUTE * 60;
+    uint256 internal constant SECONDS_ONE_DAY = SECONDS_ONE_HOUR * 24;
     uint256 internal constant SECONDS_ONE_YEAR = SECONDS_ONE_DAY * 36525 / 100;
 
     // Percentages

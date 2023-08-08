@@ -32,7 +32,7 @@ ISharesSplitterLib.sol: SharesSplitterLib.abi.json
 ISharesSplitterFactory.sol: SharesSplitterFactory.abi.json
 
 # Protocol fee
-IProtocolFeeReserve.sol: ProtocolFeeReserveLib.abi.json
+IProtocolFeeReserveLib.sol: ProtocolFeeReserveLib.abi.json
 
 # Shares wrapper
 IGatedRedemptionQueueSharesWrapperLib.sol: GatedRedemptionQueueSharesWrapperLib.abi.json
@@ -50,9 +50,9 @@ IMapleV1ToV2PoolMapper.sol: MapleV1ToV2PoolMapper.abi.json
 #######################################################################################################################
 
 # Core
-IVault.sol: VaultLib.abi.json
+IVaultLib.sol: VaultLib.abi.json
 IVaultCore.sol: IVaultCore.abi.json
-IComptroller.sol: ComptrollerLib.abi.json
+IComptrollerLib.sol: ComptrollerLib.abi.json
 IFundDeployer.sol: FundDeployer.abi.json
 
 # Policies

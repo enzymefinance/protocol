@@ -8,7 +8,7 @@ import {CommonUtils} from "tests/utils/CommonUtils.sol";
 import {Bytes32Lib} from "tests/utils/libs/Bytes32Lib.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
@@ -29,7 +29,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
     function callOnIntegration(
         IIntegrationManager _integrationManager,
-        IComptroller _comptrollerProxy,
+        IComptrollerLib _comptrollerProxy,
         address _adapter,
         bytes4 _selector,
         bytes memory _actionArgs
@@ -41,7 +41,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
     function callOnIntegration(
         IIntegrationManager _integrationManager,
-        IComptroller _comptrollerProxy,
+        IComptrollerLib _comptrollerProxy,
         address _caller,
         bytes memory _callArgs
     ) internal {
@@ -82,7 +82,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
         }
 
         // Parse necessary data from event
-        address vaultProxyAddress = IComptroller(targetEvent.topics[1].toAddress()).getVaultProxy();
+        address vaultProxyAddress = IComptrollerLib(targetEvent.topics[1].toAddress()).getVaultProxy();
         IIntegrationAdapter adapter = IIntegrationAdapter(targetEvent.topics[2].toAddress());
         bytes4 actionSelector = targetEvent.topics[3].toBytes4();
         (, bytes memory integrationData,,,,) =

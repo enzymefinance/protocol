@@ -7,7 +7,7 @@ import {UnitTest} from "tests/bases/UnitTest.sol";
 import {FeeHook} from "tests/utils/fees/FeeUtils.sol";
 import {PerformanceFeeUtils} from "tests/utils/fees/PerformanceFeeUtils.sol";
 
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IPerformanceFee} from "tests/interfaces/internal/IPerformanceFee.sol";
 
@@ -30,7 +30,7 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
         // ComptrollerProxy.calcGrossShareValue() = grossShareValue
         vm.mockCall({
             callee: _comptrollerProxy,
-            data: abi.encodeWithSelector(IComptroller.calcGrossShareValue.selector),
+            data: abi.encodeWithSelector(IComptrollerLib.calcGrossShareValue.selector),
             returnData: abi.encode(_grossShareValue)
         });
 

@@ -8,9 +8,9 @@ import {UpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 import {CumulativeSlippageTolerancePolicyUtils} from "tests/utils/policies/CumulativeSlippageTolerancePolicyUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {ICumulativeSlippageTolerancePolicy} from "tests/interfaces/internal/ICumulativeSlippageTolerancePolicy.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSlippageTolerancePolicyUtils {
     uint256 private constant ONE_HUNDRED_PERCENT_FOR_POLICY = 1 ether; // 10 ** 18
@@ -21,8 +21,8 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
     address internal vaultOwner = makeAddr("VaultOwner");
     address internal sharesBuyer = makeAddr("SharesBuyer");
 
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
     ICumulativeSlippageTolerancePolicy internal cumulativeSlippageTolerancePolicy;
     MockedAdapter internal mockedAdapter;
     IERC20 internal fakeToken0;

@@ -7,8 +7,8 @@ import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IERC4626Adapter} from "tests/interfaces/internal/IERC4626Adapter.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {
     ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
     ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS,
@@ -19,8 +19,8 @@ import {
 abstract contract ERC4626AdapterTestBase is IntegrationTest {
     address internal vaultOwner = makeAddr("VaultOwner");
 
-    IVault internal vaultProxy;
-    IComptroller internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
 
     IERC4626Adapter internal erc4626Adapter;
     IERC4626 internal erc4626Vault;

@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
 
@@ -21,8 +21,13 @@ enum MigrationOutHook {
 }
 
 abstract contract VaultUtils is CoreUtilsBase {
-    function seedVault(IVault _vaultProxy, IERC20 _dealToken, uint256 _dealAmount) internal {
-        deal(address(_vaultProxy), address(_dealToken), _dealAmount);
+    function addTrackedAsset(IVaultLib _vaultProxy, IERC20 _asset, uint256 _seedAmount) internal {
+        if (_seedAmount > 0) {
+            increaseTokenBalance(IERC20(address(_vaultProxy)), address(_asset), _seedAmount);
+        }
+
+        vm.prank(_vaultProxy.getAccessor());
+        _vaultProxy.addTrackedAsset(address(_asset));
     }
 
     function predictVaultProxyAddress(IDispatcher _dispatcher) internal view returns (address) {
@@ -38,13 +43,13 @@ abstract contract VaultUtils is CoreUtilsBase {
         address _vaultOwner,
         address _denominationAsset,
         uint256 _sharesActionTimelock
-    ) internal returns (IComptroller comptrollerProxy_, IVault vaultProxy_) {
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         return createVault(_fundDeployer, _vaultOwner, _denominationAsset, _sharesActionTimelock, "", "");
     }
 
     function createVault(IFundDeployer _fundDeployer, address _vaultOwner, address _denominationAsset)
         internal
-        returns (IComptroller comptrollerProxy_, IVault vaultProxy_)
+        returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_)
     {
         return createVault(_fundDeployer, _vaultOwner, _denominationAsset, 0, "", "");
     }
@@ -56,7 +61,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         uint256 _sharesActionTimelock,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData
-    ) internal returns (IComptroller comptrollerProxy_, IVault vaultProxy_) {
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         (address comptrollerProxy, address vaultProxy) = _fundDeployer.createNewFund(
             _vaultOwner,
             "testVault",
@@ -67,8 +72,8 @@ abstract contract VaultUtils is CoreUtilsBase {
             _policyManagerConfigData
         );
 
-        comptrollerProxy_ = IComptroller(comptrollerProxy);
-        vaultProxy_ = IVault(vaultProxy);
+        comptrollerProxy_ = IComptrollerLib(comptrollerProxy);
+        vaultProxy_ = IVaultLib(vaultProxy);
     }
 
     function createVaultAndBuyShares(
@@ -80,7 +85,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         uint256 _sharesActionTimelock,
         bytes memory _feeManagerConfigData,
         bytes memory _policyManagerConfigData
-    ) internal returns (IComptroller comptrollerProxy_, IVault vaultProxy_) {
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         (comptrollerProxy_, vaultProxy_) = createVault({
             _fundDeployer: _fundDeployer,
             _vaultOwner: _vaultOwner,
@@ -99,7 +104,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         address _sharesBuyer,
         address _denominationAsset,
         uint256 _amountToDeposit
-    ) internal returns (IComptroller comptrollerProxy_, IVault vaultProxy_) {
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         return createVaultAndBuyShares({
             _fundDeployer: _fundDeployer,
             _vaultOwner: _vaultOwner,
@@ -119,7 +124,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         address _denominationAsset,
         uint256 _amountToDeposit,
         bytes memory _policyManagerConfigData
-    ) internal returns (IComptroller comptrollerProxy_, IVault vaultProxy_) {
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         return createVaultAndBuyShares({
             _fundDeployer: _fundDeployer,
             _vaultOwner: _vaultOwner,
@@ -179,7 +184,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         return vaultProxyAddress_;
     }
 
-    function buyShares(address _sharesBuyer, IComptroller _comptrollerProxy, uint256 _amountToDeposit)
+    function buyShares(address _sharesBuyer, IComptrollerLib _comptrollerProxy, uint256 _amountToDeposit)
         internal
         returns (uint256 sharesReceived_)
     {
@@ -195,7 +200,7 @@ abstract contract VaultUtils is CoreUtilsBase {
     function buySharesOnBehalf(
         address _sharesBuyer,
         address _sharesRecipient,
-        IComptroller _comptrollerProxy,
+        IComptrollerLib _comptrollerProxy,
         uint256 _amountToDeposit
     ) internal returns (uint256 sharesReceived_) {
         IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
@@ -211,7 +216,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         vm.stopPrank();
     }
 
-    function redeemSharesInKind(address _redeemer, IComptroller _comptrollerProxy, uint256 _sharesQuantity)
+    function redeemSharesInKind(address _redeemer, IComptrollerLib _comptrollerProxy, uint256 _sharesQuantity)
         internal
         returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_)
     {

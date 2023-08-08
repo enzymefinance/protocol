@@ -7,9 +7,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {INotionalV3Router} from "tests/interfaces/external/INotionalV3Router.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {INotionalV3PositionLib} from "tests/interfaces/internal/INotionalV3PositionLib.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 // TODO: test slippage param
 
@@ -42,8 +42,8 @@ abstract contract TestBase is IntegrationTest {
     INotionalV3Router internal notionalV3Router = INotionalV3Router(NOTIONAL_ROUTER);
 
     address internal fundOwner;
-    IComptroller internal comptrollerProxy;
-    IVault internal vaultProxy;
+    IComptrollerLib internal comptrollerProxy;
+    IVaultLib internal vaultProxy;
 
     IERC20 internal dai;
     IERC20 internal usdc;

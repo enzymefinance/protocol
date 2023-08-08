@@ -2,15 +2,15 @@
 pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {IComptroller} from "tests/interfaces/internal/IComptroller.sol";
-import {IVault} from "tests/interfaces/internal/IVault.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ChainlinkRateAsset} from "tests/utils/core/AssetUniverseUtils.sol";
 
 contract ValueInterpreterTest is IntegrationTest {
     function test_wethPrice(address _quoteAsset, uint256 _result) internal {
         uint256 value = core.release.valueInterpreter.calcCanonicalAssetValue({
-            _baseAsset: address(core.config.wethToken),
+            _baseAsset: address(wethToken),
             _amount: 1 ether,
             _quoteAsset: _quoteAsset
         });
@@ -61,7 +61,7 @@ contract ValueInterpreterTestEthereum is ValueInterpreterTest {
     function test_InverseValuesAreEqual(uint256 _wethAmount) public {
         _wethAmount = bound(_wethAmount, 10, 10_000_000 ether);
 
-        uint256 inverseValue = getInverseValue(address(core.config.wethToken), DAI, _wethAmount);
+        uint256 inverseValue = getInverseValue(address(wethToken), DAI, _wethAmount);
 
         // allow rounding error of 1 wei
         assert(_wethAmount - inverseValue <= 1);
@@ -91,7 +91,7 @@ contract ValueInterpreterTestPolygon is ValueInterpreterTest {
     function test_InverseValuesAreEqual(uint256 _wethAmount) public {
         _wethAmount = bound(_wethAmount, 10, 10_000_000 ether);
 
-        uint256 inverseValue = getInverseValue(address(core.config.wethToken), DAI, _wethAmount);
+        uint256 inverseValue = getInverseValue(address(wethToken), DAI, _wethAmount);
 
         // allow rounding error of 1 wei
         assert(_wethAmount - inverseValue <= 1);
