@@ -112,7 +112,6 @@ IAaveDebtPositionLib.sol: AaveDebtPositionLib.abi.json
 IAaveDebtPositionParser.sol: AaveDebtPositionParser.abi.json
 IAaveV3DebtPositionLib.sol: AaveV3DebtPositionLib.abi.json
 IAaveV3DebtPositionParser.sol: AaveV3DebtPositionParser.abi.json
-IArbitraryLoanFixedInterestModule.sol: ArbitraryLoanFixedInterestModule.abi.json
 IArbitraryLoanPositionLib.sol: ArbitraryLoanPositionLib.abi.json
 IArbitraryLoanPositionParser.sol: ArbitraryLoanPositionParser.abi.json
 IArbitraryLoanTotalNominalDeltaOracleModule.sol: ArbitraryLoanTotalNominalDeltaOracleModule.abi.json
