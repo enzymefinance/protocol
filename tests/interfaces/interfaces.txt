@@ -142,7 +142,6 @@ IValueInterpreter.sol: ValueInterpreter.abi.json
 IDerivativePriceFeed.sol: IDerivativePriceFeed.abi.json
 ICurvePriceFeed.sol: CurvePriceFeed.abi.json
 IBalancerV2WeightedPoolPriceFeed.sol: BalancerV2WeightedPoolPriceFeed.abi.json
-IFiduPriceFeed.sol: FiduPriceFeed.abi.json
 IBalancerV2StablePoolPriceFeed.sol: BalancerV2StablePoolPriceFeed.abi.json
 IWstethPriceFeed.sol: WstethPriceFeed.abi.json
 ICompoundPriceFeed.sol: CompoundPriceFeed.abi.json
