@@ -100,7 +100,6 @@ IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
 IAuraBalancerV2LpStakingAdapter.sol: AuraBalancerV2LpStakingAdapter.abi.json
-IZeroExV2Adapter.sol: ZeroExV2Adapter.abi.json
 IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
 ICurveExchangeAdapter.sol: CurveExchangeAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json
