@@ -88,6 +88,9 @@ export * from './codegen/AuthUserExecutedSharesRequestorProxy';
 export * from './codegen/FundActionsWrapper';
 export * from './codegen/FundValueCalculator';
 
+// Off-chain
+export * from './codegen/AssetValueCalculator';
+
 // Test contracts
 export * from './codegen/TestPeggedDerivativesPriceFeed';
 export * from './codegen/TestSinglePeggedDerivativePriceFeed';
