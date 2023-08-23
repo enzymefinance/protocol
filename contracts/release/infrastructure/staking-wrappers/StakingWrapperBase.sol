@@ -382,13 +382,11 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
             emit UserHarvestUpdated(_account, _rewardToken, totalIntegral, 0);
         }
 
-        // Repeat balance lookup since the reward token could have irregular transfer behavior
+        // Use the final rewardToken balance as the last checkpoint balance
         uint256 finalBal = ERC20(_rewardToken).balanceOf(address(this));
-        if (finalBal < totalHarvestData.lastCheckpointBalance) {
-            totalHarvestData.lastCheckpointBalance = uint128(finalBal);
+        totalHarvestData.lastCheckpointBalance = uint128(finalBal);
 
-            emit TotalHarvestLastCheckpointBalanceUpdated(_rewardToken, finalBal);
-        }
+        emit TotalHarvestLastCheckpointBalanceUpdated(_rewardToken, finalBal);
 
         return claimedAmount_;
     }
