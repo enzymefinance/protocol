@@ -137,6 +137,9 @@ $(INTERFACES_DIR)/: Makefile $(INTERFACES_FILE) $(ARTIFACTS_DIR)/
 >   # Generate the interface using `cast interface`.
 >   $(CAST) interface "$$path" -o "$$output" -n "$$name" --pragma "$(INTERFACES_PRAGMA)" > /dev/null
 >
+>   # Copy the abi file to the interfaces directory.
+>   cp "$$path" "$$(dirname $$output)/$$name.abi.json"
+>
 >   # Add a license header to the generated interface.
 >   echo -e "$(INTERFACES_LICENSE_HEADER)\n$$(cat $$output)" > $$output
 > done < "$(INTERFACES_FILE)"

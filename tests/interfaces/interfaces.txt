@@ -14,6 +14,7 @@ IManualValueOracleLib.sol: ManualValueOracleLib.abi.json
 # Off-chain
 IHelperDataReader.sol: HelperDataReader.abi.json
 IHelperDataReaderRouter.sol: HelperDataReaderRouter.abi.json
+IFundDataProviderRouter.sol: FundDataProviderRouter.abi.json
 IFundValueCalculatorRouter.sol: FundValueCalculatorRouter.abi.json
 IFundValueCalculatorUsdWrapper.sol: FundValueCalculatorUsdWrapper.abi.json
 
@@ -179,3 +180,4 @@ IArbitraryTokenPhasedSharesWrapperLib.sol: ArbitraryTokenPhasedSharesWrapperLib.
 
 # Off-chain
 IFundValueCalculator.sol: FundValueCalculator.abi.json
+IAssetValueCalculator.sol: AssetValueCalculator.abi.json
