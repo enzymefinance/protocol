@@ -12,6 +12,8 @@ IManualValueOracleFactory.sol: ManualValueOracleFactory.abi.json
 IManualValueOracleLib.sol: ManualValueOracleLib.abi.json
 
 # Off-chain
+IHelperDataReader.sol: HelperDataReader.abi.json
+IHelperDataReaderRouter.sol: HelperDataReaderRouter.abi.json
 IFundValueCalculatorRouter.sol: FundValueCalculatorRouter.abi.json
 IFundValueCalculatorUsdWrapper.sol: FundValueCalculatorUsdWrapper.abi.json
 
