@@ -15,15 +15,17 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for ValueInterpreter
 interface IValueInterpreter {
-    function calcCanonicalAssetValue(address, uint256, address) external returns (uint256);
-
-    function calcCanonicalAssetsTotalValue(address[] calldata, uint256[] calldata, address)
+    function calcCanonicalAssetValue(address _baseAsset, uint256 _amount, address _quoteAsset)
         external
-        returns (uint256);
+        returns (uint256 value_);
 
-    function isSupportedAsset(address) external view returns (bool);
+    function calcCanonicalAssetsTotalValue(address[] memory _baseAssets, uint256[] memory _amounts, address _quoteAsset)
+        external
+        returns (uint256 value_);
 
-    function isSupportedDerivativeAsset(address) external view returns (bool);
+    function isSupportedAsset(address _asset) external view returns (bool isSupported_);
 
-    function isSupportedPrimitiveAsset(address) external view returns (bool);
+    function isSupportedDerivativeAsset(address _asset) external view returns (bool isSupported_);
+
+    function isSupportedPrimitiveAsset(address _asset) external view returns (bool isSupported_);
 }

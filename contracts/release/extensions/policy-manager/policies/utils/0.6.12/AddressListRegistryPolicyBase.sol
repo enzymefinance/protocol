@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/PolicyBase.sol";
+import "../../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import "../../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "./PolicyBase.sol";
 
 /// @title AddressListRegistryPolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

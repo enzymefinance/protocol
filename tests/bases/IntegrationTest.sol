@@ -241,20 +241,29 @@ abstract contract IntegrationTest is CoreUtils {
     }
 
     function setUpStandaloneEnvironment() internal {
-        uint256 chainlinkStaleRateThreshold = 3650 days;
-
         // Warp beyond Chainlink aggregator staleness threshold
+        uint256 chainlinkStaleRateThreshold = 3650 days;
         skip(chainlinkStaleRateThreshold);
+
+        // Deploy mock Chainlink ETH-USD aggregator with arbitrary price
+        address chainlinkEthUsdAggregatorAddress =
+            address(createTestAggregator({_price: 2222 * CHAINLINK_AGGREGATOR_PRECISION_USD}));
+
+        // Deploy mocks for core tokens
+        address wethTokenAddress = address(createTestToken({_name: "Wrapped Ether", _symbol: "WETH", _decimals: 18}));
+        address mlnTokenAddress = address(createTestToken({_name: "Enzyme", _symbol: "MLN", _decimals: 18}));
+        address wrappedNativeTokenAddress =
+            address(createTestToken({_name: "Wrapped Native Asset", _symbol: "wNATIVE", _decimals: 18}));
 
         __setUpEnvironment({
             _config: ReleaseConfig({
                 // Chainlink
-                chainlinkEthUsdAggregatorAddress: address(0), // TODO: Deploy a mock
+                chainlinkEthUsdAggregatorAddress: chainlinkEthUsdAggregatorAddress,
                 chainlinkStaleRateThreshold: chainlinkStaleRateThreshold,
                 // Tokens
-                mlnTokenAddress: makeAddr("MlnToken"), // TODO: Deploy a mock
-                wethTokenAddress: makeAddr("WethToken"), // TODO: Deploy a mock
-                wrappedNativeTokenAddress: makeAddr("WrappedNativeToken"), // TODO: Deploy a mock
+                mlnTokenAddress: mlnTokenAddress,
+                wethTokenAddress: wethTokenAddress,
+                wrappedNativeTokenAddress: wrappedNativeTokenAddress,
                 // Gas relayer
                 gasRelayDepositCooldown: 1 days,
                 gasRelayDepositMaxTotal: 1 ether,
@@ -268,6 +277,36 @@ abstract contract IntegrationTest is CoreUtils {
             }),
             _persistentContractsAlreadySet: false
         });
+
+        // Deploy minimal asset universe
+
+        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
+        symbolToCoreToken["WETH"] = IERC20(wethTokenAddress);
+        tokenToIsCore[IERC20(wethTokenAddress)] = true;
+
+        // Create missing aggregators for corePrimitives
+        address chainlinkMlnEthAggregator =
+            address(createTestAggregator({_price: CHAINLINK_AGGREGATOR_PRECISION_ETH / 100}));
+
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(chainlinkEthUsdAggregatorAddress));
+
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](2);
+        // System primitives
+        corePrimitives[0] = CorePrimitiveInput({
+            symbol: "MLN",
+            assetAddress: mlnTokenAddress,
+            aggregatorAddress: chainlinkMlnEthAggregator,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        // Extra primitives
+        corePrimitives[1] = CorePrimitiveInput({
+            symbol: "USD",
+            assetAddress: simulatedUsdAddress,
+            aggregatorAddress: simulatedUsdAddress,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+
+        __addCorePrimitives(corePrimitives);
     }
 
     function __setUpEnvironment(ReleaseConfig memory _config, bool _persistentContractsAlreadySet) private {

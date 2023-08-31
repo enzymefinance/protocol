@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../utils/PolicyBase.sol";
+import "../utils/0.6.12/PolicyBase.sol";
 
 /// @title MinMaxInvestmentPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

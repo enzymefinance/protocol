@@ -16,8 +16,8 @@ import "openzeppelin-solc-0.6/math/SafeMath.sol";
 import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "../utils/PolicyBase.sol";
-import "../utils/PricelessAssetBypassMixin.sol";
+import "../utils/0.6.12/PolicyBase.sol";
+import "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
 /// @title CumulativeSlippageTolerancePolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

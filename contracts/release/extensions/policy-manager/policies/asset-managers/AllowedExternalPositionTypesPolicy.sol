@@ -14,7 +14,7 @@ pragma solidity 0.6.12;
 import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
-import "../utils/PolicyBase.sol";
+import "../utils/0.6.12/PolicyBase.sol";
 
 /// @title AllowedExternalPositionTypesPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

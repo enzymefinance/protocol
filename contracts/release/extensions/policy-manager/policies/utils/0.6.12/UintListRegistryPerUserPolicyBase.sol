@@ -9,9 +9,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/uint-list-registry/IUintListRegistry.sol";
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/PolicyBase.sol";
+import "../../../../../../persistent/uint-list-registry/IUintListRegistry.sol";
+import "../../../../../core/fund/comptroller/ComptrollerLib.sol";
+import "./PolicyBase.sol";
 
 /// @title UintListRegistryPerUserPolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../utils/AddressListRegistryPolicyBase.sol";
+import "../utils/0.6.12/AddressListRegistryPolicyBase.sol";
 
 /// @title AllowedAdapterIncomingAssetsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

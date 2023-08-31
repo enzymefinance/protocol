@@ -9,9 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import "../../IPolicy.sol";
+import {IPolicy} from "../../../IPolicy.sol";
 
 /// @title PolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -24,7 +24,7 @@ abstract contract PolicyBase is IPolicy {
         _;
     }
 
-    constructor(address _policyManager) public {
+    constructor(address _policyManager) {
         POLICY_MANAGER = _policyManager;
     }
 

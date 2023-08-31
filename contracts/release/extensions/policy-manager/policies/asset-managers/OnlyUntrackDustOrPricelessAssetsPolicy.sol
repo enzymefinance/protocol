@@ -12,9 +12,9 @@
 pragma solidity 0.6.12;
 
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/DustEvaluatorMixin.sol";
-import "../utils/PolicyBase.sol";
-import "../utils/PricelessAssetBypassMixin.sol";
+import "../utils/0.6.12/DustEvaluatorMixin.sol";
+import "../utils/0.6.12/PolicyBase.sol";
+import "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
 /// @title OnlyUntrackDustOrPricelessAssetsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

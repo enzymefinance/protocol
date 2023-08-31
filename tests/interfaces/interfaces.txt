@@ -74,6 +74,7 @@ IAllowedSharesTransferRecipientsPolicy.sol: AllowedSharesTransferRecipientsPolic
 IMinMaxInvestmentPolicy.sol: MinMaxInvestmentPolicy.abi.json
 IAllowedAssetsForRedemptionPolicy.sol: AllowedAssetsForRedemptionPolicy.abi.json
 IMinAssetBalancesPostRedemptionPolicy.sol: MinAssetBalancesPostRedemptionPolicy.abi.json
+INoDepegOnRedeemSharesForSpecificAssetsPolicy.sol: NoDepegOnRedeemSharesForSpecificAssetsPolicy.abi.json
 
 # Fees
 IFee.sol: IFee.abi.json

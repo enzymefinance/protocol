@@ -15,7 +15,7 @@ pragma experimental ABIEncoderV2;
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
 import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
-import "../utils/UintListRegistryPerUserPolicyBase.sol";
+import "../utils/0.6.12/UintListRegistryPerUserPolicyBase.sol";
 
 /// @title AllowedExternalPositionTypesPerManagerPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

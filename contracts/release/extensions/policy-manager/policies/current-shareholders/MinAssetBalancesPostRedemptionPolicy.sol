@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 
 import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/PolicyBase.sol";
+import "../utils/0.6.12/PolicyBase.sol";
 
 /// @title MinAssetBalancesPostRedemptionPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

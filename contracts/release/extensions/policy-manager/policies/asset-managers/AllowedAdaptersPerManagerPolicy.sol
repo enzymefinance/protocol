@@ -14,7 +14,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../../core/fund/comptroller/ComptrollerLib.sol";
 import "../../../../core/fund/vault/VaultLib.sol";
-import "../utils/AddressListRegistryPerUserPolicyBase.sol";
+import "../utils/0.6.12/AddressListRegistryPerUserPolicyBase.sol";
 
 /// @title AllowedAdaptersPerManagerPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
