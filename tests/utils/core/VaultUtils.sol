@@ -189,7 +189,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         returns (uint256 sharesReceived_)
     {
         IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
-        deal(address(denominationAsset), _sharesBuyer, _amountToDeposit);
+        increaseTokenBalance({_token: denominationAsset, _to: _sharesBuyer, _amount: _amountToDeposit});
 
         vm.startPrank(_sharesBuyer);
         denominationAsset.approve(address(_comptrollerProxy), _amountToDeposit);
@@ -204,7 +204,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         uint256 _amountToDeposit
     ) internal returns (uint256 sharesReceived_) {
         IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
-        deal(address(denominationAsset), _sharesBuyer, _amountToDeposit);
+        increaseTokenBalance({_token: denominationAsset, _to: _sharesBuyer, _amount: _amountToDeposit});
 
         vm.startPrank(_sharesRecipient);
         denominationAsset.approve(address(_comptrollerProxy), _amountToDeposit);
