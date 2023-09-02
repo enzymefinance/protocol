@@ -9,21 +9,26 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import "../core/fund/comptroller/ComptrollerLib.sol";
-import "../../external-interfaces/IWETH.sol";
-import "../../utils/0.6.12/AssetHelpers.sol";
+import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
+import {IWETH} from "../../external-interfaces/IWETH.sol";
+import {AssetHelpers} from "../../utils/0.8.19/AssetHelpers.sol";
 
 /// @title DepositWrapper Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Logic related to wrapping deposit actions
 contract DepositWrapper is AssetHelpers {
-    bytes4 private constant BUY_SHARES_ON_BEHALF_SELECTOR = 0x877fd894;
-    address private immutable WETH_TOKEN;
+    using SafeERC20 for ERC20;
 
-    constructor(address _weth) public {
-        WETH_TOKEN = _weth;
+    bytes4 private constant BUY_SHARES_ON_BEHALF_SELECTOR = 0x877fd894;
+    IWETH private immutable WRAPPED_NATIVE_ASSET;
+
+    constructor(IWETH _wrappedNativeAsset) {
+        WRAPPED_NATIVE_ASSET = _wrappedNativeAsset;
     }
 
     /// @dev Needed in case WETH not fully used during exchangeAndBuyShares,
@@ -31,6 +36,52 @@ contract DepositWrapper is AssetHelpers {
     receive() external payable {}
 
     // EXTERNAL FUNCTIONS
+
+    /// @notice Exchanges an ERC20 into a fund's denomination asset and then buys shares
+    /// @param _comptrollerProxy The ComptrollerProxy of the fund
+    /// @param _minSharesQuantity The minimum quantity of shares to receive
+    /// @param _inputAsset Asset to swap for the fund's denomination asset
+    /// @param _maxInputAssetAmount The maximum amount of _inputAsset to use in the swap
+    /// @param _exchange The exchange on which to swap ERC20 to denomination asset
+    /// @param _exchangeApproveTarget The _exchange address that should be granted an ERC20 allowance
+    /// @param _exchangeData The data with which to call the _exchange to execute the swap
+    /// @param _exchangeMinReceived The minimum amount of the denomination asset to receive from the _exchange
+    /// @return sharesReceived_ The actual amount of shares received
+    /// @dev Use a reasonable _exchangeMinReceived always, in case the exchange
+    /// does not perform as expected (low incoming asset amount, blend of assets, etc).
+    function exchangeErc20AndBuyShares(
+        IComptroller _comptrollerProxy,
+        uint256 _minSharesQuantity,
+        ERC20 _inputAsset,
+        uint256 _maxInputAssetAmount,
+        address _exchange,
+        address _exchangeApproveTarget,
+        bytes calldata _exchangeData,
+        uint256 _exchangeMinReceived
+    ) external returns (uint256 sharesReceived_) {
+        // Receive the _maxInputAssetAmount from the caller
+        _inputAsset.safeTransferFrom(msg.sender, address(this), _maxInputAssetAmount);
+
+        // Swap to the denominationAsset and buy fund shares
+        sharesReceived_ = __exchangeAndBuyShares({
+            _comptrollerProxy: _comptrollerProxy,
+            _minSharesQuantity: _minSharesQuantity,
+            _exchange: _exchange,
+            _exchangeApproveTarget: _exchangeApproveTarget,
+            _exchangeData: _exchangeData,
+            _exchangeMinReceived: _exchangeMinReceived,
+            _inputAsset: _inputAsset,
+            _maxInputAssetAmount: _maxInputAssetAmount
+        });
+
+        // Refund any remaining _inputAsset not used in the exchange
+        uint256 remainingInputAsset = _inputAsset.balanceOf(address(this));
+        if (remainingInputAsset > 0) {
+            _inputAsset.safeTransfer(msg.sender, remainingInputAsset);
+        }
+
+        return sharesReceived_;
+    }
 
     /// @notice Exchanges ETH into a fund's denomination asset and then buys shares
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
@@ -40,58 +91,55 @@ contract DepositWrapper is AssetHelpers {
     /// for the given _exchange
     /// @param _exchangeData The data with which to call the exchange to execute the swap
     /// to the denomination asset
-    /// @param _minInvestmentAmount The minimum amount of the denomination asset
+    /// @param _exchangeMinReceived The minimum amount of the denomination asset
     /// to receive in the trade for investment (not necessary for WETH)
     /// @return sharesReceived_ The actual amount of shares received
-    /// @dev Use a reasonable _minInvestmentAmount always, in case the exchange
+    /// @dev Use a reasonable _exchangeMinReceived always, in case the exchange
     /// does not perform as expected (low incoming asset amount, blend of assets, etc).
     /// If the fund's denomination asset is WETH, _exchange, _exchangeApproveTarget, _exchangeData,
-    /// and _minInvestmentAmount will be ignored.
+    /// and _exchangeMinReceived will be ignored.
     function exchangeEthAndBuyShares(
-        address _comptrollerProxy,
+        IComptroller _comptrollerProxy,
         uint256 _minSharesQuantity,
         address _exchange,
         address _exchangeApproveTarget,
         bytes calldata _exchangeData,
-        uint256 _minInvestmentAmount
+        uint256 _exchangeMinReceived
     ) external payable returns (uint256 sharesReceived_) {
-        address denominationAsset = ComptrollerLib(_comptrollerProxy).getDenominationAsset();
+        ERC20 inputAsset = ERC20(address(WRAPPED_NATIVE_ASSET));
+        uint256 maxInputAssetAmount = msg.value;
 
         // Wrap ETH into WETH
-        IWETH(payable(getWethToken())).deposit{value: msg.value}();
+        WRAPPED_NATIVE_ASSET.deposit{value: maxInputAssetAmount}();
 
-        // If denominationAsset is WETH, can just buy shares directly
-        if (denominationAsset == getWethToken()) {
-            __approveAssetMaxAsNeeded(getWethToken(), _comptrollerProxy, msg.value);
-
-            return __buyShares(_comptrollerProxy, msg.sender, msg.value, _minSharesQuantity);
+        // Empty `_exchange` signals no swap is necessary, i.e., denominationAsset is the native asset
+        if (_exchange == address(0)) {
+            return __buyShares({
+                _comptrollerProxy: _comptrollerProxy,
+                _buyer: msg.sender,
+                _investmentAmount: maxInputAssetAmount,
+                _minSharesQuantity: _minSharesQuantity,
+                _denominationAssetAddress: address(inputAsset)
+            });
         }
 
-        // Deny access to privileged core calls originating from this contract
-        bytes4 exchangeSelector = abi.decode(_exchangeData, (bytes4));
-        require(exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR, "exchangeEthAndBuyShares: Disallowed selector");
-
-        // Exchange ETH to the fund's denomination asset
-        __approveAssetMaxAsNeeded(getWethToken(), _exchangeApproveTarget, msg.value);
-        (bool success, bytes memory returnData) = _exchange.call(_exchangeData);
-        require(success, string(returnData));
-
-        // Confirm the amount received in the exchange is above the min acceptable amount
-        uint256 investmentAmount = ERC20(denominationAsset).balanceOf(address(this));
-        require(investmentAmount >= _minInvestmentAmount, "exchangeEthAndBuyShares: _minInvestmentAmount not met");
-
-        // Give the ComptrollerProxy max allowance for its denomination asset as necessary
-        __approveAssetMaxAsNeeded(denominationAsset, _comptrollerProxy, investmentAmount);
-
-        // Buy fund shares
-        sharesReceived_ = __buyShares(_comptrollerProxy, msg.sender, investmentAmount, _minSharesQuantity);
+        // Swap to the denominationAsset and buy fund shares
+        sharesReceived_ = __exchangeAndBuyShares({
+            _comptrollerProxy: _comptrollerProxy,
+            _minSharesQuantity: _minSharesQuantity,
+            _exchange: _exchange,
+            _exchangeApproveTarget: _exchangeApproveTarget,
+            _exchangeData: _exchangeData,
+            _exchangeMinReceived: _exchangeMinReceived,
+            _inputAsset: inputAsset,
+            _maxInputAssetAmount: maxInputAssetAmount
+        });
 
         // Unwrap and refund any remaining WETH not used in the exchange
-        uint256 remainingWeth = ERC20(getWethToken()).balanceOf(address(this));
+        uint256 remainingWeth = inputAsset.balanceOf(address(this));
         if (remainingWeth > 0) {
-            IWETH(payable(getWethToken())).withdraw(remainingWeth);
-            (success, returnData) = msg.sender.call{value: remainingWeth}("");
-            require(success, string(returnData));
+            WRAPPED_NATIVE_ASSET.withdraw(remainingWeth);
+            Address.sendValue({recipient: payable(msg.sender), amount: remainingWeth});
         }
 
         return sharesReceived_;
@@ -101,24 +149,63 @@ contract DepositWrapper is AssetHelpers {
 
     /// @dev Helper for buying shares
     function __buyShares(
-        address _comptrollerProxy,
+        IComptroller _comptrollerProxy,
         address _buyer,
         uint256 _investmentAmount,
-        uint256 _minSharesQuantity
+        uint256 _minSharesQuantity,
+        address _denominationAssetAddress
     ) private returns (uint256 sharesReceived_) {
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
-        sharesReceived_ = comptrollerProxyContract.buySharesOnBehalf(_buyer, _investmentAmount, _minSharesQuantity);
+        // Give the ComptrollerProxy max allowance for its denomination asset as necessary
+        __approveAssetMaxAsNeeded({
+            _asset: _denominationAssetAddress,
+            _target: address(_comptrollerProxy),
+            _neededAmount: _investmentAmount
+        });
 
-        return sharesReceived_;
+        return _comptrollerProxy.buySharesOnBehalf({
+            _buyer: _buyer,
+            _investmentAmount: _investmentAmount,
+            _minSharesQuantity: _minSharesQuantity
+        });
     }
 
-    ///////////////////
-    // STATE GETTERS //
-    ///////////////////
+    /// @dev Helper to exchange an asset for the fund's denomination asset and then buy shares
+    function __exchangeAndBuyShares(
+        IComptroller _comptrollerProxy,
+        uint256 _minSharesQuantity,
+        address _exchange,
+        address _exchangeApproveTarget,
+        bytes calldata _exchangeData,
+        uint256 _exchangeMinReceived,
+        ERC20 _inputAsset,
+        uint256 _maxInputAssetAmount
+    ) private returns (uint256 sharesReceived_) {
+        // Deny access to privileged core calls originating from this contract
+        {
+            bytes4 exchangeSelector = bytes4(_exchangeData[:4]);
+            require(exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR, "__exchangeAndBuyShares: Disallowed selector");
+        }
 
-    /// @notice Gets the `WETH_TOKEN` variable
-    /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() public view returns (address wethToken_) {
-        return WETH_TOKEN;
+        // Exchange the _inputAsset to the fund's denomination asset
+        __approveAssetMaxAsNeeded({
+            _asset: address(_inputAsset),
+            _target: _exchangeApproveTarget,
+            _neededAmount: _maxInputAssetAmount
+        });
+        Address.functionCall({target: _exchange, data: _exchangeData});
+
+        // Confirm the min amount of denomination asset was received in the exchange
+        ERC20 denominationAsset = ERC20(_comptrollerProxy.getDenominationAsset());
+        uint256 investmentAmount = denominationAsset.balanceOf(address(this));
+        require(investmentAmount >= _exchangeMinReceived, "__exchangeAndBuyShares: _exchangeMinReceived not met");
+
+        // Buy fund shares
+        return __buyShares({
+            _comptrollerProxy: _comptrollerProxy,
+            _buyer: msg.sender,
+            _investmentAmount: investmentAmount,
+            _minSharesQuantity: _minSharesQuantity,
+            _denominationAssetAddress: address(denominationAsset)
+        });
     }
 }

@@ -18,6 +18,10 @@ import "../vault/IVault.sol";
 interface IComptroller {
     function activate(bool) external;
 
+    function buySharesOnBehalf(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
+        external
+        returns (uint256 sharesReceived_);
+
     function calcGav() external returns (uint256);
 
     function calcGrossShareValue() external returns (uint256);

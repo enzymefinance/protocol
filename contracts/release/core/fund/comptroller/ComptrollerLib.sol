@@ -577,6 +577,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// where the caller buys shares for a _buyer, thereby resetting their lastSharesBought value.
     function buySharesOnBehalf(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
         external
+        override
         returns (uint256 sharesReceived_)
     {
         bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
