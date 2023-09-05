@@ -69,18 +69,5 @@ contract EthereumStethPoolTest is EthereumPoolTest {
 
         // Run common setup
         super.setUp();
-
-        IConvexCurveLpStakingWrapperLib wrapper = IConvexCurveLpStakingWrapperLib(address(stakingToken));
-
-        // Add a bogus ERC20-incompatible reward token to the wrapper,
-        // just to confirm that it doesn't interfere with any processes
-        addBadRewardTokenToStakingWrapper(wrapper);
-
-        // Confirm that the reward tokens were registered as-expected
-        address[] memory rewardTokens = wrapper.getRewardTokens();
-        // 4 reward tokens: BAL, AURA, StashToken, and the bad reward token
-        assertEq(rewardTokens.length, 4, "unexpected reward tokens count");
-        // StashToken should be stored as the underlying, not the StashToken itself
-        assertEq(rewardTokens[2], ETHEREUM_LDO, "unexpected extra reward token");
     }
 }

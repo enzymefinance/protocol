@@ -9,38 +9,29 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
-import "../../../utils/0.6.12/AddressArrayLib.sol";
-import "./IStakingWrapper.sol";
+import {ReentrancyGuard} from "openzeppelin-solc-0.8/security/ReentrancyGuard.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
+import {IStakingWrapper} from "./IStakingWrapper.sol";
 
 /// @title StakingWrapperBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A base contract for staking wrappers
-/// @dev Can be used as a base for both standard deployments and proxy targets.
-/// Draws on Convex's ConvexStakingWrapper implementation (https://github.com/convex-eth/platform/blob/main/contracts/contracts/wrappers/ConvexStakingWrapper.sol),
-/// which is based on Curve.fi gauge wrappers (https://github.com/curvefi/curve-dao-contracts/tree/master/contracts/gauges/wrappers)
+/// @dev Can be used as a base for both standard deployments and proxy targets
 abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
-    using SafeMath for uint256;
 
     event Deposited(address indexed from, address indexed to, uint256 amount);
-
-    event HarvestUpdateBypassed(address indexed rewardToken);
 
     event PauseToggled(bool isPaused);
 
     event RewardsClaimed(address caller, address indexed user, address[] rewardTokens, uint256[] claimedAmounts);
 
     event RewardTokenAdded(address token);
-
-    event RewardTokenRemoved(address token);
 
     event TotalHarvestIntegralUpdated(address indexed rewardToken, uint256 integral);
 
@@ -56,14 +47,14 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
     uint256 private constant INTEGRAL_PRECISION = 1e18;
     address internal immutable OWNER;
 
-    // Paused stops new deposits and checkpoints
+    // `paused` blocks new deposits
     bool private paused;
     address[] private rewardTokens;
     mapping(address => TotalHarvestData) private rewardTokenToTotalHarvestData;
     mapping(address => mapping(address => UserHarvestData)) private rewardTokenToUserToHarvestData;
 
-    modifier onlyInternal() {
-        require(msg.sender == address(this), "Only internal");
+    modifier notEmpty(address _account) {
+        require(_account != address(0), "Empty account");
         _;
     }
 
@@ -72,16 +63,13 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         _;
     }
 
-    constructor(address _owner, string memory _tokenName, string memory _tokenSymbol)
-        public
-        ERC20(_tokenName, _tokenSymbol)
-    {
+    constructor(address _owner, string memory _tokenName, string memory _tokenSymbol) ERC20(_tokenName, _tokenSymbol) {
         OWNER = _owner;
     }
 
-    /// @notice Toggles pause for deposit and harvesting new rewards
+    /// @notice Toggles pause for deposits
     /// @param _isPaused True if next state is paused, false if unpaused
-    function togglePause(bool _isPaused) external onlyOwner {
+    function togglePause(bool _isPaused) external override onlyOwner {
         paused = _isPaused;
 
         emit PauseToggled(_isPaused);
@@ -93,7 +81,7 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
 
     // CLAIM REWARDS
 
-    /// @notice Claims all rewards for a given account
+    /// @notice Claims all rewards for a given account, including any accrued since the last checkpoint
     /// @param _for The account for which to claim rewards
     /// @return rewardTokens_ The reward tokens
     /// @return claimedAmounts_ The reward token amounts claimed
@@ -104,97 +92,95 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         nonReentrant
         returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
     {
-        return __checkpointAndClaim(_for);
+        __checkpoint([_for, address(0)]);
+
+        return __claimRewardTokens(_for);
+    }
+
+    /// @notice Claims all rewards for a given account, not including any accrued since the last checkpoint
+    /// @param _for The account for which to claim rewards
+    /// @return rewardTokens_ The reward tokens
+    /// @return claimedAmounts_ The reward token amounts claimed
+    /// @dev Can be called off-chain to simulate the total harvestable rewards for a particular user.
+    /// Does NOT give up claim to rewards accrued since the last checkpoint.
+    function claimRewardsForWithoutCheckpoint(address _for)
+        external
+        override
+        nonReentrant
+        returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
+    {
+        return __claimRewardTokens(_for);
     }
 
     // DEPOSIT
-
-    /// @notice Deposits tokens to be staked, minting staking token to sender
-    /// @param _amount The amount of tokens to deposit
-    function deposit(uint256 _amount) external override {
-        __deposit(msg.sender, msg.sender, _amount);
-    }
 
     /// @notice Deposits tokens to be staked, minting staking token to a specified account
     /// @param _to The account to receive staking tokens
     /// @param _amount The amount of tokens to deposit
     function depositTo(address _to, uint256 _amount) external override {
-        __deposit(msg.sender, _to, _amount);
+        __deposit({_from: msg.sender, _to: _to, _amount: _amount});
     }
 
     /// @dev Helper to deposit tokens to be staked
-    function __deposit(address _from, address _to, uint256 _amount) private nonReentrant {
+    function __deposit(address _from, address _to, uint256 _amount) private nonReentrant notEmpty(_to) {
         require(!isPaused(), "__deposit: Paused");
 
         // Checkpoint before minting
         __checkpoint([_to, address(0)]);
         _mint(_to, _amount);
 
-        __depositLogic(_from, _amount);
+        __depositLogic({_onBehalf: _from, _amount: _amount});
 
         emit Deposited(_from, _to, _amount);
     }
 
     // WITHDRAWAL
 
-    /// @notice Withdraws staked tokens, returning tokens to the sender, and optionally claiming rewards
-    /// @param _amount The amount of tokens to withdraw
-    /// @param _claimRewards True if accrued rewards should be claimed
-    /// @return rewardTokens_ The reward tokens
-    /// @return claimedAmounts_ The reward token amounts claimed
-    /// @dev Setting `_claimRewards` to true will save gas over separate calls to withdraw + claim
-    function withdraw(uint256 _amount, bool _claimRewards)
-        external
-        override
-        returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
-    {
-        return __withdraw(msg.sender, msg.sender, _amount, _claimRewards);
-    }
-
-    /// @notice Withdraws staked tokens, returning tokens to a specified account,
-    /// and optionally claims rewards to the staked token holder
+    /// @notice Withdraws staked tokens, returning tokens to a specified account
     /// @param _to The account to receive tokens
     /// @param _amount The amount of tokens to withdraw
-    function withdrawTo(address _to, uint256 _amount, bool _claimRewardsToHolder) external override {
-        __withdraw(msg.sender, _to, _amount, _claimRewardsToHolder);
+    function withdrawTo(address _to, uint256 _amount) external override {
+        __withdraw({_from: msg.sender, _to: _to, _amount: _amount, _checkpoint: true});
     }
 
-    /// @notice Withdraws staked tokens on behalf of AccountA, returning tokens to a specified AccountB,
-    /// and optionally claims rewards to the staked token holder
+    /// @notice Withdraws staked tokens on behalf of AccountA, returning tokens to a specified AccountB
     /// @param _onBehalf The account on behalf to withdraw
     /// @param _to The account to receive tokens
     /// @param _amount The amount of tokens to withdraw
     /// @dev The caller must have an adequate ERC20.allowance() for _onBehalf
-    function withdrawToOnBehalf(address _onBehalf, address _to, uint256 _amount, bool _claimRewardsToHolder)
-        external
-        override
-    {
+    function withdrawToOnBehalf(address _onBehalf, address _to, uint256 _amount) external override {
         // Validate and reduce sender approval
-        _approve(_onBehalf, msg.sender, allowance(_onBehalf, msg.sender).sub(_amount));
+        _approve(_onBehalf, msg.sender, allowance(_onBehalf, msg.sender) - _amount);
 
-        __withdraw(_onBehalf, _to, _amount, _claimRewardsToHolder);
+        __withdraw({_from: _onBehalf, _to: _to, _amount: _amount, _checkpoint: true});
+    }
+
+    /// @notice Withdraws staked tokens, returning tokens to a specified account,
+    /// but giving up any rewards accrued since the previous checkpoint
+    /// @param _to The account to receive tokens
+    /// @param _amount The amount of tokens to withdraw
+    /// @dev Simply runs withdrawal logic without checkpointing rewards, in case of rewards-related failure.
+    /// Redeemer can still claim rewards accrued up to the previous checkpoint.
+    function withdrawToWithoutCheckpoint(address _to, uint256 _amount) external override {
+        __withdraw({_from: msg.sender, _to: _to, _amount: _amount, _checkpoint: false});
     }
 
     /// @dev Helper to withdraw staked tokens
-    function __withdraw(address _from, address _to, uint256 _amount, bool _claimRewards)
+    function __withdraw(address _from, address _to, uint256 _amount, bool _checkpoint)
         private
         nonReentrant
-        returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
+        notEmpty(_to)
     {
         // Checkpoint before burning
-        if (_claimRewards) {
-            (rewardTokens_, claimedAmounts_) = __checkpointAndClaim(_from);
-        } else {
+        if (_checkpoint) {
             __checkpoint([_from, address(0)]);
         }
 
         _burn(_from, _amount);
 
-        __withdrawLogic(_to, _amount);
+        __withdrawLogic({_to: _to, _amount: _amount});
 
         emit Withdrawn(msg.sender, _from, _to, _amount);
-
-        return (rewardTokens_, claimedAmounts_);
     }
 
     /////////////
@@ -216,13 +202,6 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         }
     }
 
-    /// @dev Helper to remove a reward token
-    function __removeRewardToken(address _rewardToken) internal {
-        require(rewardTokens.removeStorageItem(_rewardToken), "__removeRewardToken: No match");
-
-        emit RewardTokenRemoved(_rewardToken);
-    }
-
     // PRIVATE FUNCTIONS
 
     /// @dev Helper to calculate an unaccounted for reward amount due to a user based on integral values
@@ -231,7 +210,7 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         uint256 _totalHarvestIntegral,
         uint256 _userHarvestIntegral
     ) private view returns (uint256 claimableReward_) {
-        return balanceOf(_account).mul(_totalHarvestIntegral.sub(_userHarvestIntegral)).div(INTEGRAL_PRECISION);
+        return balanceOf(_account) * (_totalHarvestIntegral - _userHarvestIntegral) / INTEGRAL_PRECISION;
     }
 
     /// @dev Helper to calculate an unaccounted for integral amount based on checkpoint balance diff
@@ -241,81 +220,41 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         returns (uint256 integral_)
     {
         if (_supply > 0) {
-            uint256 balDiff = _currentBalance.sub(_lastCheckpointBalance);
+            uint256 balDiff = _currentBalance - _lastCheckpointBalance;
             if (balDiff > 0) {
-                return balDiff.mul(INTEGRAL_PRECISION).div(_supply);
+                return balDiff * INTEGRAL_PRECISION / _supply;
             }
         }
 
         return 0;
     }
 
-    // During the `checkpoint` functions, if an update fails for a single reward token,
-    // continue to the next reward token. This means that there is some error with the reward token,
-    // e.g., poorly registered, deflationary, or otherwise not respecting ERC20.
-    // Worst case is that users do not get their claim to the failing reward token.
-
     /// @dev Helper to checkpoint harvest data for specified accounts.
     /// Harvests all rewards prior to checkpoint.
     function __checkpoint(address[2] memory _accounts) private {
-        // If paused, continue to checkpoint, but don't attempt to get new rewards
-        if (!isPaused()) {
-            __harvestRewardsLogic();
-        }
+        __harvestRewardsLogic();
 
         uint256 supply = totalSupply();
 
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
-            try this.updateHarvest(rewardTokens[i], _accounts, supply) {}
-            catch {
-                emit HarvestUpdateBypassed(rewardTokens[i]);
-                continue;
-            }
+            __checkpointRewardToken({_rewardToken: rewardTokens[i], _accounts: _accounts, _supply: supply});
         }
     }
 
-    /// @dev Helper to checkpoint harvest data for specified accounts.
-    /// Harvests all rewards prior to checkpoint.
-    function __checkpointAndClaim(address _account)
-        private
-        returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
-    {
-        // If paused, continue to checkpoint, but don't attempt to get new rewards
-        if (!isPaused()) {
-            __harvestRewardsLogic();
-        }
-
-        uint256 supply = totalSupply();
-
-        rewardTokens_ = rewardTokens;
-        claimedAmounts_ = new uint256[](rewardTokens_.length);
-        for (uint256 i; i < rewardTokens_.length; i++) {
-            try this.updateHarvestAndClaim(rewardTokens_[i], _account, supply) returns (uint256 claimedAmount) {
-                claimedAmounts_[i] = claimedAmount;
-            } catch {
-                emit HarvestUpdateBypassed(rewardTokens_[i]);
-                continue;
-            }
-        }
-
-        emit RewardsClaimed(msg.sender, _account, rewardTokens_, claimedAmounts_);
-
-        return (rewardTokens_, claimedAmounts_);
-    }
-
-    // PSEUDO-INTERNAL FUNCTIONS
-
-    /// @dev Helper to update harvest data.
-    /// Made external to allow try/catch per reward token.
-    function updateHarvest(address _rewardToken, address[2] memory _accounts, uint256 _supply) external onlyInternal {
+    /// @dev Helper to update harvest data
+    function __checkpointRewardToken(address _rewardToken, address[2] memory _accounts, uint256 _supply) internal {
         TotalHarvestData storage totalHarvestData = rewardTokenToTotalHarvestData[_rewardToken];
 
         uint256 totalIntegral = totalHarvestData.integral;
         uint256 bal = ERC20(_rewardToken).balanceOf(address(this));
-        uint256 integralToAdd = __calcIntegralForBalDiff(_supply, bal, totalHarvestData.lastCheckpointBalance);
+        uint256 integralToAdd = __calcIntegralForBalDiff({
+            _supply: _supply,
+            _currentBalance: bal,
+            _lastCheckpointBalance: totalHarvestData.lastCheckpointBalance
+        });
         if (integralToAdd > 0) {
-            totalIntegral = totalIntegral.add(integralToAdd);
+            totalIntegral = totalIntegral + integralToAdd;
             totalHarvestData.integral = uint128(totalIntegral);
             emit TotalHarvestIntegralUpdated(_rewardToken, totalIntegral);
 
@@ -331,10 +270,12 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
 
             uint256 userIntegral = userHarvestData.integral;
             if (userIntegral < totalIntegral) {
-                uint256 claimableReward = uint256(userHarvestData.claimableReward).add(
-                    __calcClaimableRewardForIntegralDiff(_accounts[i], totalIntegral, userIntegral)
-                );
-
+                uint256 claimableReward = uint256(userHarvestData.claimableReward)
+                    + __calcClaimableRewardForIntegralDiff({
+                        _account: _accounts[i],
+                        _totalHarvestIntegral: totalIntegral,
+                        _userHarvestIntegral: userIntegral
+                    });
                 userHarvestData.claimableReward = uint128(claimableReward);
                 userHarvestData.integral = uint128(totalIntegral);
 
@@ -343,52 +284,33 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
         }
     }
 
-    /// @dev Helper to update harvest data and claim all rewards to holder.
-    /// Made external to allow try/catch per reward token.
-    function updateHarvestAndClaim(address _rewardToken, address _account, uint256 _supply)
-        external
-        onlyInternal
-        returns (uint256 claimedAmount_)
+    /// @dev Helper to claim all reward tokens for an account
+    function __claimRewardTokens(address _account)
+        private
+        returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_)
     {
-        TotalHarvestData storage totalHarvestData = rewardTokenToTotalHarvestData[_rewardToken];
+        rewardTokens_ = getRewardTokens();
+        uint256 rewardTokensLength = rewardTokens_.length;
+        claimedAmounts_ = new uint256[](rewardTokensLength);
 
-        uint256 totalIntegral = totalHarvestData.integral;
-        uint256 integralToAdd = __calcIntegralForBalDiff(
-            _supply, ERC20(_rewardToken).balanceOf(address(this)), totalHarvestData.lastCheckpointBalance
-        );
-        if (integralToAdd > 0) {
-            totalIntegral = totalIntegral.add(integralToAdd);
-            totalHarvestData.integral = uint128(totalIntegral);
+        for (uint256 i; i < rewardTokensLength; i++) {
+            ERC20 rewardToken = ERC20(rewardTokens_[i]);
+            UserHarvestData storage userHarvestData = rewardTokenToUserToHarvestData[address(rewardToken)][_account];
 
-            emit TotalHarvestIntegralUpdated(_rewardToken, totalIntegral);
+            uint256 claimableAmount = userHarvestData.claimableReward;
+            if (claimableAmount > 0) {
+                claimedAmounts_[i] = claimableAmount;
+
+                // Set the user's claimable reward to 0
+                userHarvestData.claimableReward = 0;
+
+                emit UserHarvestUpdated(_account, address(rewardToken), userHarvestData.integral, 0);
+
+                ERC20(rewardToken).safeTransfer(_account, claimableAmount);
+            }
         }
 
-        UserHarvestData storage userHarvestData = rewardTokenToUserToHarvestData[_rewardToken][_account];
-
-        uint256 userIntegral = userHarvestData.integral;
-        claimedAmount_ = userHarvestData.claimableReward;
-        if (userIntegral < totalIntegral) {
-            userHarvestData.integral = uint128(totalIntegral);
-            claimedAmount_ =
-                claimedAmount_.add(__calcClaimableRewardForIntegralDiff(_account, totalIntegral, userIntegral));
-
-            emit UserHarvestUpdated(_account, _rewardToken, totalIntegral, claimedAmount_);
-        }
-
-        if (claimedAmount_ > 0) {
-            userHarvestData.claimableReward = 0;
-            ERC20(_rewardToken).safeTransfer(_account, claimedAmount_);
-
-            emit UserHarvestUpdated(_account, _rewardToken, totalIntegral, 0);
-        }
-
-        // Use the final rewardToken balance as the last checkpoint balance
-        uint256 finalBal = ERC20(_rewardToken).balanceOf(address(this));
-        totalHarvestData.lastCheckpointBalance = uint128(finalBal);
-
-        emit TotalHarvestLastCheckpointBalanceUpdated(_rewardToken, finalBal);
-
-        return claimedAmount_;
+        return (rewardTokens_, claimedAmounts_);
     }
 
     ////////////////////////////////

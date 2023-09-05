@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../infrastructure/staking-wrappers/aura-balancer-v2-lp/AuraBalancerV2LpStakingWrapperFactory.sol";
+import "../../../../infrastructure/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
 import "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
 import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 
@@ -11,13 +11,13 @@ import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 /// @notice Adapter for staking Balancer pool tokens via Aura
 /// with optional combined end-to-end liquidity provision via Balancer
 contract AuraBalancerV2LpStakingAdapter is BalancerV2LiquidityAdapterBase, StakingWrapperActionsMixin {
-    AuraBalancerV2LpStakingWrapperFactory private immutable STAKING_WRAPPER_FACTORY_CONTRACT;
+    IConvexCurveLpStakingWrapperFactory private immutable STAKING_WRAPPER_FACTORY_CONTRACT;
 
     constructor(address _integrationManager, address _balancerVault, address _stakingWrapperFactory)
         public
         BalancerV2LiquidityAdapterBase(_integrationManager, _balancerVault)
     {
-        STAKING_WRAPPER_FACTORY_CONTRACT = AuraBalancerV2LpStakingWrapperFactory(_stakingWrapperFactory);
+        STAKING_WRAPPER_FACTORY_CONTRACT = IConvexCurveLpStakingWrapperFactory(_stakingWrapperFactory);
     }
 
     ////////////////////////////////
@@ -47,7 +47,7 @@ contract AuraBalancerV2LpStakingAdapter is BalancerV2LiquidityAdapterBase, Staki
         internal
         override
     {
-        __stakingWrapperUnstake(_stakingToken, _from, _recipient, _bptAmount, false);
+        __stakingWrapperUnstake(_stakingToken, _from, _recipient, _bptAmount);
     }
 
     ///////////////

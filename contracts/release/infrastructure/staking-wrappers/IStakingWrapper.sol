@@ -29,17 +29,19 @@ interface IStakingWrapper {
         external
         returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_);
 
-    function deposit(uint256 _amount) external;
-
-    function depositTo(address _to, uint256 _amount) external;
-
-    function withdraw(uint256 _amount, bool _claimRewards)
+    function claimRewardsForWithoutCheckpoint(address _for)
         external
         returns (address[] memory rewardTokens_, uint256[] memory claimedAmounts_);
 
-    function withdrawTo(address _to, uint256 _amount, bool _claimRewardsToHolder) external;
+    function depositTo(address _to, uint256 _amount) external;
 
-    function withdrawToOnBehalf(address _onBehalf, address _to, uint256 _amount, bool _claimRewardsToHolder) external;
+    function togglePause(bool _isPaused) external;
+
+    function withdrawTo(address _to, uint256 _amount) external;
+
+    function withdrawToOnBehalf(address _onBehalf, address _to, uint256 _amount) external;
+
+    function withdrawToWithoutCheckpoint(address _to, uint256 _amount) external;
 
     // STATE GETTERS
 

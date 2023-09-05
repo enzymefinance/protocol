@@ -9,22 +9,25 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import "openzeppelin-solc-0.6/utils/Address.sol";
-import "../../../../external-interfaces/IConvexBaseRewardPool.sol";
-import "../../../../external-interfaces/IConvexBooster.sol";
-import "../../../../external-interfaces/IConvexStashTokenWrapper.sol";
-import "../../../../external-interfaces/IConvexVirtualBalanceRewardPool.sol";
-import "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
-import "../StakingWrapperLibBase.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
+import {IConvexBaseRewardPool} from "../../../../external-interfaces/IConvexBaseRewardPool.sol";
+import {IConvexBooster} from "../../../../external-interfaces/IConvexBooster.sol";
+import {IConvexStashTokenWrapper} from "../../../../external-interfaces/IConvexStashTokenWrapper.sol";
+import {IConvexVirtualBalanceRewardPool} from "../../../../external-interfaces/IConvexVirtualBalanceRewardPool.sol";
+import {StakingWrapperBase} from "../StakingWrapperBase.sol";
+import {StakingWrapperLibBase} from "../StakingWrapperLibBase.sol";
+import {IConvexCurveLpStakingWrapper} from "./IConvexCurveLpStakingWrapper.sol";
+import {IConvexCurveLpStakingWrapperFactory} from "./IConvexCurveLpStakingWrapperFactory.sol";
 
 /// @title ConvexCurveLpStakingWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A library contract for ConvexCurveLpStakingWrapper instances
-contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
-    event AddExtraRewardsBypassed();
+contract ConvexCurveLpStakingWrapperLib is IConvexCurveLpStakingWrapper, StakingWrapperLibBase {
+    using SafeERC20 for ERC20;
 
     IConvexBooster private immutable CONVEX_BOOSTER_CONTRACT;
     address private immutable CRV_TOKEN;
@@ -35,7 +38,6 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     address private curveLPToken;
 
     constructor(address _owner, address _convexBooster, address _crvToken, address _cvxToken)
-        public
         StakingWrapperBase(_owner, "", "")
     {
         CONVEX_BOOSTER_CONTRACT = IConvexBooster(_convexBooster);
@@ -45,7 +47,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
 
     /// @notice Initializes the proxy
     /// @param _pid The Convex pool id for which to use the proxy
-    function init(uint256 _pid) external {
+    function init(uint256 _pid) external override {
         // Can validate with any variable set here
         require(getCurveLpToken() == address(0), "init: Initialized");
 
@@ -69,7 +71,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     /// @notice Adds rewards tokens that have not yet been added to the wrapper
     /// @dev Anybody can call, in case more pool tokens are added.
     /// Is called prior to every new harvest.
-    function addExtraRewards() public {
+    function addExtraRewards() public override {
         IConvexBaseRewardPool convexPoolContract = IConvexBaseRewardPool(getConvexPool());
 
         uint256 extraRewardsCount = convexPoolContract.extraRewardsLength();
@@ -91,20 +93,8 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
         }
     }
 
-    /// @notice Removes (un-tracks) a reward tokens from the wrapper
-    /// @param _token The token to remove
-    function removeExtraRewardToken(address _token) external {
-        // Defers to owner of the wrapper factory (i.e., the Dispatcher owner), which is the `OWNER` of this contract
-        require(msg.sender == IBeaconProxyFactory(OWNER).getOwner(), "removeExtraRewardToken: Unauthorized");
-
-        // Don't allow removing the core reward tokens since those are not re-addable
-        require(_token != CRV_TOKEN && _token != CVX_TOKEN, "removeExtraRewardToken: Invalid token");
-
-        __removeRewardToken(_token);
-    }
-
     /// @notice Sets necessary ERC20 approvals, as-needed
-    function setApprovals() public {
+    function setApprovals() public override {
         ERC20(getCurveLpToken()).safeApprove(address(CONVEX_BOOSTER_CONTRACT), type(uint256).max);
     }
 
@@ -128,7 +118,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     /// Do not mint staking tokens, which already happens during __deposit().
     function __depositLogic(address _from, uint256 _amount) internal override {
         ERC20(getCurveLpToken()).safeTransferFrom(_from, address(this), _amount);
-        CONVEX_BOOSTER_CONTRACT.deposit(convexPoolId, _amount, true);
+        CONVEX_BOOSTER_CONTRACT.deposit({_pid: convexPoolId, _amount: _amount, _stake: true});
     }
 
     /// @dev Logic to be run during a checkpoint to harvest new rewards, specific to the integrated protocol.
@@ -137,10 +127,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     function __harvestRewardsLogic() internal override {
         // It's probably overly-cautious to check rewards on every call,
         // but more convenient to always check than to monitor for rewards changes.
-        try this.addExtraRewards() {}
-        catch {
-            emit AddExtraRewardsBypassed();
-        }
+        addExtraRewards();
 
         IConvexBaseRewardPool(getConvexPool()).getReward();
     }
@@ -148,7 +135,7 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
     /// @dev Logic to be run during a withdrawal, specific to the integrated protocol.
     /// Do not burn staking tokens, which already happens during __withdraw().
     function __withdrawLogic(address _to, uint256 _amount) internal override {
-        IConvexBaseRewardPool(getConvexPool()).withdrawAndUnwrap(_amount, false);
+        IConvexBaseRewardPool(getConvexPool()).withdrawAndUnwrap({_amount: _amount, _claim: false});
         ERC20(getCurveLpToken()).safeTransfer(_to, _amount);
     }
 
@@ -158,19 +145,19 @@ contract ConvexCurveLpStakingWrapperLib is StakingWrapperLibBase {
 
     /// @notice Gets the associated Convex reward pool address
     /// @return convexPool_ The reward pool
-    function getConvexPool() public view returns (address convexPool_) {
+    function getConvexPool() public view override returns (address convexPool_) {
         return convexPool;
     }
 
     /// @notice Gets the associated Convex reward pool id (pid)
     /// @return convexPoolId_ The pid
-    function getConvexPoolId() public view returns (uint256 convexPoolId_) {
+    function getConvexPoolId() public view override returns (uint256 convexPoolId_) {
         return convexPoolId;
     }
 
     /// @notice Gets the associated Curve LP token
     /// @return curveLPToken_ The Curve LP token
-    function getCurveLpToken() public view returns (address curveLPToken_) {
+    function getCurveLpToken() public view override returns (address curveLPToken_) {
         return curveLPToken;
     }
 }

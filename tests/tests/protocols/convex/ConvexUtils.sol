@@ -19,31 +19,15 @@ uint256 constant ETHEREUM_AAVE_POOL_PRE_STASH_PID = 24;
 uint256 constant ETHEREUM_STETH_NG_POOL_POST_STASH_PID = 177;
 
 abstract contract ConvexUtils is AddOnUtilsBase {
-    // Adds a bogus ERC20-incompatible reward token to the staking wrapper
-    function addBadRewardTokenToStakingWrapper(IConvexCurveLpStakingWrapperLib _wrapper)
-        internal
-        returns (address badRewardTokenAddress_)
-    {
-        badRewardTokenAddress_ = makeAddr("addBadRewardTokenToStakingWrapper: BadRewardToken");
-
-        // Storage slot of `address[] rewardTokens` is `8`
-        bytes32 rewardTokensSlot = bytes32(uint256(8));
-        storeNewArrayItemAtSlot({
-            _storageContract: address(_wrapper),
-            _arraySlot: rewardTokensSlot,
-            _newItem: badRewardTokenAddress_
-        });
-    }
-
-    // Adds a reward token to Convex's reward pool
-    function addExtraRewardTokenToConvexPool(IConvexBooster _booster, uint256 _pid, address _extraRewardTokenAddress)
+    // Adds an extra reward pool (not a token or stashToken) to Convex's base reward pool
+    function addExtraRewardPoolToConvexPool(IConvexBooster _booster, uint256 _pid, address _extraRewardPoolAddress)
         internal
     {
         // Add the extra reward pool to the Convex base reward pool
         IConvexBaseRewardPool baseRewardPool = IConvexBaseRewardPool(_booster.poolInfo(_pid).crvRewards);
 
         vm.prank(baseRewardPool.rewardManager());
-        baseRewardPool.addExtraReward(_extraRewardTokenAddress);
+        baseRewardPool.addExtraReward(_extraRewardPoolAddress);
     }
 
     function deployConvexStakingWrapperLib(IConvexCurveLpStakingWrapperFactory _factory)
@@ -59,7 +43,8 @@ abstract contract ConvexUtils is AddOnUtilsBase {
         internal
         returns (IConvexCurveLpStakingWrapperFactory stakingWrapperFactory_)
     {
-        bytes memory args = abi.encode(_dispatcher, ETHEREUM_BOOSTER_ADDRESS, ETHEREUM_CRV, ETHEREUM_CVX);
+        // Initial _implementation value is empty, because currently the lib must be deployed after the factory
+        bytes memory args = abi.encode(_dispatcher, address(0));
 
         stakingWrapperFactory_ =
             IConvexCurveLpStakingWrapperFactory(deployCode("ConvexCurveLpStakingWrapperFactory.sol", args));
@@ -68,6 +53,6 @@ abstract contract ConvexUtils is AddOnUtilsBase {
         address lib = deployConvexStakingWrapperLib(stakingWrapperFactory_);
 
         vm.prank(stakingWrapperFactory_.getOwner());
-        stakingWrapperFactory_.setCanonicalLib(lib);
+        stakingWrapperFactory_.setImplementation(lib);
     }
 }

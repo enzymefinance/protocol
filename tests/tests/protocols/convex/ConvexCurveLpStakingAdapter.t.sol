@@ -90,17 +90,5 @@ contract EthereumPostStashStethNgPoolTest is EthereumPoolTest {
 
         // Run common setup
         super.setUp();
-
-        // Confirm that the reward tokens were registered as-expected
-        IConvexCurveLpStakingWrapperLib wrapper = IConvexCurveLpStakingWrapperLib(address(stakingToken));
-        address[] memory rewardTokens = wrapper.getRewardTokens();
-        // Only 2 reward tokens: CRV, CVX; the stash token is CVX, which gets skipped
-        assertEq(rewardTokens.length, 2, "unexpected reward tokens count");
-
-        // Add a bogus ERC20-incompatible reward token to the wrapper,
-        // just to confirm that it doesn't interfere with any processes
-        addBadRewardTokenToStakingWrapper(wrapper);
-
-        assertEq(wrapper.getRewardTokens().length, rewardTokens.length + 1, "bad token not added");
     }
 }

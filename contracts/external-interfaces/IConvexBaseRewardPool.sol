@@ -12,15 +12,15 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IConvexBaseRewardPool Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IConvexBaseRewardPool {
-    function balanceOf(address) external view returns (uint256);
+    function balanceOf(address _account) external view returns (uint256 balance_);
 
-    function extraRewards(uint256) external view returns (address);
+    function extraRewards(uint256 _index) external view returns (address rewardPool_);
 
-    function extraRewardsLength() external view returns (uint256);
+    function extraRewardsLength() external view returns (uint256 length_);
 
-    function getReward() external returns (bool);
+    function getReward() external returns (bool success_);
 
-    function withdraw(uint256, bool) external;
+    function withdraw(uint256 _amount, bool _claim) external returns (bool success_);
 
-    function withdrawAndUnwrap(uint256, bool) external returns (bool);
+    function withdrawAndUnwrap(uint256 _amount, bool _claim) external returns (bool success_);
 }

@@ -11,17 +11,17 @@
 
 pragma solidity 0.6.12;
 
-import "../../../staking-wrappers/convex-curve-lp/ConvexCurveLpStakingWrapperFactory.sol";
+import "../../../staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
 import "../IDerivativePriceFeed.sol";
 
 /// @title ConvexCurveLpStakingWrapperPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for wrapped Convex-staked Curve LP tokens
 contract ConvexCurveLpStakingWrapperPriceFeed is IDerivativePriceFeed {
-    ConvexCurveLpStakingWrapperFactory private immutable WRAPPER_FACTORY;
+    IConvexCurveLpStakingWrapperFactory private immutable WRAPPER_FACTORY;
 
     constructor(address _wrapperFactory) public {
-        WRAPPER_FACTORY = ConvexCurveLpStakingWrapperFactory(_wrapperFactory);
+        WRAPPER_FACTORY = IConvexCurveLpStakingWrapperFactory(_wrapperFactory);
     }
 
     /// @notice Converts a given amount of a derivative to its underlying asset values

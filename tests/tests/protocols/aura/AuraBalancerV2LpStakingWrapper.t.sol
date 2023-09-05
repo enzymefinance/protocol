@@ -19,6 +19,10 @@ contract EthereumAuraTest is ConvexAndAuraTest, AuraBalancerV2Utils {
         cvxToken = IERC20(ETHEREUM_AURA);
         stashTokenStartPid = 48;
 
+        // R-DAI w/ LDO extra reward stash
+        uint256 poolWithStashTokenPid = 97;
+        poolWithStashToken = PoolWithExtraReward({pid: poolWithStashTokenPid, extraRewardToken: IERC20(ETHEREUM_LDO)});
+
         stakingWrapperFactory = IConvexCurveLpStakingWrapperFactory(
             address(deployAuraStakingWrapperFactory({_dispatcher: core.persistent.dispatcher}))
         );

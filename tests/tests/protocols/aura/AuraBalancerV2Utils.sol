@@ -33,7 +33,8 @@ abstract contract AuraBalancerV2Utils is AddOnUtilsBase {
         internal
         returns (IAuraBalancerV2LpStakingWrapperFactory stakingWrapperFactory_)
     {
-        bytes memory args = abi.encode(_dispatcher, ETHEREUM_BOOSTER_ADDRESS, ETHEREUM_BAL, ETHEREUM_AURA);
+        // Initial _implementation value is empty, because currently the lib must be deployed after the factory
+        bytes memory args = abi.encode(_dispatcher, address(0));
 
         stakingWrapperFactory_ =
             IAuraBalancerV2LpStakingWrapperFactory(deployCode("AuraBalancerV2LpStakingWrapperFactory.sol", args));
@@ -42,6 +43,6 @@ abstract contract AuraBalancerV2Utils is AddOnUtilsBase {
         address lib = deployAuraStakingWrapperLib(stakingWrapperFactory_);
 
         vm.prank(stakingWrapperFactory_.getOwner());
-        stakingWrapperFactory_.setCanonicalLib(lib);
+        stakingWrapperFactory_.setImplementation(lib);
     }
 }

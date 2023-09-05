@@ -9,8 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
 import {IAuraStashToken} from "../../../../external-interfaces/IAuraStashToken.sol";
 import {ConvexCurveLpStakingWrapperLib} from "../convex-curve-lp/ConvexCurveLpStakingWrapperLib.sol";
@@ -20,7 +19,6 @@ import {ConvexCurveLpStakingWrapperLib} from "../convex-curve-lp/ConvexCurveLpSt
 /// @notice A library contract for AuraBalancerV2LpStakingWrapper instances
 contract AuraBalancerV2LpStakingWrapperLib is ConvexCurveLpStakingWrapperLib {
     constructor(address _owner, address _convexBooster, address _balToken, address _auraToken)
-        public
         ConvexCurveLpStakingWrapperLib(_owner, _convexBooster, _balToken, _auraToken)
     {}
 

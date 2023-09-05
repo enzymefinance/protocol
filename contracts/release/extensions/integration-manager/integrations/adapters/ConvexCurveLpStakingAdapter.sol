@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
-import "../../../../infrastructure/staking-wrappers/convex-curve-lp/ConvexCurveLpStakingWrapperFactory.sol";
+import "../../../../infrastructure/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
 import "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
 import "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
 
@@ -16,7 +16,7 @@ import "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
 /// to enforce policy management or emit an event
 /// - rewards tokens can be outside of the asset universe, in which case they cannot be tracked
 contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrapperActionsMixin {
-    ConvexCurveLpStakingWrapperFactory private immutable STAKING_WRAPPER_FACTORY_CONTRACT;
+    IConvexCurveLpStakingWrapperFactory private immutable STAKING_WRAPPER_FACTORY_CONTRACT;
     CurvePriceFeed private immutable CURVE_PRICE_FEED_CONTRACT;
 
     constructor(
@@ -27,7 +27,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
         address _nativeAssetAddress
     ) public CurveLiquidityAdapterBase(_integrationManager, _wrappedNativeAsset, _nativeAssetAddress) {
         CURVE_PRICE_FEED_CONTRACT = CurvePriceFeed(_curvePriceFeed);
-        STAKING_WRAPPER_FACTORY_CONTRACT = ConvexCurveLpStakingWrapperFactory(_stakingWrapperFactory);
+        STAKING_WRAPPER_FACTORY_CONTRACT = IConvexCurveLpStakingWrapperFactory(_stakingWrapperFactory);
     }
 
     // EXTERNAL FUNCTIONS
@@ -89,7 +89,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
     function unstake(address _vaultProxy, bytes calldata _actionData, bytes calldata) external onlyIntegrationManager {
         (, address outgoingStakingToken, uint256 amount) = __decodeUnstakeCallArgs(_actionData);
 
-        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, _vaultProxy, amount, false);
+        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, _vaultProxy, amount);
     }
 
     /// @notice Unstakes LP tokens, then redeems them
@@ -110,7 +110,7 @@ contract ConvexCurveLpStakingAdapter is CurveLiquidityAdapterBase, StakingWrappe
             bytes memory incomingAssetsData
         ) = __decodeUnstakeAndRedeemCallArgs(_actionData);
 
-        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, address(this), outgoingStakingTokenAmount, false);
+        __stakingWrapperUnstake(outgoingStakingToken, _vaultProxy, address(this), outgoingStakingTokenAmount);
 
         __curveRedeem(pool, outgoingStakingTokenAmount, useUnderlyings, redeemType, incomingAssetsData);
     }
