@@ -32,6 +32,14 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
     /// e.g., Aave aTokens, Lido stETH, etc. See: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
     /// As a workaround, inheriting utils can override this function to handle the various non-standard tokens per-network.
     function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal {
+        // TODO: Need this hack for weth for now. isAaveV2Token() and isAaveV3Token() don't play nice since weth has a fallback function.
+        if (address(_token) == ETHEREUM_WETH) {
+            increaseNativeAssetBalance(_to, _amount);
+            uint256 balance = _token.balanceOf(_to);
+            deal(address(_token), _to, balance + _amount);
+            return;
+        }
+
         if (isSteth(_token)) {
             increaseStethBalance(_to, _amount);
         } else if (isAaveV2Token(_token)) {

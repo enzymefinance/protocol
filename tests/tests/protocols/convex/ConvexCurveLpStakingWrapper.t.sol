@@ -368,7 +368,7 @@ contract EthereumConvexTest is ConvexAndAuraTest {
     address internal ETHEREUM_CNC = 0x9aE380F0272E2162340a5bB646c354271c0F5cFC;
 
     function setUp() public virtual override {
-        setUpMainnetEnvironment();
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
 
         booster = IConvexBooster(ETHEREUM_BOOSTER_ADDRESS);
         crvToken = IERC20(ETHEREUM_CRV);

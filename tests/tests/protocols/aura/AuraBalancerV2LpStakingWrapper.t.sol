@@ -12,7 +12,7 @@ import {IConvexCurveLpStakingWrapperFactory} from "tests/interfaces/internal/ICo
 
 contract EthereumAuraTest is ConvexAndAuraTest, AuraBalancerV2Utils {
     function setUp() public virtual override {
-        setUpMainnetEnvironment();
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
 
         booster = IConvexBooster(ETHEREUM_BOOSTER_ADDRESS);
         crvToken = IERC20(ETHEREUM_BAL);

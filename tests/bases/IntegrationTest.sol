@@ -113,7 +113,7 @@ abstract contract IntegrationTest is CoreUtils {
 
         address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(config.chainlinkEthUsdAggregatorAddress));
 
-        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](5);
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](6);
         // System primitives
         corePrimitives[0] = CorePrimitiveInput({
             symbol: "MLN",
@@ -144,6 +144,12 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "USDT",
             assetAddress: ETHEREUM_USDT,
             aggregatorAddress: ETHEREUM_USDT_ETH_AGGREGATOR,
+            rateAsset: ChainlinkRateAsset.ETH
+        });
+        corePrimitives[5] = CorePrimitiveInput({
+            symbol: "DAI",
+            assetAddress: ETHEREUM_DAI,
+            aggregatorAddress: ETHEREUM_DAI_ETH_AGGREGATOR,
             rateAsset: ChainlinkRateAsset.ETH
         });
 

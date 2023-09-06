@@ -16,3 +16,11 @@
 [submodule "lib/uniswap-v3-core"]
 	path = lib/uniswap-v3-core
 	url = https://github.com/uniswap/v3-core
+[submodule "lib/uniswap-v3-core-0.8"]
+	path = lib/uniswap-v3-core-0.8
+	url = https://github.com/Uniswap/v3-core.git
+	branch = 0.8
+[submodule "lib/uniswap-v3-periphery-0.8"]
+	path = lib/uniswap-v3-periphery-0.8
+	url = https://github.com/Uniswap/v3-periphery.git
+	branch = 0.8

@@ -489,7 +489,7 @@ abstract contract AaveV2DebtPositionTest is
 
 contract AaveV2DebtPositionTestEthereum is AaveV2DebtPositionTest {
     function setUp() public override {
-        setUpMainnetEnvironment();
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
 
         poolAddressProvider = IAaveV2LendingPoolAddressProvider(ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS);
         protocolDataProvider = IAaveV2ProtocolDataProvider(ETHEREUM_PROTOCOL_DATA_PROVIDER);

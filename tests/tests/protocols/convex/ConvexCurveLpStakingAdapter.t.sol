@@ -20,7 +20,7 @@ abstract contract EthereumPoolTest is CurveAndConvexPoolTest, ConvexUtils {
     uint256 internal convexPoolPid;
 
     function setUp() public virtual override {
-        setUpMainnetEnvironment();
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
 
         isConvex = true;
         crvToken = IERC20(ETHEREUM_CRV);

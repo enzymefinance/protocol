@@ -29,11 +29,12 @@ abstract contract Constants {
     // expected exchange rates, etc.
     // `ETHEREUM_BLOCK_LATEST` can be increased as-needed, and should be used in all tests
     // that should generally continue to pass regardless of block.
-    uint256 internal constant ETHEREUM_BLOCK_LATEST = 17500000; // June 17th, 2023
+    uint256 internal constant ETHEREUM_BLOCK_LATEST = 18040000; // Sept 1st, 2023
+    uint256 internal constant ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE = 17500000; // June 17th, 2023
     uint256 internal constant ETHEREUM_BLOCK_LATEST_TIME_SENSITIVE = 17345000; // May 26, 2023
     uint256 internal constant ETHEREUM_BLOCK_2023_01_13 = 16400000;
 
-    uint256 internal constant POLYGON_BLOCK_LATEST = POLYGON_BLOCK_LATEST_TIME_SENSITIVE;
+    uint256 internal constant POLYGON_BLOCK_LATEST = 47020000; // September 1st, 2023
     uint256 internal constant POLYGON_BLOCK_LATEST_TIME_SENSITIVE = 43179000; // May 26, 2023
 
     uint256 internal constant GOERLI_BLOCK_LATEST = GOERLI_BLOCK_LATEST_TIME_SENSITIVE;
@@ -73,6 +74,7 @@ abstract contract Constants {
 
     // Network Chainlink aggregators
     address internal constant ETHEREUM_BAL_ETH_AGGREGATOR = 0xC1438AA3823A6Ba0C159CfA8D98dF5A994bA120b;
+    address internal constant ETHEREUM_DAI_ETH_AGGREGATOR = 0x773616E4d11A78F511299002da57A0a94577F1f4;
     address internal constant ETHEREUM_ETH_USD_AGGREGATOR = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address internal constant ETHEREUM_MLN_ETH_AGGREGATOR = 0xDaeA8386611A157B08829ED4997A8A62B557014C;
     address internal constant ETHEREUM_USDC_ETH_AGGREGATOR = 0x986b5E1e1755e3C2440e960477f25201B0a8bbD4;

@@ -107,6 +107,7 @@ IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
 ICurveExchangeAdapter.sol: CurveExchangeAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
+IArrakisV2Adapter.sol: ArrakisV2Adapter.abi.json
 
 # External positions
 IExternalPositionManager.sol: ExternalPositionManager.abi.json
@@ -159,6 +160,7 @@ IConvexCurveLpStakingWrapperPriceFeed.sol: ConvexCurveLpStakingWrapperPriceFeed.
 IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
 IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
 IERC4626PriceFeed.sol: ERC4626PriceFeed.abi.json
+IArrakisV2PriceFeed.sol: ArrakisV2PriceFeed.abi.json
 
 # Protocol fee
 IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json

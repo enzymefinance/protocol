@@ -34,17 +34,14 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         address _priceFeedAddress,
         bool _skipIfRegistered
     ) internal {
+        // If the asset is already registered, either skip or remove it
         bool isRegistered = _valueInterpreter.isSupportedAsset(_tokenAddress);
-        if (isRegistered) {
-            if (_skipIfRegistered) {
-                return;
-            } else {
-                revert("addDerivative: already registered");
-            }
+        if (isRegistered && _skipIfRegistered) {
+            return;
         }
+        removeIfSupportedAsset({_valueInterpreter: _valueInterpreter, _tokenAddress: _tokenAddress});
 
         vm.prank(_valueInterpreter.getOwner());
-
         _valueInterpreter.addDerivatives(toArray(_tokenAddress), toArray(_priceFeedAddress));
     }
 
@@ -66,20 +63,18 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         ChainlinkRateAsset _rateAsset,
         bool _skipIfRegistered
     ) internal {
+        // If the asset is already registered, either skip or remove it
         bool isRegistered = _valueInterpreter.isSupportedAsset(_tokenAddress);
-        if (isRegistered) {
-            if (_skipIfRegistered) {
-                return;
-            } else {
-                revert("addPrimitive: already registered");
-            }
+        if (isRegistered && _skipIfRegistered) {
+            return;
         }
+
+        removeIfSupportedAsset({_valueInterpreter: _valueInterpreter, _tokenAddress: _tokenAddress});
 
         uint8[] memory rateAssetsUint8 = new uint8[](1);
         rateAssetsUint8[0] = uint8(_rateAsset);
 
         vm.prank(_valueInterpreter.getOwner());
-
         _valueInterpreter.addPrimitives({
             _primitives: toArray(_tokenAddress),
             _aggregators: toArray(_aggregatorAddress),
@@ -141,6 +136,71 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         });
 
         return token_;
+    }
+
+    function registerPrimitivePairWithPrice(
+        IValueInterpreter _valueInterpreter,
+        IERC20 _assetA,
+        IERC20 _assetB,
+        uint256 _assetBAmountPerUnitA
+    ) internal {
+        require(_assetA != _assetB, "registerPrimitivePairWithPrice: same asset");
+
+        // Both assets should use the same feed quote asset, i.e., intermediary asset.
+        // Since WETH is auto-mapped to ETH and we can't deregister it, we must use ETH as the rate asset.
+        ChainlinkRateAsset rateAsset = ChainlinkRateAsset.ETH;
+
+        // If weth is assetA, reverse the asset order
+        address wethAddress = _valueInterpreter.getWethToken();
+        if (address(_assetA) == wethAddress) {
+            _assetBAmountPerUnitA = assetUnit(_assetA) * assetUnit(_assetB) / _assetBAmountPerUnitA;
+            (_assetA, _assetB) = (_assetB, _assetA);
+        }
+
+        // TODO: need to include asset unit?
+        TestAggregator assetAAggregator = TestAggregator(address(createTestAggregator(_assetBAmountPerUnitA)));
+        addPrimitive({
+            _valueInterpreter: _valueInterpreter,
+            _tokenAddress: address(_assetA),
+            _aggregatorAddress: address(assetAAggregator),
+            _rateAsset: rateAsset,
+            _skipIfRegistered: false
+        });
+
+        if (address(_assetB) != wethAddress) {
+            // feed1 is 1:1 with WETH
+            uint256 assetBAmount = assetUnit(_assetB);
+            TestAggregator assetBAggregator = TestAggregator(address(createTestAggregator(assetBAmount)));
+            addPrimitive({
+                _valueInterpreter: _valueInterpreter,
+                _tokenAddress: address(_assetB),
+                _aggregatorAddress: address(assetBAggregator),
+                _rateAsset: rateAsset,
+                _skipIfRegistered: false
+            });
+        }
+
+        // Double-check that the registered price is what we expect
+        uint256 newCanonicalPrice = _valueInterpreter.calcCanonicalAssetValue({
+            _baseAsset: address(_assetA),
+            _amount: assetUnit(_assetA),
+            _quoteAsset: address(_assetB)
+        });
+        assertApproxEqAbs(newCanonicalPrice, _assetBAmountPerUnitA, 1, "registerPrimitivePairWithPrice: price mismatch");
+    }
+
+    function removeIfSupportedAsset(IValueInterpreter _valueInterpreter, address _tokenAddress) internal {
+        require(_tokenAddress != _valueInterpreter.getWethToken(), "removeIfSupportedAsset: weth");
+
+        vm.startPrank(_valueInterpreter.getOwner());
+
+        if (_valueInterpreter.isSupportedPrimitiveAsset(_tokenAddress)) {
+            _valueInterpreter.removePrimitives(toArray(_tokenAddress));
+        } else if (_valueInterpreter.isSupportedDerivativeAsset(_tokenAddress)) {
+            _valueInterpreter.removeDerivatives(toArray(_tokenAddress));
+        }
+
+        vm.stopPrank();
     }
 
     // VALUE CALCS

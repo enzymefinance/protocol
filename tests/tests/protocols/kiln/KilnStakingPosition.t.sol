@@ -64,7 +64,7 @@ abstract contract TestBase is IntegrationTest {
     function setUp() public virtual override {
         // Must be a block when there are enough validators provisioned in StakingContract.
         // Switch to a specific block if this becomes an issue.
-        setUpMainnetEnvironment();
+        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
 
         // TODO: REMOVE THIS AFTER SUCCESSFUL CONTRACT UPGRADE ON MAINNET
         // Update our Kiln contracts to their latest versions
