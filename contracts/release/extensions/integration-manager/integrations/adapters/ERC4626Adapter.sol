@@ -12,7 +12,7 @@
 pragma solidity 0.8.19;
 
 import {IERC4626} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC4626.sol";
-import {IIntegrationManager} from "../IIntegrationAdapter.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {AdapterBase} from "../utils/0.8.19/AdapterBase.sol";
 
 /// @title ERC4626Adapter Contract
