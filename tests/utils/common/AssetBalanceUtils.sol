@@ -32,14 +32,6 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
     /// e.g., Aave aTokens, Lido stETH, etc. See: currently doesn't work with aTokens https://github.com/foundry-rs/forge-std/issues/140
     /// As a workaround, inheriting utils can override this function to handle the various non-standard tokens per-network.
     function increaseTokenBalance(IERC20 _token, address _to, uint256 _amount) internal {
-        // TODO: Need this hack for weth for now. isAaveV2Token() and isAaveV3Token() don't play nice since weth has a fallback function.
-        if (address(_token) == ETHEREUM_WETH) {
-            increaseNativeAssetBalance(_to, _amount);
-            uint256 balance = _token.balanceOf(_to);
-            deal(address(_token), _to, balance + _amount);
-            return;
-        }
-
         if (isSteth(_token)) {
             increaseStethBalance(_to, _amount);
         } else if (isAaveV2Token(_token)) {
@@ -85,17 +77,19 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         vm.stopPrank();
     }
 
-    function isAaveV2Token(IERC20 _token) internal view returns (bool isAToken_) {
+    function isAaveV2Token(IERC20 _token) internal returns (bool isAToken_) {
         address lendingPoolAddress = getAaveV2LendingPoolAddressForChain();
         if (lendingPoolAddress == address(0)) {
             return false;
         }
 
         // Sniff out aTokens by interface
+        // Must not do a staticcall in case there is a fallback function with state modification
         (bool success, bytes memory returnData) =
-            address(_token).staticcall(abi.encodeWithSelector(IAaveAToken.UNDERLYING_ASSET_ADDRESS.selector));
+            address(_token).call(abi.encodeWithSelector(IAaveAToken.UNDERLYING_ASSET_ADDRESS.selector));
 
-        if (!success) {
+        // Check that the call succeeded and returned exactly one memory slot
+        if (!success || returnData.length != 32) {
             return false;
         }
 
@@ -140,17 +134,19 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         vm.stopPrank();
     }
 
-    function isAaveV3Token(IERC20 _token) internal view returns (bool isAToken_) {
+    function isAaveV3Token(IERC20 _token) internal returns (bool isAToken_) {
         address poolAddress = getAaveV3PoolAddressForChain();
         if (poolAddress == address(0)) {
             return false;
         }
 
         // Sniff out aTokens by interface
+        // Must not do a staticcall in case there is a fallback function with state modification
         (bool success, bytes memory returnData) =
-            address(_token).staticcall(abi.encodeWithSelector(IAaveAToken.UNDERLYING_ASSET_ADDRESS.selector));
+            address(_token).call(abi.encodeWithSelector(IAaveAToken.UNDERLYING_ASSET_ADDRESS.selector));
 
-        if (!success) {
+        // Check that the call succeeded and returned exactly one memory slot
+        if (!success || returnData.length != 32) {
             return false;
         }
 
