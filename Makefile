@@ -18,7 +18,7 @@ endif
 .RECIPEPREFIX = >
 
 GIT := git
-NPX := npx
+BUNX := bunx
 CAST := cast
 FORGE := forge
 
@@ -56,7 +56,7 @@ test: ## Run the entire test suite
 
 .PHONY: lint
 lint: ## Check linting on all contract source files
-> $(NPX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
+> $(BUNX) solhint $(CONTRACTS_DIR)/**/*.sol $(TESTS_DIR)/**/*.sol
 > $(FORGE) fmt --check $(CONTRACTS_DIR) $(TESTS_DIR)
 
 .PHONY: format

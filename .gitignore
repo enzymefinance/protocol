@@ -4,6 +4,7 @@
 # Ignore all dotfiles except the whitelisted ones.
 .*
 !.env.example
+!.envrc
 !.github
 !.gitignore
 !.gitattributes

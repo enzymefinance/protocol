@@ -9,7 +9,7 @@ Enzyme is an Ethereum-based protocol for decentralized on-chain asset management
 
 If you find a vulnerability that may affect live deployments, you can submit a report via:
 
-A. Immunefi(https://immunefi.com/bounty/enzymefinance/), or
+A. Immunefi (https://immunefi.com/bounty/enzymefinance/), or
 
 B. Direct email to [security@enzyme.finance](mailto:security@enzyme.finance)
 
@@ -17,20 +17,30 @@ Please **DO NOT** open a public issue.
 
 ## Using this Repository
 
-### A Tale of Two Frameworks
-
-:construction:
-
-This repo is currently in-flux for a gradual move from Hardhat to Foundry. All production contracts continue to live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts)).
+This repository has been migrated from Hardhat to Foundry. All production contracts continue to live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts)).
 
 If you are looking for the legacy test suite & test coverage please refer to the [hardhat branch](https://github.com/enzymefinance/protocol/tree/hardhat).
 
 ### Prerequisites
 
-Make sure to have the following installed:
+#### Automatic
+
+This repository comes with a reproducible development environment based on `nix` and `direnv`.
+
+For the best possible developer experience, make sure you have the following installed:
+
+- [nix](https://nix.dev)
+- [direnv](https://direnv.net)
+
+Once you have these installed, your isolated local development environment will be set up automatically whenever you navigate to this directory.
+
+#### Manual
+
+If you don't want to use `nix`, make sure to have the following installed:
 
 - [foundry](https://github.com/foundry-rs/foundry)
-- [make](https://www.gnu.org/software/make/)
+- [make](https://www.gnu.org/software/make)
+- [bun](https://bun.sh)
 
 Then, clone this repository:
 
