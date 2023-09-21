@@ -29,8 +29,6 @@ abstract contract StakingWrapperBase is IStakingWrapper, ERC20, ReentrancyGuard 
 
     event PauseToggled(bool isPaused);
 
-    event RewardsClaimed(address caller, address indexed user, address[] rewardTokens, uint256[] claimedAmounts);
-
     event RewardTokenAdded(address token);
 
     event TotalHarvestIntegralUpdated(address indexed rewardToken, uint256 integral);
