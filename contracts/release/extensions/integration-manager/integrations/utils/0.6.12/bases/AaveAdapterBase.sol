@@ -11,11 +11,12 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {AddOnlyAddressListOwnerConsumerMixin} from
     "../../../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
-import "../../../../../../../external-interfaces/IAaveAToken.sol";
-import "../AdapterBase.sol";
+import {IAaveAToken} from "../../../../../../../external-interfaces/IAaveAToken.sol";
+import {IIntegrationManager} from "../../../../IIntegrationManager.sol";
+import {AdapterBase} from "../AdapterBase.sol";
 
 /// @title AaveAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

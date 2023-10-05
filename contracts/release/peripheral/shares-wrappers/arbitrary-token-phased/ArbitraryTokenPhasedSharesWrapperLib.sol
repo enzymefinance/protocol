@@ -11,15 +11,16 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../persistent/address-list-registry/AddressListRegistry.sol";
-import "../../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../utils/0.6.12/AssetHelpers.sol";
-import "../../../../utils/0.6.12/MathHelpers.sol";
-import "../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../core/fund/vault/VaultLib.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IAddressListRegistry} from "../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
+import {IExternalPosition} from "../../../../persistent/external-positions/IExternalPosition.sol";
+import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../../utils/0.6.12/AssetHelpers.sol";
+import {MathHelpers} from "../../../../utils/0.6.12/MathHelpers.sol";
+import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../../core/fund/vault/IVault.sol";
 
 /// @title ArbitraryTokenPhasedSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -78,7 +79,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
     uint256 private constant MAX_BPS = 10000;
     uint256 private constant SECONDS_IN_YEAR = 31557600; // 60*60*24*365.25
 
-    AddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
+    IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     IDispatcher private immutable DISPATCHER_CONTRACT;
     address private immutable FUND_DEPLOYER_V4;
     address private immutable INITIALIZER;
@@ -134,7 +135,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         uint256 _protocolFeeBps,
         address _initializer
     ) public ERC20("Wrapped Enzyme Shares Lib", "wENZF-lib") {
-        ADDRESS_LIST_REGISTRY_CONTRACT = AddressListRegistry(_addressListRegistry);
+        ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         DISPATCHER_CONTRACT = IDispatcher(_dispatcher);
         FUND_DEPLOYER_V4 = _fundDeployerV4;
         INITIALIZER = _initializer;
@@ -218,7 +219,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
     /// @dev Helper to get the owner, who is the same as the VaultProxy owner
     function __getOwnerOfVaultProxy(address _vaultProxy) private view returns (address owner_) {
-        return VaultLib(payable(_vaultProxy)).getOwner();
+        return IVault(_vaultProxy).getOwner();
     }
 
     /// @dev Helper to set the allowed depositors listId
@@ -407,7 +408,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         require(getState() == State.Deposit, "enterLockedState: Invalid state");
 
         // Buy shares from the fund, using whatever amount of the denomination asset is in the current contract
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(VaultLib(payable(vaultProxyMem)).getAccessor());
+        IComptroller comptrollerProxyContract = IComptroller(IVault(vaultProxyMem).getAccessor());
         ERC20 denominationAssetContract = ERC20(comptrollerProxyContract.getDenominationAsset());
         uint256 investmentAmount = denominationAssetContract.balanceOf(address(this));
 
@@ -442,7 +443,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Validate that there are no active external positions that contain value.
         // Allows a fund to keep an external position active, so long as it has been emptied.
-        address[] memory externalPositions = VaultLib(payable(vaultProxyMem)).getActiveExternalPositions();
+        address[] memory externalPositions = IVault(vaultProxyMem).getActiveExternalPositions();
         for (uint256 i; i < externalPositions.length; i++) {
             (, uint256[] memory managedAssetAmounts) = IExternalPosition(externalPositions[i]).getManagedAssets();
             for (uint256 j; j < managedAssetAmounts.length; j++) {
@@ -451,7 +452,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         }
 
         // Redeem all fund shares, receiving an in-kind distribution of vault holdings
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(VaultLib(payable(getVaultProxy())).getAccessor());
+        IComptroller comptrollerProxyContract = IComptroller(IVault(getVaultProxy()).getAccessor());
         // Always includes the deposit token as an "additional asset" to claim,
         // in case it is untracked in the vault
         address[] memory additionalAssetsToClaim = _untrackedAssetsToClaim.addUniqueItem(getDepositToken());

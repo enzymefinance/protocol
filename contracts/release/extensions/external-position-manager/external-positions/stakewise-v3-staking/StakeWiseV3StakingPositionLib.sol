@@ -9,14 +9,16 @@
 
 pragma solidity 0.8.19;
 
-import "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
-import "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
-import "../../../../../external-interfaces/IWETH.sol";
-import "../../../../../persistent/external-positions/stakewise-v3-staking/StakeWiseV3StakingPositionLibBase1.sol";
-import "../../../../../utils/0.8.19/AddressArrayLib.sol";
-import "./IStakeWiseV3StakingPosition.sol";
-import "./StakeWiseV3StakingPositionDataDecoder.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
+import {IStakeWiseV3EthVault} from "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
+import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {StakeWiseV3StakingPositionLibBase1} from
+    "../../../../../persistent/external-positions/stakewise-v3-staking/StakeWiseV3StakingPositionLibBase1.sol";
+import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
+import {IStakeWiseV3StakingPosition} from "./IStakeWiseV3StakingPosition.sol";
+import {StakeWiseV3StakingPositionDataDecoder} from "./StakeWiseV3StakingPositionDataDecoder.sol";
 
 /// @title StakeWiseV3StakingPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

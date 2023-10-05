@@ -11,9 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "../utils/0.6.12/actions/SynthetixActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {SynthetixActionsMixin} from "../utils/0.6.12/actions/SynthetixActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title SynthetixAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -21,7 +23,7 @@ import "../utils/0.6.12/AdapterBase.sol";
 /// @dev This adapter currently only provides mechanisms for exiting an already-held synth position into sUSD
 contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
     address private immutable SUSD_TOKEN;
-    ValueInterpreter private immutable VALUE_INTERPRETER_CONTRACT;
+    IValueInterpreter private immutable VALUE_INTERPRETER_CONTRACT;
 
     constructor(
         address _integrationManager,
@@ -37,7 +39,7 @@ contract SynthetixAdapter is AdapterBase, SynthetixActionsMixin {
         SynthetixActionsMixin(_originator, _synthetixRedeemer, _synthetix, _trackingCode)
     {
         SUSD_TOKEN = _susd;
-        VALUE_INTERPRETER_CONTRACT = ValueInterpreter(_valueInterpreter);
+        VALUE_INTERPRETER_CONTRACT = IValueInterpreter(_valueInterpreter);
     }
 
     /// @notice Redeems an array of deprecated synths for their last underlying sUSD values

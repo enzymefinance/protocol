@@ -11,11 +11,13 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../external-interfaces/IIdleTokenV4.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../infrastructure/price-feeds/derivatives/feeds/IdlePriceFeed.sol";
-import "../utils/0.6.12/actions/IdleV4ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IIdleTokenV4} from "../../../../../external-interfaces/IIdleTokenV4.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IdlePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/IdlePriceFeed.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {IdleV4ActionsMixin} from "../utils/0.6.12/actions/IdleV4ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title IdleAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

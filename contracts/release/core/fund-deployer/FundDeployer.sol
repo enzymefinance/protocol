@@ -12,15 +12,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../persistent/dispatcher/IMigrationHookHandler.sol";
-import "../../extensions/IExtension.sol";
-import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
-import "../fund/comptroller/ComptrollerProxy.sol";
-import "../fund/comptroller/IComptroller.sol";
-import "../fund/vault/IVault.sol";
-import "./IFundDeployer.sol";
+import {IDispatcher} from "../../../persistent/dispatcher/IDispatcher.sol";
+import {IMigrationHookHandler} from "../../../persistent/dispatcher/IMigrationHookHandler.sol";
+import {IExtension} from "../../extensions/IExtension.sol";
+import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
+import {IProtocolFeeTracker} from "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
+import {ComptrollerProxy} from "../fund/comptroller/ComptrollerProxy.sol";
+import {IComptroller} from "../fund/comptroller/IComptroller.sol";
+import {IVault} from "../fund/vault/IVault.sol";
+import {IFundDeployer} from "./IFundDeployer.sol";
 
 /// @title FundDeployer Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -339,7 +339,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external returns (address comptrollerProxy_) {
+    ) external override returns (address comptrollerProxy_) {
         address canonicalSender = __msgSender();
         __assertIsMigrator(_vaultProxy, canonicalSender);
         require(
@@ -433,7 +433,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Cancels a pending reconfiguration request
     /// @param _vaultProxy The VaultProxy contract for which to cancel the reconfiguration request
-    function cancelReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
+    function cancelReconfiguration(address _vaultProxy) external override onlyMigrator(_vaultProxy) {
         address nextComptrollerProxy = vaultProxyToReconfigurationRequest[_vaultProxy].nextComptrollerProxy;
         require(
             nextComptrollerProxy != address(0),
@@ -453,7 +453,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _vaultProxy The VaultProxy contract for which to execute the reconfiguration request
     /// @dev ProtocolFeeTracker.initializeForVault() does not need to be included in a reconfiguration,
     /// as it refers to the vault and not the new ComptrollerProxy
-    function executeReconfiguration(address _vaultProxy) external onlyMigrator(_vaultProxy) {
+    function executeReconfiguration(address _vaultProxy) external override onlyMigrator(_vaultProxy) {
         ReconfigurationRequest memory request = getReconfigurationRequestForVaultProxy(_vaultProxy);
         require(
             request.nextComptrollerProxy != address(0),

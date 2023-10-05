@@ -10,14 +10,14 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/INotionalV2Router.sol";
-import "../../../../../external-interfaces/IWETH.sol";
-import "../../../../../utils/0.6.12/AssetHelpers.sol";
-import "./INotionalV2Position.sol";
-import "./NotionalV2PositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {INotionalV2Router} from "../../../../../external-interfaces/INotionalV2Router.sol";
+import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {INotionalV2Position} from "./INotionalV2Position.sol";
+import {NotionalV2PositionDataDecoder} from "./NotionalV2PositionDataDecoder.sol";
 
 /// @title NotionalV2PositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

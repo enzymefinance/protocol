@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../external-interfaces/IChainlinkAggregator.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IChainlinkAggregator} from "../../../../external-interfaces/IChainlinkAggregator.sol";
 
 /// @title ChainlinkPriceFeedMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

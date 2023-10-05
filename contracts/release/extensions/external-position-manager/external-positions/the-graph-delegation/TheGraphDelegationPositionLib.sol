@@ -9,14 +9,15 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/ITheGraphStaking.sol";
-import "../../../../../persistent/external-positions/the-graph-delegation/TheGraphDelegationPositionLibBase1.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "./ITheGraphDelegationPosition.sol";
-import "./TheGraphDelegationPositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ITheGraphStaking} from "../../../../../external-interfaces/ITheGraphStaking.sol";
+import {TheGraphDelegationPositionLibBase1} from
+    "../../../../../persistent/external-positions/the-graph-delegation/TheGraphDelegationPositionLibBase1.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {ITheGraphDelegationPosition} from "./ITheGraphDelegationPosition.sol";
+import {TheGraphDelegationPositionDataDecoder} from "./TheGraphDelegationPositionDataDecoder.sol";
 
 /// @title TheGraphDelegationPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

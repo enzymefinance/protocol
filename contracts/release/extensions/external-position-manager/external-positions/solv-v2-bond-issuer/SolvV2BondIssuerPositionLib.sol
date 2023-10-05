@@ -10,18 +10,20 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/ISolvV2BondPool.sol";
-import "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
-import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import "../../../../../persistent/external-positions/solv-v2-bond-issuer/SolvV2BondIssuerPositionLibBase1.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../../utils/0.6.12/AssetHelpers.sol";
-import "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
-import "./ISolvV2BondIssuerPosition.sol";
-import "./SolvV2BondIssuerPositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
+import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
+import {ISolvV2InitialConvertibleOfferingMarket} from
+    "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import {SolvV2BondIssuerPositionLibBase1} from
+    "../../../../../persistent/external-positions/solv-v2-bond-issuer/SolvV2BondIssuerPositionLibBase1.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
+import {ISolvV2BondIssuerPosition} from "./ISolvV2BondIssuerPosition.sol";
+import {SolvV2BondIssuerPositionDataDecoder} from "./SolvV2BondIssuerPositionDataDecoder.sol";
 
 /// @title SolvV2BondIssuerPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

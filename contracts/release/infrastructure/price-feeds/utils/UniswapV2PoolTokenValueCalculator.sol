@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../external-interfaces/IUniswapV2Factory.sol";
-import "../../../../external-interfaces/IUniswapV2Pair.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IUniswapV2Factory} from "../../../../external-interfaces/IUniswapV2Factory.sol";
+import {IUniswapV2Pair} from "../../../../external-interfaces/IUniswapV2Pair.sol";
 
 /// @title UniswapV2PoolTokenValueCalculator Contract
 /// @author Enzyme Council <security@enzyme.finance>

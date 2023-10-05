@@ -11,7 +11,7 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./IPolicyManager.sol";
+import {IPolicyManager} from "./IPolicyManager.sol";
 
 /// @title Policy Interface
 /// @author Enzyme Council <security@enzyme.finance>

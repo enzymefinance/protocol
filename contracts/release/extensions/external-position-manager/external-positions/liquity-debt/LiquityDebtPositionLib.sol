@@ -9,13 +9,13 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
-import "../../../../../external-interfaces/ILiquityTroveManager.sol";
-import "../../../../../external-interfaces/IWETH.sol";
-import "./ILiquityDebtPosition.sol";
-import "./LiquityDebtPositionDataDecoder.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ILiquityBorrowerOperations} from "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
+import {ILiquityTroveManager} from "../../../../../external-interfaces/ILiquityTroveManager.sol";
+import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {ILiquityDebtPosition} from "./ILiquityDebtPosition.sol";
+import {LiquityDebtPositionDataDecoder} from "./LiquityDebtPositionDataDecoder.sol";
 
 /// @title LiquityDebtPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../../core/fund/vault/VaultLib.sol";
-import "../../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IComptroller} from "../../../../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../../../../core/fund/vault/IVault.sol";
+import {IValueInterpreter} from "../../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 
 /// @title PricelessAssetBypassMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -49,13 +49,13 @@ abstract contract PricelessAssetBypassMixin {
     /// It also means that the originator must be the owner.
     function startAssetBypassTimelock(address _asset) external {
         // No need to validate whether the VaultProxy is an Enzyme contract
-        address comptrollerProxy = VaultLib(msg.sender).getAccessor();
+        address comptrollerProxy = IVault(msg.sender).getAccessor();
         require(
-            msg.sender == ComptrollerLib(comptrollerProxy).getVaultProxy(),
+            msg.sender == IComptroller(comptrollerProxy).getVaultProxy(),
             "startAssetBypassTimelock: Sender is not the VaultProxy of the associated ComptrollerProxy"
         );
 
-        try ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
+        try IValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
             _asset,
             1, // Any value >0 will attempt to retrieve a rate
             getPricelessAssetBypassWethToken() // Any valid asset would do
@@ -111,7 +111,7 @@ abstract contract PricelessAssetBypassMixin {
         uint256 _baseAssetAmount,
         address _quoteAsset
     ) internal returns (uint256 value_) {
-        try ValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
+        try IValueInterpreter(getPricelessAssetBypassValueInterpreter()).calcCanonicalAssetValue(
             _baseAsset, _baseAssetAmount, _quoteAsset
         ) returns (uint256 result) {
             return result;

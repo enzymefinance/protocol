@@ -9,10 +9,10 @@
     file that was distributed with this source code.
 */
 
-import "../../../../../external-interfaces/ILiquityTroveManager.sol";
-import "../IExternalPositionParser.sol";
-import "./ILiquityDebtPosition.sol";
-import "./LiquityDebtPositionDataDecoder.sol";
+import {ILiquityTroveManager} from "../../../../../external-interfaces/ILiquityTroveManager.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {ILiquityDebtPosition} from "./ILiquityDebtPosition.sol";
+import {LiquityDebtPositionDataDecoder} from "./LiquityDebtPositionDataDecoder.sol";
 
 pragma solidity 0.6.12;
 

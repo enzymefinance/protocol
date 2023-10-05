@@ -12,9 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../core/fund/vault/VaultLib.sol";
-import "../utils/0.6.12/AddressListRegistryPerUserPolicyBase.sol";
+import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../../../core/fund/vault/IVault.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {AddressListRegistryPerUserPolicyBase} from "../utils/0.6.12/AddressListRegistryPerUserPolicyBase.sol";
 
 /// @title AllowedAdaptersPerManagerPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -89,7 +90,7 @@ contract AllowedAdaptersPerManagerPolicy is AddressListRegistryPerUserPolicyBase
         view
         returns (bool isValid_)
     {
-        if (_caller == VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner()) {
+        if (_caller == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner()) {
             // fund owner passes rule by default
             return true;
         }

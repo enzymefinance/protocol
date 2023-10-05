@@ -11,7 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../IFee.sol";
+import {IFeeManager} from "../../IFeeManager.sol";
+import {IFee} from "../../IFee.sol";
 
 /// @title FeeBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

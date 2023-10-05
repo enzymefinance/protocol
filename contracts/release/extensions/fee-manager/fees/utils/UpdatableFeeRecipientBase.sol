@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../core/fund/vault/VaultLib.sol";
-import "./SettableFeeRecipientBase.sol";
+import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../../../core/fund/vault/IVault.sol";
+import {SettableFeeRecipientBase} from "./SettableFeeRecipientBase.sol";
 
 /// @title UpdatableFeeRecipientBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -24,7 +24,7 @@ abstract contract UpdatableFeeRecipientBase is SettableFeeRecipientBase {
     /// @param _recipient The fee recipient
     function setRecipientForFund(address _comptrollerProxy, address _recipient) external {
         require(
-            msg.sender == VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getOwner(),
+            msg.sender == IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getOwner(),
             "__setRecipientForFund: Only vault owner callable"
         );
 

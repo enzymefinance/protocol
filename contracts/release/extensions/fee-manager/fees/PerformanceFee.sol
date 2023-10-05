@@ -12,12 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../FeeManager.sol";
-import "./utils/FeeBase.sol";
-import "./utils/UpdatableFeeRecipientBase.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
+import {IFeeManager} from "../IFeeManager.sol";
+import {FeeBase} from "./utils/FeeBase.sol";
+import {SettableFeeRecipientBase} from "./utils/SettableFeeRecipientBase.sol";
+import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title PerformanceFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -55,7 +56,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     function activateForFund(address _comptrollerProxy, address) external override onlyFeeManager {
         FeeInfo storage feeInfo = comptrollerProxyToFeeInfo[_comptrollerProxy];
 
-        uint256 grossSharePrice = ComptrollerLib(_comptrollerProxy).calcGrossShareValue();
+        uint256 grossSharePrice = IComptroller(_comptrollerProxy).calcGrossShareValue();
 
         feeInfo.highWaterMark = grossSharePrice;
 
@@ -185,7 +186,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         returns (uint256 grossShareValue_)
     {
         if (_sharesSupply == 0) {
-            return 10 ** uint256(ERC20(ComptrollerLib(_comptrollerProxy).getDenominationAsset()).decimals());
+            return 10 ** uint256(ERC20(IComptroller(_comptrollerProxy).getDenominationAsset()).decimals());
         }
 
         return _gav.mul(SHARE_UNIT).div(_sharesSupply);

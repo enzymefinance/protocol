@@ -9,8 +9,8 @@
 
 pragma solidity 0.6.12;
 
-import "./ArbitraryTokenPhasedSharesWrapperLib.sol";
-import "./ArbitraryTokenPhasedSharesWrapperProxy.sol";
+import {ArbitraryTokenPhasedSharesWrapperLib} from "./ArbitraryTokenPhasedSharesWrapperLib.sol";
+import {ArbitraryTokenPhasedSharesWrapperProxy} from "./ArbitraryTokenPhasedSharesWrapperProxy.sol";
 
 /// @title ArbitraryTokenPhasedSharesWrapperFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>

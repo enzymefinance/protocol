@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../infrastructure/price-feeds/derivatives/feeds/YearnVaultV2PriceFeed.sol";
-import "../utils/0.6.12/actions/YearnVaultV2ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {YearnVaultV2PriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/YearnVaultV2PriceFeed.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {YearnVaultV2ActionsMixin} from "../utils/0.6.12/actions/YearnVaultV2ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title YearnVaultV2Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

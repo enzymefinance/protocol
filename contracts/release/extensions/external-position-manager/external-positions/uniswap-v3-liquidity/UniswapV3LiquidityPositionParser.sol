@@ -9,11 +9,11 @@
     file that was distributed with this source code.
 */
 
-import "openzeppelin-solc-0.7/token/ERC721/ERC721.sol";
-import "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "../IExternalPositionParser.sol";
-import "./IUniswapV3LiquidityPosition.sol";
-import "./UniswapV3LiquidityPositionDataDecoder.sol";
+import {ERC721} from "openzeppelin-solc-0.7/token/ERC721/ERC721.sol";
+import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IUniswapV3LiquidityPosition} from "./IUniswapV3LiquidityPosition.sol";
+import {UniswapV3LiquidityPositionDataDecoder} from "./UniswapV3LiquidityPositionDataDecoder.sol";
 
 pragma solidity 0.7.6;
 

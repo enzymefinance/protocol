@@ -11,8 +11,8 @@
 
 pragma solidity 0.8.19;
 
-import "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
 /// @title AssetHelpers Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../utils/0.6.12/actions/AaveV3ActionsMixin.sol";
-import "../utils/0.6.12/bases/AaveAdapterBase.sol";
+import {AaveV3ActionsMixin} from "../utils/0.6.12/actions/AaveV3ActionsMixin.sol";
+import {AaveAdapterBase} from "../utils/0.6.12/bases/AaveAdapterBase.sol";
 
 /// @title AaveV3Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -7,13 +7,14 @@
     file that was distributed with this source code.
 */
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../external-interfaces/ISolvV2BondPool.sol";
-import "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
-import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import "../IExternalPositionParser.sol";
-import "./ISolvV2BondBuyerPosition.sol";
-import "./SolvV2BondBuyerPositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
+import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
+import {ISolvV2InitialConvertibleOfferingMarket} from
+    "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {ISolvV2BondBuyerPosition} from "./ISolvV2BondBuyerPosition.sol";
+import {SolvV2BondBuyerPositionDataDecoder} from "./SolvV2BondBuyerPositionDataDecoder.sol";
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;

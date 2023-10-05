@@ -11,11 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ISynthetix.sol";
-import "../../../../../../../external-interfaces/ISynthetixProxyERC20.sol";
-import "../../../../../../../external-interfaces/ISynthetixRedeemer.sol";
-import "../../../../../../../external-interfaces/ISynthetixSynth.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ISynthetix} from "../../../../../../../external-interfaces/ISynthetix.sol";
+import {ISynthetixProxyERC20} from "../../../../../../../external-interfaces/ISynthetixProxyERC20.sol";
+import {ISynthetixRedeemer} from "../../../../../../../external-interfaces/ISynthetixRedeemer.sol";
+import {ISynthetixSynth} from "../../../../../../../external-interfaces/ISynthetixSynth.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title SynthetixActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

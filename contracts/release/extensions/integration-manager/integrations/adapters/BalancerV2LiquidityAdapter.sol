@@ -10,9 +10,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
-import "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
-import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IBalancerV2LiquidityGauge} from "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
+import {IBalancerV2Vault} from "../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {CurveGaugeV2RewardsHandlerMixin} from "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
+import {BalancerV2LiquidityAdapterBase} from "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 
 /// @title BalancerV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICompoundV3Comet.sol";
-import "../../../../../../../external-interfaces/ICompoundV3CometRewards.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ICompoundV3Comet} from "../../../../../../../external-interfaces/ICompoundV3Comet.sol";
+import {ICompoundV3CometRewards} from "../../../../../../../external-interfaces/ICompoundV3CometRewards.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CompoundV3ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

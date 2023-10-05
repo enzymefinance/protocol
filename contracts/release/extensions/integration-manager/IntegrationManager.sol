@@ -11,17 +11,17 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../utils/0.6.12/AssetHelpers.sol";
-import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "../policy-manager/IPolicyManager.sol";
-import "../utils/ExtensionBase.sol";
-import "../utils/PermissionedVaultActionMixin.sol";
-import "./integrations/IIntegrationAdapter.sol";
-import "./IIntegrationManager.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../utils/0.6.12/AssetHelpers.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
+import {IValueInterpreter} from "../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
+import {ExtensionBase} from "../utils/ExtensionBase.sol";
+import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
+import {IIntegrationAdapter} from "./integrations/IIntegrationAdapter.sol";
+import {IIntegrationManager} from "./IIntegrationManager.sol";
 
 /// @title IntegrationManager
 /// @author Enzyme Council <security@enzyme.finance>

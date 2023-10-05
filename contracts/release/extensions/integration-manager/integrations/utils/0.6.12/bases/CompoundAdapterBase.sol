@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
-import "../actions/CompoundActionsMixin.sol";
-import "../AdapterBase.sol";
+import {CompoundPriceFeed} from "../../../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
+import {IIntegrationManager} from "../../../../IIntegrationManager.sol";
+import {CompoundActionsMixin} from "../actions/CompoundActionsMixin.sol";
+import {AdapterBase} from "../AdapterBase.sol";
 
 /// @title CompoundAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

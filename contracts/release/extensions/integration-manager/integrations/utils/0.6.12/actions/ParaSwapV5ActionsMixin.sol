@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/IParaSwapV5AugustusSwapper.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IParaSwapV5AugustusSwapper} from "../../../../../../../external-interfaces/IParaSwapV5AugustusSwapper.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title ParaSwapV5ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

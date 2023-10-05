@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../IPolicy.sol";
+import {IPolicy} from "../../../IPolicy.sol";
 
 /// @title PolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

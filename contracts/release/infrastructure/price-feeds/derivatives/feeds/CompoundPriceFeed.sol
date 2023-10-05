@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../external-interfaces/ICERC20.sol";
-import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../IDerivativePriceFeed.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ICERC20} from "../../../../../external-interfaces/ICERC20.sol";
+import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title CompoundPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

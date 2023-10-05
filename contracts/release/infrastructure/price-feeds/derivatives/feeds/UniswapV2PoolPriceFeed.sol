@@ -12,13 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../../external-interfaces/IUniswapV2Pair.sol";
-import "../../../../../utils/0.6.12/MathHelpers.sol";
-import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../../../value-interpreter/ValueInterpreter.sol";
-import "../../utils/UniswapV2PoolTokenValueCalculator.sol";
-import "../IDerivativePriceFeed.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IUniswapV2Pair} from "../../../../../external-interfaces/IUniswapV2Pair.sol";
+import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
+import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IValueInterpreter} from "../../../value-interpreter/IValueInterpreter.sol";
+import {UniswapV2PoolTokenValueCalculator} from "../../utils/UniswapV2PoolTokenValueCalculator.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title UniswapV2PoolPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -105,11 +105,11 @@ contract UniswapV2PoolPriceFeed is
         if (IValueInterpreter(VALUE_INTERPRETER).isSupportedPrimitiveAsset(_token0)) {
             token1RateAmount_ = 10 ** _token1Decimals;
             token0RateAmount_ =
-                ValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(_token1, token1RateAmount_, _token0);
+                IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(_token1, token1RateAmount_, _token0);
         } else {
             token0RateAmount_ = 10 ** _token0Decimals;
             token1RateAmount_ =
-                ValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(_token0, token0RateAmount_, _token1);
+                IValueInterpreter(VALUE_INTERPRETER).calcCanonicalAssetValue(_token0, token0RateAmount_, _token1);
         }
 
         return (token0RateAmount_, token1RateAmount_);

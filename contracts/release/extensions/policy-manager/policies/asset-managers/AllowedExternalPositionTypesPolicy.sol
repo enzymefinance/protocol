@@ -11,10 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../core/fund/vault/VaultLib.sol";
-import "../utils/0.6.12/PolicyBase.sol";
+import {IExternalPositionProxy} from "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
+import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../../../core/fund/vault/IVault.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
 
 /// @title AllowedExternalPositionTypesPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -32,7 +33,7 @@ contract AllowedExternalPositionTypesPolicy is PolicyBase {
     /// @param _comptrollerProxy The fund's ComptrollerProxy address
     function activateForFund(address _comptrollerProxy) external override onlyPolicyManager {
         address[] memory activeExternalPositions =
-            VaultLib(payable(ComptrollerLib(_comptrollerProxy).getVaultProxy())).getActiveExternalPositions();
+            IVault(IComptroller(_comptrollerProxy).getVaultProxy()).getActiveExternalPositions();
         for (uint256 i; i < activeExternalPositions.length; i++) {
             require(
                 externalPositionTypeIsAllowedForFund(

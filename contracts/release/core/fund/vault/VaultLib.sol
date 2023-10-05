@@ -11,20 +11,20 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../external-interfaces/IWETH.sol";
-import "../../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../../persistent/external-positions/IExternalPosition.sol";
-import "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
-import "../../../../persistent/vault/VaultLibBase2.sol";
-import "../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
-import "../../../extensions/external-position-manager/IExternalPositionManager.sol";
-import "../comptroller/IComptroller.sol";
-import "./IVault.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IWETH} from "../../../../external-interfaces/IWETH.sol";
+import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
+import {IExternalPosition} from "../../../../persistent/external-positions/IExternalPosition.sol";
+import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
+import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
+import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
+import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
+import {IExternalPositionManager} from "../../../extensions/external-position-manager/IExternalPositionManager.sol";
+import {IComptroller} from "../comptroller/IComptroller.sol";
+import {IVault} from "./IVault.sol";
 
 /// @title VaultLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

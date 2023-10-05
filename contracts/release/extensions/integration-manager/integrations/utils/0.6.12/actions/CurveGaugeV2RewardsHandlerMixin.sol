@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICurveMinter.sol";
-import "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "./CurveGaugeV2ActionsMixin.sol";
+import {ICurveMinter} from "../../../../../../../external-interfaces/ICurveMinter.sol";
+import {AddressArrayLib} from "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {CurveGaugeV2ActionsMixin} from "./CurveGaugeV2ActionsMixin.sol";
 
 /// @title CurveGaugeV2RewardsHandlerMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

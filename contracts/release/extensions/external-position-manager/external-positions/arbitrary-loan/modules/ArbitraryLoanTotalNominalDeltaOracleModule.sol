@@ -12,10 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/math/SignedSafeMath.sol";
-import "./IArbitraryLoanAccountingModule.sol";
-import "../../../../../../persistent/arbitrary-value-oracles/IArbitraryValueOracle.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {SignedSafeMath} from "openzeppelin-solc-0.6/math/SignedSafeMath.sol";
+import {IArbitraryLoanAccountingModule} from "./IArbitraryLoanAccountingModule.sol";
+import {IArbitraryValueOracle} from "../../../../../../persistent/arbitrary-value-oracles/IArbitraryValueOracle.sol";
 
 /// @title ArbitraryLoanTotalNominalDeltaOracleModule Contract
 /// @author Enzyme Council <security@enzyme.finance>

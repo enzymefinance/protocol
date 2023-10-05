@@ -32,5 +32,12 @@ interface IPolicyManager {
         ReactivateExternalPosition
     }
 
+    function disablePolicyForFund(address _comptrollerProxy, address _policy) external;
+
+    function enablePolicyForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData) external;
+
+    function updatePolicySettingsForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
+        external;
+
     function validatePolicies(address, PolicyHook, bytes calldata) external;
 }

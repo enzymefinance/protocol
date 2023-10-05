@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./ConvexCurveLpStakingWrapperPriceFeed.sol";
+import {ConvexCurveLpStakingWrapperPriceFeed} from "./ConvexCurveLpStakingWrapperPriceFeed.sol";
 
 /// @title AuraBalancerV2LpStakingWrapperPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

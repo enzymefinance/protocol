@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/0.6.12/PolicyBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
 
 /// @title MinAssetBalancesPostRedemptionPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -78,7 +79,7 @@ contract MinAssetBalancesPostRedemptionPolicy is PolicyBase {
     {
         (,,, address[] memory assets,,) = __decodeRedeemSharesForSpecificAssetsValidationData(_encodedArgs);
 
-        address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
+        address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
         for (uint256 i; i < assets.length; i++) {
             if (ERC20(assets[i]).balanceOf(vaultProxy) < getMinAssetBalanceForFund(_comptrollerProxy, assets[i])) {
                 return false;

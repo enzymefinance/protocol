@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./GasRelayPaymasterLibBase1.sol";
+import {GasRelayPaymasterLibBase1} from "./GasRelayPaymasterLibBase1.sol";
 
 /// @title GasRelayPaymasterLibBase2 Contract
 /// @author Enzyme Council <security@enzyme.finance>

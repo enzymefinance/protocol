@@ -11,11 +11,12 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICurveAddressProvider.sol";
-import "../../../../../../../external-interfaces/ICurveSwapsERC20.sol";
-import "../../../../../../../external-interfaces/ICurveSwapsEther.sol";
-import "../../../../../../../external-interfaces/IWETH.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ICurveAddressProvider} from "../../../../../../../external-interfaces/ICurveAddressProvider.sol";
+import {ICurveSwapsERC20} from "../../../../../../../external-interfaces/ICurveSwapsERC20.sol";
+import {ICurveSwapsEther} from "../../../../../../../external-interfaces/ICurveSwapsEther.sol";
+import {IWETH} from "../../../../../../../external-interfaces/IWETH.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CurveExchangeActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

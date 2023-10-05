@@ -12,11 +12,14 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../utils/0.6.12/MakerDaoMath.sol";
-import "../../../core/fund/vault/VaultLib.sol";
-import "./utils/FeeBase.sol";
-import "./utils/UpdatableFeeRecipientBase.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {MakerDaoMath} from "../../../../utils/0.6.12/MakerDaoMath.sol";
+import {IVault} from "../../../core/fund/vault/IVault.sol";
+import {IFeeManager} from "../IFeeManager.sol";
+import {FeeBase} from "./utils/FeeBase.sol";
+import {SettableFeeRecipientBase} from "./utils/SettableFeeRecipientBase.sol";
+import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title ManagementFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -50,7 +53,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     /// @param _vaultProxy The VaultProxy of the fund
     function activateForFund(address _comptrollerProxy, address _vaultProxy) external override onlyFeeManager {
         // It is only necessary to set `lastSettled` for a migrated fund
-        if (VaultLib(payable(_vaultProxy)).totalSupply() > 0) {
+        if (ERC20(_vaultProxy).totalSupply() > 0) {
             comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = uint128(block.timestamp);
 
             emit ActivatedForMigratedFund(_comptrollerProxy);
@@ -99,13 +102,13 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
         }
 
         // If there are shares issued for the fund, calculate the shares due
-        VaultLib vaultProxyContract = VaultLib(payable(_vaultProxy));
-        uint256 sharesSupply = vaultProxyContract.totalSupply();
+        ERC20 sharesToken = ERC20(_vaultProxy);
+        uint256 sharesSupply = sharesToken.totalSupply();
         if (sharesSupply > 0) {
             // This assumes that all shares in the VaultProxy are shares outstanding,
             // which is fine for this release. Even if they are not, they are still shares that
             // are only claimable by the fund owner.
-            uint256 netSharesSupply = sharesSupply.sub(vaultProxyContract.balanceOf(_vaultProxy));
+            uint256 netSharesSupply = sharesSupply.sub(sharesToken.balanceOf(_vaultProxy));
             if (netSharesSupply > 0) {
                 sharesDue_ = netSharesSupply.mul(
                     __rpow(feeInfo.scaledPerSecondRate, secondsSinceSettlement, RATE_SCALE_BASE).sub(RATE_SCALE_BASE)

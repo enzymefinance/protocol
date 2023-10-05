@@ -32,5 +32,7 @@ interface IFeeManager {
         BurnSharesOutstanding
     }
 
+    function getEnabledFeesForFund(address _comptrollerProxy) external view returns (address[] memory enabledFees_);
+
     function invokeHook(FeeHook, bytes calldata, uint256) external;
 }

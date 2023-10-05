@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
-import "../../../../../../infrastructure/staking-wrappers/IStakingWrapper.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IStakingWrapper} from "../../../../../../infrastructure/staking-wrappers/IStakingWrapper.sol";
 
 /// @title StakingWrapperActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

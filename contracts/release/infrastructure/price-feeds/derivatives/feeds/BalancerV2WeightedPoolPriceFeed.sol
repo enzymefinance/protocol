@@ -10,16 +10,16 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../../external-interfaces/IBalancerV2WeightedPool.sol";
-import "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
-import "../../../../../external-interfaces/IBalancerV2Vault.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../../utils/0.6.12/BalancerV2LogExpMath.sol";
-import "../../../../../utils/0.6.12/BalancerV2FixedPoint.sol";
-import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../../../value-interpreter/ValueInterpreter.sol";
-import "../IDerivativePriceFeed.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IBalancerV2WeightedPool} from "../../../../../external-interfaces/IBalancerV2WeightedPool.sol";
+import {IBalancerV2PoolFactory} from "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
+import {IBalancerV2Vault} from "../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {BalancerV2LogExpMath} from "../../../../../utils/0.6.12/BalancerV2LogExpMath.sol";
+import {BalancerV2FixedPoint} from "../../../../../utils/0.6.12/BalancerV2FixedPoint.sol";
+import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IValueInterpreter} from "../../../value-interpreter/IValueInterpreter.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title BalancerV2WeightedPoolPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -37,7 +37,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
 
     IBalancerV2Vault private immutable BALANCER_VAULT_CONTRACT;
     address private immutable INTERMEDIARY_ASSET;
-    ValueInterpreter private immutable VALUE_INTERPRETER_CONTRACT;
+    IValueInterpreter private immutable VALUE_INTERPRETER_CONTRACT;
 
     address[] private poolFactories;
 
@@ -50,7 +50,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
     ) public FundDeployerOwnerMixin(_fundDeployer) {
         BALANCER_VAULT_CONTRACT = IBalancerV2Vault(_balancerVault);
         INTERMEDIARY_ASSET = _intermediaryAsset;
-        VALUE_INTERPRETER_CONTRACT = ValueInterpreter(_valueInterpreter);
+        VALUE_INTERPRETER_CONTRACT = IValueInterpreter(_valueInterpreter);
 
         __addPoolFactories(_poolFactories);
     }

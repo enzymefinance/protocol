@@ -9,14 +9,14 @@
     file that was distributed with this source code.
 */
 
-import "../../../../../external-interfaces/IMapleV1MplRewardsFactory.sol";
-import "../../../../../external-interfaces/IMapleV2Globals.sol";
-import "../../../../../external-interfaces/IMapleV2Pool.sol";
-import "../../../../../external-interfaces/IMapleV2PoolManager.sol";
-import "../../../../../external-interfaces/IMapleV2ProxyFactory.sol";
-import "../IExternalPositionParser.sol";
-import "./IMapleLiquidityPosition.sol";
-import "./MapleLiquidityPositionDataDecoder.sol";
+import {IMapleV1MplRewardsFactory} from "../../../../../external-interfaces/IMapleV1MplRewardsFactory.sol";
+import {IMapleV2Globals} from "../../../../../external-interfaces/IMapleV2Globals.sol";
+import {IMapleV2Pool} from "../../../../../external-interfaces/IMapleV2Pool.sol";
+import {IMapleV2PoolManager} from "../../../../../external-interfaces/IMapleV2PoolManager.sol";
+import {IMapleV2ProxyFactory} from "../../../../../external-interfaces/IMapleV2ProxyFactory.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IMapleLiquidityPosition} from "./IMapleLiquidityPosition.sol";
+import {MapleLiquidityPositionDataDecoder} from "./MapleLiquidityPositionDataDecoder.sol";
 
 pragma solidity 0.6.12;
 

@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICurveLiquidityGaugeV2.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ICurveLiquidityGaugeV2} from "../../../../../../../external-interfaces/ICurveLiquidityGaugeV2.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CurveGaugeV2ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

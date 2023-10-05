@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/IYearnVaultV2.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IYearnVaultV2} from "../../../../../../../external-interfaces/IYearnVaultV2.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title YearnVaultV2ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,8 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../core/fund/comptroller/ComptrollerLib.sol";
-import "../extensions/fee-manager/FeeManager.sol";
+import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
+import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";
+import {IFee} from "../extensions/fee-manager/IFee.sol";
 
 /// @title UnpermissionedActionsWrapper Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -32,7 +33,7 @@ contract UnpermissionedActionsWrapper {
         view
         returns (address[] memory continuousFees_)
     {
-        FeeManager feeManagerContract = FeeManager(getFeeManager());
+        IFeeManager feeManagerContract = IFeeManager(getFeeManager());
 
         address[] memory fees = feeManagerContract.getEnabledFeesForFund(_comptrollerProxy);
 
@@ -75,7 +76,7 @@ contract UnpermissionedActionsWrapper {
         address _comptrollerProxy,
         address[] calldata _fees
     ) external {
-        ComptrollerLib comptrollerProxyContract = ComptrollerLib(_comptrollerProxy);
+        IComptroller comptrollerProxyContract = IComptroller(_comptrollerProxy);
 
         comptrollerProxyContract.callOnExtension(getFeeManager(), 0, "");
         comptrollerProxyContract.callOnExtension(getFeeManager(), 1, abi.encode(_fees));

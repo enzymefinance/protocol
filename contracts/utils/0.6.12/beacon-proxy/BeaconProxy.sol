@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./IBeacon.sol";
+import {IBeacon} from "./IBeacon.sol";
 
 /// @title BeaconProxy Contract
 /// @author Enzyme Council <security@enzyme.finance>

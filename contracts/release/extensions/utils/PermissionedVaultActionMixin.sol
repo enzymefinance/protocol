@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../core/fund/comptroller/IComptroller.sol";
-import "../../core/fund/vault/IVault.sol";
+import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
 
 /// @title PermissionedVaultActionMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

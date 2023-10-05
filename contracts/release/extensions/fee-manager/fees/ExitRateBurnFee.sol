@@ -11,7 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "./utils/ExitRateFeeBase.sol";
+import {IFeeManager} from "../IFeeManager.sol";
+import {ExitRateFeeBase} from "./utils/ExitRateFeeBase.sol";
 
 /// @title ExitRateBurnFee Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../IDerivativePriceFeed.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title RevertingPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

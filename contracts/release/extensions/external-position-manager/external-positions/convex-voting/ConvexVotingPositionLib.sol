@@ -10,16 +10,17 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/IConvexBaseRewardPool.sol";
-import "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
-import "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
-import "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
-import "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
-import "../../../../../utils/0.6.12/AssetHelpers.sol";
-import "./ConvexVotingPositionDataDecoder.sol";
-import "./IConvexVotingPosition.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IConvexBaseRewardPool} from "../../../../../external-interfaces/IConvexBaseRewardPool.sol";
+import {IConvexCvxLockerV2} from "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
+import {IConvexVlCvxExtraRewardDistribution} from
+    "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
+import {ISnapshotDelegateRegistry} from "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
+import {IVotiumMultiMerkleStash} from "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
+import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ConvexVotingPositionDataDecoder} from "./ConvexVotingPositionDataDecoder.sol";
+import {IConvexVotingPosition} from "./IConvexVotingPosition.sol";
 
 /// @title ConvexVotingPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

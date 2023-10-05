@@ -14,6 +14,18 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IFundDeployer Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IFundDeployer {
+    function cancelReconfiguration(address _vaultProxy) external;
+
+    function createReconfigurationRequest(
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external returns (address comptrollerProxy_);
+
+    function executeReconfiguration(address _vaultProxy) external;
+
     function getOwner() external view returns (address);
 
     function hasReconfigurationRequest(address) external view returns (bool);

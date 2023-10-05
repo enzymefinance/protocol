@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../../../external-interfaces/IUniswapV3SwapRouter.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IUniswapV3SwapRouter} from "../../../../../../../external-interfaces/IUniswapV3SwapRouter.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title UniswapV3ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

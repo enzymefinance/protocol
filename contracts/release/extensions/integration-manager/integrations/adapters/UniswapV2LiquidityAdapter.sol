@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../external-interfaces/IUniswapV2Factory.sol";
-import "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {IUniswapV2Factory} from "../../../../../external-interfaces/IUniswapV2Factory.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {UniswapV2ActionsMixin} from "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title UniswapV2LiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

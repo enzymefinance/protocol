@@ -9,8 +9,8 @@
     file that was distributed with this source code.
 */
 
-import "../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
-import "./IGasRelayPaymaster.sol";
+import {IBeaconProxyFactory} from "../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
+import {IGasRelayPaymaster} from "./IGasRelayPaymaster.sol";
 
 pragma solidity 0.6.12;
 

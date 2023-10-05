@@ -11,13 +11,14 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
-import "../core/fund/comptroller/ComptrollerLib.sol";
-import "../core/fund/vault/VaultLib.sol";
-import "../extensions/fee-manager/FeeManager.sol";
-import "../infrastructure/protocol-fees/ProtocolFeeTracker.sol";
-import "../infrastructure/value-interpreter/ValueInterpreter.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
+import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../core/fund/vault/IVault.sol";
+import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";
+import {IProtocolFeeTracker} from "../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
+import {IValueInterpreter} from "../infrastructure/value-interpreter/IValueInterpreter.sol";
 
 /// @title FundValueCalculator Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -55,7 +56,7 @@ contract FundValueCalculator is IFundValueCalculator {
     function calcGavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 gav_) {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcGav(_vaultProxy);
 
-        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAsset, valueInDenominationAsset, _quoteAsset
         );
     }
@@ -71,7 +72,7 @@ contract FundValueCalculator is IFundValueCalculator {
     {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcGrossShareValue(_vaultProxy);
 
-        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAsset, valueInDenominationAsset, _quoteAsset
         );
     }
@@ -83,7 +84,7 @@ contract FundValueCalculator is IFundValueCalculator {
     function calcNavInAsset(address _vaultProxy, address _quoteAsset) external override returns (uint256 nav_) {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcNav(_vaultProxy);
 
-        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAsset, valueInDenominationAsset, _quoteAsset
         );
     }
@@ -99,7 +100,7 @@ contract FundValueCalculator is IFundValueCalculator {
     {
         (address denominationAsset, uint256 valueInDenominationAsset) = calcNetShareValue(_vaultProxy);
 
-        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAsset, valueInDenominationAsset, _quoteAsset
         );
     }
@@ -117,7 +118,7 @@ contract FundValueCalculator is IFundValueCalculator {
         (address denominationAsset, uint256 valueInDenominationAsset) =
             calcNetValueForSharesHolder(_vaultProxy, _sharesHolder);
 
-        return ValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
+        return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAsset, valueInDenominationAsset, _quoteAsset
         );
     }
@@ -129,7 +130,7 @@ contract FundValueCalculator is IFundValueCalculator {
     /// @return denominationAsset_ The denomination asset of the fund
     /// @return gav_ The GAV quoted in the denomination asset
     function calcGav(address _vaultProxy) public override returns (address denominationAsset_, uint256 gav_) {
-        ComptrollerLib comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
+        IComptroller comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
 
         return (comptrollerProxyContract.getDenominationAsset(), comptrollerProxyContract.calcGav());
     }
@@ -143,7 +144,7 @@ contract FundValueCalculator is IFundValueCalculator {
         override
         returns (address denominationAsset_, uint256 grossShareValue_)
     {
-        ComptrollerLib comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
+        IComptroller comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
 
         return (comptrollerProxyContract.getDenominationAsset(), comptrollerProxyContract.calcGrossShareValue());
     }
@@ -175,7 +176,7 @@ contract FundValueCalculator is IFundValueCalculator {
         override
         returns (address denominationAsset_, uint256 netShareValue_)
     {
-        ComptrollerLib comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
+        IComptroller comptrollerProxyContract = __getComptrollerProxyForVault(_vaultProxy);
 
         // Settle Continuous fees
         comptrollerProxyContract.callOnExtension(getFeeManager(), 0, "");
@@ -221,7 +222,7 @@ contract FundValueCalculator is IFundValueCalculator {
     /// Includes the 50% buyback discount.
     function calcProtocolFeeDueForFund(address _vaultProxy) public view returns (uint256 sharesDue_) {
         // 1. Calc seconds since last payment
-        uint256 lastPaid = ProtocolFeeTracker(getProtocolFeeTracker()).getLastPaidForVault(_vaultProxy);
+        uint256 lastPaid = IProtocolFeeTracker(getProtocolFeeTracker()).getLastPaidForVault(_vaultProxy);
         if (lastPaid >= block.timestamp || lastPaid == 0) {
             return 0;
         }
@@ -232,7 +233,7 @@ contract FundValueCalculator is IFundValueCalculator {
         uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
 
         uint256 rawSharesDue = sharesSupply.mul(
-            ProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy)
+            IProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy)
         ).mul(secondsDue).div(SECONDS_IN_YEAR).div(MAX_BPS);
 
         uint256 supplyNetRawSharesDue = sharesSupply.sub(rawSharesDue);
@@ -262,9 +263,9 @@ contract FundValueCalculator is IFundValueCalculator {
     function __getComptrollerProxyForVault(address _vaultProxy)
         private
         view
-        returns (ComptrollerLib comptrollerProxyContract_)
+        returns (IComptroller comptrollerProxyContract_)
     {
-        return ComptrollerLib(VaultLib(payable(_vaultProxy)).getAccessor());
+        return IComptroller(IVault(_vaultProxy).getAccessor());
     }
 
     ///////////////////

@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/IUniswapV2Router2.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IUniswapV2Router2} from "../../../../../../../external-interfaces/IUniswapV2Router2.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title UniswapV2ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

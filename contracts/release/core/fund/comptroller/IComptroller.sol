@@ -11,12 +11,18 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "../vault/IVault.sol";
+import {IVault} from "../vault/IVault.sol";
 
 /// @title IComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IComptroller {
     function activate(bool) external;
+
+    function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
+
+    function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity)
+        external
+        returns (uint256 sharesReceived_);
 
     function buySharesOnBehalf(address _buyer, uint256 _investmentAmount, uint256 _minSharesQuantity)
         external
@@ -27,6 +33,8 @@ interface IComptroller {
     function calcGrossShareValue() external returns (uint256);
 
     function callOnExtension(address, uint256, bytes calldata) external;
+
+    function depositToGasRelayPaymaster() external;
 
     function destructActivated(uint256, uint256) external;
 
@@ -56,7 +64,20 @@ interface IComptroller {
 
     function preTransferSharesHookFreelyTransferable(address) external view;
 
+    function redeemSharesInKind(
+        address _recipient,
+        uint256 _sharesQuantity,
+        address[] calldata _additionalAssets,
+        address[] calldata _assetsToSkip
+    ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_);
+
+    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external;
+
     function setGasRelayPaymaster(address) external;
 
     function setVaultProxy(address) external;
+
+    function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
+        external
+        returns (bytes memory returnData_);
 }

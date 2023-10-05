@@ -9,8 +9,8 @@
 
 pragma solidity 0.8.19;
 
-import "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
-import "./IStakeWiseV3StakingPosition.sol";
+import {IStakeWiseV3EthVault} from "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
+import {IStakeWiseV3StakingPosition} from "./IStakeWiseV3StakingPosition.sol";
 
 /// @title StakeWiseV3StakingPositionDataDecoder Contract
 /// @author Enzyme Council <security@enzyme.finance>

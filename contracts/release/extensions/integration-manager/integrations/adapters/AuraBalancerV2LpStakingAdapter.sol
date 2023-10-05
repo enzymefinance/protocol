@@ -2,9 +2,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../infrastructure/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
-import "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
-import "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
+import {IConvexCurveLpStakingWrapperFactory} from
+    "../../../../infrastructure/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {StakingWrapperActionsMixin} from "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
+import {BalancerV2LiquidityAdapterBase} from "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
 
 /// @title AuraBalancerV2LpStakingAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

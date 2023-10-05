@@ -12,10 +12,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../external-interfaces/INotionalV2Router.sol";
-import "../IExternalPositionParser.sol";
-import "./INotionalV2Position.sol";
-import "./NotionalV2PositionDataDecoder.sol";
+import {INotionalV2Router} from "../../../../../external-interfaces/INotionalV2Router.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {INotionalV2Position} from "./INotionalV2Position.sol";
+import {NotionalV2PositionDataDecoder} from "./NotionalV2PositionDataDecoder.sol";
 
 /// @title NotionalV2PositionParser
 /// @author Enzyme Council <security@enzyme.finance>

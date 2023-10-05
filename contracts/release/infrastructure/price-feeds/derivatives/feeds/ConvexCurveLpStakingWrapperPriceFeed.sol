@@ -11,8 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
-import "../IDerivativePriceFeed.sol";
+import {IConvexCurveLpStakingWrapperFactory} from
+    "../../../staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title ConvexCurveLpStakingWrapperPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

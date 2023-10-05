@@ -12,7 +12,7 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
-import "../../../external-interfaces/IGsnPaymaster.sol";
+import {IGsnPaymaster} from "../../../external-interfaces/IGsnPaymaster.sol";
 
 /// @title IGasRelayPaymaster Interface
 /// @author Enzyme Council <security@enzyme.finance>

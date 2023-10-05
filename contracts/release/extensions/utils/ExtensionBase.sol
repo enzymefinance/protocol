@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../IExtension.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IExtension} from "../IExtension.sol";
 
 /// @title ExtensionBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -12,9 +12,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../utils/0.6.12/actions/OneInchV5ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IOneInchV5AggregationRouter} from "../../../../../external-interfaces/IOneInchV5AggregationRouter.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {OneInchV5ActionsMixin} from "../utils/0.6.12/actions/OneInchV5ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title OneInchV5Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICERC20.sol";
-import "../../../../../../../external-interfaces/ICEther.sol";
-import "../../../../../../../external-interfaces/IWETH.sol";
-import "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {ICERC20} from "../../../../../../../external-interfaces/ICERC20.sol";
+import {ICEther} from "../../../../../../../external-interfaces/ICEther.sol";
+import {IWETH} from "../../../../../../../external-interfaces/IWETH.sol";
+import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
 /// @title CompoundActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>

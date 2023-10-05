@@ -9,17 +9,19 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/IAaveV2IncentivesController.sol";
-import "../../../../../external-interfaces/IAaveV2LendingPool.sol";
-import "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
-import "../../../../../external-interfaces/IAaveV2ProtocolDataProvider.sol";
-import "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../../utils/0.6.12/AssetHelpers.sol";
-import "./AaveDebtPositionDataDecoder.sol";
-import "./IAaveDebtPosition.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IAaveV2IncentivesController} from "../../../../../external-interfaces/IAaveV2IncentivesController.sol";
+import {IAaveV2LendingPool} from "../../../../../external-interfaces/IAaveV2LendingPool.sol";
+import {IAaveV2LendingPoolAddressProvider} from
+    "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
+import {IAaveV2ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV2ProtocolDataProvider.sol";
+import {AaveDebtPositionLibBase1} from
+    "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {AaveDebtPositionDataDecoder} from "./AaveDebtPositionDataDecoder.sol";
+import {IAaveDebtPosition} from "./IAaveDebtPosition.sol";
 
 /// @title AaveDebtPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

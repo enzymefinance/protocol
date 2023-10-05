@@ -11,11 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../../utils/0.6.12/AssetHelpers.sol";
-import "../../IIntegrationAdapter.sol";
-import "./../IntegrationSelectors.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {AssetHelpers} from "../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IIntegrationAdapter} from "../../IIntegrationAdapter.sol";
+import {IntegrationSelectors} from "./../IntegrationSelectors.sol";
 
 /// @title AdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

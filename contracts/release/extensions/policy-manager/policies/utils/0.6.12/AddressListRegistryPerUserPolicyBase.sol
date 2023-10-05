@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import "../../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "./PolicyBase.sol";
+import {IAddressListRegistry} from "../../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import {IComptroller} from "../../../../../core/fund/comptroller/IComptroller.sol";
+import {PolicyBase} from "./PolicyBase.sol";
 
 /// @title AddressListRegistryPerUserPolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -118,7 +118,7 @@ abstract contract AddressListRegistryPerUserPolicyBase is PolicyBase {
 
             // Create and add any new lists
             if (newListsData.length > 0) {
-                address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
+                address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
                 for (uint256 i; i < newListsData.length; i++) {
                     uint256 nextListIdsIndex = existingListIds.length + i;
                     nextListIds[nextListIdsIndex] = __createAddressListFromData(vaultProxy, newListsData[i]);

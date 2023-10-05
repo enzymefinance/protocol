@@ -9,9 +9,9 @@
     file that was distributed with this source code.
 */
 
-import "../IExternalPositionParser.sol";
-import "./ConvexVotingPositionDataDecoder.sol";
-import "./IConvexVotingPosition.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {ConvexVotingPositionDataDecoder} from "./ConvexVotingPositionDataDecoder.sol";
+import {IConvexVotingPosition} from "./IConvexVotingPosition.sol";
 
 pragma solidity 0.6.12;
 

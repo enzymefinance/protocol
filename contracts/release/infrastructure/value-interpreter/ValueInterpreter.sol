@@ -12,13 +12,14 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../utils/0.6.12/MathHelpers.sol";
-import "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
-import "../price-feeds/derivatives/IDerivativePriceFeed.sol";
-import "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";
-import "./IValueInterpreter.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {MathHelpers} from "../../../utils/0.6.12/MathHelpers.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {AggregatedDerivativePriceFeedMixin} from "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
+import {IDerivativePriceFeed} from "../price-feeds/derivatives/IDerivativePriceFeed.sol";
+import {ChainlinkPriceFeedMixin} from "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";
+import {IValueInterpreter} from "./IValueInterpreter.sol";
 
 /// @title ValueInterpreter Contract
 /// @author Enzyme Council <security@enzyme.finance>

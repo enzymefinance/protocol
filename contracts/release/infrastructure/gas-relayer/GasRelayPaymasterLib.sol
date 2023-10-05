@@ -12,18 +12,19 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/utils/Address.sol";
-import "../../../external-interfaces/IGsnRelayHub.sol";
-import "../../../external-interfaces/IGsnTypes.sol";
-import "../../../external-interfaces/IWETH.sol";
-import "../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../core/fund/vault/IVault.sol";
-import "../../core/fund-deployer/FundDeployer.sol";
-import "../../extensions/policy-manager/PolicyManager.sol";
-import "./bases/GasRelayPaymasterLibBase2.sol";
-import "./IGasRelayPaymaster.sol";
-import "./IGasRelayPaymasterDepositor.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {Address} from "openzeppelin-solc-0.6/utils/Address.sol";
+import {IGsnPaymaster} from "../../../external-interfaces/IGsnPaymaster.sol";
+import {IGsnRelayHub} from "../../../external-interfaces/IGsnRelayHub.sol";
+import {IGsnTypes} from "../../../external-interfaces/IGsnTypes.sol";
+import {IWETH} from "../../../external-interfaces/IWETH.sol";
+import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
+import {IFundDeployer} from "../../core/fund-deployer/IFundDeployer.sol";
+import {IPolicyManager} from "../../extensions/policy-manager/IPolicyManager.sol";
+import {GasRelayPaymasterLibBase2} from "./bases/GasRelayPaymasterLibBase2.sol";
+import {IGasRelayPaymaster} from "./IGasRelayPaymaster.sol";
+import {IGasRelayPaymasterDepositor} from "./IGasRelayPaymasterDepositor.sol";
 
 /// @title GasRelayPaymasterLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -215,27 +216,27 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
         address parentComptroller = __getComptrollerForVault(_vaultProxy);
         if (_contract == parentComptroller) {
             if (
-                _selector == ComptrollerLib.callOnExtension.selector
-                    || _selector == ComptrollerLib.vaultCallOnContract.selector
-                    || _selector == ComptrollerLib.buyBackProtocolFeeShares.selector
-                    || _selector == ComptrollerLib.depositToGasRelayPaymaster.selector
-                    || _selector == ComptrollerLib.setAutoProtocolFeeSharesBuyback.selector
+                _selector == IComptroller.callOnExtension.selector
+                    || _selector == IComptroller.vaultCallOnContract.selector
+                    || _selector == IComptroller.buyBackProtocolFeeShares.selector
+                    || _selector == IComptroller.depositToGasRelayPaymaster.selector
+                    || _selector == IComptroller.setAutoProtocolFeeSharesBuyback.selector
             ) {
                 return true;
             }
-        } else if (_contract == ComptrollerLib(parentComptroller).getPolicyManager()) {
+        } else if (_contract == IComptroller(parentComptroller).getPolicyManager()) {
             if (
-                _selector == PolicyManager.updatePolicySettingsForFund.selector
-                    || _selector == PolicyManager.enablePolicyForFund.selector
-                    || _selector == PolicyManager.disablePolicyForFund.selector
+                _selector == IPolicyManager.updatePolicySettingsForFund.selector
+                    || _selector == IPolicyManager.enablePolicyForFund.selector
+                    || _selector == IPolicyManager.disablePolicyForFund.selector
             ) {
                 return __parseTxDataFirstParameterAsAddress(_txData) == getParentComptroller();
             }
-        } else if (_contract == ComptrollerLib(parentComptroller).getFundDeployer()) {
+        } else if (_contract == IComptroller(parentComptroller).getFundDeployer()) {
             if (
-                _selector == FundDeployer.createReconfigurationRequest.selector
-                    || _selector == FundDeployer.executeReconfiguration.selector
-                    || _selector == FundDeployer.cancelReconfiguration.selector
+                _selector == IFundDeployer.createReconfigurationRequest.selector
+                    || _selector == IFundDeployer.executeReconfiguration.selector
+                    || _selector == IFundDeployer.cancelReconfiguration.selector
             ) {
                 return __parseTxDataFirstParameterAsAddress(_txData) == getParentVault();
             }

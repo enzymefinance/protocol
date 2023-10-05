@@ -12,10 +12,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import "../../../../../utils/0.6.12/MathHelpers.sol";
-import "../utils/0.6.12/actions/ZeroExV4ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {IZeroExV4} from "../../../../../external-interfaces/IZeroExV4.sol";
+import {IAddressListRegistry} from "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {ZeroExV4ActionsMixin} from "../utils/0.6.12/actions/ZeroExV4ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title ZeroExV4Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

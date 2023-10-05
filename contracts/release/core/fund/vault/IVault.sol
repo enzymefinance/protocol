@@ -11,10 +11,11 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
-import "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
-import "../../../../persistent/vault/interfaces/IMigratableVault.sol";
-import "../../../../persistent/vault/interfaces/IVaultCore.sol";
+import {IExternalPositionVault} from "../../../../persistent/vault/interfaces/IExternalPositionVault.sol";
+import {IFreelyTransferableSharesVault} from
+    "../../../../persistent/vault/interfaces/IFreelyTransferableSharesVault.sol";
+import {IMigratableVault} from "../../../../persistent/vault/interfaces/IMigratableVault.sol";
+import {IVaultCore} from "../../../../persistent/vault/interfaces/IVaultCore.sol";
 
 /// @title IVault Interface
 /// @author Enzyme Council <security@enzyme.finance>

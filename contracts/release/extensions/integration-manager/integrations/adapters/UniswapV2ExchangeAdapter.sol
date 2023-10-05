@@ -11,9 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
-import "../utils/0.6.12/AdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {UniswapV2ActionsMixin} from "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
+import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 
 /// @title UniswapV2ExchangeAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

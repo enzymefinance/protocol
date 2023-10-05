@@ -10,15 +10,16 @@
 pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.7/math/SafeMath.sol";
-import "openzeppelin-solc-0.7/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.7/token/ERC20/SafeERC20.sol";
-import "uniswap-v3-periphery/interfaces/INonfungiblePositionManager.sol";
-import "uniswap-v3-periphery/libraries/PositionValue.sol";
-import "../../../../../persistent/external-positions/uniswap-v3-liquidity/UniswapV3LiquidityPositionLibBase1.sol";
-import "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "./IUniswapV3LiquidityPosition.sol";
-import "./UniswapV3LiquidityPositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.7/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.7/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.7/token/ERC20/SafeERC20.sol";
+import {INonfungiblePositionManager} from "uniswap-v3-periphery/interfaces/INonfungiblePositionManager.sol";
+import {PositionValue} from "uniswap-v3-periphery/libraries/PositionValue.sol";
+import {UniswapV3LiquidityPositionLibBase1} from
+    "../../../../../persistent/external-positions/uniswap-v3-liquidity/UniswapV3LiquidityPositionLibBase1.sol";
+import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IUniswapV3LiquidityPosition} from "./IUniswapV3LiquidityPosition.sol";
+import {UniswapV3LiquidityPositionDataDecoder} from "./UniswapV3LiquidityPositionDataDecoder.sol";
 
 /// @title UniswapV3LiquidityPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

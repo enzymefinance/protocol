@@ -12,13 +12,13 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../core/fund/comptroller/IComptroller.sol";
-import "../../core/fund/vault/IVault.sol";
-import "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import "../utils/ExtensionBase.sol";
-import "./IPolicy.sol";
-import "./IPolicyManager.sol";
+import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
+import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
+import {ExtensionBase} from "../utils/ExtensionBase.sol";
+import {IPolicy} from "./IPolicy.sol";
+import {IPolicyManager} from "./IPolicyManager.sol";
 
 /// @title PolicyManager Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -80,6 +80,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// removed hook values.
     function disablePolicyForFund(address _comptrollerProxy, address _policy)
         external
+        override
         onlyFundOwner(_comptrollerProxy)
     {
         require(IPolicy(_policy).canDisable(), "disablePolicyForFund: _policy cannot be disabled");
@@ -103,6 +104,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// policy's job to determine how to merge that config with the _settingsData param in this function.
     function enablePolicyForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
         external
+        override
         onlyFundOwner(_comptrollerProxy)
     {
         PolicyHook[] memory implementedHooks = IPolicy(_policy).implementedHooks();
@@ -155,6 +157,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     /// @param _settingsData The encoded settings data with which to update the policy config
     function updatePolicySettingsForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
         external
+        override
         onlyFundOwner(_comptrollerProxy)
     {
         IPolicy(_policy).updateFundSettings(_comptrollerProxy, _settingsData);

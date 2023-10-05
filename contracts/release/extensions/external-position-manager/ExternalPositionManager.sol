@@ -11,14 +11,15 @@
 
 pragma solidity 0.6.12;
 
-import "../../../persistent/external-positions/IExternalPosition.sol";
-import "../../../persistent/external-positions/IExternalPositionFactory.sol";
-import "../../../persistent/external-positions/IExternalPositionProxy.sol";
-import "../policy-manager/IPolicyManager.sol";
-import "../utils/ExtensionBase.sol";
-import "../utils/PermissionedVaultActionMixin.sol";
-import "./external-positions/IExternalPositionParser.sol";
-import "./IExternalPositionManager.sol";
+import {IExternalPosition} from "../../../persistent/external-positions/IExternalPosition.sol";
+import {IExternalPositionFactory} from "../../../persistent/external-positions/IExternalPositionFactory.sol";
+import {IExternalPositionProxy} from "../../../persistent/external-positions/IExternalPositionProxy.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
+import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
+import {ExtensionBase} from "../utils/ExtensionBase.sol";
+import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
+import {IExternalPositionParser} from "./external-positions/IExternalPositionParser.sol";
+import {IExternalPositionManager} from "./IExternalPositionManager.sol";
 
 /// @title ExternalPositionManager
 /// @author Enzyme Council <security@enzyme.finance>

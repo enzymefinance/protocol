@@ -7,9 +7,9 @@
     file that was distributed with this source code.
 */
 
-import "../IExternalPositionParser.sol";
-import "./TheGraphDelegationPositionDataDecoder.sol";
-import "./ITheGraphDelegationPosition.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {TheGraphDelegationPositionDataDecoder} from "./TheGraphDelegationPositionDataDecoder.sol";
+import {ITheGraphDelegationPosition} from "./ITheGraphDelegationPosition.sol";
 
 pragma solidity 0.6.12;
 

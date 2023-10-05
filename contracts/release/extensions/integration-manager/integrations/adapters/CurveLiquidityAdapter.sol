@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
-import "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
-import "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {CurvePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
+import {IIntegrationManager} from "../../IIntegrationManager.sol";
+import {CurveGaugeV2RewardsHandlerMixin} from "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
+import {CurveLiquidityAdapterBase} from "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";
 
 /// @title CurveLiquidityAdapter Contract
 /// @author Enzyme Council <security@enzyme.finance>

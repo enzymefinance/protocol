@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../IDerivativePriceFeed.sol";
-import "./SingleUnderlyingDerivativeRegistryMixin.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IDerivativePriceFeed} from "../../IDerivativePriceFeed.sol";
+import {SingleUnderlyingDerivativeRegistryMixin} from "./SingleUnderlyingDerivativeRegistryMixin.sol";
 
 /// @title PeggedDerivativesPriceFeedBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

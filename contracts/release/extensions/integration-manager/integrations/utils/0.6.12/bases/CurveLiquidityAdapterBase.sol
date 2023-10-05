@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import "../../../../../../../external-interfaces/ICurveLiquidityPool.sol";
-import "../actions/CurveLiquidityActionsMixin.sol";
-import "../AdapterBase.sol";
+import {ICurveLiquidityPool} from "../../../../../../../external-interfaces/ICurveLiquidityPool.sol";
+import {CurveLiquidityActionsMixin} from "../actions/CurveLiquidityActionsMixin.sol";
+import {AdapterBase} from "../AdapterBase.sol";
 
 /// @title CurveLiquidityAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

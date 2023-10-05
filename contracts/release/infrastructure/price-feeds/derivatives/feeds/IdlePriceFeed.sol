@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../external-interfaces/IIdleTokenV4.sol";
-import "../IDerivativePriceFeed.sol";
-import "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IIdleTokenV4} from "../../../../../external-interfaces/IIdleTokenV4.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
+import {SingleUnderlyingDerivativeRegistryMixin} from "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
 
 /// @title IdlePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

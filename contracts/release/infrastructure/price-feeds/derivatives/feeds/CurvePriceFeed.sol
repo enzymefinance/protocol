@@ -12,15 +12,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../../external-interfaces/ICurveAddressProvider.sol";
-import "../../../../../external-interfaces/ICurveLiquidityPool.sol";
-import "../../../../../external-interfaces/ICurvePoolOwner.sol";
-import "../../../../../external-interfaces/ICurveRegistryMain.sol";
-import "../../../../../external-interfaces/ICurveRegistryMetapoolFactory.sol";
-import "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "../IDerivativePriceFeed.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ICurveAddressProvider} from "../../../../../external-interfaces/ICurveAddressProvider.sol";
+import {ICurveLiquidityPool} from "../../../../../external-interfaces/ICurveLiquidityPool.sol";
+import {ICurvePoolOwner} from "../../../../../external-interfaces/ICurvePoolOwner.sol";
+import {ICurveRegistryMain} from "../../../../../external-interfaces/ICurveRegistryMain.sol";
+import {ICurveRegistryMetapoolFactory} from "../../../../../external-interfaces/ICurveRegistryMetapoolFactory.sol";
+import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title CurvePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

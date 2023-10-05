@@ -12,12 +12,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "../utils/0.6.12/PolicyBase.sol";
-import "../utils/0.6.12/PricelessAssetBypassMixin.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IAddressListRegistry} from "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
+import {PricelessAssetBypassMixin} from "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
 /// @title CumulativeSlippageTolerancePolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

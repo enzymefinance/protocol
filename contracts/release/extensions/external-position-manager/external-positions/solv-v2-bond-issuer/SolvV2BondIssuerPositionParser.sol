@@ -7,14 +7,17 @@
     file that was distributed with this source code.
 */
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../../external-interfaces/ISolvV2BondPool.sol";
-import "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../IExternalPositionParser.sol";
-import "./ISolvV2BondIssuerPosition.sol";
-import "./SolvV2BondIssuerPositionDataDecoder.sol";
-import "./SolvV2BondIssuerPositionLib.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
+import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
+import {ISolvV2InitialConvertibleOfferingMarket} from
+    "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {ISolvV2BondIssuerPosition} from "./ISolvV2BondIssuerPosition.sol";
+import {SolvV2BondIssuerPositionDataDecoder} from "./SolvV2BondIssuerPositionDataDecoder.sol";
+import {SolvV2BondIssuerPositionLib} from "./SolvV2BondIssuerPositionLib.sol";
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;

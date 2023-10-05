@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import "../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../utils/0.6.12/beacon-proxy/BeaconProxyFactory.sol";
+import {IDispatcher} from "../../../persistent/dispatcher/IDispatcher.sol";
+import {BeaconProxyFactory} from "../../../utils/0.6.12/beacon-proxy/BeaconProxyFactory.sol";
 
 /// @title GasRelayPaymasterFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>

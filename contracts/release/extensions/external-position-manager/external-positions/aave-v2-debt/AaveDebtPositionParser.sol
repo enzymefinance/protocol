@@ -9,10 +9,11 @@
     file that was distributed with this source code.
 */
 
-import "../../../../infrastructure/value-interpreter/ValueInterpreter.sol";
-import "../IExternalPositionParser.sol";
-import "./AaveDebtPositionDataDecoder.sol";
-import "./IAaveDebtPosition.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {AaveDebtPositionDataDecoder} from "./AaveDebtPositionDataDecoder.sol";
+import {IAaveDebtPosition} from "./IAaveDebtPosition.sol";
 
 pragma solidity 0.6.12;
 

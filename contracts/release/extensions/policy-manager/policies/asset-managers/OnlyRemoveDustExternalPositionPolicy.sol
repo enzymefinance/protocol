@@ -11,10 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/0.6.12/DustEvaluatorMixin.sol";
-import "../utils/0.6.12/PolicyBase.sol";
-import "../utils/0.6.12/PricelessAssetBypassMixin.sol";
+import {IExternalPosition} from "../../../../../persistent/external-positions/IExternalPosition.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {DustEvaluatorMixin} from "../utils/0.6.12/DustEvaluatorMixin.sol";
+import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
+import {PricelessAssetBypassMixin} from "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
 /// @title OnlyRemoveDustExternalPositionPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -11,10 +11,12 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../core/fund/comptroller/ComptrollerLib.sol";
-import "../utils/0.6.12/DustEvaluatorMixin.sol";
-import "../utils/0.6.12/PolicyBase.sol";
-import "../utils/0.6.12/PricelessAssetBypassMixin.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
+import {IPolicyManager} from "../../IPolicyManager.sol";
+import {DustEvaluatorMixin} from "../utils/0.6.12/DustEvaluatorMixin.sol";
+import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
+import {PricelessAssetBypassMixin} from "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
 /// @title OnlyUntrackDustOrPricelessAssetsPolicy Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -76,7 +78,7 @@ contract OnlyUntrackDustOrPricelessAssetsPolicy is PolicyBase, DustEvaluatorMixi
     {
         (, address[] memory assets) = __decodeRemoveTrackedAssetsValidationData(_encodedArgs);
 
-        address vaultProxy = ComptrollerLib(_comptrollerProxy).getVaultProxy();
+        address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
         for (uint256 i; i < assets.length; i++) {
             uint256 amount = ERC20(assets[i]).balanceOf(vaultProxy);
             uint256 valueInWeth = __calcValueExcludingBypassablePricelessAsset(

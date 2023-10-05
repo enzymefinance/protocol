@@ -12,14 +12,14 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../core/fund/comptroller/IComptroller.sol";
-import "../../core/fund/vault/IVault.sol";
-import "../utils/ExtensionBase.sol";
-import "../utils/PermissionedVaultActionMixin.sol";
-import "./IFee.sol";
-import "./IFeeManager.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
+import {IVault} from "../../core/fund/vault/IVault.sol";
+import {ExtensionBase} from "../utils/ExtensionBase.sol";
+import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
+import {IFee} from "./IFee.sol";
+import {IFeeManager} from "./IFeeManager.sol";
 
 /// @title FeeManager Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -326,7 +326,12 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
     /// @notice Get a list of enabled fees for a given fund
     /// @param _comptrollerProxy The ComptrollerProxy of the fund
     /// @return enabledFees_ An array of enabled fee addresses
-    function getEnabledFeesForFund(address _comptrollerProxy) public view returns (address[] memory enabledFees_) {
+    function getEnabledFeesForFund(address _comptrollerProxy)
+        public
+        view
+        override
+        returns (address[] memory enabledFees_)
+    {
         return comptrollerProxyToFees[_comptrollerProxy];
     }
 

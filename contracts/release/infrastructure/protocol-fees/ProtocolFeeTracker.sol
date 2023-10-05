@@ -11,10 +11,10 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
-import "./IProtocolFeeTracker.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {IProtocolFeeTracker} from "./IProtocolFeeTracker.sol";
 
 /// @title ProtocolFeeTracker Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -92,7 +92,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @notice Gets the protocol fee rate (in bps) for a given VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @return feeBps_ The protocol fee (in bps)
-    function getFeeBpsForVault(address _vaultProxy) public view returns (uint256 feeBps_) {
+    function getFeeBpsForVault(address _vaultProxy) public view override returns (uint256 feeBps_) {
         feeBps_ = getFeeBpsOverrideForVault(_vaultProxy);
 
         if (feeBps_ == 0) {
@@ -192,7 +192,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @notice Gets the lastPaid value for the given VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @return lastPaid_ The lastPaid value
-    function getLastPaidForVault(address _vaultProxy) public view returns (uint256 lastPaid_) {
+    function getLastPaidForVault(address _vaultProxy) public view override returns (uint256 lastPaid_) {
         return vaultProxyToLastPaid[_vaultProxy];
     }
 }

@@ -11,8 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "./utils/FeeBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IFeeManager} from "../IFeeManager.sol";
+import {FeeBase} from "./utils/FeeBase.sol";
 
 /// @title MinSharesSupplyFee Contract
 /// @author Enzyme Council <security@enzyme.finance>

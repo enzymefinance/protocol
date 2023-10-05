@@ -14,6 +14,10 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IProtocolFeeTracker Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IProtocolFeeTracker {
+    function getFeeBpsForVault(address _vaultProxy) external view returns (uint256 feeBps_);
+
+    function getLastPaidForVault(address _vaultProxy) external view returns (uint256 lastPaid_);
+
     function initializeForVault(address) external;
 
     function payFee() external returns (uint256);

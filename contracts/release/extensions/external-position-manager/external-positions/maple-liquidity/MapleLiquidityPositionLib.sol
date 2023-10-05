@@ -9,21 +9,23 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../../external-interfaces/IMapleV1MplRewards.sol";
-import "../../../../../external-interfaces/IMapleV1Pool.sol";
-import "../../../../../external-interfaces/IMapleV2Pool.sol";
-import "../../../../../external-interfaces/IMapleV2PoolManager.sol";
-import "../../../../../external-interfaces/IMapleV2WithdrawalManager.sol";
-import "../../../../../persistent/external-positions/maple-liquidity/MapleLiquidityPositionLibBase2.sol";
-import "../../../../../persistent/external-positions/maple-liquidity/MapleV1ToV2PoolMapper.sol";
-import "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../../../utils/0.6.12/AssetHelpers.sol";
-import "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
-import "./IMapleLiquidityPosition.sol";
-import "./MapleLiquidityPositionDataDecoder.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IMapleV1MplRewards} from "../../../../../external-interfaces/IMapleV1MplRewards.sol";
+import {IMapleV1Pool} from "../../../../../external-interfaces/IMapleV1Pool.sol";
+import {IMapleV2Pool} from "../../../../../external-interfaces/IMapleV2Pool.sol";
+import {IMapleV2PoolManager} from "../../../../../external-interfaces/IMapleV2PoolManager.sol";
+import {IMapleV2WithdrawalManager} from "../../../../../external-interfaces/IMapleV2WithdrawalManager.sol";
+import {MapleLiquidityPositionLibBase2} from
+    "../../../../../persistent/external-positions/maple-liquidity/MapleLiquidityPositionLibBase2.sol";
+import {MapleV1ToV2PoolMapper} from
+    "../../../../../persistent/external-positions/maple-liquidity/MapleV1ToV2PoolMapper.sol";
+import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
+import {IMapleLiquidityPosition} from "./IMapleLiquidityPosition.sol";
+import {MapleLiquidityPositionDataDecoder} from "./MapleLiquidityPositionDataDecoder.sol";
 
 /// @title MapleLiquidityPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -233,7 +235,7 @@ contract MapleLiquidityPositionLib is
 
     /// @dev Helper to get total pool token v2 balance, including escrowed amount
     function __getTotalPoolTokenV2Balance(address _pool) private view returns (uint256 balance_) {
-        balance_ = IERC20(_pool).balanceOf(address(this));
+        balance_ = ERC20(_pool).balanceOf(address(this));
 
         // According to Maple's WithdrawalManager code comments, IMapleV2PoolManager.withdrawalManager
         // can be set to address(0) in order to pause redemptions, which would cause this to revert.

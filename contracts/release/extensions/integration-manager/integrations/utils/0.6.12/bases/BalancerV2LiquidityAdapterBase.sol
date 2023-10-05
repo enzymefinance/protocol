@@ -10,10 +10,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../../../../../../external-interfaces/IBalancerV2Vault.sol";
-import "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../actions/BalancerV2ActionsMixin.sol";
-import "../AdapterBase.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IBalancerV2Vault} from "../../../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {AddressArrayLib} from "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IIntegrationManager} from "../../../../IIntegrationManager.sol";
+import {BalancerV2ActionsMixin} from "../actions/BalancerV2ActionsMixin.sol";
+import {AdapterBase} from "../AdapterBase.sol";
 
 /// @title BalancerV2LiquidityAdapterBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

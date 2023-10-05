@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "../../../../external-interfaces/IChainlinkAggregator.sol";
+import {IChainlinkAggregator} from "../../../../external-interfaces/IChainlinkAggregator.sol";
 
 /// @title UsdEthSimulatedAggregator Contract
 /// @author Enzyme Council <security@enzyme.finance>

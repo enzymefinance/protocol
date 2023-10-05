@@ -11,12 +11,12 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "../../../../../external-interfaces/IYearnVaultV2.sol";
-import "../../../../../external-interfaces/IYearnVaultV2Registry.sol";
-import "../IDerivativePriceFeed.sol";
-import "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IYearnVaultV2} from "../../../../../external-interfaces/IYearnVaultV2.sol";
+import {IYearnVaultV2Registry} from "../../../../../external-interfaces/IYearnVaultV2Registry.sol";
+import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
+import {SingleUnderlyingDerivativeRegistryMixin} from "./utils/SingleUnderlyingDerivativeRegistryMixin.sol";
 
 /// @title YearnVaultV2PriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

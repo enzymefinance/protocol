@@ -11,8 +11,11 @@
 
 pragma solidity 0.6.12;
 
-import "./utils/EntranceRateFeeBase.sol";
-import "./utils/UpdatableFeeRecipientBase.sol";
+import {IFeeManager} from "../IFeeManager.sol";
+import {EntranceRateFeeBase} from "./utils/EntranceRateFeeBase.sol";
+import {FeeBase} from "./utils/FeeBase.sol";
+import {SettableFeeRecipientBase} from "./utils/SettableFeeRecipientBase.sol";
+import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
 
 /// @title EntranceRateDirectFee Contract
 /// @author Enzyme Council <security@enzyme.finance>

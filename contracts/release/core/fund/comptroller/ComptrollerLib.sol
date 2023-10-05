@@ -11,23 +11,23 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "../../../../persistent/dispatcher/IDispatcher.sol";
-import "../../../../persistent/external-positions/IExternalPosition.sol";
-import "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
-import "../../../../utils/0.6.12/AddressArrayLib.sol";
-import "../../../extensions/IExtension.sol";
-import "../../../extensions/fee-manager/IFeeManager.sol";
-import "../../../extensions/policy-manager/IPolicyManager.sol";
-import "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import "../../../infrastructure/gas-relayer/IGasRelayPaymaster.sol";
-import "../../../infrastructure/gas-relayer/IGasRelayPaymasterDepositor.sol";
-import "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import "../../fund-deployer/IFundDeployer.sol";
-import "../vault/IVault.sol";
-import "./IComptroller.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
+import {IExternalPosition} from "../../../../persistent/external-positions/IExternalPosition.sol";
+import {IBeaconProxyFactory} from "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
+import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IExtension} from "../../../extensions/IExtension.sol";
+import {IFeeManager} from "../../../extensions/fee-manager/IFeeManager.sol";
+import {IPolicyManager} from "../../../extensions/policy-manager/IPolicyManager.sol";
+import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
+import {IGasRelayPaymaster} from "../../../infrastructure/gas-relayer/IGasRelayPaymaster.sol";
+import {IGasRelayPaymasterDepositor} from "../../../infrastructure/gas-relayer/IGasRelayPaymasterDepositor.sol";
+import {IValueInterpreter} from "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
+import {IFundDeployer} from "../../fund-deployer/IFundDeployer.sol";
+import {IVault} from "../vault/IVault.sol";
+import {IComptroller} from "./IComptroller.sol";
 
 /// @title ComptrollerLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -237,6 +237,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @return returnData_ The data returned by the call
     function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
         external
+        override
         onlyOwner
         returns (bytes memory returnData_)
     {
@@ -264,7 +265,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Buys back shares collected as protocol fee at a discounted shares price, using MLN
     /// @param _sharesAmount The amount of shares to buy back
-    function buyBackProtocolFeeShares(uint256 _sharesAmount) external {
+    function buyBackProtocolFeeShares(uint256 _sharesAmount) external override {
         address vaultProxyCopy = vaultProxy;
         require(IVault(vaultProxyCopy).canManageAssets(__msgSender()), "buyBackProtocolFeeShares: Unauthorized");
 
@@ -278,7 +279,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @notice Sets whether to attempt to buyback protocol fee shares immediately when collected
     /// @param _nextAutoProtocolFeeSharesBuyback True if protocol fee shares should be attempted
     /// to be bought back immediately when collected
-    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external onlyOwner {
+    function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external override onlyOwner {
         autoProtocolFeeSharesBuyback = _nextAutoProtocolFeeSharesBuyback;
 
         emit AutoProtocolFeeSharesBuybackSet(_nextAutoProtocolFeeSharesBuyback);
@@ -599,6 +600,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @return sharesReceived_ The actual amount of shares received
     function buyShares(uint256 _investmentAmount, uint256 _minSharesQuantity)
         external
+        override
         returns (uint256 sharesReceived_)
     {
         bool hasSharesActionTimelock = getSharesActionTimelock() > 0;
@@ -788,7 +790,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 _sharesQuantity,
         address[] calldata _additionalAssets,
         address[] calldata _assetsToSkip
-    ) external locksReentrance returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
+    ) external override locksReentrance returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_) {
         address canonicalSender = __msgSender();
         require(_additionalAssets.isUniqueSet(), "redeemSharesInKind: _additionalAssets contains duplicates");
         require(_assetsToSkip.isUniqueSet(), "redeemSharesInKind: _assetsToSkip contains duplicates");
@@ -1029,7 +1031,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     }
 
     /// @notice Tops up the gas relay paymaster deposit
-    function depositToGasRelayPaymaster() external onlyOwner {
+    function depositToGasRelayPaymaster() external override onlyOwner {
         __depositToGasRelayPaymaster(getGasRelayPaymaster());
     }
 

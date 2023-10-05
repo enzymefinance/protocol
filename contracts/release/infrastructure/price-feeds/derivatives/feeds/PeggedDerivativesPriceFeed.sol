@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./utils/PeggedDerivativesPriceFeedBase.sol";
+import {PeggedDerivativesPriceFeedBase} from "./utils/PeggedDerivativesPriceFeedBase.sol";
 
 /// @title PeggedDerivativesPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>

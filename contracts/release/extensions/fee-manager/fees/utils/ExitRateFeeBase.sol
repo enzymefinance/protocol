@@ -11,8 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "./FeeBase.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IFeeManager} from "../../IFeeManager.sol";
+import {FeeBase} from "./FeeBase.sol";
 
 /// @title ExitRateFeeBase Contract
 /// @author Enzyme Council <security@enzyme.finance>

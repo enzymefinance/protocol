@@ -11,7 +11,7 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "../IIntegrationManager.sol";
+import {IIntegrationManager} from "../IIntegrationManager.sol";
 
 /// @title Integration Adapter interface
 /// @author Enzyme Council <security@enzyme.finance>
