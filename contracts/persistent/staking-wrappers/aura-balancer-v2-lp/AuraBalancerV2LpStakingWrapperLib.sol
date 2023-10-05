@@ -11,7 +11,7 @@
 
 pragma solidity 0.8.19;
 
-import {IAuraStashToken} from "../../../../external-interfaces/IAuraStashToken.sol";
+import {IAuraStashToken} from "../../../external-interfaces/IAuraStashToken.sol";
 import {ConvexCurveLpStakingWrapperLib} from "../convex-curve-lp/ConvexCurveLpStakingWrapperLib.sol";
 
 /// @title AuraBalancerV2LpStakingWrapperLib Contract

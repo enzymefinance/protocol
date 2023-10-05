@@ -2,9 +2,9 @@
 pragma solidity 0.6.12;
 
 import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {CurvePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import {IConvexCurveLpStakingWrapperFactory} from
-    "../../../../infrastructure/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
+    "../../../../../persistent/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
+import {CurvePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {StakingWrapperActionsMixin} from "../utils/0.6.12/actions/StakingWrapperActionsMixin.sol";
 import {CurveLiquidityAdapterBase} from "../utils/0.6.12/bases/CurveLiquidityAdapterBase.sol";

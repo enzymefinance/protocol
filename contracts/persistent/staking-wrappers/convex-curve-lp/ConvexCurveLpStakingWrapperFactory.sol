@@ -9,9 +9,9 @@
 
 pragma solidity 0.8.19;
 
+import {DispatcherOwnedBeacon} from "../../../utils/0.8.19/dispatcher-owned-beacon/DispatcherOwnedBeacon.sol";
 import {IConvexCurveLpStakingWrapper} from "./IConvexCurveLpStakingWrapper.sol";
 import {IConvexCurveLpStakingWrapperFactory} from "./IConvexCurveLpStakingWrapperFactory.sol";
-import {DispatcherOwnedBeacon} from "../../../../utils/0.8.19/dispatcher-owned-beacon/DispatcherOwnedBeacon.sol";
 
 /// @title ConvexCurveLpStakingWrapperFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>

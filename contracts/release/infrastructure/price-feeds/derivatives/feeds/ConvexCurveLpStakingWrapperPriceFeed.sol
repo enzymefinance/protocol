@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import {IConvexCurveLpStakingWrapperFactory} from
-    "../../../staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
+    "../../../../../persistent/staking-wrappers/convex-curve-lp/IConvexCurveLpStakingWrapperFactory.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
 /// @title ConvexCurveLpStakingWrapperPriceFeed Contract

@@ -14,7 +14,7 @@ pragma solidity 0.8.19;
 import {ReentrancyGuard} from "openzeppelin-solc-0.8/security/ReentrancyGuard.sol";
 import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
-import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
+import {AddressArrayLib} from "../../utils/0.8.19/AddressArrayLib.sol";
 import {IStakingWrapper} from "./IStakingWrapper.sol";
 
 /// @title StakingWrapperBase Contract

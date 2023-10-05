@@ -9,7 +9,7 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import {IDispatcherOwnedBeacon} from "../../../../utils/0.8.19/dispatcher-owned-beacon/IDispatcherOwnedBeacon.sol";
+import {IDispatcherOwnedBeacon} from "../../../utils/0.8.19/dispatcher-owned-beacon/IDispatcherOwnedBeacon.sol";
 
 /// @title IConvexCurveLpStakingWrapperFactory Interface
 /// @author Enzyme Council <security@enzyme.finance>
