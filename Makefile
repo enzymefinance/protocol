@@ -75,7 +75,7 @@ $(ARTIFACTS_DIR)/: Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > $(FORGE) build --sizes --extra-output-files abi
 > touch $@
 
-$(INTERFACES_DIR)/: Makefile $(INTERFACES_FILE) $(ARTIFACTS_DIR)/
+$(INTERFACES_DIR): Makefile $(INTERFACES_FILE) $(ARTIFACTS_DIR)/
 > mkdir -p $(@D)
 >
 > # Remove all existing interfaces and abis.
