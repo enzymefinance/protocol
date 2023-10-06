@@ -7,9 +7,8 @@
     file that was distributed with this source code.
 */
 
-import {IExternalPosition} from "../../../../../persistent/external-positions/IExternalPosition.sol";
-import {LidoWithdrawalsPositionLibBase1} from
-    "../../../../../persistent/external-positions/lido-withdrawals/LidoWithdrawalsPositionLibBase1.sol";
+import {IExternalPosition} from "../../IExternalPosition.sol";
+import {LidoWithdrawalsPositionLibBase1} from "./bases/LidoWithdrawalsPositionLibBase1.sol";
 
 pragma solidity 0.8.19;
 

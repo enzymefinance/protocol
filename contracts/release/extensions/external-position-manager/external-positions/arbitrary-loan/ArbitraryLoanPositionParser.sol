@@ -11,7 +11,7 @@
 
 import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {IArbitraryLoanPosition} from "./IArbitraryLoanPosition.sol";
 import {ArbitraryLoanPositionDataDecoder} from "./ArbitraryLoanPositionDataDecoder.sol";
 

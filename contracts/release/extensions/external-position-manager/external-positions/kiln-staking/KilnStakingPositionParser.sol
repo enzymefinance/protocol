@@ -10,7 +10,7 @@
 */
 
 import {IAddressListRegistry} from "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {IKilnStakingPosition} from "./IKilnStakingPosition.sol";
 import {KilnStakingPositionDataDecoder} from "./KilnStakingPositionDataDecoder.sol";
 

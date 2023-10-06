@@ -14,9 +14,8 @@ import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {IStakeWiseV3EthVault} from "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
-import {StakeWiseV3StakingPositionLibBase1} from
-    "../../../../../persistent/external-positions/stakewise-v3-staking/StakeWiseV3StakingPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
+import {StakeWiseV3StakingPositionLibBase1} from "./bases/StakeWiseV3StakingPositionLibBase1.sol";
 import {IStakeWiseV3StakingPosition} from "./IStakeWiseV3StakingPosition.sol";
 import {StakeWiseV3StakingPositionDataDecoder} from "./StakeWiseV3StakingPositionDataDecoder.sol";
 

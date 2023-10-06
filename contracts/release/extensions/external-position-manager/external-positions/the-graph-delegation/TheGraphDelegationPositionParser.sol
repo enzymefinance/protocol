@@ -7,7 +7,7 @@
     file that was distributed with this source code.
 */
 
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {TheGraphDelegationPositionDataDecoder} from "./TheGraphDelegationPositionDataDecoder.sol";
 import {ITheGraphDelegationPosition} from "./ITheGraphDelegationPosition.sol";
 

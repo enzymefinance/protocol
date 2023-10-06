@@ -27,5 +27,5 @@ interface IExternalPositionManager {
         ReactivateExternalPosition
     }
 
-    function getExternalPositionLibForType(uint256) external view returns (address);
+    function getExternalPositionLibForType(uint256 _typeId) external view returns (address lib_);
 }

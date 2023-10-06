@@ -13,7 +13,7 @@ import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IAaveAToken} from "../../../../../external-interfaces/IAaveAToken.sol";
 import {AddOnlyAddressListOwnerConsumerMixin} from
     "../../../../../persistent/address-list-registry/address-list-owners/utils/0.8.19/AddOnlyAddressListOwnerConsumerMixin.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {AaveV3DebtPositionDataDecoder} from "./AaveV3DebtPositionDataDecoder.sol";
 import {IAaveV3DebtPosition} from "./IAaveV3DebtPosition.sol";
 

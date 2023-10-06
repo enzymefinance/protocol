@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {IExternalPosition} from "../../../../../persistent/external-positions/IExternalPosition.sol";
+import {IExternalPosition} from "../../../external-position-manager/IExternalPosition.sol";
 import {IPolicyManager} from "../../IPolicyManager.sol";
 import {DustEvaluatorMixin} from "../utils/0.6.12/DustEvaluatorMixin.sol";
 import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";

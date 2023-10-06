@@ -12,7 +12,7 @@ import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPoo
 import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import {ISolvV2InitialConvertibleOfferingMarket} from
     "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {ISolvV2BondBuyerPosition} from "./ISolvV2BondBuyerPosition.sol";
 import {SolvV2BondBuyerPositionDataDecoder} from "./SolvV2BondBuyerPositionDataDecoder.sol";
 

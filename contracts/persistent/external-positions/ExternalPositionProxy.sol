@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 
 import "../vault/interfaces/IExternalPositionVault.sol";
-import "./IExternalPosition.sol";
+import "./IExternalPositionLibCore.sol";
 import "./IExternalPositionProxy.sol";
 
 /// @title ExternalPositionProxy Contract
@@ -49,12 +49,13 @@ contract ExternalPositionProxy is IExternalPositionProxy {
 
     /// @notice Delegates call to IExternalPosition.receiveCallFromVault
     /// @param _data The bytes data variable to be decoded at the External Position
-    function receiveCallFromVault(bytes calldata _data) external {
+    function receiveCallFromVault(bytes calldata _data) external override {
         require(msg.sender == getVaultProxy(), "receiveCallFromVault: Only the vault can make this call");
         address contractLogic =
             IExternalPositionVault(getVaultProxy()).getExternalPositionLibForType(getExternalPositionType());
-        (bool success, bytes memory returnData) =
-            contractLogic.delegatecall(abi.encodeWithSelector(IExternalPosition.receiveCallFromVault.selector, _data));
+        (bool success, bytes memory returnData) = contractLogic.delegatecall(
+            abi.encodeWithSelector(IExternalPositionLibCore.receiveCallFromVault.selector, _data)
+        );
 
         require(success, string(returnData));
     }

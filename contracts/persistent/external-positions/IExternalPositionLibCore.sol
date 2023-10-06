@@ -7,19 +7,11 @@
     file that was distributed with this source code.
 */
 
-import {IExternalPosition} from "../../IExternalPosition.sol";
-
 pragma solidity >=0.6.0 <0.9.0;
 
-/// @title ILiquityDebtPosition Interface
+/// @title IExternalPositionLibCore interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface ILiquityDebtPosition is IExternalPosition {
-    enum Actions {
-        OpenTrove,
-        AddCollateral,
-        RemoveCollateral,
-        Borrow,
-        RepayBorrow,
-        CloseTrove
-    }
+/// @notice An interface for core required functions of an IExternalPositionLib instance
+interface IExternalPositionLibCore {
+    function receiveCallFromVault(bytes memory _data) external;
 }

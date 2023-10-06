@@ -17,11 +17,10 @@ import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPoo
 import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import {ISolvV2InitialConvertibleOfferingMarket} from
     "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
-import {SolvV2BondIssuerPositionLibBase1} from
-    "../../../../../persistent/external-positions/solv-v2-bond-issuer/SolvV2BondIssuerPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
 import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
+import {SolvV2BondIssuerPositionLibBase1} from "./bases/SolvV2BondIssuerPositionLibBase1.sol";
 import {ISolvV2BondIssuerPosition} from "./ISolvV2BondIssuerPosition.sol";
 import {SolvV2BondIssuerPositionDataDecoder} from "./SolvV2BondIssuerPositionDataDecoder.sol";
 

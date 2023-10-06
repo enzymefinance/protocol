@@ -13,7 +13,9 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An interface for publicly accessible functions on the ExternalPositionProxy
 interface IExternalPositionProxy {
-    function getExternalPositionType() external view returns (uint256);
+    function getExternalPositionType() external view returns (uint256 typeId_);
 
-    function getVaultProxy() external view returns (address);
+    function getVaultProxy() external view returns (address vaultProxy_);
+
+    function receiveCallFromVault(bytes memory _data) external;
 }

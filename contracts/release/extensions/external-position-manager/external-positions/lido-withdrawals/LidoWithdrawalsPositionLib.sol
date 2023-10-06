@@ -11,8 +11,7 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {ILidoWithdrawalQueue} from "../../../../../external-interfaces/ILidoWithdrawalQueue.sol";
-import {LidoWithdrawalsPositionLibBase1} from
-    "../../../../../persistent/external-positions/lido-withdrawals/LidoWithdrawalsPositionLibBase1.sol";
+import {LidoWithdrawalsPositionLibBase1} from "./bases/LidoWithdrawalsPositionLibBase1.sol";
 import {ILidoWithdrawalsPosition} from "./ILidoWithdrawalsPosition.sol";
 import {LidoWithdrawalsPositionDataDecoder} from "./LidoWithdrawalsPositionDataDecoder.sol";
 

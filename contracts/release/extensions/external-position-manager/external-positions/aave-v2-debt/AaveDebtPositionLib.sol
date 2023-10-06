@@ -16,10 +16,9 @@ import {IAaveV2LendingPool} from "../../../../../external-interfaces/IAaveV2Lend
 import {IAaveV2LendingPoolAddressProvider} from
     "../../../../../external-interfaces/IAaveV2LendingPoolAddressProvider.sol";
 import {IAaveV2ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV2ProtocolDataProvider.sol";
-import {AaveDebtPositionLibBase1} from
-    "../../../../../persistent/external-positions/aave-v2-debt/AaveDebtPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {AaveDebtPositionLibBase1} from "./bases/AaveDebtPositionLibBase1.sol";
 import {AaveDebtPositionDataDecoder} from "./AaveDebtPositionDataDecoder.sol";
 import {IAaveDebtPosition} from "./IAaveDebtPosition.sol";
 

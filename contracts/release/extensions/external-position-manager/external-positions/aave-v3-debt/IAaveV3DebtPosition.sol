@@ -7,7 +7,7 @@
     file that was distributed with this source code.
 */
 
-import {IExternalPosition} from "../../../../../persistent/external-positions/IExternalPosition.sol";
+import {IExternalPosition} from "../../IExternalPosition.sol";
 
 pragma solidity 0.8.19;
 

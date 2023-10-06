@@ -13,9 +13,8 @@ import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {ITheGraphStaking} from "../../../../../external-interfaces/ITheGraphStaking.sol";
-import {TheGraphDelegationPositionLibBase1} from
-    "../../../../../persistent/external-positions/the-graph-delegation/TheGraphDelegationPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {TheGraphDelegationPositionLibBase1} from "./bases/TheGraphDelegationPositionLibBase1.sol";
 import {ITheGraphDelegationPosition} from "./ITheGraphDelegationPosition.sol";
 import {TheGraphDelegationPositionDataDecoder} from "./TheGraphDelegationPositionDataDecoder.sol";
 

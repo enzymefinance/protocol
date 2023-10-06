@@ -11,7 +11,7 @@
 
 import {ERC721} from "openzeppelin-solc-0.7/token/ERC721/ERC721.sol";
 import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {IUniswapV3LiquidityPosition} from "./IUniswapV3LiquidityPosition.sol";
 import {UniswapV3LiquidityPositionDataDecoder} from "./UniswapV3LiquidityPositionDataDecoder.sol";
 

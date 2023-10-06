@@ -15,12 +15,12 @@ import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {IAddressListRegistry} from "../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
-import {IExternalPosition} from "../../../../persistent/external-positions/IExternalPosition.sol";
 import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../utils/0.6.12/AssetHelpers.sol";
 import {MathHelpers} from "../../../../utils/0.6.12/MathHelpers.sol";
 import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../../core/fund/vault/IVault.sol";
+import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 
 /// @title ArbitraryTokenPhasedSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

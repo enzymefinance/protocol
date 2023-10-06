@@ -12,10 +12,9 @@ pragma solidity 0.8.19;
 import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
-import {KilnStakingPositionLibBase2} from
-    "../../../../../persistent/external-positions/kiln-staking/KilnStakingPositionLibBase2.sol";
 import {IKilnStakingContract} from "../../../../../external-interfaces/IKilnStakingContract.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {KilnStakingPositionLibBase2} from "./bases/KilnStakingPositionLibBase2.sol";
 import {IKilnStakingPosition} from "./IKilnStakingPosition.sol";
 import {KilnStakingPositionDataDecoder} from "./KilnStakingPositionDataDecoder.sol";
 

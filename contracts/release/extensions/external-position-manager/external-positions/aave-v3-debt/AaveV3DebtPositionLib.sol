@@ -15,10 +15,9 @@ import {IAaveAToken} from "../../../../../external-interfaces/IAaveAToken.sol";
 import {IAaveV3Pool} from "../../../../../external-interfaces/IAaveV3Pool.sol";
 import {IAaveV3PoolAddressProvider} from "../../../../../external-interfaces/IAaveV3PoolAddressProvider.sol";
 import {IAaveV3ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV3ProtocolDataProvider.sol";
-import {AaveV3DebtPositionLibBase1} from
-    "../../../../../persistent/external-positions/aave-v3-debt/AaveV3DebtPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.8.19/AssetHelpers.sol";
+import {AaveV3DebtPositionLibBase1} from "./bases/AaveV3DebtPositionLibBase1.sol";
 import {AaveV3DebtPositionDataDecoder} from "./AaveV3DebtPositionDataDecoder.sol";
 import {IAaveV3DebtPosition} from "./IAaveV3DebtPosition.sol";
 

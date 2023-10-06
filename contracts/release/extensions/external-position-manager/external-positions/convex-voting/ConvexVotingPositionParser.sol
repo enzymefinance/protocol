@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {ConvexVotingPositionDataDecoder} from "./ConvexVotingPositionDataDecoder.sol";
 import {IConvexVotingPosition} from "./IConvexVotingPosition.sol";
 

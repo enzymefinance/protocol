@@ -14,8 +14,8 @@ pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {SignedSafeMath} from "openzeppelin-solc-0.6/math/SignedSafeMath.sol";
-import {IArbitraryLoanAccountingModule} from "./IArbitraryLoanAccountingModule.sol";
 import {IArbitraryValueOracle} from "../../../../../../persistent/arbitrary-value-oracles/IArbitraryValueOracle.sol";
+import {IArbitraryLoanAccountingModule} from "./IArbitraryLoanAccountingModule.sol";
 
 /// @title ArbitraryLoanTotalNominalDeltaOracleModule Contract
 /// @author Enzyme Council <security@enzyme.finance>

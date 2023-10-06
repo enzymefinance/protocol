@@ -14,7 +14,7 @@ import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2Bond
 import {ISolvV2InitialConvertibleOfferingMarket} from
     "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {ISolvV2BondIssuerPosition} from "./ISolvV2BondIssuerPosition.sol";
 import {SolvV2BondIssuerPositionDataDecoder} from "./SolvV2BondIssuerPositionDataDecoder.sol";
 import {SolvV2BondIssuerPositionLib} from "./SolvV2BondIssuerPositionLib.sol";

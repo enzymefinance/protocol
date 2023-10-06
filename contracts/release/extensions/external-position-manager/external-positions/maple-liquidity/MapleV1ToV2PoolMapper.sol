@@ -11,9 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import
-    "../../../release/extensions/external-position-manager/external-positions/maple-liquidity/MapleLiquidityPositionLib.sol";
-import "../../dispatcher/IDispatcher.sol";
+import {IDispatcher} from "../../../../../persistent/dispatcher/IDispatcher.sol";
+import {MapleLiquidityPositionLib} from "./MapleLiquidityPositionLib.sol";
 
 /// @title MapleV1ToV2PoolMapper Contract
 /// @author Enzyme Council <security@enzyme.finance>

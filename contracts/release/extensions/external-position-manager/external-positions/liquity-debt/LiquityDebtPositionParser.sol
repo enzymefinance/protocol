@@ -10,7 +10,7 @@
 */
 
 import {ILiquityTroveManager} from "../../../../../external-interfaces/ILiquityTroveManager.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {ILiquityDebtPosition} from "./ILiquityDebtPosition.sol";
 import {LiquityDebtPositionDataDecoder} from "./LiquityDebtPositionDataDecoder.sol";
 

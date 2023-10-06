@@ -17,15 +17,13 @@ import {IMapleV1Pool} from "../../../../../external-interfaces/IMapleV1Pool.sol"
 import {IMapleV2Pool} from "../../../../../external-interfaces/IMapleV2Pool.sol";
 import {IMapleV2PoolManager} from "../../../../../external-interfaces/IMapleV2PoolManager.sol";
 import {IMapleV2WithdrawalManager} from "../../../../../external-interfaces/IMapleV2WithdrawalManager.sol";
-import {MapleLiquidityPositionLibBase2} from
-    "../../../../../persistent/external-positions/maple-liquidity/MapleLiquidityPositionLibBase2.sol";
-import {MapleV1ToV2PoolMapper} from
-    "../../../../../persistent/external-positions/maple-liquidity/MapleV1ToV2PoolMapper.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
 import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
+import {MapleLiquidityPositionLibBase2} from "./bases/MapleLiquidityPositionLibBase2.sol";
 import {IMapleLiquidityPosition} from "./IMapleLiquidityPosition.sol";
 import {MapleLiquidityPositionDataDecoder} from "./MapleLiquidityPositionDataDecoder.sol";
+import {MapleV1ToV2PoolMapper} from "./MapleV1ToV2PoolMapper.sol";
 
 /// @title MapleLiquidityPositionLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

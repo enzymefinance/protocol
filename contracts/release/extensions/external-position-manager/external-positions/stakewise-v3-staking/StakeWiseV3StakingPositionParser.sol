@@ -11,7 +11,7 @@
 
 import {IStakeWiseV3EthVault} from "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3VaultsRegistry} from "../../../../../external-interfaces/IStakeWiseV3VaultsRegistry.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {IStakeWiseV3StakingPosition} from "./IStakeWiseV3StakingPosition.sol";
 import {StakeWiseV3StakingPositionDataDecoder} from "./StakeWiseV3StakingPositionDataDecoder.sol";
 

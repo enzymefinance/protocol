@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./MapleLiquidityPositionLibBase1.sol";
+import {MapleLiquidityPositionLibBase1} from "./MapleLiquidityPositionLibBase1.sol";
 
 /// @title MapleLiquidityPositionLibBase2 Contract
 /// @author Enzyme Council <security@enzyme.finance>

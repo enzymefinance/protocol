@@ -16,9 +16,8 @@ import {ICERC20} from "../../../../../external-interfaces/ICERC20.sol";
 import {ICEther} from "../../../../../external-interfaces/ICEther.sol";
 import {ICompoundComptroller} from "../../../../../external-interfaces/ICompoundComptroller.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
-import {CompoundDebtPositionLibBase1} from
-    "../../../../../persistent/external-positions/compound-debt/CompoundDebtPositionLibBase1.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {CompoundDebtPositionLibBase1} from "./bases/CompoundDebtPositionLibBase1.sol";
 import {ICompoundDebtPosition} from "./ICompoundDebtPosition.sol";
 
 /// @title CompoundDebtPositionLib Contract

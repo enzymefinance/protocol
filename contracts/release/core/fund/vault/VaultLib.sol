@@ -16,10 +16,10 @@ import {ERC20Burnable} from "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol
 import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {IWETH} from "../../../../external-interfaces/IWETH.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
-import {IExternalPosition} from "../../../../persistent/external-positions/IExternalPosition.sol";
 import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
 import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {IExternalPositionManager} from "../../../extensions/external-position-manager/IExternalPositionManager.sol";

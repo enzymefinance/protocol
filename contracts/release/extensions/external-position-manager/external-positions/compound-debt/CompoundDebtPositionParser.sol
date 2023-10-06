@@ -12,7 +12,7 @@
 import {ICERC20} from "../../../../../external-interfaces/ICERC20.sol";
 import {CompoundPriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
-import {IExternalPositionParser} from "../IExternalPositionParser.sol";
+import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {ICompoundDebtPosition} from "./ICompoundDebtPosition.sol";
 
 pragma solidity 0.6.12;

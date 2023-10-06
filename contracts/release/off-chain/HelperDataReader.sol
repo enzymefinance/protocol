@@ -11,13 +11,13 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IExternalPositionFactory} from "../../persistent/external-positions/IExternalPositionFactory.sol";
-import {IExternalPosition} from "../../persistent/external-positions/IExternalPosition.sol";
 import {IExternalPositionProxy} from "../../persistent/external-positions/IExternalPositionProxy.sol";
 import {IHelperDataReader} from "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
 import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
 
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";
+import {IExternalPosition} from "../extensions/external-position-manager/IExternalPosition.sol";
 import {IPolicyManager} from "../extensions/policy-manager/IPolicyManager.sol";
 import {IPolicy} from "../extensions/policy-manager/IPolicy.sol";
 import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";
