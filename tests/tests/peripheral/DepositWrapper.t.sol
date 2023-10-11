@@ -5,6 +5,7 @@ import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
+import {UpdateType as AddressListUpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 import {
     ETHEREUM_SWAP_ROUTER as ETHEREUM_UNISWAP_ROUTER,
     POLYGON_SWAP_ROUTER as POLYGON_UNISWAP_ROUTER,
@@ -13,23 +14,33 @@ import {
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
+import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IDepositWrapper} from "tests/interfaces/internal/IDepositWrapper.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract TestBase is IntegrationTest, UniswapV3Utils {
+    uint256 internal allowedExchangesListId;
+    IDepositWrapper internal depositWrapper;
+
     address internal sharesBuyer = makeAddr("SharesBuyer");
     address internal vaultOwner = makeAddr("VaultOwner");
     IComptrollerLib internal comptrollerProxy;
     IVaultLib internal vaultProxy;
 
     // Defined by parent contract
-    IDepositWrapper internal depositWrapper;
     IERC20 internal denominationAsset;
     address internal exchangeAddress;
     address internal exchangeApprovalTargetAddress;
 
     function setUp() public virtual override {
+        // Create an allowedExchanges list, with Uniswap router as the only allowed exchange
+        allowedExchangesListId = core.persistent.addressListRegistry.createList({
+            _owner: address(this),
+            _updateType: uint8(AddressListUpdateType.AddAndRemove),
+            _initialItems: toArray(exchangeAddress)
+        });
+
         // Deploy deposit wrapper
         depositWrapper = __deployDepositWrapper();
 
@@ -49,7 +60,9 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
     // DEPLOYMENT HELPERS
 
     function __deployDepositWrapper() internal returns (IDepositWrapper) {
-        bytes memory args = abi.encode(wrappedNativeToken);
+        require(allowedExchangesListId != 0, "__deployDepositWrapper: Unset listId");
+
+        bytes memory args = abi.encode(core.persistent.addressListRegistry, allowedExchangesListId, wrappedNativeToken);
 
         return IDepositWrapper(deployCode("DepositWrapper.sol", args));
     }
@@ -116,25 +129,6 @@ abstract contract ExchangeErc20AndBuySharesTest is TestBase {
         vm.stopPrank();
     }
 
-    function test_failWithDisallowedSelector() public {
-        bytes memory badExchangeData =
-            abi.encodeWithSelector(IComptrollerLib.buySharesOnBehalf.selector, sharesBuyer, inputAssetAmount, 1);
-
-        // Should fail with a disallowed selector
-        vm.expectRevert("__exchangeAndBuyShares: Disallowed selector");
-        vm.prank(sharesBuyer);
-        depositWrapper.exchangeErc20AndBuyShares({
-            _comptrollerProxy: address(comptrollerProxy),
-            _minSharesQuantity: minExpectedShares,
-            _inputAsset: address(inputAsset),
-            _maxInputAssetAmount: inputAssetAmount,
-            _exchange: exchangeAddress,
-            _exchangeApproveTarget: exchangeApprovalTargetAddress,
-            _exchangeData: badExchangeData,
-            _exchangeMinReceived: 0
-        });
-    }
-
     function test_failWithExchangeMinNotReceived() public {
         uint256 denominationAssetValue = core.release.valueInterpreter.calcCanonicalAssetValue({
             _baseAsset: address(inputAsset),
@@ -169,6 +163,24 @@ abstract contract ExchangeErc20AndBuySharesTest is TestBase {
             _exchangeApproveTarget: exchangeApprovalTargetAddress,
             _exchangeData: exchangeData,
             _exchangeMinReceived: reasonableMin // reasonable
+        });
+    }
+
+    function test_failWithUnallowedExchange() public {
+        address badExchange = makeAddr("BadExchange");
+
+        // Should fail with a disallowed selector
+        vm.expectRevert("__exchangeAndBuyShares: Unallowed _exchange");
+        vm.prank(sharesBuyer);
+        depositWrapper.exchangeErc20AndBuyShares({
+            _comptrollerProxy: address(comptrollerProxy),
+            _minSharesQuantity: minExpectedShares,
+            _inputAsset: address(inputAsset),
+            _maxInputAssetAmount: inputAssetAmount,
+            _exchange: badExchange,
+            _exchangeApproveTarget: exchangeApprovalTargetAddress,
+            _exchangeData: exchangeData,
+            _exchangeMinReceived: 0
         });
     }
 

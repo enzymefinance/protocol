@@ -14,9 +14,10 @@ pragma solidity 0.8.19;
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
-import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IWETH} from "../../external-interfaces/IWETH.sol";
+import {IAddressListRegistry} from "../../persistent/address-list-registry/IAddressListRegistry.sol";
 import {AssetHelpers} from "../../utils/0.8.19/AssetHelpers.sol";
+import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 
 /// @title DepositWrapper Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -24,10 +25,13 @@ import {AssetHelpers} from "../../utils/0.8.19/AssetHelpers.sol";
 contract DepositWrapper is AssetHelpers {
     using SafeERC20 for ERC20;
 
-    bytes4 private constant BUY_SHARES_ON_BEHALF_SELECTOR = 0x877fd894;
+    IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY;
+    uint256 private immutable ALLOWED_EXCHANGES_LIST_ID;
     IWETH private immutable WRAPPED_NATIVE_ASSET;
 
-    constructor(IWETH _wrappedNativeAsset) {
+    constructor(address _addressListRegistryAddress, uint256 _allowedExchangesListId, IWETH _wrappedNativeAsset) {
+        ADDRESS_LIST_REGISTRY = IAddressListRegistry(_addressListRegistryAddress);
+        ALLOWED_EXCHANGES_LIST_ID = _allowedExchangesListId;
         WRAPPED_NATIVE_ASSET = _wrappedNativeAsset;
     }
 
@@ -180,11 +184,10 @@ contract DepositWrapper is AssetHelpers {
         ERC20 _inputAsset,
         uint256 _maxInputAssetAmount
     ) private returns (uint256 sharesReceived_) {
-        // Deny access to privileged core calls originating from this contract
-        {
-            bytes4 exchangeSelector = bytes4(_exchangeData[:4]);
-            require(exchangeSelector != BUY_SHARES_ON_BEHALF_SELECTOR, "__exchangeAndBuyShares: Disallowed selector");
-        }
+        require(
+            ADDRESS_LIST_REGISTRY.isInList({_id: ALLOWED_EXCHANGES_LIST_ID, _item: _exchange}),
+            "__exchangeAndBuyShares: Unallowed _exchange"
+        );
 
         // Exchange the _inputAsset to the fund's denomination asset
         __approveAssetMaxAsNeeded({
