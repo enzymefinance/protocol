@@ -35,7 +35,7 @@ help: ## Describe useful make targets
 > grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "%-30s %s\n", $$1, $$2}'
 
 .PHONY: all
-all: install format build ## Run install, format & build (default)
+all: install build ## Run install & build (default)
 
 .PHONY: install
 install: ## Install all dependencies
@@ -45,10 +45,10 @@ install: ## Install all dependencies
 build: artifacts interfaces ## Build all contract artifacts & interfaces
 
 .PHONY: artifacts
-artifacts: $(ARTIFACTS_DIR)/ ## Build all contract artifacts
+artifacts: $(ARTIFACTS_DIR)/.sentinel ## Build all contract artifacts
 
 .PHONY: interfaces
-interfaces: $(INTERFACES_DIR)/ ## Generate interfaces for all contracts listed in interfaces.txt
+interfaces: $(INTERFACES_DIR)/.sentinel ## Generate interfaces for all contracts listed in interfaces.txt
 
 .PHONY: test
 test: ## Run the entire test suite
@@ -68,14 +68,14 @@ clean: ## Remove all untracked files and directories and bust any caches
 > $(GIT) clean -dfX --exclude !**/.env* --exclude !**/deployments --exclude !**/cache
 > $(FORGE) clean
 
-$(ARTIFACTS_DIR)/: Makefile $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
+$(ARTIFACTS_DIR)/.sentinel: $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 > mkdir -p $(@D)
 > # Remove this once the `forge build` command supports a more capable version of the `--skip` option.
 > export FOUNDRY_TEST=this-directory-does-not-exist
 > $(FORGE) build --sizes --extra-output-files abi
 > touch $@
 
-$(INTERFACES_DIR)/: Makefile $(INTERFACES_FILE) $(ARTIFACTS_DIR)/
+$(INTERFACES_DIR)/.sentinel: $(INTERFACES_FILE) $(ARTIFACTS_DIR)/.sentinel
 > mkdir -p $(@D)
 >
 > # Remove all existing interfaces and abis.
