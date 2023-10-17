@@ -14,11 +14,12 @@ pragma solidity 0.6.12;
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {IChainlinkAggregator} from "../../../../external-interfaces/IChainlinkAggregator.sol";
+import {IChainlinkPriceFeedMixin} from "./IChainlinkPriceFeedMixin.sol";
 
 /// @title ChainlinkPriceFeedMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A price feed that uses Chainlink oracles as price sources
-abstract contract ChainlinkPriceFeedMixin {
+abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
     using SafeMath for uint256;
 
     event EthUsdAggregatorSet(address prevEthUsdAggregator, address nextEthUsdAggregator);
@@ -26,16 +27,6 @@ abstract contract ChainlinkPriceFeedMixin {
     event PrimitiveAdded(address indexed primitive, address aggregator, RateAsset rateAsset, uint256 unit);
 
     event PrimitiveRemoved(address indexed primitive);
-
-    enum RateAsset {
-        ETH,
-        USD
-    }
-
-    struct AggregatorInfo {
-        address aggregator;
-        RateAsset rateAsset;
-    }
 
     uint256 private constant ETH_UNIT = 10 ** 18;
 
@@ -265,13 +256,13 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @notice Gets the aggregator for a primitive
     /// @param _primitive The primitive asset for which to get the aggregator value
     /// @return aggregator_ The aggregator address
-    function getAggregatorForPrimitive(address _primitive) public view returns (address aggregator_) {
+    function getAggregatorForPrimitive(address _primitive) public view override returns (address aggregator_) {
         return primitiveToAggregatorInfo[_primitive].aggregator;
     }
 
     /// @notice Gets the `ethUsdAggregator` variable value
     /// @return ethUsdAggregator_ The `ethUsdAggregator` variable value
-    function getEthUsdAggregator() public view returns (address ethUsdAggregator_) {
+    function getEthUsdAggregator() public view override returns (address ethUsdAggregator_) {
         return ethUsdAggregator;
     }
 
@@ -280,7 +271,7 @@ abstract contract ChainlinkPriceFeedMixin {
     /// @dev This isn't strictly necessary as WETH_TOKEN will be undefined and thus
     /// the RateAsset will be the 0-position of the enum (i.e. ETH), but it makes the
     /// behavior more explicit
-    function getRateAssetForPrimitive(address _primitive) public view returns (RateAsset rateAsset_) {
+    function getRateAssetForPrimitive(address _primitive) public view override returns (RateAsset rateAsset_) {
         if (_primitive == getWethToken()) {
             return RateAsset.ETH;
         }
@@ -290,13 +281,13 @@ abstract contract ChainlinkPriceFeedMixin {
 
     /// @notice Gets the `STALE_RATE_THRESHOLD` variable value
     /// @return staleRateThreshold_ The `STALE_RATE_THRESHOLD` value
-    function getStaleRateThreshold() public view returns (uint256 staleRateThreshold_) {
+    function getStaleRateThreshold() public view override returns (uint256 staleRateThreshold_) {
         return STALE_RATE_THRESHOLD;
     }
 
     /// @notice Gets the unit variable value for a primitive
     /// @return unit_ The unit variable value
-    function getUnitForPrimitive(address _primitive) public view returns (uint256 unit_) {
+    function getUnitForPrimitive(address _primitive) public view override returns (uint256 unit_) {
         if (_primitive == getWethToken()) {
             return ETH_UNIT;
         }
@@ -306,7 +297,7 @@ abstract contract ChainlinkPriceFeedMixin {
 
     /// @notice Gets the `WETH_TOKEN` variable value
     /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() public view returns (address wethToken_) {
+    function getWethToken() public view override returns (address wethToken_) {
         return WETH_TOKEN;
     }
 }

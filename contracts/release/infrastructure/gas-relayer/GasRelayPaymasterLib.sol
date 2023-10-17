@@ -83,7 +83,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// @notice Initializes a paymaster proxy
     /// @param _vault The VaultProxy associated with the paymaster proxy
     /// @dev Used to set the owning vault
-    function init(address _vault) external {
+    function init(address _vault) external override {
         require(getParentVault() == address(0), "init: Paymaster already initialized");
 
         parentVault = _vault;
@@ -161,7 +161,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets the current ComptrollerProxy of the VaultProxy associated with this contract
     /// @return parentComptroller_ The ComptrollerProxy
-    function getParentComptroller() public view returns (address parentComptroller_) {
+    function getParentComptroller() public view override returns (address parentComptroller_) {
         return __getComptrollerForVault(parentVault);
     }
 
@@ -291,13 +291,13 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets the timestamp at last deposit into the relayer
     /// @return lastDepositTimestamp_ The timestamp
-    function getLastDepositTimestamp() public view returns (uint256 lastDepositTimestamp_) {
+    function getLastDepositTimestamp() public view override returns (uint256 lastDepositTimestamp_) {
         return lastDepositTimestamp;
     }
 
     /// @notice Gets the `parentVault` variable value
     /// @return parentVault_ The `parentVault` value
-    function getParentVault() public view returns (address parentVault_) {
+    function getParentVault() public view override returns (address parentVault_) {
         return parentVault;
     }
 
@@ -309,7 +309,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets the `WETH_TOKEN` variable value
     /// @return wethToken_ The `WETH_TOKEN` value
-    function getWethToken() public view returns (address wethToken_) {
+    function getWethToken() public view override returns (address wethToken_) {
         return WETH_TOKEN;
     }
 

@@ -70,11 +70,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     event VaultLibSet(address vaultLib);
 
-    struct ReconfigurationRequest {
-        address nextComptrollerProxy;
-        uint256 executableTimestamp;
-    }
-
     // Constants
     // keccak256(abi.encodePacked("mln.vaultCall.any")
     bytes32 private constant ANY_VAULT_CALL = 0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
@@ -159,7 +154,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Sets the ComptrollerLib
     /// @param _comptrollerLib The ComptrollerLib contract address
-    function setComptrollerLib(address _comptrollerLib) external onlyOwner pseudoConstant(getComptrollerLib()) {
+    function setComptrollerLib(address _comptrollerLib)
+        external
+        override
+        onlyOwner
+        pseudoConstant(getComptrollerLib())
+    {
         comptrollerLib = _comptrollerLib;
 
         emit ComptrollerLibSet(_comptrollerLib);
@@ -169,6 +169,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _protocolFeeTracker The ProtocolFeeTracker contract address
     function setProtocolFeeTracker(address _protocolFeeTracker)
         external
+        override
         onlyOwner
         pseudoConstant(getProtocolFeeTracker())
     {
@@ -179,7 +180,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Sets the VaultLib
     /// @param _vaultLib The VaultLib contract address
-    function setVaultLib(address _vaultLib) external onlyOwner pseudoConstant(getVaultLib()) {
+    function setVaultLib(address _vaultLib) external override onlyOwner pseudoConstant(getVaultLib()) {
         vaultLib = _vaultLib;
 
         emit VaultLibSet(_vaultLib);
@@ -206,6 +207,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _nextPayProtocolFeeGasLimit The amount of gas to forward to pay the protocol fee
     function setGasLimitsForDestructCall(uint32 _nextDeactivateFeeManagerGasLimit, uint32 _nextPayProtocolFeeGasLimit)
         external
+        override
         onlyOwner
     {
         require(
@@ -222,7 +224,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @notice Sets the release as live
     /// @dev A live release allows funds to be created and migrated once this contract
     /// is set as the Dispatcher.currentFundDeployer
-    function setReleaseLive() external {
+    function setReleaseLive() external override {
         require(msg.sender == getCreator(), "setReleaseLive: Only the creator can call this function");
         require(!releaseIsLive(), "setReleaseLive: Already live");
 
@@ -262,7 +264,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData,
         bool _bypassPrevReleaseFailure
-    ) external onlyLiveRelease onlyMigratorNotRelayable(_vaultProxy) returns (address comptrollerProxy_) {
+    ) external override onlyLiveRelease onlyMigratorNotRelayable(_vaultProxy) returns (address comptrollerProxy_) {
         // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
 
         require(
@@ -303,7 +305,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         uint256 _sharesActionTimelock,
         bytes calldata _feeManagerConfigData,
         bytes calldata _policyManagerConfigData
-    ) external onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
+    ) external override onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
         // _fundOwner is validated by VaultLib.__setOwner()
         address canonicalSender = __msgSender();
 
@@ -491,7 +493,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Sets a new reconfiguration timelock
     /// @param _nextTimelock The number of seconds for the new timelock
-    function setReconfigurationTimelock(uint256 _nextTimelock) external onlyOwner {
+    function setReconfigurationTimelock(uint256 _nextTimelock) external override onlyOwner {
         reconfigurationTimelock = _nextTimelock;
 
         emit ReconfigurationTimelockSet(_nextTimelock);
@@ -506,6 +508,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while canceling migration
     function cancelMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
+        override
         onlyMigratorNotRelayable(_vaultProxy)
     {
         IDispatcher(getDispatcher()).cancelMigration(_vaultProxy, _bypassPrevReleaseFailure);
@@ -516,6 +519,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while executing migration
     function executeMigration(address _vaultProxy, bool _bypassPrevReleaseFailure)
         external
+        override
         onlyMigratorNotRelayable(_vaultProxy)
     {
         IDispatcher dispatcherContract = IDispatcher(getDispatcher());
@@ -570,7 +574,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Deregisters allowed callers of ComptrollerProxy.buySharesOnBehalf()
     /// @param _callers The callers to deregister
-    function deregisterBuySharesOnBehalfCallers(address[] calldata _callers) external onlyOwner {
+    function deregisterBuySharesOnBehalfCallers(address[] calldata _callers) external override onlyOwner {
         for (uint256 i; i < _callers.length; i++) {
             require(
                 isAllowedBuySharesOnBehalfCaller(_callers[i]),
@@ -588,7 +592,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @dev Validate that each registered caller only forwards requests to buy shares that
     /// originate from the same _buyer passed into buySharesOnBehalf(). This is critical
     /// to the integrity of VaultProxy.freelyTransferableShares.
-    function registerBuySharesOnBehalfCallers(address[] calldata _callers) external onlyOwner {
+    function registerBuySharesOnBehalfCallers(address[] calldata _callers) external override onlyOwner {
         for (uint256 i; i < _callers.length; i++) {
             require(
                 !isAllowedBuySharesOnBehalfCaller(_callers[i]),
@@ -612,7 +616,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address[] calldata _contracts,
         bytes4[] calldata _selectors,
         bytes32[] memory _dataHashes
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(_contracts.length > 0, "deregisterVaultCalls: Empty _contracts");
         require(
             _contracts.length == _selectors.length && _contracts.length == _dataHashes.length,
@@ -641,7 +645,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address[] calldata _contracts,
         bytes4[] calldata _selectors,
         bytes32[] memory _dataHashes
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(_contracts.length > 0, "registerVaultCalls: Empty _contracts");
         require(
             _contracts.length == _selectors.length && _contracts.length == _dataHashes.length,
@@ -690,19 +694,19 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Gets the `comptrollerLib` variable value
     /// @return comptrollerLib_ The `comptrollerLib` variable value
-    function getComptrollerLib() public view returns (address comptrollerLib_) {
+    function getComptrollerLib() public view override returns (address comptrollerLib_) {
         return comptrollerLib;
     }
 
     /// @notice Gets the `CREATOR` variable value
     /// @return creator_ The `CREATOR` variable value
-    function getCreator() public view returns (address creator_) {
+    function getCreator() public view override returns (address creator_) {
         return CREATOR;
     }
 
     /// @notice Gets the `DISPATCHER` variable value
     /// @return dispatcher_ The `DISPATCHER` variable value
-    function getDispatcher() public view returns (address dispatcher_) {
+    function getDispatcher() public view override returns (address dispatcher_) {
         return DISPATCHER;
     }
 
@@ -712,6 +716,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     function getGasLimitsForDestructCall()
         public
         view
+        override
         returns (uint256 deactivateFeeManagerGasLimit_, uint256 payProtocolFeeGasLimit_)
     {
         return (gasLimitForDestructCallToDeactivateFeeManager, gasLimitForDestructCallToPayProtocolFee);
@@ -719,7 +724,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Gets the `protocolFeeTracker` variable value
     /// @return protocolFeeTracker_ The `protocolFeeTracker` variable value
-    function getProtocolFeeTracker() public view returns (address protocolFeeTracker_) {
+    function getProtocolFeeTracker() public view override returns (address protocolFeeTracker_) {
         return protocolFeeTracker;
     }
 
@@ -729,6 +734,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     function getReconfigurationRequestForVaultProxy(address _vaultProxy)
         public
         view
+        override
         returns (ReconfigurationRequest memory reconfigurationRequest_)
     {
         return vaultProxyToReconfigurationRequest[_vaultProxy];
@@ -736,13 +742,13 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Gets the amount of time that must pass before executing a ReconfigurationRequest
     /// @return reconfigurationTimelock_ The timelock value (in seconds)
-    function getReconfigurationTimelock() public view returns (uint256 reconfigurationTimelock_) {
+    function getReconfigurationTimelock() public view override returns (uint256 reconfigurationTimelock_) {
         return reconfigurationTimelock;
     }
 
     /// @notice Gets the `vaultLib` variable value
     /// @return vaultLib_ The `vaultLib` variable value
-    function getVaultLib() public view returns (address vaultLib_) {
+    function getVaultLib() public view override returns (address vaultLib_) {
         return vaultLib;
     }
 
@@ -773,6 +779,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     function isRegisteredVaultCall(address _contract, bytes4 _selector, bytes32 _dataHash)
         public
         view
+        override
         returns (bool isRegistered_)
     {
         return vaultCallToPayloadToIsAllowed[keccak256(abi.encodePacked(_contract, _selector))][_dataHash];
@@ -780,7 +787,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Gets the `isLive` variable value
     /// @return isLive_ The `isLive` variable value
-    function releaseIsLive() public view returns (bool isLive_) {
+    function releaseIsLive() public view override returns (bool isLive_) {
         return isLive;
     }
 }

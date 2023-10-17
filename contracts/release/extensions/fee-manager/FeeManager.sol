@@ -344,6 +344,7 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
     function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
         public
         view
+        override
         returns (uint256 sharesOutstanding_)
     {
         return comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];

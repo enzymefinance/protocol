@@ -195,19 +195,19 @@ contract ValueInterpreter is
         address[] calldata _primitives,
         address[] calldata _aggregators,
         RateAsset[] calldata _rateAssets
-    ) external onlyFundDeployerOwner {
+    ) external override onlyFundDeployerOwner {
         __addPrimitives(_primitives, _aggregators, _rateAssets);
     }
 
     /// @notice Removes a list of primitives from the feed
     /// @param _primitives The primitives to remove
-    function removePrimitives(address[] calldata _primitives) external onlyFundDeployerOwner {
+    function removePrimitives(address[] calldata _primitives) external override onlyFundDeployerOwner {
         __removePrimitives(_primitives);
     }
 
     /// @notice Sets the `ehUsdAggregator` variable value
     /// @param _nextEthUsdAggregator The `ehUsdAggregator` value to set
-    function setEthUsdAggregator(address _nextEthUsdAggregator) external onlyFundDeployerOwner {
+    function setEthUsdAggregator(address _nextEthUsdAggregator) external override onlyFundDeployerOwner {
         __setEthUsdAggregator(_nextEthUsdAggregator);
     }
 
@@ -219,7 +219,7 @@ contract ValueInterpreter is
         address[] calldata _primitives,
         address[] calldata _aggregators,
         RateAsset[] calldata _rateAssets
-    ) external onlyFundDeployerOwner {
+    ) external override onlyFundDeployerOwner {
         __removePrimitives(_primitives);
         __addPrimitives(_primitives, _aggregators, _rateAssets);
     }
@@ -242,6 +242,7 @@ contract ValueInterpreter is
     /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
     function addDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
         external
+        override
         onlyFundDeployerOwner
     {
         __addDerivatives(_derivatives, _priceFeeds);
@@ -249,7 +250,7 @@ contract ValueInterpreter is
 
     /// @notice Removes a list of derivatives
     /// @param _derivatives The derivatives to remove
-    function removeDerivatives(address[] calldata _derivatives) external onlyFundDeployerOwner {
+    function removeDerivatives(address[] calldata _derivatives) external override onlyFundDeployerOwner {
         __removeDerivatives(_derivatives);
     }
 
@@ -258,6 +259,7 @@ contract ValueInterpreter is
     /// @param _priceFeeds The ordered price feeds corresponding to the list of _derivatives
     function updateDerivatives(address[] calldata _derivatives, address[] calldata _priceFeeds)
         external
+        override
         onlyFundDeployerOwner
     {
         __removeDerivatives(_derivatives);

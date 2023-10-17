@@ -134,7 +134,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
 
     /// @notice Sets the default protocol fee rate (in bps)
     /// @param _nextFeeBpsDefault The default protocol fee rate (in bps) to set
-    function setFeeBpsDefault(uint256 _nextFeeBpsDefault) external onlyFundDeployerOwner {
+    function setFeeBpsDefault(uint256 _nextFeeBpsDefault) external override onlyFundDeployerOwner {
         require(_nextFeeBpsDefault < MAX_BPS, "setDefaultFeeBps: Exceeds max");
 
         feeBpsDefault = _nextFeeBpsDefault;
@@ -147,6 +147,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @param _nextFeeBpsOverride The protocol fee rate (in bps) to set
     function setFeeBpsOverrideForVault(address _vaultProxy, uint256 _nextFeeBpsOverride)
         external
+        override
         onlyFundDeployerOwner
     {
         require(_nextFeeBpsOverride < MAX_BPS, "setFeeBpsOverrideForVault: Exceeds max");
@@ -159,7 +160,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     /// @notice Sets the lastPaid timestamp for a specified VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @param _nextTimestamp The lastPaid timestamp to set
-    function setLastPaidForVault(address _vaultProxy, uint256 _nextTimestamp) external onlyFundDeployerOwner {
+    function setLastPaidForVault(address _vaultProxy, uint256 _nextTimestamp) external override onlyFundDeployerOwner {
         uint256 prevTimestamp = getLastPaidForVault(_vaultProxy);
         require(prevTimestamp > 0, "setLastPaidForVault: _vaultProxy not initialized");
         require(
@@ -178,14 +179,14 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
 
     /// @notice Gets the `feeBpsDefault` variable value
     /// @return feeBpsDefault_ The `feeBpsDefault` variable value
-    function getFeeBpsDefault() public view returns (uint256 feeBpsDefault_) {
+    function getFeeBpsDefault() public view override returns (uint256 feeBpsDefault_) {
         return feeBpsDefault;
     }
 
     /// @notice Gets the feeBpsOverride value for the given VaultProxy
     /// @param _vaultProxy The VaultProxy
     /// @return feeBpsOverride_ The feeBpsOverride value
-    function getFeeBpsOverrideForVault(address _vaultProxy) public view returns (uint256 feeBpsOverride_) {
+    function getFeeBpsOverrideForVault(address _vaultProxy) public view override returns (uint256 feeBpsOverride_) {
         return vaultProxyToFeeBpsOverride[_vaultProxy];
     }
 

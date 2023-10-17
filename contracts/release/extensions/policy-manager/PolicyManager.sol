@@ -259,6 +259,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     function getEnabledPoliciesForFund(address _comptrollerProxy)
         public
         view
+        override
         returns (address[] memory enabledPolicies_)
     {
         PolicyHook[POLICY_HOOK_COUNT] memory hooks = __getAllPolicyHooks();
@@ -277,6 +278,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     function getEnabledPoliciesOnHookForFund(address _comptrollerProxy, PolicyHook _hook)
         public
         view
+        override
         returns (address[] memory enabledPolicies_)
     {
         return comptrollerProxyToHookToPolicies[_comptrollerProxy][_hook];
@@ -290,6 +292,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     function policyIsEnabledOnHookForFund(address _comptrollerProxy, PolicyHook _hook, address _policy)
         public
         view
+        override
         returns (bool isEnabled_)
     {
         return getEnabledPoliciesOnHookForFund(_comptrollerProxy, _hook).contains(_policy);

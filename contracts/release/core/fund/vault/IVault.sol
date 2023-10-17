@@ -37,37 +37,74 @@ interface IVault is IVaultCore, IMigratableVault, IFreelyTransferableSharesVault
         RemoveExternalPosition
     }
 
-    function addTrackedAsset(address) external;
+    function addAssetManagers(address[] calldata _managers) external;
 
-    function burnShares(address, uint256) external;
+    function addTrackedAsset(address _asset) external;
 
-    function buyBackProtocolFeeShares(uint256, uint256, uint256) external;
+    function burnShares(address _target, uint256 _amount) external;
 
-    function callOnContract(address, bytes calldata) external returns (bytes memory);
+    function buyBackProtocolFeeShares(uint256 _sharesAmount, uint256 _mlnValue, uint256 _gav) external;
 
-    function canManageAssets(address) external view returns (bool);
+    function callOnContract(address _contract, bytes calldata _callData) external returns (bytes memory returnData_);
 
-    function canRelayCalls(address) external view returns (bool);
+    function canManageAssets(address _who) external view returns (bool canManageAssets_);
 
-    function getActiveExternalPositions() external view returns (address[] memory);
+    function canRelayCalls(address _who) external view returns (bool canRelayCalls_);
 
-    function getTrackedAssets() external view returns (address[] memory);
+    function claimOwnership() external;
 
-    function isActiveExternalPosition(address) external view returns (bool);
+    function getActiveExternalPositions() external view returns (address[] memory activeExternalPositions_);
 
-    function isTrackedAsset(address) external view returns (bool);
+    function getExternalPositionManager() external view returns (address externalPositionManager_);
 
-    function mintShares(address, uint256) external;
+    function getFundDeployer() external view returns (address fundDeployer_);
+
+    function getMlnBurner() external view returns (address mlnBurner_);
+
+    function getMlnToken() external view returns (address mlnToken_);
+
+    function getNominatedOwner() external view returns (address nominatedOwner_);
+
+    function getPositionsLimit() external view returns (uint256 positionsLimit_);
+
+    function getProtocolFeeReserve() external view returns (address protocolFeeReserve_);
+
+    function getProtocolFeeTracker() external view returns (address protocolFeeTracker_);
+
+    function getTrackedAssets() external view returns (address[] memory trackedAssets_);
+
+    function isActiveExternalPosition(address _externalPosition)
+        external
+        view
+        returns (bool isActiveExternalPosition_);
+
+    function isAssetManager(address _who) external view returns (bool isAssetManager_);
+
+    function isTrackedAsset(address _asset) external view returns (bool isTrackedAsset_);
+
+    function mintShares(address _target, uint256 _amount) external;
 
     function payProtocolFee() external;
 
-    function receiveValidatedVaultAction(VaultAction, bytes calldata) external;
+    function receiveValidatedVaultAction(VaultAction _action, bytes calldata _actionData) external;
 
-    function setAccessorForFundReconfiguration(address) external;
+    function removeAssetManagers(address[] calldata _managers) external;
 
-    function setSymbol(string calldata) external;
+    function removeNominatedOwner() external;
 
-    function transferShares(address, address, uint256) external;
+    function setAccessorForFundReconfiguration(address _nextAccessor) external;
 
-    function withdrawAssetTo(address, address, uint256) external;
+    function setFreelyTransferableShares() external;
+
+    function setMigrator(address _nextMigrator) external;
+
+    function setName(string calldata _nextName) external;
+
+    function setNominatedOwner(address _nextNominatedOwner) external;
+
+    function setSymbol(string calldata _nextSymbol) external;
+
+    function transferShares(address _from, address _to, uint256 _amount) external;
+
+    function withdrawAssetTo(address _asset, address _target, uint256 _amount) external;
 }

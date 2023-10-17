@@ -36,8 +36,23 @@ interface IPolicyManager {
 
     function enablePolicyForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData) external;
 
+    function getEnabledPoliciesForFund(address _comptrollerProxy)
+        external
+        view
+        returns (address[] memory enabledPolicies_);
+
+    function getEnabledPoliciesOnHookForFund(address _comptrollerProxy, PolicyHook _hook)
+        external
+        view
+        returns (address[] memory enabledPolicies_);
+
+    function policyIsEnabledOnHookForFund(address _comptrollerProxy, PolicyHook _hook, address _policy)
+        external
+        view
+        returns (bool isEnabled_);
+
     function updatePolicySettingsForFund(address _comptrollerProxy, address _policy, bytes calldata _settingsData)
         external;
 
-    function validatePolicies(address, PolicyHook, bytes calldata) external;
+    function validatePolicies(address _comptrollerProxy, PolicyHook _hook, bytes calldata _validationData) external;
 }

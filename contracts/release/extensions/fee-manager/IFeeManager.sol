@@ -34,5 +34,10 @@ interface IFeeManager {
 
     function getEnabledFeesForFund(address _comptrollerProxy) external view returns (address[] memory enabledFees_);
 
-    function invokeHook(FeeHook, bytes calldata, uint256) external;
+    function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
+        external
+        view
+        returns (uint256 sharesOutstanding_);
+
+    function invokeHook(FeeHook _hook, bytes calldata _settlementData, uint256 _gav) external;
 }

@@ -258,7 +258,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
         uint256[] memory _typeIds,
         address[] memory _libs,
         address[] memory _parsers
-    ) external onlyFundDeployerOwner {
+    ) external override onlyFundDeployerOwner {
         require(
             _typeIds.length == _parsers.length && _libs.length == _parsers.length,
             "updateExternalPositionTypesInfo: Unequal arrays"
@@ -282,7 +282,7 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
 
     /// @notice Gets the `EXTERNAL_POSITION_FACTORY` variable
     /// @return externalPositionFactory_ The `EXTERNAL_POSITION_FACTORY` variable value
-    function getExternalPositionFactory() public view returns (address externalPositionFactory_) {
+    function getExternalPositionFactory() public view override returns (address externalPositionFactory_) {
         return EXTERNAL_POSITION_FACTORY;
     }
 
@@ -296,13 +296,13 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     /// @notice Gets the external position parser contract for a given type
     /// @param _typeId The type for which to get the external position's parser
     /// @return parser_ The external position parser
-    function getExternalPositionParserForType(uint256 _typeId) public view returns (address parser_) {
+    function getExternalPositionParserForType(uint256 _typeId) public view override returns (address parser_) {
         return typeIdToTypeInfo[_typeId].parser;
     }
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
-    function getPolicyManager() public view returns (address policyManager_) {
+    function getPolicyManager() public view override returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 }

@@ -15,7 +15,9 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Simple interface for derivative price source oracle implementations
 interface IDerivativePriceFeed {
-    function calcUnderlyingValues(address, uint256) external returns (address[] memory, uint256[] memory);
+    function calcUnderlyingValues(address _derivative, uint256 _derivativeAmount)
+        external
+        returns (address[] memory underlyings_, uint256[] memory underlyingAmounts_);
 
-    function isSupportedAsset(address) external view returns (bool);
+    function isSupportedAsset(address _asset) external view returns (bool isSupported_);
 }

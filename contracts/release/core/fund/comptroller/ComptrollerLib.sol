@@ -737,7 +737,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 _sharesQuantity,
         address[] calldata _payoutAssets,
         uint256[] calldata _payoutAssetPercentages
-    ) external locksReentrance returns (uint256[] memory payoutAmounts_) {
+    ) external override locksReentrance returns (uint256[] memory payoutAmounts_) {
         address canonicalSender = __msgSender();
         require(_payoutAssets.length == _payoutAssetPercentages.length, "redeemSharesForSpecificAssets: Unequal arrays");
         require(_payoutAssets.isUniqueSet(), "redeemSharesForSpecificAssets: Duplicate payout asset");
@@ -1019,7 +1019,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /////////////////
 
     /// @notice Deploys a paymaster contract and deposits WETH, enabling gas relaying
-    function deployGasRelayPaymaster() external onlyOwnerNotRelayable {
+    function deployGasRelayPaymaster() external override onlyOwnerNotRelayable {
         require(getGasRelayPaymaster() == address(0), "deployGasRelayPaymaster: Paymaster already deployed");
 
         bytes memory constructData = abi.encodeWithSignature("init(address)", getVaultProxy());
@@ -1049,7 +1049,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Removes the gas relay paymaster, withdrawing the remaining WETH balance
     /// and disabling gas relaying
-    function shutdownGasRelayPaymaster() external onlyOwnerNotRelayable {
+    function shutdownGasRelayPaymaster() external override onlyOwnerNotRelayable {
         IGasRelayPaymaster(gasRelayPaymaster).withdrawBalance();
 
         IVault(vaultProxy).addTrackedAsset(getWethToken());
@@ -1079,7 +1079,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `DISPATCHER` variable
     /// @return dispatcher_ The `DISPATCHER` variable value
-    function getDispatcher() public view returns (address dispatcher_) {
+    function getDispatcher() public view override returns (address dispatcher_) {
         return DISPATCHER;
     }
 
@@ -1109,7 +1109,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `MLN_TOKEN` variable
     /// @return mlnToken_ The `MLN_TOKEN` variable value
-    function getMlnToken() public view returns (address mlnToken_) {
+    function getMlnToken() public view override returns (address mlnToken_) {
         return MLN_TOKEN;
     }
 
@@ -1121,19 +1121,19 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable
     /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
-    function getProtocolFeeReserve() public view returns (address protocolFeeReserve_) {
+    function getProtocolFeeReserve() public view override returns (address protocolFeeReserve_) {
         return PROTOCOL_FEE_RESERVE;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getValueInterpreter() public view returns (address valueInterpreter_) {
+    function getValueInterpreter() public view override returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
     }
 
     /// @notice Gets the `WETH_TOKEN` variable
     /// @return wethToken_ The `WETH_TOKEN` variable value
-    function getWethToken() public view returns (address wethToken_) {
+    function getWethToken() public view override returns (address wethToken_) {
         return WETH_TOKEN;
     }
 
@@ -1142,7 +1142,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @notice Checks if collected protocol fee shares are automatically bought back
     /// while buying or redeeming shares
     /// @return doesAutoBuyback_ True if shares are automatically bought back
-    function doesAutoProtocolFeeSharesBuyback() public view returns (bool doesAutoBuyback_) {
+    function doesAutoProtocolFeeSharesBuyback() public view override returns (bool doesAutoBuyback_) {
         return autoProtocolFeeSharesBuyback;
     }
 
@@ -1164,6 +1164,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     function getLastSharesBoughtTimestampForAccount(address _who)
         public
         view
+        override
         returns (uint256 lastSharesBoughtTimestamp_)
     {
         return acctToLastSharesBoughtTimestamp[_who];
@@ -1171,7 +1172,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     /// @notice Gets the `sharesActionTimelock` variable
     /// @return sharesActionTimelock_ The `sharesActionTimelock` variable value
-    function getSharesActionTimelock() public view returns (uint256 sharesActionTimelock_) {
+    function getSharesActionTimelock() public view override returns (uint256 sharesActionTimelock_) {
         return sharesActionTimelock;
     }
 

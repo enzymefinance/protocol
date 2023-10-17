@@ -16,7 +16,7 @@ import {IVault} from "../vault/IVault.sol";
 /// @title IComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IComptroller {
-    function activate(bool) external;
+    function activate(bool _isMigration) external;
 
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
 
@@ -28,41 +28,69 @@ interface IComptroller {
         external
         returns (uint256 sharesReceived_);
 
-    function calcGav() external returns (uint256);
+    function calcGav() external returns (uint256 gav_);
 
-    function calcGrossShareValue() external returns (uint256);
+    function calcGrossShareValue() external returns (uint256 grossShareValue_);
 
-    function callOnExtension(address, uint256, bytes calldata) external;
+    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs) external;
+
+    function deployGasRelayPaymaster() external;
 
     function depositToGasRelayPaymaster() external;
 
-    function destructActivated(uint256, uint256) external;
+    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit) external;
 
     function destructUnactivated() external;
 
-    function getDenominationAsset() external view returns (address);
+    function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 
-    function getExternalPositionManager() external view returns (address);
+    function getDenominationAsset() external view returns (address denominationAsset_);
 
-    function getFeeManager() external view returns (address);
+    function getDispatcher() external view returns (address dispatcher_);
 
-    function getFundDeployer() external view returns (address);
+    function getExternalPositionManager() external view returns (address externalPositionManager_);
 
-    function getGasRelayPaymaster() external view returns (address);
+    function getFeeManager() external view returns (address feeManager_);
 
-    function getIntegrationManager() external view returns (address);
+    function getFundDeployer() external view returns (address fundDeployer_);
 
-    function getPolicyManager() external view returns (address);
+    function getGasRelayPaymaster() external view returns (address gasRelayPaymaster_);
 
-    function getVaultProxy() external view returns (address);
+    function getIntegrationManager() external view returns (address integrationManager_);
 
-    function init(address, uint256) external;
+    function getLastSharesBoughtTimestampForAccount(address _who)
+        external
+        view
+        returns (uint256 lastSharesBoughtTimestamp_);
 
-    function permissionedVaultAction(IVault.VaultAction, bytes calldata) external;
+    function getMlnToken() external view returns (address mlnToken_);
 
-    function preTransferSharesHook(address, address, uint256) external;
+    function getPolicyManager() external view returns (address policyManager_);
 
-    function preTransferSharesHookFreelyTransferable(address) external view;
+    function getProtocolFeeReserve() external view returns (address protocolFeeReserve_);
+
+    function getSharesActionTimelock() external view returns (uint256 sharesActionTimelock_);
+
+    function getValueInterpreter() external view returns (address valueInterpreter_);
+
+    function getVaultProxy() external view returns (address vaultProxy_);
+
+    function getWethToken() external view returns (address wethToken_);
+
+    function init(address _denominationAsset, uint256 _sharesActionTimelock) external;
+
+    function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
+
+    function preTransferSharesHook(address _sender, address _recipient, uint256 _amount) external;
+
+    function preTransferSharesHookFreelyTransferable(address _sender) external view;
+
+    function redeemSharesForSpecificAssets(
+        address _recipient,
+        uint256 _sharesQuantity,
+        address[] calldata _payoutAssets,
+        uint256[] calldata _payoutAssetPercentages
+    ) external returns (uint256[] memory payoutAmounts_);
 
     function redeemSharesInKind(
         address _recipient,
@@ -73,9 +101,11 @@ interface IComptroller {
 
     function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external;
 
-    function setGasRelayPaymaster(address) external;
+    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external;
 
-    function setVaultProxy(address) external;
+    function setVaultProxy(address _vaultProxy) external;
+
+    function shutdownGasRelayPaymaster() external;
 
     function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
         external

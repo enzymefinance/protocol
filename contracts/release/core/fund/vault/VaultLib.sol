@@ -116,7 +116,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// transferability guarantee to liquidity pools and other smart contract holders
     /// that rely on transfers to function properly. Enabling this option will skip all
     /// policies run upon transferring shares, but will still respect the shares action timelock.
-    function setFreelyTransferableShares() external onlyOwner {
+    function setFreelyTransferableShares() external override onlyOwner {
         require(!sharesAreFreelyTransferable(), "setFreelyTransferableShares: Already set");
 
         freelyTransferableShares = true;
@@ -129,7 +129,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @dev Owners should consider the implications of changing an ERC20 name post-deployment,
     /// e.g., some apps/dapps may cache token names for display purposes, so changing the name
     /// in contract state may not be reflected in third party applications as desired.
-    function setName(string calldata _nextName) external onlyOwner {
+    function setName(string calldata _nextName) external override onlyOwner {
         sharesName = _nextName;
 
         emit NameSet(_nextName);
@@ -155,7 +155,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Registers accounts that can manage vault holdings within the protocol
     /// @param _managers The accounts to add as asset managers
-    function addAssetManagers(address[] calldata _managers) external onlyOwner {
+    function addAssetManagers(address[] calldata _managers) external override onlyOwner {
         for (uint256 i; i < _managers.length; i++) {
             require(!isAssetManager(_managers[i]), "addAssetManagers: Manager already registered");
 
@@ -166,7 +166,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     }
 
     /// @notice Claim ownership of the contract
-    function claimOwnership() external {
+    function claimOwnership() external override {
         address nextOwner = nominatedOwner;
         require(msg.sender == nextOwner, "claimOwnership: Only the nominatedOwner can call this function");
 
@@ -180,7 +180,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Deregisters accounts that can manage vault holdings within the protocol
     /// @param _managers The accounts to remove as asset managers
-    function removeAssetManagers(address[] calldata _managers) external onlyOwner {
+    function removeAssetManagers(address[] calldata _managers) external override onlyOwner {
         for (uint256 i; i < _managers.length; i++) {
             require(isAssetManager(_managers[i]), "removeAssetManagers: Manager not registered");
 
@@ -191,7 +191,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     }
 
     /// @notice Revoke the nomination of a new contract owner
-    function removeNominatedOwner() external onlyOwner {
+    function removeNominatedOwner() external override onlyOwner {
         address removedNominatedOwner = nominatedOwner;
         require(removedNominatedOwner != address(0), "removeNominatedOwner: There is no nominated owner");
 
@@ -203,7 +203,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Sets the account that is allowed to migrate a fund to new releases
     /// @param _nextMigrator The account to set as the allowed migrator
     /// @dev Set to address(0) to remove the migrator.
-    function setMigrator(address _nextMigrator) external onlyOwner {
+    function setMigrator(address _nextMigrator) external override onlyOwner {
         address prevMigrator = migrator;
         require(_nextMigrator != prevMigrator, "setMigrator: Value already set");
 
@@ -215,7 +215,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Nominate a new contract owner
     /// @param _nextNominatedOwner The account to nominate
     /// @dev Does not prohibit overwriting the current nominatedOwner
-    function setNominatedOwner(address _nextNominatedOwner) external onlyOwner {
+    function setNominatedOwner(address _nextNominatedOwner) external override onlyOwner {
         require(_nextNominatedOwner != address(0), "setNominatedOwner: _nextNominatedOwner cannot be empty");
         require(_nextNominatedOwner != owner, "setNominatedOwner: _nextNominatedOwner is already the owner");
         require(_nextNominatedOwner != nominatedOwner, "setNominatedOwner: _nextNominatedOwner is already nominated");
@@ -637,7 +637,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the account that is nominated to be the next owner of this contract
     /// @return nominatedOwner_ The account that is nominated to be the owner
-    function getNominatedOwner() external view returns (address nominatedOwner_) {
+    function getNominatedOwner() external view override returns (address nominatedOwner_) {
         return nominatedOwner;
     }
 
@@ -657,25 +657,25 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
     /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
-    function getExternalPositionManager() public view returns (address externalPositionManager_) {
+    function getExternalPositionManager() public view override returns (address externalPositionManager_) {
         return EXTERNAL_POSITION_MANAGER;
     }
 
     /// @notice Gets the vaults fund deployer
     /// @return fundDeployer_ The fund deployer contract associated with this vault
-    function getFundDeployer() public view returns (address fundDeployer_) {
+    function getFundDeployer() public view override returns (address fundDeployer_) {
         return IDispatcher(creator).getFundDeployerForVaultProxy(address(this));
     }
 
     /// @notice Gets the `MLN_BURNER` variable
     /// @return mlnBurner_ The `MLN_BURNER` variable value
-    function getMlnBurner() public view returns (address mlnBurner_) {
+    function getMlnBurner() public view override returns (address mlnBurner_) {
         return MLN_BURNER;
     }
 
     /// @notice Gets the `MLN_TOKEN` variable
     /// @return mlnToken_ The `MLN_TOKEN` variable value
-    function getMlnToken() public view returns (address mlnToken_) {
+    function getMlnToken() public view override returns (address mlnToken_) {
         return MLN_TOKEN;
     }
 
@@ -687,19 +687,19 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     /// @notice Gets the `POSITIONS_LIMIT` variable
     /// @return positionsLimit_ The `POSITIONS_LIMIT` variable value
-    function getPositionsLimit() public view returns (uint256 positionsLimit_) {
+    function getPositionsLimit() public view override returns (uint256 positionsLimit_) {
         return POSITIONS_LIMIT;
     }
 
     /// @notice Gets the `PROTOCOL_FEE_RESERVE` variable
     /// @return protocolFeeReserve_ The `PROTOCOL_FEE_RESERVE` variable value
-    function getProtocolFeeReserve() public view returns (address protocolFeeReserve_) {
+    function getProtocolFeeReserve() public view override returns (address protocolFeeReserve_) {
         return PROTOCOL_FEE_RESERVE;
     }
 
     /// @notice Gets the `PROTOCOL_FEE_TRACKER` variable
     /// @return protocolFeeTracker_ The `PROTOCOL_FEE_TRACKER` variable value
-    function getProtocolFeeTracker() public view returns (address protocolFeeTracker_) {
+    function getProtocolFeeTracker() public view override returns (address protocolFeeTracker_) {
         return PROTOCOL_FEE_TRACKER;
     }
 
@@ -718,7 +718,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
     /// @notice Checks whether an account is an allowed asset manager
     /// @param _who The account to check
     /// @return isAssetManager_ True if the account is an allowed asset manager
-    function isAssetManager(address _who) public view returns (bool isAssetManager_) {
+    function isAssetManager(address _who) public view override returns (bool isAssetManager_) {
         return accountToIsAssetManager[_who];
     }
 

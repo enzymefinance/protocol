@@ -20,7 +20,7 @@ import {IValueInterpreter} from "../../infrastructure/value-interpreter/IValueIn
 import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
 import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
-import {IIntegrationAdapter} from "./integrations/IIntegrationAdapter.sol";
+import {IIntegrationAdapter} from "./IIntegrationAdapter.sol";
 import {IIntegrationManager} from "./IIntegrationManager.sol";
 
 /// @title IntegrationManager
@@ -406,13 +406,13 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
 
     /// @notice Gets the `POLICY_MANAGER` variable
     /// @return policyManager_ The `POLICY_MANAGER` variable value
-    function getPolicyManager() public view returns (address policyManager_) {
+    function getPolicyManager() public view override returns (address policyManager_) {
         return POLICY_MANAGER;
     }
 
     /// @notice Gets the `VALUE_INTERPRETER` variable
     /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getValueInterpreter() public view returns (address valueInterpreter_) {
+    function getValueInterpreter() public view override returns (address valueInterpreter_) {
         return VALUE_INTERPRETER;
     }
 }

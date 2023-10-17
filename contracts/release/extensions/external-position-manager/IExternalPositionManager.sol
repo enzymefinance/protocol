@@ -27,5 +27,17 @@ interface IExternalPositionManager {
         ReactivateExternalPosition
     }
 
+    function getExternalPositionFactory() external view returns (address externalPositionFactory_);
+
     function getExternalPositionLibForType(uint256 _typeId) external view returns (address lib_);
+
+    function getExternalPositionParserForType(uint256 _typeId) external view returns (address parser_);
+
+    function getPolicyManager() external view returns (address policyManager_);
+
+    function updateExternalPositionTypesInfo(
+        uint256[] memory _typeIds,
+        address[] memory _libs,
+        address[] memory _parsers
+    ) external;
 }

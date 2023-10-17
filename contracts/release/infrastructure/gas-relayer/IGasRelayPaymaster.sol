@@ -19,5 +19,15 @@ import {IGsnPaymaster} from "../../../external-interfaces/IGsnPaymaster.sol";
 interface IGasRelayPaymaster is IGsnPaymaster {
     function deposit() external;
 
+    function getLastDepositTimestamp() external view returns (uint256 lastDepositTimestamp_);
+
+    function getParentComptroller() external view returns (address parentComptroller_);
+
+    function getParentVault() external view returns (address parentVault_);
+
+    function getWethToken() external view returns (address wethToken_);
+
+    function init(address _vault) external;
+
     function withdrawBalance() external;
 }
