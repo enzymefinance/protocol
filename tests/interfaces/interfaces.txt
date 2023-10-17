@@ -129,7 +129,6 @@ ILiquityDebtPositionLib.sol: LiquityDebtPositionLib.abi.json
 ILiquityDebtPositionParser.sol: LiquityDebtPositionParser.abi.json
 IMapleLiquidityPositionLib.sol: MapleLiquidityPositionLib.abi.json
 IMapleLiquidityPositionParser.sol: MapleLiquidityPositionParser.abi.json
-INotionalV3PositionLib.sol: NotionalV2PositionLib.abi.json
 ISolvV2BondBuyerPositionLib.sol: SolvV2BondBuyerPositionLib.abi.json
 ISolvV2BondBuyerPositionParser.sol: SolvV2BondBuyerPositionParser.abi.json
 ISolvV2BondIssuerPositionLib.sol: SolvV2BondIssuerPositionLib.abi.json
