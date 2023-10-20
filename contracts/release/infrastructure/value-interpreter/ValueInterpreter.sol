@@ -9,13 +9,11 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {MathHelpers} from "../../../utils/0.6.12/MathHelpers.sol";
-import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {MathHelpersLib} from "../../../utils/0.8.19/MathHelpersLib.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.8.19/FundDeployerOwnerMixin.sol";
 import {AggregatedDerivativePriceFeedMixin} from "../price-feeds/derivatives/AggregatedDerivativePriceFeedMixin.sol";
 import {IDerivativePriceFeed} from "../price-feeds/derivatives/IDerivativePriceFeed.sol";
 import {ChainlinkPriceFeedMixin} from "../price-feeds/primitives/ChainlinkPriceFeedMixin.sol";
@@ -28,17 +26,13 @@ contract ValueInterpreter is
     IValueInterpreter,
     FundDeployerOwnerMixin,
     AggregatedDerivativePriceFeedMixin,
-    ChainlinkPriceFeedMixin,
-    MathHelpers
+    ChainlinkPriceFeedMixin
 {
-    using SafeMath for uint256;
-
     // Used to only tolerate a max rounding discrepancy of 0.01%
     // when converting values via an inverse rate
     uint256 private constant MIN_INVERSE_RATE_AMOUNT = 10000;
 
     constructor(address _fundDeployer, address _wethToken, uint256 _chainlinkStaleRateThreshold)
-        public
         FundDeployerOwnerMixin(_fundDeployer)
         ChainlinkPriceFeedMixin(_wethToken, _chainlinkStaleRateThreshold)
     {}
@@ -63,7 +57,7 @@ contract ValueInterpreter is
 
         for (uint256 i; i < _baseAssets.length; i++) {
             uint256 assetValue = __calcAssetValue(_baseAssets[i], _amounts[i], _quoteAsset);
-            value_ = value_.add(assetValue);
+            value_ += assetValue;
         }
 
         return value_;
@@ -148,7 +142,7 @@ contract ValueInterpreter is
         for (uint256 i = 0; i < underlyings.length; i++) {
             uint256 underlyingValue = __calcAssetValue(underlyings[i], underlyingAmounts[i], _quoteAsset);
 
-            value_ = value_.add(underlyingValue);
+            value_ += underlyingValue;
         }
     }
 
@@ -179,8 +173,9 @@ contract ValueInterpreter is
         // Adds `1` to primitiveAmountForDerivativeUnit so that the final return value is
         // slightly less than the actual value, which is congruent with how all other
         // asset conversions are floored in the protocol.
-        return
-            __calcRelativeQuantity(primitiveAmountForDerivativeUnit.add(1), derivativeUnit, _primitiveBaseAssetAmount);
+        return MathHelpersLib.calcRelativeQuantity(
+            primitiveAmountForDerivativeUnit + 1, derivativeUnit, _primitiveBaseAssetAmount
+        );
     }
 
     ////////////////////////////

@@ -9,19 +9,16 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.8.19/FundDeployerOwnerMixin.sol";
 import {IProtocolFeeTracker} from "./IProtocolFeeTracker.sol";
 
 /// @title ProtocolFeeTracker Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The contract responsible for tracking owed protocol fees
 contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
-    using SafeMath for uint256;
-
     event InitializedForVault(address vaultProxy);
 
     event FeeBpsDefaultSet(uint256 nextFeeBpsDefault);
@@ -39,7 +36,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     mapping(address => uint256) private vaultProxyToFeeBpsOverride;
     mapping(address => uint256) private vaultProxyToLastPaid;
 
-    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {
+    constructor(address _fundDeployer) FundDeployerOwnerMixin(_fundDeployer) {
         // Validate constants
         require(SECONDS_IN_YEAR == (60 * 60 * 24 * 36525) / 100, "constructor: Incorrect SECONDS_IN_YEAR");
     }
@@ -76,7 +73,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
         // VaultProxy, but inexpensive
         require(lastPaid > 0, "payFee: VaultProxy not initialized");
 
-        uint256 secondsDue = block.timestamp.sub(lastPaid);
+        uint256 secondsDue = block.timestamp - lastPaid;
         sharesDue_ = __calcSharesDueForVault(vaultProxy, secondsDue);
 
         // Even if sharesDue_ is 0, we update the lastPaid timestamp and emit the event
@@ -112,15 +109,14 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
     {
         uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
 
-        uint256 rawSharesDue =
-            sharesSupply.mul(getFeeBpsForVault(_vaultProxy)).mul(_secondsDue).div(SECONDS_IN_YEAR).div(MAX_BPS);
+        uint256 rawSharesDue = sharesSupply * getFeeBpsForVault(_vaultProxy) * _secondsDue / SECONDS_IN_YEAR / MAX_BPS;
 
-        uint256 supplyNetRawSharesDue = sharesSupply.sub(rawSharesDue);
+        uint256 supplyNetRawSharesDue = sharesSupply - rawSharesDue;
         if (supplyNetRawSharesDue == 0) {
             return 0;
         }
 
-        return rawSharesDue.mul(sharesSupply).div(supplyNetRawSharesDue);
+        return rawSharesDue * sharesSupply / supplyNetRawSharesDue;
     }
 
     /// @dev Helper to set the lastPaid timestamp for a given VaultProxy

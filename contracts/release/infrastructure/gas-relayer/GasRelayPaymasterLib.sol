@@ -9,11 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {Address} from "openzeppelin-solc-0.6/utils/Address.sol";
+import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {IGsnPaymaster} from "../../../external-interfaces/IGsnPaymaster.sol";
 import {IGsnRelayHub} from "../../../external-interfaces/IGsnRelayHub.sol";
 import {IGsnTypes} from "../../../external-interfaces/IGsnTypes.sol";
@@ -30,8 +28,6 @@ import {IGasRelayPaymasterDepositor} from "./IGasRelayPaymasterDepositor.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library for the "paymaster" contract which refunds GSN relayers
 contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
-    using SafeMath for uint256;
-
     // Immutable and constants
     // Sane defaults, subject to change after gas profiling
     uint256 private constant CALLDATA_SIZE_LIMIT = 10500;
@@ -68,7 +64,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
         uint256 _depositMaxTotal,
         uint256 _relayFeeMaxBase,
         uint256 _relayFeeMaxPercent
-    ) public {
+    ) {
         DEPOSIT_COOLDOWN = _depositCooldown;
         DEPOSIT_MAX_TOTAL = _depositMaxTotal;
         RELAY_FEE_MAX_BASE = _relayFeeMaxBase;
@@ -102,6 +98,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
     /// @return rejectOnRecipientRevert_ Always false
     function preRelayedCall(IGsnTypes.RelayRequest calldata _relayRequest, bytes calldata, bytes calldata, uint256)
         external
+        view
         override
         relayHubOnly
         returns (bytes memory context_, bool rejectOnRecipientRevert_)
@@ -179,7 +176,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
         if (prevDeposit >= DEPOSIT_MAX_TOTAL) {
             return;
         }
-        uint256 amount = DEPOSIT_MAX_TOTAL.sub(prevDeposit);
+        uint256 amount = DEPOSIT_MAX_TOTAL - prevDeposit;
 
         IGasRelayPaymasterDepositor(getParentComptroller()).pullWethForGasRelayer(amount);
 
@@ -277,7 +274,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets gas limits used by the relay hub for the pre and post relay calls
     /// @return limits_ `GasAndDataLimits(PAYMASTER_ACCEPTANCE_BUDGET, PRE_RELAYED_CALL_GAS_LIMIT, POST_RELAYED_CALL_GAS_LIMIT, CALLDATA_SIZE_LIMIT)`
-    function getGasAndDataLimits() external view override returns (IGsnPaymaster.GasAndDataLimits memory limits_) {
+    function getGasAndDataLimits() external pure override returns (IGsnPaymaster.GasAndDataLimits memory limits_) {
         return IGsnPaymaster.GasAndDataLimits(
             PAYMASTER_ACCEPTANCE_BUDGET, PRE_RELAYED_CALL_GAS_LIMIT, POST_RELAYED_CALL_GAS_LIMIT, CALLDATA_SIZE_LIMIT
         );
@@ -321,7 +318,7 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
 
     /// @notice Gets the string representation of the contract version (fulfills interface)
     /// @return versionString_ The version string
-    function versionPaymaster() external view override returns (string memory versionString_) {
+    function versionPaymaster() external pure override returns (string memory versionString_) {
         return "2.2.3+opengsn.enzymefund.ipaymaster";
     }
 }

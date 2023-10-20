@@ -9,9 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import {FundDeployerOwnerMixin} from "../../utils/0.6.12/FundDeployerOwnerMixin.sol";
+import {FundDeployerOwnerMixin} from "../../utils/0.8.19/FundDeployerOwnerMixin.sol";
 import {IExtension} from "../IExtension.sol";
 
 /// @title ExtensionBase Contract
@@ -27,7 +27,7 @@ abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
         _;
     }
 
-    constructor(address _fundDeployer) public FundDeployerOwnerMixin(_fundDeployer) {}
+    constructor(address _fundDeployer) FundDeployerOwnerMixin(_fundDeployer) {}
 
     /// @notice Allows extension to run logic during fund activation
     /// @dev Unimplemented by default, may be overridden.

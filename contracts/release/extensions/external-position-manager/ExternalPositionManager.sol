@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
 import {IExternalPositionFactory} from "../../../persistent/external-positions/IExternalPositionFactory.sol";
 import {IExternalPositionProxy} from "../../../persistent/external-positions/IExternalPositionProxy.sol";
@@ -52,7 +52,6 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     mapping(uint256 => ExternalPositionTypeInfo) private typeIdToTypeInfo;
 
     constructor(address _fundDeployer, address _externalPositionFactory, address _policyManager)
-        public
         ExtensionBase(_fundDeployer)
     {
         EXTERNAL_POSITION_FACTORY = _externalPositionFactory;

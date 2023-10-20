@@ -9,11 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
 import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
@@ -29,7 +27,6 @@ import {IFeeManager} from "./IFeeManager.sol";
 /// Fees can only be added upon fund setup, migration, or reconfiguration.
 contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin {
     using AddressArrayLib for address[];
-    using SafeMath for uint256;
 
     event FeeEnabledForFund(address indexed comptrollerProxy, address indexed fee, bytes settingsData);
 
@@ -49,7 +46,7 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
     mapping(address => address[]) private comptrollerProxyToFees;
     mapping(address => mapping(address => uint256)) private comptrollerProxyToFeeToSharesOutstanding;
 
-    constructor(address _fundDeployer) public ExtensionBase(_fundDeployer) {}
+    constructor(address _fundDeployer) ExtensionBase(_fundDeployer) {}
 
     // EXTERNAL FUNCTIONS
 
@@ -249,14 +246,12 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         } else if (settlementType == SettlementType.Burn) {
             __burnShares(_comptrollerProxy, payer, sharesDue);
         } else if (settlementType == SettlementType.MintSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] =
-                comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee].add(sharesDue);
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] += sharesDue;
 
             payee = _vaultProxy;
             __mintShares(_comptrollerProxy, payee, sharesDue);
         } else if (settlementType == SettlementType.BurnSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] =
-                comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee].sub(sharesDue);
+            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] -= sharesDue;
 
             payer = _vaultProxy;
             __burnShares(_comptrollerProxy, payer, sharesDue);

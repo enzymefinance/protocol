@@ -9,14 +9,13 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
-import {IBeaconProxyFactory} from "../../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
-import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {IBeaconProxyFactory} from "../../../../utils/0.8.19/deprecated/beacon-proxy/IBeaconProxyFactory.sol";
+import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
 import {IExtension} from "../../../extensions/IExtension.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {IFeeManager} from "../../../extensions/fee-manager/IFeeManager.sol";
@@ -34,7 +33,6 @@ import {IComptroller} from "./IComptroller.sol";
 /// @notice The core logic library shared by all funds
 contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRecipientMixin {
     using AddressArrayLib for address[];
-    using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
@@ -171,8 +169,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 lastSharesBoughtTimestamp = getLastSharesBoughtTimestampForAccount(_account);
 
         require(
-            lastSharesBoughtTimestamp == 0
-                || block.timestamp.sub(lastSharesBoughtTimestamp) >= getSharesActionTimelock()
+            lastSharesBoughtTimestamp == 0 || block.timestamp - lastSharesBoughtTimestamp >= getSharesActionTimelock()
                 || __hasPendingMigrationOrReconfiguration(_vaultProxy),
             "Shares action timelocked"
         );
@@ -190,7 +187,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         address _gasRelayPaymasterFactory,
         address _mlnToken,
         address _wethToken
-    ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
+    ) GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         DISPATCHER = _dispatcher;
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
@@ -307,7 +304,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             _gav, ERC20(_vaultProxy).totalSupply(), 10 ** uint256(ERC20(denominationAssetCopy).decimals())
         );
 
-        uint256 buybackValueInDenominationAsset = grossShareValue.mul(_sharesAmount).div(SHARES_UNIT);
+        uint256 buybackValueInDenominationAsset = grossShareValue * _sharesAmount / SHARES_UNIT;
 
         return IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
             denominationAssetCopy, buybackValueInDenominationAsset, getMlnToken()
@@ -506,7 +503,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             for (uint256 i; i < externalPositions.length; i++) {
                 uint256 externalPositionValue = __calcExternalPositionValue(externalPositions[i]);
 
-                gav_ = gav_.add(externalPositionValue);
+                gav_ += externalPositionValue;
             }
         }
 
@@ -543,7 +540,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         );
 
         if (managedValue > debtValue) {
-            value_ = managedValue.sub(debtValue);
+            value_ = managedValue - debtValue;
         }
 
         return value_;
@@ -559,7 +556,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             return _denominationAssetUnit;
         }
 
-        return _gav.mul(SHARES_UNIT).div(_sharesSupply);
+        return _gav * SHARES_UNIT / _sharesSupply;
     }
 
     ///////////////////
@@ -654,7 +651,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 sharePrice = __calcGrossShareValue(
             gav, ERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
         );
-        uint256 sharesIssued = receivedInvestmentAmount.mul(SHARES_UNIT).div(sharePrice);
+        uint256 sharesIssued = receivedInvestmentAmount * SHARES_UNIT / sharePrice;
 
         // Mint shares to the buyer
         uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
@@ -665,7 +662,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
-        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer).sub(prevBuyerShares);
+        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer) - prevBuyerShares;
         require(sharesReceived_ >= _minSharesQuantity, "__buyShares: Shares received < _minSharesQuantity");
 
         if (_hasSharesActionTimelock) {
@@ -694,7 +691,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 _sharesIssued,
         uint256 _preBuySharesGav
     ) private {
-        uint256 gav = _preBuySharesGav.add(_investmentAmount);
+        uint256 gav = _preBuySharesGav + _investmentAmount;
         IFeeManager(getFeeManager()).invokeHook(
             IFeeManager.FeeHook.PostBuyShares, abi.encode(_buyer, _investmentAmount, _sharesIssued), gav
         );
@@ -717,7 +714,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
         ERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
 
-        return ERC20(_asset).balanceOf(_recipient).sub(preTransferRecipientBalance);
+        return ERC20(_asset).balanceOf(_recipient) - preTransferRecipientBalance;
     }
 
     // REDEEM SHARES
@@ -749,11 +746,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             __redeemSharesSetup(vaultProxyContract, canonicalSender, _sharesQuantity, true, gav);
 
         payoutAmounts_ = __payoutSpecifiedAssetPercentages(
-            vaultProxyContract,
-            _recipient,
-            _payoutAssets,
-            _payoutAssetPercentages,
-            gav.mul(sharesToRedeem).div(sharesSupply)
+            vaultProxyContract, _recipient, _payoutAssets, _payoutAssetPercentages, gav * sharesToRedeem / sharesSupply
         );
 
         // Run post-redemption in order to have access to the payoutAmounts
@@ -822,7 +815,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
-            payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(vaultProxy).mul(sharesToRedeem).div(sharesSupply);
+            payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(vaultProxy) * sharesToRedeem / sharesSupply;
 
             // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {
@@ -861,7 +854,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             return trackedAssetsToPayout;
         }
 
-        payoutAssets_ = new address[](trackedAssetsToPayout.length.add(additionalItemsCount));
+        payoutAssets_ = new address[](trackedAssetsToPayout.length + additionalItemsCount);
         for (uint256 i; i < trackedAssetsToPayout.length; i++) {
             payoutAssets_[i] = trackedAssetsToPayout[i];
         }
@@ -888,7 +881,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         uint256 percentagesTotal;
         payoutAmounts_ = new uint256[](_payoutAssets.length);
         for (uint256 i; i < _payoutAssets.length; i++) {
-            percentagesTotal = percentagesTotal.add(_payoutAssetPercentages[i]);
+            percentagesTotal += _payoutAssetPercentages[i];
 
             // Used to explicitly specify less than 100% in total _payoutAssetPercentages
             if (_payoutAssets[i] == SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS) {
@@ -896,9 +889,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
             }
 
             payoutAmounts_[i] = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(
-                denominationAssetCopy,
-                _owedGav.mul(_payoutAssetPercentages[i]).div(ONE_HUNDRED_PERCENT),
-                _payoutAssets[i]
+                denominationAssetCopy, _owedGav * _payoutAssetPercentages[i] / ONE_HUNDRED_PERCENT, _payoutAssets[i]
             );
             // Guards against corner case of primitive-to-derivative asset conversion that floors to 0,
             // or redeeming a very low shares amount and/or percentage where asset value owed is 0
@@ -974,7 +965,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         if (_sharesQuantityInput == type(uint256).max) {
             sharesToRedeem_ = postFeesRedeemerSharesBalance;
         } else if (postFeesRedeemerSharesBalance < preFeesRedeemerSharesBalance) {
-            sharesToRedeem_ = sharesToRedeem_.sub(preFeesRedeemerSharesBalance.sub(postFeesRedeemerSharesBalance));
+            sharesToRedeem_ -= preFeesRedeemerSharesBalance - postFeesRedeemerSharesBalance;
         }
 
         // Pay the protocol fee after running other fees, but before burning shares

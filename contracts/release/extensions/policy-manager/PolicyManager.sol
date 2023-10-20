@@ -9,10 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
-import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
+import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
 import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
 import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
@@ -50,7 +49,6 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     }
 
     constructor(address _fundDeployer, address _gasRelayPaymasterFactory)
-        public
         ExtensionBase(_fundDeployer)
         GasRelayRecipientMixin(_gasRelayPaymasterFactory)
     {}

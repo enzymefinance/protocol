@@ -9,9 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-
-import "./VaultLibSafeMath.sol";
+pragma solidity 0.8.19;
 
 /// @title StandardERC20 Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -20,8 +18,6 @@ import "./VaultLibSafeMath.sol";
 /// Adapted from OpenZeppelin 3.2.0.
 /// DO NOT EDIT THIS CONTRACT.
 abstract contract SharesTokenBase {
-    using VaultLibSafeMath for uint256;
-
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -49,11 +45,7 @@ abstract contract SharesTokenBase {
     /// @dev Standard implementation of ERC20's transferFrom(). Can be overridden.
     function transferFrom(address _sender, address _recipient, uint256 _amount) public virtual returns (bool) {
         __transfer(_sender, _recipient, _amount);
-        __approve(
-            _sender,
-            msg.sender,
-            sharesAllowances[_sender][msg.sender].sub(_amount, "ERC20: transfer amount exceeds allowance")
-        );
+        __approve(_sender, msg.sender, sharesAllowances[_sender][msg.sender] - _amount);
         return true;
     }
 
@@ -104,8 +96,8 @@ abstract contract SharesTokenBase {
     function __burn(address _account, uint256 _amount) internal virtual {
         require(_account != address(0), "ERC20: burn from the zero address");
 
-        sharesBalances[_account] = sharesBalances[_account].sub(_amount, "ERC20: burn amount exceeds balance");
-        sharesTotalSupply = sharesTotalSupply.sub(_amount);
+        sharesBalances[_account] -= _amount;
+        sharesTotalSupply -= _amount;
         emit Transfer(_account, address(0), _amount);
     }
 
@@ -113,8 +105,8 @@ abstract contract SharesTokenBase {
     function __mint(address _account, uint256 _amount) internal virtual {
         require(_account != address(0), "ERC20: mint to the zero address");
 
-        sharesTotalSupply = sharesTotalSupply.add(_amount);
-        sharesBalances[_account] = sharesBalances[_account].add(_amount);
+        sharesTotalSupply += _amount;
+        sharesBalances[_account] += _amount;
         emit Transfer(address(0), _account, _amount);
     }
 
@@ -123,8 +115,8 @@ abstract contract SharesTokenBase {
         require(_sender != address(0), "ERC20: transfer from the zero address");
         require(_recipient != address(0), "ERC20: transfer to the zero address");
 
-        sharesBalances[_sender] = sharesBalances[_sender].sub(_amount, "ERC20: transfer amount exceeds balance");
-        sharesBalances[_recipient] = sharesBalances[_recipient].add(_amount);
+        sharesBalances[_sender] -= _amount;
+        sharesBalances[_recipient] += _amount;
         emit Transfer(_sender, _recipient, _amount);
     }
 }

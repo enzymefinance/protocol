@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import "./utils/ProxiableVaultLib.sol";
+import {IProxiableVaultLib} from "./utils/IProxiableVaultLib.sol";
 
 /// @title VaultProxy Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -27,7 +27,7 @@ contract VaultProxy {
         // `bytes32(keccak256('mln.proxiable.vaultlib'))`
         require(
             bytes32(0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5)
-                == ProxiableVaultLib(_vaultLib).proxiableUUID(),
+                == IProxiableVaultLib(_vaultLib).proxiableUUID(),
             "constructor: _vaultLib not compatible"
         );
 

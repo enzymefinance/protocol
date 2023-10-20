@@ -9,12 +9,11 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {AddressArrayLib} from "../../../utils/0.6.12/AddressArrayLib.sol";
-import {AssetHelpers} from "../../../utils/0.6.12/AssetHelpers.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
+import {AssetHelpers} from "../../../utils/0.8.19/AssetHelpers.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
 import {IValueInterpreter} from "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
@@ -32,7 +31,6 @@ import {IIntegrationManager} from "./IIntegrationManager.sol";
 /// arbitrary adapters that they interact with.
 contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedVaultActionMixin, AssetHelpers {
     using AddressArrayLib for address[];
-    using SafeMath for uint256;
 
     event CallOnIntegrationExecutedForFund(
         address indexed comptrollerProxy,
@@ -50,7 +48,6 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     address private immutable VALUE_INTERPRETER;
 
     constructor(address _fundDeployer, address _policyManager, address _valueInterpreter)
-        public
         ExtensionBase(_fundDeployer)
     {
         POLICY_MANAGER = _policyManager;
@@ -361,7 +358,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         incomingAssetAmounts_ = new uint256[](_incomingAssets.length);
         for (uint256 i; i < _incomingAssets.length; i++) {
             incomingAssetAmounts_[i] =
-                __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]).sub(_preCallIncomingAssetBalances[i]);
+                __getVaultAssetBalance(_vaultProxy, _incomingAssets[i]) - _preCallIncomingAssetBalances[i];
             require(
                 incomingAssetAmounts_[i] >= _minIncomingAssetAmounts[i],
                 "__postProcessCoI: Received incoming asset less than expected"
@@ -378,7 +375,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
             // Calculate the balance change of spend assets. Ignore if balance increased.
             uint256 postCallSpendAssetBalance = __getVaultAssetBalance(_vaultProxy, _spendAssets[i]);
             if (postCallSpendAssetBalance < _preCallSpendAssetBalances[i]) {
-                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i].sub(postCallSpendAssetBalance);
+                spendAssetAmounts_[i] = _preCallSpendAssetBalances[i] - postCallSpendAssetBalance;
             }
 
             // Reset any unused approvals

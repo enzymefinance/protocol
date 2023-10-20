@@ -9,8 +9,7 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.19;
 
 import {IDispatcher} from "../../../persistent/dispatcher/IDispatcher.sol";
 import {IMigrationHookHandler} from "../../../persistent/dispatcher/IMigrationHookHandler.sol";
@@ -127,7 +126,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     }
 
     constructor(address _dispatcher, address _gasRelayPaymasterFactory)
-        public
         GasRelayRecipientMixin(_gasRelayPaymasterFactory)
     {
         // Validate constants

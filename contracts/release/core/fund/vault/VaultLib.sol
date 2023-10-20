@@ -9,16 +9,16 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {ERC20Burnable} from "openzeppelin-solc-0.6/token/ERC20/ERC20Burnable.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {ERC20Burnable} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC20Burnable.sol";
+import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {IWETH} from "../../../../external-interfaces/IWETH.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
 import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
-import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
+import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
@@ -76,7 +76,7 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         address _mlnBurner,
         address _wethToken,
         uint256 _positionsLimit
-    ) public GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
+    ) GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         MLN_BURNER = _mlnBurner;
         MLN_TOKEN = _mlnToken;

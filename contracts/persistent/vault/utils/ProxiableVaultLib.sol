@@ -9,7 +9,9 @@
     file that was distributed with this source code.
 */
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
+
+import {IProxiableVaultLib} from "./IProxiableVaultLib.sol";
 
 /// @title ProxiableVaultLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -17,7 +19,7 @@ pragma solidity 0.6.12;
 /// @dev The recommended implementation of the target of a proxy according to EIP-1822 and EIP-1967
 /// Code position in storage is `bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)`,
 /// which is "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc".
-abstract contract ProxiableVaultLib {
+abstract contract ProxiableVaultLib is IProxiableVaultLib {
     /// @dev Updates the target of the proxy to be the contract at _nextVaultLib
     function __updateCodeAddress(address _nextVaultLib) internal {
         require(
@@ -34,7 +36,7 @@ abstract contract ProxiableVaultLib {
     /// @notice Returns a unique bytes32 hash for VaultLib instances
     /// @return uuid_ The bytes32 hash representing the UUID
     /// @dev The UUID is `bytes32(keccak256('mln.proxiable.vaultlib'))`
-    function proxiableUUID() public pure returns (bytes32 uuid_) {
+    function proxiableUUID() public pure override returns (bytes32 uuid_) {
         return 0x027b9570e9fedc1a80b937ae9a06861e5faef3992491af30b684a64b3fbec7a5;
     }
 }

@@ -9,10 +9,10 @@
     file that was distributed with this source code.
 */
 
-import {IBeaconProxyFactory} from "../../../utils/0.6.12/beacon-proxy/IBeaconProxyFactory.sol";
+import {IBeaconProxyFactory} from "../../../utils/0.8.19/deprecated/beacon-proxy/IBeaconProxyFactory.sol";
 import {IGasRelayPaymaster} from "./IGasRelayPaymaster.sol";
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.19;
 
 /// @title GasRelayRecipientMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -22,7 +22,7 @@ pragma solidity 0.6.12;
 abstract contract GasRelayRecipientMixin {
     address internal immutable GAS_RELAY_PAYMASTER_FACTORY;
 
-    constructor(address _gasRelayPaymasterFactory) internal {
+    constructor(address _gasRelayPaymasterFactory) {
         GAS_RELAY_PAYMASTER_FACTORY = _gasRelayPaymasterFactory;
     }
 
@@ -36,7 +36,7 @@ abstract contract GasRelayRecipientMixin {
             return canonicalSender_;
         }
 
-        return msg.sender;
+        return payable(msg.sender);
     }
 
     ///////////////////
