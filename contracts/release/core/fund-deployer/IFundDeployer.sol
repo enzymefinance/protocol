@@ -87,6 +87,8 @@ interface IFundDeployer {
 
     function getVaultLib() external view returns (address vaultLib_);
 
+    function getVaultProxyForComptrollerProxy(address _comptrollerProxy) external view returns (address vaultProxy_);
+
     function hasReconfigurationRequest(address _vaultProxy) external view returns (bool hasReconfigurationRequest_);
 
     function isAllowedBuySharesOnBehalfCaller(address _who) external view returns (bool isAllowed_);

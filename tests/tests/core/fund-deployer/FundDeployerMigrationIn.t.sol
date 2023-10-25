@@ -106,6 +106,12 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         assertEq(comptrollerProxy.getDenominationAsset(), denominationAsset);
         assertEq(comptrollerProxy.getSharesActionTimelock(), sharesActionTimelock);
 
+        // Assert the correct FundDeployer state values
+        assertEq(
+            core.release.fundDeployer.getVaultProxyForComptrollerProxy(address(comptrollerProxy)),
+            address(vaultProxyCore)
+        );
+
         // TODO: Assert the extensions were called correctly
     }
 

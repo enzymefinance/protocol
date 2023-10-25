@@ -116,6 +116,9 @@ contract FundDeployerTest is IntegrationTest {
         assertEq(IERC20(vaultProxy).name(), fundName);
         assertEq(IERC20(vaultProxy).symbol(), "ENZF");
 
+        // Assert the correct FundDeployer state values
+        assertEq(core.release.fundDeployer.getVaultProxyForComptrollerProxy(address(comptrollerProxy)), vaultProxy);
+
         // TODO: calls the active() lifecycle function (?)
     }
 }

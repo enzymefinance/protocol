@@ -90,6 +90,8 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     uint256 private reconfigurationTimelock;
 
     mapping(address => bool) private acctToIsAllowedBuySharesOnBehalfCaller;
+    // Record of all ComptrollerProxy instances created via this contract
+    mapping(address => address) private comptrollerProxyToVaultProxy;
     mapping(bytes32 => mapping(bytes32 => bool)) private vaultCallToPayloadToIsAllowed;
     mapping(address => ReconfigurationRequest) private vaultProxyToReconfigurationRequest;
 
@@ -441,6 +443,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address _denominationAsset,
         uint256 _sharesActionTimelock
     ) private {
+        // Do this before anything else
+        comptrollerProxyToVaultProxy[_comptrollerProxy] = _vaultProxy;
+
         IComptroller(_comptrollerProxy).init({
             _vaultProxy: _vaultProxy,
             _denominationAsset: _denominationAsset,
@@ -693,6 +698,18 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     ///////////////////
 
     // EXTERNAL FUNCTIONS
+
+    /// @notice Gets the VaultProxy for a given ComptrollerProxy created by this contract
+    /// @param _comptrollerProxy The ComptrollerProxy
+    /// @return vaultProxy_ The VaultProxy
+    function getVaultProxyForComptrollerProxy(address _comptrollerProxy)
+        external
+        view
+        override
+        returns (address vaultProxy_)
+    {
+        return comptrollerProxyToVaultProxy[_comptrollerProxy];
+    }
 
     /// @notice Checks if a contract call is allowed
     /// @param _contract The contract of the call to check
