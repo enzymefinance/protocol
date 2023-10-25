@@ -77,7 +77,13 @@ interface IComptroller {
 
     function getWethToken() external view returns (address wethToken_);
 
-    function init(address _vaultProxy, address _denominationAsset, uint256 _sharesActionTimelock) external;
+    function init(
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external;
 
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
 

@@ -119,15 +119,11 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
     }
 
     /// @notice Enable policies for use in a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
-    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata _configData)
-        external
-        override
-        onlyFundDeployer
-    {
-        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
+    function setConfigForFund(bytes calldata _configData) external override {
+        address comptrollerProxy = msg.sender;
+
+        __setValidatedVaultProxy({_comptrollerProxy: comptrollerProxy});
 
         // In case there are no policies yet
         if (_configData.length == 0) {
@@ -144,7 +140,7 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
         // Enable each policy with settings
         for (uint256 i; i < policies.length; i++) {
             __enablePolicyForFund(
-                _comptrollerProxy, policies[i], settingsData[i], IPolicy(policies[i]).implementedHooks()
+                comptrollerProxy, policies[i], settingsData[i], IPolicy(policies[i]).implementedHooks()
             );
         }
     }

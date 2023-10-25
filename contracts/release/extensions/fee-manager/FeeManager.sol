@@ -99,18 +99,14 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
     }
 
     /// @notice Enable and configure fees for use in the calling fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _vaultProxy The VaultProxy of the fund
     /// @param _configData Encoded config data
     /// @dev The order of `fees` determines the order in which fees of the same FeeHook will be applied.
     /// It is recommended to run ManagementFee before PerformanceFee in order to achieve precise
     /// PerformanceFee calcs.
-    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata _configData)
-        external
-        override
-        onlyFundDeployer
-    {
-        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
+    function setConfigForFund(bytes calldata _configData) external override {
+        address comptrollerProxy = msg.sender;
+
+        __setValidatedVaultProxy({_comptrollerProxy: comptrollerProxy});
 
         (address[] memory fees, bytes[] memory settingsData) = abi.decode(_configData, (address[], bytes[]));
 
@@ -121,12 +117,12 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         // Enable each fee with settings
         for (uint256 i; i < fees.length; i++) {
             // Set fund config on fee
-            IFee(fees[i]).addFundSettings(_comptrollerProxy, settingsData[i]);
+            IFee(fees[i]).addFundSettings(comptrollerProxy, settingsData[i]);
 
             // Enable fee for fund
-            comptrollerProxyToFees[_comptrollerProxy].push(fees[i]);
+            comptrollerProxyToFees[comptrollerProxy].push(fees[i]);
 
-            emit FeeEnabledForFund(_comptrollerProxy, fees[i], settingsData[i]);
+            emit FeeEnabledForFund(comptrollerProxy, fees[i], settingsData[i]);
         }
     }
 

@@ -280,10 +280,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: _vaultProxy,
             _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock
+            _sharesActionTimelock: _sharesActionTimelock,
+            _feeManagerConfigData: _feeManagerConfigData,
+            _policyManagerConfigData: _policyManagerConfigData
         });
-
-        __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
         IDispatcher(getDispatcher()).signalMigration(
             _vaultProxy, comptrollerProxy_, getVaultLib(), _bypassPrevReleaseFailure
@@ -325,10 +325,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: vaultProxy_,
             _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock
+            _sharesActionTimelock: _sharesActionTimelock,
+            _feeManagerConfigData: _feeManagerConfigData,
+            _policyManagerConfigData: _policyManagerConfigData
         });
-
-        __configureExtensions(comptrollerProxy_, vaultProxy_, _feeManagerConfigData, _policyManagerConfigData);
 
         IComptroller(comptrollerProxy_).activate(false);
 
@@ -371,10 +371,10 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: _vaultProxy,
             _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock
+            _sharesActionTimelock: _sharesActionTimelock,
+            _feeManagerConfigData: _feeManagerConfigData,
+            _policyManagerConfigData: _policyManagerConfigData
         });
-
-        __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
         uint256 executableTimestamp = block.timestamp + getReconfigurationTimelock();
         vaultProxyToReconfigurationRequest[_vaultProxy] =
@@ -383,33 +383,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         emit ReconfigurationRequestCreated(canonicalSender, _vaultProxy, comptrollerProxy_, executableTimestamp);
 
         return comptrollerProxy_;
-    }
-
-    /// @dev Helper function to configure the Extensions for a given ComptrollerProxy
-    function __configureExtensions(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData
-    ) private {
-        // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
-        if (_feeManagerConfigData.length > 0) {
-            IExtension(IComptroller(_comptrollerProxy).getFeeManager()).setConfigForFund(
-                _comptrollerProxy, _vaultProxy, _feeManagerConfigData
-            );
-        }
-
-        // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
-        // In the future, we can consider caching conditionally.
-        IExtension(IComptroller(_comptrollerProxy).getExternalPositionManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, ""
-        );
-        IExtension(IComptroller(_comptrollerProxy).getIntegrationManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, ""
-        );
-        IExtension(IComptroller(_comptrollerProxy).getPolicyManager()).setConfigForFund(
-            _comptrollerProxy, _vaultProxy, _policyManagerConfigData
-        );
     }
 
     /// @dev Helper function to deploy an uninitialized ComptrollerProxy
@@ -441,7 +414,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address _comptrollerProxy,
         address _vaultProxy,
         address _denominationAsset,
-        uint256 _sharesActionTimelock
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
     ) private {
         // Do this before anything else
         comptrollerProxyToVaultProxy[_comptrollerProxy] = _vaultProxy;
@@ -449,7 +424,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         IComptroller(_comptrollerProxy).init({
             _vaultProxy: _vaultProxy,
             _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock
+            _sharesActionTimelock: _sharesActionTimelock,
+            _feeManagerConfigData: _feeManagerConfigData,
+            _policyManagerConfigData: _policyManagerConfigData
         });
 
         emit ComptrollerProxyDeployed(

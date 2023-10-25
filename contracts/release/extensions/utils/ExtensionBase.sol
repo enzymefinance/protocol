@@ -11,6 +11,7 @@
 
 pragma solidity 0.8.19;
 
+import {IFundDeployer} from "../../core/fund-deployer/IFundDeployer.sol";
 import {FundDeployerOwnerMixin} from "../../utils/0.8.19/FundDeployerOwnerMixin.sol";
 import {IExtension} from "../IExtension.sol";
 
@@ -21,11 +22,6 @@ abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
     event ValidatedVaultProxySetForFund(address indexed comptrollerProxy, address indexed vaultProxy);
 
     mapping(address => address) internal comptrollerProxyToVaultProxy;
-
-    modifier onlyFundDeployer() {
-        require(msg.sender == getFundDeployer(), "Only the FundDeployer can make this call");
-        _;
-    }
 
     constructor(address _fundDeployer) FundDeployerOwnerMixin(_fundDeployer) {}
 
@@ -50,15 +46,18 @@ abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
 
     /// @notice Allows extension to run logic during fund configuration
     /// @dev Unimplemented by default, may be overridden.
-    function setConfigForFund(address, address, bytes calldata) external virtual override {
+    function setConfigForFund(bytes calldata) external virtual override {
         return;
     }
 
     /// @dev Helper to store the validated ComptrollerProxy-VaultProxy relation
-    function __setValidatedVaultProxy(address _comptrollerProxy, address _vaultProxy) internal {
-        comptrollerProxyToVaultProxy[_comptrollerProxy] = _vaultProxy;
+    function __setValidatedVaultProxy(address _comptrollerProxy) internal returns (address vaultProxy_) {
+        vaultProxy_ = IFundDeployer(getFundDeployer()).getVaultProxyForComptrollerProxy(_comptrollerProxy);
+        require(vaultProxy_ != address(0), "__setValidatedVaultProxy: Invalid ComptrollerProxy");
 
-        emit ValidatedVaultProxySetForFund(_comptrollerProxy, _vaultProxy);
+        comptrollerProxyToVaultProxy[_comptrollerProxy] = vaultProxy_;
+
+        emit ValidatedVaultProxySetForFund(_comptrollerProxy, vaultProxy_);
     }
 
     ///////////////////

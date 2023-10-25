@@ -44,7 +44,13 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     event GasRelayPaymasterSet(address gasRelayPaymaster);
 
-    event Initialized(address vaultProxy, address denominationAsset, uint256 sharesActionTimelock);
+    event Initialized(
+        address vaultProxy,
+        address denominationAsset,
+        uint256 sharesActionTimelock,
+        bytes feeManagerConfigData,
+        bytes policyManagerConfigData
+    );
 
     event MigratedSharesDuePaid(uint256 sharesDue);
 
@@ -350,10 +356,21 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _denominationAsset The asset in which the fund's value should be denominated
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
+    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
+    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
-    function init(address _vaultProxy, address _denominationAsset, uint256 _sharesActionTimelock) external override {
+    function init(
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock,
+        bytes calldata _feeManagerConfigData,
+        bytes calldata _policyManagerConfigData
+    ) external override {
+        // 1. Comptroller config
+        // This must be set before Extensions are initialized, as they may rely on it
+
         require(getVaultProxy() == address(0), "init: Already initialized");
         require(
             IValueInterpreter(getValueInterpreter()).isSupportedPrimitiveAsset(_denominationAsset),
@@ -364,7 +381,22 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         denominationAsset = _denominationAsset;
         sharesActionTimelock = _sharesActionTimelock;
 
-        emit Initialized(_vaultProxy, _denominationAsset, _sharesActionTimelock);
+        // 2. Extensions config
+
+        // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
+        if (_feeManagerConfigData.length > 0) {
+            IExtension(getFeeManager()).setConfigForFund(_feeManagerConfigData);
+        }
+
+        // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
+        // In the future, we can consider caching conditionally.
+        IExtension(getExternalPositionManager()).setConfigForFund("");
+        IExtension(getIntegrationManager()).setConfigForFund("");
+        IExtension(getPolicyManager()).setConfigForFund(_policyManagerConfigData);
+
+        emit Initialized(
+            _vaultProxy, _denominationAsset, _sharesActionTimelock, _feeManagerConfigData, _policyManagerConfigData
+        );
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`

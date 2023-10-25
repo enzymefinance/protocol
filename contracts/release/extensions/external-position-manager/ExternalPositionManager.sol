@@ -63,14 +63,8 @@ contract ExternalPositionManager is IExternalPositionManager, ExtensionBase, Per
     /////////////
 
     /// @notice Enables the ExternalPositionManager to be used by a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _vaultProxy The VaultProxy of the fund
-    function setConfigForFund(address _comptrollerProxy, address _vaultProxy, bytes calldata)
-        external
-        override
-        onlyFundDeployer
-    {
-        __setValidatedVaultProxy(_comptrollerProxy, _vaultProxy);
+    function setConfigForFund(bytes calldata) external override {
+        __setValidatedVaultProxy({_comptrollerProxy: msg.sender});
     }
 
     ///////////////////////////////
