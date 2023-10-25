@@ -319,7 +319,14 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external override {
-        __assertPermissionedVaultAction(msg.sender, _action);
+        require(permissionedVaultActionAllowed, "permissionedVaultAction: No actions allowed");
+
+        // Validate caller
+        require(
+            msg.sender == getIntegrationManager() || msg.sender == getExternalPositionManager()
+                || msg.sender == getFeeManager(),
+            "permissionedVaultAction: Unauthorized caller"
+        );
 
         // Validate action as needed
         if (_action == IVault.VaultAction.RemoveTrackedAsset) {
@@ -330,41 +337,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         }
 
         IVault(getVaultProxy()).receiveValidatedVaultAction(_action, _actionData);
-    }
-
-    /// @dev Helper to assert that a caller is allowed to perform a particular VaultAction.
-    /// Uses this pattern rather than multiple `require` statements to save on contract size.
-    function __assertPermissionedVaultAction(address _caller, IVault.VaultAction _action) private view {
-        bool validAction;
-        if (permissionedVaultActionAllowed) {
-            // Calls are roughly ordered by likely frequency
-            if (_caller == getIntegrationManager()) {
-                if (
-                    _action == IVault.VaultAction.AddTrackedAsset || _action == IVault.VaultAction.RemoveTrackedAsset
-                        || _action == IVault.VaultAction.WithdrawAssetTo
-                        || _action == IVault.VaultAction.ApproveAssetSpender
-                ) {
-                    validAction = true;
-                }
-            } else if (_caller == getFeeManager()) {
-                if (
-                    _action == IVault.VaultAction.MintShares || _action == IVault.VaultAction.BurnShares
-                        || _action == IVault.VaultAction.TransferShares
-                ) {
-                    validAction = true;
-                }
-            } else if (_caller == getExternalPositionManager()) {
-                if (
-                    _action == IVault.VaultAction.CallOnExternalPosition
-                        || _action == IVault.VaultAction.AddExternalPosition
-                        || _action == IVault.VaultAction.RemoveExternalPosition
-                ) {
-                    validAction = true;
-                }
-            }
-        }
-
-        require(validAction, "__assertPermissionedVaultAction: Action not allowed");
     }
 
     ///////////////
