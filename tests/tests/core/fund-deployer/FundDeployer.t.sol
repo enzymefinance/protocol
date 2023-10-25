@@ -23,6 +23,7 @@ contract FundDeployerTest is IntegrationTest {
     event ComptrollerProxyDeployed(
         address indexed creator,
         address comptrollerProxy,
+        address indexed vaultProxy,
         address indexed denominationAsset,
         uint256 sharesActionTimelock
     );
@@ -82,7 +83,9 @@ contract FundDeployerTest is IntegrationTest {
         address expectedVaultProxyAddress = predictVaultProxyAddress(core.persistent.dispatcher);
 
         expectEmit(address(core.release.fundDeployer));
-        emit ComptrollerProxyDeployed(fundCreator, expectedComptrollerProxy, denominationAsset, sharesActionTimelock);
+        emit ComptrollerProxyDeployed(
+            fundCreator, expectedComptrollerProxy, expectedVaultProxyAddress, denominationAsset, sharesActionTimelock
+        );
 
         // TODO: Should this be tested in the protocol fee tracker tests?
         expectEmit(address(core.release.protocolFeeTracker));

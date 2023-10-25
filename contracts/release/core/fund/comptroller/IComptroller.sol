@@ -77,7 +77,7 @@ interface IComptroller {
 
     function getWethToken() external view returns (address wethToken_);
 
-    function init(address _denominationAsset, uint256 _sharesActionTimelock) external;
+    function init(address _vaultProxy, address _denominationAsset, uint256 _sharesActionTimelock) external;
 
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
 
@@ -102,8 +102,6 @@ interface IComptroller {
     function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external;
 
     function setGasRelayPaymaster(address _nextGasRelayPaymaster) external;
-
-    function setVaultProxy(address _vaultProxy) external;
 
     function shutdownGasRelayPaymaster() external;
 

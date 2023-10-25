@@ -44,6 +44,8 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     event GasRelayPaymasterSet(address gasRelayPaymaster);
 
+    event Initialized(address vaultProxy, address denominationAsset, uint256 sharesActionTimelock);
+
     event MigratedSharesDuePaid(uint256 sharesDue);
 
     event PayProtocolFeeDuringDestructFailed();
@@ -61,8 +63,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         address[] receivedAssets,
         uint256[] receivedAssetAmounts
     );
-
-    event VaultProxySet(address vaultProxy);
 
     // Constants and immutables - shared by all proxies
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
@@ -374,31 +374,25 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     // Ordered by execution in the lifecycle
 
     /// @notice Initializes a fund with its core config
+    /// @param _vaultProxy The VaultProxy contract
     /// @param _denominationAsset The asset in which the fund's value should be denominated
     /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
     /// (buying or selling shares) by the same user
     /// @dev Pseudo-constructor per proxy.
     /// No need to assert access because this is called atomically on deployment,
     /// and once it's called, it cannot be called again.
-    function init(address _denominationAsset, uint256 _sharesActionTimelock) external override {
-        require(getDenominationAsset() == address(0), "init: Already initialized");
+    function init(address _vaultProxy, address _denominationAsset, uint256 _sharesActionTimelock) external override {
+        require(getVaultProxy() == address(0), "init: Already initialized");
         require(
             IValueInterpreter(getValueInterpreter()).isSupportedPrimitiveAsset(_denominationAsset),
             "init: Bad denomination asset"
         );
 
+        vaultProxy = _vaultProxy;
         denominationAsset = _denominationAsset;
         sharesActionTimelock = _sharesActionTimelock;
-    }
 
-    /// @notice Sets the VaultProxy
-    /// @param _vaultProxy The VaultProxy contract
-    /// @dev No need to assert anything beyond FundDeployer access.
-    /// Called atomically with init(), but after ComptrollerProxy has been deployed.
-    function setVaultProxy(address _vaultProxy) external override onlyFundDeployer {
-        vaultProxy = _vaultProxy;
-
-        emit VaultProxySet(_vaultProxy);
+        emit Initialized(_vaultProxy, _denominationAsset, _sharesActionTimelock);
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`

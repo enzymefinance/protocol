@@ -34,9 +34,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     event ComptrollerLibSet(address comptrollerLib);
 
+    // TODO: can index comptrollerProxy once denominationAsset is removed
     event ComptrollerProxyDeployed(
         address indexed creator,
         address comptrollerProxy,
+        address indexed vaultProxy,
         address indexed denominationAsset,
         uint256 sharesActionTimelock
     );
@@ -270,9 +272,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "createMigrationRequest: A MigrationRequest already exists"
         );
 
-        comptrollerProxy_ = __deployComptrollerProxy(msg.sender, _denominationAsset, _sharesActionTimelock);
-
-        IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
+        comptrollerProxy_ = __deployComptrollerProxy();
+        __initializeComptrollerProxy({
+            _canonicalSender: msg.sender,
+            _comptrollerProxy: comptrollerProxy_,
+            _vaultProxy: _vaultProxy,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: _sharesActionTimelock
+        });
 
         __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
@@ -307,16 +314,21 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // _fundOwner is validated by VaultLib.__setOwner()
         address canonicalSender = __msgSender();
 
-        comptrollerProxy_ = __deployComptrollerProxy(canonicalSender, _denominationAsset, _sharesActionTimelock);
+        comptrollerProxy_ = __deployComptrollerProxy();
 
         vaultProxy_ = __deployVaultProxy(_fundOwner, comptrollerProxy_, _fundName, _fundSymbol);
 
-        IComptroller comptrollerContract = IComptroller(comptrollerProxy_);
-        comptrollerContract.setVaultProxy(vaultProxy_);
+        __initializeComptrollerProxy({
+            _canonicalSender: canonicalSender,
+            _comptrollerProxy: comptrollerProxy_,
+            _vaultProxy: vaultProxy_,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: _sharesActionTimelock
+        });
 
         __configureExtensions(comptrollerProxy_, vaultProxy_, _feeManagerConfigData, _policyManagerConfigData);
 
-        comptrollerContract.activate(false);
+        IComptroller(comptrollerProxy_).activate(false);
 
         IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(vaultProxy_);
 
@@ -351,9 +363,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "createReconfigurationRequest: VaultProxy has a pending reconfiguration request"
         );
 
-        comptrollerProxy_ = __deployComptrollerProxy(canonicalSender, _denominationAsset, _sharesActionTimelock);
-
-        IComptroller(comptrollerProxy_).setVaultProxy(_vaultProxy);
+        comptrollerProxy_ = __deployComptrollerProxy();
+        __initializeComptrollerProxy({
+            _canonicalSender: canonicalSender,
+            _comptrollerProxy: comptrollerProxy_,
+            _vaultProxy: _vaultProxy,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: _sharesActionTimelock
+        });
 
         __configureExtensions(comptrollerProxy_, _vaultProxy, _feeManagerConfigData, _policyManagerConfigData);
 
@@ -393,21 +410,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         );
     }
 
-    /// @dev Helper function to deploy a configured ComptrollerProxy
-    function __deployComptrollerProxy(
-        address _canonicalSender,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock
-    ) private returns (address comptrollerProxy_) {
-        // _denominationAsset is validated by ComptrollerLib.init()
-
-        bytes memory constructData =
-            abi.encodeWithSelector(IComptroller.init.selector, _denominationAsset, _sharesActionTimelock);
-        comptrollerProxy_ = address(new ComptrollerProxy(constructData, getComptrollerLib()));
-
-        emit ComptrollerProxyDeployed(_canonicalSender, comptrollerProxy_, _denominationAsset, _sharesActionTimelock);
-
-        return comptrollerProxy_;
+    /// @dev Helper function to deploy an uninitialized ComptrollerProxy
+    function __deployComptrollerProxy() private returns (address comptrollerProxy_) {
+        return address(new ComptrollerProxy("", getComptrollerLib()));
     }
 
     /// @dev Helper to deploy a new VaultProxy instance during fund creation.
@@ -425,6 +430,26 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         }
 
         return vaultProxy_;
+    }
+
+    /// @dev Helper to initialize the ComptrollerProxy post-deployment.
+    /// Done as a separate step since VaultProxy is not known at deployment time in the case new funds.
+    function __initializeComptrollerProxy(
+        address _canonicalSender,
+        address _comptrollerProxy,
+        address _vaultProxy,
+        address _denominationAsset,
+        uint256 _sharesActionTimelock
+    ) private {
+        IComptroller(_comptrollerProxy).init({
+            _vaultProxy: _vaultProxy,
+            _denominationAsset: _denominationAsset,
+            _sharesActionTimelock: _sharesActionTimelock
+        });
+
+        emit ComptrollerProxyDeployed(
+            _canonicalSender, _comptrollerProxy, _vaultProxy, _denominationAsset, _sharesActionTimelock
+        );
     }
 
     ///////////////////////////////////////////////
