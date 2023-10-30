@@ -447,9 +447,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "cancelReconfiguration: No reconfiguration request exists for _vaultProxy"
         );
 
-        // Destroy the nextComptrollerProxy
-        IComptroller(nextComptrollerProxy).destructUnactivated();
-
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
 
@@ -476,7 +473,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             "executeReconfiguration: _vaultProxy is no longer on this release"
         );
 
-        // Unwind and destroy the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
+        // Unwind the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
         address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
         address paymaster = IComptroller(prevComptrollerProxy).getGasRelayPaymaster();
         __destructActivatedComptrollerProxy(prevComptrollerProxy);
@@ -539,13 +536,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     }
 
     /// @notice Executes logic when a migration is canceled on the Dispatcher
-    /// @param _nextComptrollerProxy The ComptrollerProxy created on this release
-    function invokeMigrationInCancelHook(address, address, address _nextComptrollerProxy, address)
-        external
-        override
-        onlyDispatcher
-    {
-        IComptroller(_nextComptrollerProxy).destructUnactivated();
+    function invokeMigrationInCancelHook(address, address, address, address) external override {
+        // UNIMPLEMENTED
+        // If re-implemented, must restrict access to Dispatcher
     }
 
     ///////////////////
@@ -567,7 +560,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // Must use PreMigrate hook to get the ComptrollerProxy from the VaultProxy
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
 
-        // Wind down fund and destroy its config
+        // Wind down fund
         __destructActivatedComptrollerProxy(comptrollerProxy);
     }
 

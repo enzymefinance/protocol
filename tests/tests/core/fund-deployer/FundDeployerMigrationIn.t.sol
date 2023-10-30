@@ -174,10 +174,8 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
                 core.persistent.dispatcher.cancelMigration.selector, address(vaultProxyCore), bypassPrevReleaseFailure
             )
         );
-        // Assert ComptrollerProxy.destructUnactivated() will be called
-        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.destructUnactivated.selector));
-        vm.prank(vaultOwner);
 
+        vm.prank(vaultOwner);
         core.release.fundDeployer.cancelMigration({
             _vaultProxy: address(vaultProxyCore),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure

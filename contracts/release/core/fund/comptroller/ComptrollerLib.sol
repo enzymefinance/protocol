@@ -90,8 +90,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     address internal denominationAsset;
     address internal vaultProxy;
-    // True only for the one non-proxy
-    bool internal isLib;
 
     // Storage
 
@@ -204,7 +202,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
         VALUE_INTERPRETER = _valueInterpreter;
         WETH_TOKEN = _wethToken;
-        isLib = true;
     }
 
     /////////////
@@ -454,23 +451,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         catch {
             emit DeactivateFeeManagerFailed();
         }
-
-        __selfDestruct();
-    }
-
-    /// @notice Destroy a ComptrollerProxy that has not been activated
-    function destructUnactivated() external override onlyFundDeployer {
-        __selfDestruct();
-    }
-
-    /// @dev Helper to self-destruct the contract.
-    /// There should never be ETH in the ComptrollerLib,
-    /// so no need to waste gas to get the fund owner
-    function __selfDestruct() private {
-        // Not necessary, but failsafe to protect the lib against selfdestruct
-        require(!isLib, "__selfDestruct: Only delegate callable");
-
-        selfdestruct(payable(address(this)));
     }
 
     ////////////////

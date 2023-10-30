@@ -40,8 +40,6 @@ interface IComptroller {
 
     function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit) external;
 
-    function destructUnactivated() external;
-
     function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 
     function getDenominationAsset() external view returns (address denominationAsset_);
