@@ -424,7 +424,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @notice Wind down and destroy a ComptrollerProxy that is active
     /// @dev No need to assert anything beyond FundDeployer access.
     /// Uses the try/catch pattern throughout out of an abundance of caution for the function's success.
-    function destructActivated() external override onlyFundDeployer allowsPermissionedVaultAction {
+    function deactivate() external override onlyFundDeployer allowsPermissionedVaultAction {
         try IVault(getVaultProxy()).payProtocolFee() {}
         catch {
             emit PayProtocolFeeDuringDestructFailed();

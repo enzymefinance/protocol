@@ -153,8 +153,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     ) private {
         // Validating the ComptrollerProxy is the active VaultProxy.accessor()
         // protects against corner cases of lingering permissions on adapters issued
-        // via VaultLib.callOnContract() that could otherwise be called from an
-        // undestructed ComptrollerProxy
+        // via VaultLib.callOnContract() that could otherwise be reached from an old ComptrollerProxy
         require(
             _comptrollerProxy == IVault(_vaultProxy).getAccessor(), "receiveCallFromComptroller: Fund is not active"
         );

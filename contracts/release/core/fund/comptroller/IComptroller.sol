@@ -34,11 +34,11 @@ interface IComptroller {
 
     function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs) external;
 
+    function deactivate() external;
+
     function deployGasRelayPaymaster() external;
 
     function depositToGasRelayPaymaster() external;
-
-    function destructActivated() external;
 
     function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 

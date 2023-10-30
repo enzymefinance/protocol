@@ -210,9 +210,9 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         emit ReleaseIsLive();
     }
 
-    /// @dev Helper to call ComptrollerProxy.destructActivated() with the correct params
-    function __destructActivatedComptrollerProxy(address _comptrollerProxy) private {
-        IComptroller(_comptrollerProxy).destructActivated();
+    /// @dev Helper to call ComptrollerProxy.deactivate() with the correct params
+    function __deactivateComptrollerProxy(address _comptrollerProxy) private {
+        IComptroller(_comptrollerProxy).deactivate();
     }
 
     ///////////////////
@@ -445,7 +445,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         // Unwind the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
         address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
         address paymaster = IComptroller(prevComptrollerProxy).getGasRelayPaymaster();
-        __destructActivatedComptrollerProxy(prevComptrollerProxy);
+        __deactivateComptrollerProxy(prevComptrollerProxy);
 
         // Execute the reconfiguration
         IVault(_vaultProxy).setAccessorForFundReconfiguration(request.nextComptrollerProxy);
@@ -530,7 +530,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
 
         // Wind down fund
-        __destructActivatedComptrollerProxy(comptrollerProxy);
+        __deactivateComptrollerProxy(comptrollerProxy);
     }
 
     //////////////

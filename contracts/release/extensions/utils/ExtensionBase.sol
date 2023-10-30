@@ -31,7 +31,7 @@ abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
         return;
     }
 
-    /// @notice Allows extension to run logic during fund deactivation (destruct)
+    /// @notice Allows extension to run logic during fund deactivation
     /// @dev Unimplemented by default, may be overridden.
     function deactivateForFund() external virtual override {
         return;
