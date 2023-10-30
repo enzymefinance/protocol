@@ -43,8 +43,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         uint256 sharesActionTimelock
     );
 
-    event GasLimitsForDestructCallSet(uint256 nextDeactivateFeeManagerGasLimit, uint256 nextPayProtocolFeeGasLimit);
-
     event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
@@ -84,8 +82,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     address private vaultLib;
 
     // Storage
-    uint32 private gasLimitForDestructCallToDeactivateFeeManager; // Can reduce to uint16
-    uint32 private gasLimitForDestructCallToPayProtocolFee; // Can reduce to uint16
     bool private isLive;
     uint256 private reconfigurationTimelock;
 
@@ -139,13 +135,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         CREATOR = msg.sender;
         DISPATCHER = _dispatcher;
-
-        // Estimated base call cost: 17k
-        // Per fee that uses shares outstanding (default recipient): 33k
-        // 300k accommodates up to 8 such fees
-        gasLimitForDestructCallToDeactivateFeeManager = 300000;
-        // Estimated cost: 50k
-        gasLimitForDestructCallToPayProtocolFee = 200000;
 
         reconfigurationTimelock = 2 days;
     }
@@ -204,25 +193,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         return IDispatcher(getDispatcher()).getOwner();
     }
 
-    /// @notice Sets the amounts of gas to forward to each of the ComptrollerLib.destructActivated() external calls
-    /// @param _nextDeactivateFeeManagerGasLimit The amount of gas to forward to deactivate the FeeManager
-    /// @param _nextPayProtocolFeeGasLimit The amount of gas to forward to pay the protocol fee
-    function setGasLimitsForDestructCall(uint32 _nextDeactivateFeeManagerGasLimit, uint32 _nextPayProtocolFeeGasLimit)
-        external
-        override
-        onlyOwner
-    {
-        require(
-            _nextDeactivateFeeManagerGasLimit > 0 && _nextPayProtocolFeeGasLimit > 0,
-            "setGasLimitsForDestructCall: Zero value not allowed"
-        );
-
-        gasLimitForDestructCallToDeactivateFeeManager = _nextDeactivateFeeManagerGasLimit;
-        gasLimitForDestructCallToPayProtocolFee = _nextPayProtocolFeeGasLimit;
-
-        emit GasLimitsForDestructCallSet(_nextDeactivateFeeManagerGasLimit, _nextPayProtocolFeeGasLimit);
-    }
-
     /// @notice Sets the release as live
     /// @dev A live release allows funds to be created and migrated once this contract
     /// is set as the Dispatcher.currentFundDeployer
@@ -242,8 +212,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @dev Helper to call ComptrollerProxy.destructActivated() with the correct params
     function __destructActivatedComptrollerProxy(address _comptrollerProxy) private {
-        (uint256 deactivateFeeManagerGasLimit, uint256 payProtocolFeeGasLimit) = getGasLimitsForDestructCall();
-        IComptroller(_comptrollerProxy).destructActivated(deactivateFeeManagerGasLimit, payProtocolFeeGasLimit);
+        IComptroller(_comptrollerProxy).destructActivated();
     }
 
     ///////////////////
@@ -718,18 +687,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @return dispatcher_ The `DISPATCHER` variable value
     function getDispatcher() public view override returns (address dispatcher_) {
         return DISPATCHER;
-    }
-
-    /// @notice Gets the amounts of gas to forward to each of the ComptrollerLib.destructActivated() external calls
-    /// @return deactivateFeeManagerGasLimit_ The amount of gas to forward to deactivate the FeeManager
-    /// @return payProtocolFeeGasLimit_ The amount of gas to forward to pay the protocol fee
-    function getGasLimitsForDestructCall()
-        public
-        view
-        override
-        returns (uint256 deactivateFeeManagerGasLimit_, uint256 payProtocolFeeGasLimit_)
-    {
-        return (gasLimitForDestructCallToDeactivateFeeManager, gasLimitForDestructCallToPayProtocolFee);
     }
 
     /// @notice Gets the `protocolFeeTracker` variable value

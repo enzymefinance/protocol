@@ -38,7 +38,7 @@ interface IComptroller {
 
     function depositToGasRelayPaymaster() external;
 
-    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit) external;
+    function destructActivated() external;
 
     function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 

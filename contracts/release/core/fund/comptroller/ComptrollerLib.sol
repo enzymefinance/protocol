@@ -422,21 +422,10 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     }
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active
-    /// @param _deactivateFeeManagerGasLimit The amount of gas to forward to deactivate the FeeManager
-    /// @param _payProtocolFeeGasLimit The amount of gas to forward to pay the protocol fee
     /// @dev No need to assert anything beyond FundDeployer access.
     /// Uses the try/catch pattern throughout out of an abundance of caution for the function's success.
-    /// All external calls must use limited forwarded gas to ensure that a migration to another release
-    /// does not get bricked by logic that consumes too much gas for the block limit.
-    function destructActivated(uint256 _deactivateFeeManagerGasLimit, uint256 _payProtocolFeeGasLimit)
-        external
-        override
-        onlyFundDeployer
-        allowsPermissionedVaultAction
-    {
-        // Forwarding limited gas here also protects fee recipients by guaranteeing that fee payout logic
-        // will run in the next function call
-        try IVault(getVaultProxy()).payProtocolFee{gas: _payProtocolFeeGasLimit}() {}
+    function destructActivated() external override onlyFundDeployer allowsPermissionedVaultAction {
+        try IVault(getVaultProxy()).payProtocolFee() {}
         catch {
             emit PayProtocolFeeDuringDestructFailed();
         }
@@ -447,7 +436,7 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         // Deactivate extensions only as-necessary
 
         // Pays out shares outstanding for fees
-        try IExtension(getFeeManager()).deactivateForFund{gas: _deactivateFeeManagerGasLimit}() {}
+        try IExtension(getFeeManager()).deactivateForFund() {}
         catch {
             emit DeactivateFeeManagerFailed();
         }

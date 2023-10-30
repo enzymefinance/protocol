@@ -69,11 +69,6 @@ interface IFundDeployer {
 
     function getDispatcher() external view returns (address dispatcher_);
 
-    function getGasLimitsForDestructCall()
-        external
-        view
-        returns (uint256 deactivateFeeManagerGasLimit_, uint256 payProtocolFeeGasLimit_);
-
     function getOwner() external view returns (address owner_);
 
     function getProtocolFeeTracker() external view returns (address protocolFeeTracker_);
@@ -114,9 +109,6 @@ interface IFundDeployer {
     function releaseIsLive() external view returns (bool isLive_);
 
     function setComptrollerLib(address _comptrollerLib) external;
-
-    function setGasLimitsForDestructCall(uint32 _nextDeactivateFeeManagerGasLimit, uint32 _nextPayProtocolFeeGasLimit)
-        external;
 
     function setProtocolFeeTracker(address _protocolFeeTracker) external;
 
