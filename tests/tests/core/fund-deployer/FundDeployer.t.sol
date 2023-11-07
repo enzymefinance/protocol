@@ -35,10 +35,7 @@ contract FundDeployerTest is IntegrationTest {
 
     function test_getOwner_success() public {
         // Deploy a new FundDeployer
-        IFundDeployer newFundDeployer = deployFundDeployer({
-            _dispatcher: core.persistent.dispatcher,
-            _gasRelayPaymasterFactory: core.release.gasRelayPaymasterFactory
-        });
+        IFundDeployer newFundDeployer = deployFundDeployer({_dispatcher: core.persistent.dispatcher});
 
         // Owner starts as the FundDeployer contract deployer
         address creator = newFundDeployer.getOwner();

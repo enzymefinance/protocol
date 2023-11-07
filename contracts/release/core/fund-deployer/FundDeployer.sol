@@ -14,7 +14,6 @@ pragma solidity 0.8.19;
 import {IDispatcher} from "../../../persistent/dispatcher/IDispatcher.sol";
 import {IMigrationHookHandler} from "../../../persistent/dispatcher/IMigrationHookHandler.sol";
 import {IExtension} from "../../extensions/IExtension.sol";
-import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {IProtocolFeeTracker} from "../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {ComptrollerProxy} from "../fund/comptroller/ComptrollerProxy.sol";
 import {IComptroller} from "../fund/comptroller/IComptroller.sol";
@@ -27,7 +26,7 @@ import {IFundDeployer} from "./IFundDeployer.sol";
 /// It primarily coordinates fund deployment and fund migration, but
 /// it is also deferred to for contract access control and for allowed calls
 /// that can be made with a fund's VaultProxy as the msg.sender.
-contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipientMixin {
+contract FundDeployer is IFundDeployer, IMigrationHookHandler {
     event BuySharesOnBehalfCallerDeregistered(address caller);
 
     event BuySharesOnBehalfCallerRegistered(address caller);
@@ -123,9 +122,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         require(IVault(_vaultProxy).canMigrate(_who), "Only a permissioned migrator can call this function");
     }
 
-    constructor(address _dispatcher, address _gasRelayPaymasterFactory)
-        GasRelayRecipientMixin(_gasRelayPaymasterFactory)
-    {
+    constructor(address _dispatcher) {
         // Validate constants
         require(
             ANY_VAULT_CALL == keccak256(abi.encodePacked("mln.vaultCall.any")), "constructor: Incorrect ANY_VAULT_CALL"
@@ -135,6 +132,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         DISPATCHER = _dispatcher;
 
         reconfigurationTimelock = 2 days;
+    }
+
+    // TODO: Temp placeholder; update when tx relaying is reinstated
+    function __msgSender() private view returns (address sender_) {
+        return msg.sender;
     }
 
     //////////////////////////////////////
@@ -402,7 +404,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         // Unwind the prevComptrollerProxy before setting the nextComptrollerProxy as the VaultProxy.accessor
         address prevComptrollerProxy = IVault(_vaultProxy).getAccessor();
-        address paymaster = IComptroller(prevComptrollerProxy).getGasRelayPaymaster();
         __deactivateComptrollerProxy(prevComptrollerProxy);
 
         // Execute the reconfiguration
@@ -410,9 +411,6 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
         // Activate the new ComptrollerProxy
         IComptroller(request.nextComptrollerProxy).activate(true);
-        if (paymaster != address(0)) {
-            IComptroller(request.nextComptrollerProxy).setGasRelayPaymaster(paymaster);
-        }
 
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];

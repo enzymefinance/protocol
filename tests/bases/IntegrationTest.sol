@@ -14,7 +14,7 @@ import {
     Contracts as ReleaseContracts,
     getMainnetDeployment as getMainnetReleaseContracts,
     getPolygonDeployment as getPolygonReleaseContracts
-} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
+} from "tests/utils/core/deployment/V5ReleaseContracts.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 

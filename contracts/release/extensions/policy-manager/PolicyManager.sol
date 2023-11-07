@@ -14,7 +14,6 @@ pragma solidity 0.8.19;
 import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
 import {IComptroller} from "../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
-import {GasRelayRecipientMixin} from "../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
 import {IPolicy} from "./IPolicy.sol";
 import {IPolicyManager} from "./IPolicyManager.sol";
@@ -27,7 +26,7 @@ import {IPolicyManager} from "./IPolicyManager.sol";
 /// Policies that restrict current investors can only be added upon fund setup, migration, or reconfiguration.
 /// Policies that restrict new investors or asset management actions can be added at any time.
 /// Policies themselves specify whether or not they are allowed to be updated or removed.
-contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin {
+contract PolicyManager is IPolicyManager, ExtensionBase {
     using AddressArrayLib for address[];
 
     event PolicyDisabledOnHookForFund(
@@ -48,10 +47,12 @@ contract PolicyManager is IPolicyManager, ExtensionBase, GasRelayRecipientMixin 
         _;
     }
 
-    constructor(address _fundDeployer, address _gasRelayPaymasterFactory)
-        ExtensionBase(_fundDeployer)
-        GasRelayRecipientMixin(_gasRelayPaymasterFactory)
-    {}
+    constructor(address _fundDeployer) ExtensionBase(_fundDeployer) {}
+
+    // TODO: Temp placeholder; update when tx relaying is reinstated
+    function __msgSender() private view returns (address sender_) {
+        return msg.sender;
+    }
 
     // EXTERNAL FUNCTIONS
 

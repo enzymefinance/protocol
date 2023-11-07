@@ -216,8 +216,9 @@ contract GasRelayPaymasterLib is IGasRelayPaymaster, GasRelayPaymasterLibBase2 {
                 _selector == IComptroller.callOnExtension.selector
                     || _selector == IComptroller.vaultCallOnContract.selector
                     || _selector == IComptroller.buyBackProtocolFeeShares.selector
-                    || _selector == IComptroller.depositToGasRelayPaymaster.selector
-                    || _selector == IComptroller.setAutoProtocolFeeSharesBuyback.selector
+                // TODO: remove or reinstate
+                // || _selector == IComptroller.depositToGasRelayPaymaster.selector
+                || _selector == IComptroller.setAutoProtocolFeeSharesBuyback.selector
             ) {
                 return true;
             }

@@ -49,10 +49,6 @@ interface IComptroller {
 
     function deactivate() external;
 
-    function deployGasRelayPaymaster() external;
-
-    function depositToGasRelayPaymaster() external;
-
     function doesAutoProtocolFeeSharesBuyback() external view returns (bool doesAutoBuyback_);
 
     function getDenominationAsset() external view returns (address denominationAsset_);
@@ -64,8 +60,6 @@ interface IComptroller {
     function getFeeManager() external view returns (address feeManager_);
 
     function getFundDeployer() external view returns (address fundDeployer_);
-
-    function getGasRelayPaymaster() external view returns (address gasRelayPaymaster_);
 
     function getIntegrationManager() external view returns (address integrationManager_);
 
@@ -111,10 +105,6 @@ interface IComptroller {
     ) external returns (address[] memory payoutAssets_, uint256[] memory payoutAmounts_);
 
     function setAutoProtocolFeeSharesBuyback(bool _nextAutoProtocolFeeSharesBuyback) external;
-
-    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external;
-
-    function shutdownGasRelayPaymaster() external;
 
     function vaultCallOnContract(address _contract, bytes4 _selector, bytes calldata _encodedArgs)
         external

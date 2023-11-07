@@ -20,7 +20,6 @@ import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/
 import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
 import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
-import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
 import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {IExternalPositionManager} from "../../../extensions/external-position-manager/IExternalPositionManager.sol";
 import {IComptroller} from "../comptroller/IComptroller.sol";
@@ -34,7 +33,7 @@ import {IVault} from "./IVault.sol";
 /// but only tracked assets are used in gav calculations.
 /// Note that this contract inherits VaultLibSafeMath (a verbatim Open Zeppelin SafeMath copy)
 /// from SharesTokenBase via VaultLibBase2
-contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
+contract VaultLib is VaultLibBase2, IVault {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
@@ -69,14 +68,13 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
 
     constructor(
         address _externalPositionManager,
-        address _gasRelayPaymasterFactory,
         address _protocolFeeReserve,
         address _protocolFeeTracker,
         address _mlnToken,
         address _mlnBurner,
         address _wethToken,
         uint256 _positionsLimit
-    ) GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
+    ) {
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         MLN_BURNER = _mlnBurner;
         MLN_TOKEN = _mlnToken;
@@ -93,6 +91,11 @@ contract VaultLib is VaultLibBase2, IVault, GasRelayRecipientMixin {
         IWETH(payable(getWethToken())).deposit{value: ethAmount}();
 
         emit EthReceived(msg.sender, ethAmount);
+    }
+
+    // TODO: Temp placeholder; update when tx relaying is reinstated
+    function __msgSender() private view returns (address sender_) {
+        return msg.sender;
     }
 
     /////////////

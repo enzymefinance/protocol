@@ -20,9 +20,6 @@ import {IExtension} from "../../../extensions/IExtension.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {IFeeManager} from "../../../extensions/fee-manager/IFeeManager.sol";
 import {IPolicyManager} from "../../../extensions/policy-manager/IPolicyManager.sol";
-import {GasRelayRecipientMixin} from "../../../infrastructure/gas-relayer/GasRelayRecipientMixin.sol";
-import {IGasRelayPaymaster} from "../../../infrastructure/gas-relayer/IGasRelayPaymaster.sol";
-import {IGasRelayPaymasterDepositor} from "../../../infrastructure/gas-relayer/IGasRelayPaymasterDepositor.sol";
 import {IValueInterpreter} from "../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IFundDeployer} from "../../fund-deployer/IFundDeployer.sol";
 import {IVault} from "../vault/IVault.sol";
@@ -31,7 +28,7 @@ import {IComptroller} from "./IComptroller.sol";
 /// @title ComptrollerLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice The core logic library shared by all funds
-contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRecipientMixin {
+contract ComptrollerLib is IComptroller {
     using AddressArrayLib for address[];
     using SafeERC20 for ERC20;
 
@@ -41,8 +38,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         bytes indexed failureReturnData, uint256 sharesAmount, uint256 buybackValueInMln, uint256 gav
     );
     event DeactivateFeeManagerFailed();
-
-    event GasRelayPaymasterSet(address gasRelayPaymaster);
 
     event Initialized(
         address vaultProxy,
@@ -103,8 +98,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     // that must expire before that account transfers or redeems their shares
     uint256 internal sharesActionTimelock;
     mapping(address => uint256) internal acctToLastSharesBoughtTimestamp;
-    // The contract which manages paying gas relayers
-    address private gasRelayPaymaster;
 
     ///////////////
     // MODIFIERS //
@@ -129,11 +122,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         _;
     }
 
-    modifier onlyGasRelayPaymaster() {
-        __assertIsGasRelayPaymaster();
-        _;
-    }
-
     modifier onlyOwner() {
         __assertIsOwner(__msgSender());
         _;
@@ -151,10 +139,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
 
     function __assertIsFundDeployer() private view {
         require(msg.sender == getFundDeployer(), "Only FundDeployer callable");
-    }
-
-    function __assertIsGasRelayPaymaster() private view {
-        require(msg.sender == getGasRelayPaymaster(), "Only Gas Relay Paymaster callable");
     }
 
     function __assertIsOwner(address _who) private view {
@@ -188,10 +172,9 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         address _feeManager,
         address _integrationManager,
         address _policyManager,
-        address _gasRelayPaymasterFactory,
         address _mlnToken,
         address _wethToken
-    ) GasRelayRecipientMixin(_gasRelayPaymasterFactory) {
+    ) {
         DISPATCHER = _dispatcher;
         EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
@@ -257,6 +240,11 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     {
         return IDispatcher(getDispatcher()).hasMigrationRequest(_vaultProxy)
             || IFundDeployer(getFundDeployer()).hasReconfigurationRequest(_vaultProxy);
+    }
+
+    // TODO: Temp placeholder; update when tx relaying is reinstated
+    function __msgSender() private view returns (address sender_) {
+        return msg.sender;
     }
 
     //////////////////
@@ -966,63 +954,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
         __assertSharesActionNotTimelocked(getVaultProxy(), _sender);
     }
 
-    /////////////////
-    // GAS RELAYER //
-    /////////////////
-
-    /// @notice Deploys a paymaster contract and deposits WETH, enabling gas relaying
-    function deployGasRelayPaymaster() external override onlyOwnerNotRelayable {
-        require(getGasRelayPaymaster() == address(0), "deployGasRelayPaymaster: Paymaster already deployed");
-
-        bytes memory constructData = abi.encodeWithSignature("init(address)", getVaultProxy());
-        address paymaster = IBeaconProxyFactory(getGasRelayPaymasterFactory()).deployProxy(constructData);
-
-        __setGasRelayPaymaster(paymaster);
-
-        __depositToGasRelayPaymaster(paymaster);
-    }
-
-    /// @notice Tops up the gas relay paymaster deposit
-    function depositToGasRelayPaymaster() external override onlyOwner {
-        __depositToGasRelayPaymaster(getGasRelayPaymaster());
-    }
-
-    /// @notice Pull WETH from vault to gas relay paymaster
-    /// @param _amount Amount of the WETH to pull from the vault
-    function pullWethForGasRelayer(uint256 _amount) external override onlyGasRelayPaymaster {
-        IVault(getVaultProxy()).withdrawAssetTo(getWethToken(), getGasRelayPaymaster(), _amount);
-    }
-
-    /// @notice Sets the gasRelayPaymaster variable value
-    /// @param _nextGasRelayPaymaster The next gasRelayPaymaster value
-    function setGasRelayPaymaster(address _nextGasRelayPaymaster) external override onlyFundDeployer {
-        __setGasRelayPaymaster(_nextGasRelayPaymaster);
-    }
-
-    /// @notice Removes the gas relay paymaster, withdrawing the remaining WETH balance
-    /// and disabling gas relaying
-    function shutdownGasRelayPaymaster() external override onlyOwnerNotRelayable {
-        IGasRelayPaymaster(gasRelayPaymaster).withdrawBalance();
-
-        IVault(vaultProxy).addTrackedAsset(getWethToken());
-
-        delete gasRelayPaymaster;
-
-        emit GasRelayPaymasterSet(address(0));
-    }
-
-    /// @dev Helper to deposit to the gas relay paymaster
-    function __depositToGasRelayPaymaster(address _paymaster) private {
-        IGasRelayPaymaster(_paymaster).deposit();
-    }
-
-    /// @dev Helper to set the next `gasRelayPaymaster` variable
-    function __setGasRelayPaymaster(address _nextGasRelayPaymaster) private {
-        gasRelayPaymaster = _nextGasRelayPaymaster;
-
-        emit GasRelayPaymasterSet(_nextGasRelayPaymaster);
-    }
-
     ///////////////////
     // STATE GETTERS //
     ///////////////////
@@ -1102,12 +1033,6 @@ contract ComptrollerLib is IComptroller, IGasRelayPaymasterDepositor, GasRelayRe
     /// @return denominationAsset_ The `denominationAsset` variable value
     function getDenominationAsset() public view override returns (address denominationAsset_) {
         return denominationAsset;
-    }
-
-    /// @notice Gets the `gasRelayPaymaster` variable
-    /// @return gasRelayPaymaster_ The `gasRelayPaymaster` variable value
-    function getGasRelayPaymaster() public view override returns (address gasRelayPaymaster_) {
-        return gasRelayPaymaster;
     }
 
     /// @notice Gets the timestamp of the last time shares were bought for a given account

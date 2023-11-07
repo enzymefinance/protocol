@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {Contracts as PersistentContracts} from "tests/utils/core/deployment/PersistentContracts.sol";
-import {Contracts as ReleaseContracts} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
+import {Contracts as ReleaseContracts} from "tests/utils/core/deployment/V5ReleaseContracts.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
@@ -32,7 +32,6 @@ struct DeployComptrollerLibParams {
     IFeeManager feeManager;
     IIntegrationManager integrationManager;
     IPolicyManager policyManager;
-    IGasRelayPaymasterFactory gasRelayPaymasterFactory;
     address mlnTokenAddress;
     address wrappedNativeTokenAddress;
 }
@@ -169,10 +168,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             });
         }
 
-        releaseContracts_.fundDeployer = deployFundDeployer({
-            _dispatcher: _persistentContracts.dispatcher,
-            _gasRelayPaymasterFactory: releaseContracts_.gasRelayPaymasterFactory
-        });
+        releaseContracts_.fundDeployer = deployFundDeployer({_dispatcher: _persistentContracts.dispatcher});
 
         releaseContracts_.protocolFeeTracker = deployProtocolFeeTracker({_fundDeployer: releaseContracts_.fundDeployer});
         releaseContracts_.valueInterpreter = deployValueInterpreter({
@@ -181,10 +177,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             _chainlinkStaleRateThreshold: _config.chainlinkStaleRateThreshold
         });
 
-        releaseContracts_.policyManager = deployPolicyManager({
-            _fundDeployer: releaseContracts_.fundDeployer,
-            _gasRelayPaymasterFactory: releaseContracts_.gasRelayPaymasterFactory
-        });
+        releaseContracts_.policyManager = deployPolicyManager({_fundDeployer: releaseContracts_.fundDeployer});
         releaseContracts_.externalPositionManager = deployExternalPositionManager({
             _fundDeployer: releaseContracts_.fundDeployer,
             _externalPositionFactory: _persistentContracts.externalPositionFactory,
@@ -207,7 +200,6 @@ abstract contract DeploymentUtils is CoreUtilsBase {
                 feeManager: releaseContracts_.feeManager,
                 integrationManager: releaseContracts_.integrationManager,
                 policyManager: releaseContracts_.policyManager,
-                gasRelayPaymasterFactory: releaseContracts_.gasRelayPaymasterFactory,
                 mlnTokenAddress: _config.mlnTokenAddress,
                 wrappedNativeTokenAddress: _config.wrappedNativeTokenAddress
             })
@@ -219,7 +211,6 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             _wrappedNativeTokenAddress: _config.wrappedNativeTokenAddress,
             _vaultPositionsLimit: _config.vaultPositionsLimit,
             _externalPositionManager: releaseContracts_.externalPositionManager,
-            _gasRelayPaymasterFactory: releaseContracts_.gasRelayPaymasterFactory,
             _protocolFeeReserveProxy: _persistentContracts.protocolFeeReserveProxy,
             _protocolFeeTracker: releaseContracts_.protocolFeeTracker
         });
@@ -338,7 +329,6 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             params.feeManager,
             params.integrationManager,
             params.policyManager,
-            params.gasRelayPaymasterFactory,
             params.mlnTokenAddress,
             params.wrappedNativeTokenAddress
         );
@@ -361,11 +351,8 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         return IFeeManager(addr);
     }
 
-    function deployFundDeployer(IDispatcher _dispatcher, IGasRelayPaymasterFactory _gasRelayPaymasterFactory)
-        internal
-        returns (IFundDeployer)
-    {
-        bytes memory args = abi.encode(_dispatcher, _gasRelayPaymasterFactory);
+    function deployFundDeployer(IDispatcher _dispatcher) internal returns (IFundDeployer) {
+        bytes memory args = abi.encode(_dispatcher);
         address addr = deployCode("FundDeployer.sol", args);
         return IFundDeployer(addr);
     }
@@ -410,11 +397,8 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         return IIntegrationManager(addr);
     }
 
-    function deployPolicyManager(IFundDeployer _fundDeployer, IGasRelayPaymasterFactory _gasRelayPaymasterFactory)
-        internal
-        returns (IPolicyManager)
-    {
-        bytes memory args = abi.encode(_fundDeployer, _gasRelayPaymasterFactory);
+    function deployPolicyManager(IFundDeployer _fundDeployer) internal returns (IPolicyManager) {
+        bytes memory args = abi.encode(_fundDeployer);
         address addr = deployCode("PolicyManager.sol", args);
         return IPolicyManager(addr);
     }
@@ -441,13 +425,11 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         address _wrappedNativeTokenAddress,
         uint256 _vaultPositionsLimit,
         IExternalPositionManager _externalPositionManager,
-        IGasRelayPaymasterFactory _gasRelayPaymasterFactory,
         IProtocolFeeReserveLib _protocolFeeReserveProxy,
         IProtocolFeeTracker _protocolFeeTracker
     ) internal returns (address) {
         bytes memory args = abi.encode(
             _externalPositionManager,
-            _gasRelayPaymasterFactory,
             _protocolFeeReserveProxy,
             _protocolFeeTracker,
             _mlnTokenAddress,
