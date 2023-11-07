@@ -34,13 +34,11 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     event ComptrollerLibSet(address comptrollerLib);
 
-    // TODO: can index comptrollerProxy once denominationAsset is removed
     event ComptrollerProxyDeployed(
         address indexed creator,
-        address comptrollerProxy,
+        address indexed comptrollerProxy,
         address indexed vaultProxy,
-        address indexed denominationAsset,
-        uint256 sharesActionTimelock
+        IComptroller.ConfigInput comptrollerConfig
     );
 
     event MigrationRequestCreated(address indexed creator, address indexed vaultProxy, address comptrollerProxy);
@@ -221,19 +219,12 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Creates a fully-configured ComptrollerProxy instance for a VaultProxy and signals the migration process
     /// @param _vaultProxy The VaultProxy to migrate
-    /// @param _denominationAsset The contract address of the denomination asset for the fund
-    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
-    /// (buying or selling shares) by the same user
-    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
-    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @param _comptrollerConfig The Comptroller configuration object
     /// @param _bypassPrevReleaseFailure True if should override a failure in the previous release while signaling migration
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createMigrationRequest(
         address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData,
+        IComptroller.ConfigInput calldata _comptrollerConfig,
         bool _bypassPrevReleaseFailure
     ) external override onlyLiveRelease onlyMigratorNotRelayable(_vaultProxy) returns (address comptrollerProxy_) {
         // Bad _vaultProxy value is validated by Dispatcher.signalMigration()
@@ -248,10 +239,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _canonicalSender: msg.sender,
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: _vaultProxy,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock,
-            _feeManagerConfigData: _feeManagerConfigData,
-            _policyManagerConfigData: _policyManagerConfigData
+            _comptrollerConfig: _comptrollerConfig
         });
 
         IDispatcher(getDispatcher()).signalMigration(
@@ -267,20 +255,13 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
     /// @param _fundOwner The address of the owner for the fund
     /// @param _fundName The name of the fund's shares token
     /// @param _fundSymbol The symbol of the fund's shares token
-    /// @param _denominationAsset The contract address of the denomination asset for the fund
-    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
-    /// (buying or selling shares) by the same user
-    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
-    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @param _comptrollerConfig The Comptroller configuration object
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
     function createNewFund(
         address _fundOwner,
         string calldata _fundName,
         string calldata _fundSymbol,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
+        IComptroller.ConfigInput calldata _comptrollerConfig
     ) external override onlyLiveRelease returns (address comptrollerProxy_, address vaultProxy_) {
         // _fundOwner is validated by VaultLib.__setOwner()
         address canonicalSender = __msgSender();
@@ -293,10 +274,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _canonicalSender: canonicalSender,
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: vaultProxy_,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock,
-            _feeManagerConfigData: _feeManagerConfigData,
-            _policyManagerConfigData: _policyManagerConfigData
+            _comptrollerConfig: _comptrollerConfig
         });
 
         IComptroller(comptrollerProxy_).activate(false);
@@ -310,19 +288,13 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
 
     /// @notice Creates a fully-configured ComptrollerProxy instance for a VaultProxy and signals the reconfiguration process
     /// @param _vaultProxy The VaultProxy to reconfigure
-    /// @param _denominationAsset The contract address of the denomination asset for the fund
-    /// @param _sharesActionTimelock The minimum number of seconds between any two "shares actions"
-    /// (buying or selling shares) by the same user
-    /// @param _feeManagerConfigData Bytes data for the fees to be enabled for the fund
-    /// @param _policyManagerConfigData Bytes data for the policies to be enabled for the fund
+    /// @param _comptrollerConfig The Comptroller configuration object
     /// @return comptrollerProxy_ The address of the ComptrollerProxy deployed during this action
-    function createReconfigurationRequest(
-        address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external override returns (address comptrollerProxy_) {
+    function createReconfigurationRequest(address _vaultProxy, IComptroller.ConfigInput calldata _comptrollerConfig)
+        external
+        override
+        returns (address comptrollerProxy_)
+    {
         address canonicalSender = __msgSender();
         __assertIsMigrator(_vaultProxy, canonicalSender);
         require(
@@ -339,10 +311,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
             _canonicalSender: canonicalSender,
             _comptrollerProxy: comptrollerProxy_,
             _vaultProxy: _vaultProxy,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock,
-            _feeManagerConfigData: _feeManagerConfigData,
-            _policyManagerConfigData: _policyManagerConfigData
+            _comptrollerConfig: _comptrollerConfig
         });
 
         uint256 executableTimestamp = block.timestamp + getReconfigurationTimelock();
@@ -382,25 +351,14 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler, GasRelayRecipient
         address _canonicalSender,
         address _comptrollerProxy,
         address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
+        IComptroller.ConfigInput calldata _comptrollerConfig
     ) private {
         // Do this before anything else
         comptrollerProxyToVaultProxy[_comptrollerProxy] = _vaultProxy;
 
-        IComptroller(_comptrollerProxy).init({
-            _vaultProxy: _vaultProxy,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock,
-            _feeManagerConfigData: _feeManagerConfigData,
-            _policyManagerConfigData: _policyManagerConfigData
-        });
+        IComptroller(_comptrollerProxy).init({_vaultProxy: _vaultProxy, _config: _comptrollerConfig});
 
-        emit ComptrollerProxyDeployed(
-            _canonicalSender, _comptrollerProxy, _vaultProxy, _denominationAsset, _sharesActionTimelock
-        );
+        emit ComptrollerProxyDeployed(_canonicalSender, _comptrollerProxy, _vaultProxy, _comptrollerConfig);
     }
 
     ///////////////////////////////////////////////

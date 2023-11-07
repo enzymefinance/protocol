@@ -9,6 +9,7 @@ import {CumulativeSlippageTolerancePolicyUtils} from "tests/utils/policies/Cumul
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ICumulativeSlippageTolerancePolicy} from "tests/interfaces/internal/ICumulativeSlippageTolerancePolicy.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -87,12 +88,14 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
             _fundDeployer: core.release.fundDeployer,
             _vaultOwner: vaultOwner,
+            _comptrollerConfig: IFundDeployer.ConfigInput({
+                denominationAsset: address(fakeToken0),
+                sharesActionTimelock: 0,
+                policyManagerConfigData: encodePolicyManagerConfigData(policies, settingsData),
+                feeManagerConfigData: ""
+            }),
             _sharesBuyer: sharesBuyer,
-            _denominationAsset: address(fakeToken0),
-            _amountToDeposit: vaultInitialBalance,
-            _sharesActionTimelock: 0,
-            _policyManagerConfigData: encodePolicyManagerConfigData(policies, settingsData),
-            _feeManagerConfigData: ""
+            _amountToDeposit: vaultInitialBalance
         });
     }
 

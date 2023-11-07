@@ -38,39 +38,27 @@ abstract contract VaultUtils is CoreUtilsBase {
         return computeCreateAddress(address(_fundDeployer), vm.getNonce(address(_fundDeployer)));
     }
 
-    function createVault(
-        IFundDeployer _fundDeployer,
-        address _vaultOwner,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock
-    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
-        return createVault(_fundDeployer, _vaultOwner, _denominationAsset, _sharesActionTimelock, "", "");
-    }
-
     function createVault(IFundDeployer _fundDeployer, address _vaultOwner, address _denominationAsset)
         internal
         returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_)
     {
-        return createVault(_fundDeployer, _vaultOwner, _denominationAsset, 0, "", "");
+        IFundDeployer.ConfigInput memory comptrollerConfigInput = IFundDeployer.ConfigInput({
+            denominationAsset: _denominationAsset,
+            sharesActionTimelock: 0,
+            feeManagerConfigData: "",
+            policyManagerConfigData: ""
+        });
+
+        return createVault(_fundDeployer, _vaultOwner, comptrollerConfigInput);
     }
 
     function createVault(
         IFundDeployer _fundDeployer,
         address _vaultOwner,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData
+        IFundDeployer.ConfigInput memory _comptrollerConfig
     ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
-        (address comptrollerProxy, address vaultProxy) = _fundDeployer.createNewFund(
-            _vaultOwner,
-            "testVault",
-            "TEST_VAULT",
-            _denominationAsset,
-            _sharesActionTimelock,
-            _feeManagerConfigData,
-            _policyManagerConfigData
-        );
+        (address comptrollerProxy, address vaultProxy) =
+            _fundDeployer.createNewFund(_vaultOwner, "testVault", "TEST_VAULT", _comptrollerConfig);
 
         comptrollerProxy_ = IComptrollerLib(comptrollerProxy);
         vaultProxy_ = IVaultLib(vaultProxy);
@@ -79,20 +67,14 @@ abstract contract VaultUtils is CoreUtilsBase {
     function createVaultAndBuyShares(
         IFundDeployer _fundDeployer,
         address _vaultOwner,
+        IFundDeployer.ConfigInput memory _comptrollerConfig,
         address _sharesBuyer,
-        address _denominationAsset,
-        uint256 _amountToDeposit,
-        uint256 _sharesActionTimelock,
-        bytes memory _feeManagerConfigData,
-        bytes memory _policyManagerConfigData
+        uint256 _amountToDeposit
     ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         (comptrollerProxy_, vaultProxy_) = createVault({
             _fundDeployer: _fundDeployer,
             _vaultOwner: _vaultOwner,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: _sharesActionTimelock,
-            _feeManagerConfigData: _feeManagerConfigData,
-            _policyManagerConfigData: _policyManagerConfigData
+            _comptrollerConfig: _comptrollerConfig
         });
 
         buyShares({_sharesBuyer: _sharesBuyer, _comptrollerProxy: comptrollerProxy_, _amountToDeposit: _amountToDeposit});
@@ -101,39 +83,23 @@ abstract contract VaultUtils is CoreUtilsBase {
     function createVaultAndBuyShares(
         IFundDeployer _fundDeployer,
         address _vaultOwner,
-        address _sharesBuyer,
         address _denominationAsset,
+        address _sharesBuyer,
         uint256 _amountToDeposit
     ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
-        return createVaultAndBuyShares({
-            _fundDeployer: _fundDeployer,
-            _vaultOwner: _vaultOwner,
-            _sharesBuyer: _sharesBuyer,
-            _amountToDeposit: _amountToDeposit,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: 0,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: ""
+        IFundDeployer.ConfigInput memory comptrollerConfigInput = IFundDeployer.ConfigInput({
+            denominationAsset: _denominationAsset,
+            sharesActionTimelock: 0,
+            feeManagerConfigData: "",
+            policyManagerConfigData: ""
         });
-    }
 
-    function createVaultAndBuyShares(
-        IFundDeployer _fundDeployer,
-        address _vaultOwner,
-        address _sharesBuyer,
-        address _denominationAsset,
-        uint256 _amountToDeposit,
-        bytes memory _policyManagerConfigData
-    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_) {
         return createVaultAndBuyShares({
             _fundDeployer: _fundDeployer,
             _vaultOwner: _vaultOwner,
+            _comptrollerConfig: comptrollerConfigInput,
             _sharesBuyer: _sharesBuyer,
-            _amountToDeposit: _amountToDeposit,
-            _denominationAsset: _denominationAsset,
-            _sharesActionTimelock: 0,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: _policyManagerConfigData
+            _amountToDeposit: _amountToDeposit
         });
     }
 

@@ -6,6 +6,7 @@ import {PerformanceFeeUtils} from "tests/utils/fees/PerformanceFeeUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IPerformanceFee} from "tests/interfaces/internal/IPerformanceFee.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -40,10 +41,12 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
         (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy) = createVault({
             _fundDeployer: core.release.fundDeployer,
             _vaultOwner: vaultOwner,
-            _denominationAsset: address(denominationAsset),
-            _sharesActionTimelock: 0,
-            _feeManagerConfigData: feeManagerConfigData,
-            _policyManagerConfigData: ""
+            _comptrollerConfig: IFundDeployer.ConfigInput({
+                denominationAsset: address(denominationAsset),
+                sharesActionTimelock: 0,
+                feeManagerConfigData: feeManagerConfigData,
+                policyManagerConfigData: ""
+            })
         });
         IERC20 sharesToken = IERC20(address(vaultProxy));
 

@@ -22,10 +22,9 @@ contract FundDeployerTest is IntegrationTest {
     // FundDeployer events
     event ComptrollerProxyDeployed(
         address indexed creator,
-        address comptrollerProxy,
+        address indexed comptrollerProxy,
         address indexed vaultProxy,
-        address indexed denominationAsset,
-        uint256 sharesActionTimelock
+        IFundDeployer.ConfigInput comptrollerConfig
     );
 
     event NewFundCreated(address indexed creator, address vaultProxy, address comptrollerProxy);
@@ -75,16 +74,22 @@ contract FundDeployerTest is IntegrationTest {
         address fundCreator = makeAddr("FundCreator");
         address fundOwner = makeAddr("FundOwner");
         string memory fundName = "My Fund";
-        uint256 sharesActionTimelock = 123;
 
         // Add denomination asset to the asset universe
         address denominationAsset = address(standardPrimitive);
         address expectedComptrollerProxy = predictComptrollerProxyAddress(core.release.fundDeployer);
         address expectedVaultProxyAddress = predictVaultProxyAddress(core.persistent.dispatcher);
 
+        IFundDeployer.ConfigInput memory comptrollerConfig = IFundDeployer.ConfigInput({
+            denominationAsset: denominationAsset,
+            sharesActionTimelock: 123,
+            feeManagerConfigData: "",
+            policyManagerConfigData: ""
+        });
+
         expectEmit(address(core.release.fundDeployer));
         emit ComptrollerProxyDeployed(
-            fundCreator, expectedComptrollerProxy, expectedVaultProxyAddress, denominationAsset, sharesActionTimelock
+            fundCreator, expectedComptrollerProxy, expectedVaultProxyAddress, comptrollerConfig
         );
 
         // TODO: Should this be tested in the protocol fee tracker tests?
@@ -99,15 +104,12 @@ contract FundDeployerTest is IntegrationTest {
             _fundOwner: fundOwner,
             _fundName: fundName,
             _fundSymbol: "",
-            _denominationAsset: denominationAsset,
-            _sharesActionTimelock: sharesActionTimelock,
-            _feeManagerConfigData: "",
-            _policyManagerConfigData: ""
+            _comptrollerConfig: comptrollerConfig
         });
 
         // Assert the correct ComptrollerProxy state values
-        assertEq(IComptrollerLib(comptrollerProxy).getDenominationAsset(), denominationAsset);
-        assertEq(IComptrollerLib(comptrollerProxy).getSharesActionTimelock(), sharesActionTimelock);
+        assertEq(IComptrollerLib(comptrollerProxy).getDenominationAsset(), comptrollerConfig.denominationAsset);
+        assertEq(IComptrollerLib(comptrollerProxy).getSharesActionTimelock(), comptrollerConfig.sharesActionTimelock);
         assertEq(IComptrollerLib(comptrollerProxy).getVaultProxy(), vaultProxy);
 
         // Assert the correct VaultProxy state values

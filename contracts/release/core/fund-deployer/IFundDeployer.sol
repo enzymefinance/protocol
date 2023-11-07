@@ -12,6 +12,8 @@
 pragma solidity >=0.6.0 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import {IComptroller} from "../fund/comptroller/IComptroller.sol";
+
 /// @title IFundDeployer Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IFundDeployer {
@@ -26,10 +28,7 @@ interface IFundDeployer {
 
     function createMigrationRequest(
         address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData,
+        IComptroller.ConfigInput calldata _comptrollerConfig,
         bool _bypassPrevReleaseFailure
     ) external returns (address comptrollerProxy_);
 
@@ -37,19 +36,12 @@ interface IFundDeployer {
         address _fundOwner,
         string calldata _fundName,
         string calldata _fundSymbol,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
+        IComptroller.ConfigInput calldata _comptrollerConfig
     ) external returns (address comptrollerProxy_, address vaultProxy_);
 
-    function createReconfigurationRequest(
-        address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external returns (address comptrollerProxy_);
+    function createReconfigurationRequest(address _vaultProxy, IComptroller.ConfigInput calldata _comptrollerConfig)
+        external
+        returns (address comptrollerProxy_);
 
     function deregisterBuySharesOnBehalfCallers(address[] calldata _callers) external;
 

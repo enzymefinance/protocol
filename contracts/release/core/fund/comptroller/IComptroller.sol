@@ -10,12 +10,25 @@
 */
 
 pragma solidity >=0.6.0 <0.9.0;
+pragma experimental ABIEncoderV2;
 
 import {IVault} from "../vault/IVault.sol";
 
 /// @title IComptroller Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IComptroller {
+    struct ConfigInput {
+        // The asset in which the fund's value should be denominated
+        address denominationAsset;
+        // A timelock after the last time shares were bought for an account
+        // that must expire before that account transfers or redeems their shares
+        uint256 sharesActionTimelock;
+        // Encoded data for the fees to be enabled for the fund
+        bytes feeManagerConfigData;
+        // Encoded data for the policies to be enabled for the fund
+        bytes policyManagerConfigData;
+    }
+
     function activate(bool _isMigration) external;
 
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
@@ -75,13 +88,7 @@ interface IComptroller {
 
     function getWethToken() external view returns (address wethToken_);
 
-    function init(
-        address _vaultProxy,
-        address _denominationAsset,
-        uint256 _sharesActionTimelock,
-        bytes calldata _feeManagerConfigData,
-        bytes calldata _policyManagerConfigData
-    ) external;
+    function init(address _vaultProxy, ConfigInput calldata _config) external;
 
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
 
