@@ -18,6 +18,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {ICurveLiquidityAdapter} from "tests/interfaces/internal/ICurveLiquidityAdapter.sol";
 import {ICurvePriceFeed} from "tests/interfaces/internal/ICurvePriceFeed.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -39,7 +40,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     IIntegrationAdapter internal adapter;
     ICurvePriceFeed internal priceFeed;
 
-    address internal vaultOwner = makeAddr("VaultOwner");
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -62,11 +63,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         // stakingToken can be empty (no staking token)
 
         // Create fund with arbitrary denomination asset
-        (comptrollerProxy, vaultProxy) = createVault({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _denominationAsset: address(wethToken)
-        });
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
 
         // Store pool assets
         poolAssetAddresses = __getPoolAssets({_pool: poolAddress, _useUnderlying: false});

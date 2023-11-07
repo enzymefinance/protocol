@@ -6,6 +6,7 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IStakeWiseV3EthVault} from "tests/interfaces/external/IStakeWiseV3EthVault.sol";
 import {IStakeWiseV3StakingPositionLib} from "tests/interfaces/internal/IStakeWiseV3StakingPositionLib.sol";
 import {IStakeWiseV3StakingPositionParser} from "tests/interfaces/internal/IStakeWiseV3StakingPositionParser.sol";
@@ -36,8 +37,6 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
 
     event VaultTokenRemoved(address indexed stakeWiseV3VaultAddress);
 
-    address internal vaultOwner = makeAddr("VaultOwner");
-
     IStakeWiseV3StakingPositionParser internal stakeWiseV3StakingPositionParser;
     IStakeWiseV3StakingPositionLib internal stakeWiseV3StakingPositionLib;
     IStakeWiseV3StakingPositionLib internal stakeWiseV3ExternalPosition;
@@ -45,6 +44,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
     address internal stakeWiseV3RegistryAddress;
     IStakeWiseV3EthVault internal stakeWiseV3Vault;
 
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -56,16 +56,17 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager
         });
 
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _denominationAsset: address(wethToken),
-            _amountToDeposit: 10_000 ether,
-            _sharesBuyer: vaultOwner
-        });
+        // Create a fund denominated in WETH
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+        // Buy shares, seeding the fund with WETH
+        buyShares({_comptrollerProxy: comptrollerProxy, _sharesBuyer: vaultOwner, _amountToDeposit: 10_000 ether});
 
         vm.prank(vaultOwner);
-
         stakeWiseV3ExternalPosition = IStakeWiseV3StakingPositionLib(
             createExternalPosition({
                 _externalPositionManager: core.release.externalPositionManager,

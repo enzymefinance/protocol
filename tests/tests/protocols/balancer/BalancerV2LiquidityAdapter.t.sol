@@ -13,6 +13,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IBalancerV2LiquidityAdapter} from "tests/interfaces/internal/IBalancerV2LiquidityAdapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -39,7 +40,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     IBalancerV2Vault internal balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
-    address internal vaultOwner = makeAddr("VaultOwner");
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -56,11 +57,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     function setUp() public virtual override {
         // Create fund with arbitrary denomination asset
-        (comptrollerProxy, vaultProxy) = createVault({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _denominationAsset: address(wethToken)
-        });
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
 
         // Store pool assets
         (poolAssetAddresses,,) = balancerVault.getPoolTokens(poolId);

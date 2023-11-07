@@ -15,8 +15,9 @@ import {
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IDepositWrapper} from "tests/interfaces/internal/IDepositWrapper.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IDepositWrapper} from "tests/interfaces/internal/IDepositWrapper.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract TestBase is IntegrationTest, UniswapV3Utils {
@@ -24,7 +25,6 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
     IDepositWrapper internal depositWrapper;
 
     address internal sharesBuyer = makeAddr("SharesBuyer");
-    address internal vaultOwner = makeAddr("VaultOwner");
     IComptrollerLib internal comptrollerProxy;
     IVaultLib internal vaultProxy;
 
@@ -50,11 +50,11 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
         core.release.fundDeployer.registerBuySharesOnBehalfCallers(toArray(address(depositWrapper)));
 
         // Create a fund denominated in any ERC20 other than the wrapped native asset
-        (comptrollerProxy, vaultProxy) = createVault({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _denominationAsset: address(denominationAsset)
-        });
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(denominationAsset);
+
+        (comptrollerProxy, vaultProxy,) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
     }
 
     // DEPLOYMENT HELPERS
@@ -309,11 +309,11 @@ abstract contract ExchangeEthAndBuySharesTest is TestBase {
 
     function test_successWithNativeAssetDenomination() public {
         // Create new fund that is denominated in the wrapped native asset
-        (IComptrollerLib nativeAssetComptrollerProxy, IVaultLib nativeAssetVaultProxy) = createVault({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _denominationAsset: address(wrappedNativeToken)
-        });
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wrappedNativeToken);
+
+        (IComptrollerLib nativeAssetComptrollerProxy, IVaultLib nativeAssetVaultProxy,) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
 
         uint256 inputAmount = 3 ether;
         uint256 expectedShares = inputAmount; // 1:1

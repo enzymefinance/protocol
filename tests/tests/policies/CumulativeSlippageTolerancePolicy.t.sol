@@ -19,9 +19,9 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
     // keccak256(abi.encodePacked("mln.vaultCall.any")
     bytes32 private constant ANY_VAULT_CALL = 0x5bf1898dd28c4d29f33c4c1bb9b8a7e2f6322847d70be63e8f89de024d08a669;
 
-    address internal vaultOwner = makeAddr("VaultOwner");
     address internal sharesBuyer = makeAddr("SharesBuyer");
 
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
     ICumulativeSlippageTolerancePolicy internal cumulativeSlippageTolerancePolicy;
@@ -85,15 +85,18 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         bytes[] memory settingsData = new bytes[](1);
         settingsData[0] = encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance});
 
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFund({
             _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
             _comptrollerConfig: IFundDeployer.ConfigInput({
                 denominationAsset: address(fakeToken0),
                 sharesActionTimelock: 0,
                 policyManagerConfigData: encodePolicyManagerConfigData(policies, settingsData),
                 feeManagerConfigData: ""
-            }),
+            })
+        });
+
+        buyShares({
+            _comptrollerProxy: comptrollerProxy,
             _sharesBuyer: sharesBuyer,
             _amountToDeposit: vaultInitialBalance
         });

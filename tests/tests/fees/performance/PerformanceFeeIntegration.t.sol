@@ -20,7 +20,6 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
     }
 
     function test_integration() public {
-        address vaultOwner = makeAddr("VaultOwner");
         address feeRecipient = makeAddr("FeeRecipient");
         address sharesBuyer = makeAddr("SharesBuyer");
 
@@ -38,9 +37,8 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
 
         bytes memory feeManagerConfigData = abi.encode(fees, settings);
 
-        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy) = createVault({
+        (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy,) = createFund({
             _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
             _comptrollerConfig: IFundDeployer.ConfigInput({
                 denominationAsset: address(denominationAsset),
                 sharesActionTimelock: 0,

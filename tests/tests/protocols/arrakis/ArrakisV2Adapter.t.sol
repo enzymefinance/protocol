@@ -2,14 +2,18 @@
 pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
+import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
+
 import {IArrakisV2Helper} from "tests/interfaces/external/IArrakisV2Helper.sol";
 import {IArrakisV2Resolver} from "tests/interfaces/external/IArrakisV2Resolver.sol";
 import {IArrakisV2Vault} from "tests/interfaces/external/IArrakisV2Vault.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+
 import {IArrakisV2Adapter} from "tests/interfaces/internal/IArrakisV2Adapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
+
 import {
     ARRAKIS_HELPER_ADDRESS,
     ARRAKIS_RESOLVER_ADDRESS,
@@ -18,8 +22,7 @@ import {
 } from "./ArrakisV2Utils.sol";
 
 abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
-    address internal vaultOwner = makeAddr("VaultOwner");
-
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -48,16 +51,15 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
             _skipIfRegistered: true
         });
 
-        // Create a fund with the ArrakisV2 token0 as the denomination asset
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _sharesBuyer: vaultOwner,
-            _denominationAsset: address(token0),
-            _amountToDeposit: assetUnit(token0) * 31
-        });
+        // Create fund with arbitrary denomination asset
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
 
-        // Seed the fund with some token1
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+        // Seed the fund with Arrakis vault underlyings
+        increaseTokenBalance({_token: token0, _to: address(vaultProxy), _amount: assetUnit(token0) * 31});
         increaseTokenBalance({_token: token1, _to: address(vaultProxy), _amount: assetUnit(token1) * 23});
 
         // Allow adapter to mint Arrakis shares

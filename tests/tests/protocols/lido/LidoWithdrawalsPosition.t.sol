@@ -9,6 +9,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQueue.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -46,15 +47,15 @@ abstract contract TestBase is IntegrationTest {
             _skipIfRegistered: true
         });
 
-        // Create a fund, denominated in and seeded with stETH
-        fundOwner = makeAddr("FundOwner");
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: fundOwner,
-            _denominationAsset: address(stethToken),
-            _amountToDeposit: 1000 ether,
-            _sharesBuyer: fundOwner
-        });
+        // Create a fund, denominated in stETH
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(stethToken);
+
+        (comptrollerProxy, vaultProxy, fundOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+        // Buy shares to seed with stETH
+        buyShares({_comptrollerProxy: comptrollerProxy, _sharesBuyer: fundOwner, _amountToDeposit: 1000 ether});
 
         // Deploy all position dependencies
         uint256 typeId = __deployPositionType();

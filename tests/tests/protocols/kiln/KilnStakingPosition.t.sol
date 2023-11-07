@@ -12,6 +12,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IKilnStakingContract} from "tests/interfaces/external/IKilnStakingContract.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
@@ -93,15 +94,15 @@ abstract contract TestBase is IntegrationTest {
         }
         vm.stopPrank();
 
-        // Create a fund, seeded with WETH
-        fundOwner = makeAddr("FundOwner");
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: fundOwner,
-            _denominationAsset: address(wethToken),
-            _amountToDeposit: 1000 ether,
-            _sharesBuyer: fundOwner
-        });
+        // Create a fund
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, fundOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+        // Buy shares to seed fund with WETH
+        buyShares({_comptrollerProxy: comptrollerProxy, _sharesBuyer: fundOwner, _amountToDeposit: 1000 ether});
 
         // Deploy all KilnStakingPosition dependencies
         uint256 typeId;

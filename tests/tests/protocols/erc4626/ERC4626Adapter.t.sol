@@ -6,8 +6,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IERC4626Adapter} from "tests/interfaces/internal/IERC4626Adapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IERC4626Adapter} from "tests/interfaces/internal/IERC4626Adapter.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {
     ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,
@@ -17,8 +18,7 @@ import {
 } from "./ERC4626Utils.sol";
 
 abstract contract ERC4626AdapterTestBase is IntegrationTest {
-    address internal vaultOwner = makeAddr("VaultOwner");
-
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -44,11 +44,16 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         });
 
         // Create a fund with the ERC4626 underlying as the denomination asset
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(underlying);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+        // Buy shares, seeding the fund with the ERC4626 underlying
+        buyShares({
+            _comptrollerProxy: comptrollerProxy,
             _sharesBuyer: vaultOwner,
-            _denominationAsset: address(underlying),
             _amountToDeposit: assetUnit(underlying) * 31
         });
     }

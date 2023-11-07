@@ -2,19 +2,20 @@
 pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
+import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
+
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 abstract contract AaveAdapterTestBase is IntegrationTest {
     uint256 internal constant ROUNDING_BUFFER = 2;
 
-    address internal vaultOwner = makeAddr("VaultOwner");
-    address internal sharesBuyer = makeAddr("SharesBuyer");
-
+    address internal vaultOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -26,13 +27,12 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     IERC20 internal non18DecimalUnderlying;
 
     function setUp() public virtual override {
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: vaultOwner,
-            _sharesBuyer: sharesBuyer,
-            _denominationAsset: address(wethToken),
-            _amountToDeposit: 1000 ether
-        });
+        // Create a fund with an arbitrary denomination asset
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
     }
 
     // ACTION HELPERS

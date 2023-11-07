@@ -2,18 +2,23 @@
 pragma solidity 0.8.19;
 
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
+
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
-import {IAaveV3PoolAddressProvider} from "tests/interfaces/external/IAaveV3PoolAddressProvider.sol";
 import {IAaveV3Pool} from "tests/interfaces/external/IAaveV3Pool.sol";
+import {IAaveV3PoolAddressProvider} from "tests/interfaces/external/IAaveV3PoolAddressProvider.sol";
 import {IAaveV3ProtocolDataProvider} from "tests/interfaces/external/IAaveV3ProtocolDataProvider.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPositionLib.sol";
-import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
+
 import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenListOwner.sol";
+import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPositionLib.sol";
+import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+
 import {
     ETHEREUM_POOL_ADDRESS_PROVIDER,
     ETHEREUM_PROTOCOL_DATA_PROVIDER,
@@ -37,8 +42,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     event CollateralAssetAdded(address indexed asset);
     event CollateralAssetRemoved(address indexed asset);
 
-    address internal fundOwner = makeAddr("fundOwner");
-
+    address internal fundOwner;
     IVaultLib internal vaultProxy;
     IComptrollerLib internal comptrollerProxy;
 
@@ -50,13 +54,12 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     function setUp() public virtual override {
         lendingPool = IAaveV3PoolAddressProvider(poolAddressProvider).getPool();
 
-        (comptrollerProxy, vaultProxy) = createVaultAndBuyShares({
-            _fundDeployer: core.release.fundDeployer,
-            _vaultOwner: fundOwner,
-            _denominationAsset: address(wethToken),
-            _amountToDeposit: 1000 ether,
-            _sharesBuyer: fundOwner
-        });
+        // Create a fund with an arbitrary denomination asset
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(wethToken);
+
+        (comptrollerProxy, vaultProxy, fundOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
 
         // Deploy all AaveV3Debt dependencies
         uint256 typeId = __deployPositionType({
