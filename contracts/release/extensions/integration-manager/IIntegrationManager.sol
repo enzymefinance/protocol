@@ -22,6 +22,4 @@ interface IIntegrationManager {
     }
 
     function getPolicyManager() external view returns (address policyManager_);
-
-    function getValueInterpreter() external view returns (address valueInterpreter_);
 }

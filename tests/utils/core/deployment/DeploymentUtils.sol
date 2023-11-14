@@ -186,8 +186,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         releaseContracts_.feeManager = deployFeeManager({_fundDeployer: releaseContracts_.fundDeployer});
         releaseContracts_.integrationManager = deployIntegrationManager({
             _fundDeployer: releaseContracts_.fundDeployer,
-            _policyManager: releaseContracts_.policyManager,
-            _valueInterpreter: releaseContracts_.valueInterpreter
+            _policyManager: releaseContracts_.policyManager
         });
 
         releaseContracts_.comptrollerLibAddress = deployComptrollerLib(
@@ -387,12 +386,11 @@ abstract contract DeploymentUtils is CoreUtilsBase {
         return deployCode("GasRelayPaymasterLib.sol", args);
     }
 
-    function deployIntegrationManager(
-        IFundDeployer _fundDeployer,
-        IPolicyManager _policyManager,
-        IValueInterpreter _valueInterpreter
-    ) internal returns (IIntegrationManager) {
-        bytes memory args = abi.encode(_fundDeployer, _policyManager, _valueInterpreter);
+    function deployIntegrationManager(IFundDeployer _fundDeployer, IPolicyManager _policyManager)
+        internal
+        returns (IIntegrationManager)
+    {
+        bytes memory args = abi.encode(_fundDeployer, _policyManager);
         address addr = deployCode("IntegrationManager.sol", args);
         return IIntegrationManager(addr);
     }

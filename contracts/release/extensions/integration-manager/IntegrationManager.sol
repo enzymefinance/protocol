@@ -15,7 +15,6 @@ import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../utils/0.8.19/AssetHelpers.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
-import {IValueInterpreter} from "../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IPolicyManager} from "../policy-manager/IPolicyManager.sol";
 import {ExtensionBase} from "../utils/ExtensionBase.sol";
 import {PermissionedVaultActionMixin} from "../utils/PermissionedVaultActionMixin.sol";
@@ -45,13 +44,9 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     );
 
     address private immutable POLICY_MANAGER;
-    address private immutable VALUE_INTERPRETER;
 
-    constructor(address _fundDeployer, address _policyManager, address _valueInterpreter)
-        ExtensionBase(_fundDeployer)
-    {
+    constructor(address _fundDeployer, address _policyManager) ExtensionBase(_fundDeployer) {
         POLICY_MANAGER = _policyManager;
-        VALUE_INTERPRETER = _valueInterpreter;
     }
 
     /////////////
@@ -107,11 +102,6 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         );
 
         for (uint256 i; i < assets.length; i++) {
-            require(
-                IValueInterpreter(getValueInterpreter()).isSupportedAsset(assets[i]),
-                "__addTrackedAssetsToVault: Unsupported asset"
-            );
-
             __addTrackedAsset(_comptrollerProxy, assets[i]);
         }
     }
@@ -308,11 +298,6 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         // as a spend asset can be immediately transferred after recording its balance
         preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i; i < incomingAssets_.length; i++) {
-            require(
-                IValueInterpreter(getValueInterpreter()).isSupportedAsset(incomingAssets_[i]),
-                "__preProcessCoI: Non-receivable incoming asset"
-            );
-
             preCallIncomingAssetBalances_[i] = ERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
         }
 
@@ -398,11 +383,5 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
     /// @return policyManager_ The `POLICY_MANAGER` variable value
     function getPolicyManager() public view override returns (address policyManager_) {
         return POLICY_MANAGER;
-    }
-
-    /// @notice Gets the `VALUE_INTERPRETER` variable
-    /// @return valueInterpreter_ The `VALUE_INTERPRETER` variable value
-    function getValueInterpreter() public view override returns (address valueInterpreter_) {
-        return VALUE_INTERPRETER;
     }
 }
