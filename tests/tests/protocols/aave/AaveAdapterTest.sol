@@ -16,8 +16,8 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     uint256 internal constant ROUNDING_BUFFER = 2;
 
     address internal vaultOwner;
-    IVaultLib internal vaultProxy;
-    IComptrollerLib internal comptrollerProxy;
+    address internal vaultProxyAddress;
+    address internal comptrollerProxyAddress;
 
     address internal adapter;
     address internal lendingPool;
@@ -26,13 +26,15 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     IERC20 internal regular18DecimalUnderlying;
     IERC20 internal non18DecimalUnderlying;
 
+    // Set by child contract
+    EnzymeVersion internal version;
+
     function setUp() public virtual override {
         // Create a fund with an arbitrary denomination asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
+        IERC20 denominationAsset = wethToken;
 
-        (comptrollerProxy, vaultProxy, vaultOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) =
+            createTradingFundForVersion({_version: version, _denominationAsset: denominationAsset});
     }
 
     // ACTION HELPERS
@@ -41,10 +43,10 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        adapterActionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: adapter,
             _selector: IAaveV2Adapter.lend.selector, // selectors are the same for V2 and V3
             _actionArgs: actionArgs
         });
@@ -54,10 +56,10 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        adapterActionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: adapter,
             _selector: IAaveV2Adapter.redeem.selector, // selectors are the same for V2 and V3
             _actionArgs: actionArgs
         });
@@ -84,7 +86,7 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
     function __test_lend_success(address _aToken, uint256 _amount) internal {
         address underlying = IAaveAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
 
-        increaseTokenBalance({_token: IERC20(underlying), _to: address(vaultProxy), _amount: _amount});
+        increaseTokenBalance({_token: IERC20(underlying), _to: vaultProxyAddress, _amount: _amount});
 
         vm.recordLogs();
 
@@ -101,7 +103,7 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
         });
 
         assertApproxEqAbs(
-            IERC20(_aToken).balanceOf(address(vaultProxy)),
+            IERC20(_aToken).balanceOf(vaultProxyAddress),
             _amount,
             ROUNDING_BUFFER,
             "AToken balance of vault after lend is incorrect"
@@ -119,18 +121,16 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
             returnData: abi.encode(fakeUnderlying)
         });
 
-        // register incoming asset
-        addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: fakeAToken,
-            _skipIfRegistered: false
-        });
+        // If v4, register incoming asset to pass the asset universe validation
+        if (version == EnzymeVersion.V4) {
+            v4AddPrimitiveWithTestAggregator({_tokenAddress: fakeAToken, _skipIfRegistered: true});
+        }
 
         // lend minimal amount
         uint256 amountToLend = 1 + ROUNDING_BUFFER;
 
         // increase vault's fake aToken balance, so it won't revert, because of insufficient balance
-        increaseTokenBalance({_token: IERC20(fakeUnderlying), _to: address(vaultProxy), _amount: amountToLend});
+        increaseTokenBalance({_token: IERC20(fakeUnderlying), _to: vaultProxyAddress, _amount: amountToLend});
 
         vm.expectRevert(formatError("__validateItems: Invalid aToken"));
 
@@ -156,10 +156,10 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
     function __test_redeem_success(address _aToken, uint256 _amount) internal {
         address underlying = IAaveAToken(_aToken).UNDERLYING_ASSET_ADDRESS();
 
-        increaseTokenBalance({_token: IERC20(_aToken), _to: address(vaultProxy), _amount: _amount});
+        increaseTokenBalance({_token: IERC20(_aToken), _to: vaultProxyAddress, _amount: _amount});
 
         // balance of vault before redeem
-        uint256 vaultBalanceBefore = IERC20(underlying).balanceOf(address(vaultProxy));
+        uint256 vaultBalanceBefore = IERC20(underlying).balanceOf(vaultProxyAddress);
 
         vm.recordLogs();
 
@@ -176,7 +176,7 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
         });
 
         // balance of vault after redeem
-        uint256 vaultBalanceAfter = IERC20(underlying).balanceOf(address(vaultProxy));
+        uint256 vaultBalanceAfter = IERC20(underlying).balanceOf(vaultProxyAddress);
 
         // balance of vault should be increased by _amount
         assertApproxEqAbs(
@@ -198,18 +198,16 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
             returnData: abi.encode(fakeUnderlying)
         });
 
-        // register incoming asset
-        addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: fakeUnderlying,
-            _skipIfRegistered: false
-        });
+        // If v4, register incoming asset to pass the asset universe validation
+        if (version == EnzymeVersion.V4) {
+            v4AddPrimitiveWithTestAggregator({_tokenAddress: fakeUnderlying, _skipIfRegistered: true});
+        }
 
         // redeem minimal amount
         uint256 amountToRedeem = 1 + ROUNDING_BUFFER;
 
         // increase vault's fake aToken balance, so it won't revert, because of insufficient balance
-        increaseTokenBalance({_token: IERC20(fakeAToken), _to: address(vaultProxy), _amount: amountToRedeem});
+        increaseTokenBalance({_token: IERC20(fakeAToken), _to: vaultProxyAddress, _amount: amountToRedeem});
 
         vm.expectRevert(formatError("__validateItems: Invalid aToken"));
 

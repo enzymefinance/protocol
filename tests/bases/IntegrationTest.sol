@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
-import {ChainlinkRateAsset} from "tests/utils/core/AssetUniverseUtils.sol";
+import {ChainlinkRateAsset, TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {
     Contracts as PersistentContracts,
@@ -11,12 +11,27 @@ import {
 } from "tests/utils/core/deployment/PersistentContracts.sol";
 import {ReleaseConfig} from "tests/utils/core/deployment/DeploymentUtils.sol";
 import {
+    Contracts as V4ReleaseContracts,
+    getMainnetDeployment as getV4MainnetReleaseContracts,
+    getPolygonDeployment as getV4PolygonReleaseContracts
+} from "tests/utils/core/deployment/V4ReleaseContracts.sol";
+import {
     Contracts as ReleaseContracts,
     getMainnetDeployment as getMainnetReleaseContracts,
     getPolygonDeployment as getPolygonReleaseContracts
 } from "tests/utils/core/deployment/V5ReleaseContracts.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+
+// v4 interfaces
+import {IComptrollerLib as IV4ComptrollerLib} from "tests/interfaces/internal/v4/IComptrollerLib.sol";
+import {IFundDeployer as IV4FundDeployer} from "tests/interfaces/internal/v4/IFundDeployer.sol";
 
 struct CorePrimitiveInput {
     string symbol;
@@ -40,6 +55,7 @@ abstract contract IntegrationTest is CoreUtils {
     IERC20 internal nonStandardPrimitive;
 
     Deployment internal core;
+    V4ReleaseContracts internal v4ReleaseContracts;
     // Don't allow access outside of this contract
     mapping(string => IERC20) private symbolToCoreToken;
     mapping(IERC20 => bool) private tokenToIsCore;
@@ -101,6 +117,8 @@ abstract contract IntegrationTest is CoreUtils {
     function setUpMainnetEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("mainnet", _forkBlock);
 
+        v4ReleaseContracts = getV4MainnetReleaseContracts();
+
         ReleaseConfig memory config = getDefaultMainnetConfig();
 
         __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
@@ -158,6 +176,8 @@ abstract contract IntegrationTest is CoreUtils {
 
     function setUpPolygonEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("polygon", _forkBlock);
+
+        v4ReleaseContracts = getV4PolygonReleaseContracts();
 
         ReleaseConfig memory config = getDefaultPolygonConfig();
 
@@ -439,5 +459,108 @@ abstract contract IntegrationTest is CoreUtils {
 
     function isCoreToken(IERC20 _token) internal view returns (bool isCore_) {
         return tokenToIsCore[_token];
+    }
+
+    // VERSIONED CONVENIENCE FUNCTIONS
+    // Not the most ideal place to dump all this stuff, but it's convenient for now
+
+    // Sorted descending, so default is most current version in the repo.
+    // V3 and earlier not supported.
+    // Version numbers refer to live contracts, not the contracts in this repo.
+    enum EnzymeVersion {
+        Current,
+        V4
+    }
+
+    // Versioned routers
+
+    function adapterActionForVersion(
+        EnzymeVersion _version,
+        address _comptrollerProxyAddress,
+        address _adapterAddress,
+        bytes4 _selector,
+        bytes memory _actionArgs
+    ) internal {
+        // Only difference currently is the integration manager address
+        address integrationManagerAddress = getIntegrationManagerAddressForVersion(_version);
+
+        callOnIntegration({
+            _integrationManager: IIntegrationManager(integrationManagerAddress),
+            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
+            _adapter: _adapterAddress,
+            _selector: _selector,
+            _actionArgs: _actionArgs
+        });
+    }
+
+    function createTradingFundForVersion(EnzymeVersion _version, IERC20 _denominationAsset)
+        internal
+        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
+    {
+        if (_version == EnzymeVersion.V4) {
+            return v4CreateFundSimple({
+                _fundDeployer: v4ReleaseContracts.fundDeployer,
+                _denominationAsset: _denominationAsset
+            });
+        } else {
+            IFundDeployer.ConfigInput memory comptrollerConfig;
+            comptrollerConfig.denominationAsset = address(_denominationAsset);
+
+            IComptrollerLib comptrollerProxy;
+            IVaultLib vaultProxy;
+            (comptrollerProxy, vaultProxy, fundOwner_) =
+                createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+
+            comptrollerProxyAddress_ = address(comptrollerProxy);
+            vaultProxyAddress_ = address(vaultProxy);
+        }
+    }
+
+    function getIntegrationManagerAddressForVersion(EnzymeVersion _version)
+        internal
+        view
+        returns (address integrationManagerAddress_)
+    {
+        if (_version == EnzymeVersion.V4) {
+            return address(v4ReleaseContracts.integrationManager);
+        } else {
+            return address(core.release.integrationManager);
+        }
+    }
+
+    // v4 actions: fund creation
+
+    // Create simple fund that can trade, but no fees or policies
+    function v4CreateFundSimple(IV4FundDeployer _fundDeployer, IERC20 _denominationAsset)
+        internal
+        returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
+    {
+        fundOwner_ = makeAddr("createFund: FundOwner");
+
+        (comptrollerProxyAddress_, vaultProxyAddress_) = _fundDeployer.createNewFund({
+            _fundOwner: fundOwner_,
+            _fundName: "Test Fund",
+            _fundSymbol: "TEST",
+            _denominationAsset: address(_denominationAsset),
+            _sharesActionTimelock: 0,
+            _feeManagerConfigData: "",
+            _policyManagerConfigData: ""
+        });
+    }
+
+    // v4 actions: system
+
+    // Where the interfaces/logic remain the same, we can reuse the current convenience functions for v4 (e.g., ValueInterpreter).
+    // By defining pass-through helpers in such a way, we can avoid more heavy refactoring later if we can no longer use the current convenience functions
+
+    function v4AddPrimitiveWithTestAggregator(address _tokenAddress, bool _skipIfRegistered)
+        internal
+        returns (TestAggregator aggregator_)
+    {
+        return addPrimitiveWithTestAggregator({
+            _valueInterpreter: IValueInterpreter(address(v4ReleaseContracts.valueInterpreter)),
+            _tokenAddress: _tokenAddress,
+            _skipIfRegistered: _skipIfRegistered
+        });
     }
 }

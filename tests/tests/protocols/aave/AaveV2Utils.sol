@@ -8,7 +8,6 @@ import {IAaveV2ATokenListOwner} from "tests/interfaces/internal/IAaveV2ATokenLis
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
-import {IAaveV2LendingPool} from "tests/interfaces/external/IAaveV2LendingPool.sol";
 
 abstract contract AaveV2Utils is AddOnUtilsBase {
     function deployAaveV2ATokenListOwner(

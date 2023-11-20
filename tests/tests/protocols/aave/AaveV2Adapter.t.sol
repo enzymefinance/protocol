@@ -19,7 +19,7 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
     function setUp() public virtual override {
         (IAaveV2Adapter aaveV2Adapter,) = __deployATokenListOwnerAndAdapter({
             _addressListRegistry: core.persistent.addressListRegistry,
-            _integrationManager: core.release.integrationManager,
+            _integrationManagerAddress: getIntegrationManagerAddressForVersion(version),
             _lendingPool: lendingPool,
             _lendingPoolAddressProvider: lendingPoolAddressProvider
         });
@@ -33,7 +33,7 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
 
     function __deployATokenListOwnerAndAdapter(
         IAddressListRegistry _addressListRegistry,
-        IIntegrationManager _integrationManager,
+        address _integrationManagerAddress,
         address _lendingPool,
         address _lendingPoolAddressProvider
     ) internal returns (IAaveV2Adapter aaveV2Adapter_, IAaveV2ATokenListOwner aaveV2ATokenListOwner_) {
@@ -46,7 +46,7 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
         });
 
         aaveV2Adapter_ = __deployAdapter({
-            _integrationManager: _integrationManager,
+            _integrationManagerAddress: _integrationManagerAddress,
             _addressListRegistry: _addressListRegistry,
             _aTokenListId: aTokenListId,
             _lendingPool: _lendingPool
@@ -56,12 +56,12 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
     }
 
     function __deployAdapter(
-        IIntegrationManager _integrationManager,
         IAddressListRegistry _addressListRegistry,
+        address _integrationManagerAddress,
         uint256 _aTokenListId,
         address _lendingPool
     ) internal returns (IAaveV2Adapter) {
-        bytes memory args = abi.encode(_integrationManager, _addressListRegistry, _aTokenListId, _lendingPool);
+        bytes memory args = abi.encode(_integrationManagerAddress, _addressListRegistry, _aTokenListId, _lendingPool);
         address addr = deployCode("AaveV2Adapter.sol", args);
         return IAaveV2Adapter(addr);
     }
@@ -71,18 +71,10 @@ abstract contract AaveV2AdapterTest is AaveAdapterTest, AaveV2Utils {
     function __getATokenAddress(address _underlying) internal view override returns (address) {
         return getATokenAddress({_lendingPool: lendingPool, _underlying: _underlying});
     }
-
-    function __registerTokensAndATokensForThem(address[] memory _underlyingAddresses) internal {
-        registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: core.release.valueInterpreter,
-            _underlyings: _underlyingAddresses,
-            _lendingPool: lendingPool
-        });
-    }
 }
 
 contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         lendingPool = ETHEREUM_LENDING_POOL_ADDRESS;
         lendingPoolAddressProvider = ETHEREUM_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
 
@@ -91,14 +83,12 @@ contract AaveV2AdapterTestEthereum is AaveV2AdapterTest {
         regular18DecimalUnderlying = IERC20(ETHEREUM_WETH);
         non18DecimalUnderlying = IERC20(ETHEREUM_USDC);
 
-        __registerTokensAndATokensForThem(toArray(address(regular18DecimalUnderlying), address(non18DecimalUnderlying)));
-
         super.setUp();
     }
 }
 
 contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         lendingPool = POLYGON_LENDING_POOL_ADDRESS;
         lendingPoolAddressProvider = POLYGON_LENDING_POOL_ADDRESS_PROVIDER_ADDRESS;
 
@@ -107,7 +97,21 @@ contract AaveV2AdapterTestPolygon is AaveV2AdapterTest {
         regular18DecimalUnderlying = IERC20(POLYGON_WETH);
         non18DecimalUnderlying = IERC20(POLYGON_USDC);
 
-        __registerTokensAndATokensForThem(toArray(address(regular18DecimalUnderlying), address(non18DecimalUnderlying)));
+        super.setUp();
+    }
+}
+
+contract AaveV2AdapterTestEthereumV4 is AaveV2AdapterTestEthereum {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract AaveV2AdapterTestPolygonV4 is AaveV2AdapterTestPolygon {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
 
         super.setUp();
     }

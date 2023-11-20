@@ -78,9 +78,9 @@ $(ARTIFACTS_DIR)/.sentinel: $(shell find $(CONTRACTS_DIR) -type f -name "*.sol")
 $(INTERFACES_DIR)/.sentinel: $(INTERFACES_FILE) $(ARTIFACTS_DIR)/.sentinel
 > mkdir -p $(@D)
 >
-> # Remove all existing interfaces and abis.
-> find $(INTERFACES_DIR) -type f -name "*.sol" -delete
-> find $(INTERFACES_DIR) -type f -name "*.abi.json" -delete
+> # Remove all existing interfaces and abis (from the immediate directory only).
+> find $(INTERFACES_DIR) -maxdepth 1 -type f -name "*.sol" -delete
+> find $(INTERFACES_DIR) -maxdepth 1 -type f -name "*.abi.json" -delete
 >
 > echo "Generating interfaces ..."
 >
