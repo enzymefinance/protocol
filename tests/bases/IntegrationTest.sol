@@ -493,18 +493,31 @@ abstract contract IntegrationTest is CoreUtils {
         });
     }
 
-    function createTradingFundForVersion(EnzymeVersion _version, IERC20 _denominationAsset)
+    function createTradingFundForVersion(EnzymeVersion _version)
         internal
         returns (address comptrollerProxyAddress_, address vaultProxyAddress_, address fundOwner_)
     {
+        // Use arbitrary test token as denomination asset
+        IERC20 denominationAsset = createTestToken();
+
         if (_version == EnzymeVersion.V4) {
+            // Add the denom asset as primitive
+            v4AddPrimitiveWithTestAggregator({_tokenAddress: address(denominationAsset), _skipIfRegistered: false});
+
             return v4CreateFundSimple({
                 _fundDeployer: v4ReleaseContracts.fundDeployer,
-                _denominationAsset: _denominationAsset
+                _denominationAsset: denominationAsset
             });
         } else {
+            // Add the denom asset as primitive
+            addPrimitiveWithTestAggregator({
+                _valueInterpreter: core.release.valueInterpreter,
+                _tokenAddress: address(denominationAsset),
+                _skipIfRegistered: false
+            });
+
             IFundDeployer.ConfigInput memory comptrollerConfig;
-            comptrollerConfig.denominationAsset = address(_denominationAsset);
+            comptrollerConfig.denominationAsset = address(denominationAsset);
 
             IComptrollerLib comptrollerProxy;
             IVaultLib vaultProxy;

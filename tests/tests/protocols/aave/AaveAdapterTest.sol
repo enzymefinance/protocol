@@ -30,11 +30,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
     EnzymeVersion internal version;
 
     function setUp() public virtual override {
-        // Create a fund with an arbitrary denomination asset
-        IERC20 denominationAsset = wethToken;
-
-        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) =
-            createTradingFundForVersion({_version: version, _denominationAsset: denominationAsset});
+        (comptrollerProxyAddress, vaultProxyAddress, vaultOwner) = createTradingFundForVersion(version);
     }
 
     // ACTION HELPERS
