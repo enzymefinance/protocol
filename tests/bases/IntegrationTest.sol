@@ -24,6 +24,7 @@ import {
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
@@ -472,26 +473,7 @@ abstract contract IntegrationTest is CoreUtils {
         V4
     }
 
-    // Versioned routers
-
-    function adapterActionForVersion(
-        EnzymeVersion _version,
-        address _comptrollerProxyAddress,
-        address _adapterAddress,
-        bytes4 _selector,
-        bytes memory _actionArgs
-    ) internal {
-        // Only difference currently is the integration manager address
-        address integrationManagerAddress = getIntegrationManagerAddressForVersion(_version);
-
-        callOnIntegration({
-            _integrationManager: IIntegrationManager(integrationManagerAddress),
-            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
-            _adapter: _adapterAddress,
-            _selector: _selector,
-            _actionArgs: _actionArgs
-        });
-    }
+    // Versioned routers: fund
 
     function createTradingFundForVersion(EnzymeVersion _version)
         internal
@@ -529,6 +511,97 @@ abstract contract IntegrationTest is CoreUtils {
         }
     }
 
+    // Versioned routers: integrations
+
+    function callOnIntegrationForVersion(
+        EnzymeVersion _version,
+        address _comptrollerProxyAddress,
+        address _adapterAddress,
+        bytes4 _selector,
+        bytes memory _actionArgs
+    ) internal {
+        // Only difference currently is the integration manager address
+        address integrationManagerAddress = getIntegrationManagerAddressForVersion(_version);
+
+        callOnIntegration({
+            _integrationManager: IIntegrationManager(integrationManagerAddress),
+            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
+            _adapter: _adapterAddress,
+            _selector: _selector,
+            _actionArgs: _actionArgs
+        });
+    }
+
+    // Versioned routers: external positions
+
+    function callOnExternalPositionForVersion(
+        EnzymeVersion _version,
+        address _comptrollerProxyAddress,
+        address _externalPositionAddress,
+        uint256 _actionId,
+        bytes memory _actionArgs
+    ) internal {
+        // Only difference currently is the ExternalPositionManager address
+        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
+
+        callOnExternalPosition({
+            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
+            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
+            _externalPositionAddress: _externalPositionAddress,
+            _actionId: _actionId,
+            _actionArgs: _actionArgs
+        });
+    }
+
+    function createExternalPositionForVersion(
+        EnzymeVersion _version,
+        address _comptrollerProxyAddress,
+        uint256 _typeId,
+        bytes memory _initializationData
+    ) internal returns (address externalPositionAddress_) {
+        // Only difference currently is the ExternalPositionManager address
+        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
+
+        return createExternalPosition({
+            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
+            _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
+            _typeId: _typeId,
+            _initializationData: _initializationData,
+            _callOnExternalPositionCallArgs: ""
+        });
+    }
+
+    function registerExternalPositionTypeForVersion(
+        EnzymeVersion _version,
+        string memory _label,
+        address _lib,
+        address _parser
+    ) internal returns (uint256 typeId_) {
+        // Only difference currently is the ExternalPositionManager address
+        address externalPositionManagerAddress = getExternalPositionManagerAddressForVersion(_version);
+
+        return registerExternalPositionType({
+            _externalPositionManager: IExternalPositionManager(externalPositionManagerAddress),
+            _label: _label,
+            _lib: _lib,
+            _parser: _parser
+        });
+    }
+
+    // Versioned routers: helpers
+
+    function getExternalPositionManagerAddressForVersion(EnzymeVersion _version)
+        internal
+        view
+        returns (address externalPositionManagerAddress_)
+    {
+        if (_version == EnzymeVersion.V4) {
+            return address(v4ReleaseContracts.externalPositionManager);
+        } else {
+            return address(core.release.externalPositionManager);
+        }
+    }
+
     function getIntegrationManagerAddressForVersion(EnzymeVersion _version)
         internal
         view
@@ -538,6 +611,18 @@ abstract contract IntegrationTest is CoreUtils {
             return address(v4ReleaseContracts.integrationManager);
         } else {
             return address(core.release.integrationManager);
+        }
+    }
+
+    function getValueInterpreterAddressForVersion(EnzymeVersion _version)
+        internal
+        view
+        returns (address valueInterpreterAddress_)
+    {
+        if (_version == EnzymeVersion.V4) {
+            return address(v4ReleaseContracts.valueInterpreter);
+        } else {
+            return address(core.release.valueInterpreter);
         }
     }
 

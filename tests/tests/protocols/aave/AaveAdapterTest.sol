@@ -39,7 +39,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        adapterActionForVersion({
+        callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _adapterAddress: adapter,
@@ -52,7 +52,7 @@ abstract contract AaveAdapterTestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_aToken, _amount);
 
         vm.prank(vaultOwner);
-        adapterActionForVersion({
+        callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _adapterAddress: adapter,
