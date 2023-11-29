@@ -48,7 +48,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
         address integrationManager = address(_integrationManager);
         uint256 actionId = uint256(0);
 
-        vm.prank(_caller);
+        vm.prank(_caller, _caller);
         _comptrollerProxy.callOnExtension(integrationManager, actionId, _callArgs);
     }
 

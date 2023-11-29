@@ -1,19 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.19;
 
-/*
-    This file is part of the Enzyme Protocol.
-
-    (c) Enzyme Council <council@enzyme.finance>
-
-    For the full license information, please view the LICENSE
-    file that was distributed with this source code.
-*/
-
-pragma solidity >=0.6.0 <0.9.0;
-pragma experimental ABIEncoderV2;
-
-/// @title IZeroExV4 Interface
-/// @author Enzyme Council <security@enzyme.finance>
 interface IZeroExV4 {
     enum SignatureType {
         ILLEGAL,
@@ -69,16 +56,9 @@ interface IZeroExV4 {
         bytes32 s;
     }
 
-    function fillOrKillLimitOrder(LimitOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
-        external
-        payable
-        returns (uint128 makerTokenFilledAmount_);
+    function getLimitOrderHash(LimitOrder calldata _order) external view returns (bytes32 orderHash_);
 
-    function fillOrKillRfqOrder(RfqOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
-        external
-        returns (uint128 makerTokenFilledAmount_);
+    function getRfqOrderHash(RfqOrder calldata _order) external view returns (bytes32 orderHash_);
 
-    function fillOtcOrder(OtcOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
-        external
-        returns (uint128 takerTokenFilledAmount_, uint128 makerTokenFilledAmount_);
+    function getOtcOrderHash(OtcOrder calldata _order) external view returns (bytes32 orderHash_);
 }

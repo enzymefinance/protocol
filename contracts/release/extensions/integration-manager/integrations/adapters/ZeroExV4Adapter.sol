@@ -25,7 +25,8 @@ import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     enum OrderType {
         Limit,
-        Rfq
+        Rfq,
+        Otc
     }
 
     IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
@@ -64,6 +65,10 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
             (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) =
                 __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
             __zeroExV4TakeRfqOrder({_order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount});
+        } else if (orderType == OrderType.Otc) {
+            (IZeroExV4.OtcOrder memory order, IZeroExV4.Signature memory signature) =
+                __decodeZeroExOtcOrderArgs(encodedZeroExOrderArgs);
+            __zeroExV4TakeOtcOrder({_order: order, _signature: signature, _takerAssetFillAmount: takerAssetFillAmount});
         }
     }
 
@@ -118,6 +123,13 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
             takerTokenFeeAmount = order.takerTokenFeeAmount;
         } else if (orderType == OrderType.Rfq) {
             (IZeroExV4.RfqOrder memory order,) = __decodeZeroExRfqOrderArgs(encodedZeroExOrderArgs);
+            maker = order.maker;
+            makerAmount = order.makerAmount;
+            incomingAssets_[0] = order.makerToken;
+            spendAssets_[0] = order.takerToken;
+            takerAmount = order.takerAmount;
+        } else if (orderType == OrderType.Otc) {
+            (IZeroExV4.OtcOrder memory order,) = __decodeZeroExOtcOrderArgs(encodedZeroExOrderArgs);
             maker = order.maker;
             makerAmount = order.makerAmount;
             incomingAssets_[0] = order.makerToken;
@@ -186,6 +198,15 @@ contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
         returns (IZeroExV4.RfqOrder memory order_, IZeroExV4.Signature memory signature_)
     {
         return abi.decode(_encodedZeroExOrderArgs, (IZeroExV4.RfqOrder, IZeroExV4.Signature));
+    }
+
+    /// @dev Decode the parameters of a 0x otc order
+    function __decodeZeroExOtcOrderArgs(bytes memory _encodedZeroExOrderArgs)
+        private
+        pure
+        returns (IZeroExV4.OtcOrder memory order_, IZeroExV4.Signature memory signature_)
+    {
+        return abi.decode(_encodedZeroExOrderArgs, (IZeroExV4.OtcOrder, IZeroExV4.Signature));
     }
 
     ///////////////////
