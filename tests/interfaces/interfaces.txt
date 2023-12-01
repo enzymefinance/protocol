@@ -140,6 +140,8 @@ ITheGraphDelegationPositionLib.sol: TheGraphDelegationPositionLib.abi.json
 ITheGraphDelegationPositionParser.sol: TheGraphDelegationPositionParser.abi.json
 IUniswapV3LiquidityPositionLib.sol: UniswapV3LiquidityPositionLib.abi.json
 IUniswapV3LiquidityPositionParser.sol: UniswapV3LiquidityPositionParser.abi.json
+ITermFinanceV1LendingPositionLib.sol: TermFinanceV1LendingPositionLib.abi.json
+ITermFinanceV1LendingPositionParser.sol: TermFinanceV1LendingPositionParser.abi.json
 
 # Value interpreter
 IValueInterpreter.sol: ValueInterpreter.abi.json
