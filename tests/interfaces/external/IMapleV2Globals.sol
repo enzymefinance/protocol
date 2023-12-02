@@ -11,8 +11,6 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-/// @title IMapleV2Globals Interface
-/// @author Enzyme Council <security@enzyme.finance>
 interface IMapleV2Globals {
     function isInstanceOf(bytes32 _key, address _who) external view returns (bool isInstanceOf_);
 }

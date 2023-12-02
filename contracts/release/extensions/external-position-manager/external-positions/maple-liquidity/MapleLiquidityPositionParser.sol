@@ -96,7 +96,7 @@ contract MapleLiquidityPositionParser is MapleLiquidityPositionDataDecoder, IExt
         );
 
         require(
-            IMapleV2Globals(MAPLE_V2_GLOBALS).isFactory("POOL_MANAGER", poolManagerFactory),
+            IMapleV2Globals(MAPLE_V2_GLOBALS).isInstanceOf("POOL_MANAGER_FACTORY", poolManagerFactory),
             "__validatePoolV2: Invalid Globals relation"
         );
     }
