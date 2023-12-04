@@ -23,5 +23,5 @@ abstract contract MapleLiquidityPositionLibBase1 {
 
     event UsedLendingPoolRemoved(address indexed lendingPool);
 
-    address[] internal usedLendingPoolsV1;
+    address[] internal usedLendingPoolsV1_DEPRECATED;
 }

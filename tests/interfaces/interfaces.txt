@@ -46,7 +46,6 @@ IExternalPosition.sol: IExternalPosition.abi.json
 IExternalPositionFactory.sol: ExternalPositionFactory.abi.json
 IExternalPositionProxy.sol: ExternalPositionProxy.abi.json
 IExternalPositionVault.sol: IExternalPositionVault.abi.json
-IMapleV1ToV2PoolMapper.sol: MapleV1ToV2PoolMapper.abi.json
 
 #######################################################################################################################
 # RELEASE

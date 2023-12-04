@@ -9,7 +9,6 @@
     file that was distributed with this source code.
 */
 
-import {IMapleV1MplRewardsFactory} from "../../../../../external-interfaces/IMapleV1MplRewardsFactory.sol";
 import {IMapleV2Globals} from "../../../../../external-interfaces/IMapleV2Globals.sol";
 import {IMapleV2Pool} from "../../../../../external-interfaces/IMapleV2Pool.sol";
 import {IMapleV2PoolManager} from "../../../../../external-interfaces/IMapleV2PoolManager.sol";
@@ -24,11 +23,9 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Parser for Maple liquidity positions
 contract MapleLiquidityPositionParser is MapleLiquidityPositionDataDecoder, IExternalPositionParser {
-    address private immutable MAPLE_V1_MPL_REWARDS_FACTORY;
     address private immutable MAPLE_V2_GLOBALS;
 
-    constructor(address _mapleV2Globals, address _mapleV1MplRewardsFactory) public {
-        MAPLE_V1_MPL_REWARDS_FACTORY = _mapleV1MplRewardsFactory;
+    constructor(address _mapleV2Globals) public {
         MAPLE_V2_GLOBALS = _mapleV2Globals;
     }
 
@@ -68,9 +65,6 @@ contract MapleLiquidityPositionParser is MapleLiquidityPositionDataDecoder, IExt
         } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.CancelRedeemV2)) {
             (address pool,) = __decodeCancelRedeemV2ActionArgs(_encodedActionArgs);
             __validatePoolV2(pool);
-        } else if (_actionId == uint256(IMapleLiquidityPosition.Actions.ClaimRewardsV1)) {
-            address rewardsContract = __decodeClaimRewardsV1ActionArgs(_encodedActionArgs);
-            __validateRewardsContract(rewardsContract);
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
@@ -98,14 +92,6 @@ contract MapleLiquidityPositionParser is MapleLiquidityPositionDataDecoder, IExt
         require(
             IMapleV2Globals(MAPLE_V2_GLOBALS).isInstanceOf("POOL_MANAGER_FACTORY", poolManagerFactory),
             "__validatePoolV2: Invalid Globals relation"
-        );
-    }
-
-    // Validates that a rewards contract has been deployed from the Maple rewards factory
-    function __validateRewardsContract(address _rewardsContract) private view {
-        require(
-            IMapleV1MplRewardsFactory(MAPLE_V1_MPL_REWARDS_FACTORY).isMplRewards(_rewardsContract),
-            "__validateRewardsContract: Invalid rewards contract"
         );
     }
 }

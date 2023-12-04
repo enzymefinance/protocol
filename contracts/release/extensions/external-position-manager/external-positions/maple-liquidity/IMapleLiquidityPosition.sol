@@ -23,7 +23,7 @@ interface IMapleLiquidityPosition is IExternalPosition {
         DEPRECATED_UnstakeV1,
         DEPRECATED_UnstakeAndRedeemV1,
         DEPRECATED_ClaimInterestV1,
-        ClaimRewardsV1,
+        DEPRECATED_ClaimRewardsV1,
         LendV2,
         RequestRedeemV2,
         RedeemV2,

@@ -13,23 +13,6 @@ pragma solidity 0.6.12;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Abstract contract containing data decodings for MapleLiquidityPosition payloads
 abstract contract MapleLiquidityPositionDataDecoder {
-    ////////////////
-    // V1 ACTIONS //
-    ////////////////
-
-    /// @dev Helper to decode args used during the ClaimRewardsV1 action
-    function __decodeClaimRewardsV1ActionArgs(bytes memory _actionArgs)
-        internal
-        pure
-        returns (address rewardsContract_)
-    {
-        return abi.decode(_actionArgs, (address));
-    }
-
-    ////////////////
-    // V2 ACTIONS //
-    ////////////////
-
     /// @dev Helper to decode args used during the CancelRedeemV2 action
     function __decodeCancelRedeemV2ActionArgs(bytes memory _actionArgs)
         internal

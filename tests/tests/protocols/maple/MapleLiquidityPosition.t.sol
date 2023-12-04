@@ -13,9 +13,7 @@ import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IMapleLiquidityPositionLib} from "tests/interfaces/internal/IMapleLiquidityPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {
-    ETHEREUM_MAPLE_V1_MPL_REWARDS_FACTORY_ADDRESS,
-    ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS,
-    ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS
+    ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS, ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS
 } from "./MapleLiquidityConstants.sol";
 
 enum Actions {
@@ -27,7 +25,7 @@ enum Actions {
     DEPRECATED_UnstakeV1,
     DEPRECATED_UnstakeAndRedeemV1,
     DEPRECATED_ClaimInterestV1,
-    ClaimRewardsV1,
+    DEPRECATED_ClaimRewardsV1,
     LendV2,
     RequestRedeemV2,
     RedeemV2,
@@ -47,7 +45,6 @@ abstract contract TestBase is IntegrationTest {
     IMapleV2WithdrawalManager internal mapleWithdrawalManager;
 
     // Set by child contract
-    address internal mapleV1MplRewardsFactoryAddress;
     address internal mapleV2GlobalsAddress;
     IMapleV2Pool internal pool;
     EnzymeVersion internal version;
@@ -57,11 +54,7 @@ abstract contract TestBase is IntegrationTest {
         (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Deploy all dependencies
-        uint256 typeId = __deployPositionType({
-            _dispatcher: core.persistent.dispatcher,
-            _mapleV2GlobalsAddress: mapleV2GlobalsAddress,
-            _mapleV1MplRewardsFactoryAddress: mapleV1MplRewardsFactoryAddress
-        });
+        uint256 typeId = __deployPositionType({_mapleV2GlobalsAddress: mapleV2GlobalsAddress});
 
         // Create an empty external position for the fund
         vm.prank(fundOwner);
@@ -81,39 +74,21 @@ abstract contract TestBase is IntegrationTest {
 
     // DEPLOYMENT HELPERS
 
-    function __deployMapleV1ToV2PoolMapper(IDispatcher _dispatcher) internal returns (address mapper_) {
-        bytes memory args = abi.encode(_dispatcher);
-
-        return deployCode("MapleV1ToV2PoolMapper.sol", args);
+    function __deployLib() internal returns (address lib_) {
+        return deployCode("MapleLiquidityPositionLib.sol");
     }
 
-    function __deployLib(address _mapperAddress) internal returns (address lib_) {
-        bytes memory args = abi.encode(_mapperAddress);
-
-        return deployCode("MapleLiquidityPositionLib.sol", args);
-    }
-
-    function __deployParser(address _mapleV2GlobalsAddress, address _mapleV1MplRewardsFactoryAddress)
-        internal
-        returns (address parser_)
-    {
-        bytes memory args = abi.encode(_mapleV2GlobalsAddress, _mapleV1MplRewardsFactoryAddress);
+    function __deployParser(address _mapleV2GlobalsAddress) internal returns (address parser_) {
+        bytes memory args = abi.encode(_mapleV2GlobalsAddress);
 
         return deployCode("MapleLiquidityPositionParser.sol", args);
     }
 
-    function __deployPositionType(
-        IDispatcher _dispatcher,
-        address _mapleV2GlobalsAddress,
-        address _mapleV1MplRewardsFactoryAddress
-    ) internal returns (uint256 typeId_) {
+    function __deployPositionType(address _mapleV2GlobalsAddress) internal returns (uint256 typeId_) {
         // Deploy type contracts
-        address libAddress = __deployLib({_mapperAddress: __deployMapleV1ToV2PoolMapper({_dispatcher: _dispatcher})});
+        address libAddress = __deployLib();
 
-        address parserAddress = __deployParser({
-            _mapleV2GlobalsAddress: _mapleV2GlobalsAddress,
-            _mapleV1MplRewardsFactoryAddress: _mapleV1MplRewardsFactoryAddress
-        });
+        address parserAddress = __deployParser({_mapleV2GlobalsAddress: _mapleV2GlobalsAddress});
 
         // Register type
         typeId_ = registerExternalPositionTypeForVersion({
@@ -381,7 +356,7 @@ abstract contract CancelRedeemTest is TestBase {
     }
 }
 
-// doesn't matter which action we will test, since all of them use the same validation except claimRewardsV1
+// doesn't matter which action we will test, since all of them use the same validation
 abstract contract ValidatePoolTest is TestBase {
     function test_validatePoolV2_failInvalidPoolManagerRelation() public {
         address fakePool = makeAddr("Fake pool");
@@ -476,12 +451,12 @@ contract MapleLiquidityPositionEthereum is PositionTest {
     function setUp() public virtual override {
         setUpMainnetEnvironment(18691012); // TODO: update to this global latest block number
         mapleV2GlobalsAddress = ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS;
-        mapleV1MplRewardsFactoryAddress = ETHEREUM_MAPLE_V1_MPL_REWARDS_FACTORY_ADDRESS;
         pool = IMapleV2Pool(ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS);
 
         super.setUp();
     }
 }
+//
 
 contract MapleLiquidityPositionEthereumV4 is MapleLiquidityPositionEthereum {
     function setUp() public override {
