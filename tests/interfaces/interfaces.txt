@@ -92,7 +92,6 @@ IIntegrationManager.sol: IntegrationManager.abi.json
 IUniswapV2LiquidityAdapter.sol: UniswapV2LiquidityAdapter.abi.json
 IAaveV3Adapter.sol: AaveV3Adapter.abi.json
 ISynthetixAdapter.sol: SynthetixAdapter.abi.json
-IConvexCurveLpStakingAdapter.sol: ConvexCurveLpStakingAdapter.abi.json
 IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
 IIdleAdapter.sol: IdleAdapter.abi.json
 ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
@@ -101,7 +100,6 @@ ICompoundV3Adapter.sol: CompoundV3Adapter.abi.json
 IYearnVaultV2Adapter.sol: YearnVaultV2Adapter.abi.json
 IParaSwapV5Adapter.sol: ParaSwapV5Adapter.abi.json
 IAaveV2Adapter.sol: AaveV2Adapter.abi.json
-IAuraBalancerV2LpStakingAdapter.sol: AuraBalancerV2LpStakingAdapter.abi.json
 IBalancerV2LiquidityAdapter.sol: BalancerV2LiquidityAdapter.abi.json
 ICurveExchangeAdapter.sol: CurveExchangeAdapter.abi.json
 ICompoundAdapter.sol: CompoundAdapter.abi.json
@@ -156,8 +154,6 @@ IUniswapV2PoolPriceFeed.sol: UniswapV2PoolPriceFeed.abi.json
 IBalancerV2GaugeTokenPriceFeed.sol: BalancerV2GaugeTokenPriceFeed.abi.json
 IIdlePriceFeed.sol: IdlePriceFeed.abi.json
 IRevertingPriceFeed.sol: RevertingPriceFeed.abi.json
-IAuraBalancerV2LpStakingWrapperPriceFeed.sol: AuraBalancerV2LpStakingWrapperPriceFeed.abi.json
-IConvexCurveLpStakingWrapperPriceFeed.sol: ConvexCurveLpStakingWrapperPriceFeed.abi.json
 IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
 IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
 IERC4626PriceFeed.sol: ERC4626PriceFeed.abi.json
@@ -169,12 +165,6 @@ IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json
 # Gas relayer
 IGasRelayPaymasterLib.sol: GasRelayPaymasterLib.abi.json
 IGasRelayPaymasterFactory.sol: GasRelayPaymasterFactory.abi.json
-
-# Staking wrappers
-IConvexCurveLpStakingWrapperFactory.sol: ConvexCurveLpStakingWrapperFactory.abi.json
-IConvexCurveLpStakingWrapperLib.sol: ConvexCurveLpStakingWrapperLib.abi.json
-IAuraBalancerV2LpStakingWrapperFactory.sol: AuraBalancerV2LpStakingWrapperFactory.abi.json
-IStakingWrapper.sol: IStakingWrapper.abi.json
 
 # Peripheral
 IDepositWrapper.sol: DepositWrapper.abi.json
