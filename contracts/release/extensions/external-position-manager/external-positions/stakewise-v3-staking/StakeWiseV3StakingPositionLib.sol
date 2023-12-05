@@ -95,11 +95,12 @@ contract StakeWiseV3StakingPositionLib is
             ExitRequest({
                 stakeWiseVaultAddress: address(stakeWiseVault),
                 positionTicket: positionTicket,
+                timestamp: block.timestamp,
                 sharesAmount: sharesAmount
             })
         );
 
-        emit ExitRequestAdded(address(stakeWiseVault), positionTicket, sharesAmount);
+        emit ExitRequestAdded(address(stakeWiseVault), positionTicket, block.timestamp, sharesAmount);
 
         // Remove StakeWiseVaultToken from storage if exited in full
         __removeStakeWiseVaultTokenIfNoBalance(stakeWiseVault);
@@ -107,7 +108,8 @@ contract StakeWiseV3StakingPositionLib is
 
     /// @dev Claims assets that were exited.
     function __claimExitedAssets(bytes memory _actionArgs) private {
-        (IStakeWiseV3EthVault stakeWiseVault, uint256 positionTicket) = __decodeClaimExitedAssetsActionArgs(_actionArgs);
+        (IStakeWiseV3EthVault stakeWiseVault, uint256 positionTicket, uint256 timestamp) =
+            __decodeClaimExitedAssetsActionArgs(_actionArgs);
 
         // If the positionTicket is invalid or already claimed, the exit queue index will be -1
         int256 exitQueueIndex = stakeWiseVault.getExitQueueIndex({_positionTicket: positionTicket});
@@ -116,6 +118,7 @@ contract StakeWiseV3StakingPositionLib is
         // Claim the position ticket
         (uint256 nextPositionTicket, uint256 claimedShares,) = stakeWiseVault.claimExitedAssets({
             _positionTicket: positionTicket,
+            _timestamp: timestamp,
             _exitQueueIndex: uint256(exitQueueIndex)
         });
 
@@ -133,11 +136,13 @@ contract StakeWiseV3StakingPositionLib is
                 // A non-zero positionTicket means that there is still a pending request (not all shares have been claimed).
                 if (nextPositionTicket != 0) {
                     // If the claim was only partial, update the ExitRequest
-                    uint256 nextSharesAmount = exitRequest.sharesAmount - claimedShares;
-                    exitRequest.sharesAmount = nextSharesAmount;
                     exitRequest.positionTicket = nextPositionTicket;
+                    exitRequest.sharesAmount -= claimedShares;
 
-                    emit ExitRequestAdded(address(stakeWiseVault), nextPositionTicket, nextSharesAmount);
+                    // New requests added in the context of a partial claim keep the original timestamp
+                    emit ExitRequestAdded(
+                        address(stakeWiseVault), nextPositionTicket, timestamp, exitRequest.sharesAmount
+                    );
                 } else {
                     // If the claim was in full, remove the ExitRequest from exitRequests
                     if (i != finalExitRequestsIndex) {
@@ -158,7 +163,7 @@ contract StakeWiseV3StakingPositionLib is
 
     /// @dev Helper to remove a stakeWiseVaultToken from storage and emit the corresponding event if balance is 0
     function __removeStakeWiseVaultTokenIfNoBalance(IStakeWiseV3EthVault _stakeWiseVault) private {
-        if (_stakeWiseVault.balanceOf(address(this)) == 0) {
+        if (_stakeWiseVault.getShares(address(this)) == 0) {
             stakeWiseVaultTokens.removeStorageItem(address(_stakeWiseVault));
             emit VaultTokenRemoved(address(_stakeWiseVault));
         }
@@ -195,16 +200,35 @@ contract StakeWiseV3StakingPositionLib is
         // stakeWiseVaultTokens held by the EP
         for (uint256 i; i < stakeWiseVaultTokensLength; i++) {
             IStakeWiseV3EthVault stakeWiseVault = IStakeWiseV3EthVault(stakeWiseVaultTokens[i]);
-            amounts_[0] += stakeWiseVault.convertToAssets({_shares: stakeWiseVault.balanceOf(address(this))});
+            amounts_[0] += stakeWiseVault.convertToAssets({_shares: stakeWiseVault.getShares(address(this))});
         }
 
         // Pending exit requests
         for (uint256 i; i < exitRequestsLength; i++) {
             ExitRequest memory exitRequest = exitRequests[i];
-            amounts_[0] += IStakeWiseV3EthVault(exitRequest.stakeWiseVaultAddress).convertToAssets({
-                _shares: exitRequest.sharesAmount
+
+            IStakeWiseV3EthVault stakeWiseVault = IStakeWiseV3EthVault(exitRequest.stakeWiseVaultAddress);
+
+            // If the positionTicket is invalid or already claimed, the exit queue index will be -1
+            int256 exitQueueIndex = stakeWiseVault.getExitQueueIndex({_positionTicket: exitRequest.positionTicket});
+
+            // A missing positionTicket means that the VaultState has not been updated.
+            // In this case, we fallback to valuing the exitRequest based on the sharePrice
+            if (exitQueueIndex < 0) {
+                amounts_[0] += stakeWiseVault.convertToAssets({_shares: exitRequest.sharesAmount});
+                continue;
+            }
+
+            (,, uint256 claimedAssets) = stakeWiseVault.calculateExitedAssets({
+                _receiver: address(this),
+                _positionTicket: exitRequest.positionTicket,
+                _timestamp: exitRequest.timestamp,
+                _exitQueueIndex: uint256(exitQueueIndex)
             });
+
+            amounts_[0] += claimedAssets;
         }
+
         return (assets_, amounts_);
     }
 

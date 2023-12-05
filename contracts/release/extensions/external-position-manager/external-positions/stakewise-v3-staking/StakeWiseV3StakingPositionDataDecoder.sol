@@ -47,8 +47,8 @@ abstract contract StakeWiseV3StakingPositionDataDecoder {
     function __decodeClaimExitedAssetsActionArgs(bytes memory _actionArgs)
         internal
         pure
-        returns (IStakeWiseV3EthVault vaultToken_, uint256 positionTicket_)
+        returns (IStakeWiseV3EthVault vaultToken_, uint256 positionTicket_, uint256 timestamp_)
     {
-        return abi.decode(_actionArgs, (IStakeWiseV3EthVault, uint256));
+        return abi.decode(_actionArgs, (IStakeWiseV3EthVault, uint256, uint256));
     }
 }

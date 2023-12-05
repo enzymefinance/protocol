@@ -111,10 +111,6 @@ abstract contract IntegrationTest is CoreUtils {
         setUpPolygonEnvironment(POLYGON_BLOCK_LATEST);
     }
 
-    function setUpGoerliEnvironment() internal {
-        setUpGoerliEnvironment(GOERLI_BLOCK_LATEST);
-    }
-
     function setUpMainnetEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("mainnet", _forkBlock);
 
@@ -224,50 +220,6 @@ abstract contract IntegrationTest is CoreUtils {
             assetAddress: POLYGON_WBTC,
             aggregatorAddress: POLYGON_WBTC_USD_AGGREGATOR,
             rateAsset: ChainlinkRateAsset.USD
-        });
-
-        __addCorePrimitives(corePrimitives);
-    }
-
-    function setUpGoerliEnvironment(uint256 _forkBlock) internal {
-        vm.createSelectFork("goerli", _forkBlock);
-
-        ReleaseConfig memory config = ReleaseConfig({
-            // Chainlink
-            chainlinkEthUsdAggregatorAddress: address(0), // TODO: lookup real address
-            chainlinkStaleRateThreshold: 3650 days,
-            // Tokens
-            mlnTokenAddress: GOERLI_MLN, // TODO: is this actually what we use as "MLN" on Goerli?
-            wethTokenAddress: GOERLI_WETH,
-            wrappedNativeTokenAddress: GOERLI_WETH,
-            // Gas relayer
-            gasRelayDepositCooldown: 1 days,
-            gasRelayDepositMaxTotal: 1 ether,
-            gasRelayFeeMaxPercent: 10,
-            gasRelayHubAddress: address(0), // TODO: lookup real address
-            gasRelayRelayFeeMaxBase: 0,
-            gasRelayTrustedForwarderAddress: address(0), // TODO: lookup/deploy real address
-            // Vault settings
-            vaultMlnBurner: address(0), // TODO: MLN must be burnable
-            vaultPositionsLimit: 20
-        });
-
-        __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
-
-        // Deploy minimal asset universe
-
-        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
-        symbolToCoreToken["WETH"] = IERC20(wethToken);
-        tokenToIsCore[IERC20(wethToken)] = true;
-
-        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](1);
-        // System primitives
-        address testMlnEthAggregator = address(createTestAggregator({_price: 0.01 ether}));
-        corePrimitives[0] = CorePrimitiveInput({
-            symbol: "MLN",
-            assetAddress: GOERLI_MLN,
-            aggregatorAddress: testMlnEthAggregator,
-            rateAsset: ChainlinkRateAsset.ETH
         });
 
         __addCorePrimitives(corePrimitives);

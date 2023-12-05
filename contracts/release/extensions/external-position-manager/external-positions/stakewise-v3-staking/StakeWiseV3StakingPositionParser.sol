@@ -64,7 +64,7 @@ contract StakeWiseV3StakingPositionParser is StakeWiseV3StakingPositionDataDecod
 
             assetsToReceive_[0] = WETH_ADDRESS;
         } else if (_actionId == uint256(IStakeWiseV3StakingPosition.Actions.ClaimExitedAssets)) {
-            (IStakeWiseV3EthVault stakeWiseVault,) = __decodeClaimExitedAssetsActionArgs(_encodedActionArgs);
+            (IStakeWiseV3EthVault stakeWiseVault,,) = __decodeClaimExitedAssetsActionArgs(_encodedActionArgs);
 
             __validateStakeWiseVault(stakeWiseVault);
 

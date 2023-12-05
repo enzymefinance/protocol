@@ -21,11 +21,20 @@ interface IStakeWiseV3EthVault {
         bytes32[] proof;
     }
 
-    function balanceOf(address _account) external view returns (uint256 balance_);
+    function calculateExitedAssets(
+        address _receiver,
+        uint256 _positionTicket,
+        uint256 _timestamp,
+        uint256 _exitQueueIndex
+    ) external view returns (uint256 leftShares_, uint256 claimedShares_, uint256 claimedAssets_);
 
     function convertToShares(uint256 _assets) external view returns (uint256 shares_);
 
     function convertToAssets(uint256 _shares) external view returns (uint256 assets_);
+
+    function getExitQueueIndex(uint256 _positionTicket) external view returns (int256 exitQueueIndex_);
+
+    function getShares(address _account) external view returns (uint256 shares_);
 
     function updateState(HarvestParams calldata harvestParams) external;
 }

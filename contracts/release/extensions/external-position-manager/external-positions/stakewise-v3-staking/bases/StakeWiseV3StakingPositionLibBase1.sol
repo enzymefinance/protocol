@@ -19,7 +19,9 @@ pragma solidity 0.8.19;
 /// a numbered StakeWiseV3StakingPositionLibBaseXXX that inherits the previous base.
 /// e.g., `StakeWiseV3StakingPositionLibBase2 is StakeWiseV3StakingPositionLibBase1`
 abstract contract StakeWiseV3StakingPositionLibBase1 {
-    event ExitRequestAdded(address indexed stakeWiseVaultAddress, uint256 positionTicket, uint256 sharesAmount);
+    event ExitRequestAdded(
+        address indexed stakeWiseVaultAddress, uint256 positionTicket, uint256 timestamp, uint256 sharesAmount
+    );
 
     event ExitRequestRemoved(address indexed stakeWiseVaultAddress, uint256 positionTicket);
 
@@ -30,6 +32,7 @@ abstract contract StakeWiseV3StakingPositionLibBase1 {
     struct ExitRequest {
         address stakeWiseVaultAddress;
         uint256 positionTicket;
+        uint256 timestamp;
         uint256 sharesAmount;
     }
 
