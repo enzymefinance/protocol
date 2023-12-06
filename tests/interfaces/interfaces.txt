@@ -91,7 +91,6 @@ IIntegrationAdapter.sol: IIntegrationAdapter.abi.json
 IIntegrationManager.sol: IntegrationManager.abi.json
 IUniswapV2LiquidityAdapter.sol: UniswapV2LiquidityAdapter.abi.json
 IAaveV3Adapter.sol: AaveV3Adapter.abi.json
-ISynthetixAdapter.sol: SynthetixAdapter.abi.json
 IUniswapV3Adapter.sol: UniswapV3Adapter.abi.json
 IIdleAdapter.sol: IdleAdapter.abi.json
 ICurveLiquidityAdapter.sol: CurveLiquidityAdapter.abi.json
