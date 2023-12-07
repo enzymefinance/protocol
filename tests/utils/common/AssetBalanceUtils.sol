@@ -13,9 +13,16 @@ import {
     POLYGON_POOL_ADDRESS as POLYGON_AAVE_V3_POOL_ADDRESS
 } from "tests/tests/protocols/aave/AaveV3Constants.sol";
 
+import {
+    ETHEREUM_COMPOUND_V3_CONFIGURATOR,
+    POLYGON_COMPOUND_V3_CONFIGURATOR
+} from "tests/tests/protocols/compound/CompoundV3Constants.sol";
+
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IAaveV2LendingPool} from "tests/interfaces/external/IAaveV2LendingPool.sol";
 import {IAaveV3Pool} from "tests/interfaces/external/IAaveV3Pool.sol";
+import {ICompoundV3Configurator} from "tests/interfaces/external/ICompoundV3Configurator.sol";
+import {ICompoundV3Comet} from "tests/interfaces/external/ICompoundV3Comet.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ILidoSteth} from "tests/interfaces/external/ILidoSteth.sol";
 
@@ -38,6 +45,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             increaseAaveV2TokenBalance(_token, _to, _amount);
         } else if (isAaveV3Token(_token)) {
             increaseAaveV3TokenBalance(_token, _to, _amount);
+        } else if (isCompoundV3Token(_token)) {
+            increaseCompoundV3TokenBalance(_token, _to, _amount);
         } else {
             uint256 balance = _token.balanceOf(_to);
 
@@ -159,6 +168,37 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         return address(_token) == reserveData.aTokenAddress;
     }
 
+    // CompoundV3
+
+    function getCompoundV3ConfiguratorForChain() internal view returns (address configurator_) {
+        if (block.chainid == ETHEREUM_CHAIN_ID) {
+            return ETHEREUM_COMPOUND_V3_CONFIGURATOR;
+        } else if (block.chainid == POLYGON_CHAIN_ID) {
+            return POLYGON_COMPOUND_V3_CONFIGURATOR;
+        }
+    }
+
+    function isCompoundV3Token(IERC20 _token) internal view returns (bool isCToken_) {
+        ICompoundV3Configurator configurator = ICompoundV3Configurator(getCompoundV3ConfiguratorForChain());
+
+        if (address(configurator) == address(0)) {
+            return false;
+        }
+
+        return configurator.factory(address(_token)) != address(0);
+    }
+
+    function increaseCompoundV3TokenBalance(IERC20 _cToken, address _to, uint256 _amount) internal {
+        ICompoundV3Comet cToken = ICompoundV3Comet(address(_cToken));
+
+        IERC20 underlyingToken = IERC20(cToken.baseToken());
+
+        increaseTokenBalance(underlyingToken, _to, _amount);
+        vm.startPrank(_to);
+        underlyingToken.approve(address(_cToken), _amount);
+        cToken.supplyTo({_dst: _to, _asset: address(underlyingToken), _amount: _amount});
+        vm.stopPrank();
+    }
     // Lido stETH
 
     function increaseStethBalance(address _to, uint256 _amount) internal {
