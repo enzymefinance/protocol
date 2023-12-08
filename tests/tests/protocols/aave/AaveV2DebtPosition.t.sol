@@ -208,7 +208,7 @@ abstract contract TestBase is AaveV2Utils, IntegrationTest {
 
     function __registerUnderlyingsAndATokensForThem(address[] memory _underlyingAddresses) internal {
         registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: core.release.valueInterpreter,
+            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version))),
             _underlyings: _underlyingAddresses,
             _lendingPool: address(lendingPool)
         });

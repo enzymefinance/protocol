@@ -16,6 +16,7 @@ import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPosit
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
@@ -43,9 +44,11 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     event CollateralAssetRemoved(address indexed asset);
 
     address internal fundOwner;
-    IVaultLib internal vaultProxy;
-    IComptrollerLib internal comptrollerProxy;
+    address internal vaultProxyAddress;
+    address internal comptrollerProxyAddress;
 
+    // Set by child contract
+    EnzymeVersion internal version;
     IAaveV3DebtPositionLib internal aaveV3DebtPosition;
     IAaveV3PoolAddressProvider internal poolAddressProvider;
     IAaveV3ProtocolDataProvider internal protocolDataProvider;
@@ -58,12 +61,11 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         IFundDeployer.ConfigInput memory comptrollerConfig;
         comptrollerConfig.denominationAsset = address(wethToken);
 
-        (comptrollerProxy, vaultProxy, fundOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        // Create a fund
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Deploy all AaveV3Debt dependencies
         uint256 typeId = __deployPositionType({
-            _externalPositionManager: core.release.externalPositionManager,
             _poolAddressProvider: poolAddressProvider,
             _protocolDataProvider: protocolDataProvider,
             _addressListRegistry: core.persistent.addressListRegistry
@@ -72,12 +74,11 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         // Create an empty AaveV3Debt for the fund
         vm.prank(fundOwner);
         aaveV3DebtPosition = IAaveV3DebtPositionLib(
-            createExternalPosition({
-                _externalPositionManager: core.release.externalPositionManager,
-                _comptrollerProxy: comptrollerProxy,
+            createExternalPositionForVersion({
+                _version: version,
+                _comptrollerProxyAddress: comptrollerProxyAddress,
                 _typeId: typeId,
-                _initializationData: "",
-                _callOnExternalPositionCallArgs: ""
+                _initializationData: ""
             })
         );
     }
@@ -103,7 +104,6 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     }
 
     function __deployPositionType(
-        IExternalPositionManager _externalPositionManager,
         IAaveV3PoolAddressProvider _poolAddressProvider,
         IAaveV3ProtocolDataProvider _protocolDataProvider,
         IAddressListRegistry _addressListRegistry
@@ -126,8 +126,8 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             address(__deployParser({_addressListRegistry: _addressListRegistry, _aTokenListId: aTokenListId}));
 
         // Register AaveV3Debt type
-        typeId_ = registerExternalPositionType({
-            _externalPositionManager: _externalPositionManager,
+        typeId_ = registerExternalPositionTypeForVersion({
+            _version: version,
             _label: "AAVE_V3_DEBT",
             _lib: aaveV3DebtPositionLibAddress,
             _parser: aaveV3DebtPositionParser
@@ -142,9 +142,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts, _fromUnderlying);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.AddCollateral)
@@ -155,9 +155,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_aTokens, _amounts, _toUnderlying);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.RemoveCollateral)
@@ -168,9 +168,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.Borrow)
@@ -181,9 +181,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlyings, _amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.RepayBorrow)
@@ -194,9 +194,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_categoryId);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.SetEMode)
@@ -207,9 +207,9 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
         bytes memory actionArgs = abi.encode(_underlying, _useAsCollateral);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
             _actionId: uint256(Actions.SetUseReserveAsCollateral)
@@ -233,7 +233,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     function __registerUnderlyingsAndATokensForThem(address[] memory _underlyingAddresses) internal {
         registerUnderlyingsAndATokensForThem({
-            _valueInterpreter: core.release.valueInterpreter,
+            _valueInterpreter: IValueInterpreter(address(getValueInterpreterAddressForVersion(version))),
             _underlyings: _underlyingAddresses,
             _lendingPool: address(lendingPool)
         });
@@ -242,7 +242,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
     function __dealATokenAndAddCollateral(address[] memory _aTokens, uint256[] memory _amounts) internal {
         // increase tokens balance for vault with amounts
         for (uint256 i = 0; i < _aTokens.length; i++) {
-            increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
+            increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: vaultProxyAddress, _amount: _amounts[i]});
         }
 
         __addCollateral({_aTokens: _aTokens, _amounts: _amounts, _fromUnderlying: false});
@@ -269,11 +269,11 @@ abstract contract AddCollateralTest is TestBase {
             if (_fromUnderlying) {
                 increaseTokenBalance({
                     _token: IERC20(IAaveAToken(_aTokens[i]).UNDERLYING_ASSET_ADDRESS()),
-                    _to: address(vaultProxy),
+                    _to: vaultProxyAddress,
                     _amount: _amounts[i]
                 });
             } else {
-                increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: address(vaultProxy), _amount: _amounts[i]});
+                increaseTokenBalance({_token: IERC20(_aTokens[i]), _to: vaultProxyAddress, _amount: _amounts[i]});
             }
         }
 
@@ -292,7 +292,7 @@ abstract contract AddCollateralTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -351,7 +351,7 @@ abstract contract RemoveCollateralTest is TestBase {
         }
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: assetsToReceive
         });
 
@@ -387,7 +387,7 @@ abstract contract RemoveCollateralTest is TestBase {
             // check that vault received removed collateral
             // 1 wei difference is allowed because of the interest accrued
             assertApproxEqAbs(
-                removedAsset.balanceOf(address(vaultProxy)),
+                removedAsset.balanceOf(vaultProxyAddress),
                 expectedVaultBalance,
                 1,
                 "Vault did not receive removed collateral"
@@ -434,7 +434,7 @@ abstract contract BorrowTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: _underlyingsToBorrow
         });
 
@@ -457,7 +457,7 @@ abstract contract BorrowTest is TestBase {
         // check the borrowed assets vault balance
         for (uint256 i = 0; i < uniqueUnderlyingsToBorrow.length; i++) {
             assertEq(
-                IERC20(uniqueUnderlyingsToBorrow[i]).balanceOf(address(vaultProxy)),
+                IERC20(uniqueUnderlyingsToBorrow[i]).balanceOf(vaultProxyAddress),
                 uniqueUnderlyingsToBorrowAmounts[i],
                 "Borrowed asset amount was not sent to the vault"
             );
@@ -480,7 +480,7 @@ abstract contract RepayBorrowTest is TestBase {
 
         for (uint256 i = 0; i < _underlyingsToBorrowAndRepay.length; i++) {
             // set vault balances with amounts
-            deal({token: _underlyingsToBorrowAndRepay[i], give: _underlyingsVaultAmounts[i], to: address(vaultProxy)});
+            deal({token: _underlyingsToBorrowAndRepay[i], give: _underlyingsVaultAmounts[i], to: vaultProxyAddress});
         }
 
         // expect emit borrowed asset removed event for every fully-repaid token
@@ -497,7 +497,7 @@ abstract contract RepayBorrowTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -507,7 +507,7 @@ abstract contract RepayBorrowTest is TestBase {
             // if the repay amount is less than the borrowed amount the vault balance should be decreased by the repay amount
             // 1 wei difference is allowed because of the interest accrued
             assertApproxEqAbs(
-                IERC20(_underlyingsToBorrowAndRepay[i]).balanceOf(address(vaultProxy)),
+                IERC20(_underlyingsToBorrowAndRepay[i]).balanceOf(vaultProxyAddress),
                 _underlyingsVaultAmounts[i] - Math.min(_underlyingsToBorrowAmounts[i], _underlyingsToRepayAmounts[i]),
                 1,
                 "Vault balance is not correct after repay"
@@ -554,7 +554,7 @@ abstract contract SetEModeTest is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -588,7 +588,7 @@ abstract contract SetUseReserveAsCollateral is TestBase {
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -617,7 +617,7 @@ abstract contract AaveV3DebtPositionTest is
 {}
 
 contract AaveV3DebtPositionTestEthereum is AaveV3DebtPositionTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         setUpMainnetEnvironment();
 
         poolAddressProvider = IAaveV3PoolAddressProvider(ETHEREUM_POOL_ADDRESS_PROVIDER);
@@ -763,7 +763,7 @@ contract AaveV3DebtPositionTestEthereum is AaveV3DebtPositionTest {
 }
 
 contract AaveV3DebtPositionTestPolygon is AaveV3DebtPositionTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         setUpPolygonEnvironment();
 
         poolAddressProvider = IAaveV3PoolAddressProvider(POLYGON_POOL_ADDRESS_PROVIDER);
@@ -905,5 +905,21 @@ contract AaveV3DebtPositionTestPolygon is AaveV3DebtPositionTest {
             _amountsToRemove: amountsToRemove,
             _toUnderlying: _toUnderlying
         });
+    }
+}
+
+contract AaveV3DebtPositionTestEthereumV4 is AaveV3DebtPositionTestEthereum {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract AaveV3DebtPositionTestPolygonV4 is AaveV3DebtPositionTestPolygon {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
     }
 }
