@@ -11,8 +11,9 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IArrakisV2Adapter} from "tests/interfaces/internal/IArrakisV2Adapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
+import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
-import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {
     ARRAKIS_HELPER_ADDRESS,
@@ -22,9 +23,9 @@ import {
 } from "./ArrakisV2Utils.sol";
 
 abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
-    address internal vaultOwner;
-    IVaultLib internal vaultProxy;
-    IComptrollerLib internal comptrollerProxy;
+    address internal fundOwner;
+    address internal vaultProxyAddress;
+    address internal comptrollerProxyAddress;
 
     IArrakisV2Adapter internal arrakisAdapter;
     IArrakisV2Helper internal arrakisHelper;
@@ -32,6 +33,9 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
     IArrakisV2Vault internal arrakisVault;
     IERC20 internal token0;
     IERC20 internal token1;
+
+    // Set by child contract
+    EnzymeVersion internal version;
 
     function setUp(address _arrakisVaultAddress, address _arrakisHelperAddress, address _arrakisResolverAddress)
         internal
@@ -45,22 +49,23 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
         token0 = IERC20(arrakisVault.token0());
         token1 = IERC20(arrakisVault.token1());
 
-        addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: toArray(address(token0), address(token1), address(arrakisVault)),
-            _skipIfRegistered: true
-        });
+        // If v4, register incoming asset to pass the asset universe validation
+        if (version == EnzymeVersion.V4) {
+            v4AddPrimitivesWithTestAggregator({
+                _tokenAddresses: toArray(address(token0), address(token1), address(arrakisVault)),
+                _skipIfRegistered: true
+            });
+        }
 
         // Create fund with arbitrary denomination asset
         IFundDeployer.ConfigInput memory comptrollerConfig;
         comptrollerConfig.denominationAsset = address(wethToken);
 
-        (comptrollerProxy, vaultProxy, vaultOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Seed the fund with Arrakis vault underlyings
-        increaseTokenBalance({_token: token0, _to: address(vaultProxy), _amount: assetUnit(token0) * 31});
-        increaseTokenBalance({_token: token1, _to: address(vaultProxy), _amount: assetUnit(token1) * 23});
+        increaseTokenBalance({_token: token0, _to: vaultProxyAddress, _amount: assetUnit(token0) * 31});
+        increaseTokenBalance({_token: token1, _to: vaultProxyAddress, _amount: assetUnit(token1) * 23});
 
         // Allow adapter to mint Arrakis shares
         vm.prank(arrakisVault.owner());
@@ -70,7 +75,7 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
     // DEPLOYMENT HELPERS
 
     function __deployAdapter() private returns (IArrakisV2Adapter) {
-        bytes memory args = abi.encode(core.release.integrationManager);
+        bytes memory args = abi.encode(getIntegrationManagerAddressForVersion(version));
         address addr = deployCode("ArrakisV2Adapter.sol", args);
         return IArrakisV2Adapter(addr);
     }
@@ -79,32 +84,34 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
 
     function __lend(uint256[2] memory _maxUnderlyingAmounts, uint256 _sharesAmount) private {
         bytes memory integrationData = abi.encode(arrakisVault, _maxUnderlyingAmounts, _sharesAmount);
-        bytes memory callArgs = abi.encode(address(arrakisAdapter), IArrakisV2Adapter.lend.selector, integrationData);
 
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _caller: vaultOwner,
-            _callArgs: callArgs
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(arrakisAdapter),
+            _selector: IArrakisV2Adapter.lend.selector,
+            _actionArgs: integrationData
         });
     }
 
     function __redeem(uint256 _sharesAmount, uint256[2] memory _minIncomingTokenAmounts) private {
         bytes memory integrationData = abi.encode(address(arrakisVault), _sharesAmount, _minIncomingTokenAmounts);
-        bytes memory callArgs = abi.encode(address(arrakisAdapter), IArrakisV2Adapter.redeem.selector, integrationData);
 
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _caller: vaultOwner,
-            _callArgs: callArgs
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(arrakisAdapter),
+            _selector: IArrakisV2Adapter.redeem.selector,
+            _actionArgs: integrationData
         });
     }
 
     function test_lend_success() public {
-        uint256 token0BalancePre = token0.balanceOf(address(vaultProxy));
+        uint256 token0BalancePre = token0.balanceOf(vaultProxyAddress);
         uint256 token0MaxAmount = token0BalancePre / 5;
-        uint256 token1BalancePre = token1.balanceOf(address(vaultProxy));
+        uint256 token1BalancePre = token1.balanceOf(vaultProxyAddress);
         uint256 token1MaxAmount = token1BalancePre / 5;
 
         assertNotEq(token0MaxAmount, 0, "token0 amount to deposit is 0");
@@ -129,17 +136,17 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
 
         // Assert the expected final vaultProxy balances
         assertEq(
-            IERC20(address(arrakisVault)).balanceOf(address(vaultProxy)),
+            IERC20(address(arrakisVault)).balanceOf(vaultProxyAddress),
             expectedSharesAmount,
             "Mismatch between received and expected arrakis vault balance"
         );
         assertEq(
-            token0BalancePre - token0.balanceOf(address(vaultProxy)),
+            token0BalancePre - token0.balanceOf(vaultProxyAddress),
             expectedToken0Amount,
             "Mismatch between sent and expected token0 balance"
         );
         assertEq(
-            token1BalancePre - token1.balanceOf(address(vaultProxy)),
+            token1BalancePre - token1.balanceOf(vaultProxyAddress),
             expectedToken1Amount,
             "Mismatch between sent and expected token1 balance"
         );
@@ -150,8 +157,8 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
     }
 
     function test_redeem_success() public {
-        uint256 token0MaxAmount = token0.balanceOf(address(vaultProxy)) / 5;
-        uint256 token1MaxAmount = token1.balanceOf(address(vaultProxy)) / 5;
+        uint256 token0MaxAmount = token0.balanceOf(vaultProxyAddress) / 5;
+        uint256 token1MaxAmount = token1.balanceOf(vaultProxyAddress) / 5;
 
         (,, uint256 expectedSharesAmount) = arrakisResolver.getMintAmounts({
             _vaultV2: address(arrakisVault),
@@ -161,9 +168,9 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
 
         __lend({_maxUnderlyingAmounts: [token0MaxAmount, token1MaxAmount], _sharesAmount: expectedSharesAmount});
 
-        uint256 token0BalancePre = token0.balanceOf(address(vaultProxy));
-        uint256 token1BalancePre = token1.balanceOf(address(vaultProxy));
-        uint256 sharesBalance = IERC20(address(arrakisVault)).balanceOf(address(vaultProxy));
+        uint256 token0BalancePre = token0.balanceOf(vaultProxyAddress);
+        uint256 token1BalancePre = token1.balanceOf(vaultProxyAddress);
+        uint256 sharesBalance = IERC20(address(arrakisVault)).balanceOf(vaultProxyAddress);
 
         uint256 sharesToRedeem = sharesBalance / 3;
 
@@ -198,14 +205,14 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
 
         // Allow for a slight difference in returned amounts due to rounding and supply-based estimation calcs
         assertApproxEqAbs(
-            token0.balanceOf(address(vaultProxy)),
+            token0.balanceOf(vaultProxyAddress),
             expectedToken0Balance,
             10 wei,
             "Mismatch between received and expected arrakis token0 balance"
         );
 
         assertApproxEqAbs(
-            token1.balanceOf(address(vaultProxy)),
+            token1.balanceOf(vaultProxyAddress),
             expectedToken1Balance,
             10 wei,
             "Mismatch between received and expected arrakis token1 balance"
@@ -214,7 +221,7 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
 }
 
 contract DaiWethEthereumTest is ArrakisV2AdapterTestBase {
-    function setUp() public override {
+    function setUp() public virtual override {
         setUpMainnetEnvironment();
         setUp({
             _arrakisVaultAddress: ETHEREUM_ARRAKIS_DAI_WETH,
@@ -225,12 +232,28 @@ contract DaiWethEthereumTest is ArrakisV2AdapterTestBase {
 }
 
 contract WmaticWethPolygonTest is ArrakisV2AdapterTestBase {
-    function setUp() public override {
+    function setUp() public virtual override {
         setUpPolygonEnvironment();
         setUp({
             _arrakisVaultAddress: POLYGON_ARRAKIS_USDC_WETH,
             _arrakisHelperAddress: ARRAKIS_HELPER_ADDRESS,
             _arrakisResolverAddress: ARRAKIS_RESOLVER_ADDRESS
         });
+    }
+}
+
+contract DaiWethEthereumTestV4 is DaiWethEthereumTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract WmaticWethPolygonTestV4 is WmaticWethPolygonTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
     }
 }
