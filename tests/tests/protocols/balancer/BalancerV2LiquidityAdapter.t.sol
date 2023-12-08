@@ -40,11 +40,14 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     IBalancerV2Vault internal balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
-    address internal vaultOwner;
-    IVaultLib internal vaultProxy;
-    IComptrollerLib internal comptrollerProxy;
+    address internal fudnOwner;
+    address internal vaultProxyAddress;
+    address internal comptrollerProxyAddress;
 
     address[] internal poolAssetAddresses;
+
+    // Set by child contract
+    EnzymeVersion internal version;
 
     // Vars defined by child contract
     IIntegrationAdapter internal adapter;
@@ -60,8 +63,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         IFundDeployer.ConfigInput memory comptrollerConfig;
         comptrollerConfig.denominationAsset = address(wethToken);
 
-        (comptrollerProxy, vaultProxy, vaultOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxyAddress, vaultProxyAddress, fudnOwner) = createTradingFundForVersion(version);
 
         // Store pool assets
         (poolAssetAddresses,,) = balancerVault.getPoolTokens(poolId);
@@ -70,11 +72,10 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         // * must do after storing pool assets
         address[] memory tokensToRegister = toArray(address(poolBpt), address(stakingToken));
         tokensToRegister = tokensToRegister.mergeArray(poolAssetAddresses);
-        addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokensToRegister,
-            _skipIfRegistered: true
-        });
+        // If v4, register incoming asset to pass the asset universe validation
+        if (version == EnzymeVersion.V4) {
+            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokensToRegister, _skipIfRegistered: true});
+        }
     }
 
     // ACTION HELPERS
@@ -82,11 +83,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __claimRewards() internal {
         bytes memory actionArgs = abi.encode(address(stakingToken));
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fudnOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -101,11 +102,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs =
             abi.encode(address(stakingToken), poolId, _minIncomingBptAmount, _spendAssets, _spendAssetAmounts, _request);
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fudnOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.lendAndStake.selector,
             _actionArgs: actionArgs
         });
@@ -114,11 +115,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __stake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fudnOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.stake.selector,
             _actionArgs: actionArgs
         });
@@ -127,11 +128,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __unstake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fudnOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.unstake.selector,
             _actionArgs: actionArgs
         });
@@ -147,11 +148,11 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
             address(stakingToken), poolId, _bptAmount, _incomingAssetAddresses, _minIncomingAssetAmounts, _request
         );
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fudnOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: IBalancerV2LiquidityAdapter.unstakeAndRedeem.selector,
             _actionArgs: actionArgs
         });
@@ -297,12 +298,12 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         if (__isBalancerMainnetTest()) {
             // Approve adapter to call Minter on behalf of the vault
             registerVaultCall({
-                _fundDeployer: core.release.fundDeployer,
+                _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector
             });
-            vm.prank(vaultOwner);
-            comptrollerProxy.vaultCallOnContract({
+            vm.prank(fudnOwner);
+            IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector,
                 _encodedArgs: abi.encode(address(adapter))
@@ -319,7 +320,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
 
         // Seed the vault with bpt and stake them to start accruing rewards
         uint256 stakingTokenBalance = assetUnit(stakingToken) * 1000;
-        deal({token: address(poolBpt), to: address(vaultProxy), give: stakingTokenBalance});
+        deal({token: address(poolBpt), to: vaultProxyAddress, give: stakingTokenBalance});
         __stake(stakingTokenBalance);
 
         // Warp ahead in time to accrue significant rewards
@@ -349,7 +350,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
 
         // Assert vault balances of reward tokens have increased
         // TODO: set extra reward token
-        assertTrue(balToken.balanceOf(address(vaultProxy)) > 0, "no bal token received");
+        assertTrue(balToken.balanceOf(vaultProxyAddress) > 0, "no bal token received");
     }
 
     function test_lendAndStake_successWithExactBptOut() public {
@@ -361,7 +362,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         uint256 minIncomingBptAmount = 123;
 
         // Seed the vault with max spend asset amount
-        deal({token: address(spendAsset), to: address(vaultProxy), give: maxSpendAssetAmount});
+        deal({token: address(spendAsset), to: vaultProxyAddress, give: maxSpendAssetAmount});
 
         IBalancerV2Vault.PoolBalanceChange memory request = __constructRequestTokenInForExactBptOut({
             _bptAmountOut: incomingBptAmount,
@@ -389,17 +390,15 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         });
 
         // Received staking token amount should be exactly as-specified
-        assertEq(
-            stakingToken.balanceOf(address(vaultProxy)), incomingBptAmount, "incorrect final staking token balance"
-        );
+        assertEq(stakingToken.balanceOf(vaultProxyAddress), incomingBptAmount, "incorrect final staking token balance");
         // There should be some unused amount of the spend asset that has been returned to the vault
-        assertTrue(spendAsset.balanceOf(address(vaultProxy)) > 0, "incorrect final spend asset balance");
+        assertTrue(spendAsset.balanceOf(vaultProxyAddress) > 0, "incorrect final spend asset balance");
     }
 
     function test_stake_success() public {
         // Seed the vault with unstaked bpt
         uint256 preTxBptBalance = assetUnit(stakingToken) * 1000;
-        deal({token: address(poolBpt), to: address(vaultProxy), give: preTxBptBalance});
+        deal({token: address(poolBpt), to: vaultProxyAddress, give: preTxBptBalance});
 
         uint256 bptToStake = preTxBptBalance / 5;
 
@@ -417,14 +416,14 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
             _minIncomingAssetAmounts: toArray(bptToStake)
         });
 
-        assertEq(stakingToken.balanceOf(address(vaultProxy)), bptToStake, "incorrect final staking token balance");
-        assertEq(poolBpt.balanceOf(address(vaultProxy)), preTxBptBalance - bptToStake, "incorrect final bpt balance");
+        assertEq(stakingToken.balanceOf(vaultProxyAddress), bptToStake, "incorrect final staking token balance");
+        assertEq(poolBpt.balanceOf(vaultProxyAddress), preTxBptBalance - bptToStake, "incorrect final bpt balance");
     }
 
     function test_unstake_success() public {
         // Seed the vault with bpt and stake them
         uint256 preTxStakingTokenBalance = assetUnit(stakingToken) * 1000;
-        deal({token: address(poolBpt), to: address(vaultProxy), give: preTxStakingTokenBalance});
+        deal({token: address(poolBpt), to: vaultProxyAddress, give: preTxStakingTokenBalance});
         __stake(preTxStakingTokenBalance);
 
         uint256 bptToUnstake = preTxStakingTokenBalance / 5;
@@ -444,17 +443,17 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         });
 
         assertEq(
-            stakingToken.balanceOf(address(vaultProxy)),
+            stakingToken.balanceOf(vaultProxyAddress),
             preTxStakingTokenBalance - bptToUnstake,
             "incorrect final staking token balance"
         );
-        assertEq(poolBpt.balanceOf(address(vaultProxy)), bptToUnstake, "incorrect final bpt balance");
+        assertEq(poolBpt.balanceOf(vaultProxyAddress), bptToUnstake, "incorrect final bpt balance");
     }
 
     function test_unstakeAndRedeem_successWithExactTokensOut() public {
         // Seed the vault with bpt and stake them
         uint256 preTxStakingTokenBalance = assetUnit(stakingToken) * 1000;
-        deal({token: address(poolBpt), to: address(vaultProxy), give: preTxStakingTokenBalance});
+        deal({token: address(poolBpt), to: vaultProxyAddress, give: preTxStakingTokenBalance});
         __stake(preTxStakingTokenBalance);
 
         uint256 unstakeAmount = preTxStakingTokenBalance / 3;
@@ -507,7 +506,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         for (uint256 i; i < incomingAssetAddressesWithoutBpt.length; i++) {
             IERC20 incomingAsset = IERC20(incomingAssetAddressesWithoutBpt[i]);
             assertEq(
-                incomingAsset.balanceOf(address(vaultProxy)),
+                incomingAsset.balanceOf(vaultProxyAddress),
                 incomingAssetAmountsWithoutBpt[i],
                 "incorrect final incoming asset balance"
             );
@@ -515,7 +514,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
 
         // Any unused bpt should been re-staked.
         // and the adapter should have no bpt balance.
-        uint256 postTxStakingTokenBalance = stakingToken.balanceOf(address(vaultProxy));
+        uint256 postTxStakingTokenBalance = stakingToken.balanceOf(vaultProxyAddress);
         assertTrue(postTxStakingTokenBalance > preTxStakingTokenBalance - unstakeAmount, "no re-staked bpt");
         assertEq(poolBpt.balanceOf(address(adapter)), 0, "adapter still has bpt");
     }
@@ -525,7 +524,8 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
 
 abstract contract BalancerPoolTest is BalancerAndAuraPoolTest {
     function __deployAdapter(address _minterAddress) internal returns (address adapterAddress_) {
-        bytes memory args = abi.encode(core.release.integrationManager, balancerVault, _minterAddress, balToken);
+        bytes memory args =
+            abi.encode(getIntegrationManagerAddressForVersion(version), balancerVault, _minterAddress, balToken);
 
         return deployCode("BalancerV2LiquidityAdapter.sol", args);
     }
@@ -563,7 +563,7 @@ abstract contract PolygonBalancerPoolTest is BalancerPoolTest {
 // ACTUAL TESTS, RUN PER-POOL
 
 contract EthereumUsdcDaiUsdtPoolTest is EthereumBalancerPoolTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         // Define pool before all other setup
         poolId = ETHEREUM_USDC_DAI_USDT_POOL_ID;
         poolBpt = IERC20(ETHEREUM_USDC_DAI_USDT_POOL_ADDRESS);
@@ -575,12 +575,28 @@ contract EthereumUsdcDaiUsdtPoolTest is EthereumBalancerPoolTest {
 }
 
 contract PolygonTriCryptoPoolTest is PolygonBalancerPoolTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         // Define pool before all other setup
         poolId = POLYGON_TRICRYPTO_POOL_ID;
         poolBpt = IERC20(POLYGON_TRICRYPTO_POOL_ADDRESS);
         poolType = PoolType.Weighted;
         stakingToken = IERC20(POLYGON_TRICRYPTO_POOL_GAUGE_ADDRESS);
+
+        super.setUp();
+    }
+}
+
+contract EthereumUsdcDaiUsdtPoolTestV4 is EthereumUsdcDaiUsdtPoolTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract PolygonTriCryptoPoolTestV4 is PolygonTriCryptoPoolTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
 
         super.setUp();
     }
