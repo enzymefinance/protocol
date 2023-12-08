@@ -554,6 +554,18 @@ abstract contract IntegrationTest is CoreUtils {
         }
     }
 
+    function getFundDeployerAddressForVersion(EnzymeVersion _version)
+        internal
+        view
+        returns (address fundDeployerAddress_)
+    {
+        if (_version == EnzymeVersion.V4) {
+            return address(v4ReleaseContracts.fundDeployer);
+        } else {
+            return address(core.release.fundDeployer);
+        }
+    }
+
     function getIntegrationManagerAddressForVersion(EnzymeVersion _version)
         internal
         view
@@ -612,5 +624,17 @@ abstract contract IntegrationTest is CoreUtils {
             _tokenAddress: _tokenAddress,
             _skipIfRegistered: _skipIfRegistered
         });
+    }
+
+    function v4AddPrimitivesWithTestAggregator(address[] memory _tokenAddresses, bool _skipIfRegistered)
+        internal
+        returns (TestAggregator[] memory aggregators_)
+    {
+        aggregators_ = new TestAggregator[](_tokenAddresses.length);
+        for (uint256 i; i < _tokenAddresses.length; i++) {
+            aggregators_[i] = v4AddPrimitiveWithTestAggregator(_tokenAddresses[i], _skipIfRegistered);
+        }
+
+        return aggregators_;
     }
 }

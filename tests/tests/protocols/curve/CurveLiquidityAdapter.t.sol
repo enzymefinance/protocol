@@ -20,7 +20,7 @@ import {ICurveLiquidityAdapter} from "tests/interfaces/internal/ICurveLiquidityA
 import {ICurvePriceFeed} from "tests/interfaces/internal/ICurvePriceFeed.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
-import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
 import {CurveUtils} from "./CurveUtils.sol";
 
@@ -40,12 +40,15 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     IIntegrationAdapter internal adapter;
     ICurvePriceFeed internal priceFeed;
 
-    address internal vaultOwner;
-    IVaultLib internal vaultProxy;
-    IComptrollerLib internal comptrollerProxy;
+    address internal fundOwner;
+    address internal vaultProxyAddress;
+    address internal comptrollerProxyAddress;
 
     address[] internal poolAssetAddresses;
     address[] internal poolUnderlyingAddresses;
+
+    // Set by child contract
+    EnzymeVersion internal version;
 
     // Vars defined by child contract
     bool internal isConvex;
@@ -66,8 +69,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         IFundDeployer.ConfigInput memory comptrollerConfig;
         comptrollerConfig.denominationAsset = address(wethToken);
 
-        (comptrollerProxy, vaultProxy, vaultOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Store pool assets
         poolAssetAddresses = __getPoolAssets({_pool: poolAddress, _useUnderlying: false});
@@ -75,15 +77,14 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
 
         // Add all pool assets to asset universe to make them receivable
         address[] memory tokensToRegister = poolAssetAddresses.mergeArray(poolUnderlyingAddresses);
-        addPrimitivesWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddresses: tokensToRegister,
-            _skipIfRegistered: true
-        });
+        // If v4, register incoming asset to pass the asset universe validation
+        if (version == EnzymeVersion.V4) {
+            v4AddPrimitivesWithTestAggregator({_tokenAddresses: tokensToRegister, _skipIfRegistered: true});
+        }
         // lpToken and stakingToken must be registered on the CurvePriceFeed
         // _invariantProxyAssets and _reentrantVirtualPrices are arbitrary
         // _gaugeTokens is not needed for Convex
-        vm.prank(core.release.fundDeployer.getOwner());
+        vm.prank(IFundDeployer(getFundDeployerAddressForVersion(version)).getOwner());
         priceFeed.addPools({
             _pools: toArray(poolAddress),
             _invariantProxyAssets: toArray(address(getCoreToken("USD"))),
@@ -93,7 +94,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         });
         // Convex tests will register its own stakingToken
         addDerivatives({
-            _valueInterpreter: core.release.valueInterpreter,
+            _valueInterpreter: IValueInterpreter(getValueInterpreterAddressForVersion(version)),
             _tokenAddresses: isConvex ? toArray(address(lpToken)) : toArray(address(lpToken), address(stakingToken)),
             _priceFeedAddresses: isConvex ? toArray(address(priceFeed)) : toArray(address(priceFeed), address(priceFeed)),
             _skipIfRegistered: false
@@ -105,11 +106,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     function __claimRewards() internal {
         bytes memory actionArgs = abi.encode(address(stakingToken));
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: ICurveLiquidityAdapter.claimRewards.selector,
             _actionArgs: actionArgs
         });
@@ -128,11 +129,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
             _useUnderlyings
         );
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: ICurveLiquidityAdapter.lendAndStake.selector,
             _actionArgs: actionArgs
         });
@@ -141,11 +142,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     function __stake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(poolAddress, address(stakingToken), _amount);
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: ICurveLiquidityAdapter.stake.selector,
             _actionArgs: actionArgs
         });
@@ -154,11 +155,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     function __unstake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(poolAddress, address(stakingToken), _amount);
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: ICurveLiquidityAdapter.unstake.selector,
             _actionArgs: actionArgs
         });
@@ -179,11 +180,11 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
             _incomingAssetsData
         );
 
-        vm.prank(vaultOwner);
-        callOnIntegration({
-            _integrationManager: core.release.integrationManager,
-            _comptrollerProxy: comptrollerProxy,
-            _adapter: address(adapter),
+        vm.prank(fundOwner);
+        callOnIntegrationForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
+            _adapterAddress: address(adapter),
             _selector: ICurveLiquidityAdapter.unstakeAndRedeem.selector,
             _actionArgs: actionArgs
         });
@@ -276,13 +277,16 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Setup rewards claiming on the Minter (mainnet Curve tests only)
         if (__isCurveMainnetTest()) {
             // Approve adapter to call Minter on behalf of the vault
-            registerVaultCall({
-                _fundDeployer: core.release.fundDeployer,
-                _contract: ETHEREUM_MINTER_ADDRESS,
-                _selector: ICurveMinter.toggle_approve_mint.selector
-            });
-            vm.prank(vaultOwner);
-            comptrollerProxy.vaultCallOnContract({
+            // for V4 fork it is already registered
+            if (version != EnzymeVersion.V4) {
+                registerVaultCall({
+                    _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+                    _contract: ETHEREUM_MINTER_ADDRESS,
+                    _selector: ICurveMinter.toggle_approve_mint.selector
+                });
+            }
+            vm.prank(fundOwner);
+            IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector,
                 _encodedArgs: abi.encode(address(adapter))
@@ -305,7 +309,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
 
         // Seed the vault with lpToken and stake them to start accruing rewards
         uint256 stakingTokenBalance = assetUnit(stakingToken) * 1000;
-        increaseTokenBalance({_token: lpToken, _to: address(vaultProxy), _amount: stakingTokenBalance});
+        increaseTokenBalance({_token: lpToken, _to: vaultProxyAddress, _amount: stakingTokenBalance});
         __stake(stakingTokenBalance);
 
         // Warp ahead in time to accrue significant rewards
@@ -335,7 +339,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
 
         // Assert vault balances of reward tokens have increased
         // TODO: set extra reward token
-        assertTrue(crvToken.balanceOf(address(vaultProxy)) > 0, "no bal token received");
+        assertTrue(crvToken.balanceOf(vaultProxyAddress) > 0, "no bal token received");
     }
 
     function test_lendAndStake_success() public {
@@ -356,7 +360,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         for (uint256 i; i < spendAssetAddresses.length; i++) {
             increaseTokenBalance({
                 _token: IERC20(spendAssetAddresses[i]),
-                _to: address(vaultProxy),
+                _to: vaultProxyAddress,
                 _amount: spendAssetAmounts[i]
             });
         }
@@ -380,11 +384,11 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         });
 
         // Received staking token amount should be non-zero
-        assertTrue(stakingToken.balanceOf(address(vaultProxy)) > 0, "incorrect final staking token balance");
+        assertTrue(stakingToken.balanceOf(vaultProxyAddress) > 0, "incorrect final staking token balance");
         // The full amounts of the spend assets should have been used
         for (uint256 i; i < spendAssetAddresses.length; i++) {
             assertEq(
-                IERC20(spendAssetAddresses[i]).balanceOf(address(vaultProxy)), 0, "incorrect final spend asset balance"
+                IERC20(spendAssetAddresses[i]).balanceOf(vaultProxyAddress), 0, "incorrect final spend asset balance"
             );
         }
     }
@@ -392,7 +396,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
     function test_stake_success() public {
         // Seed the vault with unstaked lpToken
         uint256 preTxLpTokenBalance = assetUnit(lpToken) * 1000;
-        increaseTokenBalance({_token: lpToken, _to: address(vaultProxy), _amount: preTxLpTokenBalance});
+        increaseTokenBalance({_token: lpToken, _to: vaultProxyAddress, _amount: preTxLpTokenBalance});
 
         uint256 lpTokenToStake = preTxLpTokenBalance / 5;
 
@@ -410,9 +414,9 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
             _minIncomingAssetAmounts: toArray(lpTokenToStake)
         });
 
-        assertEq(stakingToken.balanceOf(address(vaultProxy)), lpTokenToStake, "incorrect final staking token balance");
+        assertEq(stakingToken.balanceOf(vaultProxyAddress), lpTokenToStake, "incorrect final staking token balance");
         assertEq(
-            lpToken.balanceOf(address(vaultProxy)),
+            lpToken.balanceOf(vaultProxyAddress),
             preTxLpTokenBalance - lpTokenToStake,
             "incorrect final lpToken balance"
         );
@@ -421,7 +425,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
     function test_unstake_success() public {
         // Seed the vault with lpToken and stake them
         uint256 preTxLpTokenBalance = assetUnit(stakingToken) * 1000;
-        increaseTokenBalance({_token: lpToken, _to: address(vaultProxy), _amount: preTxLpTokenBalance});
+        increaseTokenBalance({_token: lpToken, _to: vaultProxyAddress, _amount: preTxLpTokenBalance});
         __stake(preTxLpTokenBalance);
 
         uint256 lpTokenToUnstake = preTxLpTokenBalance / 5;
@@ -441,17 +445,17 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         });
 
         assertEq(
-            stakingToken.balanceOf(address(vaultProxy)),
+            stakingToken.balanceOf(vaultProxyAddress),
             preTxLpTokenBalance - lpTokenToUnstake,
             "incorrect final staking token balance"
         );
-        assertEq(lpToken.balanceOf(address(vaultProxy)), lpTokenToUnstake, "incorrect final lpToken balance");
+        assertEq(lpToken.balanceOf(vaultProxyAddress), lpTokenToUnstake, "incorrect final lpToken balance");
     }
 
     function test_unstakeAndRedeem_successStandard() public {
         // Seed the vault with lpToken and stake them
         uint256 preTxLpTokenBalance = assetUnit(stakingToken) * 1000;
-        increaseTokenBalance({_token: lpToken, _to: address(vaultProxy), _amount: preTxLpTokenBalance});
+        increaseTokenBalance({_token: lpToken, _to: vaultProxyAddress, _amount: preTxLpTokenBalance});
         __stake(preTxLpTokenBalance);
 
         uint256 lpTokenToUnstake = preTxLpTokenBalance / 5;
@@ -465,7 +469,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
             nextMinIncomingAssetAmount *= 3;
 
             // Also, assert incoming tokens all start with a zero-balance
-            preTxIncomingAssetBalances[i] = IERC20(poolAssetAddresses[i]).balanceOf(address(vaultProxy));
+            preTxIncomingAssetBalances[i] = IERC20(poolAssetAddresses[i]).balanceOf(vaultProxyAddress);
         }
 
         vm.recordLogs();
@@ -492,13 +496,13 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Received token amounts should be non-zero
         for (uint256 i; i < poolAssetAddresses.length; i++) {
             assertTrue(
-                IERC20(poolAssetAddresses[i]).balanceOf(address(vaultProxy)) > preTxIncomingAssetBalances[i],
+                IERC20(poolAssetAddresses[i]).balanceOf(vaultProxyAddress) > preTxIncomingAssetBalances[i],
                 "incorrect final received token balance"
             );
         }
         // The exact stakingToken amount should have been used
         assertEq(
-            stakingToken.balanceOf(address(vaultProxy)),
+            stakingToken.balanceOf(vaultProxyAddress),
             preTxLpTokenBalance - lpTokenToUnstake,
             "incorrect final staking token balance"
         );
@@ -508,13 +512,15 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
 abstract contract CurvePoolTest is CurveAndConvexPoolTest {
     function __deployAdapter(address _minterAddress) internal returns (address adapterAddress_) {
         // Validate required vars are set
-        require(address(core.release.integrationManager) != address(0), "__deployAdapter: integrationManager not set");
+        require(
+            getIntegrationManagerAddressForVersion(version) != address(0), "__deployAdapter: integrationManager not set"
+        );
         require(address(priceFeed) != address(0), "__deployAdapter: priceFeed not set");
         require(address(wrappedNativeToken) != address(0), "__deployAdapter: wrappedNativeToken not set");
         require(address(crvToken) != address(0), "__deployAdapter: crvToken not set");
 
         bytes memory args = abi.encode(
-            core.release.integrationManager,
+            getIntegrationManagerAddressForVersion(version),
             priceFeed,
             wrappedNativeToken,
             _minterAddress,
@@ -536,7 +542,7 @@ abstract contract EthereumCurvePoolTest is CurvePoolTest {
 
         // Deploy the price feed
         priceFeed = deployPriceFeed({
-            _fundDeployer: core.release.fundDeployer,
+            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: ETHEREUM_POOL_OWNER_ADDRESS,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -558,7 +564,7 @@ abstract contract PolygonCurvePoolTest is CurvePoolTest {
 
         // Deploy the price feed
         priceFeed = deployPriceFeed({
-            _fundDeployer: core.release.fundDeployer,
+            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
             _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
             _poolOwnerAddress: POLYGON_POOL_OWNER_ADDRESS,
             _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
@@ -576,7 +582,7 @@ abstract contract PolygonCurvePoolTest is CurvePoolTest {
 contract EthereumAavePoolTest is EthereumCurvePoolTest {
     using SafeERC20 for IERC20;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         // Define pool before all other setup
         poolAddress = ETHEREUM_AAVE_POOL_ADDRESS;
         lpToken = IERC20(ETHEREUM_AAVE_POOL_LP_TOKEN_ADDRESS);
@@ -587,7 +593,7 @@ contract EthereumAavePoolTest is EthereumCurvePoolTest {
 }
 
 contract EthereumStethNgPoolTest is EthereumCurvePoolTest {
-    function setUp() public override {
+    function setUp() public virtual override {
         // Define pool before all other setup
         poolAddress = ETHEREUM_STETH_NG_POOL_ADDRESS;
         lpToken = IERC20(ETHEREUM_STETH_NG_POOL_LP_TOKEN_ADDRESS);
@@ -600,11 +606,35 @@ contract EthereumStethNgPoolTest is EthereumCurvePoolTest {
 contract PolygonAavePoolTest is PolygonCurvePoolTest {
     using SafeERC20 for IERC20;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         // Define pool before all other setup
         poolAddress = POLYGON_AAVE_POOL_ADDRESS;
         lpToken = IERC20(POLYGON_AAVE_POOL_LP_TOKEN_ADDRESS);
         stakingToken = IERC20(POLYGON_AAVE_POOL_GAUGE_TOKEN_ADDRESS);
+
+        super.setUp();
+    }
+}
+
+contract EthereumAavePoolTestV4 is EthereumAavePoolTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract EthereumStethNgPoolTestV4 is EthereumStethNgPoolTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract PolygonAavePoolTestV4 is PolygonAavePoolTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
 
         super.setUp();
     }
