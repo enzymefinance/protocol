@@ -40,6 +40,9 @@ abstract contract Constants {
     // Network assets
     address internal constant ETHEREUM_AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     address internal constant ETHEREUM_BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
+    address internal constant ETHEREUM_COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
+    address internal constant ETHEREUM_COMPOUND_V2_CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
+    address internal constant ETHEREUM_COMPOUND_V2_CUSDC = 0x39AA39c021dfbaE8faC545936693aC917d5E7563;
     address internal constant ETHEREUM_COMPOUND_V3_CUSDC = 0xc3d688B66703497DAA19211EEdff47f25384cdc3;
     address internal constant ETHEREUM_COMPOUND_V3_CWETH = 0xA17581A9E3356d9A858b789D68B4d866e593aE94;
     address internal constant ETHEREUM_CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
