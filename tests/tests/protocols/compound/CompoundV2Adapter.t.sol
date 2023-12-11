@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {ICERC20} from "tests/interfaces/external/ICERC20.sol";
+import {ICompoundV2CERC20 as ICERC20} from "tests/interfaces/external/ICompoundV2CERC20.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {ICompoundAdapter} from "tests/interfaces/internal/ICompoundAdapter.sol";

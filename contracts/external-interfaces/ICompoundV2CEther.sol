@@ -11,10 +11,9 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-/// @title ICEther Interface
+/// @title ICompoundV2CEther Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Minimal interface for interactions with Compound Ether
-interface ICEther {
+interface ICompoundV2CEther {
     function mint() external payable;
 
     function repayBorrow() external payable;

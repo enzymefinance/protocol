@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import {ICERC20} from "../../../../../external-interfaces/ICERC20.sol";
+import {ICompoundV2CERC20 as ICERC20} from "../../../../../external-interfaces/ICompoundV2CERC20.sol";
 import {CompoundPriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CompoundPriceFeed.sol";
 import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IExternalPositionParser} from "../../IExternalPositionParser.sol";

@@ -13,10 +13,9 @@ pragma solidity >=0.6.0 <0.9.0;
 
 import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
 
-/// @title ICERC20 Interface
+/// @title ICompoundV2CERC20 Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Minimal interface for interactions with Compound tokens (cTokens)
-interface ICERC20 is IERC20 {
+interface ICompoundV2CERC20 is IERC20 {
     function accrueInterest() external returns (uint256);
 
     function borrow(uint256) external returns (uint256);

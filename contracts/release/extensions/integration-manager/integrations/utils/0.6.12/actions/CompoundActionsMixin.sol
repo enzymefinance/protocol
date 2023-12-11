@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import {ICERC20} from "../../../../../../../external-interfaces/ICERC20.sol";
-import {ICEther} from "../../../../../../../external-interfaces/ICEther.sol";
+import {ICompoundV2CERC20 as ICERC20} from "../../../../../../../external-interfaces/ICompoundV2CERC20.sol";
+import {ICompoundV2CEther as ICEther} from "../../../../../../../external-interfaces/ICompoundV2CEther.sol";
 import {IWETH} from "../../../../../../../external-interfaces/IWETH.sol";
 import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 

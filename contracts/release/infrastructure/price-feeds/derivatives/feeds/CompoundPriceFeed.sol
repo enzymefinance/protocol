@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ICERC20} from "../../../../../external-interfaces/ICERC20.sol";
+import {ICompoundV2CERC20 as ICERC20} from "../../../../../external-interfaces/ICompoundV2CERC20.sol";
 import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
