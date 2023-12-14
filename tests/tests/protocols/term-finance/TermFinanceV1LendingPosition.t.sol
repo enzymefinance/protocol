@@ -412,6 +412,32 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         }
     }
 
+    function test_addEmptyOffersArray_failure() public {
+        vm.expectRevert(formatError("__addOrUpdateOffers: Empty submittedOfferIds"));
+
+        // Call AddOrUpdate action with an empty offers array
+        __addOrUpdateOffers({
+            _termFinanceAuction: termFinanceAuction,
+            _offerIds: new bytes32[](0),
+            _offerPrices: new uint256[](0),
+            _amountsChange: new int256[](0)
+        });
+    }
+
+    function test_addAndUpdateSameOffer_failure() public {
+        __setUpOffers();
+
+        vm.expectRevert(formatError("__addOrUpdateOffers: Duplicate offerIds"));
+
+        // Add and update the same termAuction in a single tx
+        __addOrUpdateOffers({
+            _termFinanceAuction: termFinanceAuction,
+            _offerIds: toArray(offerIdSeeds[0], generatedOfferIds[0], generatedOfferIds[0]),
+            _offerPrices: offerPrices,
+            _amountsChange: offerAmounts
+        });
+    }
+
     function test_removeOffers_success() public {
         // Add a few offers
         __setUpOffers();

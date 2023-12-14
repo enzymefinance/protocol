@@ -80,6 +80,11 @@ contract TermFinanceV1LendingPositionLib is
         ) = __decodeAddOrUpdateOffersActionArgs(_actionArgs);
 
         uint256 submittedOffersLength = submittedOfferIds.length;
+
+        // Ensure that the submittedOffers array is not-empty. (Term Finance does not revert on empty arrays)
+        // This is necessary to prevent adding duplicate termAuctions to storage.
+        require(submittedOffersLength > 0, "__addOrUpdateOffers: Empty submittedOfferIds");
+
         address purchaseTokenAddress = termAuction.purchaseToken();
 
         ITermFinanceV1AuctionOfferLocker.TermAuctionOfferSubmission[] memory offerSubmissions =
@@ -127,6 +132,11 @@ contract TermFinanceV1LendingPositionLib is
 
         bytes32[] memory offerIds = ITermFinanceV1AuctionOfferLocker(termAuction.termAuctionOfferLocker())
             .lockOffersWithReferral({_offerSubmissions: offerSubmissions, _referralAddress: REFERRER_ADDRESS});
+
+        // Assert that the generated offerIds are unique. This ensures that:
+        // An offer can't be created and updated
+        // An offer can't be updated multiple times
+        require(__isUniqueSet(offerIds), "__addOrUpdateOffers: Duplicate offerIds");
 
         // Add the new offerIds to storage
         for (uint256 i; i < offerIds.length; i++) {
@@ -240,6 +250,25 @@ contract TermFinanceV1LendingPositionLib is
         if (purchaseTokenBalance > 0) {
             purchaseToken.safeTransfer(msg.sender, purchaseTokenBalance);
         }
+    }
+
+    /// @dev Helper to verify if bytes32 array is a set of unique values.
+    /// Does not assert length > 0.
+    function __isUniqueSet(bytes32[] memory _items) internal pure returns (bool isUnique_) {
+        if (_items.length <= 1) {
+            return true;
+        }
+
+        uint256 arrayLength = _items.length;
+        for (uint256 i; i < arrayLength; i++) {
+            for (uint256 j = i + 1; j < arrayLength; j++) {
+                if (_items[i] == _items[j]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     ////////////////////
