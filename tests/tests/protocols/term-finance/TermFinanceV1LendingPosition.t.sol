@@ -438,6 +438,20 @@ abstract contract AddReplaceAndRemoveOffersTest is TestBase {
         });
     }
 
+    function test_addAndUpdateUnequalLength_failure() public {
+        __setUpOffers();
+
+        vm.expectRevert("parseAssetsForAction: Unequal arrays");
+
+        // Add 1 offerId but provide 3 offerPrices and amountsChange.
+        __addOrUpdateOffers({
+            _termFinanceAuction: termFinanceAuction,
+            _offerIds: toArray(offerIdSeeds[0]),
+            _offerPrices: offerPrices,
+            _amountsChange: offerAmounts
+        });
+    }
+
     function test_removeOffers_success() public {
         // Add a few offers
         __setUpOffers();

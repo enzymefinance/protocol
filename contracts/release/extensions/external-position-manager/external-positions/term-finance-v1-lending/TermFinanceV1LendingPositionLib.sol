@@ -343,24 +343,24 @@ contract TermFinanceV1LendingPositionLib is
             return 0;
         }
 
+        // (4) Calculate the full redemption value of the repoToken
+        // Redemptions are valued in two ways depending on the health of the repayments ("repurchases"):
+        // 1. If the loans were fully repurchased, the redemption value is the full loan value ("par redemptions")
+        // 2. If the loans were not fully repurchased, the redemption value is prorated based on the repurchased amounts ("pro-rata redemptions")
+        // Not fully repurchased loans result from "undercollateralized" borrowers.
+        // Since we are not able to accurately detect and price undercollateralized borrowers while the loan is active,
+        // we are fully disregarding the possibility of pro-rata redemptions, therefore considering all redemptions to be "par redemptions".
+
+        // Copied from Term Finance's logic: https://github.com/term-finance/term-finance-contracts/blob/f766367dfc33ba7b93f6e29f27f12e65c132d242/contracts/TermRepoToken.sol#L150
+        // redemptionValue is always specified in 18 decimal notation
+        // redemptionValue is a scalar used to convert a repoToken into the purchaseToken units it can be redeemed for, assuming full loan repayment
+        // repoTokenBalance is specified in the same decimal notation as the purchaseToken
+        loanValue_ = repoTokenBalance * repoToken.redemptionValue() / SCALING_FACTOR;
+
         if (block.timestamp < termRepoServicer.redemptionTimestamp()) {
             // (3) We have not reached the redemption window but auction is complete
-            return
-                (repoTokenBalance * __getEstimatedRepoTokenPresentValue({_termAuction: _termAuction})) / SCALING_FACTOR;
-        } else {
-            // (4) We have reached the redemption window, use the redemption value
-            // Redemptions are valued in two ways depending on the health of the repayments ("repurchases"):
-            // 1. If the loans were fully repurchased, the redemption value is the full loan value ("par redemptions")
-            // 2. If the loans were not fully repurchased, the redemption value is prorated based on the repurchased amounts ("pro-rata redemptions")
-            // Not fully repurchased loans result from "undercollateralized" borrowers.
-            // Since we are not able to accurately detect and price undercollateralized borrowers while the loan is active,
-            // we are fully disregarding the possibility of pro-rata redemptions, therefore considering all redemptions to be "par redemptions".
-
-            // Copied from Term Finance's logic: https://github.com/term-finance/term-finance-contracts/blob/f766367dfc33ba7b93f6e29f27f12e65c132d242/contracts/TermRepoToken.sol#L150
-            // redemptionValue is always specified in 18 decimal notation
-            // repoTokenBalance is specified in the same decimal notation as the purchaseToken
-            // repoToken.redemptionValue() / SCALING_FACTOR therefore represents the "percentage of the repoToken that will actually be paid out".
-            loanValue_ = repoTokenBalance * repoToken.redemptionValue() / SCALING_FACTOR;
+            // We prorate the loan value based on the time remaining until maturity
+            loanValue_ = loanValue_ * __getEstimatedRepoTokenPresentValue({_termAuction: _termAuction}) / SCALING_FACTOR;
         }
 
         return loanValue_;

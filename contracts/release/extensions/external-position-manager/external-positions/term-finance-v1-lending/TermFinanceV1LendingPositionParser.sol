@@ -47,15 +47,27 @@ contract TermFinanceV1LendingPositionParser is TermFinanceV1LendingPositionDataD
         )
     {
         if (_actionId == uint256(ITermFinanceV1LendingPosition.Actions.AddOrUpdateOffers)) {
-            (ITermFinanceV1Auction termAuction,,, int256[] memory underlyingAmountsChange) =
-                __decodeAddOrUpdateOffersActionArgs(_encodedActionArgs);
+            (
+                ITermFinanceV1Auction termAuction,
+                bytes32[] memory offerIds,
+                bytes32[] memory offerPriceHashes,
+                int256[] memory underlyingAmountsChange
+            ) = __decodeAddOrUpdateOffersActionArgs(_encodedActionArgs);
 
             __validateTermAuction(termAuction);
+
+            uint256 underlyingAmountsChangeLength = underlyingAmountsChange.length;
+
+            require(
+                offerIds.length == underlyingAmountsChangeLength
+                    && offerPriceHashes.length == underlyingAmountsChangeLength,
+                "parseAssetsForAction: Unequal arrays"
+            );
 
             uint256 amountToTransfer;
             address purchaseToken = termAuction.purchaseToken();
 
-            for (uint256 i; i < underlyingAmountsChange.length; i++) {
+            for (uint256 i; i < underlyingAmountsChangeLength; i++) {
                 if (underlyingAmountsChange[i] > 0) {
                     amountToTransfer += uint256(underlyingAmountsChange[i]);
                 } else {
