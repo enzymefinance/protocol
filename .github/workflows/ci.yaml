@@ -4,10 +4,12 @@ on:
     branches:
       - v[1-9]*
       - audit/*
+      - dev
   pull_request:
     branches:
       - v[1-9]*
       - audit/*
+      - dev
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
