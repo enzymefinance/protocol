@@ -17,9 +17,14 @@ Please **DO NOT** open a public issue.
 
 ## Using this Repository
 
-This repository has been migrated from Hardhat to Foundry. All production contracts continue to live in `contracts/persistent/` and `contracts/release/` (deployed contracts [here](https://docs.enzyme.finance/developers/contracts)).
+This is the branch for active development, and it contains:
 
-If you are looking for the legacy test suite & test coverage please refer to the [hardhat branch](https://github.com/enzymefinance/protocol/tree/hardhat).
+1. Not fully audited: work-in-progress system contracts changes
+2. Audited and in-use: "plugin" contracts (e.g., integrations, price feeds, policies, fees) and peripheral contracts (e.g., wrappers) that are backwards-compatible with v4.
+
+For deployed, in-production system contracts, see the relevant release branch (e.g., `v4`).
+
+v4 contract deployments can be found [here](https://docs.enzyme.finance/developers/contracts).
 
 ### Prerequisites
 
@@ -71,6 +76,12 @@ You can also manually run parts of the test suite using `forge` directly, e.g:
 ```sh
 forge test --match-test <REGEX>
 ```
+
+#### Hardhat test coverage
+
+This repository has been migrated from Hardhat to Foundry, and old test suites are still being ported.
+
+If you are looking for the legacy test suite & test coverage please refer to the [hardhat branch](https://github.com/enzymefinance/protocol/tree/hardhat).
 
 ## Contributing
 
