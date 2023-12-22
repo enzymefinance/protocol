@@ -8,10 +8,9 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQueue.sol";
 
-import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
-import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 
 enum Actions {
     RequestWithdrawals,
@@ -34,28 +33,20 @@ abstract contract TestBase is IntegrationTest {
     IERC20 internal stethToken = IERC20(ETHEREUM_STETH);
 
     address internal fundOwner;
-    IComptrollerLib internal comptrollerProxy;
-    IVaultLib internal vaultProxy;
+    address internal comptrollerProxyAddress;
+    address internal vaultProxyAddress;
+
+    // Set by child contract
+    EnzymeVersion internal version;
 
     function setUp() public virtual override {
         setUpMainnetEnvironment();
 
-        // Add steth as a primitive so it can be used as denomination asset
-        addPrimitiveWithTestAggregator({
-            _valueInterpreter: core.release.valueInterpreter,
-            _tokenAddress: address(stethToken),
-            _skipIfRegistered: true
-        });
+        // Create a fund
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
-        // Create a fund, denominated in stETH
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(stethToken);
-
-        (comptrollerProxy, vaultProxy, fundOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
-
-        // Buy shares to seed with stETH
-        buyShares({_comptrollerProxy: comptrollerProxy, _sharesBuyer: fundOwner, _amountToDeposit: 1000 ether});
+        // Seed with stETH
+        increaseTokenBalance({_token: stethToken, _to: vaultProxyAddress, _amount: 1000 ether});
 
         // Deploy all position dependencies
         uint256 typeId = __deployPositionType();
@@ -63,12 +54,11 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty LidoStakingPosition for the fund
         vm.prank(fundOwner);
         lidoWithdrawalsPosition = ILidoWithdrawalsPositionLib(
-            createExternalPosition({
-                _externalPositionManager: core.release.externalPositionManager,
-                _comptrollerProxy: comptrollerProxy,
+            createExternalPositionForVersion({
+                _version: version,
+                _comptrollerProxyAddress: comptrollerProxyAddress,
                 _typeId: typeId,
-                _initializationData: "",
-                _callOnExternalPositionCallArgs: ""
+                _initializationData: ""
             })
         );
     }
@@ -93,8 +83,8 @@ abstract contract TestBase is IntegrationTest {
         address parserAddress = __deployParser();
 
         // Register position type
-        typeId_ = registerExternalPositionType({
-            _externalPositionManager: core.release.externalPositionManager,
+        typeId_ = registerExternalPositionTypeForVersion({
+            _version: version,
             _label: "LIDO_WITHDRAWALS",
             _lib: libAddress,
             _parser: parserAddress
@@ -109,9 +99,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_requestIds, _hints);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(lidoWithdrawalsPosition),
             _actionId: uint256(Actions.ClaimWithdrawals),
             _actionArgs: actionArgs
@@ -122,9 +112,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_amounts);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(lidoWithdrawalsPosition),
             _actionId: uint256(Actions.RequestWithdrawals),
             _actionArgs: actionArgs
@@ -187,9 +177,9 @@ abstract contract TestBase is IntegrationTest {
 // ACTIONS //
 /////////////
 
-contract RequestWithdrawalsTest is TestBase {
-    function test_success() public {
-        uint256 preTxVaultStethBal = stethToken.balanceOf(address(vaultProxy));
+abstract contract RequestWithdrawalsTest is TestBase {
+    function test_requestWithdrawals_success() public {
+        uint256 preTxVaultStethBal = stethToken.balanceOf(vaultProxyAddress);
 
         // Define request amounts
         uint256 requestAmount1 = 3 * assetUnit(stethToken);
@@ -217,7 +207,7 @@ contract RequestWithdrawalsTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -236,13 +226,13 @@ contract RequestWithdrawalsTest is TestBase {
         // Assert vault stETH diff
         // Give a buffer of 1 wei per request for rounding errors
         assertApproxEqAbs(
-            stethToken.balanceOf(address(vaultProxy)), preTxVaultStethBal - totalRequestsAmount, requests.length
+            stethToken.balanceOf(vaultProxyAddress), preTxVaultStethBal - totalRequestsAmount, requests.length
         );
     }
 }
 
-contract ClaimWithdrawalsTest is TestBase {
-    function test_success() public {
+abstract contract ClaimWithdrawalsTest is TestBase {
+    function test_claimWithdrawals_success() public {
         // Request a few withdrawals
         uint256 requestAmount1 = 3 * assetUnit(stethToken);
         uint256 requestAmount2 = 11 * assetUnit(stethToken);
@@ -252,7 +242,7 @@ contract ClaimWithdrawalsTest is TestBase {
         // Finalize requests in Lido
         __finalizeAllRequests();
 
-        uint256 preTxVaultWethBal = wethToken.balanceOf(address(vaultProxy));
+        uint256 preTxVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
 
         // Define a subset of requests to withdraw
         ILidoWithdrawalsPositionLib.Request[] memory preTxRequests = lidoWithdrawalsPosition.getRequests();
@@ -279,7 +269,7 @@ contract ClaimWithdrawalsTest is TestBase {
         // Assert assetsToReceive was correctly formatted
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: toArray(address(wethToken))
         });
 
@@ -290,7 +280,7 @@ contract ClaimWithdrawalsTest is TestBase {
         assertEq(postTxRequests[0].amount, requestToKeep.amount);
 
         // Assert the vault received the WETH
-        uint256 postTxVaultWethBal = wethToken.balanceOf(address(vaultProxy));
+        uint256 postTxVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
         assertEq(postTxVaultWethBal, preTxVaultWethBal + totalClaimsAmount);
     }
 }
@@ -299,8 +289,8 @@ contract ClaimWithdrawalsTest is TestBase {
 // POSITION VALUE //
 ////////////////////
 
-contract GetManagedAssetsTest is TestBase {
-    function test_successWithNoRequests() public {
+abstract contract GetManagedAssetsTest is TestBase {
+    function test_getManagedAssets_successWithNoRequests() public {
         // Should return empty arrays
 
         (address[] memory managedAssets, uint256[] memory managedAssetAmounts) =
@@ -310,7 +300,7 @@ contract GetManagedAssetsTest is TestBase {
         assertEq(managedAssetAmounts.length, 0);
     }
 
-    function test_successWithMultipleRequests() public {
+    function test_getManagedAssets_successWithMultipleRequests() public {
         // Make a couple withdrawal requests
         uint256 requestAmount1 = 3 * assetUnit(stethToken);
         uint256 requestAmount2 = 11 * assetUnit(stethToken);
@@ -325,5 +315,15 @@ contract GetManagedAssetsTest is TestBase {
         assertEq(managedAssets[0], address(stethToken));
         assertEq(managedAssetAmounts.length, 1);
         assertEq(managedAssetAmounts[0], requestAmount1 + requestAmount2);
+    }
+}
+
+contract LidoWithdrawalsPositionTest is RequestWithdrawalsTest, ClaimWithdrawalsTest, GetManagedAssetsTest {}
+
+contract LidoWithdrawalsPositionTestV4 is LidoWithdrawalsPositionTest {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
     }
 }
