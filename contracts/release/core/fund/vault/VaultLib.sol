@@ -11,14 +11,14 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {ERC20Burnable} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC20Burnable.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
+import {IERC20Burnable} from "../../../../external-interfaces/IERC20Burnable.sol";
 import {IWETH} from "../../../../external-interfaces/IWETH.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
 import {IProtocolFeeReserve1} from "../../../../persistent/protocol-fee-reserve/interfaces/IProtocolFeeReserve1.sol";
 import {VaultLibBase2} from "../../../../persistent/vault/VaultLibBase2.sol";
 import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
 import {IProtocolFeeTracker} from "../../../infrastructure/protocol-fees/IProtocolFeeTracker.sol";
 import {IExternalPositionManager} from "../../../extensions/external-position-manager/IExternalPositionManager.sol";
@@ -35,7 +35,7 @@ import {IVault} from "./IVault.sol";
 /// from SharesTokenBase via VaultLibBase2
 contract VaultLib is VaultLibBase2, IVault {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     address private immutable EXTERNAL_POSITION_MANAGER;
     // The account to which to send $MLN earmarked for burn.
@@ -282,9 +282,9 @@ contract VaultLib is VaultLibBase2, IVault {
         __burn(getProtocolFeeReserve(), _sharesAmount);
 
         if (getMlnBurner() == address(0)) {
-            ERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
+            IERC20Burnable(getMlnToken()).burn(mlnAmountToBurn);
         } else {
-            ERC20(getMlnToken()).safeTransfer(getMlnBurner(), mlnAmountToBurn);
+            IERC20(getMlnToken()).safeTransfer(getMlnBurner(), mlnAmountToBurn);
         }
 
         emit ProtocolFeeSharesBoughtBack(_sharesAmount, _mlnValue, mlnAmountToBurn);
@@ -480,7 +480,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to grant an allowance to a spender to use a vault asset
     function __approveAssetSpender(address _asset, address _target, uint256 _amount) private notShares(_asset) {
-        ERC20 assetContract = ERC20(_asset);
+        IERC20 assetContract = IERC20(_asset);
         if (assetContract.allowance(address(this), _target) > 0) {
             assetContract.safeApprove(_target, 0);
         }
@@ -517,7 +517,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to the get the Vault's balance of a given asset
     function __getAssetBalance(address _asset) private view returns (uint256 balance_) {
-        return ERC20(_asset).balanceOf(address(this));
+        return IERC20(_asset).balanceOf(address(this));
     }
 
     /// @dev Helper to remove a external position from the vault
@@ -552,7 +552,7 @@ contract VaultLib is VaultLibBase2, IVault {
 
     /// @dev Helper to withdraw an asset from the vault to a specified recipient
     function __withdrawAssetTo(address _asset, address _target, uint256 _amount) private notShares(_asset) {
-        ERC20(_asset).safeTransfer(_target, _amount);
+        IERC20(_asset).safeTransfer(_target, _amount);
 
         emit AssetWithdrawn(_asset, _target, _amount);
     }

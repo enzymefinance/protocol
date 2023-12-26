@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../../external-interfaces/IERC20.sol";
 import {IDerivativePriceFeed} from "../../IDerivativePriceFeed.sol";
 
 /// @title SinglePeggedDerivativePriceFeedBase Contract
@@ -22,7 +22,7 @@ abstract contract SinglePeggedDerivativePriceFeedBase is IDerivativePriceFeed {
     address private immutable UNDERLYING;
 
     constructor(address _derivative, address _underlying) public {
-        require(ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "constructor: Unequal decimals");
+        require(IERC20(_derivative).decimals() == IERC20(_underlying).decimals(), "constructor: Unequal decimals");
 
         DERIVATIVE = _derivative;
         UNDERLYING = _underlying;

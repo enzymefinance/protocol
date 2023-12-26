@@ -11,7 +11,7 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../../external-interfaces/IERC20.sol";
 import {IValueInterpreter} from "../../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IPolicyManager} from "../../../IPolicyManager.sol";
 import {PolicyBase} from "./PolicyBase.sol";
@@ -22,8 +22,8 @@ import {PolicyBase} from "./PolicyBase.sol";
 /// deviates significantly from its expected peg
 abstract contract NoDepegPolicyBase is PolicyBase {
     struct AssetConfig {
-        ERC20 asset;
-        ERC20 referenceAsset;
+        IERC20 asset;
+        IERC20 referenceAsset;
         uint16 deviationToleranceInBps;
     }
 

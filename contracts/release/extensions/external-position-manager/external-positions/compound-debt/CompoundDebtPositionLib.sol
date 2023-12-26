@@ -10,13 +10,13 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {ICompoundV2CERC20 as ICERC20} from "../../../../../external-interfaces/ICompoundV2CERC20.sol";
 import {ICompoundV2CEther as ICEther} from "../../../../../external-interfaces/ICompoundV2CEther.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ICompoundComptroller} from "../../../../../external-interfaces/ICompoundComptroller.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {CompoundDebtPositionLibBase1} from "./bases/CompoundDebtPositionLibBase1.sol";
 import {ICompoundDebtPosition} from "./ICompoundDebtPosition.sol";
 
@@ -25,7 +25,7 @@ import {ICompoundDebtPosition} from "./ICompoundDebtPosition.sol";
 /// @notice An External Position library contract for Compound debt positions
 contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtPosition {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     address private immutable COMP_TOKEN;
@@ -107,7 +107,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
                 IWETH(payable(getWethToken())).deposit{value: _amounts[i]}();
             }
 
-            ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
+            IERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
 
             emit AssetBorrowed(_assets[i], _amounts[i]);
         }
@@ -117,7 +117,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
     function __claimComp() private {
         ICompoundComptroller(getCompoundComptroller()).claimComp(address(this));
 
-        ERC20 compToken = ERC20(getCompToken());
+        IERC20 compToken = IERC20(getCompToken());
 
         compToken.safeTransfer(msg.sender, compToken.balanceOf(address(this)));
     }
@@ -127,14 +127,14 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         for (uint256 i; i < _assets.length; i++) {
             require(assetIsCollateral(_assets[i]), "__removeCollateralAssets: Asset is not collateral");
 
-            if (ERC20(_assets[i]).balanceOf(address(this)) == _amounts[i]) {
+            if (IERC20(_assets[i]).balanceOf(address(this)) == _amounts[i]) {
                 // If the full collateral of an asset is removed, it can be removed from collateral assets
                 assetToIsCollateral[_assets[i]] = false;
 
                 collateralAssets.removeStorageItem(_assets[i]);
             }
 
-            ERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
+            IERC20(_assets[i]).safeTransfer(msg.sender, _amounts[i]);
 
             emit CollateralAssetRemoved(_assets[i], _amounts[i]);
         }
@@ -171,7 +171,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
             IWETH(payable(getWethToken())).withdraw(_amount);
             ICEther(_cToken).repayBorrow{value: _amount}();
         } else {
-            ERC20(_token).safeApprove(_cToken, _amount);
+            IERC20(_token).safeApprove(_cToken, _amount);
 
             require(ICERC20(_cToken).repayBorrow(_amount) == 0, "__repayBorrowedAsset: Error while repaying borrow");
         }
@@ -206,7 +206,7 @@ contract CompoundDebtPositionLib is CompoundDebtPositionLibBase1, ICompoundDebtP
         amounts_ = new uint256[](collateralAssets.length);
 
         for (uint256 i; i < assets_.length; i++) {
-            amounts_[i] = ERC20(assets_[i]).balanceOf(address(this));
+            amounts_[i] = IERC20(assets_[i]).balanceOf(address(this));
         }
 
         return (assets_, amounts_);

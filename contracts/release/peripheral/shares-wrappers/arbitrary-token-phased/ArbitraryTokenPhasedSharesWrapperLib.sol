@@ -11,13 +11,14 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {ERC20 as OpenZeppelinERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IAddressListRegistry} from "../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
 import {AddressArrayLib} from "../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../utils/0.6.12/AssetHelpers.sol";
 import {MathHelpers} from "../../../../utils/0.6.12/MathHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../../core/fund/vault/IVault.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
@@ -39,9 +40,9 @@ import {IExternalPosition} from "../../../extensions/external-position-manager/I
 /// - untrusted asset managers cannot untrack assets or untrack external positions with positive value
 /// - all other generally-recommended policies are in-place for limiting untrusted asset manager
 /// interactions with adapters and external positions
-contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelpers {
-    using SafeERC20 for ERC20;
+contract ArbitraryTokenPhasedSharesWrapperLib is OpenZeppelinERC20, AssetHelpers, MathHelpers {
     using AddressArrayLib for address[];
+    using SafeERC20 for IERC20;
 
     enum State {
         Deposit,
@@ -134,7 +135,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         address _protocolFeeRecipient,
         uint256 _protocolFeeBps,
         address _initializer
-    ) public ERC20("Wrapped Enzyme Shares Lib", "wENZF-lib") {
+    ) public OpenZeppelinERC20("Wrapped Enzyme Shares Lib", "wENZF-lib") {
         ADDRESS_LIST_REGISTRY_CONTRACT = IAddressListRegistry(_addressListRegistry);
         DISPATCHER_CONTRACT = IDispatcher(_dispatcher);
         FUND_DEPLOYER_V4 = _fundDeployerV4;
@@ -254,7 +255,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
             return super.name();
         }
 
-        return string(abi.encodePacked("Wrapped ", ERC20(getVaultProxy()).name()));
+        return string(abi.encodePacked("Wrapped ", IERC20(getVaultProxy()).name()));
     }
 
     /// @notice Gets the symbol of the wrapped shares token
@@ -264,7 +265,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
             return super.symbol();
         }
 
-        return string(abi.encodePacked("w", ERC20(getVaultProxy()).symbol()));
+        return string(abi.encodePacked("w", IERC20(getVaultProxy()).symbol()));
     }
 
     /// @notice Gets the number of decimals of the wrapped shares token
@@ -313,7 +314,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
             );
         }
 
-        ERC20 depositTokenContract = ERC20(getDepositToken());
+        IERC20 depositTokenContract = IERC20(getDepositToken());
 
         // Global max deposit limit check
         uint256 totalDepositMaxMem = getTotalDepositMax();
@@ -379,7 +380,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         // Distribute the assets claimed
         claimedAssetAmounts_ = new uint256[](claimedAssets_.length);
         for (uint256 i; i < claimedAssets_.length; i++) {
-            ERC20 assetContract = ERC20(claimedAssets_[i]);
+            IERC20 assetContract = IERC20(claimedAssets_[i]);
             claimedAssetAmounts_[i] = assetContract.balanceOf(address(this)).mul(_amount).div(wrappedSharesSupply);
 
             if (claimedAssetAmounts_[i] > 0) {
@@ -409,7 +410,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Buy shares from the fund, using whatever amount of the denomination asset is in the current contract
         IComptroller comptrollerProxyContract = IComptroller(IVault(vaultProxyMem).getAccessor());
-        ERC20 denominationAssetContract = ERC20(comptrollerProxyContract.getDenominationAsset());
+        IERC20 denominationAssetContract = IERC20(comptrollerProxyContract.getDenominationAsset());
         uint256 investmentAmount = denominationAssetContract.balanceOf(address(this));
 
         denominationAssetContract.safeApprove(address(comptrollerProxyContract), investmentAmount);
@@ -417,7 +418,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
 
         // Validate the received shares to guarantee that the deposit token contribution
         // of this contract cannot be diluted by more than 1 bps
-        uint256 thirdPartyShares = ERC20(vaultProxyMem).totalSupply().sub(receivedShares);
+        uint256 thirdPartyShares = IERC20(vaultProxyMem).totalSupply().sub(receivedShares);
         require(
             thirdPartyShares == 0 || receivedShares > thirdPartyShares.mul(MAX_BPS),
             "enterLockedState: Min shares not met"
@@ -427,7 +428,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         __setState(State.Locked);
 
         // Send deposit tokens to vault
-        ERC20 depositTokenContract = ERC20(getDepositToken());
+        IERC20 depositTokenContract = IERC20(getDepositToken());
         depositTokenContract.safeTransfer(vaultProxyMem, depositTokenContract.balanceOf(address(this)));
     }
 
@@ -495,7 +496,7 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         }
 
         for (uint256 i; i < _assets.length; i++) {
-            ERC20 assetContract = ERC20(_assets[i]);
+            IERC20 assetContract = IERC20(_assets[i]);
 
             uint256 feeChargeableBalance;
             if (address(assetContract) == depositTokenIfPrincipalExcluded) {
@@ -522,10 +523,10 @@ contract ArbitraryTokenPhasedSharesWrapperLib is ERC20, AssetHelpers, MathHelper
         uint256 protocolFeeSecs = block.timestamp.sub(getProtocolFeeStart());
 
         for (uint256 i; i < _assets.length; i++) {
-            uint256 feeAmount = ERC20(_assets[i]).balanceOf(address(this)).mul(PROTOCOL_FEE_BPS).mul(protocolFeeSecs)
+            uint256 feeAmount = IERC20(_assets[i]).balanceOf(address(this)).mul(PROTOCOL_FEE_BPS).mul(protocolFeeSecs)
                 .div(MAX_BPS).div(SECONDS_IN_YEAR);
             if (feeAmount > 0) {
-                ERC20(_assets[i]).safeTransfer(PROTOCOL_FEE_RECIPIENT, feeAmount);
+                IERC20(_assets[i]).safeTransfer(PROTOCOL_FEE_RECIPIENT, feeAmount);
 
                 emit ProtocolFeePaid(_assets[i], feeAmount);
             }

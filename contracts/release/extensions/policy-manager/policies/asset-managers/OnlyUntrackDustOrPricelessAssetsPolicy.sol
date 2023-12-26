@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IComptroller} from "../../../../core/fund/comptroller/IComptroller.sol";
 import {IPolicyManager} from "../../IPolicyManager.sol";
 import {DustEvaluatorMixin} from "../utils/0.6.12/DustEvaluatorMixin.sol";
@@ -80,7 +80,7 @@ contract OnlyUntrackDustOrPricelessAssetsPolicy is PolicyBase, DustEvaluatorMixi
 
         address vaultProxy = IComptroller(_comptrollerProxy).getVaultProxy();
         for (uint256 i; i < assets.length; i++) {
-            uint256 amount = ERC20(assets[i]).balanceOf(vaultProxy);
+            uint256 amount = IERC20(assets[i]).balanceOf(vaultProxy);
             uint256 valueInWeth = __calcValueExcludingBypassablePricelessAsset(
                 _comptrollerProxy, assets[i], amount, getPricelessAssetBypassWethToken()
             );

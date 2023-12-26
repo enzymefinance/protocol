@@ -9,14 +9,14 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {IAaveAToken} from "../../../../../external-interfaces/IAaveAToken.sol";
 import {IAaveV3Pool} from "../../../../../external-interfaces/IAaveV3Pool.sol";
 import {IAaveV3PoolAddressProvider} from "../../../../../external-interfaces/IAaveV3PoolAddressProvider.sol";
 import {IAaveV3ProtocolDataProvider} from "../../../../../external-interfaces/IAaveV3ProtocolDataProvider.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.8.19/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {AaveV3DebtPositionLibBase1} from "./bases/AaveV3DebtPositionLibBase1.sol";
 import {AaveV3DebtPositionDataDecoder} from "./AaveV3DebtPositionDataDecoder.sol";
 import {IAaveV3DebtPosition} from "./IAaveV3DebtPosition.sol";
@@ -31,7 +31,7 @@ contract AaveV3DebtPositionLib is
     AssetHelpers
 {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     uint256 private constant VARIABLE_INTEREST_RATE = 2;
 
@@ -115,7 +115,7 @@ contract AaveV3DebtPositionLib is
                 underlyings[i], amounts[i], VARIABLE_INTEREST_RATE, REFERRAL_CODE, address(this)
             );
 
-            ERC20(underlyings[i]).safeTransfer(msg.sender, amounts[i]);
+            IERC20(underlyings[i]).safeTransfer(msg.sender, amounts[i]);
 
             if (!assetIsBorrowed(underlyings[i])) {
                 // Store the debt token as a flag that the token is now a borrowed asset
@@ -138,7 +138,7 @@ contract AaveV3DebtPositionLib is
         for (uint256 i; i < aTokens.length; i++) {
             require(assetIsCollateral(aTokens[i]), "__removeCollateralAssets: Invalid collateral asset");
 
-            uint256 collateralBalance = ERC20(aTokens[i]).balanceOf(address(this));
+            uint256 collateralBalance = IERC20(aTokens[i]).balanceOf(address(this));
 
             if (amounts[i] == type(uint256).max) {
                 amounts[i] = collateralBalance;
@@ -157,7 +157,7 @@ contract AaveV3DebtPositionLib is
                     _to: msg.sender
                 });
             } else {
-                ERC20(aTokens[i]).safeTransfer(msg.sender, amounts[i]);
+                IERC20(aTokens[i]).safeTransfer(msg.sender, amounts[i]);
             }
         }
     }
@@ -175,14 +175,14 @@ contract AaveV3DebtPositionLib is
 
             IAaveV3Pool(lendingPoolAddress).repay(underlyings[i], amounts[i], VARIABLE_INTEREST_RATE, address(this));
 
-            uint256 remainingBalance = ERC20(underlyings[i]).balanceOf(address(this));
+            uint256 remainingBalance = IERC20(underlyings[i]).balanceOf(address(this));
 
             if (remainingBalance > 0) {
-                ERC20(underlyings[i]).safeTransfer(msg.sender, remainingBalance);
+                IERC20(underlyings[i]).safeTransfer(msg.sender, remainingBalance);
             }
 
             // Remove borrowed asset state from storage, if there is no remaining borrowed balance
-            if (ERC20(getDebtTokenForBorrowedAsset(underlyings[i])).balanceOf(address(this)) == 0) {
+            if (IERC20(getDebtTokenForBorrowedAsset(underlyings[i])).balanceOf(address(this)) == 0) {
                 delete borrowedAssetToDebtToken[underlyings[i]];
                 borrowedAssets.removeStorageItem(underlyings[i]);
                 emit BorrowedAssetRemoved(underlyings[i]);
@@ -224,7 +224,7 @@ contract AaveV3DebtPositionLib is
         amounts_ = new uint256[](assets_.length);
 
         for (uint256 i; i < assets_.length; i++) {
-            amounts_[i] = ERC20(getDebtTokenForBorrowedAsset(assets_[i])).balanceOf(address(this));
+            amounts_[i] = IERC20(getDebtTokenForBorrowedAsset(assets_[i])).balanceOf(address(this));
         }
 
         return (assets_, amounts_);
@@ -238,7 +238,7 @@ contract AaveV3DebtPositionLib is
         amounts_ = new uint256[](collateralAssets.length);
 
         for (uint256 i; i < assets_.length; i++) {
-            amounts_[i] = ERC20(assets_[i]).balanceOf(address(this));
+            amounts_[i] = IERC20(assets_[i]).balanceOf(address(this));
         }
 
         return (assets_, amounts_);

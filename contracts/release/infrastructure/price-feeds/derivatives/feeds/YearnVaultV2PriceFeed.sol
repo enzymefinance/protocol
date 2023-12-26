@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IYearnVaultV2} from "../../../../../external-interfaces/IYearnVaultV2.sol";
 import {IYearnVaultV2Registry} from "../../../../../external-interfaces/IYearnVaultV2Registry.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
@@ -49,7 +49,7 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
 
         underlyingAmounts_ = new uint256[](1);
         underlyingAmounts_[0] = _derivativeAmount.mul(IYearnVaultV2(_derivative).pricePerShare()).div(
-            10 ** uint256(ERC20(_derivative).decimals())
+            10 ** uint256(IERC20(_derivative).decimals())
         );
     }
 
@@ -77,7 +77,8 @@ contract YearnVaultV2PriceFeed is IDerivativePriceFeed, SingleUnderlyingDerivati
 
         // Validates our assumption that yVaults and underlyings will have the same decimals
         require(
-            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "__validateDerivative: Incongruent decimals"
+            IERC20(_derivative).decimals() == IERC20(_underlying).decimals(),
+            "__validateDerivative: Incongruent decimals"
         );
     }
 

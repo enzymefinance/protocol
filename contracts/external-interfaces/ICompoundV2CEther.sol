@@ -11,9 +11,11 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
+import {IERC20} from "./IERC20.sol";
+
 /// @title ICompoundV2CEther Interface
 /// @author Enzyme Council <security@enzyme.finance>
-interface ICompoundV2CEther {
+interface ICompoundV2CEther is IERC20 {
     function mint() external payable;
 
     function repayBorrow() external payable;

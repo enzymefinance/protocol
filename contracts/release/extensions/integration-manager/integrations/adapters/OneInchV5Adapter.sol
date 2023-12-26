@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IOneInchV5AggregationRouter} from "../../../../../external-interfaces/IOneInchV5AggregationRouter.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
@@ -93,12 +93,12 @@ contract OneInchV5Adapter is AdapterBase, OneInchV5ActionsMixin {
     function __takeOrderAndValidateIncoming(address _vaultProxy, bytes memory _orderData) private {
         (, IOneInchV5AggregationRouter.SwapDescription memory swapDescription,) = __decodeTakeOrderCallArgs(_orderData);
 
-        uint256 preIncomingAssetBal = ERC20(swapDescription.dstToken).balanceOf(_vaultProxy);
+        uint256 preIncomingAssetBal = IERC20(swapDescription.dstToken).balanceOf(_vaultProxy);
 
         __takeOrder({_orderData: _orderData});
 
         require(
-            ERC20(swapDescription.dstToken).balanceOf(_vaultProxy).sub(preIncomingAssetBal)
+            IERC20(swapDescription.dstToken).balanceOf(_vaultProxy).sub(preIncomingAssetBal)
                 >= swapDescription.minReturnAmount,
             "__takeOrderAndValidateIncoming: Received incoming asset less than expected"
         );

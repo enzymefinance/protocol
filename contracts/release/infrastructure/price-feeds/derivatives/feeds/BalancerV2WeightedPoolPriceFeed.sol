@@ -10,10 +10,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {IBalancerV2WeightedPool} from "../../../../../external-interfaces/IBalancerV2WeightedPool.sol";
 import {IBalancerV2PoolFactory} from "../../../../../external-interfaces/IBalancerV2PoolFactory.sol";
 import {IBalancerV2Vault} from "../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {BalancerV2LogExpMath} from "../../../../../utils/0.6.12/BalancerV2LogExpMath.sol";
 import {BalancerV2FixedPoint} from "../../../../../utils/0.6.12/BalancerV2FixedPoint.sol";
@@ -79,7 +79,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
         underlyings_ = new address[](1);
         underlyingAmounts_ = new uint256[](1);
 
-        uint256 totalSupply = ERC20(_derivative).totalSupply();
+        uint256 totalSupply = IERC20(_derivative).totalSupply();
         uint256 invariant = IBalancerV2WeightedPool(_derivative).getInvariant();
         uint256[] memory weights = IBalancerV2WeightedPool(_derivative).getNormalizedWeights();
 
@@ -88,7 +88,7 @@ contract BalancerV2WeightedPoolPriceFeed is IDerivativePriceFeed, FundDeployerOw
 
         for (uint256 i; i < poolTokens.length; i++) {
             uint256 price = VALUE_INTERPRETER_CONTRACT.calcCanonicalAssetValue(
-                poolTokens[i], 10 ** (uint256(ERC20(poolTokens[i]).decimals())), INTERMEDIARY_ASSET
+                poolTokens[i], 10 ** (uint256(IERC20(poolTokens[i]).decimals())), INTERMEDIARY_ASSET
             );
             geometricWeightedMean =
                 geometricWeightedMean.mulUp((price.pow(weights[i])).divUp(weights[i].pow(weights[i])));

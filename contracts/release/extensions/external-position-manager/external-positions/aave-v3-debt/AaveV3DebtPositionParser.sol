@@ -9,8 +9,8 @@
     file that was distributed with this source code.
 */
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IAaveAToken} from "../../../../../external-interfaces/IAaveAToken.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddOnlyAddressListOwnerConsumerMixin} from
     "../../../../../persistent/address-list-registry/address-list-owners/utils/0.8.19/AddOnlyAddressListOwnerConsumerMixin.sol";
 import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
@@ -86,7 +86,7 @@ contract AaveV3DebtPositionParser is
                     // This is fine, because `repay()` only uses up to the full repay amount.
                     address debtToken =
                         IAaveV3DebtPosition(_externalPosition).getDebtTokenForBorrowedAsset(assetsToTransfer_[i]);
-                    amountsToTransfer_[i] = ERC20(debtToken).balanceOf(_externalPosition);
+                    amountsToTransfer_[i] = IERC20(debtToken).balanceOf(_externalPosition);
                 }
             }
         }

@@ -11,10 +11,12 @@ pragma solidity 0.7.6;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.7/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.7/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.7/token/ERC20/SafeERC20.sol";
+
 import {INonfungiblePositionManager} from "uniswap-v3-periphery/interfaces/INonfungiblePositionManager.sol";
 import {PositionValue} from "uniswap-v3-periphery/libraries/PositionValue.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
+// WrappedSafeERC20 is compatible with solc 7
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {IValueInterpreter} from "../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {UniswapV3LiquidityPositionLibBase1} from "./bases/UniswapV3LiquidityPositionLibBase1.sol";
 import {IUniswapV3LiquidityPosition} from "./IUniswapV3LiquidityPosition.sol";
@@ -28,7 +30,7 @@ contract UniswapV3LiquidityPositionLib is
     UniswapV3LiquidityPositionLibBase1,
     UniswapV3LiquidityPositionDataDecoder
 {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     address private immutable NON_FUNGIBLE_TOKEN_MANAGER;
@@ -129,23 +131,23 @@ contract UniswapV3LiquidityPositionLib is
 
         if (amount0 < _params.amount0Desired) {
             address token0 = getToken0ForNft(_params.tokenId);
-            ERC20(token0).safeTransfer(msg.sender, ERC20(token0).balanceOf(address(this)));
+            IERC20(token0).safeTransfer(msg.sender, IERC20(token0).balanceOf(address(this)));
         }
 
         if (amount1 < _params.amount1Desired) {
             address token1 = getToken1ForNft(_params.tokenId);
-            ERC20(token1).safeTransfer(msg.sender, ERC20(token1).balanceOf(address(this)));
+            IERC20(token1).safeTransfer(msg.sender, IERC20(token1).balanceOf(address(this)));
         }
     }
 
     /// @dev Helper to approve a target account with the max amount of an asset
     function __approveAssetMaxAsNeeded(address _asset, address _target, uint256 _neededAmount) internal {
-        uint256 allowance = ERC20(_asset).allowance(address(this), _target);
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
         if (allowance < _neededAmount) {
             if (allowance > 0) {
-                ERC20(_asset).safeApprove(_target, 0);
+                IERC20(_asset).safeApprove(_target, 0);
             }
-            ERC20(_asset).safeApprove(_target, type(uint256).max);
+            IERC20(_asset).safeApprove(_target, type(uint256).max);
         }
     }
 
@@ -193,11 +195,11 @@ contract UniswapV3LiquidityPositionLib is
 
         // Transfer back to the vaultProxy tokens not added as liquidity
         if (amount0 < _params.amount0Desired) {
-            ERC20(_params.token0).safeTransfer(msg.sender, ERC20(_params.token0).balanceOf(address(this)));
+            IERC20(_params.token0).safeTransfer(msg.sender, IERC20(_params.token0).balanceOf(address(this)));
         }
 
         if (amount1 < _params.amount1Desired) {
-            ERC20(_params.token1).safeTransfer(msg.sender, ERC20(_params.token1).balanceOf(address(this)));
+            IERC20(_params.token1).safeTransfer(msg.sender, IERC20(_params.token1).balanceOf(address(this)));
         }
 
         emit NFTPositionAdded(tokenId);

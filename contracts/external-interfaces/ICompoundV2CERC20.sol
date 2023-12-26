@@ -11,7 +11,7 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
+import {IERC20} from "./IERC20.sol";
 
 /// @title ICompoundV2CERC20 Interface
 /// @author Enzyme Council <security@enzyme.finance>
@@ -21,8 +21,6 @@ interface ICompoundV2CERC20 is IERC20 {
     function borrow(uint256) external returns (uint256);
 
     function borrowBalanceStored(address) external view returns (uint256);
-
-    function decimals() external view returns (uint8);
 
     function mint(uint256) external returns (uint256);
 

@@ -11,8 +11,8 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IChainlinkAggregator} from "../../../../external-interfaces/IChainlinkAggregator.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IChainlinkPriceFeedMixin} from "./IChainlinkPriceFeedMixin.sol";
 
 /// @title ChainlinkPriceFeedMixin Contract
@@ -215,7 +215,7 @@ abstract contract ChainlinkPriceFeedMixin is IChainlinkPriceFeedMixin {
                 AggregatorInfo({aggregator: _aggregators[i], rateAsset: _rateAssets[i]});
 
             // Store the amount that makes up 1 unit given the asset's decimals
-            uint256 unit = 10 ** uint256(ERC20(_primitives[i]).decimals());
+            uint256 unit = 10 ** uint256(IERC20(_primitives[i]).decimals());
             primitiveToUnit[_primitives[i]] = unit;
 
             emit PrimitiveAdded(_primitives[i], _aggregators[i], _rateAssets[i], unit);

@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IIdleTokenV4} from "../../../../../external-interfaces/IIdleTokenV4.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IdlePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/IdlePriceFeed.sol";
@@ -89,7 +89,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
     {
         (address idleToken,,) = __decodeRedeemCallArgs(_actionData);
 
-        __idleV4Redeem(idleToken, ERC20(idleToken).balanceOf(address(this)));
+        __idleV4Redeem(idleToken, IERC20(idleToken).balanceOf(address(this)));
 
         __pushFullAssetBalances(_vaultProxy, __idleV4GetRewardsTokens(idleToken));
     }
@@ -158,7 +158,7 @@ contract IdleAdapter is AdapterBase, IdleV4ActionsMixin {
         spendAssets_[0] = idleToken;
 
         spendAssetAmounts_ = new uint256[](1);
-        spendAssetAmounts_[0] = ERC20(idleToken).balanceOf(_vaultProxy);
+        spendAssetAmounts_[0] = IERC20(idleToken).balanceOf(_vaultProxy);
 
         return (
             IIntegrationManager.SpendAssetsHandleType.Transfer,

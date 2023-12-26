@@ -11,18 +11,21 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../../../external-interfaces/IERC20.sol";
 import {ICurveAddressProvider} from "../../../../../../../external-interfaces/ICurveAddressProvider.sol";
 import {ICurveSwapsERC20} from "../../../../../../../external-interfaces/ICurveSwapsERC20.sol";
 import {ICurveSwapsEther} from "../../../../../../../external-interfaces/ICurveSwapsEther.sol";
 import {IWETH} from "../../../../../../../external-interfaces/IWETH.sol";
 import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 
 /// @title CurveExchangeActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Mixin contract for interacting with the Curve exchange functions
 /// @dev Inheriting contract must have a receive() function
 abstract contract CurveExchangeActionsMixin is AssetHelpers {
+    using SafeERC20 for IERC20;
+
     address private constant CURVE_EXCHANGE_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address private immutable CURVE_EXCHANGE_ADDRESS_PROVIDER;
@@ -70,7 +73,7 @@ abstract contract CurveExchangeActionsMixin is AssetHelpers {
             // Wrap received ETH and send back to the recipient
             uint256 receivedAmount = payable(address(this)).balance;
             IWETH(payable(CURVE_EXCHANGE_WETH_TOKEN)).deposit{value: receivedAmount}();
-            ERC20(CURVE_EXCHANGE_WETH_TOKEN).safeTransfer(_recipient, receivedAmount);
+            IERC20(CURVE_EXCHANGE_WETH_TOKEN).safeTransfer(_recipient, receivedAmount);
         } else {
             __approveAssetMaxAsNeeded(_outgoingAsset, swaps, _outgoingAssetAmount);
 

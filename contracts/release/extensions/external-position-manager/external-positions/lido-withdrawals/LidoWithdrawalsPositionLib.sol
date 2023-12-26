@@ -9,7 +9,7 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ILidoWithdrawalQueue} from "../../../../../external-interfaces/ILidoWithdrawalQueue.sol";
 import {LidoWithdrawalsPositionLibBase1} from "./bases/LidoWithdrawalsPositionLibBase1.sol";
 import {ILidoWithdrawalsPosition} from "./ILidoWithdrawalsPosition.sol";
@@ -40,7 +40,7 @@ contract LidoWithdrawalsPositionLib is
     /// @dev Not access controlled since it only grants stETH allowance to the withdrawal queue contract
     function init(bytes memory) external override {
         // Grant infinite stETH allowance to the withdrawal queue contract
-        ERC20(STETH_ADDRESS).approve(address(WITHDRAWAL_QUEUE), type(uint256).max);
+        IERC20(STETH_ADDRESS).approve(address(WITHDRAWAL_QUEUE), type(uint256).max);
     }
 
     /// @notice Receives and executes a call from the Vault

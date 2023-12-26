@@ -9,7 +9,7 @@
     file that was distributed with this source code.
 */
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IExternalPositionParser} from "../../IExternalPositionParser.sol";
 import {IArbitraryLoanPosition} from "./IArbitraryLoanPosition.sol";
@@ -67,7 +67,7 @@ contract ArbitraryLoanPositionParser is IExternalPositionParser, ArbitraryLoanPo
             assetsToReceive_ = __decodeCloseLoanActionArgs(_encodedActionArgs);
 
             address loanAsset = IArbitraryLoanPosition(_externalPosition).getLoanAsset();
-            if (ERC20(loanAsset).balanceOf(_externalPosition) > 0) {
+            if (IERC20(loanAsset).balanceOf(_externalPosition) > 0) {
                 assetsToReceive_ = assetsToReceive_.addUniqueItem(loanAsset);
             }
         } else if (_actionId == uint256(IArbitraryLoanPosition.Actions.Reconcile)) {
@@ -75,7 +75,7 @@ contract ArbitraryLoanPositionParser is IExternalPositionParser, ArbitraryLoanPo
             assetsToReceive_ = __decodeReconcileActionArgs(_encodedActionArgs);
 
             address loanAsset = IArbitraryLoanPosition(_externalPosition).getLoanAsset();
-            if (ERC20(loanAsset).balanceOf(_externalPosition) > 0) {
+            if (IERC20(loanAsset).balanceOf(_externalPosition) > 0) {
                 assetsToReceive_ = assetsToReceive_.addUniqueItem(loanAsset);
             }
         }

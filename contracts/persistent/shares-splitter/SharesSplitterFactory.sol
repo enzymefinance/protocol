@@ -9,8 +9,8 @@
 
 pragma solidity 0.6.12;
 
-import "./SharesSplitterLib.sol";
-import "./SharesSplitterProxy.sol";
+import {SharesSplitterLib} from "./SharesSplitterLib.sol";
+import {SharesSplitterProxy} from "./SharesSplitterProxy.sol";
 
 /// @title SharesSplitterFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>

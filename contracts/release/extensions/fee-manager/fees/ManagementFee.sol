@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {MakerDaoMath} from "../../../../utils/0.6.12/MakerDaoMath.sol";
 import {IVault} from "../../../core/fund/vault/IVault.sol";
 import {IFeeManager} from "../IFeeManager.sol";
@@ -53,7 +53,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     /// @param _vaultProxy The VaultProxy of the fund
     function activateForFund(address _comptrollerProxy, address _vaultProxy) external override onlyFeeManager {
         // It is only necessary to set `lastSettled` for a migrated fund
-        if (ERC20(_vaultProxy).totalSupply() > 0) {
+        if (IERC20(_vaultProxy).totalSupply() > 0) {
             comptrollerProxyToFeeInfo[_comptrollerProxy].lastSettled = uint128(block.timestamp);
 
             emit ActivatedForMigratedFund(_comptrollerProxy);
@@ -102,7 +102,7 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
         }
 
         // If there are shares issued for the fund, calculate the shares due
-        ERC20 sharesToken = ERC20(_vaultProxy);
+        IERC20 sharesToken = IERC20(_vaultProxy);
         uint256 sharesSupply = sharesToken.totalSupply();
         if (sharesSupply > 0) {
             // This assumes that all shares in the VaultProxy are shares outstanding,

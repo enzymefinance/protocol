@@ -9,11 +9,11 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ILiquityBorrowerOperations} from "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
 import {ILiquityTroveManager} from "../../../../../external-interfaces/ILiquityTroveManager.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {ILiquityDebtPosition} from "./ILiquityDebtPosition.sol";
 import {LiquityDebtPositionDataDecoder} from "./LiquityDebtPositionDataDecoder.sol";
 
@@ -21,7 +21,7 @@ import {LiquityDebtPositionDataDecoder} from "./LiquityDebtPositionDataDecoder.s
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Liquity debt positions
 contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionDataDecoder {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     address private immutable LIQUITY_BORROWER_OPERATIONS;
     address private immutable LIQUITY_TROVE_MANAGER;
@@ -91,7 +91,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
             _maxFeePercentage, _amount, _upperHint, _lowerHint
         );
 
-        ERC20(LUSD_TOKEN).safeTransfer(msg.sender, _amount);
+        IERC20(LUSD_TOKEN).safeTransfer(msg.sender, _amount);
     }
 
     /// @dev Closes a trove
@@ -104,8 +104,8 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
         IWETH(WETH_TOKEN).deposit{value: ethBalance}();
 
         // The liquidation reserve is refunded in LUSD when closing a trove
-        ERC20(LUSD_TOKEN).safeTransfer(msg.sender, ERC20(LUSD_TOKEN).balanceOf(address(this)));
-        ERC20(WETH_TOKEN).safeTransfer(msg.sender, ethBalance);
+        IERC20(LUSD_TOKEN).safeTransfer(msg.sender, IERC20(LUSD_TOKEN).balanceOf(address(this)));
+        IERC20(WETH_TOKEN).safeTransfer(msg.sender, ethBalance);
     }
 
     /// @dev Opens a new Trove
@@ -122,7 +122,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
             _maxFeePercentage, _lusdAmount, _upperHint, _lowerHint
         );
 
-        ERC20(LUSD_TOKEN).safeTransfer(msg.sender, _lusdAmount);
+        IERC20(LUSD_TOKEN).safeTransfer(msg.sender, _lusdAmount);
     }
 
     /// @dev Removes ETH as collateral
@@ -130,7 +130,7 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
         ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).withdrawColl(_amount, _upperHint, _lowerHint);
 
         IWETH(WETH_TOKEN).deposit{value: _amount}();
-        ERC20(WETH_TOKEN).safeTransfer(msg.sender, _amount);
+        IERC20(WETH_TOKEN).safeTransfer(msg.sender, _amount);
     }
 
     /// @dev Repays borrowed LUSD, reducing the borrow balance

@@ -8,7 +8,7 @@
 */
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
 import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import {ISolvV2InitialConvertibleOfferingMarket} from
@@ -78,7 +78,7 @@ contract SolvV2BondIssuerPositionParser is IExternalPositionParser, SolvV2BondIs
             uint256 offersLength = offersMem.length;
             for (uint256 i; i < offersLength; i++) {
                 address currency = INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offersMem[i]).currency;
-                if (ERC20(currency).balanceOf(_externalPosition) > 0) {
+                if (IERC20(currency).balanceOf(_externalPosition) > 0) {
                     assetsToReceive_ = assetsToReceive_.addUniqueItem(currency);
                 }
             }
@@ -89,8 +89,9 @@ contract SolvV2BondIssuerPositionParser is IExternalPositionParser, SolvV2BondIs
 
             ISolvV2BondPool.SlotDetail memory slotDetail = voucherPoolContract.getSlotDetail(slotId);
 
-            uint256 currencyAmount = slotDetail.totalValue.mul(10 ** uint256(ERC20(slotDetail.fundCurrency).decimals()))
-                .div(10 ** uint256(voucherPoolContract.valueDecimals()));
+            uint256 currencyAmount = slotDetail.totalValue.mul(
+                10 ** uint256(IERC20(slotDetail.fundCurrency).decimals())
+            ).div(10 ** uint256(voucherPoolContract.valueDecimals()));
 
             assetsToTransfer_ = new address[](1);
             assetsToTransfer_[0] = slotDetail.fundCurrency;
@@ -108,7 +109,7 @@ contract SolvV2BondIssuerPositionParser is IExternalPositionParser, SolvV2BondIs
                 assetsToReceive_[0] = ISolvV2BondVoucher(offer.voucher).underlying();
             }
 
-            if (ERC20(offer.currency).balanceOf(_externalPosition) > 0) {
+            if (IERC20(offer.currency).balanceOf(_externalPosition) > 0) {
                 assetsToReceive_ = assetsToReceive_.addItem(offer.currency);
             }
         } else if (_actionId == uint256(ISolvV2BondIssuerPosition.Actions.Withdraw)) {

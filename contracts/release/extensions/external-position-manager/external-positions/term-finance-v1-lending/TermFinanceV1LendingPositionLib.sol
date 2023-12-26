@@ -9,15 +9,15 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "openzeppelin-solc-0.8/utils/math/SafeCast.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ITermFinanceV1Auction} from "../../../../../external-interfaces/ITermFinanceV1Auction.sol";
 import {ITermFinanceV1AuctionOfferLocker} from "../../../../../external-interfaces/ITermFinanceV1AuctionOfferLocker.sol";
 import {ITermFinanceV1RepoServicer} from "../../../../../external-interfaces/ITermFinanceV1RepoServicer.sol";
 import {ITermFinanceV1RepoToken} from "../../../../../external-interfaces/ITermFinanceV1RepoToken.sol";
 import {AddressArrayLib} from "../../../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.8.19/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {TermFinanceV1LendingPositionLibBase1} from "./bases/TermFinanceV1LendingPositionLibBase1.sol";
 import {ITermFinanceV1LendingPosition} from "./ITermFinanceV1LendingPosition.sol";
 import {TermFinanceV1LendingPositionDataDecoder} from "./TermFinanceV1LendingPositionDataDecoder.sol";
@@ -35,7 +35,7 @@ contract TermFinanceV1LendingPositionLib is
     using AddressArrayLib for address[];
     using SafeCast for int256;
     using SafeCast for uint256;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     address internal immutable REFERRER_ADDRESS;
     uint256 internal constant SCALING_FACTOR = 1e18;
@@ -204,7 +204,7 @@ contract TermFinanceV1LendingPositionLib is
 
         __sweepTermAuctionPurchaseToken({_termAuction: termAuction});
 
-        if (ERC20(termRepoServicer.termRepoToken()).balanceOf(address(this)) == 0) {
+        if (IERC20(termRepoServicer.termRepoToken()).balanceOf(address(this)) == 0) {
             // If there is no repoToken balance left, we can delete the termAuction
             __removeTermAuction({_termAuctionAddress: address(termAuction)});
         }
@@ -226,7 +226,7 @@ contract TermFinanceV1LendingPositionLib is
             // the termAuction can be removed from storage (it can never contain additional value).
             if (
                 termAuction.auctionCompleted()
-                    && ERC20(ITermFinanceV1RepoServicer(termAuction.termRepoServicer()).termRepoToken()).balanceOf(
+                    && IERC20(ITermFinanceV1RepoServicer(termAuction.termRepoServicer()).termRepoToken()).balanceOf(
                         address(this)
                     ) == 0
             ) {
@@ -244,7 +244,7 @@ contract TermFinanceV1LendingPositionLib is
 
     /// @dev Helper to sweep the purchaseToken balance from a termAuction.
     function __sweepTermAuctionPurchaseToken(ITermFinanceV1Auction _termAuction) internal {
-        ERC20 purchaseToken = ERC20(_termAuction.purchaseToken());
+        IERC20 purchaseToken = IERC20(_termAuction.purchaseToken());
         uint256 purchaseTokenBalance = purchaseToken.balanceOf(address(this));
 
         if (purchaseTokenBalance > 0) {
@@ -328,7 +328,7 @@ contract TermFinanceV1LendingPositionLib is
         // (1) Outstanding balance of purchaseTokens
         // We calculate the balance after aggregating to avoid double-counting
         for (uint256 i; i < assets_.length; i++) {
-            amounts_[i] += ERC20(assets_[i]).balanceOf(address(this));
+            amounts_[i] += IERC20(assets_[i]).balanceOf(address(this));
         }
     }
 
@@ -336,7 +336,7 @@ contract TermFinanceV1LendingPositionLib is
     function __getLoanValue(ITermFinanceV1Auction _termAuction) private view returns (uint256 loanValue_) {
         ITermFinanceV1RepoServicer termRepoServicer = ITermFinanceV1RepoServicer(_termAuction.termRepoServicer());
         ITermFinanceV1RepoToken repoToken = ITermFinanceV1RepoToken(termRepoServicer.termRepoToken());
-        uint256 repoTokenBalance = ERC20(address(repoToken)).balanceOf(address(this));
+        uint256 repoTokenBalance = IERC20(address(repoToken)).balanceOf(address(this));
 
         // If the repoToken balance is 0, there is no active loan
         if (repoTokenBalance == 0) {

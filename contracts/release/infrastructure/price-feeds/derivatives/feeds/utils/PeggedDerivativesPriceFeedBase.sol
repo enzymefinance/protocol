@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../../external-interfaces/IERC20.sol";
 import {IDerivativePriceFeed} from "../../IDerivativePriceFeed.sol";
 import {SingleUnderlyingDerivativeRegistryMixin} from "./SingleUnderlyingDerivativeRegistryMixin.sol";
 
@@ -55,7 +55,7 @@ abstract contract PeggedDerivativesPriceFeedBase is IDerivativePriceFeed, Single
     /// Can be overrode by the inheriting price feed using super() to implement further validation.
     function __validateDerivative(address _derivative, address _underlying) internal virtual override {
         require(
-            ERC20(_derivative).decimals() == ERC20(_underlying).decimals(), "__validateDerivative: Unequal decimals"
+            IERC20(_derivative).decimals() == IERC20(_underlying).decimals(), "__validateDerivative: Unequal decimals"
         );
     }
 }

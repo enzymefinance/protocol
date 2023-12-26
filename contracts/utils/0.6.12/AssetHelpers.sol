@@ -12,14 +12,14 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 
 /// @title AssetHelpers Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A util contract for common token actions
 abstract contract AssetHelpers {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     /// @dev Helper to aggregate amounts of the same assets
@@ -74,20 +74,20 @@ abstract contract AssetHelpers {
     /// This is helpful for fully trusted contracts, such as adapters that
     /// interact with external protocol like Uniswap, Compound, etc.
     function __approveAssetMaxAsNeeded(address _asset, address _target, uint256 _neededAmount) internal {
-        uint256 allowance = ERC20(_asset).allowance(address(this), _target);
+        uint256 allowance = IERC20(_asset).allowance(address(this), _target);
         if (allowance < _neededAmount) {
             if (allowance > 0) {
-                ERC20(_asset).safeApprove(_target, 0);
+                IERC20(_asset).safeApprove(_target, 0);
             }
-            ERC20(_asset).safeApprove(_target, type(uint256).max);
+            IERC20(_asset).safeApprove(_target, type(uint256).max);
         }
     }
 
     /// @dev Helper to transfer full asset balance from the current contract to a target
     function __pushFullAssetBalance(address _target, address _asset) internal returns (uint256 amountTransferred_) {
-        amountTransferred_ = ERC20(_asset).balanceOf(address(this));
+        amountTransferred_ = IERC20(_asset).balanceOf(address(this));
         if (amountTransferred_ > 0) {
-            ERC20(_asset).safeTransfer(_target, amountTransferred_);
+            IERC20(_asset).safeTransfer(_target, amountTransferred_);
         }
 
         return amountTransferred_;
@@ -100,7 +100,7 @@ abstract contract AssetHelpers {
     {
         amountsTransferred_ = new uint256[](_assets.length);
         for (uint256 i; i < _assets.length; i++) {
-            ERC20 assetContract = ERC20(_assets[i]);
+            IERC20 assetContract = IERC20(_assets[i]);
             amountsTransferred_[i] = assetContract.balanceOf(address(this));
             if (amountsTransferred_[i] > 0) {
                 assetContract.safeTransfer(_target, amountsTransferred_[i]);

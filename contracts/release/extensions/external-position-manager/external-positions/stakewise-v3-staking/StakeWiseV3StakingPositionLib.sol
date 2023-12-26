@@ -9,8 +9,6 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {IStakeWiseV3EthVault} from "../../../../../external-interfaces/IStakeWiseV3EthVault.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
@@ -28,7 +26,6 @@ contract StakeWiseV3StakingPositionLib is
     StakeWiseV3StakingPositionLibBase1
 {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
 
     IWETH public immutable WETH_TOKEN;
     address private immutable REFERRER_ADDRESS;

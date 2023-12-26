@@ -11,7 +11,7 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../external-interfaces/IERC20.sol";
 import {FundDeployerOwnerMixin} from "../../utils/0.8.19/FundDeployerOwnerMixin.sol";
 import {IProtocolFeeTracker} from "./IProtocolFeeTracker.sol";
 
@@ -107,7 +107,7 @@ contract ProtocolFeeTracker is IProtocolFeeTracker, FundDeployerOwnerMixin {
         view
         returns (uint256 sharesDue_)
     {
-        uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
+        uint256 sharesSupply = IERC20(_vaultProxy).totalSupply();
 
         uint256 rawSharesDue = sharesSupply * getFeeBpsForVault(_vaultProxy) * _secondsDue / SECONDS_IN_YEAR / MAX_BPS;
 

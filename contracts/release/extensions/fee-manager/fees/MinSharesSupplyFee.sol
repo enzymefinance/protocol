@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IFeeManager} from "../IFeeManager.sol";
 import {FeeBase} from "./utils/FeeBase.sol";
 
@@ -58,7 +58,7 @@ contract MinSharesSupplyFee is FeeBase {
         onlyFeeManager
         returns (IFeeManager.SettlementType settlementType_, address payer_, uint256 sharesDue_)
     {
-        uint256 lockedShares = ERC20(_vaultProxy).balanceOf(LOCKED_SHARES_ADDRESS);
+        uint256 lockedShares = IERC20(_vaultProxy).balanceOf(LOCKED_SHARES_ADDRESS);
         if (lockedShares >= MIN_SHARES_SUPPLY) {
             return (IFeeManager.SettlementType.None, address(0), 0);
         }

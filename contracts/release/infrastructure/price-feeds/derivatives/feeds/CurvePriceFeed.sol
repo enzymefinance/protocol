@@ -13,12 +13,12 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {ICurveAddressProvider} from "../../../../../external-interfaces/ICurveAddressProvider.sol";
 import {ICurveLiquidityPool} from "../../../../../external-interfaces/ICurveLiquidityPool.sol";
 import {ICurvePoolOwner} from "../../../../../external-interfaces/ICurvePoolOwner.sol";
 import {ICurveRegistryMain} from "../../../../../external-interfaces/ICurveRegistryMain.sol";
 import {ICurveRegistryMetapoolFactory} from "../../../../../external-interfaces/ICurveRegistryMetapoolFactory.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
 
@@ -303,7 +303,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
         require(getPoolForDerivative(_derivative) == address(0), "__addDerivative: Already exists");
 
         // Assert that the assumption that all Curve pool tokens are 18 decimals
-        require(ERC20(_derivative).decimals() == 18, "__addDerivative: Not 18-decimal");
+        require(IERC20(_derivative).decimals() == 18, "__addDerivative: Not 18-decimal");
 
         derivativeToPool[_derivative] = _pool;
 
@@ -395,7 +395,7 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
         poolToPoolInfo[_pool] = PoolInfo({
             invariantProxyAsset: _invariantProxyAsset,
-            invariantProxyAssetDecimals: ERC20(_invariantProxyAsset).decimals(),
+            invariantProxyAssetDecimals: IERC20(_invariantProxyAsset).decimals(),
             lastValidatedVirtualPrice: uint88(lastValidatedVirtualPrice)
         });
 

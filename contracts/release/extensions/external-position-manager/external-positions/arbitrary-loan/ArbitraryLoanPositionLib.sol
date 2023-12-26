@@ -10,14 +10,14 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {SafeCast} from "openzeppelin-solc-0.6/utils/SafeCast.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
 import {IExternalPositionProxy} from "../../../../../persistent/external-positions/IExternalPositionProxy.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
 import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {ArbitraryLoanPositionLibBase1} from "./bases/ArbitraryLoanPositionLibBase1.sol";
 import {IArbitraryLoanAccountingModule} from "./modules/IArbitraryLoanAccountingModule.sol";
 import {IArbitraryLoanPosition} from "./IArbitraryLoanPosition.sol";
@@ -38,7 +38,7 @@ contract ArbitraryLoanPositionLib is
 {
     using AddressArrayLib for address[];
     using SafeCast for uint256;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     address private immutable WRAPPED_NATIVE_ASSET;
@@ -148,7 +148,7 @@ contract ArbitraryLoanPositionLib is
             __updateBorrowableAmount(getBorrowableAmount().sub(decreaseAmount));
 
             // If decreasing borrowable amount, send unborrowable capital to the VaultProxy
-            ERC20(loanAsset).safeTransfer(msg.sender, decreaseAmount);
+            IERC20(loanAsset).safeTransfer(msg.sender, decreaseAmount);
         } else {
             __updateBorrowableAmount(getBorrowableAmount().add(uint256(amountDelta)));
         }
@@ -167,7 +167,7 @@ contract ArbitraryLoanPositionLib is
             }
         }
 
-        ERC20 loanAssetContract = ERC20(getLoanAsset());
+        IERC20 loanAssetContract = IERC20(getLoanAsset());
 
         require(
             !_extraAssetsToSweep.contains(address(loanAssetContract)), "__reconcile: Extra assets contains loan asset"
@@ -252,7 +252,7 @@ contract ArbitraryLoanPositionLib is
         totalBorrowedMem = totalBorrowedMem.add(_amount);
         totalBorrowed = totalBorrowedMem.toUint128();
 
-        ERC20(loanAsset).safeTransfer(msg.sender, _amount);
+        IERC20(loanAsset).safeTransfer(msg.sender, _amount);
 
         emit TotalBorrowedUpdated(totalBorrowedMem);
     }
@@ -284,7 +284,7 @@ contract ArbitraryLoanPositionLib is
 
         __updateTotalRepaid(totalRepaidMem.add(repayAmount));
 
-        ERC20(getLoanAsset()).safeTransferFrom(
+        IERC20(getLoanAsset()).safeTransferFrom(
             msg.sender, IExternalPositionProxy(address(this)).getVaultProxy(), repayAmount
         );
     }

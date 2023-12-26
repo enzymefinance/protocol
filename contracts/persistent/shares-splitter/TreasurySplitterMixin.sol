@@ -11,16 +11,16 @@
 
 pragma solidity 0.6.12;
 
-import "openzeppelin-solc-0.6/math/SafeMath.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 
 /// @title TreasurySplitterMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A mixin contract for splitting all tokens amongst participants at a fixed ratio
 /// @dev Inheriting contract must call __setSplitRatio() to set the fixed participants ratio
 abstract contract TreasurySplitterMixin {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     event SplitPercentageSet(address indexed user, uint256 percentage);
@@ -66,7 +66,7 @@ abstract contract TreasurySplitterMixin {
         return __calcTokenBalClaimable(
             getSplitPercentageForUser(_user),
             getTokenBalClaimedForUser(_user, _token),
-            getTotalTokenBalClaimed(_token).add(ERC20(_token).balanceOf(address(this)))
+            getTotalTokenBalClaimed(_token).add(IERC20(_token).balanceOf(address(this)))
         );
     }
 
@@ -90,7 +90,7 @@ abstract contract TreasurySplitterMixin {
         returns (uint256 claimedAmount_)
     {
         claimedAmount_ = __claimTokenWithoutTransfer(_user, _token, _amount);
-        ERC20(_token).safeTransfer(_to, claimedAmount_);
+        IERC20(_token).safeTransfer(_to, claimedAmount_);
 
         return claimedAmount_;
     }
@@ -103,7 +103,7 @@ abstract contract TreasurySplitterMixin {
         uint256 totalBalClaimed = getTotalTokenBalClaimed(_token);
         uint256 balClaimedForUser = getTokenBalClaimedForUser(_user, _token);
 
-        uint256 totalCumulativeBal = totalBalClaimed.add(ERC20(_token).balanceOf(address(this)));
+        uint256 totalCumulativeBal = totalBalClaimed.add(IERC20(_token).balanceOf(address(this)));
         uint256 claimableBalForUser =
             __calcTokenBalClaimable(getSplitPercentageForUser(_user), balClaimedForUser, totalCumulativeBal);
 

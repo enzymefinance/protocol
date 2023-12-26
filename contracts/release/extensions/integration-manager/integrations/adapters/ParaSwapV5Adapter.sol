@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IParaSwapV5AugustusSwapper} from "../../../../../external-interfaces/IParaSwapV5AugustusSwapper.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
@@ -144,12 +144,12 @@ contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
 
         address incomingAsset = __getIncomingAssetFromSwapData({_swapType: swapType, _swapData: swapData});
 
-        uint256 preIncomingAssetBal = ERC20(incomingAsset).balanceOf(_vaultProxy);
+        uint256 preIncomingAssetBal = IERC20(incomingAsset).balanceOf(_vaultProxy);
 
         __takeOrder({_vaultProxy: _vaultProxy, _orderData: _orderData});
 
         require(
-            ERC20(incomingAsset).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >= minIncomingAssetAmount,
+            IERC20(incomingAsset).balanceOf(_vaultProxy).sub(preIncomingAssetBal) >= minIncomingAssetAmount,
             "__takeOrderAndValidateIncoming: Received incoming asset less than expected"
         );
     }

@@ -11,7 +11,7 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../utils/0.8.19/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../utils/0.8.19/AssetHelpers.sol";
 import {IVault} from "../../core/fund/vault/IVault.sol";
@@ -258,7 +258,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
 
     /// @dev Helper to get the vault's balance of a particular asset
     function __getVaultAssetBalance(address _vaultProxy, address _asset) private view returns (uint256) {
-        return ERC20(_asset).balanceOf(_vaultProxy);
+        return IERC20(_asset).balanceOf(_vaultProxy);
     }
 
     /// @dev Helper for the internal actions to take prior to executing CoI
@@ -298,14 +298,14 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
         // as a spend asset can be immediately transferred after recording its balance
         preCallIncomingAssetBalances_ = new uint256[](incomingAssets_.length);
         for (uint256 i; i < incomingAssets_.length; i++) {
-            preCallIncomingAssetBalances_[i] = ERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
+            preCallIncomingAssetBalances_[i] = IERC20(incomingAssets_[i]).balanceOf(_vaultProxy);
         }
 
         // SPEND ASSETS
 
         preCallSpendAssetBalances_ = new uint256[](spendAssets_.length);
         for (uint256 i; i < spendAssets_.length; i++) {
-            preCallSpendAssetBalances_[i] = ERC20(spendAssets_[i]).balanceOf(_vaultProxy);
+            preCallSpendAssetBalances_[i] = IERC20(spendAssets_[i]).balanceOf(_vaultProxy);
 
             // Grant adapter access to the spend assets.
             // spendAssets_ is already asserted to be a unique set.
@@ -359,7 +359,7 @@ contract IntegrationManager is IIntegrationManager, ExtensionBase, PermissionedV
             // Reset any unused approvals
             if (
                 _spendAssetsHandleType == SpendAssetsHandleType.Approve
-                    && ERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
+                    && IERC20(_spendAssets[i]).allowance(_vaultProxy, _adapter) > 0
             ) {
                 __approveAssetSpender(_comptrollerProxy, _spendAssets[i], _adapter, 0);
             } else if (_spendAssetsHandleType == SpendAssetsHandleType.None) {

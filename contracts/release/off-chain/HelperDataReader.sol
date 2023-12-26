@@ -9,7 +9,7 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IExternalPositionFactory} from "../../persistent/external-positions/IExternalPositionFactory.sol";
 import {IExternalPositionProxy} from "../../persistent/external-positions/IExternalPositionProxy.sol";
 import {IHelperDataReader} from "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
@@ -138,9 +138,9 @@ contract HelperDataReader is IHelperDataReader {
     }
 
     function getVaultDetailsDecoded(address _vaultProxy) public returns (VaultDetails memory) {
-        string memory name = ERC20(_vaultProxy).name();
-        string memory symbol = ERC20(_vaultProxy).symbol();
-        uint256 totalSupply = ERC20(_vaultProxy).totalSupply();
+        string memory name = IERC20(_vaultProxy).name();
+        string memory symbol = IERC20(_vaultProxy).symbol();
+        uint256 totalSupply = IERC20(_vaultProxy).totalSupply();
         address comptrollerProxy = IVault(_vaultProxy).getAccessor();
         address owner = IVault(_vaultProxy).getOwner();
         address denominationAsset = IComptroller(comptrollerProxy).getDenominationAsset();
@@ -183,7 +183,7 @@ contract HelperDataReader is IHelperDataReader {
 
         for (uint256 i = 0; i < trackedAssets.length; i++) {
             trackedAssetsAmounts[i] =
-                AssetAmount({asset: trackedAssets[i], amount: ERC20(trackedAssets[i]).balanceOf(_vaultProxy)});
+                AssetAmount({asset: trackedAssets[i], amount: IERC20(trackedAssets[i]).balanceOf(_vaultProxy)});
         }
 
         return trackedAssetsAmounts;

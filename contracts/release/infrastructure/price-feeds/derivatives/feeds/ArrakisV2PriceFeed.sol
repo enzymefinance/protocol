@@ -11,9 +11,9 @@
 
 pragma solidity 0.8.19;
 
-import {IERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
 import {IUniswapV3Factory} from "uniswap-v3-core-0.8/contracts/interfaces/IUniswapV3Factory.sol";
 import {IArrakisV2Vault} from "../../../../../external-interfaces/IArrakisV2Vault.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {CorePositionValue} from "../../../../../utils/0.8.19/uniswap/adapted-libs/CorePositionValue.sol";
 import {UniswapV3PositionHelper} from "../../../../../utils/0.8.19/uniswap/UniswapV3PositionHelper.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";

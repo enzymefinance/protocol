@@ -9,8 +9,8 @@
 
 pragma solidity 0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../fund-value-calculator/FundValueCalculatorRouter.sol";
+import {IERC20} from "../../../external-interfaces/IERC20.sol";
+import {FundValueCalculatorRouter} from "../fund-value-calculator/FundValueCalculatorRouter.sol";
 
 /// @title FundDataProviderRouter Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -46,7 +46,7 @@ contract FundDataProviderRouter {
         )
     {
         timestamp_ = block.timestamp;
-        sharesSupply_ = ERC20(_vaultProxy).totalSupply();
+        sharesSupply_ = IERC20(_vaultProxy).totalSupply();
 
         try FundValueCalculatorRouter(getFundValueCalculatorRouter()).calcGavInAsset(_vaultProxy, getWethToken())
         returns (uint256 gav) {

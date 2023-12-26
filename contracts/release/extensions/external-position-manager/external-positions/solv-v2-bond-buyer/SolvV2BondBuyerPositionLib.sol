@@ -11,14 +11,14 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
 import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import {ISolvV2InitialConvertibleOfferingMarket} from
     "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
 import {SolvV2BondBuyerPositionLibBase1} from "./bases/SolvV2BondBuyerPositionLibBase1.sol";
 import {ISolvV2BondBuyerPosition} from "./ISolvV2BondBuyerPosition.sol";
@@ -34,7 +34,7 @@ contract SolvV2BondBuyerPositionLib is
     AssetHelpers
 {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Uint256ArrayLib for uint256[];
 
@@ -72,7 +72,7 @@ contract SolvV2BondBuyerPositionLib is
         ISolvV2BondVoucher voucherContract = ISolvV2BondVoucher(offering.voucher);
         uint32 nextTokenId = voucherContract.nextTokenId();
 
-        ERC20 currencyToken = ERC20(offering.currency);
+        IERC20 currencyToken = IERC20(offering.currency);
         currencyToken.safeApprove(address(INITIAL_BOND_OFFERING_MARKET_CONTRACT), type(uint256).max);
 
         INITIAL_BOND_OFFERING_MARKET_CONTRACT.buy(offerId, units);
@@ -175,7 +175,7 @@ contract SolvV2BondBuyerPositionLib is
         uint256 claimTokenAmount;
 
         if (slotDetail.isIssuerRefunded) {
-            claimCurrencyAmount = tokenBalance.mul(10 ** uint256(ERC20(slotDetail.fundCurrency).decimals())).div(
+            claimCurrencyAmount = tokenBalance.mul(10 ** uint256(IERC20(slotDetail.fundCurrency).decimals())).div(
                 10 ** uint256(poolContract.valueDecimals())
             );
 

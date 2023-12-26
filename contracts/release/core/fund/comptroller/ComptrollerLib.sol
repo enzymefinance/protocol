@@ -11,10 +11,10 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IDispatcher} from "../../../../persistent/dispatcher/IDispatcher.sol";
 import {IBeaconProxyFactory} from "../../../../utils/0.8.19/deprecated/beacon-proxy/IBeaconProxyFactory.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {AddressArrayLib} from "../../../../utils/0.8.19/AddressArrayLib.sol";
 import {IExtension} from "../../../extensions/IExtension.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
@@ -30,7 +30,7 @@ import {IComptroller} from "./IComptroller.sol";
 /// @notice The core logic library shared by all funds
 contract ComptrollerLib is IComptroller {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     event AutoProtocolFeeSharesBuybackSet(bool autoProtocolFeeSharesBuyback);
 
@@ -275,7 +275,7 @@ contract ComptrollerLib is IComptroller {
 
     /// @dev Helper to buyback the max available protocol fee shares, during an auto-buyback
     function __buyBackMaxProtocolFeeShares(address _vaultProxy, uint256 _gav) private {
-        uint256 sharesAmount = ERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
+        uint256 sharesAmount = IERC20(_vaultProxy).balanceOf(getProtocolFeeReserve());
         uint256 buybackValueInMln = __getBuybackValueInMln(_vaultProxy, sharesAmount, _gav);
 
         try IVault(_vaultProxy).buyBackProtocolFeeShares(sharesAmount, buybackValueInMln, _gav) {}
@@ -292,7 +292,7 @@ contract ComptrollerLib is IComptroller {
         address denominationAssetCopy = getDenominationAsset();
 
         uint256 grossShareValue = __calcGrossShareValue(
-            _gav, ERC20(_vaultProxy).totalSupply(), 10 ** uint256(ERC20(denominationAssetCopy).decimals())
+            _gav, IERC20(_vaultProxy).totalSupply(), 10 ** uint256(IERC20(denominationAssetCopy).decimals())
         );
 
         uint256 buybackValueInDenominationAsset = grossShareValue * _sharesAmount / SHARES_UNIT;
@@ -388,7 +388,7 @@ contract ComptrollerLib is IComptroller {
             // Distribute any shares in the VaultProxy to the fund owner.
             // This is a mechanism to ensure that even in the edge case of a fund being unable
             // to payout fee shares owed during migration, these shares are not lost.
-            uint256 sharesDue = ERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
+            uint256 sharesDue = IERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
             if (sharesDue > 0) {
                 IVault(vaultProxyCopy).transferShares(vaultProxyCopy, IVault(vaultProxyCopy).getOwner(), sharesDue);
 
@@ -441,7 +441,7 @@ contract ComptrollerLib is IComptroller {
 
         uint256[] memory balances = new uint256[](assets.length);
         for (uint256 i; i < assets.length; i++) {
-            balances[i] = ERC20(assets[i]).balanceOf(vaultProxyAddress);
+            balances[i] = IERC20(assets[i]).balanceOf(vaultProxyAddress);
         }
 
         gav_ = IValueInterpreter(getValueInterpreter()).calcCanonicalAssetsTotalValue(
@@ -466,7 +466,7 @@ contract ComptrollerLib is IComptroller {
         uint256 gav = calcGav();
 
         grossShareValue_ = __calcGrossShareValue(
-            gav, ERC20(getVaultProxy()).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
+            gav, IERC20(getVaultProxy()).totalSupply(), 10 ** uint256(IERC20(getDenominationAsset()).decimals())
         );
 
         return grossShareValue_;
@@ -598,12 +598,12 @@ contract ComptrollerLib is IComptroller {
 
         // Calculate the amount of shares to issue with the investment amount
         uint256 sharePrice = __calcGrossShareValue(
-            gav, ERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(ERC20(getDenominationAsset()).decimals())
+            gav, IERC20(vaultProxyCopy).totalSupply(), 10 ** uint256(IERC20(getDenominationAsset()).decimals())
         );
         uint256 sharesIssued = receivedInvestmentAmount * SHARES_UNIT / sharePrice;
 
         // Mint shares to the buyer
-        uint256 prevBuyerShares = ERC20(vaultProxyCopy).balanceOf(_buyer);
+        uint256 prevBuyerShares = IERC20(vaultProxyCopy).balanceOf(_buyer);
         IVault(vaultProxyCopy).mintShares(_buyer, sharesIssued);
 
         // Gives Extensions a chance to run logic after shares are issued
@@ -611,7 +611,7 @@ contract ComptrollerLib is IComptroller {
 
         // The number of actual shares received may differ from shares issued due to
         // how the PostBuyShares hooks are invoked by Extensions (i.e., fees)
-        sharesReceived_ = ERC20(vaultProxyCopy).balanceOf(_buyer) - prevBuyerShares;
+        sharesReceived_ = IERC20(vaultProxyCopy).balanceOf(_buyer) - prevBuyerShares;
         require(sharesReceived_ >= _minSharesQuantity, "__buyShares: Shares received < _minSharesQuantity");
 
         if (_hasSharesActionTimelock) {
@@ -652,18 +652,18 @@ contract ComptrollerLib is IComptroller {
         );
     }
 
-    /// @dev Helper to execute ERC20.transferFrom() while calculating the actual amount received
+    /// @dev Helper to execute IERC20.transferFrom() while calculating the actual amount received
     function __transferFromWithReceivedAmount(
         address _asset,
         address _sender,
         address _recipient,
         uint256 _transferAmount
     ) private returns (uint256 receivedAmount_) {
-        uint256 preTransferRecipientBalance = ERC20(_asset).balanceOf(_recipient);
+        uint256 preTransferRecipientBalance = IERC20(_asset).balanceOf(_recipient);
 
-        ERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
+        IERC20(_asset).safeTransferFrom(_sender, _recipient, _transferAmount);
 
-        return ERC20(_asset).balanceOf(_recipient) - preTransferRecipientBalance;
+        return IERC20(_asset).balanceOf(_recipient) - preTransferRecipientBalance;
     }
 
     // REDEEM SHARES
@@ -764,7 +764,7 @@ contract ComptrollerLib is IComptroller {
         // Calculate and transfer payout asset amounts due to _recipient
         payoutAmounts_ = new uint256[](payoutAssets_.length);
         for (uint256 i; i < payoutAssets_.length; i++) {
-            payoutAmounts_[i] = ERC20(payoutAssets_[i]).balanceOf(vaultProxy) * sharesToRedeem / sharesSupply;
+            payoutAmounts_[i] = IERC20(payoutAssets_[i]).balanceOf(vaultProxy) * sharesToRedeem / sharesSupply;
 
             // Transfer payout asset to _recipient
             if (payoutAmounts_[i] > 0) {
@@ -896,7 +896,7 @@ contract ComptrollerLib is IComptroller {
     ) private returns (uint256 sharesToRedeem_, uint256 sharesSupply_) {
         __assertSharesActionNotTimelocked(address(vaultProxyContract), _redeemer);
 
-        ERC20 sharesContract = ERC20(address(vaultProxyContract));
+        IERC20 sharesContract = IERC20(address(vaultProxyContract));
 
         uint256 preFeesRedeemerSharesBalance = sharesContract.balanceOf(_redeemer);
 

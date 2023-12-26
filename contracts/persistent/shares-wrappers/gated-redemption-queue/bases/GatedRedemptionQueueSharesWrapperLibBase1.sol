@@ -12,8 +12,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
+import {ERC20 as OpenZeppelinERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {ReentrancyGuard} from "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLibBase1 Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -21,7 +21,7 @@ import "openzeppelin-solc-0.6/utils/ReentrancyGuard.sol";
 /// @dev Each next base implementation inherits the previous base implementation,
 /// e.g., `GatedRedemptionQueueSharesWrapperLibBase2 is GatedRedemptionQueueSharesWrapperLibBase1`
 /// DO NOT EDIT CONTRACT.
-abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is ERC20, ReentrancyGuard {
+abstract contract GatedRedemptionQueueSharesWrapperLibBase1 is OpenZeppelinERC20, ReentrancyGuard {
     enum DepositMode {
         Direct,
         Request

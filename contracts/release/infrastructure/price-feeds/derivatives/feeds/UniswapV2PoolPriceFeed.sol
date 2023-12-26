@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IUniswapV2Pair} from "../../../../../external-interfaces/IUniswapV2Pair.sol";
 import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
 import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
@@ -137,8 +137,8 @@ contract UniswapV2PoolPriceFeed is
             poolTokenToInfo[_poolTokens[i]] = PoolTokenInfo({
                 token0: token0,
                 token1: token1,
-                token0Decimals: ERC20(token0).decimals(),
-                token1Decimals: ERC20(token1).decimals()
+                token0Decimals: IERC20(token0).decimals(),
+                token1Decimals: IERC20(token1).decimals()
             });
 
             emit PoolTokenAdded(_poolTokens[i], token0, token1);

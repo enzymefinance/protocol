@@ -11,12 +11,11 @@
 
 pragma solidity >=0.6.0 <0.9.0;
 
-import "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
+import {IERC20} from "./IERC20.sol";
 
 /// @title IIdleTokenV4 Interface
 /// @author Enzyme Council <security@enzyme.finance>
-/// @notice Minimal interface for our interactions with IdleToken (V4) contracts
-interface IIdleTokenV4 {
+interface IIdleTokenV4 is IERC20 {
     function getGovTokensAmounts(address) external view returns (uint256[] calldata);
 
     function govTokens(uint256) external view returns (address);

@@ -10,15 +10,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
 import {IConvexBaseRewardPool} from "../../../../../external-interfaces/IConvexBaseRewardPool.sol";
 import {IConvexCvxLockerV2} from "../../../../../external-interfaces/IConvexCvxLockerV2.sol";
 import {IConvexVlCvxExtraRewardDistribution} from
     "../../../../../external-interfaces/IConvexVlCvxExtraRewardDistribution.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ISnapshotDelegateRegistry} from "../../../../../external-interfaces/ISnapshotDelegateRegistry.sol";
 import {IVotiumMultiMerkleStash} from "../../../../../external-interfaces/IVotiumMultiMerkleStash.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {ConvexVotingPositionDataDecoder} from "./ConvexVotingPositionDataDecoder.sol";
 import {IConvexVotingPosition} from "./IConvexVotingPosition.sol";
 
@@ -26,12 +26,12 @@ import {IConvexVotingPosition} from "./IConvexVotingPosition.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Library contract for Convex vlCVX positions
 contract ConvexVotingPositionLib is IConvexVotingPosition, ConvexVotingPositionDataDecoder, AssetHelpers {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     bytes32 private constant CONVEX_SNAPSHOT_ID = "cvx.eth";
 
     IConvexBaseRewardPool private immutable CVX_CRV_STAKING_CONTRACT;
-    ERC20 private immutable CVX_TOKEN_CONTRACT;
+    IERC20 private immutable CVX_TOKEN_CONTRACT;
     ISnapshotDelegateRegistry private immutable SNAPSHOT_DELEGATE_REGISTRY;
     IConvexCvxLockerV2 private immutable VLCVX_CONTRACT;
     IConvexVlCvxExtraRewardDistribution private immutable VLCVX_EXTRA_REWARDS_CONTRACT;
@@ -46,7 +46,7 @@ contract ConvexVotingPositionLib is IConvexVotingPosition, ConvexVotingPositionD
         address _votiumMultiMerkleStash
     ) public {
         CVX_CRV_STAKING_CONTRACT = IConvexBaseRewardPool(_cvxCrvStaking);
-        CVX_TOKEN_CONTRACT = ERC20(_cvxToken);
+        CVX_TOKEN_CONTRACT = IERC20(_cvxToken);
         SNAPSHOT_DELEGATE_REGISTRY = ISnapshotDelegateRegistry(_snapshotDelegateRegistry);
         VLCVX_CONTRACT = IConvexCvxLockerV2(_vlCvx);
         VLCVX_EXTRA_REWARDS_CONTRACT = IConvexVlCvxExtraRewardDistribution(_vlCvxExtraRewards);

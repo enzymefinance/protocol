@@ -11,9 +11,9 @@
 
 pragma solidity 0.6.12;
 
-import "../dispatcher/IDispatcher.sol";
-import "../global-config/interfaces/IGlobalConfig1.sol";
-import "./TreasurySplitterMixin.sol";
+import {IDispatcher} from "../dispatcher/IDispatcher.sol";
+import {IGlobalConfig1} from "../global-config/interfaces/IGlobalConfig1.sol";
+import {TreasurySplitterMixin} from "./TreasurySplitterMixin.sol";
 
 /// @title SharesSplitterLib Contract
 /// @author Enzyme Council <security@enzyme.finance>

@@ -10,10 +10,10 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ITheGraphStaking} from "../../../../../external-interfaces/ITheGraphStaking.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {TheGraphDelegationPositionLibBase1} from "./bases/TheGraphDelegationPositionLibBase1.sol";
 import {ITheGraphDelegationPosition} from "./ITheGraphDelegationPosition.sol";
 import {TheGraphDelegationPositionDataDecoder} from "./TheGraphDelegationPositionDataDecoder.sol";
@@ -27,15 +27,15 @@ contract TheGraphDelegationPositionLib is
     TheGraphDelegationPositionDataDecoder
 {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     ITheGraphStaking private immutable GRAPH_STAKING_CONTRACT;
-    ERC20 private immutable GRT_TOKEN_CONTRACT;
+    IERC20 private immutable GRT_TOKEN_CONTRACT;
 
     constructor(address _stakingProxy, address _grtToken) public {
         GRAPH_STAKING_CONTRACT = ITheGraphStaking(_stakingProxy);
-        GRT_TOKEN_CONTRACT = ERC20(_grtToken);
+        GRT_TOKEN_CONTRACT = IERC20(_grtToken);
     }
 
     /// @notice Initializes the external position

@@ -10,9 +10,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {IBalancerV2LiquidityGauge} from "../../../../../external-interfaces/IBalancerV2LiquidityGauge.sol";
 import {IBalancerV2Vault} from "../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {CurveGaugeV2RewardsHandlerMixin} from "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
 import {BalancerV2LiquidityAdapterBase} from "../utils/0.6.12/bases/BalancerV2LiquidityAdapterBase.sol";
@@ -21,6 +22,8 @@ import {BalancerV2LiquidityAdapterBase} from "../utils/0.6.12/bases/BalancerV2Li
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for Balancer V2 pool liquidity provision and native staking
 contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaugeV2RewardsHandlerMixin {
+    using SafeERC20 for IERC20;
+
     constructor(address _integrationManager, address _balancerVault, address _balancerMinter, address _balToken)
         public
         BalancerV2LiquidityAdapterBase(_integrationManager, _balancerVault)
@@ -49,7 +52,7 @@ contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaug
     function __stake(address _vaultProxy, address _stakingToken, uint256 _bptAmount) internal override {
         __curveGaugeV2Stake(_stakingToken, __getBptForStakingToken(_stakingToken), _bptAmount);
 
-        ERC20(_stakingToken).safeTransfer(_vaultProxy, _bptAmount);
+        IERC20(_stakingToken).safeTransfer(_vaultProxy, _bptAmount);
     }
 
     /// @dev Logic to unstake BPT from a given staking token
@@ -57,7 +60,7 @@ contract BalancerV2LiquidityAdapter is BalancerV2LiquidityAdapterBase, CurveGaug
         __curveGaugeV2Unstake(_stakingToken, _bptAmount);
 
         if (_recipient != address(this)) {
-            ERC20(__getBptForStakingToken(_stakingToken)).safeTransfer(_recipient, _bptAmount);
+            IERC20(__getBptForStakingToken(_stakingToken)).safeTransfer(_recipient, _bptAmount);
         }
     }
 

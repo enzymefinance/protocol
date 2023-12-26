@@ -9,11 +9,11 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IKilnStakingContract} from "../../../../../external-interfaces/IKilnStakingContract.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {KilnStakingPositionLibBase2} from "./bases/KilnStakingPositionLibBase2.sol";
 import {IKilnStakingPosition} from "./IKilnStakingPosition.sol";
 import {KilnStakingPositionDataDecoder} from "./KilnStakingPositionDataDecoder.sol";
@@ -22,7 +22,7 @@ import {KilnStakingPositionDataDecoder} from "./KilnStakingPositionDataDecoder.s
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice An External Position library contract for Kiln Staking Positions
 contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionDataDecoder, KilnStakingPositionLibBase2 {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     uint256 internal constant ETH_AMOUNT_PER_NODE = 32 ether;
 
@@ -154,7 +154,7 @@ contract KilnStakingPositionLib is IKilnStakingPosition, KilnStakingPositionData
 
         WETH_TOKEN.deposit{value: amount}();
 
-        ERC20(address(WETH_TOKEN)).safeTransfer(msg.sender, amount);
+        IERC20(address(WETH_TOKEN)).safeTransfer(msg.sender, amount);
     }
 
     /// @dev Helper to unpause position valuation

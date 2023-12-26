@@ -13,7 +13,7 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
 import {IFeeManager} from "../IFeeManager.sol";
 import {FeeBase} from "./utils/FeeBase.sol";
@@ -140,7 +140,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     {
         if (comptrollerProxyToFeeInfo[_comptrollerProxy].highWaterMark == RESET_HWM_FLAG) {
             uint256 nextHWM =
-                __calcGrossShareValueForComptrollerProxy(_comptrollerProxy, _gav, ERC20(_vaultProxy).totalSupply());
+                __calcGrossShareValueForComptrollerProxy(_comptrollerProxy, _gav, IERC20(_vaultProxy).totalSupply());
             comptrollerProxyToFeeInfo[_comptrollerProxy].highWaterMark = nextHWM;
 
             emit HighWaterMarkUpdated(_comptrollerProxy, nextHWM);
@@ -186,7 +186,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
         returns (uint256 grossShareValue_)
     {
         if (_sharesSupply == 0) {
-            return 10 ** uint256(ERC20(IComptroller(_comptrollerProxy).getDenominationAsset()).decimals());
+            return 10 ** uint256(IERC20(IComptroller(_comptrollerProxy).getDenominationAsset()).decimals());
         }
 
         return _gav.mul(SHARE_UNIT).div(_sharesSupply);
@@ -203,7 +203,7 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
             return (0, 0);
         }
 
-        uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
+        uint256 sharesSupply = IERC20(_vaultProxy).totalSupply();
         if (sharesSupply == 0) {
             return (0, 0);
         }

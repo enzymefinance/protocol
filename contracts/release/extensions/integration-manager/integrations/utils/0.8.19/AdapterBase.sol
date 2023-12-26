@@ -11,8 +11,6 @@
 
 pragma solidity 0.8.19;
 
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 import {AssetHelpers} from "../../../../../../utils/0.8.19/AssetHelpers.sol";
 import {IIntegrationAdapter} from "../../../IIntegrationAdapter.sol";
 import {IntegrationSelectors} from "../IntegrationSelectors.sol";
@@ -21,8 +19,6 @@ import {IntegrationSelectors} from "../IntegrationSelectors.sol";
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A base contract for integration adapters
 abstract contract AdapterBase is IIntegrationAdapter, IntegrationSelectors, AssetHelpers {
-    using SafeERC20 for ERC20;
-
     address internal immutable INTEGRATION_MANAGER;
 
     /// @dev Provides a standard implementation for transferring incoming assets

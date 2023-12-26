@@ -12,18 +12,18 @@
 pragma solidity 0.8.19;
 
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
-import {ERC20} from "openzeppelin-solc-0.8/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IWETH} from "../../external-interfaces/IWETH.sol";
 import {IAddressListRegistry} from "../../persistent/address-list-registry/IAddressListRegistry.sol";
 import {AssetHelpers} from "../../utils/0.8.19/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../utils/0.8.19/open-zeppelin/WrappedSafeERC20.sol";
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 
 /// @title DepositWrapper Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Logic related to wrapping deposit actions
 contract DepositWrapper is AssetHelpers {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY;
     uint256 private immutable ALLOWED_EXCHANGES_LIST_ID;
@@ -56,7 +56,7 @@ contract DepositWrapper is AssetHelpers {
     function exchangeErc20AndBuyShares(
         IComptroller _comptrollerProxy,
         uint256 _minSharesQuantity,
-        ERC20 _inputAsset,
+        IERC20 _inputAsset,
         uint256 _maxInputAssetAmount,
         address _exchange,
         address _exchangeApproveTarget,
@@ -110,7 +110,7 @@ contract DepositWrapper is AssetHelpers {
         bytes calldata _exchangeData,
         uint256 _exchangeMinReceived
     ) external payable returns (uint256 sharesReceived_) {
-        ERC20 inputAsset = ERC20(address(WRAPPED_NATIVE_ASSET));
+        IERC20 inputAsset = IERC20(address(WRAPPED_NATIVE_ASSET));
         uint256 maxInputAssetAmount = msg.value;
 
         // Wrap ETH into WETH
@@ -181,7 +181,7 @@ contract DepositWrapper is AssetHelpers {
         address _exchangeApproveTarget,
         bytes calldata _exchangeData,
         uint256 _exchangeMinReceived,
-        ERC20 _inputAsset,
+        IERC20 _inputAsset,
         uint256 _maxInputAssetAmount
     ) private returns (uint256 sharesReceived_) {
         require(
@@ -198,7 +198,7 @@ contract DepositWrapper is AssetHelpers {
         Address.functionCall({target: _exchange, data: _exchangeData});
 
         // Confirm the min amount of denomination asset was received in the exchange
-        ERC20 denominationAsset = ERC20(_comptrollerProxy.getDenominationAsset());
+        IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
         uint256 investmentAmount = denominationAsset.balanceOf(address(this));
         require(investmentAmount >= _exchangeMinReceived, "__exchangeAndBuyShares: _exchangeMinReceived not met");
 

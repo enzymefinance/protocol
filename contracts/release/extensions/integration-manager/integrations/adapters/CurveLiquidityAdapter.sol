@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {CurvePriceFeed} from "../../../../infrastructure/price-feeds/derivatives/feeds/CurvePriceFeed.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {CurveGaugeV2RewardsHandlerMixin} from "../utils/0.6.12/actions/CurveGaugeV2RewardsHandlerMixin.sol";
@@ -92,7 +92,7 @@ contract CurveLiquidityAdapter is CurveLiquidityAdapterBase, CurveGaugeV2Rewards
             pool, spendAssets, orderedOutgoingAssetAmounts, minIncomingStakingTokenAmount, useUnderlyings
         );
 
-        __curveGaugeV2Stake(incomingStakingToken, lpToken, ERC20(lpToken).balanceOf(address(this)));
+        __curveGaugeV2Stake(incomingStakingToken, lpToken, IERC20(lpToken).balanceOf(address(this)));
     }
 
     /// @notice Redeems LP tokens

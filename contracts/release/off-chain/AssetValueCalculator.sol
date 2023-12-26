@@ -10,7 +10,7 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IValueInterpreter} from "../infrastructure/value-interpreter/IValueInterpreter.sol";
 
 /// @title AssetValueCalculator Contract
@@ -39,7 +39,7 @@ contract AssetValueCalculator {
         returns (uint256 timestamp_, uint256 value_, bool valueIsValid_)
     {
         timestamp_ = block.timestamp;
-        uint256 amount = 10 ** uint256(ERC20(_baseAsset).decimals());
+        uint256 amount = 10 ** uint256(IERC20(_baseAsset).decimals());
 
         try IValueInterpreter(getValueInterpreter()).calcCanonicalAssetValue(_baseAsset, amount, _quoteAsset) returns (
             uint256 value
@@ -48,7 +48,7 @@ contract AssetValueCalculator {
             valueIsValid_ = true;
         } catch {}
 
-        uint256 decimals = ERC20(_quoteAsset).decimals();
+        uint256 decimals = IERC20(_quoteAsset).decimals();
         value_ = value_.mul(10 ** 18).div(10 ** decimals);
 
         return (timestamp_, value_, valueIsValid_);

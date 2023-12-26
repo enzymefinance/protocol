@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../core/fund/vault/IVault.sol";
@@ -157,7 +157,7 @@ contract FundValueCalculator is IFundValueCalculator {
     /// as the NAV is only valid for the shares quantity prior to the settlement of fees,
     /// and this function actually settles fund-level fees, so the NAV would no longer be valid
     function calcNav(address _vaultProxy) public override returns (address denominationAsset_, uint256 nav_) {
-        uint256 preSharesSupply = ERC20(_vaultProxy).totalSupply();
+        uint256 preSharesSupply = IERC20(_vaultProxy).totalSupply();
 
         uint256 netShareValue;
         (denominationAsset_, netShareValue) = calcNetShareValue(_vaultProxy);
@@ -188,7 +188,7 @@ contract FundValueCalculator is IFundValueCalculator {
         netShareValue_ = __calcShareValue(
             denominationAsset_,
             comptrollerProxyContract.calcGav(),
-            ERC20(_vaultProxy).totalSupply().add(protocolFeeSharesDue)
+            IERC20(_vaultProxy).totalSupply().add(protocolFeeSharesDue)
         );
 
         return (denominationAsset_, netShareValue_);
@@ -205,7 +205,7 @@ contract FundValueCalculator is IFundValueCalculator {
         returns (address denominationAsset_, uint256 netValue_)
     {
         // Does not account for any new shares accrued to the _sharesHolder during calcs
-        uint256 sharesHolderBalance = ERC20(_vaultProxy).balanceOf(_sharesHolder);
+        uint256 sharesHolderBalance = IERC20(_vaultProxy).balanceOf(_sharesHolder);
 
         uint256 netShareValue;
         (denominationAsset_, netShareValue) = calcNetShareValue(_vaultProxy);
@@ -230,7 +230,7 @@ contract FundValueCalculator is IFundValueCalculator {
         uint256 secondsDue = block.timestamp.sub(lastPaid);
 
         // 2. Calc shares due as a proportion of annualized fee bps
-        uint256 sharesSupply = ERC20(_vaultProxy).totalSupply();
+        uint256 sharesSupply = IERC20(_vaultProxy).totalSupply();
 
         uint256 rawSharesDue = sharesSupply.mul(
             IProtocolFeeTracker(getProtocolFeeTracker()).getFeeBpsForVault(_vaultProxy)
@@ -253,7 +253,7 @@ contract FundValueCalculator is IFundValueCalculator {
         returns (uint256 shareValue_)
     {
         if (_sharesSupply == 0) {
-            return 10 ** uint256(ERC20(_denominationAsset).decimals());
+            return 10 ** uint256(IERC20(_denominationAsset).decimals());
         }
 
         return _assetsValue.mul(SHARES_UNIT).div(_sharesSupply);

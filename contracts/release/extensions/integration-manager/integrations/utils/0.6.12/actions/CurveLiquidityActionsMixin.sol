@@ -11,8 +11,8 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {Strings} from "openzeppelin-solc-0.6/utils/Strings.sol";
+import {IERC20} from "../../../../../../../external-interfaces/IERC20.sol";
 import {IWETH} from "../../../../../../../external-interfaces/IWETH.sol";
 import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
 
@@ -52,7 +52,7 @@ abstract contract CurveLiquidityActionsMixin is AssetHelpers {
             if (_squashedOutgoingAssets[i] == getCurveLiquidityWrappedNativeAsset()) {
                 // It is never the case that a pool has multiple slots for the same native asset,
                 // so this is not additive
-                outgoingNativeAssetAmount = ERC20(getCurveLiquidityWrappedNativeAsset()).balanceOf(address(this));
+                outgoingNativeAssetAmount = IERC20(getCurveLiquidityWrappedNativeAsset()).balanceOf(address(this));
                 IWETH(getCurveLiquidityWrappedNativeAsset()).withdraw(outgoingNativeAssetAmount);
             } else {
                 // Once an asset it approved for a given pool, it will almost definitely

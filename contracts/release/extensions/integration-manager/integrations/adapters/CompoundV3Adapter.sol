@@ -12,7 +12,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {IERC20} from "openzeppelin-solc-0.6/token/ERC20/IERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddOnlyAddressListOwnerConsumerMixin} from
     "../../../../../persistent/address-list-registry/address-list-owners/utils/0.6.12/AddOnlyAddressListOwnerConsumerMixin.sol";
 import {ICompoundV3Configurator} from "../../../../../external-interfaces/ICompoundV3Configurator.sol";

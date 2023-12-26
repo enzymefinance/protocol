@@ -10,8 +10,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
 import {IBalancerV2Vault} from "../../../../../../../external-interfaces/IBalancerV2Vault.sol";
+import {IERC20} from "../../../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IIntegrationManager} from "../../../../IIntegrationManager.sol";
 import {BalancerV2ActionsMixin} from "../actions/BalancerV2ActionsMixin.sol";
@@ -86,7 +86,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
 
         __lend(address(this), poolId, spendAssets, spendAssetAmounts, request);
 
-        __stake(_vaultProxy, stakingToken, ERC20(__parseBalancerPoolAddress(poolId)).balanceOf(address(this)));
+        __stake(_vaultProxy, stakingToken, IERC20(__parseBalancerPoolAddress(poolId)).balanceOf(address(this)));
 
         // There can be different join/exit options per Balancer pool type,
         // some of which involve spending only up-to-max amounts
@@ -172,7 +172,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
                 // only if partial spend was intentional due to specifying exact swap output amounts.
                 // Prevents griefing edge case if `__stake()` reverts.
                 if (stakingTokens[i] != address(0) && kind == IBalancerV2Vault.SwapKind.GIVEN_OUT) {
-                    uint256 bptAmount = ERC20(assets[i]).balanceOf(address(this));
+                    uint256 bptAmount = IERC20(assets[i]).balanceOf(address(this));
                     if (bptAmount > 0) {
                         __stake({_vaultProxy: _vaultProxy, _stakingToken: stakingTokens[i], _bptAmount: bptAmount});
                     }
@@ -185,7 +185,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
                     __stake({
                         _vaultProxy: _vaultProxy,
                         _stakingToken: stakingTokens[i],
-                        _bptAmount: ERC20(assets[i]).balanceOf(address(this))
+                        _bptAmount: IERC20(assets[i]).balanceOf(address(this))
                     });
                 } else if (hasIncomingStakedBpt) {
                     // Push any remaining incoming asset balance back to the vault
@@ -230,7 +230,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
         // The full amount of unstaked bpt might not be used in a redemption for exact underlyings
         // (with max bpt specified). In that case, re-stake the unused bpt.
         address bpt = __parseBalancerPoolAddress(poolId);
-        uint256 remainingBpt = ERC20(bpt).balanceOf(address(this));
+        uint256 remainingBpt = IERC20(bpt).balanceOf(address(this));
         if (remainingBpt > 0) {
             __stake(_vaultProxy, stakingToken, remainingBpt);
         }
@@ -277,7 +277,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             uint256 remainingCount = unusedTokensCount;
             for (uint256 i; remainingCount > 0; i++) {
                 if (!_expectedIncomingTokens.contains(_request.assets[i])) {
-                    preTxTokenBalancesIfUnused[i] = ERC20(_request.assets[i]).balanceOf(_vaultProxy);
+                    preTxTokenBalancesIfUnused[i] = IERC20(_request.assets[i]).balanceOf(_vaultProxy);
                     remainingCount--;
                 }
             }
@@ -289,7 +289,7 @@ abstract contract BalancerV2LiquidityAdapterBase is AdapterBase, BalancerV2Actio
             for (uint256 i; unusedTokensCount > 0; i++) {
                 if (!_expectedIncomingTokens.contains(_request.assets[i])) {
                     require(
-                        ERC20(_request.assets[i]).balanceOf(_vaultProxy) == preTxTokenBalancesIfUnused[i],
+                        IERC20(_request.assets[i]).balanceOf(_vaultProxy) == preTxTokenBalancesIfUnused[i],
                         "__balancerRedeem: Unexpected asset received"
                     );
                     unusedTokensCount--;

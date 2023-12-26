@@ -11,14 +11,14 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ISolvV2BondPool} from "../../../../../external-interfaces/ISolvV2BondPool.sol";
 import {ISolvV2BondVoucher} from "../../../../../external-interfaces/ISolvV2BondVoucher.sol";
 import {ISolvV2InitialConvertibleOfferingMarket} from
     "../../../../../external-interfaces/ISolvV2InitialConvertibleOfferingMarket.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {AssetHelpers} from "../../../../../utils/0.6.12/AssetHelpers.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
 import {Uint256ArrayLib} from "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
 import {SolvV2BondIssuerPositionLibBase1} from "./bases/SolvV2BondIssuerPositionLibBase1.sol";
 import {ISolvV2BondIssuerPosition} from "./ISolvV2BondIssuerPosition.sol";
@@ -34,7 +34,7 @@ contract SolvV2BondIssuerPositionLib is
     AssetHelpers
 {
     using AddressArrayLib for address[];
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using Uint256ArrayLib for uint256[];
 
@@ -83,7 +83,7 @@ contract SolvV2BondIssuerPositionLib is
             ISolvV2InitialConvertibleOfferingMarket.MintParameter memory mintParameter
         ) = __decodeCreateOfferActionArgs(_actionArgs);
 
-        ERC20(ISolvV2BondVoucher(voucher).underlying()).safeApprove(
+        IERC20(ISolvV2BondVoucher(voucher).underlying()).safeApprove(
             address(INITIAL_BOND_OFFERING_MARKET_CONTRACT), mintParameter.tokenInAmount
         );
 
@@ -123,7 +123,7 @@ contract SolvV2BondIssuerPositionLib is
 
         ISolvV2BondPool.SlotDetail memory slotDetail = voucherPoolContract.getSlotDetail(slotId);
 
-        ERC20 currencyToken = ERC20(slotDetail.fundCurrency);
+        IERC20 currencyToken = IERC20(slotDetail.fundCurrency);
 
         currencyToken.safeApprove(address(voucherPoolContract), type(uint256).max);
         voucherPoolContract.refund(slotId);
@@ -139,8 +139,8 @@ contract SolvV2BondIssuerPositionLib is
         ISolvV2InitialConvertibleOfferingMarket.Offering memory offer =
             INITIAL_BOND_OFFERING_MARKET_CONTRACT.offerings(offerId);
 
-        ERC20 currencyToken = ERC20(offer.currency);
-        ERC20 underlyingToken = ERC20(ISolvV2BondVoucher(offer.voucher).underlying());
+        IERC20 currencyToken = IERC20(offer.currency);
+        IERC20 underlyingToken = IERC20(ISolvV2BondVoucher(offer.voucher).underlying());
 
         INITIAL_BOND_OFFERING_MARKET_CONTRACT.remove(offerId);
 
@@ -181,7 +181,7 @@ contract SolvV2BondIssuerPositionLib is
         ISolvV2BondVoucher voucherContract = ISolvV2BondVoucher(voucher);
         ISolvV2BondPool(voucherContract.bondPool()).withdraw(slotId);
 
-        ERC20 underlyingToken = ERC20(voucherContract.underlying());
+        IERC20 underlyingToken = IERC20(voucherContract.underlying());
         uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
 
         if (underlyingBalance > 0) {
@@ -275,7 +275,7 @@ contract SolvV2BondIssuerPositionLib is
             if (currencies_.contains(currency)) {
                 continue;
             }
-            uint256 balance = ERC20(currency).balanceOf(address(this));
+            uint256 balance = IERC20(currency).balanceOf(address(this));
             if (balance > 0) {
                 currencies_ = currencies_.addItem(currency);
                 balances_ = balances_.addItem(balance);

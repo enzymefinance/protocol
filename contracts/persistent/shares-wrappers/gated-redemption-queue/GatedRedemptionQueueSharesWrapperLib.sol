@@ -12,14 +12,15 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solc-0.6/utils/Address.sol";
-import "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
-import "openzeppelin-solc-0.6/token/ERC20/SafeERC20.sol";
-import "openzeppelin-solc-0.6/utils/SafeCast.sol";
-import "../../../external-interfaces/IWETH.sol";
-import "../../global-config/interfaces/IGlobalConfig2.sol";
-import "../../vault/interfaces/IVaultCore.sol";
-import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
+import {ERC20 as OpenZeppelinERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {Address} from "openzeppelin-solc-0.6/utils/Address.sol";
+import {SafeCast} from "openzeppelin-solc-0.6/utils/SafeCast.sol";
+import {IERC20} from "../../../external-interfaces/IERC20.sol";
+import {IWETH} from "../../../external-interfaces/IWETH.sol";
+import {WrappedSafeERC20 as SafeERC20} from "../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
+import {IGlobalConfig2} from "../../global-config/interfaces/IGlobalConfig2.sol";
+import {IVaultCore} from "../../vault/interfaces/IVaultCore.sol";
+import {GatedRedemptionQueueSharesWrapperLibBase1} from "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -30,7 +31,7 @@ import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
 contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase1 {
     using Address for address;
     using SafeCast for uint256;
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     address private constant NATIVE_ASSET = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 private constant ONE_HUNDRED_PERCENT = 1e18;
@@ -41,7 +42,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
     constructor(address _globalConfigProxy, address _wrappedNativeAsset)
         public
-        ERC20("Wrapped Enzyme Shares Lib", "wENZF-lib")
+        OpenZeppelinERC20("Wrapped Enzyme Shares Lib", "wENZF-lib")
     {
         GLOBAL_CONFIG_CONTRACT = IGlobalConfig2(_globalConfigProxy);
         THIS_LIB = address(this);
@@ -114,7 +115,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             return super.name();
         }
 
-        return string(abi.encodePacked("Wrapped ", ERC20(getVaultProxy()).name()));
+        return string(abi.encodePacked("Wrapped ", IERC20(getVaultProxy()).name()));
     }
 
     /// @notice Gets the symbol of the wrapped shares token
@@ -124,7 +125,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             return super.symbol();
         }
 
-        return string(abi.encodePacked("w", ERC20(getVaultProxy()).symbol()));
+        return string(abi.encodePacked("w", IERC20(getVaultProxy()).symbol()));
     }
 
     /// @notice Gets the number of decimals of the wrapped shares token
@@ -227,7 +228,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
             Address.sendValue({recipient: msg.sender, amount: depositAssetAmount});
         } else {
-            ERC20(_depositAsset).safeTransfer(msg.sender, depositAssetAmount);
+            IERC20(_depositAsset).safeTransfer(msg.sender, depositAssetAmount);
         }
     }
 
@@ -277,7 +278,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
             __checkpointRelativeSharesAllowed();
         }
 
-        ERC20 sharesTokenContract = ERC20(getVaultProxy());
+        IERC20 sharesTokenContract = IERC20(getVaultProxy());
         uint256 preSharesBal = sharesTokenContract.balanceOf(address(this));
 
         // Format the call to deposit for shares
@@ -288,8 +289,8 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
         });
 
         // Approve the deposit target as necessary
-        if (ERC20(_depositAsset).allowance(address(this), depositTarget) == 0) {
-            ERC20(_depositAsset).safeApprove(depositTarget, type(uint256).max);
+        if (IERC20(_depositAsset).allowance(address(this), depositTarget) == 0) {
+            IERC20(_depositAsset).safeApprove(depositTarget, type(uint256).max);
         }
 
         // Deposit and receive shares
@@ -316,7 +317,7 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
             depositAsset_ = _depositAssetOrNativeAsset;
 
-            ERC20(depositAsset_).safeTransferFrom(msg.sender, address(this), _depositAssetAmount);
+            IERC20(depositAsset_).safeTransferFrom(msg.sender, address(this), _depositAssetAmount);
         }
         // After this point, whether the native asset was deposited is irrelevant
 
@@ -612,9 +613,9 @@ contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapp
 
         // Check whether native asset is to be dispersed
         bool disperseNativeAsset;
-        ERC20 redemptionAssetContract = ERC20(getRedemptionAsset());
+        IERC20 redemptionAssetContract = IERC20(getRedemptionAsset());
         if (address(redemptionAssetContract) == NATIVE_ASSET) {
-            redemptionAssetContract = ERC20(address(WRAPPED_NATIVE_ASSET_CONTRACT));
+            redemptionAssetContract = IERC20(address(WRAPPED_NATIVE_ASSET_CONTRACT));
             disperseNativeAsset = true;
         }
 

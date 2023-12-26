@@ -11,7 +11,7 @@
 
 pragma solidity 0.6.12;
 
-import {ERC20} from "openzeppelin-solc-0.6/token/ERC20/ERC20.sol";
+import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {UniswapV2ActionsMixin} from "../utils/0.6.12/actions/UniswapV2ActionsMixin.sol";
 import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
@@ -36,7 +36,7 @@ contract UniswapV2ExchangeAdapter is AdapterBase, UniswapV2ActionsMixin {
         (address[] memory path,, uint256 minIncomingAssetAmount) = __decodeTakeOrderCallArgs(_actionData);
 
         // Uses full balance to support outgoing fee-on-transfer tokens
-        __uniswapV2Swap(_vaultProxy, ERC20(path[0]).balanceOf(address(this)), minIncomingAssetAmount, path);
+        __uniswapV2Swap(_vaultProxy, IERC20(path[0]).balanceOf(address(this)), minIncomingAssetAmount, path);
     }
 
     /////////////////////////////
