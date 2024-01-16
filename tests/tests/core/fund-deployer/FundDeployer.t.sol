@@ -110,8 +110,8 @@ contract FundDeployerTest is IntegrationTest {
         assertEq(IComptrollerLib(comptrollerProxy).getVaultProxy(), vaultProxy);
 
         // Assert the correct VaultProxy state values
-        assertEq(IVaultLib(vaultProxy).getAccessor(), comptrollerProxy);
-        assertEq(IVaultLib(vaultProxy).getOwner(), fundOwner);
+        assertEq(IVaultLib(payable(vaultProxy)).getAccessor(), comptrollerProxy);
+        assertEq(IVaultLib(payable(vaultProxy)).getOwner(), fundOwner);
         assertEq(IERC20(vaultProxy).name(), fundName);
         assertEq(IERC20(vaultProxy).symbol(), "ENZF");
 

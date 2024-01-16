@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IMapleLiquidityPosition as IMapleLiquidityPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/maple-liquidity/IMapleLiquidityPosition.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -15,22 +18,6 @@ import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPosit
 import {
     ETHEREUM_MAPLE_V2_GLOBALS_ADDRESS, ETHEREUM_M11_CREDIT_USDC2_POOL_ADDRESS
 } from "./MapleLiquidityConstants.sol";
-
-enum Actions {
-    DEPRECATED_LendV1,
-    DEPRECATED_LendAndStakeV1,
-    DEPRECATED_IntendToRedeemV1,
-    DEPRECATED_RedeemV1,
-    DEPRECATED_StakeV1,
-    DEPRECATED_UnstakeV1,
-    DEPRECATED_UnstakeAndRedeemV1,
-    DEPRECATED_ClaimInterestV1,
-    DEPRECATED_ClaimRewardsV1,
-    LendV2,
-    RequestRedeemV2,
-    RedeemV2,
-    CancelRedeemV2
-}
 
 abstract contract TestBase is IntegrationTest {
     event UsedLendingPoolV2Added(address indexed lendingPoolV2);
@@ -112,7 +99,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.LendV2)
+            _actionId: uint256(IMapleLiquidityPositionProd.Actions.LendV2)
         });
     }
 
@@ -125,7 +112,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RequestRedeemV2)
+            _actionId: uint256(IMapleLiquidityPositionProd.Actions.RequestRedeemV2)
         });
     }
 
@@ -138,7 +125,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RedeemV2)
+            _actionId: uint256(IMapleLiquidityPositionProd.Actions.RedeemV2)
         });
     }
 
@@ -151,7 +138,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(position),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.CancelRedeemV2)
+            _actionId: uint256(IMapleLiquidityPositionProd.Actions.CancelRedeemV2)
         });
     }
 

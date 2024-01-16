@@ -8,17 +8,27 @@
 */
 
 import {IExternalPosition} from "../../IExternalPosition.sol";
-import {LidoWithdrawalsPositionLibBase1} from "./bases/LidoWithdrawalsPositionLibBase1.sol";
 
 pragma solidity 0.8.19;
 
 /// @title ILidoWithdrawalsPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ILidoWithdrawalsPosition is IExternalPosition {
+    // REQUIRED; APPEND-ONLY
+
+    // Required by: LibBase1
+
+    struct Request {
+        uint128 amount;
+        uint128 id;
+    }
+
+    // ARBITRARY FOR VERSION
+
     enum Actions {
         RequestWithdrawals,
         ClaimWithdrawals
     }
 
-    function getRequests() external view returns (LidoWithdrawalsPositionLibBase1.Request[] memory requests_);
+    function getRequests() external view returns (Request[] memory requests_);
 }

@@ -1,9 +1,42 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
+import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IUintListRegistry} from "tests/interfaces/internal/IUintListRegistry.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TypeUtils is CommonUtilsBase {
+    function formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType _updateType)
+        internal
+        pure
+        returns (IAddressListRegistry.UpdateType formattedUpdateType_)
+    {
+        return IAddressListRegistry.UpdateType.wrap(uint8(_updateType));
+    }
+
+    function formatChainlinkRateAsset(IChainlinkPriceFeedMixinProd.RateAsset _rateAsset)
+        internal
+        pure
+        returns (IValueInterpreter.RateAsset formattedRateAsset_)
+    {
+        return IValueInterpreter.RateAsset.wrap(uint8(_rateAsset));
+    }
+
+    function formatUintListRegistryUpdateType(IUintListRegistryProd.UpdateType _updateType)
+        internal
+        pure
+        returns (IUintListRegistry.UpdateType formattedUpdateType_)
+    {
+        return IUintListRegistry.UpdateType.wrap(uint8(_updateType));
+    }
+
     // toArray() - bool
 
     function toArray(bool _0) internal pure returns (bool[] memory array_) {

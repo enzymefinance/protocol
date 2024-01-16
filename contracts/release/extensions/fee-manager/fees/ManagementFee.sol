@@ -17,6 +17,7 @@ import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {MakerDaoMath} from "../../../../utils/0.6.12/MakerDaoMath.sol";
 import {IVault} from "../../../core/fund/vault/IVault.sol";
 import {IFeeManager} from "../IFeeManager.sol";
+import {IManagementFee} from "./interfaces/IManagementFee.sol";
 import {FeeBase} from "./utils/FeeBase.sol";
 import {SettableFeeRecipientBase} from "./utils/SettableFeeRecipientBase.sol";
 import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
@@ -24,7 +25,7 @@ import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
 /// @title ManagementFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A management fee with a configurable annual rate
-contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
+contract ManagementFee is IManagementFee, FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     using SafeMath for uint256;
 
     event ActivatedForMigratedFund(address indexed comptrollerProxy);
@@ -32,13 +33,6 @@ contract ManagementFee is FeeBase, UpdatableFeeRecipientBase, MakerDaoMath {
     event FundSettingsAdded(address indexed comptrollerProxy, uint128 scaledPerSecondRate);
 
     event Settled(address indexed comptrollerProxy, uint256 sharesQuantity, uint256 secondsSinceSettlement);
-
-    struct FeeInfo {
-        // The scaled rate representing 99.99% is under 10^28,
-        // thus `uint128 scaledPerSecondRate` is sufficient for any reasonable fee rate
-        uint128 scaledPerSecondRate;
-        uint128 lastSettled;
-    }
 
     uint256 private constant RATE_SCALE_BASE = 10 ** 27;
 

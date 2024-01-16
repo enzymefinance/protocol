@@ -19,24 +19,19 @@ import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwner
 import {IValueInterpreter} from "../../../value-interpreter/IValueInterpreter.sol";
 import {UniswapV2PoolTokenValueCalculator} from "../../utils/UniswapV2PoolTokenValueCalculator.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
+import {IUniswapV2PoolPriceFeed} from "./interfaces/IUniswapV2PoolPriceFeed.sol";
 
 /// @title UniswapV2PoolPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed for Uniswap lending pool tokens
 contract UniswapV2PoolPriceFeed is
+    IUniswapV2PoolPriceFeed,
     IDerivativePriceFeed,
     FundDeployerOwnerMixin,
     MathHelpers,
     UniswapV2PoolTokenValueCalculator
 {
     event PoolTokenAdded(address indexed poolToken, address token0, address token1);
-
-    struct PoolTokenInfo {
-        address token0;
-        address token1;
-        uint8 token0Decimals;
-        uint8 token1Decimals;
-    }
 
     address private immutable FACTORY;
     address private immutable VALUE_INTERPRETER;

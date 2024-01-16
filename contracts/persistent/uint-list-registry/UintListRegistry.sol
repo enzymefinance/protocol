@@ -31,12 +31,6 @@ contract UintListRegistry is IUintListRegistry {
 
     event ListUpdateTypeSet(uint256 indexed id, UpdateType prevUpdateType, UpdateType indexed nextUpdateType);
 
-    struct ListInfo {
-        address owner;
-        UpdateType updateType;
-        mapping(uint256 => bool) itemToIsInList;
-    }
-
     address private immutable DISPATCHER;
 
     ListInfo[] private lists;

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IExternalPositionManager as IExternalPositionManagerProd} from
+    "contracts/release/extensions/external-position-manager/IExternalPositionManager.sol";
+
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
@@ -10,13 +13,6 @@ import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
 import {IExternalPositionFactory} from "tests/interfaces/internal/IExternalPositionFactory.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-
-enum Actions {
-    CreateExternalPosition,
-    CallOnExternalPosition,
-    RemoveExternalPosition,
-    ReactivateExternalPosition
-}
 
 abstract contract ExternalPositionUtils is CoreUtilsBase {
     // ACTIONS
@@ -32,7 +28,7 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
 
         _comptrollerProxy.callOnExtension({
             _extension: address(_externalPositionManager),
-            _actionId: uint256(Actions.CallOnExternalPosition),
+            _actionId: uint256(IExternalPositionManagerProd.ExternalPositionManagerActions.CallOnExternalPosition),
             _callArgs: callArgs
         });
     }
@@ -49,12 +45,12 @@ abstract contract ExternalPositionUtils is CoreUtilsBase {
         // IMPORTANT: This must precede any other calls in the function (for assertions on this call)
         _comptrollerProxy.callOnExtension({
             _extension: address(_externalPositionManager),
-            _actionId: uint256(Actions.CreateExternalPosition),
+            _actionId: uint256(IExternalPositionManagerProd.ExternalPositionManagerActions.CreateExternalPosition),
             _callArgs: callArgs
         });
 
         // Find the external position by taking the last-activated external position for the relevant vault
-        IVaultLib vaultProxy = IVaultLib(_comptrollerProxy.getVaultProxy());
+        IVaultLib vaultProxy = IVaultLib(payable(_comptrollerProxy.getVaultProxy()));
         address[] memory activeExternalPositions = vaultProxy.getActiveExternalPositions();
 
         return activeExternalPositions[activeExternalPositions.length - 1];

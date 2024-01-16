@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IStakeWiseV3StakingPosition as IStakeWiseV3StakingPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/stakewise-v3-staking/IStakeWiseV3StakingPosition.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
@@ -12,13 +15,6 @@ import {IStakeWiseV3StakingPositionParser} from "tests/interfaces/internal/IStak
 // We are using a fork block specific to StakeWise to ensure reliability of
 // some complex and time-sensitive actions necessary for testing.
 uint256 constant ETHEREUM_BLOCK_STAKEWISE_TIME_SENSITIVE = 18656282; // Nov 26th, 2023
-
-enum Actions {
-    Stake,
-    Redeem,
-    EnterExitQueue,
-    ClaimExitedAssets
-}
 
 // ETHEREUM MAINNET CONSTANTS
 address constant STAKEWISE_V3_ACTIVE_VAULT_TOKEN_ETHEREUM_ADDRESS = 0x8A93A876912c9F03F88Bc9114847cf5b63c89f56;
@@ -137,7 +133,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
-            _actionId: uint256(Actions.Stake),
+            _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.Stake),
             _actionArgs: actionArgs
         });
     }
@@ -152,7 +148,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
-            _actionId: uint256(Actions.Redeem),
+            _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.Redeem),
             _actionArgs: actionArgs
         });
     }
@@ -171,7 +167,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
-            _actionId: uint256(Actions.EnterExitQueue),
+            _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.EnterExitQueue),
             _actionArgs: actionArgs
         });
 
@@ -193,7 +189,7 @@ abstract contract StakeWiseV3StakingPositionTest is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(stakeWiseV3ExternalPosition),
-            _actionId: uint256(Actions.ClaimExitedAssets),
+            _actionId: uint256(IStakeWiseV3StakingPositionProd.Actions.ClaimExitedAssets),
             _actionArgs: actionArgs
         });
     }

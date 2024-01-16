@@ -14,6 +14,13 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IDispatcher Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IDispatcher {
+    struct MigrationRequest {
+        address nextFundDeployer;
+        address nextVaultAccessor;
+        address nextVaultLib;
+        uint256 executableTimestamp;
+    }
+
     function cancelMigration(address _vaultProxy, bool _bypassFailure) external;
 
     function claimOwnership() external;

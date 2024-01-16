@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAaveV3DebtPosition as IAaveV3DebtPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/aave-v3-debt/IAaveV3DebtPosition.sol";
+
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
@@ -27,15 +30,6 @@ import {
     POLYGON_PROTOCOL_DATA_PROVIDER
 } from "./AaveV3Constants.sol";
 import {AaveV3Utils} from "./AaveV3Utils.sol";
-
-enum Actions {
-    AddCollateral,
-    RemoveCollateral,
-    Borrow,
-    RepayBorrow,
-    SetEMode,
-    SetUseReserveAsCollateral
-}
 
 abstract contract TestBase is IntegrationTest, AaveV3Utils {
     event BorrowedAssetAdded(address indexed asset);
@@ -147,7 +141,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.AddCollateral)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.AddCollateral)
         });
     }
 
@@ -160,7 +154,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RemoveCollateral)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.RemoveCollateral)
         });
     }
 
@@ -173,7 +167,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.Borrow)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.Borrow)
         });
     }
 
@@ -186,7 +180,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RepayBorrow)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.RepayBorrow)
         });
     }
 
@@ -199,7 +193,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.SetEMode)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.SetEMode)
         });
     }
 
@@ -212,7 +206,7 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(aaveV3DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.SetUseReserveAsCollateral)
+            _actionId: uint256(IAaveV3DebtPositionProd.Actions.SetUseReserveAsCollateral)
         });
     }
 

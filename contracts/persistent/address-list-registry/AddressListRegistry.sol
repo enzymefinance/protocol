@@ -31,12 +31,6 @@ contract AddressListRegistry is IAddressListRegistry {
 
     event ListUpdateTypeSet(uint256 indexed id, UpdateType prevUpdateType, UpdateType indexed nextUpdateType);
 
-    struct ListInfo {
-        address owner;
-        UpdateType updateType;
-        mapping(address => bool) itemToIsInList;
-    }
-
     address private immutable DISPATCHER;
 
     ListInfo[] private lists;

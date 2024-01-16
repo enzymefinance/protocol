@@ -11,6 +11,8 @@
 
 pragma solidity 0.6.12;
 
+import {ISolvV2BondBuyerPosition} from "../ISolvV2BondBuyerPosition.sol";
+
 /// @title SolvV2BondBuyerPositionLibBase1 Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A persistent contract containing all required storage variables and
@@ -23,10 +25,5 @@ contract SolvV2BondBuyerPositionLibBase1 {
 
     event VoucherTokenIdRemoved(address indexed voucher, uint32 indexed tokenId);
 
-    struct VoucherTokenId {
-        address voucher;
-        uint32 tokenId;
-    }
-
-    VoucherTokenId[] internal voucherTokenIds;
+    ISolvV2BondBuyerPosition.VoucherTokenId[] internal voucherTokenIds;
 }

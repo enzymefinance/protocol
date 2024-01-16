@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {ILidoWithdrawalsPosition as ILidoWithdrawalsPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/lido-withdrawals/ILidoWithdrawalsPosition.sol";
+
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
@@ -11,11 +14,6 @@ import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQue
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-
-enum Actions {
-    RequestWithdrawals,
-    ClaimWithdrawals
-}
 
 address constant WITHDRAWAL_QUEUE_ADDRESS = 0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1;
 
@@ -103,7 +101,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(lidoWithdrawalsPosition),
-            _actionId: uint256(Actions.ClaimWithdrawals),
+            _actionId: uint256(ILidoWithdrawalsPositionProd.Actions.ClaimWithdrawals),
             _actionArgs: actionArgs
         });
     }
@@ -116,7 +114,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(lidoWithdrawalsPosition),
-            _actionId: uint256(Actions.RequestWithdrawals),
+            _actionId: uint256(ILidoWithdrawalsPositionProd.Actions.RequestWithdrawals),
             _actionArgs: actionArgs
         });
     }

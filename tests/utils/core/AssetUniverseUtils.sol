@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
 import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 
 import {IChainlinkAggregator} from "tests/interfaces/external/IChainlinkAggregator.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
-
-enum ChainlinkRateAsset {
-    ETH,
-    USD
-}
 
 abstract contract AssetUniverseUtils is CoreUtilsBase {
     // AGGREGATORS
@@ -60,7 +58,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         IValueInterpreter _valueInterpreter,
         address _tokenAddress,
         address _aggregatorAddress,
-        ChainlinkRateAsset _rateAsset,
+        IChainlinkPriceFeedMixinProd.RateAsset _rateAsset,
         bool _skipIfRegistered
     ) internal {
         // If the asset is already registered, either skip or remove it
@@ -71,14 +69,14 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         removeIfSupportedAsset({_valueInterpreter: _valueInterpreter, _tokenAddress: _tokenAddress});
 
-        uint8[] memory rateAssetsUint8 = new uint8[](1);
-        rateAssetsUint8[0] = uint8(_rateAsset);
+        IValueInterpreter.RateAsset[] memory rateAssets = new IValueInterpreter.RateAsset[](1);
+        rateAssets[0] = formatChainlinkRateAsset(_rateAsset);
 
         vm.prank(_valueInterpreter.getOwner());
         _valueInterpreter.addPrimitives({
             _primitives: toArray(_tokenAddress),
             _aggregators: toArray(_aggregatorAddress),
-            _rateAssets: rateAssetsUint8
+            _rateAssets: rateAssets
         });
     }
 
@@ -86,7 +84,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         IValueInterpreter _valueInterpreter,
         address[] memory _tokenAddresses,
         address[] memory _aggregatorAddresses,
-        ChainlinkRateAsset[] memory _rateAssets,
+        IChainlinkPriceFeedMixinProd.RateAsset[] memory _rateAssets,
         bool _skipIfRegistered
     ) internal {
         for (uint256 i; i < _tokenAddresses.length; i++) {
@@ -103,7 +101,13 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
     ) internal returns (TestAggregator aggregator_) {
         aggregator_ = TestAggregator(address(createTestAggregator(1 ether)));
 
-        addPrimitive(_valueInterpreter, _tokenAddress, address(aggregator_), ChainlinkRateAsset.ETH, _skipIfRegistered);
+        addPrimitive(
+            _valueInterpreter,
+            _tokenAddress,
+            address(aggregator_),
+            IChainlinkPriceFeedMixinProd.RateAsset.ETH,
+            _skipIfRegistered
+        );
 
         return aggregator_;
     }
@@ -131,7 +135,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
             _valueInterpreter: _valueInterpreter,
             _tokenAddress: address(token_),
             _aggregatorAddress: address(createTestAggregator(1 ether)),
-            _rateAsset: ChainlinkRateAsset.ETH,
+            _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH,
             _skipIfRegistered: false
         });
 
@@ -148,7 +152,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
 
         // Both assets should use the same feed quote asset, i.e., intermediary asset.
         // Since WETH is auto-mapped to ETH and we can't deregister it, we must use ETH as the rate asset.
-        ChainlinkRateAsset rateAsset = ChainlinkRateAsset.ETH;
+        IChainlinkPriceFeedMixinProd.RateAsset rateAsset = IChainlinkPriceFeedMixinProd.RateAsset.ETH;
 
         // If weth is assetA, reverse the asset order
         address wethAddress = _valueInterpreter.getWethToken();

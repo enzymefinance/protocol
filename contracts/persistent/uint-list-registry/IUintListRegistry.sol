@@ -22,6 +22,12 @@ interface IUintListRegistry {
         AddAndRemove
     }
 
+    struct ListInfo {
+        address owner;
+        UpdateType updateType;
+        mapping(uint256 => bool) itemToIsInList;
+    }
+
     /////////////////////
     // LIST MANAGEMENT //
     /////////////////////

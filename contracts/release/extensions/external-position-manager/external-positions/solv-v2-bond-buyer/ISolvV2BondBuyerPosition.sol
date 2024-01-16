@@ -15,6 +15,17 @@ pragma experimental ABIEncoderV2;
 /// @title ISolvV2BondBuyerPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface ISolvV2BondBuyerPosition is IExternalPosition {
+    // REQUIRED; APPEND-ONLY
+
+    // Required by: LibBase1
+
+    struct VoucherTokenId {
+        address voucher;
+        uint32 tokenId;
+    }
+
+    // ARBITRARY FOR VERSION
+
     enum Actions {
         BuyOffering,
         Claim

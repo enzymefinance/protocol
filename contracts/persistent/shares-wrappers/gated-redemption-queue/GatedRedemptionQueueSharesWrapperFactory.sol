@@ -13,7 +13,7 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solc-0.6/proxy/BeaconProxy.sol";
 import "openzeppelin-solc-0.6/proxy/IBeacon.sol";
 import "../../dispatcher/IDispatcher.sol";
-import "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
+import "./IGatedRedemptionQueueSharesWrapper.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperFactory Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -49,15 +49,15 @@ contract GatedRedemptionQueueSharesWrapperFactory is IBeacon {
         bool _useDepositApprovals,
         bool _useRedemptionApprovals,
         bool _useTransferApprovals,
-        GatedRedemptionQueueSharesWrapperLibBase1.DepositMode _depositMode,
-        GatedRedemptionQueueSharesWrapperLibBase1.RedemptionWindowConfig calldata _windowConfig
+        IGatedRedemptionQueueSharesWrapper.DepositMode _depositMode,
+        IGatedRedemptionQueueSharesWrapper.RedemptionWindowConfig calldata _windowConfig
     ) external returns (address wrapperProxy_) {
         require(
             DISPATCHER_CONTRACT.getFundDeployerForVaultProxy(_vaultProxy) != address(0), "_vaultProxy: Invalid vault"
         );
 
         bytes memory constructData = abi.encodeWithSelector(
-            GatedRedemptionQueueSharesWrapperLibBase1.init.selector,
+            IGatedRedemptionQueueSharesWrapper.init.selector,
             _vaultProxy,
             _managers,
             _redemptionAsset,

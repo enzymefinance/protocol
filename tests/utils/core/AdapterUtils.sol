@@ -12,16 +12,11 @@ import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter.sol";
 import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
 
+// Not a production type
 enum Actions {
     CallOnIntegration,
     AddTrackedAssetsToVault,
     RemoveTrackedAssetsFromVault
-}
-
-enum SpendAssetsHandleType {
-    None,
-    Approve,
-    Transfer
 }
 
 abstract contract AdapterUtils is CoreUtilsBase {
@@ -60,7 +55,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
     function assertAdapterAssetsForAction(
         VmSafe.Log[] memory _logs,
-        SpendAssetsHandleType _spendAssetsHandleType,
+        uint8 _spendAssetsHandleTypeUint8,
         address[] memory _spendAssets,
         uint256[] memory _maxSpendAssetAmounts,
         address[] memory _incomingAssets,
@@ -90,7 +85,7 @@ abstract contract AdapterUtils is CoreUtilsBase {
 
         // Simulate actually-called parseAssetsForAction()
         (
-            uint8 actualSpendAssetsHandleType,
+            IIntegrationAdapter.SpendAssetsHandleType actualSpendAssetsHandleType,
             address[] memory actualSpendAssets,
             uint256[] memory actualMaxSpendAssetAmounts,
             address[] memory actualIncomingAssets,
@@ -102,8 +97,8 @@ abstract contract AdapterUtils is CoreUtilsBase {
         });
 
         assertEq(
-            uint256(_spendAssetsHandleType),
-            uint256(actualSpendAssetsHandleType),
+            _spendAssetsHandleTypeUint8,
+            IIntegrationAdapter.SpendAssetsHandleType.unwrap(actualSpendAssetsHandleType),
             "assertAdapterAssetsForAction: _spendAssetsHandleType mismatch"
         );
         assertEq(_spendAssets, actualSpendAssets, "assertAdapterAssetsForAction: _spendAssets mismatch");
@@ -125,14 +120,14 @@ contract MockedAdapter is CommonUtils {
     constructor() {}
 
     function encodeAssetsForAction(
-        SpendAssetsHandleType _spendAssetsHandleType,
+        uint8 _spendAssetsHandleTypeUint8,
         address[] memory _spendAssets,
         uint256[] memory _spendAssetAmounts,
         address[] memory _incomingAssets,
         uint256[] memory _minIncomingAssetAmounts
     ) public pure returns (bytes memory actionData_) {
         return abi.encode(
-            _spendAssetsHandleType, _spendAssets, _spendAssetAmounts, _incomingAssets, _minIncomingAssetAmounts
+            _spendAssetsHandleTypeUint8, _spendAssets, _spendAssetAmounts, _incomingAssets, _minIncomingAssetAmounts
         );
     }
 
@@ -140,7 +135,7 @@ contract MockedAdapter is CommonUtils {
         public
         pure
         returns (
-            SpendAssetsHandleType spendAssetsHandleType_,
+            uint8 spendAssetsHandleTypeUint8_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
@@ -169,15 +164,15 @@ contract MockedAdapter is CommonUtils {
         internal
         pure
         returns (
-            SpendAssetsHandleType spendAssetsHandleType_,
+            uint8 spendAssetsHandleTypeUint8_,
             address[] memory spendAssets_,
             uint256[] memory spendAssetAmounts_,
             address[] memory incomingAssets_,
             uint256[] memory minIncomingAssetAmounts_
         )
     {
-        (spendAssetsHandleType_, spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_) =
-            abi.decode(_integrationData, (SpendAssetsHandleType, address[], uint256[], address[], uint256[]));
+        (spendAssetsHandleTypeUint8_, spendAssets_, spendAssetAmounts_, incomingAssets_, minIncomingAssetAmounts_) =
+            abi.decode(_integrationData, (uint8, address[], uint256[], address[], uint256[]));
     }
 
     /// @dev Helper to decode the _assetData param passed to adapter call

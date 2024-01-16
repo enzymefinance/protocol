@@ -11,22 +11,16 @@
 
 pragma solidity 0.8.19;
 
-import {IERC20} from "../../../../../../external-interfaces/IERC20.sol";
 import {IValueInterpreter} from "../../../../../infrastructure/value-interpreter/IValueInterpreter.sol";
 import {IPolicyManager} from "../../../IPolicyManager.sol";
+import {INoDepegPolicyBase} from "../interfaces/INoDepegPolicyBase.sol";
 import {PolicyBase} from "./PolicyBase.sol";
 
 /// @title NoDepegPolicyBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A base policy that validates when one of a list of assets has a price that
 /// deviates significantly from its expected peg
-abstract contract NoDepegPolicyBase is PolicyBase {
-    struct AssetConfig {
-        IERC20 asset;
-        IERC20 referenceAsset;
-        uint16 deviationToleranceInBps;
-    }
-
+abstract contract NoDepegPolicyBase is INoDepegPolicyBase, PolicyBase {
     event FundSettingsUpdated(address indexed comptrollerProxy, AssetConfig[] assetConfigs);
 
     uint256 private constant BPS_ONE_HUNDRED_PERCENT = 10_000;

@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {MockedAdapter, SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
+import {MockedAdapter} from "tests/utils/core/AdapterUtils.sol";
 import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
-import {UpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 import {CumulativeSlippageTolerancePolicyUtils} from "tests/utils/policies/CumulativeSlippageTolerancePolicyUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -65,7 +69,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         uint256 bypassableAdaptersListId = core.persistent.addressListRegistry.createList({
             _owner: vaultOwner,
             _initialItems: _bypassableAdaptersListItems,
-            _updateType: uint8(UpdateType.AddAndRemove)
+            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove)
         });
 
         cumulativeSlippageTolerancePolicy = deployCumulativeSlippageTolerancePolicy({
@@ -428,7 +432,7 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         minIncomingAssetAmounts[0] = _minIncomingAssetAmount;
 
         bytes memory integrationData = mockedAdapter.encodeAssetsForAction({
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: spendAssets,
             _spendAssetAmounts: spendAssetAmounts,
             _incomingAssets: incomingAssets,

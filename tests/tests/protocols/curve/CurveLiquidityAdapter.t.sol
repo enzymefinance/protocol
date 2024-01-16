@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {ICurveLiquidityAdapterBase as ICurveLiquidityAdapterBaseProd} from
+    "contracts/release/extensions/integration-manager/integrations/utils/interfaces/ICurveLiquidityAdapterBase.sol";
+
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
 
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
@@ -23,11 +27,6 @@ import {IIntegrationAdapter} from "tests/interfaces/internal/IIntegrationAdapter
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
 import {CurveUtils} from "./CurveUtils.sol";
-
-enum RedeemType {
-    Standard,
-    OneCoin
-}
 
 // TODO: test underlyings for all relevant pools
 // TODO: consider switching to fuzz tests for cases where a subset of tokens can be lent or redeemed for
@@ -168,7 +167,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
     function __unstakeAndRedeem(
         uint256 _outgoingStakingTokenAmount,
         bool _useUnderlyings,
-        RedeemType _redeemType,
+        ICurveLiquidityAdapterBaseProd.RedeemType _redeemType,
         bytes memory _incomingAssetsData
     ) internal {
         bytes memory actionArgs = abi.encode(
@@ -330,7 +329,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // All should be empty.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.None,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.None),
             _spendAssets: new address[](0),
             _maxSpendAssetAmounts: new uint256[](0),
             _incomingAssets: new address[](0),
@@ -376,7 +375,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: spendAssetAddresses,
             _maxSpendAssetAmounts: spendAssetAmounts,
             _incomingAssets: toArray(address(stakingToken)),
@@ -407,7 +406,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(lpToken)),
             _maxSpendAssetAmounts: toArray(lpTokenToStake),
             _incomingAssets: toArray(address(stakingToken)),
@@ -437,7 +436,9 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: isConvex ? SpendAssetsHandleType.Approve : SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: isConvex
+                ? uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve)
+                : uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(stakingToken)),
             _maxSpendAssetAmounts: toArray(lpTokenToUnstake),
             _incomingAssets: toArray(address(lpToken)),
@@ -477,7 +478,7 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         __unstakeAndRedeem({
             _outgoingStakingTokenAmount: lpTokenToUnstake,
             _useUnderlyings: false,
-            _redeemType: RedeemType.Standard,
+            _redeemType: ICurveLiquidityAdapterBaseProd.RedeemType.Standard,
             _incomingAssetsData: __encodeIncomingAssetsDataRedeemStandard({
                 _orderedMinIncomingAssetAmounts: orderedMinIncomingAssetAmounts
             })
@@ -486,7 +487,9 @@ abstract contract CurveAndConvexPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: isConvex ? SpendAssetsHandleType.Approve : SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: isConvex
+                ? uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve)
+                : uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(stakingToken)),
             _maxSpendAssetAmounts: toArray(lpTokenToUnstake),
             _incomingAssets: poolAssetAddresses,

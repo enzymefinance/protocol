@@ -13,19 +13,12 @@ pragma solidity 0.6.12;
 
 import {IParaSwapV5AugustusSwapper} from "../../../../../../../external-interfaces/IParaSwapV5AugustusSwapper.sol";
 import {AssetHelpers} from "../../../../../../../utils/0.6.12/AssetHelpers.sol";
+import {IParaSwapV5Adapter} from "../../../adapters/interfaces/IParaSwapV5Adapter.sol";
 
 /// @title ParaSwapV5ActionsMixin Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Mixin contract for interacting with ParaSwap (v5)
 abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
-    struct SimpleSwapParams {
-        address incomingAsset;
-        address[] callees;
-        bytes exchangeData;
-        uint256[] startIndexes;
-        uint256[] values;
-    }
-
     address private immutable PARA_SWAP_V5_AUGUSTUS_SWAPPER;
     address payable private immutable PARA_SWAP_V5_FEE_PARTNER;
     uint256 private immutable PARA_SWAP_V5_FEE_PERCENT;
@@ -107,7 +100,7 @@ abstract contract ParaSwapV5ActionsMixin is AssetHelpers {
         uint256 _fromAmount,
         uint256 _toAmount,
         uint256 _expectedAmount,
-        SimpleSwapParams memory _simpleSwapParams,
+        IParaSwapV5Adapter.SimpleSwapParams memory _simpleSwapParams,
         address payable _beneficiary,
         bytes16 _uuid
     ) internal {

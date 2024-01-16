@@ -21,6 +21,7 @@ import {WrappedSafeERC20 as SafeERC20} from "../../../utils/0.6.12/open-zeppelin
 import {IGlobalConfig2} from "../../global-config/interfaces/IGlobalConfig2.sol";
 import {IVaultCore} from "../../vault/interfaces/IVaultCore.sol";
 import {GatedRedemptionQueueSharesWrapperLibBase1} from "./bases/GatedRedemptionQueueSharesWrapperLibBase1.sol";
+import {IGatedRedemptionQueueSharesWrapper} from "./IGatedRedemptionQueueSharesWrapper.sol";
 
 /// @title GatedRedemptionQueueSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -28,7 +29,10 @@ import {GatedRedemptionQueueSharesWrapperLibBase1} from "./bases/GatedRedemption
 /// single-asset redemptions, as well as misc participation controls
 /// @dev Holders of these wrapped shares must fully trust the vault `owner`,
 /// who can appropriate their full value
-contract GatedRedemptionQueueSharesWrapperLib is GatedRedemptionQueueSharesWrapperLibBase1 {
+contract GatedRedemptionQueueSharesWrapperLib is
+    IGatedRedemptionQueueSharesWrapper,
+    GatedRedemptionQueueSharesWrapperLibBase1
+{
     using Address for address;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;

@@ -18,17 +18,12 @@ import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {ZeroExV4ActionsMixin} from "../utils/0.6.12/actions/ZeroExV4ActionsMixin.sol";
 import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
+import {IZeroExV4Adapter} from "./interfaces/IZeroExV4Adapter.sol";
 
 /// @title ZeroExV4Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter to 0xV4 Exchange Contract
-contract ZeroExV4Adapter is AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
-    enum OrderType {
-        Limit,
-        Rfq,
-        Otc
-    }
-
+contract ZeroExV4Adapter is IZeroExV4Adapter, AdapterBase, MathHelpers, ZeroExV4ActionsMixin {
     IAddressListRegistry private immutable ADDRESS_LIST_REGISTRY_CONTRACT;
     uint256 private immutable ALLOWED_MAKERS_LIST_ID;
 

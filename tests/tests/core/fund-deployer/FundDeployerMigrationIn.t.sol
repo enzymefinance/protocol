@@ -30,7 +30,7 @@ contract FundDeployerMigrationInTest is IntegrationTest {
         // Set the `migrator` role on the vault
         migrator = makeAddr("Migrator");
         vm.prank(vaultProxyCore.getOwner());
-        IVaultLib(address(vaultProxyCore)).setMigrator(migrator);
+        IVaultLib(payable(address(vaultProxyCore))).setMigrator(migrator);
     }
 }
 

@@ -12,14 +12,6 @@ import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
 
-enum MigrationOutHook {
-    PreSignal,
-    PostSignal,
-    PreMigrate,
-    PostMigrate,
-    PostCancel
-}
-
 abstract contract VaultUtils is CoreUtilsBase {
     function addTrackedAsset(IVaultLib _vaultProxy, IERC20 _asset, uint256 _seedAmount) internal {
         if (_seedAmount > 0) {
@@ -52,7 +44,7 @@ abstract contract VaultUtils is CoreUtilsBase {
         });
 
         comptrollerProxy_ = IComptrollerLib(comptrollerProxy);
-        vaultProxy_ = IVaultLib(vaultProxy);
+        vaultProxy_ = IVaultLib(payable(vaultProxy));
     }
 
     function createVaultFromMockFundDeployer(IDispatcher _dispatcher, address _vaultLibAddress)

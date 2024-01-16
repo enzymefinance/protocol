@@ -3,9 +3,11 @@ pragma solidity 0.8.19;
 
 import {SafeERC20} from "openzeppelin-solc-0.8/token/ERC20/utils/SafeERC20.sol";
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {UpdateType as AddressListUpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 import {
     ETHEREUM_SWAP_ROUTER as ETHEREUM_UNISWAP_ROUTER,
     POLYGON_SWAP_ROUTER as POLYGON_UNISWAP_ROUTER,
@@ -37,7 +39,7 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
         // Create an allowedExchanges list, with Uniswap router as the only allowed exchange
         allowedExchangesListId = core.persistent.addressListRegistry.createList({
             _owner: address(this),
-            _updateType: uint8(AddressListUpdateType.AddAndRemove),
+            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
             _initialItems: toArray(exchangeAddress)
         });
 
@@ -64,7 +66,7 @@ abstract contract TestBase is IntegrationTest, UniswapV3Utils {
 
         bytes memory args = abi.encode(core.persistent.addressListRegistry, allowedExchangesListId, wrappedNativeToken);
 
-        return IDepositWrapper(deployCode("DepositWrapper.sol", args));
+        return IDepositWrapper(payable(deployCode("DepositWrapper.sol", args)));
     }
 
     // MISC HELPERS

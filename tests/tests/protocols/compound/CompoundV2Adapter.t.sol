@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {ICompoundV2CERC20 as ICERC20} from "tests/interfaces/external/ICompoundV2CERC20.sol";
@@ -11,7 +14,6 @@ import {ICompoundPriceFeed} from "tests/interfaces/internal/ICompoundPriceFeed.s
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 import {ETHEREUM_COMPTROLLER} from "./CompoundV2Constants.sol";
 
 abstract contract CompoundV2TestBase is IntegrationTest {
@@ -61,7 +63,7 @@ abstract contract CompoundV2TestBase is IntegrationTest {
         IERC20 _wethToken
     ) internal returns (ICompoundAdapter adapter_) {
         bytes memory args = abi.encode(_integrationManagerAddress, _compoundPriceFeed, _wethToken);
-        return ICompoundAdapter(deployCode("CompoundAdapter.sol", args));
+        return ICompoundAdapter(payable(deployCode("CompoundAdapter.sol", args)));
     }
 
     function __deployCompoundPriceFeed(address _fundDeployerAddress, IERC20 _wethToken, address _cETH)
@@ -178,7 +180,7 @@ abstract contract CompoundV2AdapterLendTest is CompoundV2TestBase {
         // test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(underlying),
             _maxSpendAssetAmounts: toArray(_underlyingAmount),
             _incomingAssets: toArray(_cToken),
@@ -223,7 +225,7 @@ abstract contract CompoundV2AdapterRedeemTest is CompoundV2TestBase {
         // test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(_cToken),
             _maxSpendAssetAmounts: toArray(_cTokenAmount),
             _incomingAssets: toArray(underlying),
@@ -280,7 +282,7 @@ abstract contract CompoundV2AdapterClaimRewardsTest is CompoundV2TestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.None,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.None),
             _spendAssets: new address[](0),
             _maxSpendAssetAmounts: new uint256[](0),
             _incomingAssets: new address[](0),

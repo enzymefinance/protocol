@@ -16,6 +16,7 @@ import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {IERC20} from "../../../../external-interfaces/IERC20.sol";
 import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
 import {IFeeManager} from "../IFeeManager.sol";
+import {IPerformanceFee} from "./interfaces/IPerformanceFee.sol";
 import {FeeBase} from "./utils/FeeBase.sol";
 import {SettableFeeRecipientBase} from "./utils/SettableFeeRecipientBase.sol";
 import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
@@ -23,7 +24,7 @@ import {UpdatableFeeRecipientBase} from "./utils/UpdatableFeeRecipientBase.sol";
 /// @title PerformanceFee Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A performance-based fee with configurable rate
-contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
+contract PerformanceFee is IPerformanceFee, FeeBase, UpdatableFeeRecipientBase {
     using SafeMath for uint256;
 
     event ActivatedForFund(address indexed comptrollerProxy, uint256 highWaterMark);
@@ -33,13 +34,6 @@ contract PerformanceFee is FeeBase, UpdatableFeeRecipientBase {
     event HighWaterMarkUpdated(address indexed comptrollerProxy, uint256 nextHighWaterMark);
 
     event Settled(address indexed comptrollerProxy, uint256 sharePrice, uint256 sharesDue);
-
-    // Does not use variable packing as `highWaterMark` will often be read without reading `rate`,
-    // `rate` will never be updated after deployment, and each is set at a different time
-    struct FeeInfo {
-        uint256 rate;
-        uint256 highWaterMark;
-    }
 
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     uint256 private constant RESET_HWM_FLAG = type(uint256).max;

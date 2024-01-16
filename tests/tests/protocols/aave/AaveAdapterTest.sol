@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {IAaveAToken} from "tests/interfaces/external/IAaveAToken.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -91,7 +93,7 @@ abstract contract AaveAdapterLendTest is AaveAdapterTestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(underlying),
             _maxSpendAssetAmounts: toArray(_amount),
             _incomingAssets: toArray(_aToken),
@@ -164,7 +166,7 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(_aToken),
             _maxSpendAssetAmounts: toArray(_amount),
             _incomingAssets: toArray(underlying),

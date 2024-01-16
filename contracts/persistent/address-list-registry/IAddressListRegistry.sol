@@ -22,6 +22,12 @@ interface IAddressListRegistry {
         AddAndRemove
     }
 
+    struct ListInfo {
+        address owner;
+        UpdateType updateType;
+        mapping(address => bool) itemToIsInList;
+    }
+
     /////////////////////
     // LIST MANAGEMENT //
     /////////////////////

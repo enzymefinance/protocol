@@ -22,6 +22,7 @@ import {WrappedSafeERC20 as SafeERC20} from "../../../../utils/0.6.12/open-zeppe
 import {IComptroller} from "../../../core/fund/comptroller/IComptroller.sol";
 import {IVault} from "../../../core/fund/vault/IVault.sol";
 import {IExternalPosition} from "../../../extensions/external-position-manager/IExternalPosition.sol";
+import {IArbitraryTokenPhasedSharesWrapper} from "./IArbitraryTokenPhasedSharesWrapper.sol";
 
 /// @title ArbitraryTokenPhasedSharesWrapperLib Contract
 /// @author Enzyme Council <security@enzyme.finance>
@@ -40,15 +41,14 @@ import {IExternalPosition} from "../../../extensions/external-position-manager/I
 /// - untrusted asset managers cannot untrack assets or untrack external positions with positive value
 /// - all other generally-recommended policies are in-place for limiting untrusted asset manager
 /// interactions with adapters and external positions
-contract ArbitraryTokenPhasedSharesWrapperLib is OpenZeppelinERC20, AssetHelpers, MathHelpers {
+contract ArbitraryTokenPhasedSharesWrapperLib is
+    IArbitraryTokenPhasedSharesWrapper,
+    OpenZeppelinERC20,
+    AssetHelpers,
+    MathHelpers
+{
     using AddressArrayLib for address[];
     using SafeERC20 for IERC20;
-
-    enum State {
-        Deposit,
-        Locked,
-        Redeem
-    }
 
     event AllowedDepositorListIdSet(uint256 listId);
 

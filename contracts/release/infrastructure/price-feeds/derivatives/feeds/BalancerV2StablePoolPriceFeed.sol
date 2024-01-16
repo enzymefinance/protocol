@@ -18,11 +18,16 @@ import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
+import {IBalancerV2StablePoolPriceFeed} from "./interfaces/IBalancerV2StablePoolPriceFeed.sol";
 
 /// @title BalancerV2StablePoolPriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price source oracle for Balancer Pool Tokens (BPT) of stable pools
-contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
+contract BalancerV2StablePoolPriceFeed is
+    IBalancerV2StablePoolPriceFeed,
+    IDerivativePriceFeed,
+    FundDeployerOwnerMixin
+{
     using AddressArrayLib for address[];
     using SafeMath for uint256;
 
@@ -33,12 +38,6 @@ contract BalancerV2StablePoolPriceFeed is IDerivativePriceFeed, FundDeployerOwne
     event PoolFactoryRemoved(address indexed poolFactory);
 
     event PoolRemoved(address indexed pool);
-
-    // We take one asset as representative of the pool's invariant, e.g., WETH for ETH-based pools.
-    struct PoolInfo {
-        address invariantProxyAsset;
-        uint8 invariantProxyAssetDecimals;
-    }
 
     // The pricing requires dividing by 1e18 twice, once for converting decimal precision, and then for converting rate precision
     uint256 private constant RATE_FORMULA_DIVISOR = 10 ** 36;

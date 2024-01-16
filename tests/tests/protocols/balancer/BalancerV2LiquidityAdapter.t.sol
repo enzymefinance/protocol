@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
 import {Uint256ArrayLib} from "tests/utils/libs/Uint256ArrayLib.sol";
 
@@ -341,7 +343,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         // All should be empty.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.None,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.None),
             _spendAssets: new address[](0),
             _maxSpendAssetAmounts: new uint256[](0),
             _incomingAssets: new address[](0),
@@ -382,7 +384,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(spendAsset)),
             _maxSpendAssetAmounts: toArray(maxSpendAssetAmount),
             _incomingAssets: toArray(address(stakingToken)),
@@ -409,7 +411,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(poolBpt)),
             _maxSpendAssetAmounts: toArray(bptToStake),
             _incomingAssets: toArray(address(stakingToken)),
@@ -435,7 +437,9 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: isAura ? SpendAssetsHandleType.Approve : SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: isAura
+                ? uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve)
+                : uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(stakingToken)),
             _maxSpendAssetAmounts: toArray(bptToUnstake),
             _incomingAssets: toArray(address(poolBpt)),
@@ -495,7 +499,9 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: isAura ? SpendAssetsHandleType.Approve : SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: isAura
+                ? uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve)
+                : uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(stakingToken)),
             _maxSpendAssetAmounts: toArray(unstakeAmount),
             _incomingAssets: incomingAssetAddressesWithoutBpt,

@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 
 import {ICurveLiquidityPool} from "../../../../../../../external-interfaces/ICurveLiquidityPool.sol";
+import {ICurveLiquidityAdapterBase} from "../../interfaces/ICurveLiquidityAdapterBase.sol";
 import {CurveLiquidityActionsMixin} from "../actions/CurveLiquidityActionsMixin.sol";
 import {AdapterBase} from "../AdapterBase.sol";
 
@@ -10,12 +11,7 @@ import {AdapterBase} from "../AdapterBase.sol";
 /// @notice Base adapter for liquidity provision in Curve pools that adhere to pool templates,
 /// as well as some old pools that have almost the same required interface (e.g., 3pool).
 /// Implementing contracts can allow staking via Curve gauges, Convex, etc.
-abstract contract CurveLiquidityAdapterBase is AdapterBase, CurveLiquidityActionsMixin {
-    enum RedeemType {
-        Standard,
-        OneCoin
-    }
-
+abstract contract CurveLiquidityAdapterBase is ICurveLiquidityAdapterBase, AdapterBase, CurveLiquidityActionsMixin {
     address private immutable CURVE_LIQUIDITY_NATIVE_ASSET_ADDRESS;
 
     constructor(address _integrationManager, address _wrappedNativeAsset, address _nativeAssetAddress)

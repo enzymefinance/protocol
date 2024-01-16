@@ -13,12 +13,13 @@ pragma solidity 0.6.12;
 
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {IFeeManager} from "../../IFeeManager.sol";
+import {IExitRateFeeBase} from "./interfaces/IExitRateFeeBase.sol";
 import {FeeBase} from "./FeeBase.sol";
 
 /// @title ExitRateFeeBase Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Calculates a fee based on a rate to be charged to an investor upon exiting a fund
-abstract contract ExitRateFeeBase is FeeBase {
+abstract contract ExitRateFeeBase is IExitRateFeeBase, FeeBase {
     using SafeMath for uint256;
 
     event FundSettingsAdded(address indexed comptrollerProxy, uint256 inKindRate, uint256 specificAssetsRate);
@@ -26,11 +27,6 @@ abstract contract ExitRateFeeBase is FeeBase {
     event Settled(
         address indexed comptrollerProxy, address indexed payer, uint256 sharesQuantity, bool indexed forSpecificAssets
     );
-
-    struct FeeInfo {
-        uint16 inKindRate;
-        uint16 specificAssetsRate;
-    }
 
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;
     IFeeManager.SettlementType private immutable SETTLEMENT_TYPE;

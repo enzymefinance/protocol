@@ -3,8 +3,10 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-solc-0.8/token/ERC20/IERC20.sol";
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
+
+import {IFeeManager as IFeeManagerProd} from "contracts/release/extensions/fee-manager/IFeeManager.sol";
+
 import {UnitTest} from "tests/bases/UnitTest.sol";
-import {FeeHook} from "tests/utils/fees/FeeUtils.sol";
 import {PerformanceFeeUtils} from "tests/utils/fees/PerformanceFeeUtils.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
@@ -71,7 +73,7 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
     }
 
     function test_settlesOnHook() public {
-        for (uint256 i; i < uint256(type(FeeHook).max); i++) {
+        for (uint256 i; i < uint256(type(IFeeManagerProd.FeeHook).max); i++) {
             bytes memory returnData = address(performanceFee).functionStaticCall(
                 abi.encodeWithSelector(performanceFee.settlesOnHook.selector, i)
             );
@@ -80,8 +82,9 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
 
             // Only these hooks are used, and all use GAV
             if (
-                i == uint256(FeeHook.PreBuyShares) || i == uint256(FeeHook.PreRedeemShares)
-                    || i == uint256(FeeHook.Continuous)
+                i == uint256(IFeeManagerProd.FeeHook.PreBuyShares)
+                    || i == uint256(IFeeManagerProd.FeeHook.PreRedeemShares)
+                    || i == uint256(IFeeManagerProd.FeeHook.Continuous)
             ) {
                 assertTrue(updates);
                 assertTrue(usesGav);
@@ -93,7 +96,7 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
     }
 
     function test_updatesOnHook() public {
-        for (uint256 i; i < uint256(type(FeeHook).max); i++) {
+        for (uint256 i; i < uint256(type(IFeeManagerProd.FeeHook).max); i++) {
             bytes memory returnData = address(performanceFee).functionStaticCall(
                 abi.encodeWithSelector(performanceFee.updatesOnHook.selector, i)
             );
@@ -102,8 +105,9 @@ contract PerformanceFeeTest is UnitTest, PerformanceFeeUtils {
 
             // Only these hooks are used, and all use GAV
             if (
-                i == uint256(FeeHook.PostBuyShares) || i == uint256(FeeHook.PreRedeemShares)
-                    || i == uint256(FeeHook.Continuous)
+                i == uint256(IFeeManagerProd.FeeHook.PostBuyShares)
+                    || i == uint256(IFeeManagerProd.FeeHook.PreRedeemShares)
+                    || i == uint256(IFeeManagerProd.FeeHook.Continuous)
             ) {
                 assertTrue(updates);
                 assertTrue(usesGav);

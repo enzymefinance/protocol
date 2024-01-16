@@ -2,8 +2,11 @@
 pragma solidity 0.8.19;
 
 import {IERC4626} from "openzeppelin-solc-0.8/token/ERC20/extensions/ERC4626.sol";
+
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
@@ -100,7 +103,7 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(underlying)),
             _maxSpendAssetAmounts: toArray(amountToDeposit),
             _incomingAssets: toArray(address(erc4626Vault)),
@@ -137,7 +140,7 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Approve,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Approve),
             _spendAssets: toArray(address(erc4626Vault)),
             _maxSpendAssetAmounts: toArray(sharesBalance),
             _incomingAssets: toArray(address(underlying)),

@@ -14,6 +14,19 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IStakeWiseV3StakingPosition Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IStakeWiseV3StakingPosition is IExternalPosition {
+    // REQUIRED; APPEND-ONLY
+
+    // Required by: LibBase1
+
+    struct ExitRequest {
+        address stakeWiseVaultAddress;
+        uint256 positionTicket;
+        uint256 timestamp;
+        uint256 sharesAmount;
+    }
+
+    // ARBITRARY FOR VERSION
+
     enum Actions {
         Stake,
         Redeem,

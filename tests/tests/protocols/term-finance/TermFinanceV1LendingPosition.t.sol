@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {ITermFinanceV1LendingPosition as ITermFinanceV1LendingPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/term-finance-v1-lending/ITermFinanceV1LendingPosition.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -13,13 +16,6 @@ import {ITermFinanceV1RepoToken} from "tests/interfaces/external/ITermFinanceV1R
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {ITermFinanceV1LendingPositionLib} from "tests/interfaces/internal/ITermFinanceV1LendingPositionLib.sol";
 import {AddressArrayLib} from "tests/utils/libs/AddressArrayLib.sol";
-
-enum Actions {
-    AddOrUpdateOffers,
-    RemoveOffers,
-    Redeem,
-    Sweep
-}
 
 address constant TERM_FINANCE_CONTROLLER_ADDRESS = 0x62f476DBB9B60D9272e26994525F4Db80Fd543e4;
 address constant TERM_FINANCE_AUCTION_ADDRESS_1 = 0x52B021153cB52815f831b120516Aab32A4B910B2; // PurchaseToken: Weth
@@ -153,7 +149,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(termFinanceLendingPosition),
-            _actionId: uint256(Actions.AddOrUpdateOffers),
+            _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.AddOrUpdateOffers),
             _actionArgs: actionArgs
         });
     }
@@ -166,7 +162,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(termFinanceLendingPosition),
-            _actionId: uint256(Actions.RemoveOffers),
+            _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.RemoveOffers),
             _actionArgs: actionArgs
         });
     }
@@ -179,7 +175,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(termFinanceLendingPosition),
-            _actionId: uint256(Actions.Redeem),
+            _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.Redeem),
             _actionArgs: actionArgs
         });
     }
@@ -192,7 +188,7 @@ abstract contract TestBase is IntegrationTest {
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(termFinanceLendingPosition),
-            _actionId: uint256(Actions.Sweep),
+            _actionId: uint256(ITermFinanceV1LendingPositionProd.Actions.Sweep),
             _actionArgs: actionArgs
         });
     }

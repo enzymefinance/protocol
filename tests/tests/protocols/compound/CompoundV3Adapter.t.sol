@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -9,7 +12,6 @@ import {ICompoundV3CometRewards} from "tests/interfaces/external/ICompoundV3Come
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {ICompoundV3Adapter} from "tests/interfaces/internal/ICompoundV3Adapter.sol";
 import {ICompoundV3CTokenListOwner} from "tests/interfaces/internal/ICompoundV3CTokenListOwner.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {
     ETHEREUM_COMPOUND_V3_CONFIGURATOR,
@@ -146,7 +148,7 @@ abstract contract CompoundV3LendTest is CompoundV3TestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(underlying),
             _maxSpendAssetAmounts: toArray(_underlyingAmount),
             _incomingAssets: toArray(_cToken),
@@ -183,7 +185,7 @@ abstract contract CompoundV3RedeemTest is CompoundV3TestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(_cToken),
             _maxSpendAssetAmounts: toArray(_cTokenAmount),
             _incomingAssets: toArray(underlying),
@@ -231,7 +233,7 @@ abstract contract CompoundV3ClaimRewardsTest is CompoundV3TestBase {
         // Test parseAssetsForAction encoding.
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.None,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.None),
             _spendAssets: new address[](0),
             _maxSpendAssetAmounts: new uint256[](0),
             _incomingAssets: new address[](0),

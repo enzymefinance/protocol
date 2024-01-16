@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+import {IZeroExV4Adapter as IZeroExV4AdapterProd} from
+    "contracts/release/extensions/integration-manager/integrations/adapters/interfaces/IZeroExV4Adapter.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
-import {UpdateType as AddressListUpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IZeroExV4} from "tests/interfaces/external/IZeroExV4.sol";
@@ -15,12 +20,6 @@ import {IZeroExV4Adapter} from "tests/interfaces/internal/IZeroExV4Adapter.sol";
 address constant ETHEREUM_ZERO_EX_V4_EXCHANGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
 abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
-    enum OrderType {
-        Limit,
-        Rfq,
-        Otc
-    }
-
     address internal fundOwner;
     address internal maker;
     uint256 makerKey;
@@ -67,7 +66,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         // Create a new AddressListRegistry list containing the allowedMakers
         uint256 allowedMakersListId = core.persistent.addressListRegistry.createList({
             _owner: makeAddr("ListOwner"),
-            _updateType: uint8(AddressListUpdateType.None),
+            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.None),
             _initialItems: _allowedMakers
         });
 
@@ -178,7 +177,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         __takeOrder({
             _encodedZeroExOrderArgs: abi.encode(_order, _signature),
             _takerAssetFillAmount: _takerAssetFillAmount,
-            _orderType: OrderType.Limit
+            _orderType: IZeroExV4AdapterProd.OrderType.Limit
         });
     }
 
@@ -190,7 +189,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         __takeOrder({
             _encodedZeroExOrderArgs: abi.encode(_order, _signature),
             _takerAssetFillAmount: _takerAssetFillAmount,
-            _orderType: OrderType.Rfq
+            _orderType: IZeroExV4AdapterProd.OrderType.Rfq
         });
     }
 
@@ -202,13 +201,15 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         __takeOrder({
             _encodedZeroExOrderArgs: abi.encode(_order, _signature),
             _takerAssetFillAmount: _takerAssetFillAmount,
-            _orderType: OrderType.Otc
+            _orderType: IZeroExV4AdapterProd.OrderType.Otc
         });
     }
 
-    function __takeOrder(bytes memory _encodedZeroExOrderArgs, uint256 _takerAssetFillAmount, OrderType _orderType)
-        private
-    {
+    function __takeOrder(
+        bytes memory _encodedZeroExOrderArgs,
+        uint256 _takerAssetFillAmount,
+        IZeroExV4AdapterProd.OrderType _orderType
+    ) private {
         bytes memory actionArgs = abi.encode(_encodedZeroExOrderArgs, _takerAssetFillAmount, _orderType);
 
         vm.prank(fundOwner, fundOwner);
@@ -241,7 +242,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(takerAsset)),
             _maxSpendAssetAmounts: toArray(takerAmount),
             _incomingAssets: toArray(address(makerAsset)),
@@ -284,7 +285,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(takerAsset)),
             _maxSpendAssetAmounts: toArray(takerAmount + takerFee),
             _incomingAssets: toArray(address(makerAsset)),
@@ -323,7 +324,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(takerAsset)),
             _maxSpendAssetAmounts: toArray(takerAmount),
             _incomingAssets: toArray(address(makerAsset)),
@@ -362,7 +363,7 @@ abstract contract ZeroExV4AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(takerAsset)),
             _maxSpendAssetAmounts: toArray(takerAmount),
             _incomingAssets: toArray(address(makerAsset)),

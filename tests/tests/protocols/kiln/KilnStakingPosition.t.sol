@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IAddressListRegistry as IAddressListRegistryProd} from
+    "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
+import {IKilnStakingPosition as IKilnStakingPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/kiln-staking/IKilnStakingPosition.sol";
+
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
-import {UpdateType as AddressListUpdateType} from "tests/utils/core/ListRegistryUtils.sol";
 import {BytesArrayLib} from "tests/utils/libs/BytesArrayLib.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -16,21 +20,6 @@ import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-
-enum Actions {
-    Stake,
-    ClaimFees,
-    SweepEth,
-    Unstake,
-    PausePositionValue,
-    UnpausePositionValue
-}
-
-enum ClaimFeeTypes {
-    ExecutionLayer,
-    ConsensusLayer,
-    All
-}
 
 address constant STAKING_CONTRACT_ADDRESS_ETHEREUM = 0x0816DF553a89c4bFF7eBfD778A9706a989Dd3Ce3;
 
@@ -142,7 +131,7 @@ abstract contract TestBase is IntegrationTest {
         // Create a new AddressListRegistry list for Kiln StakingContract instances
         stakingPositionsListId_ = core.persistent.addressListRegistry.createList({
             _owner: makeAddr("__deployKilnStakingPositionType: StakingContractsListOwner"),
-            _updateType: uint8(AddressListUpdateType.AddAndRemove),
+            _updateType: formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType.AddAndRemove),
             _initialItems: toArray(address(stakingContract))
         });
 
@@ -163,9 +152,11 @@ abstract contract TestBase is IntegrationTest {
 
     // ACTION HELPERS
 
-    function __claimFees(address _stakingContractAddress, bytes[] memory _publicKeys, ClaimFeeTypes _claimFeesType)
-        internal
-    {
+    function __claimFees(
+        address _stakingContractAddress,
+        bytes[] memory _publicKeys,
+        IKilnStakingPositionProd.ClaimFeeTypes _claimFeesType
+    ) internal {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _publicKeys, _claimFeesType);
 
         vm.prank(fundOwner);
@@ -173,7 +164,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.ClaimFees),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.ClaimFees),
             _actionArgs: actionArgs
         });
     }
@@ -184,7 +175,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.PausePositionValue),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.PausePositionValue),
             _actionArgs: ""
         });
     }
@@ -197,7 +188,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.Stake),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.Stake),
             _actionArgs: actionArgs
         });
     }
@@ -208,7 +199,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.SweepEth),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.SweepEth),
             _actionArgs: ""
         });
     }
@@ -219,7 +210,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.UnpausePositionValue),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.UnpausePositionValue),
             _actionArgs: ""
         });
     }
@@ -233,7 +224,7 @@ abstract contract TestBase is IntegrationTest {
             _externalPositionManager: core.release.externalPositionManager,
             _comptrollerProxy: comptrollerProxy,
             _externalPositionAddress: address(kilnStakingPosition),
-            _actionId: uint256(Actions.Unstake),
+            _actionId: uint256(IKilnStakingPositionProd.Actions.Unstake),
             _actionArgs: actionArgs
         });
     }
@@ -470,7 +461,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: validatorKeysWithRewards,
-            _claimFeesType: ClaimFeeTypes.All
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.All
         });
     }
 
@@ -480,7 +471,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: validatorKeysWithRewards,
-            _claimFeesType: ClaimFeeTypes.All
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.All
         });
 
         // Assert assetsToReceive was correctly formatted (WETH only)
@@ -505,7 +496,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: validatorKeysWithRewards,
-            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.ConsensusLayer
         });
 
         // Assert vault received the fees, minus operator fee
@@ -539,7 +530,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: toArray(requestExitValidatorKey, slashedValidatorKey),
-            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.ConsensusLayer
         });
 
         // Validator count should be updated
@@ -552,7 +543,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: validatorKeysWithRewards,
-            _claimFeesType: ClaimFeeTypes.ExecutionLayer
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.ExecutionLayer
         });
 
         // Assert vault received the fees, minus operator fee
@@ -647,7 +638,7 @@ contract GetManagedAssetsTest is TestBase {
         __claimFees({
             _stakingContractAddress: address(stakingContract),
             _publicKeys: validatorKeysToExit,
-            _claimFeesType: ClaimFeeTypes.ConsensusLayer
+            _claimFeesType: IKilnStakingPositionProd.ClaimFeeTypes.ConsensusLayer
         });
 
         // Assert the final EP value

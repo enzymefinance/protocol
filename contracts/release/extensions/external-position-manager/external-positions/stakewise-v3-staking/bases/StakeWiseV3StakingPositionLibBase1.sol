@@ -11,6 +11,8 @@
 
 pragma solidity 0.8.19;
 
+import {IStakeWiseV3StakingPosition} from "../IStakeWiseV3StakingPosition.sol";
+
 /// @title StakeWiseV3StakingPositionLibBase1 Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice A persistent contract containing all required storage variables and
@@ -29,14 +31,7 @@ abstract contract StakeWiseV3StakingPositionLibBase1 {
 
     event VaultTokenRemoved(address indexed stakeWiseVaultAddress);
 
-    struct ExitRequest {
-        address stakeWiseVaultAddress;
-        uint256 positionTicket;
-        uint256 timestamp;
-        uint256 sharesAmount;
-    }
-
-    ExitRequest[] internal exitRequests;
+    IStakeWiseV3StakingPosition.ExitRequest[] internal exitRequests;
 
     address[] internal stakeWiseVaultTokens;
 }

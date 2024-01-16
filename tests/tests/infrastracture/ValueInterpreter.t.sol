@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
-import {ChainlinkRateAsset} from "tests/utils/core/AssetUniverseUtils.sol";
 
 contract ValueInterpreterTest is IntegrationTest {
     function test_wethPrice(address _quoteAsset, uint256 _result) internal {
@@ -49,7 +51,7 @@ contract ValueInterpreterTestEthereum is ValueInterpreterTest {
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: DAI,
             _aggregatorAddress: DAI_AGGREGATOR,
-            _rateAsset: ChainlinkRateAsset.ETH,
+            _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH,
             _skipIfRegistered: true
         });
     }
@@ -79,7 +81,7 @@ contract ValueInterpreterTestPolygon is ValueInterpreterTest {
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: DAI,
             _aggregatorAddress: DAI_AGGREGATOR,
-            _rateAsset: ChainlinkRateAsset.USD,
+            _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD,
             _skipIfRegistered: true
         });
     }

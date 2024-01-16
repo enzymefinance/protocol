@@ -12,6 +12,11 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IArbitraryLoanAccountingModule Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IArbitraryLoanAccountingModule {
+    struct OracleInfo {
+        address oracle;
+        uint32 stalenessThreshold;
+    }
+
     /// @notice Calculates the canonical face value of the loan
     /// @param _totalBorrowed The total borrowed amount
     /// @param _totalRepaid The total repaid amount

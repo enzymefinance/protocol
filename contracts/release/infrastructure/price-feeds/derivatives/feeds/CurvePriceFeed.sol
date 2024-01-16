@@ -21,11 +21,12 @@ import {ICurveRegistryMetapoolFactory} from "../../../../../external-interfaces/
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {FundDeployerOwnerMixin} from "../../../../utils/0.6.12/FundDeployerOwnerMixin.sol";
 import {IDerivativePriceFeed} from "../IDerivativePriceFeed.sol";
+import {ICurvePriceFeed} from "./interfaces/ICurvePriceFeed.sol";
 
 /// @title CurvePriceFeed Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Price feed for Curve pool tokens
-contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
+contract CurvePriceFeed is ICurvePriceFeed, IDerivativePriceFeed, FundDeployerOwnerMixin {
     using SafeMath for uint256;
 
     event CurvePoolOwnerSet(address poolOwner);
@@ -46,15 +47,6 @@ contract CurvePriceFeed is IDerivativePriceFeed, FundDeployerOwnerMixin {
 
     ICurveAddressProvider private immutable ADDRESS_PROVIDER_CONTRACT;
     uint256 private immutable VIRTUAL_PRICE_DEVIATION_THRESHOLD;
-
-    // We take one asset as representative of the pool's invariant, e.g., WETH for ETH-based pools.
-    // Caching invariantProxyAssetDecimals in a packed storage slot
-    // removes an additional external call and cold SLOAD operation during value lookups.
-    struct PoolInfo {
-        address invariantProxyAsset; // 20 bytes
-        uint8 invariantProxyAssetDecimals; // 1 byte
-        uint88 lastValidatedVirtualPrice; // 11 bytes (could safely be 8-10 bytes)
-    }
 
     address private curvePoolOwner;
 

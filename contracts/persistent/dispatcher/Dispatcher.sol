@@ -91,13 +91,6 @@ contract Dispatcher is IDispatcher {
         string fundName
     );
 
-    struct MigrationRequest {
-        address nextFundDeployer;
-        address nextVaultAccessor;
-        address nextVaultLib;
-        uint256 executableTimestamp;
-    }
-
     address private currentFundDeployer;
     address private nominatedOwner;
     address private owner;

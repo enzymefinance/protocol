@@ -18,19 +18,14 @@ import {AddressArrayLib} from "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {ParaSwapV5ActionsMixin} from "../utils/0.6.12/actions/ParaSwapV5ActionsMixin.sol";
 import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
+import {IParaSwapV5Adapter} from "./interfaces/IParaSwapV5Adapter.sol";
 
 /// @title ParaSwapV5Adapter Contract
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Adapter for interacting with ParaSwap (v5)
 /// @dev Does not support any protocol that collects additional protocol fees as ETH/WETH, e.g., 0x v3
-contract ParaSwapV5Adapter is AdapterBase, ParaSwapV5ActionsMixin {
+contract ParaSwapV5Adapter is IParaSwapV5Adapter, AdapterBase, ParaSwapV5ActionsMixin {
     using AddressArrayLib for address[];
-
-    enum SwapType {
-        Simple,
-        Multi,
-        Mega
-    }
 
     event MultipleOrdersItemFailed(uint256 index, bytes reason);
 

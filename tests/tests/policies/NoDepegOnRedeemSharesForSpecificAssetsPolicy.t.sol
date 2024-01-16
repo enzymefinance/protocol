@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IPolicyManager as IPolicyManagerProd} from "contracts/release/extensions/policy-manager/IPolicyManager.sol";
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {ChainlinkRateAsset, TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
+import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
@@ -16,6 +20,8 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     bytes private constant ERROR_MESSAGE_ONLY_POLICY_MANAGER = "Only the PolicyManager can make this call";
     uint256 private constant ONE_HUNDRED_PERCENT_FOR_POLICY = BPS_ONE_HUNDRED_PERCENT;
 
+    INoDepegPolicy.PolicyHook internal policyHook =
+        INoDepegPolicy.PolicyHook.wrap(uint8(IPolicyManagerProd.PolicyHook.RedeemSharesForSpecificAssets));
     INoDepegPolicy internal policy;
     IERC20 internal simulatedUsd;
     IERC20 internal ethPeggedAsset;
@@ -47,14 +53,14 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: address(ethPeggedAsset),
             _aggregatorAddress: address(ethPeggedAssetAggregator),
-            _rateAsset: ChainlinkRateAsset.ETH,
+            _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH,
             _skipIfRegistered: false
         });
         addPrimitive({
             _valueInterpreter: core.release.valueInterpreter,
             _tokenAddress: address(usdPeggedAsset),
             _aggregatorAddress: address(usdPeggedAssetAggregator),
-            _rateAsset: ChainlinkRateAsset.USD,
+            _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD,
             _skipIfRegistered: false
         });
     }
@@ -256,26 +262,26 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         }
 
         // Rule should initially PASS
-        assertTrue(policy.validateRule(comptrollerProxyAddress, 0, ""), "control case");
+        assertTrue(policy.validateRule(comptrollerProxyAddress, policyHook, ""), "control case");
 
         uint256 smallArbitraryOffset = 10;
 
         // Push asset prices to just within the lower bound; rule should PASS
         ethPeggedAssetAggregator.setPrice(ethPeggedAssetLowerBound + smallArbitraryOffset);
         usdPeggedAssetAggregator.setPrice(usdPeggedAssetLowerBound + smallArbitraryOffset);
-        assertTrue(policy.validateRule(comptrollerProxyAddress, 0, ""), "within lower bound");
+        assertTrue(policy.validateRule(comptrollerProxyAddress, policyHook, ""), "within lower bound");
 
         // Push ETH asset price to just outside of the lower bound; rule should now FAIL
         ethPeggedAssetAggregator.setPrice(ethPeggedAssetLowerBound - smallArbitraryOffset);
-        assertFalse(policy.validateRule(comptrollerProxyAddress, 0, ""), "outside of lower bound");
+        assertFalse(policy.validateRule(comptrollerProxyAddress, policyHook, ""), "outside of lower bound");
 
         // Push asset prices to just within the upper bound; rule should PASS
         ethPeggedAssetAggregator.setPrice(ethPeggedAssetUpperBound - smallArbitraryOffset);
         usdPeggedAssetAggregator.setPrice(usdPeggedAssetUpperBound - smallArbitraryOffset);
-        assertTrue(policy.validateRule(comptrollerProxyAddress, 0, ""), "within upper bound");
+        assertTrue(policy.validateRule(comptrollerProxyAddress, policyHook, ""), "within upper bound");
 
         // Push USD asset price to just outside of the upper bound; rule should now FAIL
         usdPeggedAssetAggregator.setPrice(usdPeggedAssetUpperBound + smallArbitraryOffset);
-        assertFalse(policy.validateRule(comptrollerProxyAddress, 0, ""), "outside of upper bound");
+        assertFalse(policy.validateRule(comptrollerProxyAddress, policyHook, ""), "outside of upper bound");
     }
 }

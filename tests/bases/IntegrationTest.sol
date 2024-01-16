@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
+    "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
+
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
-import {ChainlinkRateAsset, TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
+import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {
     Contracts as PersistentContracts,
@@ -38,7 +41,7 @@ struct CorePrimitiveInput {
     string symbol;
     address assetAddress;
     address aggregatorAddress;
-    ChainlinkRateAsset rateAsset;
+    IChainlinkPriceFeedMixinProd.RateAsset rateAsset;
 }
 
 struct Deployment {
@@ -134,38 +137,38 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "MLN",
             assetAddress: ETHEREUM_MLN,
             aggregatorAddress: ETHEREUM_MLN_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         // Extra primitives
         corePrimitives[1] = CorePrimitiveInput({
             symbol: "USD",
             assetAddress: simulatedUsdAddress,
             aggregatorAddress: simulatedUsdAddress,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         corePrimitives[2] = CorePrimitiveInput({
             symbol: "USDC",
             assetAddress: ETHEREUM_USDC,
             aggregatorAddress: ETHEREUM_USDC_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         corePrimitives[3] = CorePrimitiveInput({
             symbol: "BAL",
             assetAddress: ETHEREUM_BAL,
             aggregatorAddress: ETHEREUM_BAL_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         corePrimitives[4] = CorePrimitiveInput({
             symbol: "USDT",
             assetAddress: ETHEREUM_USDT,
             aggregatorAddress: ETHEREUM_USDT_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         corePrimitives[5] = CorePrimitiveInput({
             symbol: "DAI",
             assetAddress: ETHEREUM_DAI,
             aggregatorAddress: ETHEREUM_DAI_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
 
         __addCorePrimitives(corePrimitives);
@@ -194,32 +197,32 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "WMATIC",
             assetAddress: POLYGON_WMATIC,
             aggregatorAddress: POLYGON_MATIC_USD_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.USD
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD
         });
         corePrimitives[1] = CorePrimitiveInput({
             symbol: "MLN",
             assetAddress: POLYGON_MLN,
             aggregatorAddress: POLYGON_MLN_ETH_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         // Extra primitives
         corePrimitives[2] = CorePrimitiveInput({
             symbol: "USD",
             assetAddress: simulatedUsdAddress,
             aggregatorAddress: simulatedUsdAddress,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         corePrimitives[3] = CorePrimitiveInput({
             symbol: "USDC",
             assetAddress: POLYGON_USDC,
             aggregatorAddress: POLYGON_USDC_USD_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.USD
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD
         });
         corePrimitives[4] = CorePrimitiveInput({
             symbol: "WBTC",
             assetAddress: POLYGON_WBTC,
             aggregatorAddress: POLYGON_WBTC_USD_AGGREGATOR,
-            rateAsset: ChainlinkRateAsset.USD
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD
         });
 
         __addCorePrimitives(corePrimitives);
@@ -281,14 +284,14 @@ abstract contract IntegrationTest is CoreUtils {
             symbol: "MLN",
             assetAddress: mlnTokenAddress,
             aggregatorAddress: chainlinkMlnEthAggregator,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         // Extra primitives
         corePrimitives[1] = CorePrimitiveInput({
             symbol: "USD",
             assetAddress: simulatedUsdAddress,
             aggregatorAddress: simulatedUsdAddress,
-            rateAsset: ChainlinkRateAsset.ETH
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
 
         __addCorePrimitives(corePrimitives);
@@ -385,7 +388,7 @@ abstract contract IntegrationTest is CoreUtils {
             IERC20 token = IERC20(primitiveInfo.assetAddress);
             string memory symbol = primitiveInfo.symbol;
             address aggregatorAddress = primitiveInfo.aggregatorAddress;
-            ChainlinkRateAsset rateAsset = primitiveInfo.rateAsset;
+            IChainlinkPriceFeedMixinProd.RateAsset rateAsset = primitiveInfo.rateAsset;
 
             // Register primitive.
             // Don't allow overwriting.

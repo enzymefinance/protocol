@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {IIntegrationManager as IIntegrationManagerProd} from
+    "contracts/release/extensions/integration-manager/IIntegrationManager.sol";
+
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {SpendAssetsHandleType} from "tests/utils/core/AdapterUtils.sol";
 
 import {IArrakisV2Helper} from "tests/interfaces/external/IArrakisV2Helper.sol";
 import {IArrakisV2Resolver} from "tests/interfaces/external/IArrakisV2Resolver.sol";
@@ -127,7 +129,7 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(token0), address(token1)),
             _maxSpendAssetAmounts: toArray(token0MaxAmount, token1MaxAmount),
             _incomingAssets: toArray(address(arrakisVault)),
@@ -193,7 +195,7 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
         // Test parseAssetsForAction encoding
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
-            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssetsHandleTypeUint8: uint8(IIntegrationManagerProd.SpendAssetsHandleType.Transfer),
             _spendAssets: toArray(address(arrakisVault)),
             _maxSpendAssetAmounts: toArray(sharesToRedeem),
             _incomingAssets: toArray(address(token0), address(token1)),

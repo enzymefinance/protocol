@@ -29,11 +29,6 @@ contract ArbitraryLoanTotalNominalDeltaOracleModule is IArbitraryLoanAccountingM
 
     event OracleSetForLoan(address indexed loan, address indexed oracle, uint32 stalenessThreshold);
 
-    struct OracleInfo {
-        address oracle;
-        uint32 stalenessThreshold;
-    }
-
     mapping(address => OracleInfo) private loanToOracleInfo;
 
     /////////////////////

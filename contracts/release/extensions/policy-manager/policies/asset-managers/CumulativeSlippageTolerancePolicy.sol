@@ -15,6 +15,7 @@ pragma experimental ABIEncoderV2;
 import {SafeMath} from "openzeppelin-solc-0.6/math/SafeMath.sol";
 import {IAddressListRegistry} from "../../../../../persistent/address-list-registry/IAddressListRegistry.sol";
 import {IPolicyManager} from "../../IPolicyManager.sol";
+import {ICumulativeSlippageTolerancePolicy} from "../interfaces/ICumulativeSlippageTolerancePolicy.sol";
 import {PolicyBase} from "../utils/0.6.12/PolicyBase.sol";
 import {PricelessAssetBypassMixin} from "../utils/0.6.12/PricelessAssetBypassMixin.sol";
 
@@ -23,18 +24,16 @@ import {PricelessAssetBypassMixin} from "../utils/0.6.12/PricelessAssetBypassMix
 /// @notice A policy that limits cumulative slippage (i.e., value loss) via adapter actions
 /// @dev Slippage tolerance and accumulation values use 10^18 rather than 10^19 (the greatest 10^n uint64 value)
 /// since it is a more natural and common in rates elsewhere
-contract CumulativeSlippageTolerancePolicy is PolicyBase, PricelessAssetBypassMixin {
+contract CumulativeSlippageTolerancePolicy is
+    ICumulativeSlippageTolerancePolicy,
+    PolicyBase,
+    PricelessAssetBypassMixin
+{
     using SafeMath for uint256;
 
     event CumulativeSlippageUpdatedForFund(address indexed comptrollerProxy, uint256 nextCumulativeSlippage);
 
     event FundSettingsSet(address indexed comptrollerProxy, uint256 tolerance);
-
-    struct PolicyInfo {
-        uint64 tolerance;
-        uint64 cumulativeSlippage;
-        uint128 lastSlippageTimestamp;
-    }
 
     uint256 private constant ONE_HUNDRED_PERCENT = 1 ether; // 10 ** 18
 

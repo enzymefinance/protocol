@@ -12,7 +12,8 @@ pragma solidity 0.8.19;
 import {IERC20} from "../../external-interfaces/IERC20.sol";
 import {IExternalPositionFactory} from "../../persistent/external-positions/IExternalPositionFactory.sol";
 import {IExternalPositionProxy} from "../../persistent/external-positions/IExternalPositionProxy.sol";
-import {IHelperDataReader} from "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
+import {IHelperDataReader as IHelperDataReaderPersistent} from
+    "../../persistent/off-chain/helper-data-reader/IHelperDataReader.sol";
 import {IFundValueCalculator} from "../../persistent/off-chain/fund-value-calculator/IFundValueCalculator.sol";
 
 import {IComptroller} from "../core/fund/comptroller/IComptroller.sol";
@@ -22,6 +23,7 @@ import {IPolicyManager} from "../extensions/policy-manager/IPolicyManager.sol";
 import {IPolicy} from "../extensions/policy-manager/IPolicy.sol";
 import {IFeeManager} from "../extensions/fee-manager/IFeeManager.sol";
 import {IFee} from "../extensions/fee-manager/IFee.sol";
+import {IHelperDataReader} from "./interfaces/IHelperDataReader.sol";
 
 interface IFundValueCalculatorRouter {
     function calcNetShareValue(address _vaultProxy)
@@ -47,56 +49,7 @@ interface IFeeManagerExtended is IFeeManager {
 /// @notice A peripheral contract for serving fund value calculation requests from the FundValueCalculatorRouter
 /// @dev These are convenience functions intended for off-chain consumption,
 /// some of which involve potentially expensive state transitions.
-contract HelperDataReader is IHelperDataReader {
-    struct VaultDetails {
-        string name;
-        string symbol;
-        uint256 totalSupply;
-        address denominationAsset;
-        uint256 netShareValue;
-        uint256 grossAssetValue;
-        address owner;
-        bool hasInvalidAum;
-    }
-
-    struct VaultDetailsExtended {
-        string name;
-        string symbol;
-        uint256 totalSupply;
-        address denominationAsset;
-        uint256 netShareValue;
-        uint256 grossAssetValue;
-        address owner;
-        bool hasInvalidAum;
-        AssetAmount[] trackedAssetsAmounts;
-        ExternalPositionDetails[] activeExternalPositionsDetails;
-        PolicyDetails[] policiesDetails;
-        FeeDetails[] feesDetails;
-    }
-
-    struct AssetAmount {
-        address asset;
-        uint256 amount;
-    }
-
-    struct ExternalPositionDetails {
-        string label;
-        address id;
-        uint256 typeId;
-        AssetAmount[] debtAssetsAmounts;
-        AssetAmount[] managedAssetsAmounts;
-    }
-
-    struct PolicyDetails {
-        string identifier;
-        address id;
-    }
-
-    struct FeeDetails {
-        address recipientForFund;
-        address id;
-    }
-
+contract HelperDataReader is IHelperDataReader, IHelperDataReaderPersistent {
     IFundValueCalculatorRouter private immutable FUND_VALUE_CALCULATOR_ROUTER;
     IExternalPositionFactory private immutable EXTERNAL_POSITION_FACTORY;
     IPolicyManagerExtended private immutable POLICY_MANAGER;
@@ -199,9 +152,8 @@ contract HelperDataReader is IHelperDataReader {
     {
         address[] memory externalPositions = IVault(_vaultProxy).getActiveExternalPositions();
 
-        ExternalPositionDetails[] memory externalPositionsDetails = new ExternalPositionDetails[](
-            externalPositions.length
-        );
+        ExternalPositionDetails[] memory externalPositionsDetails =
+            new ExternalPositionDetails[](externalPositions.length);
 
         for (uint256 i = 0; i < externalPositions.length; i++) {
             address externalPosition = externalPositions[i];
