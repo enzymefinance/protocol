@@ -13,6 +13,8 @@ interface ICompoundV2CERC20 is IERC20 {
 
     function redeem(uint256 _redeemAmount) external returns (uint256 status_);
 
+    function repayBorrow(uint256 _repayAmouny) external returns (uint256 status_);
+
     function exchangeRateStored() external view returns (uint256 exchangeRate_);
 
     function underlying() external returns (address underlying_);
