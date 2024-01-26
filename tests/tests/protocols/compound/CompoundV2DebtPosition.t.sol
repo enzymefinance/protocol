@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {ICompoundDebtPosition as ICompoundDebtPositionProd} from
+    "contracts/release/extensions/external-position-manager/external-positions/compound-debt/ICompoundDebtPosition.sol";
+
 import {Math} from "openzeppelin-solc-0.8/utils/math/Math.sol";
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 
@@ -13,14 +16,6 @@ import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {ICompoundPriceFeed} from "tests/interfaces/internal/ICompoundPriceFeed.sol";
 import {ETHEREUM_COMPTROLLER} from "./CompoundV2Constants.sol";
-
-enum Actions {
-    AddCollateral,
-    RemoveCollateral,
-    Borrow,
-    RepayBorrow,
-    ClaimComp
-}
 
 abstract contract TestBase is IntegrationTest {
     event AssetBorrowed(address indexed asset, uint256 amount);
@@ -145,7 +140,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.AddCollateral)
+            _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.AddCollateral)
         });
     }
 
@@ -158,7 +153,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RemoveCollateral)
+            _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.RemoveCollateral)
         });
     }
 
@@ -173,7 +168,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.Borrow)
+            _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.Borrow)
         });
     }
 
@@ -186,7 +181,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: actionArgs,
-            _actionId: uint256(Actions.RepayBorrow)
+            _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.RepayBorrow)
         });
     }
 
@@ -197,7 +192,7 @@ abstract contract TestBase is IntegrationTest {
             _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(compoundV2DebtPosition),
             _actionArgs: abi.encode(new address[](0), new uint256[](0), ""),
-            _actionId: uint256(Actions.ClaimComp)
+            _actionId: uint256(ICompoundDebtPositionProd.ExternalPositionActions.ClaimComp)
         });
     }
 
