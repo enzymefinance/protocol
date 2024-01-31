@@ -61,4 +61,8 @@ interface IZeroExV4 {
     function getRfqOrderHash(RfqOrder calldata _order) external view returns (bytes32 orderHash_);
 
     function getOtcOrderHash(OtcOrder calldata _order) external view returns (bytes32 orderHash_);
+
+    function fillOrKillRfqOrder(RfqOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
+        external
+        returns (uint128 makerTokenFilledAmount_);
 }

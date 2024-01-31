@@ -105,6 +105,7 @@ ICompoundAdapter.sol: CompoundAdapter.abi.json
 IERC4626Adapter.sol: ERC4626Adapter.abi.json
 IArrakisV2Adapter.sol: ArrakisV2Adapter.abi.json
 IZeroExV4Adapter.sol: ZeroExV4Adapter.abi.json
+IThreeOneThirdAdapter.sol: ThreeOneThirdAdapter.abi.json
 
 # External positions
 IExternalPositionManager.sol: ExternalPositionManager.abi.json
