@@ -382,21 +382,7 @@ contract ComptrollerLib is IComptroller {
     /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
     function activate(bool _isMigration) external override onlyFundDeployer {
-        address vaultProxyCopy = getVaultProxy();
-
-        if (_isMigration) {
-            // Distribute any shares in the VaultProxy to the fund owner.
-            // This is a mechanism to ensure that even in the edge case of a fund being unable
-            // to payout fee shares owed during migration, these shares are not lost.
-            uint256 sharesDue = IERC20(vaultProxyCopy).balanceOf(vaultProxyCopy);
-            if (sharesDue > 0) {
-                IVault(vaultProxyCopy).transferShares(vaultProxyCopy, IVault(vaultProxyCopy).getOwner(), sharesDue);
-
-                emit MigratedSharesDuePaid(sharesDue);
-            }
-        }
-
-        IVault(vaultProxyCopy).addTrackedAsset(getDenominationAsset());
+        IVault(getVaultProxy()).addTrackedAsset(getDenominationAsset());
 
         // Activate extensions
         IExtension(getFeeManager()).activateForFund(_isMigration);
@@ -414,14 +400,6 @@ contract ComptrollerLib is IComptroller {
 
         // Do not attempt to auto-buyback protocol fee shares in this case,
         // as the call is gav-dependent and can consume too much gas
-
-        // Deactivate extensions only as-necessary
-
-        // Pays out shares outstanding for fees
-        try IExtension(getFeeManager()).deactivateForFund() {}
-        catch {
-            emit DeactivateFeeManagerFailed();
-        }
     }
 
     ////////////////

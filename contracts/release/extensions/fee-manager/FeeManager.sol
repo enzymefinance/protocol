@@ -39,12 +39,7 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         uint256 sharesDue
     );
 
-    event SharesOutstandingPaidForFund(
-        address indexed comptrollerProxy, address indexed fee, address indexed payee, uint256 sharesDue
-    );
-
     mapping(address => address[]) private comptrollerProxyToFees;
-    mapping(address => mapping(address => uint256)) private comptrollerProxyToFeeToSharesOutstanding;
 
     constructor(address _fundDeployer) ExtensionBase(_fundDeployer) {}
 
@@ -61,19 +56,6 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         }
     }
 
-    /// @notice Deactivate fees for a fund
-    /// @dev There will be no fees if the caller is not a valid ComptrollerProxy
-    function deactivateForFund() external override {
-        address comptrollerProxy = msg.sender;
-        address vaultProxy = getVaultProxyForFund(comptrollerProxy);
-
-        // Force payout of remaining shares outstanding
-        address[] memory fees = getEnabledFeesForFund(comptrollerProxy);
-        for (uint256 i; i < fees.length; i++) {
-            __payoutSharesOutstanding(comptrollerProxy, vaultProxy, fees[i]);
-        }
-    }
-
     /// @notice Allows all fees for a particular FeeHook to implement settle() and update() logic
     /// @param _hook The FeeHook to invoke
     /// @param _settlementData The encoded settlement parameters specific to the FeeHook
@@ -84,15 +66,12 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
 
     /// @notice Receives a dispatched `callOnExtension` from a fund's ComptrollerProxy
     /// @param _actionId An ID representing the desired action
-    /// @param _callArgs Encoded arguments specific to the _actionId
     /// @dev This is the only way to call a function on this contract that updates VaultProxy state.
     /// For both of these actions, any caller is allowed, so we don't use the caller param.
-    function receiveCallFromComptroller(address, uint256 _actionId, bytes calldata _callArgs) external override {
+    function receiveCallFromComptroller(address, uint256 _actionId, bytes calldata) external override {
         if (_actionId == 0) {
             // Settle and update all continuous fees
             __invokeHook(msg.sender, IFeeManager.FeeHook.Continuous, "", 0, true);
-        } else if (_actionId == 1) {
-            __payoutSharesOutstandingForFees(msg.sender, _callArgs);
         } else {
             revert("receiveCallFromComptroller: Invalid _actionId");
         }
@@ -186,37 +165,6 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         return recipient_;
     }
 
-    /// @dev Helper to payout the shares outstanding for the specified fees.
-    /// Does not call settle() on fees.
-    /// Only callable via ComptrollerProxy.callOnExtension().
-    function __payoutSharesOutstandingForFees(address _comptrollerProxy, bytes memory _callArgs) private {
-        address[] memory fees = abi.decode(_callArgs, (address[]));
-        address vaultProxy = getVaultProxyForFund(msg.sender);
-
-        for (uint256 i; i < fees.length; i++) {
-            if (IFee(fees[i]).payout(_comptrollerProxy, vaultProxy)) {
-                __payoutSharesOutstanding(_comptrollerProxy, vaultProxy, fees[i]);
-            }
-        }
-    }
-
-    /// @dev Helper to payout shares outstanding for a given fee.
-    /// Assumes the fee is payout-able.
-    function __payoutSharesOutstanding(address _comptrollerProxy, address _vaultProxy, address _fee) private {
-        uint256 sharesOutstanding = getFeeSharesOutstandingForFund(_comptrollerProxy, _fee);
-        if (sharesOutstanding == 0) {
-            return;
-        }
-
-        delete comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
-
-        address payee = __parseFeeRecipientForFund(_comptrollerProxy, _vaultProxy, _fee);
-
-        __transferShares(_comptrollerProxy, _vaultProxy, payee, sharesOutstanding);
-
-        emit SharesOutstandingPaidForFund(_comptrollerProxy, _fee, payee, sharesOutstanding);
-    }
-
     /// @dev Helper to settle a fee
     function __settleFee(
         address _comptrollerProxy,
@@ -240,16 +188,6 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
             payee = __parseFeeRecipientForFund(_comptrollerProxy, _vaultProxy, _fee);
             __mintShares(_comptrollerProxy, payee, sharesDue);
         } else if (settlementType == SettlementType.Burn) {
-            __burnShares(_comptrollerProxy, payer, sharesDue);
-        } else if (settlementType == SettlementType.MintSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] += sharesDue;
-
-            payee = _vaultProxy;
-            __mintShares(_comptrollerProxy, payee, sharesDue);
-        } else if (settlementType == SettlementType.BurnSharesOutstanding) {
-            comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee] -= sharesDue;
-
-            payer = _vaultProxy;
             __burnShares(_comptrollerProxy, payer, sharesDue);
         } else {
             revert("__settleFee: Invalid SettlementType");
@@ -324,20 +262,5 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
         returns (address[] memory enabledFees_)
     {
         return comptrollerProxyToFees[_comptrollerProxy];
-    }
-
-    // PUBLIC FUNCTIONS
-
-    /// @notice Get the amount of shares outstanding for a particular fee for a fund
-    /// @param _comptrollerProxy The ComptrollerProxy of the fund
-    /// @param _fee The fee address
-    /// @return sharesOutstanding_ The amount of shares outstanding
-    function getFeeSharesOutstandingForFund(address _comptrollerProxy, address _fee)
-        public
-        view
-        override
-        returns (uint256 sharesOutstanding_)
-    {
-        return comptrollerProxyToFeeToSharesOutstanding[_comptrollerProxy][_fee];
     }
 }

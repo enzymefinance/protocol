@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import {IAddressListRegistry as IAddressListRegistryProd} from
     "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {IFeeManager as IFeeManagerProd} from "contracts/release/extensions/fee-manager/IFeeManager.sol";
 import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
     "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
+import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IUintListRegistry} from "tests/interfaces/internal/IUintListRegistry.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TypeUtils is CommonUtilsBase {
@@ -27,6 +29,14 @@ abstract contract TypeUtils is CommonUtilsBase {
         returns (IValueInterpreter.RateAsset formattedRateAsset_)
     {
         return IValueInterpreter.RateAsset.wrap(uint8(_rateAsset));
+    }
+
+    function formatFeeHook(IFeeManagerProd.FeeHook _feeHook)
+        internal
+        pure
+        returns (IFeeManager.FeeHook formattedFeeHook_)
+    {
+        return IFeeManager.FeeHook.wrap(uint8(_feeHook));
     }
 
     function formatUintListRegistryUpdateType(IUintListRegistryProd.UpdateType _updateType)
