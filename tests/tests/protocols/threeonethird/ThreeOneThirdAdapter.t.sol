@@ -29,16 +29,24 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
     IThreeOneThird internal threeOneThirdBatchTrade;
     IZeroExV4 internal zeroExV4Exchange;
 
-    IERC20 internal takerAsset;
-    IERC20 internal makerAsset;
+    IERC20 internal vaultAsset1;
+    IERC20 internal vaultAsset2;
+    IERC20 internal vaultAsset3;
+    IERC20 internal externalAsset1;
+    IERC20 internal externalAsset2;
+    IERC20 internal externalAsset3;
 
     EnzymeVersion internal version;
 
     function setUp(
         address _threeOneThirdBatchTrade,
         address _zeroExV4Exchange,
-        address _takerAsset,
-        address _makerAsset
+        address _vaultAsset1,
+        address _vaultAsset2,
+        address _vaultAsset3,
+        address _externalAsset1,
+        address _externalAsset2,
+        address _externalAsset3
     ) internal {
         (tradeSigner, tradeSignerKey) = makeAddrAndKey("TradeSigner");
 
@@ -59,18 +67,30 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
 
         (maker, makerKey) = makeAddrAndKey("Maker");
 
-        takerAsset = IERC20(_takerAsset);
-        makerAsset = IERC20(_makerAsset);
+        vaultAsset1 = IERC20(_vaultAsset1);
+        vaultAsset2 = IERC20(_vaultAsset2);
+        vaultAsset3 = IERC20(_vaultAsset3);
+        externalAsset1 = IERC20(_externalAsset1);
+        externalAsset2 = IERC20(_externalAsset2);
+        externalAsset3 = IERC20(_externalAsset3);
 
-        // Seed the fund with some takerAsset
-        increaseTokenBalance({_token: takerAsset, _to: vaultProxyAddress, _amount: assetUnit(takerAsset) * 123});
+        // Seed the fund with some vaultAsset1,2,3
+        increaseTokenBalance({_token: vaultAsset1, _to: vaultProxyAddress, _amount: assetUnit(vaultAsset1) * 123});
+        increaseTokenBalance({_token: vaultAsset2, _to: vaultProxyAddress, _amount: assetUnit(vaultAsset2) * 231});
+        increaseTokenBalance({_token: vaultAsset3, _to: vaultProxyAddress, _amount: assetUnit(vaultAsset3) * 312});
 
-        // Seed the maker with some makerAsset
-        increaseTokenBalance({_token: makerAsset, _to: maker, _amount: assetUnit(makerAsset) * 71});
+        // Seed the maker with some makerAsset1,2,3
+        increaseTokenBalance({_token: externalAsset1, _to: maker, _amount: assetUnit(externalAsset1) * 71});
+        increaseTokenBalance({_token: externalAsset2, _to: maker, _amount: assetUnit(externalAsset2) * 61});
+        increaseTokenBalance({_token: externalAsset3, _to: maker, _amount: assetUnit(externalAsset3) * 81});
 
-        // Approve 0xv4 to spend the maker's makerAsset
+        // Approve 0xv4 to spend the maker's makerAsset1,2,3
         vm.prank(maker);
-        makerAsset.approve(address(zeroExV4Exchange), type(uint256).max);
+        externalAsset1.approve(address(zeroExV4Exchange), type(uint256).max);
+        vm.prank(maker);
+        externalAsset2.approve(address(zeroExV4Exchange), type(uint256).max);
+        vm.prank(maker);
+        externalAsset3.approve(address(zeroExV4Exchange), type(uint256).max);
     }
 
     // DEPLOYMENT HELPERS
@@ -83,14 +103,38 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
 
     // ACTION HELPERS
 
-    function __createZeroExV4RfqOrder(uint128 _makerAmount, uint128 _takerAmount)
+    function __createZeroExV4RfqOrderBatchTrade(IERC20 _makerAsset, uint128 _makerAmount, IERC20 _takerAsset, uint128 _takerAmount)
         private
         view
-        returns (IZeroExV4.RfqOrder memory order_, IZeroExV4.Signature memory signature_)
+        returns (IThreeOneThird.Trade memory)
+    {
+        (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) =
+            __createZeroExV4RfqOrder({_makerAsset: _makerAsset, _makerAmount: uint128(_makerAmount), _takerAsset: _takerAsset, _takerAmount: uint128(_takerAmount)});
+
+        bytes memory zeroExCalldata =
+            abi.encodeWithSelector(zeroExV4Exchange.fillOrKillRfqOrder.selector, order, signature, _takerAmount);
+
+        IThreeOneThird.Trade memory trade_ = IThreeOneThird.Trade({
+            exchangeName: "ZeroExExchangeV4",
+            from: address(_takerAsset),
+            fromAmount: _takerAmount,
+            to: address(_makerAsset),
+            minToReceiveBeforeFees: _makerAmount,
+            data: zeroExCalldata,
+            signature: abi.encode() // placeholder
+        });
+
+        return addSignatureToTrade(trade_);
+    }
+
+    function __createZeroExV4RfqOrder(IERC20 _makerAsset, uint128 _makerAmount, IERC20 _takerAsset, uint128 _takerAmount)
+    private
+    view
+    returns (IZeroExV4.RfqOrder memory order_, IZeroExV4.Signature memory signature_)
     {
         order_ = IZeroExV4.RfqOrder({
-            makerToken: address(makerAsset),
-            takerToken: address(takerAsset),
+            makerToken: address(_makerAsset),
+            takerToken: address(_takerAsset),
             makerAmount: _makerAmount,
             takerAmount: _takerAmount,
             maker: maker,
@@ -108,31 +152,6 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
         signature_ = IZeroExV4.Signature(IZeroExV4.SignatureType.EIP712, v, r, s);
 
         return (order_, signature_);
-    }
-
-    // TODO: this is just a simple first version with one trade
-    function __createBatchTrade(uint128 _makerAmount, uint128 _takerAmount)
-        private
-        view
-        returns (IThreeOneThird.Trade memory)
-    {
-        (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) =
-            __createZeroExV4RfqOrder({_makerAmount: uint128(_makerAmount), _takerAmount: uint128(_takerAmount)});
-
-        bytes memory zeroExCalldata =
-            abi.encodeWithSelector(zeroExV4Exchange.fillOrKillRfqOrder.selector, order, signature, _takerAmount);
-
-        IThreeOneThird.Trade memory trade_ = IThreeOneThird.Trade({
-            exchangeName: "ZeroExExchangeV4",
-            from: address(takerAsset),
-            fromAmount: _takerAmount,
-            to: address(makerAsset),
-            minToReceiveBeforeFees: _makerAmount,
-            data: zeroExCalldata,
-            signature: abi.encode() // placeholder
-        });
-
-        return addSignatureToTrade(trade_);
     }
 
     function addSignatureToTrade(IThreeOneThird.Trade memory _trade)
@@ -171,18 +190,18 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
         });
     }
 
+    // TESTS
+
     function test_takeBatchTradeRfqOrder_success() public {
-        uint256 takerAssetBalancePre = takerAsset.balanceOf(vaultProxyAddress);
-        uint256 takerAmount = takerAssetBalancePre / 5;
+        uint256 vaultAssetBalancePre = vaultAsset1.balanceOf(vaultProxyAddress);
+        uint256 fromAmount = vaultAssetBalancePre / 5;
+        assertNotEq(fromAmount, 0, "From amount is 0");
 
-        uint256 makerAssetBalancePre = makerAsset.balanceOf(vaultProxyAddress);
-
-        assertNotEq(takerAmount, 0, "Taker amount is 0");
-
-        uint256 makerAmount = assetUnit(makerAsset) * 7;
+        uint256 externalAssetBalancePre = externalAsset1.balanceOf(vaultProxyAddress);
+        uint256 toAmount = assetUnit(externalAsset1) * 7;
 
         IThreeOneThird.Trade memory trade =
-            __createBatchTrade({_makerAmount: uint128(makerAmount), _takerAmount: uint128(takerAmount)});
+            __createZeroExV4RfqOrderBatchTrade({_makerAsset: externalAsset1, _makerAmount: uint128(toAmount), _takerAsset: vaultAsset1, _takerAmount: uint128(fromAmount)});
 
         vm.recordLogs();
 
@@ -195,22 +214,83 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest {
         assertAdapterAssetsForAction({
             _logs: vm.getRecordedLogs(),
             _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
-            _spendAssets: toArray(address(takerAsset)),
-            _maxSpendAssetAmounts: toArray(takerAmount),
-            _incomingAssets: toArray(address(makerAsset)),
-            _minIncomingAssetAmounts: toArray(makerAmount * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000))
+            _spendAssets: toArray(address(vaultAsset1)),
+            _maxSpendAssetAmounts: toArray(fromAmount),
+            _incomingAssets: toArray(address(externalAsset1)),
+            _minIncomingAssetAmounts: toArray(toAmount * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000))
         });
 
         assertEq(
-            makerAsset.balanceOf(vaultProxyAddress) - makerAssetBalancePre,
-            makerAmount * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
+            externalAsset1.balanceOf(vaultProxyAddress) - externalAssetBalancePre,
+            toAmount * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
             "Mismatch between received and expected maker asset amount"
         );
 
         assertEq(
-            takerAssetBalancePre - takerAsset.balanceOf(vaultProxyAddress),
-            takerAmount,
+            vaultAssetBalancePre - vaultAsset1.balanceOf(vaultProxyAddress),
+            fromAmount,
             "Mismatch between sent and expected taker asset amount"
+        );
+    }
+
+    function test_takeBatchTradeRfqOrders_success() public {
+        uint256 vaultAsset1BalancePre = vaultAsset1.balanceOf(vaultProxyAddress);
+        uint256 fromAmount1 = vaultAsset1BalancePre / 5;
+        uint256 vaultAsset2BalancePre = vaultAsset2.balanceOf(vaultProxyAddress);
+        uint256 fromAmount2 = vaultAsset2BalancePre / 5;
+        assertNotEq(fromAmount1, 0, "From amount 1 is 0");
+        assertNotEq(fromAmount2, 0, "From amount 2 is 0");
+
+        uint256 externalAsset1BalancePre = externalAsset1.balanceOf(vaultProxyAddress);
+        uint256 toAmount1 = assetUnit(externalAsset1) * 7;
+        uint256 externalAsset2BalancePre = externalAsset2.balanceOf(vaultProxyAddress);
+        uint256 toAmount2 = assetUnit(externalAsset2) * 7;
+
+        IThreeOneThird.Trade memory trade1 =
+                        __createZeroExV4RfqOrderBatchTrade({_makerAsset: externalAsset1, _makerAmount: uint128(toAmount1), _takerAsset: vaultAsset1, _takerAmount: uint128(fromAmount1)});
+        IThreeOneThird.Trade memory trade2 =
+                        __createZeroExV4RfqOrderBatchTrade({_makerAsset: externalAsset2, _makerAmount: uint128(toAmount2), _takerAsset: vaultAsset2, _takerAmount: uint128(fromAmount2)});
+
+        vm.recordLogs();
+
+        IThreeOneThird.Trade[] memory trades_ = new IThreeOneThird.Trade[](2);
+        trades_[0] = trade1;
+        trades_[1] = trade2;
+
+        __takeOrder({_trades: trades_});
+
+        // Test parseAssetsForAction encoding
+        assertAdapterAssetsForAction({
+            _logs: vm.getRecordedLogs(),
+            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssets: toArray(address(vaultAsset1), address(vaultAsset2)),
+            _maxSpendAssetAmounts: toArray(fromAmount1, fromAmount2),
+            _incomingAssets: toArray(address(externalAsset1), address(externalAsset2)),
+            _minIncomingAssetAmounts: toArray(toAmount1 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000), toAmount1 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000))
+        });
+
+        assertEq(
+            externalAsset1.balanceOf(vaultProxyAddress) - externalAsset1BalancePre,
+            toAmount1 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
+            "Mismatch between received and expected maker asset amount (Trade 1)"
+        );
+
+        assertEq(
+            vaultAsset1BalancePre - vaultAsset1.balanceOf(vaultProxyAddress),
+            fromAmount1,
+            "Mismatch between sent and expected taker asset amount (Trade 1)"
+        );
+
+        assertEq(
+            externalAsset2.balanceOf(vaultProxyAddress) - externalAsset2BalancePre,
+            toAmount2 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
+            "Mismatch between received and expected maker asset amount (Trade 2)"
+        );
+
+        assertEq(
+            vaultAsset2BalancePre - vaultAsset2.balanceOf(vaultProxyAddress),
+            fromAmount2,
+            "Mismatch between sent and expected taker asset amount (Trade 2)"
         );
     }
 }
@@ -221,8 +301,12 @@ contract ThreeOneThirdTestEthereum is ThreeOneThirdAdapterTestBase {
         setUp({
             _threeOneThirdBatchTrade: ETHEREUM_THREE_ONE_THIRD_BATCH_TRADE,
             _zeroExV4Exchange: ETHEREUM_ZERO_EX_V4_EXCHANGE,
-            _takerAsset: ETHEREUM_USDC,
-            _makerAsset: ETHEREUM_WETH
+            _vaultAsset1: ETHEREUM_USDC,
+            _vaultAsset2: ETHEREUM_USDT,
+            _vaultAsset3: ETHEREUM_MLN,
+            _externalAsset1: ETHEREUM_WETH,
+            _externalAsset2: ETHEREUM_CRV,
+            _externalAsset3: ETHEREUM_LINK
         });
     }
 }
