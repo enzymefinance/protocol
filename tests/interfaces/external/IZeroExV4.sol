@@ -65,4 +65,8 @@ interface IZeroExV4 {
     function fillOrKillRfqOrder(RfqOrder memory _order, Signature memory _signature, uint128 _takerTokenFillAmount)
         external
         returns (uint128 makerTokenFilledAmount_);
+
+    function sellTokenForTokenToUniswapV3(bytes memory _encodedPath, uint256 _sellAmount, uint256 _minBuyAmount, address _recipient)
+        external
+        returns (uint256 buyAmount_);
 }

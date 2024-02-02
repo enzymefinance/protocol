@@ -18,11 +18,16 @@ import {MathHelpers} from "../../../../../utils/0.6.12/MathHelpers.sol";
 import {IIntegrationManager} from "../../IIntegrationManager.sol";
 import {ThreeOneThirdActionsMixin} from "../utils/0.6.12/actions/ThreeOneThirdActionsMixin.sol";
 import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
+import "../../../../../utils/0.6.12/AddressArrayLib.sol";
+import "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
 
 /// @title ThreeOneThirdAdapter Contract
 /// @author 31Third <dev@31third.com>, Enzyme Council <security@enzyme.finance>
 /// @notice Adapter to 31Third BatchTrade Contract
 contract ThreeOneThirdAdapter is AdapterBase, MathHelpers, ThreeOneThirdActionsMixin {
+    using AddressArrayLib for address[];
+    using Uint256ArrayLib for uint256[];
+
     constructor(address _integrationManager, address _batchTrade)
         public
         AdapterBase(_integrationManager)
@@ -78,16 +83,27 @@ contract ThreeOneThirdAdapter is AdapterBase, MathHelpers, ThreeOneThirdActionsM
 
         uint256 tradesLength = trades.length;
 
-        spendAssets_ = new address[](tradesLength);
-        spendAssetAmounts_ = new uint256[](tradesLength);
-        incomingAssets_ = new address[](tradesLength);
-        minIncomingAssetAmounts_ = new uint256[](tradesLength);
+        spendAssets_ = new address[](0);
+        spendAssetAmounts_ = new uint256[](0);
+        incomingAssets_ = new address[](0);
+        minIncomingAssetAmounts_ = new uint256[](0);
 
         for (uint256 i; i < tradesLength; i++) {
-            spendAssets_[i] = trades[i].from;
-            spendAssetAmounts_[i] = trades[i].fromAmount;
-            incomingAssets_[i] = trades[i].to;
-            minIncomingAssetAmounts_[i] = trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000);
+            uint256 spendAssetsIndex = spendAssets_.findIndex(trades[i].from);
+            if (spendAssetsIndex == type(uint256).max) {
+                spendAssets_ = spendAssets_.addItem(trades[i].from);
+                spendAssetAmounts_ = spendAssetAmounts_.addItem(trades[i].fromAmount);
+            } else {
+                spendAssetAmounts_[spendAssetsIndex] += trades[i].fromAmount;
+            }
+
+            uint256 incomingAssetsIndex = incomingAssets_.findIndex(trades[i].to);
+            if (incomingAssetsIndex == type(uint256).max) {
+                incomingAssets_ = incomingAssets_.addItem(trades[i].to);
+                minIncomingAssetAmounts_ = minIncomingAssetAmounts_.addItem(trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000));
+            } else {
+                minIncomingAssetAmounts_[incomingAssetsIndex] += trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000);
+            }
         }
 
         return (
