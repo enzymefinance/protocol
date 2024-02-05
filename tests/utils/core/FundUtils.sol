@@ -12,7 +12,7 @@ import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
 
-abstract contract VaultUtils is CoreUtilsBase {
+abstract contract FundUtils is CoreUtilsBase {
     function addTrackedAsset(IVaultLib _vaultProxy, IERC20 _asset, uint256 _seedAmount) internal {
         if (_seedAmount > 0) {
             increaseTokenBalance(IERC20(address(_vaultProxy)), address(_asset), _seedAmount);
