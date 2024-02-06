@@ -29,10 +29,13 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
     IERC4626 internal erc4626Vault;
     IERC20 internal underlying;
 
-    // Set by child contract
     EnzymeVersion internal version;
 
-    function setUp(address _erc4626VaultAddress) internal {
+    function __initialize(EnzymeVersion _version, address _erc4626VaultAddress) internal {
+        setUpMainnetEnvironment();
+
+        version = _version;
+
         erc4626Adapter = __deployAdapter();
         erc4626Vault = IERC4626(_erc4626VaultAddress);
         underlying = IERC20(erc4626Vault.asset());
@@ -158,61 +161,49 @@ abstract contract ERC4626AdapterTestBase is IntegrationTest {
 }
 
 contract MorphoAaveV2Test is ERC4626AdapterTestBase {
-    function setUp() public virtual override {
-        setUpMainnetEnvironment();
-        super.setUp(ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS);
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS});
     }
 }
 
 contract MorphoAaveV3Test is ERC4626AdapterTestBase {
-    function setUp() public virtual override {
-        setUpMainnetEnvironment();
-        super.setUp(ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS);
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS});
     }
 }
 
 contract MorphoCompoundTest is ERC4626AdapterTestBase {
-    function setUp() public virtual override {
-        setUpMainnetEnvironment();
-        super.setUp(ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS);
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS});
     }
 }
 
 contract SparkTest is ERC4626AdapterTestBase {
-    function setUp() public virtual override {
-        setUpMainnetEnvironment();
-        super.setUp(ETHEREUM_SPARK_SDAI_VAULT_ADDRESS);
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current, _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
     }
 }
 
-contract MorphoAaveV2TestV4 is MorphoAaveV2Test {
-    function setUp() public virtual override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
+contract MorphoAaveV2TestV4 is ERC4626AdapterTestBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS});
     }
 }
 
-contract MorphoAaveV3TestV4 is MorphoAaveV3Test {
-    function setUp() public virtual override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
+contract MorphoAaveV3TestV4 is ERC4626AdapterTestBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MA3WETH_VAULT_ADDRESS});
     }
 }
 
-contract MorphoCompoundTestV4 is MorphoCompoundTest {
-    function setUp() public virtual override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
+contract MorphoCompoundTestV4 is ERC4626AdapterTestBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_MORPHO_MCWETH_VAULT_ADDRESS});
     }
 }
 
-contract SparkTestV4 is SparkTest {
-    function setUp() public virtual override {
-        version = EnzymeVersion.V4;
-
-        super.setUp();
+contract SparkTestV4 is ERC4626AdapterTestBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4, _erc4626VaultAddress: ETHEREUM_SPARK_SDAI_VAULT_ADDRESS});
     }
 }

@@ -105,6 +105,25 @@ abstract contract IntegrationTest is CoreUtils {
     }
 
     // New deployments
+    function setUpNetworkEnvironment(uint256 _chainId) internal {
+        if (_chainId == ETHEREUM_CHAIN_ID) {
+            setUpMainnetEnvironment();
+        } else if (_chainId == POLYGON_CHAIN_ID) {
+            setUpPolygonEnvironment();
+        } else {
+            revert("setUpNetworkEnvironment: Unsupported network");
+        }
+    }
+
+    function setUpNetworkEnvironment(uint256 _chainId, uint256 _forkBlock) internal {
+        if (_chainId == ETHEREUM_CHAIN_ID) {
+            setUpMainnetEnvironment(_forkBlock);
+        } else if (_chainId == POLYGON_CHAIN_ID) {
+            setUpPolygonEnvironment(_forkBlock);
+        } else {
+            revert("setUpNetworkEnvironment: Unsupported network");
+        }
+    }
 
     function setUpMainnetEnvironment() internal {
         setUpMainnetEnvironment(ETHEREUM_BLOCK_LATEST);
