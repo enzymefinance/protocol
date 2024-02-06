@@ -27,7 +27,7 @@ abstract contract ExtensionBase is IExtension, FundDeployerOwnerMixin {
 
     /// @notice Allows extension to run logic during fund activation
     /// @dev Unimplemented by default, may be overridden.
-    function activateForFund(bool) external virtual override {
+    function activateForFund() external virtual override {
         return;
     }
 

@@ -29,7 +29,7 @@ interface IComptroller {
         bytes policyManagerConfigData;
     }
 
-    function activate(bool _isMigration) external;
+    function activate() external;
 
     function buyBackProtocolFeeShares(uint256 _sharesAmount) external;
 

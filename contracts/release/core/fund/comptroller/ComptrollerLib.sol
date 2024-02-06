@@ -379,14 +379,13 @@ contract ComptrollerLib is IComptroller {
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`
-    /// @param _isMigration True if a migrated fund is being activated
     /// @dev No need to assert anything beyond FundDeployer access.
-    function activate(bool _isMigration) external override onlyFundDeployer {
+    function activate() external override onlyFundDeployer {
         IVault(getVaultProxy()).addTrackedAsset(getDenominationAsset());
 
         // Activate extensions
-        IExtension(getFeeManager()).activateForFund(_isMigration);
-        IExtension(getPolicyManager()).activateForFund(_isMigration);
+        IExtension(getFeeManager()).activateForFund();
+        IExtension(getPolicyManager()).activateForFund();
     }
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active

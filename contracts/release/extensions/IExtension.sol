@@ -15,7 +15,7 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Council <security@enzyme.finance>
 /// @notice Interface for all extensions
 interface IExtension {
-    function activateForFund(bool _isMigration) external;
+    function activateForFund() external;
 
     function deactivateForFund() external;
 

@@ -268,8 +268,8 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
             address(core.release.protocolFeeTracker),
             abi.encodeWithSelector(core.release.protocolFeeTracker.initializeForVault.selector, address(vaultProxyCore))
         );
-        // Assert ComptrollerProxy.activate() will be called correctly
-        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.activate.selector, true));
+        // Assert ComptrollerProxy.activate() will be called
+        vm.expectCall(nextComptrollerProxyAddress, abi.encodeWithSelector(IComptrollerLib.activate.selector));
 
         vm.prank(vaultOwner);
 

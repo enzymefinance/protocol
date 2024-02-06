@@ -46,7 +46,7 @@ contract FeeManager is IFeeManager, ExtensionBase, PermissionedVaultActionMixin 
     // EXTERNAL FUNCTIONS
 
     /// @notice Activate already-configured fees for use in the calling fund
-    function activateForFund(bool) external override {
+    function activateForFund() external override {
         address comptrollerProxy = msg.sender;
         address vaultProxy = getVaultProxyForFund(comptrollerProxy);
 

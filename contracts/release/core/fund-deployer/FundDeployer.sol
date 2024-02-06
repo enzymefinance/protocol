@@ -279,7 +279,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
             _comptrollerConfig: _comptrollerConfig
         });
 
-        IComptroller(comptrollerProxy_).activate(false);
+        IComptroller(comptrollerProxy_).activate();
 
         IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(vaultProxy_);
 
@@ -410,7 +410,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
         IVault(_vaultProxy).setAccessorForFundReconfiguration(request.nextComptrollerProxy);
 
         // Activate the new ComptrollerProxy
-        IComptroller(request.nextComptrollerProxy).activate(true);
+        IComptroller(request.nextComptrollerProxy).activate();
 
         // Remove the reconfiguration request
         delete vaultProxyToReconfigurationRequest[_vaultProxy];
@@ -455,7 +455,7 @@ contract FundDeployer is IFundDeployer, IMigrationHookHandler {
 
         dispatcherContract.executeMigration(_vaultProxy, _bypassPrevReleaseFailure);
 
-        IComptroller(comptrollerProxy).activate(true);
+        IComptroller(comptrollerProxy).activate();
 
         IProtocolFeeTracker(getProtocolFeeTracker()).initializeForVault(_vaultProxy);
     }

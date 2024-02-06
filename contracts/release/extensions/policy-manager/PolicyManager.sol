@@ -57,17 +57,13 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
     // EXTERNAL FUNCTIONS
 
     /// @notice Validates and initializes policies as necessary prior to fund activation
-    /// @param _isMigratedFund True if the fund is migrating to this release
     /// @dev There will be no enabledPolicies if the caller is not a valid ComptrollerProxy
-    function activateForFund(bool _isMigratedFund) external override {
+    function activateForFund() external override {
         address comptrollerProxy = msg.sender;
 
-        // Policies must assert that they are congruent with migrated vault state
-        if (_isMigratedFund) {
-            address[] memory enabledPolicies = getEnabledPoliciesForFund(comptrollerProxy);
-            for (uint256 i; i < enabledPolicies.length; i++) {
-                __activatePolicyForFund(comptrollerProxy, enabledPolicies[i]);
-            }
+        address[] memory enabledPolicies = getEnabledPoliciesForFund(comptrollerProxy);
+        for (uint256 i; i < enabledPolicies.length; i++) {
+            __activatePolicyForFund(comptrollerProxy, enabledPolicies[i]);
         }
     }
 
