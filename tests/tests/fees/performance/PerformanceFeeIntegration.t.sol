@@ -36,6 +36,7 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
         settings[0] = abi.encode(feeRate, feeRecipient);
 
         bytes memory feeManagerConfigData = abi.encode(fees, settings);
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
 
         (IComptrollerLib comptrollerProxy, IVaultLib vaultProxy,) = createFund({
             _fundDeployer: core.release.fundDeployer,
@@ -43,7 +44,8 @@ contract PerformanceFeeTest is IntegrationTest, PerformanceFeeUtils {
                 denominationAsset: address(denominationAsset),
                 sharesActionTimelock: 0,
                 feeManagerConfigData: feeManagerConfigData,
-                policyManagerConfigData: ""
+                policyManagerConfigData: "",
+                extensionsConfig: extensionsConfig
             })
         });
         IERC20 sharesToken = IERC20(address(vaultProxy));

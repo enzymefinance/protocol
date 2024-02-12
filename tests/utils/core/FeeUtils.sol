@@ -12,6 +12,14 @@ enum Actions {
 }
 
 abstract contract FeeUtils is CoreUtilsBase {
+    function encodeFeeManagerConfigData(address[] memory _fees, bytes[] memory _settingsData)
+        internal
+        pure
+        returns (bytes memory configData_)
+    {
+        return abi.encode(_fees, _settingsData);
+    }
+
     function invokeContinuousFeeHook(IFeeManager _feeManager, IComptrollerLib _comptrollerProxy) internal {
         _comptrollerProxy.callOnExtension({
             _extension: address(_feeManager),
@@ -19,36 +27,4 @@ abstract contract FeeUtils is CoreUtilsBase {
             _callArgs: ""
         });
     }
-}
-
-/// @dev Complete IFee implementation without logic; simply returns all default values
-contract MockDefaultFee is IFee {
-    function activateForFund(address _comptrollerProxy, address _vaultProxy) external {}
-
-    function addFundSettings(address _comptrollerProxy, bytes memory _settingsData) external {}
-
-    function getRecipientForFund(address _comptrollerProxy) external view returns (address recipient_) {}
-
-    /// @dev Legacy. No need to test anything.
-    function payout(address _comptrollerProxy, address _vaultProxy) external returns (bool isPayable_) {}
-
-    function settle(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        FeeHook _hook,
-        bytes memory _settlementData,
-        uint256 _gav
-    ) external returns (SettlementType settlementType_, address payer_, uint256 sharesDue_) {}
-
-    function settlesOnHook(FeeHook _hook) external view returns (bool settles_, bool usesGav_) {}
-
-    function updatesOnHook(FeeHook _hook) external view returns (bool updates_, bool usesGav_) {}
-
-    function update(
-        address _comptrollerProxy,
-        address _vaultProxy,
-        FeeHook _hook,
-        bytes memory _settlementData,
-        uint256 _gav
-    ) external {}
 }

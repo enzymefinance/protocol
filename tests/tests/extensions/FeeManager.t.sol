@@ -10,7 +10,8 @@ import {IFee} from "tests/interfaces/internal/IFee.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
-import {Actions as FeeManagerActions, MockDefaultFee} from "tests/utils/core/FeeUtils.sol";
+import {Actions as FeeManagerActions} from "tests/utils/core/FeeUtils.sol";
+import {MockDefaultFee} from "tests/utils/Mocks.sol";
 
 // TODO:
 // - ideally, we test correct behavior during creation AND (later) post-creation

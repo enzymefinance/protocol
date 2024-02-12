@@ -77,11 +77,13 @@ contract FundDeployerTest is IntegrationTest {
         address expectedComptrollerProxy = predictComptrollerProxyAddress(core.release.fundDeployer);
         address expectedVaultProxyAddress = predictVaultProxyAddress(core.persistent.dispatcher);
 
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         IFundDeployer.ConfigInput memory comptrollerConfig = IFundDeployer.ConfigInput({
             denominationAsset: denominationAsset,
             sharesActionTimelock: 123,
             feeManagerConfigData: "",
-            policyManagerConfigData: ""
+            policyManagerConfigData: "",
+            extensionsConfig: extensionsConfig
         });
 
         expectEmit(address(core.release.fundDeployer));

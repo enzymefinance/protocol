@@ -58,13 +58,16 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         vm.expectRevert("Only a permissioned migrator can call this function");
         vm.prank(randomSigner);
 
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
+
         core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
             _comptrollerConfig: IFundDeployer.ConfigInput({
                 denominationAsset: address(standardPrimitive),
                 sharesActionTimelock: 123,
                 feeManagerConfigData: "",
-                policyManagerConfigData: ""
+                policyManagerConfigData: "",
+                extensionsConfig: extensionsConfig
             }),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
@@ -83,6 +86,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         emit MigrationRequestCreated(migrationRequestCaller, address(vaultProxyCore), address(expectedComptrollerProxy));
 
         // Create migration request
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(migrationRequestCaller);
         IComptrollerLib comptrollerProxy = IComptrollerLib(
             core.release.fundDeployer.createMigrationRequest({
@@ -91,7 +95,8 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
                     denominationAsset: denominationAsset,
                     sharesActionTimelock: sharesActionTimelock,
                     feeManagerConfigData: "",
-                    policyManagerConfigData: ""
+                    policyManagerConfigData: "",
+                    extensionsConfig: extensionsConfig
                 }),
                 _bypassPrevReleaseFailure: bypassPrevReleaseFailure
             })
@@ -127,6 +132,7 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
         emit MigrationRequestCreated(migrator, address(vaultProxyCore), address(expectedComptrollerProxy));
 
         // Create migration request
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(migrator);
         core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
@@ -134,7 +140,8 @@ contract FundDeployerCreateMigrationRequestTest is FundDeployerMigrationInTest {
                 denominationAsset: address(standardPrimitive),
                 sharesActionTimelock: 123,
                 feeManagerConfigData: "",
-                policyManagerConfigData: ""
+                policyManagerConfigData: "",
+                extensionsConfig: extensionsConfig
             }),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
@@ -148,6 +155,7 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
         super.setUp();
 
         // Create migration request
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(vaultOwner);
         nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
@@ -155,7 +163,8 @@ contract FundDeployerCancelMigrationTest is FundDeployerMigrationInTest {
                 denominationAsset: address(standardPrimitive),
                 sharesActionTimelock: 123,
                 feeManagerConfigData: "",
-                policyManagerConfigData: ""
+                policyManagerConfigData: "",
+                extensionsConfig: extensionsConfig
             }),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });
@@ -225,6 +234,7 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
         super.setUp();
 
         // Create migration request
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig;
         vm.prank(vaultOwner);
         nextComptrollerProxyAddress = core.release.fundDeployer.createMigrationRequest({
             _vaultProxy: address(vaultProxyCore),
@@ -232,7 +242,8 @@ contract FundDeployerExecuteMigrationTest is FundDeployerMigrationInTest {
                 denominationAsset: address(standardPrimitive),
                 sharesActionTimelock: 123,
                 feeManagerConfigData: "",
-                policyManagerConfigData: ""
+                policyManagerConfigData: "",
+                extensionsConfig: extensionsConfig
             }),
             _bypassPrevReleaseFailure: bypassPrevReleaseFailure
         });

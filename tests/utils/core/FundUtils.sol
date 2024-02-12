@@ -6,9 +6,11 @@ import {CoreUtilsBase} from "tests/utils/bases/CoreUtilsBase.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IDispatcher} from "tests/interfaces/internal/IDispatcher.sol";
+import {IExtension} from "tests/interfaces/internal/IExtension.sol";
 import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
+import {MockDefaultMigrationHookHandler} from "tests/utils/Mocks.sol";
 
 bytes32 constant ANY_VAULT_CALL = keccak256(abi.encodePacked("mln.vaultCall.any"));
 
@@ -47,26 +49,40 @@ abstract contract FundUtils is CoreUtilsBase {
         vaultProxy_ = IVaultLib(payable(vaultProxy));
     }
 
+    function createFundMinimal(IFundDeployer _fundDeployer, IERC20 _denominationAsset)
+        internal
+        returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_)
+    {
+        IFundDeployer.ConfigInput memory config;
+        config.denominationAsset = address(_denominationAsset);
+
+        return createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: config});
+    }
+
+    function createFundWithExtension(
+        IFundDeployer _fundDeployer,
+        IERC20 _denominationAsset,
+        address _extensionAddress,
+        bytes memory _extensionConfigData
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_) {
+        IFundDeployer.ConfigInput memory config;
+        config.denominationAsset = address(_denominationAsset);
+        config.extensionsConfig = new IFundDeployer.ExtensionConfigInput[](1);
+        config.extensionsConfig[0].extension = _extensionAddress;
+        config.extensionsConfig[0].configData = _extensionConfigData;
+
+        return createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: config});
+    }
+
     function createVaultFromMockFundDeployer(IDispatcher _dispatcher, address _vaultLibAddress)
         internal
         returns (address vaultProxyAddress_)
     {
-        address mockFundDeployerAddress = makeAddr("createVaultFromMockFundDeployer: MockFundDeployer");
         address vaultOwner = makeAddr("createVaultFromMockFundDeployer: VaultOwner");
-
         address originalFundDeployerAddress = _dispatcher.getCurrentFundDeployer();
 
-        // 1. Create MockFundDeployer with empty IMigrationHookHandler function calls
-        vm.mockCall({
-            callee: mockFundDeployerAddress,
-            data: abi.encodeWithSelector(IMigrationHookHandler.invokeMigrationOutHook.selector),
-            returnData: ""
-        });
-        vm.mockCall({
-            callee: mockFundDeployerAddress,
-            data: abi.encodeWithSelector(IMigrationHookHandler.invokeMigrationInCancelHook.selector),
-            returnData: ""
-        });
+        // 1. Create MockFundDeployer
+        address mockFundDeployerAddress = address(new MockDefaultMigrationHookHandler());
 
         // 2. Set MockFundDeployer as the current Dispatcher.FundDeployer
         vm.prank(_dispatcher.getOwner());

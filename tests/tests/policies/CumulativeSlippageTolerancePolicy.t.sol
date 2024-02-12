@@ -89,15 +89,12 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
         bytes[] memory settingsData = new bytes[](1);
         settingsData[0] = encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance});
 
-        (comptrollerProxy, vaultProxy, vaultOwner) = createFund({
-            _fundDeployer: core.release.fundDeployer,
-            _comptrollerConfig: IFundDeployer.ConfigInput({
-                denominationAsset: address(fakeToken0),
-                sharesActionTimelock: 0,
-                policyManagerConfigData: encodePolicyManagerConfigData(policies, settingsData),
-                feeManagerConfigData: ""
-            })
-        });
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(fakeToken0);
+        comptrollerConfig.policyManagerConfigData = encodePolicyManagerConfigData(policies, settingsData);
+
+        (comptrollerProxy, vaultProxy, vaultOwner) =
+            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
 
         buyShares({
             _comptrollerProxy: comptrollerProxy,

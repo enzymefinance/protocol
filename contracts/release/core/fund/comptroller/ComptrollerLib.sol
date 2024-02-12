@@ -37,15 +37,10 @@ contract ComptrollerLib is IComptroller {
     event BuyBackMaxProtocolFeeSharesFailed(
         bytes indexed failureReturnData, uint256 sharesAmount, uint256 buybackValueInMln, uint256 gav
     );
-    event DeactivateFeeManagerFailed();
 
-    event Initialized(
-        address vaultProxy,
-        address denominationAsset,
-        uint256 sharesActionTimelock,
-        bytes feeManagerConfigData,
-        bytes policyManagerConfigData
-    );
+    event ExtensionEnabled(address indexed extension, bytes configData);
+
+    event Initialized(address vaultProxy, ConfigInput config);
 
     event MigratedSharesDuePaid(uint256 sharesDue);
 
@@ -98,6 +93,9 @@ contract ComptrollerLib is IComptroller {
     // that must expire before that account transfers or redeems their shares
     uint256 internal sharesActionTimelock;
     mapping(address => uint256) internal acctToLastSharesBoughtTimestamp;
+    // The active arbitrary extensions for the fund
+    mapping(address => bool) internal accountToIsExtension;
+    address[] internal extensions;
 
     ///////////////
     // MODIFIERS //
@@ -191,28 +189,6 @@ contract ComptrollerLib is IComptroller {
     // GENERAL //
     /////////////
 
-    /// @notice Calls a specified action on an Extension
-    /// @param _extension The Extension contract to call (e.g., FeeManager)
-    /// @param _actionId An ID representing the action to take on the extension (see extension)
-    /// @param _callArgs The encoded data for the call
-    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
-    /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
-    /// during calls originating from this function.
-    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs)
-        external
-        override
-        locksReentrance
-        allowsPermissionedVaultAction
-    {
-        require(
-            _extension == getFeeManager() || _extension == getIntegrationManager()
-                || _extension == getExternalPositionManager(),
-            "callOnExtension: _extension invalid"
-        );
-
-        IExtension(_extension).receiveCallFromComptroller(__msgSender(), _actionId, _callArgs);
-    }
-
     /// @notice Makes an arbitrary call with the VaultProxy contract as the sender
     /// @param _contract The contract to call
     /// @param _selector The selector to call
@@ -302,20 +278,45 @@ contract ComptrollerLib is IComptroller {
         );
     }
 
-    ////////////////////////////////
-    // PERMISSIONED VAULT ACTIONS //
-    ////////////////////////////////
+    ////////////////
+    // EXTENSIONS //
+    ////////////////
+
+    /// @notice Calls a specified action on an Extension
+    /// @param _extension The Extension contract to call (e.g., FeeManager)
+    /// @param _actionId An ID representing the action to take on the extension (see extension)
+    /// @param _callArgs The encoded data for the call
+    /// @dev Used to route arbitrary calls, so that msg.sender is the ComptrollerProxy
+    /// (for access control). Uses a mutex of sorts that allows "permissioned vault actions"
+    /// during calls originating from this function.
+    function callOnExtension(address _extension, uint256 _actionId, bytes calldata _callArgs)
+        external
+        override
+        locksReentrance
+        allowsPermissionedVaultAction
+    {
+        require(
+            _extension == FEE_MANAGER || _extension == INTEGRATION_MANAGER || _extension == EXTERNAL_POSITION_MANAGER
+                || isExtension(_extension),
+            "callOnExtension: _extension invalid"
+        );
+
+        IExtension(_extension).receiveCallFromComptroller(__msgSender(), _actionId, _callArgs);
+    }
 
     /// @notice Makes a permissioned, state-changing call on the VaultProxy contract
     /// @param _action The enum representing the VaultAction to perform on the VaultProxy
     /// @param _actionData The call data for the action to perform
+    /// @dev For an extension to act on the VaultProxy, a call must originate from this contract such that:
+    /// 1. User calls `this.callOnExtension()`, toggling `permissionedVaultActionAllowed` mutex
+    /// 2. Extension calls `this.permissionedVaultAction()`, which passes the action to the VaultProxy
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external override {
         require(permissionedVaultActionAllowed, "permissionedVaultAction: No actions allowed");
 
         // Validate caller
         require(
-            msg.sender == getIntegrationManager() || msg.sender == getExternalPositionManager()
-                || msg.sender == getFeeManager(),
+            msg.sender == INTEGRATION_MANAGER || msg.sender == EXTERNAL_POSITION_MANAGER || msg.sender == FEE_MANAGER
+                || isExtension(msg.sender),
             "permissionedVaultAction: Unauthorized caller"
         );
 
@@ -328,6 +329,21 @@ contract ComptrollerLib is IComptroller {
         }
 
         IVault(getVaultProxy()).receiveValidatedVaultAction(_action, _actionData);
+    }
+
+    // EXTENSION REGISTRATION
+
+    /// @dev Helper to enable an extension
+    function __enableExtension(ExtensionConfigInput calldata _extensionConfig) private {
+        require(!isExtension(_extensionConfig.extension), "__enableExtension: Already enabled");
+
+        accountToIsExtension[_extensionConfig.extension] = true;
+        extensions.push(_extensionConfig.extension);
+
+        IExtension(_extensionConfig.extension).setConfigForFund(_extensionConfig.configData);
+        // TODO: if allowing enablement post-creation, conditionally run activateForFund() if Comptroller already active
+
+        emit ExtensionEnabled(_extensionConfig.extension, _extensionConfig.configData);
     }
 
     ///////////////
@@ -363,19 +379,19 @@ contract ComptrollerLib is IComptroller {
             IExtension(getFeeManager()).setConfigForFund(_config.feeManagerConfigData);
         }
 
-        // For all other extensions, we call to cache the validated VaultProxy, for simplicity.
+        // For all other hardcoded extensions, we call to cache the validated VaultProxy, for simplicity.
         // In the future, we can consider caching conditionally.
         IExtension(getExternalPositionManager()).setConfigForFund("");
         IExtension(getIntegrationManager()).setConfigForFund("");
         IExtension(getPolicyManager()).setConfigForFund(_config.policyManagerConfigData);
 
-        emit Initialized(
-            _vaultProxy,
-            _config.denominationAsset,
-            _config.sharesActionTimelock,
-            _config.feeManagerConfigData,
-            _config.policyManagerConfigData
-        );
+        // Arbitrary extensions
+        uint256 extensionsLength = _config.extensionsConfig.length;
+        for (uint256 i; i < extensionsLength; i++) {
+            __enableExtension(_config.extensionsConfig[i]);
+        }
+
+        emit Initialized(_vaultProxy, _config);
     }
 
     /// @notice Runs atomic logic after a ComptrollerProxy has become its vaultProxy's `accessor`
@@ -383,9 +399,15 @@ contract ComptrollerLib is IComptroller {
     function activate() external override onlyFundDeployer {
         IVault(getVaultProxy()).addTrackedAsset(getDenominationAsset());
 
-        // Activate extensions
-        IExtension(getFeeManager()).activateForFund();
-        IExtension(getPolicyManager()).activateForFund();
+        // Activate hardcoded extensions
+        IExtension(FEE_MANAGER).activateForFund();
+        IExtension(POLICY_MANAGER).activateForFund();
+
+        // Activate arbitrary extensions
+        uint256 extensionsLength = extensions.length;
+        for (uint256 i; i < extensionsLength; i++) {
+            IExtension(extensions[i]).activateForFund();
+        }
     }
 
     /// @notice Wind down and destroy a ComptrollerProxy that is active
@@ -399,6 +421,14 @@ contract ComptrollerLib is IComptroller {
 
         // Do not attempt to auto-buyback protocol fee shares in this case,
         // as the call is gav-dependent and can consume too much gas
+
+        // Deactivate arbitrary extensions
+        uint256 extensionsLength = extensions.length;
+        for (uint256 i; i < extensionsLength; i++) {
+            IExtension(extensions[i]).deactivateForFund();
+        }
+
+        // TODO: clean up storage for refund?
     }
 
     ////////////////
@@ -1012,6 +1042,12 @@ contract ComptrollerLib is IComptroller {
         return denominationAsset;
     }
 
+    /// @notice Gets all active extension addresses
+    /// @return extensions_ The extension addresses
+    function getExtensions() external view override returns (address[] memory extensions_) {
+        return extensions;
+    }
+
     /// @notice Gets the timestamp of the last time shares were bought for a given account
     /// @param _who The account for which to get the timestamp
     /// @return lastSharesBoughtTimestamp_ The timestamp of the last shares bought
@@ -1034,5 +1070,12 @@ contract ComptrollerLib is IComptroller {
     /// @return vaultProxy_ The `vaultProxy` variable value
     function getVaultProxy() public view override returns (address vaultProxy_) {
         return vaultProxy;
+    }
+
+    /// @notice Returns whether or not a given account is an active extension
+    /// @param _who The account
+    /// @return isExtension_ True if active extension
+    function isExtension(address _who) public view override returns (bool isExtension_) {
+        return accountToIsExtension[_who];
     }
 }

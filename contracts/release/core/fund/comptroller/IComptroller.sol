@@ -27,6 +27,15 @@ interface IComptroller {
         bytes feeManagerConfigData;
         // Encoded data for the policies to be enabled for the fund
         bytes policyManagerConfigData;
+        // Arbitrary extensions to be enabled for the fund
+        ExtensionConfigInput[] extensionsConfig;
+    }
+
+    struct ExtensionConfigInput {
+        // The extension address
+        address extension;
+        // Encoded data for the extension-specific config
+        bytes configData;
     }
 
     function activate() external;
@@ -54,6 +63,8 @@ interface IComptroller {
     function getDenominationAsset() external view returns (address denominationAsset_);
 
     function getDispatcher() external view returns (address dispatcher_);
+
+    function getExtensions() external view returns (address[] memory extensions_);
 
     function getExternalPositionManager() external view returns (address externalPositionManager_);
 
@@ -83,6 +94,8 @@ interface IComptroller {
     function getWethToken() external view returns (address wethToken_);
 
     function init(address _vaultProxy, ConfigInput calldata _config) external;
+
+    function isExtension(address _who) external view returns (bool isExtension_);
 
     function permissionedVaultAction(IVault.VaultAction _action, bytes calldata _actionData) external;
 

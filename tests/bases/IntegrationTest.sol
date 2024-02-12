@@ -294,19 +294,27 @@ abstract contract IntegrationTest is CoreUtils {
         // Create missing aggregators for corePrimitives
         address chainlinkMlnEthAggregator =
             address(createTestAggregator({_price: CHAINLINK_AGGREGATOR_PRECISION_ETH / 100}));
+        address chainlinkWrappedNativeTokenEthAggregator =
+            address(createTestAggregator({_price: CHAINLINK_AGGREGATOR_PRECISION_ETH / 100}));
 
         address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(chainlinkEthUsdAggregatorAddress));
 
-        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](2);
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](3);
         // System primitives
         corePrimitives[0] = CorePrimitiveInput({
+            symbol: "wNATIVE",
+            assetAddress: wrappedNativeTokenAddress,
+            aggregatorAddress: chainlinkWrappedNativeTokenEthAggregator,
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
+        });
+        corePrimitives[1] = CorePrimitiveInput({
             symbol: "MLN",
             assetAddress: mlnTokenAddress,
             aggregatorAddress: chainlinkMlnEthAggregator,
             rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
         });
         // Extra primitives
-        corePrimitives[1] = CorePrimitiveInput({
+        corePrimitives[2] = CorePrimitiveInput({
             symbol: "USD",
             assetAddress: simulatedUsdAddress,
             aggregatorAddress: simulatedUsdAddress,

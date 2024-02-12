@@ -4,17 +4,22 @@ pragma solidity 0.8.19;
 import {IAddressListRegistry as IAddressListRegistryProd} from
     "contracts/persistent/address-list-registry/IAddressListRegistry.sol";
 import {IUintListRegistry as IUintListRegistryProd} from "contracts/persistent/uint-list-registry/IUintListRegistry.sol";
+import {IVault as IVaultProd} from "contracts/release/core/fund/vault/IVault.sol";
 import {IFeeManager as IFeeManagerProd} from "contracts/release/extensions/fee-manager/IFeeManager.sol";
 import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
     "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
+import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IFeeManager} from "tests/interfaces/internal/IFeeManager.sol";
+import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IUintListRegistry} from "tests/interfaces/internal/IUintListRegistry.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {CommonUtilsBase} from "tests/utils/bases/CommonUtilsBase.sol";
 
 abstract contract TypeUtils is CommonUtilsBase {
+    // TYPE FORMATTERS: production enums
+
     function formatAddressListRegistryUpdateType(IAddressListRegistryProd.UpdateType _updateType)
         internal
         pure
@@ -45,6 +50,39 @@ abstract contract TypeUtils is CommonUtilsBase {
         returns (IUintListRegistry.UpdateType formattedUpdateType_)
     {
         return IUintListRegistry.UpdateType.wrap(uint8(_updateType));
+    }
+
+    function formatVaultActionForComptroller(IVaultProd.VaultAction _vaultAction)
+        internal
+        pure
+        returns (IComptrollerLib.VaultAction formattedVaultAction_)
+    {
+        return IComptrollerLib.VaultAction.wrap(uint8(_vaultAction));
+    }
+
+    // TYPE FORMATTERS: test interface structs
+
+    function formatComptrollerConfigInputForFundDeployer(IComptrollerLib.ConfigInput memory _config)
+        internal
+        pure
+        returns (IFundDeployer.ConfigInput memory formattedConfig_)
+    {
+        IFundDeployer.ExtensionConfigInput[] memory extensionsConfig =
+            new IFundDeployer.ExtensionConfigInput[](_config.extensionsConfig.length);
+        for (uint256 i; i < _config.extensionsConfig.length; i++) {
+            extensionsConfig[i] = IFundDeployer.ExtensionConfigInput({
+                extension: _config.extensionsConfig[i].extension,
+                configData: _config.extensionsConfig[i].configData
+            });
+        }
+
+        return IFundDeployer.ConfigInput({
+            denominationAsset: _config.denominationAsset,
+            sharesActionTimelock: _config.sharesActionTimelock,
+            feeManagerConfigData: _config.feeManagerConfigData,
+            policyManagerConfigData: _config.policyManagerConfigData,
+            extensionsConfig: extensionsConfig
+        });
     }
 
     // toArray() - bool
