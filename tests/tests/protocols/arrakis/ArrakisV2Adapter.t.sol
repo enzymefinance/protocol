@@ -12,10 +12,6 @@ import {IArrakisV2Vault} from "tests/interfaces/external/IArrakisV2Vault.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IArrakisV2Adapter} from "tests/interfaces/internal/IArrakisV2Adapter.sol";
-import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IIntegrationManager} from "tests/interfaces/internal/IIntegrationManager.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 
 import {
     ARRAKIS_HELPER_ADDRESS,
@@ -59,10 +55,7 @@ abstract contract ArrakisV2AdapterTestBase is IntegrationTest {
             });
         }
 
-        // Create fund with arbitrary denomination asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
-
+        // Create fund
         (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Seed the fund with Arrakis vault underlyings

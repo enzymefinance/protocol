@@ -42,7 +42,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
 
     IBalancerV2Vault internal balancerVault = IBalancerV2Vault(VAULT_ADDRESS);
 
-    address internal fudnOwner;
+    address internal fundOwner;
     address internal vaultProxyAddress;
     address internal comptrollerProxyAddress;
 
@@ -61,11 +61,8 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     IERC20 internal stakingToken;
 
     function setUp() public virtual override {
-        // Create fund with arbitrary denomination asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
-
-        (comptrollerProxyAddress, vaultProxyAddress, fudnOwner) = createTradingFundForVersion(version);
+        // Create fund
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Store pool assets
         (poolAssetAddresses,,) = balancerVault.getPoolTokens(poolId);
@@ -85,7 +82,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __claimRewards() internal {
         bytes memory actionArgs = abi.encode(address(stakingToken));
 
-        vm.prank(fudnOwner);
+        vm.prank(fundOwner);
         callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
@@ -104,7 +101,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
         bytes memory actionArgs =
             abi.encode(address(stakingToken), poolId, _minIncomingBptAmount, _spendAssets, _spendAssetAmounts, _request);
 
-        vm.prank(fudnOwner);
+        vm.prank(fundOwner);
         callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
@@ -117,7 +114,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __stake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
-        vm.prank(fudnOwner);
+        vm.prank(fundOwner);
         callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
@@ -130,7 +127,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
     function __unstake(uint256 _amount) internal {
         bytes memory actionArgs = abi.encode(address(stakingToken), _amount);
 
-        vm.prank(fudnOwner);
+        vm.prank(fundOwner);
         callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
@@ -150,7 +147,7 @@ abstract contract PoolTestBase is IntegrationTest, BalancerV2Utils {
             address(stakingToken), poolId, _bptAmount, _incomingAssetAddresses, _minIncomingAssetAmounts, _request
         );
 
-        vm.prank(fudnOwner);
+        vm.prank(fundOwner);
         callOnIntegrationForVersion({
             _version: version,
             _comptrollerProxyAddress: comptrollerProxyAddress,
@@ -304,7 +301,7 @@ abstract contract BalancerAndAuraPoolTest is PoolTestBase {
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector
             });
-            vm.prank(fudnOwner);
+            vm.prank(fundOwner);
             IComptrollerLib(comptrollerProxyAddress).vaultCallOnContract({
                 _contract: ETHEREUM_MINTER_ADDRESS,
                 _selector: ICurveMinter.toggle_approve_mint.selector,

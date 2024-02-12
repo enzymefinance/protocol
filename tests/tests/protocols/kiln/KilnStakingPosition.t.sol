@@ -16,7 +16,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IKilnStakingContract} from "tests/interfaces/external/IKilnStakingContract.sol";
 
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
+import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 import {IKilnStakingPositionLib} from "tests/interfaces/internal/IKilnStakingPositionLib.sol";
 import {IKilnStakingPositionParser} from "tests/interfaces/internal/IKilnStakingPositionParser.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
@@ -48,50 +48,22 @@ abstract contract TestBase is IntegrationTest {
     uint256 internal exitedValidatorEthThreshold = 28 ether;
 
     address internal fundOwner;
-    IComptrollerLib internal comptrollerProxy;
-    IVaultLib internal vaultProxy;
+    address internal comptrollerProxyAddress;
+    address internal vaultProxyAddress;
+
+    // Set by child contract
+    EnzymeVersion internal version;
 
     function setUp() public virtual override {
         // Must be a block when there are enough validators provisioned in StakingContract.
         // Switch to a specific block if this becomes an issue.
-        setUpMainnetEnvironment(ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE);
-
-        // TODO: REMOVE THIS AFTER SUCCESSFUL CONTRACT UPGRADE ON MAINNET
-        // Update our Kiln contracts to their latest versions
-        address councilSafeAddress = 0xb270FE91e8E4b80452fBF1b4704208792A350f53;
-        vm.startPrank(councilSafeAddress);
-        // Upgrade CLFeeDispatcher
-        {
-            address clFeeDispatcherAddress = 0x1c4Ad85fF36D76172Eb8015a3B36858197bb1320;
-            address nextCLFeeDispatcherImplementation = 0x462Dd07A79e5DDfBe0C171449C5c01788d5d03C3;
-            (bool success,) = clFeeDispatcherAddress.call(
-                abi.encodeWithSignature("upgradeTo(address)", nextCLFeeDispatcherImplementation)
-            );
-            require(success);
-        }
-        // Upgrade StakingContract
-        {
-            address nextStakingContractImplementation = 0x0A7272e8573aea8359FEC143ac02AED90F822bD0;
-            bytes memory nextStakingContractUpgradeData =
-                abi.encodeWithSignature("initialize_2(uint256,uint256)", 10000, 10000);
-            (bool success,) = address(stakingContract).call(
-                abi.encodeWithSignature(
-                    "upgradeToAndCall(address,bytes)", nextStakingContractImplementation, nextStakingContractUpgradeData
-                )
-            );
-            require(success);
-        }
-        vm.stopPrank();
+        setUpMainnetEnvironment();
 
         // Create a fund
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
+        (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
-        (comptrollerProxy, vaultProxy, fundOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
-
-        // Buy shares to seed fund with WETH
-        buyShares({_comptrollerProxy: comptrollerProxy, _sharesBuyer: fundOwner, _amountToDeposit: 1000 ether});
+        // Seed with wETH
+        increaseTokenBalance({_token: wethToken, _to: vaultProxyAddress, _amount: 1000 ether});
 
         // Deploy all KilnStakingPosition dependencies
         uint256 typeId;
@@ -100,12 +72,11 @@ abstract contract TestBase is IntegrationTest {
         // Create an empty KilnStakingPosition for the fund
         vm.prank(fundOwner);
         kilnStakingPosition = IKilnStakingPositionLib(
-            createExternalPosition({
-                _externalPositionManager: core.release.externalPositionManager,
-                _comptrollerProxy: comptrollerProxy,
+            createExternalPositionForVersion({
+                _version: version,
+                _comptrollerProxyAddress: comptrollerProxyAddress,
                 _typeId: typeId,
-                _initializationData: "",
-                _callOnExternalPositionCallArgs: ""
+                _initializationData: ""
             })
         );
     }
@@ -140,8 +111,8 @@ abstract contract TestBase is IntegrationTest {
         address kilnStakingPositionParserAddress = __deployKilnStakingPositionParser(stakingPositionsListId_);
 
         // Register KilnStakingPosition type
-        typeId_ = registerExternalPositionType({
-            _externalPositionManager: core.release.externalPositionManager,
+        typeId_ = registerExternalPositionTypeForVersion({
+            _version: version,
             _label: "KILN_STAKING",
             _lib: kilnStakingPositionLibAddress,
             _parser: kilnStakingPositionParserAddress
@@ -160,9 +131,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _publicKeys, _claimFeesType);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.ClaimFees),
             _actionArgs: actionArgs
@@ -171,9 +142,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __pausePositionValue() internal {
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.PausePositionValue),
             _actionArgs: ""
@@ -184,9 +155,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, _validatorAmount);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.Stake),
             _actionArgs: actionArgs
@@ -195,9 +166,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __sweepEth() internal {
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.SweepEth),
             _actionArgs: ""
@@ -206,9 +177,9 @@ abstract contract TestBase is IntegrationTest {
 
     function __unpausePositionValue() internal {
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.UnpausePositionValue),
             _actionArgs: ""
@@ -220,9 +191,9 @@ abstract contract TestBase is IntegrationTest {
         bytes memory actionArgs = abi.encode(_stakingContractAddress, packedPublicKeys);
 
         vm.prank(fundOwner);
-        callOnExternalPosition({
-            _externalPositionManager: core.release.externalPositionManager,
-            _comptrollerProxy: comptrollerProxy,
+        callOnExternalPositionForVersion({
+            _version: version,
+            _comptrollerProxyAddress: comptrollerProxyAddress,
             _externalPositionAddress: address(kilnStakingPosition),
             _actionId: uint256(IKilnStakingPositionProd.Actions.Unstake),
             _actionArgs: actionArgs
@@ -310,7 +281,7 @@ contract StakeTest is TestBase {
     }
 
     function test_success() public {
-        uint256 preTxVaultWethBal = wethToken.balanceOf(address(vaultProxy));
+        uint256 preTxVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
 
         uint256 validatorAmount = 5;
         uint256 ethAmount = validatorAmount * 32 ether;
@@ -328,7 +299,7 @@ contract StakeTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: logs,
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -338,7 +309,7 @@ contract StakeTest is TestBase {
         assertEq(validatorKeys.length, validatorAmount);
 
         // Assert vault ETH diff
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preTxVaultWethBal - ethAmount);
+        assertEq(wethToken.balanceOf(vaultProxyAddress), preTxVaultWethBal - ethAmount);
 
         // Assert EP storage
         assertEq(kilnStakingPosition.getValidatorCount(), validatorAmount);
@@ -351,7 +322,7 @@ contract SweepEthTest is TestBase {
         uint256 ethToSweep = 3 ether;
         vm.deal(address(kilnStakingPosition), ethToSweep);
 
-        uint256 preTxVaultWethBal = wethToken.balanceOf(address(vaultProxy));
+        uint256 preTxVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
 
         vm.recordLogs();
 
@@ -360,12 +331,12 @@ contract SweepEthTest is TestBase {
         // Assert assetsToReceive was correctly formatted (ETH only)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: toArray(address(wethToken))
         });
 
         // Assert vault ETH diff
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preTxVaultWethBal + ethToSweep);
+        assertEq(wethToken.balanceOf(vaultProxyAddress), preTxVaultWethBal + ethToSweep);
     }
 }
 
@@ -391,7 +362,7 @@ contract PausePositionValueTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -419,7 +390,7 @@ contract UnpausePositionValueTest is TestBase {
         // Assert assetsToReceive was correctly formatted (no assets in this case)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 
@@ -451,7 +422,7 @@ contract ClaimFeesTest is PostStakeTestBase {
 
         // Record pre-claim values
         preClaimValidatorCount = kilnStakingPosition.getValidatorCount();
-        preClaimVaultWethBal = wethToken.balanceOf(address(vaultProxy));
+        preClaimVaultWethBal = wethToken.balanceOf(vaultProxyAddress);
     }
 
     function test_failWithInvalidStakingContract() public {
@@ -478,7 +449,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         // No need to test in subsequent success tests
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: toArray(address(wethToken))
         });
 
@@ -486,7 +457,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         uint256 totalRewards = (clRewardAmount + elRewardAmount) * validatorKeysWithRewards.length;
         uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
         uint256 netRewards = totalRewards - kilnFee;
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+        assertEq(wethToken.balanceOf(vaultProxyAddress), preClaimVaultWethBal + netRewards, "Vault balance");
 
         // Validator count should be unchanged
         assertEq(kilnStakingPosition.getValidatorCount(), preClaimValidatorCount, "Validator count");
@@ -503,7 +474,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         uint256 totalRewards = clRewardAmount * validatorKeysWithRewards.length;
         uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
         uint256 netRewards = totalRewards - kilnFee;
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+        assertEq(wethToken.balanceOf(vaultProxyAddress), preClaimVaultWethBal + netRewards, "Vault balance");
 
         // Validator count should be unchanged
         assertEq(kilnStakingPosition.getValidatorCount(), preClaimValidatorCount, "Validator count");
@@ -550,7 +521,7 @@ contract ClaimFeesTest is PostStakeTestBase {
         uint256 totalRewards = elRewardAmount * validatorKeysWithRewards.length;
         uint256 kilnFee = __calcKilnFeeForRewardAmount(totalRewards);
         uint256 netRewards = totalRewards - kilnFee;
-        assertEq(wethToken.balanceOf(address(vaultProxy)), preClaimVaultWethBal + netRewards, "Vault balance");
+        assertEq(wethToken.balanceOf(vaultProxyAddress), preClaimVaultWethBal + netRewards, "Vault balance");
     }
 }
 
@@ -580,7 +551,7 @@ contract UnstakeTest is PostStakeTestBase {
         // Assert assetsToReceive was correctly formatted (No assets)
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
-            _externalPositionManager: core.release.externalPositionManager,
+            _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
             _assets: new address[](0)
         });
 

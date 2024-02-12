@@ -168,10 +168,9 @@ contract PolicyManager is IPolicyManager, ExtensionBase {
             return;
         }
 
-        // Limit calls to trusted components, in case policies update local storage upon runs
+        // Limit calls to trusted components of the fund, in case policies update local storage upon runs
         require(
-            msg.sender == _comptrollerProxy || msg.sender == IComptroller(_comptrollerProxy).getIntegrationManager()
-                || msg.sender == IComptroller(_comptrollerProxy).getExternalPositionManager(),
+            msg.sender == _comptrollerProxy || IComptroller(_comptrollerProxy).isExtension(msg.sender),
             "validatePolicies: Caller not allowed"
         );
 

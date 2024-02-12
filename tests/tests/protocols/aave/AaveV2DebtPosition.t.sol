@@ -18,7 +18,6 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IAaveDebtPositionLib} from "tests/interfaces/internal/IAaveDebtPositionLib.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 

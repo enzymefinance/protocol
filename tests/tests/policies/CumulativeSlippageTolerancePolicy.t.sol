@@ -83,18 +83,20 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
             _pricelessAssetBypassTimeLimit: _pricelessAssetBypassTimeLimit
         });
 
-        address[] memory policies = new address[](1);
-        policies[0] = address(cumulativeSlippageTolerancePolicy);
-
-        bytes[] memory settingsData = new bytes[](1);
-        settingsData[0] = encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance});
-
-        IFundDeployer.ConfigInput memory comptrollerConfig;
+        // Create fund with policy and integration extensions
+        IComptrollerLib.ConfigInput memory comptrollerConfig;
         comptrollerConfig.denominationAsset = address(fakeToken0);
-        comptrollerConfig.policyManagerConfigData = encodePolicyManagerConfigData(policies, settingsData);
+        comptrollerConfig.policyManagerConfigData = encodePolicyManagerConfigData({
+            _policies: toArray(address(cumulativeSlippageTolerancePolicy)),
+            _settingsData: toArray(encodeCumulativeSlippageTolerancePolicySettings({_tolerance: _tolerance}))
+        });
+        comptrollerConfig.extensionsConfig = new IComptrollerLib.ExtensionConfigInput[](1);
+        comptrollerConfig.extensionsConfig[0].extension = address(core.release.integrationManager);
 
-        (comptrollerProxy, vaultProxy, vaultOwner) =
-            createFund({_fundDeployer: core.release.fundDeployer, _comptrollerConfig: comptrollerConfig});
+        (comptrollerProxy, vaultProxy, vaultOwner) = createFund({
+            _fundDeployer: core.release.fundDeployer,
+            _comptrollerConfig: formatComptrollerConfigInputForFundDeployer(comptrollerConfig)
+        });
 
         buyShares({
             _comptrollerProxy: comptrollerProxy,

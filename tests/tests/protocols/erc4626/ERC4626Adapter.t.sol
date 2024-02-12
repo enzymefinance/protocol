@@ -11,7 +11,6 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
 import {IERC4626Adapter} from "tests/interfaces/internal/IERC4626Adapter.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 import {
     ETHEREUM_MORPHO_MAWETH_VAULT_ADDRESS,

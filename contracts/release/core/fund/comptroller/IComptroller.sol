@@ -66,13 +66,9 @@ interface IComptroller {
 
     function getExtensions() external view returns (address[] memory extensions_);
 
-    function getExternalPositionManager() external view returns (address externalPositionManager_);
-
     function getFeeManager() external view returns (address feeManager_);
 
     function getFundDeployer() external view returns (address fundDeployer_);
-
-    function getIntegrationManager() external view returns (address integrationManager_);
 
     function getLastSharesBoughtTimestampForAccount(address _who)
         external

@@ -18,9 +18,8 @@ import {IAaveV3ATokenListOwner} from "tests/interfaces/internal/IAaveV3ATokenLis
 import {IAaveV3DebtPositionLib} from "tests/interfaces/internal/IAaveV3DebtPositionLib.sol";
 import {IAddressListRegistry} from "tests/interfaces/internal/IAddressListRegistry.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
-import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
+import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 import {
@@ -50,10 +49,6 @@ abstract contract TestBase is IntegrationTest, AaveV3Utils {
 
     function setUp() public virtual override {
         lendingPool = IAaveV3PoolAddressProvider(poolAddressProvider).getPool();
-
-        // Create a fund with an arbitrary denomination asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
 
         // Create a fund
         (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);

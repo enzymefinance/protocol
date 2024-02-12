@@ -64,10 +64,7 @@ abstract contract PoolTestBase is IntegrationTest, CurveUtils {
         // isConvex can be empty (false)
         // stakingToken can be empty (no staking token)
 
-        // Create fund with arbitrary denomination asset
-        IFundDeployer.ConfigInput memory comptrollerConfig;
-        comptrollerConfig.denominationAsset = address(wethToken);
-
+        // Create fund
         (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
         // Store pool assets

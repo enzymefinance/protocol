@@ -11,7 +11,6 @@ import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 import {ILidoWithdrawalQueue} from "tests/interfaces/external/ILidoWithdrawalQueue.sol";
 
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {ILidoWithdrawalsPositionLib} from "tests/interfaces/internal/ILidoWithdrawalsPositionLib.sol";
 import {IExternalPositionManager} from "tests/interfaces/internal/IExternalPositionManager.sol";
 

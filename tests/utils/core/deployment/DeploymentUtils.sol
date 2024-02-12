@@ -28,9 +28,7 @@ struct DeployComptrollerLibParams {
     IProtocolFeeReserveLib protocolFeeReserveProxy;
     IFundDeployer fundDeployer;
     IValueInterpreter valueInterpreter;
-    IExternalPositionManager externalPositionManager;
     IFeeManager feeManager;
-    IIntegrationManager integrationManager;
     IPolicyManager policyManager;
     address mlnTokenAddress;
     address wrappedNativeTokenAddress;
@@ -195,9 +193,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
                 protocolFeeReserveProxy: _persistentContracts.protocolFeeReserveProxy,
                 fundDeployer: releaseContracts_.fundDeployer,
                 valueInterpreter: releaseContracts_.valueInterpreter,
-                externalPositionManager: releaseContracts_.externalPositionManager,
                 feeManager: releaseContracts_.feeManager,
-                integrationManager: releaseContracts_.integrationManager,
                 policyManager: releaseContracts_.policyManager,
                 mlnTokenAddress: _config.mlnTokenAddress,
                 wrappedNativeTokenAddress: _config.wrappedNativeTokenAddress
@@ -324,9 +320,7 @@ abstract contract DeploymentUtils is CoreUtilsBase {
             params.protocolFeeReserveProxy,
             params.fundDeployer,
             params.valueInterpreter,
-            params.externalPositionManager,
             params.feeManager,
-            params.integrationManager,
             params.policyManager,
             params.mlnTokenAddress,
             params.wrappedNativeTokenAddress

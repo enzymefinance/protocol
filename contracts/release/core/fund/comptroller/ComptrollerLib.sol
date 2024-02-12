@@ -66,10 +66,8 @@ contract ComptrollerLib is IComptroller {
     address private constant SPECIFIC_ASSET_REDEMPTION_DUMMY_FORFEIT_ADDRESS =
         0x000000000000000000000000000000000000aaaa;
     address private immutable DISPATCHER;
-    address private immutable EXTERNAL_POSITION_MANAGER;
     address private immutable FUND_DEPLOYER;
     address private immutable FEE_MANAGER;
-    address private immutable INTEGRATION_MANAGER;
     address private immutable MLN_TOKEN;
     address private immutable POLICY_MANAGER;
     address private immutable PROTOCOL_FEE_RESERVE;
@@ -166,18 +164,14 @@ contract ComptrollerLib is IComptroller {
         address _protocolFeeReserve,
         address _fundDeployer,
         address _valueInterpreter,
-        address _externalPositionManager,
         address _feeManager,
-        address _integrationManager,
         address _policyManager,
         address _mlnToken,
         address _wethToken
     ) {
         DISPATCHER = _dispatcher;
-        EXTERNAL_POSITION_MANAGER = _externalPositionManager;
         FEE_MANAGER = _feeManager;
         FUND_DEPLOYER = _fundDeployer;
-        INTEGRATION_MANAGER = _integrationManager;
         MLN_TOKEN = _mlnToken;
         POLICY_MANAGER = _policyManager;
         PROTOCOL_FEE_RESERVE = _protocolFeeReserve;
@@ -295,11 +289,7 @@ contract ComptrollerLib is IComptroller {
         locksReentrance
         allowsPermissionedVaultAction
     {
-        require(
-            _extension == FEE_MANAGER || _extension == INTEGRATION_MANAGER || _extension == EXTERNAL_POSITION_MANAGER
-                || isExtension(_extension),
-            "callOnExtension: _extension invalid"
-        );
+        require(_extension == FEE_MANAGER || isExtension(_extension), "callOnExtension: _extension invalid");
 
         IExtension(_extension).receiveCallFromComptroller(__msgSender(), _actionId, _callArgs);
     }
@@ -314,11 +304,7 @@ contract ComptrollerLib is IComptroller {
         require(permissionedVaultActionAllowed, "permissionedVaultAction: No actions allowed");
 
         // Validate caller
-        require(
-            msg.sender == INTEGRATION_MANAGER || msg.sender == EXTERNAL_POSITION_MANAGER || msg.sender == FEE_MANAGER
-                || isExtension(msg.sender),
-            "permissionedVaultAction: Unauthorized caller"
-        );
+        require(msg.sender == FEE_MANAGER || isExtension(msg.sender), "permissionedVaultAction: Unauthorized caller");
 
         // Validate action as needed
         if (_action == IVault.VaultAction.RemoveTrackedAsset) {
@@ -374,15 +360,11 @@ contract ComptrollerLib is IComptroller {
 
         // 2. Extensions config
 
+        // Core extensions
         // Since fees can only be set in this step, if there are no fees, there is no need to set the validated VaultProxy
         if (_config.feeManagerConfigData.length > 0) {
             IExtension(getFeeManager()).setConfigForFund(_config.feeManagerConfigData);
         }
-
-        // For all other hardcoded extensions, we call to cache the validated VaultProxy, for simplicity.
-        // In the future, we can consider caching conditionally.
-        IExtension(getExternalPositionManager()).setConfigForFund("");
-        IExtension(getIntegrationManager()).setConfigForFund("");
         IExtension(getPolicyManager()).setConfigForFund(_config.policyManagerConfigData);
 
         // Arbitrary extensions
@@ -973,12 +955,6 @@ contract ComptrollerLib is IComptroller {
         return DISPATCHER;
     }
 
-    /// @notice Gets the `EXTERNAL_POSITION_MANAGER` variable
-    /// @return externalPositionManager_ The `EXTERNAL_POSITION_MANAGER` variable value
-    function getExternalPositionManager() public view override returns (address externalPositionManager_) {
-        return EXTERNAL_POSITION_MANAGER;
-    }
-
     /// @notice Gets the `FEE_MANAGER` variable
     /// @return feeManager_ The `FEE_MANAGER` variable value
     function getFeeManager() public view override returns (address feeManager_) {
@@ -989,12 +965,6 @@ contract ComptrollerLib is IComptroller {
     /// @return fundDeployer_ The `FUND_DEPLOYER` variable value
     function getFundDeployer() public view override returns (address fundDeployer_) {
         return FUND_DEPLOYER;
-    }
-
-    /// @notice Gets the `INTEGRATION_MANAGER` variable
-    /// @return integrationManager_ The `INTEGRATION_MANAGER` variable value
-    function getIntegrationManager() public view override returns (address integrationManager_) {
-        return INTEGRATION_MANAGER;
     }
 
     /// @notice Gets the `MLN_TOKEN` variable

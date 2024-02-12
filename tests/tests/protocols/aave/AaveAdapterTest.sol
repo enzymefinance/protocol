@@ -11,7 +11,6 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IAaveV2Adapter} from "tests/interfaces/internal/IAaveV2Adapter.sol";
 import {IComptrollerLib} from "tests/interfaces/internal/IComptrollerLib.sol";
-import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 import {IVaultLib} from "tests/interfaces/internal/IVaultLib.sol";
 
 abstract contract AaveAdapterTestBase is IntegrationTest {

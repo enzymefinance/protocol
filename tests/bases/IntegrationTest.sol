@@ -482,6 +482,9 @@ abstract contract IntegrationTest is CoreUtils {
 
             IFundDeployer.ConfigInput memory comptrollerConfig;
             comptrollerConfig.denominationAsset = address(denominationAsset);
+            comptrollerConfig.extensionsConfig = new IFundDeployer.ExtensionConfigInput[](2);
+            comptrollerConfig.extensionsConfig[0].extension = address(core.release.integrationManager);
+            comptrollerConfig.extensionsConfig[1].extension = address(core.release.externalPositionManager);
 
             IComptrollerLib comptrollerProxy;
             IVaultLib vaultProxy;
