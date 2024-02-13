@@ -30,6 +30,13 @@ abstract contract ThreeOneThirdActionsMixin is AssetHelpers {
         IThreeOneThird.Trade[] memory _trades,
         IThreeOneThird.BatchTradeConfig memory _batchTradeConfig
     ) internal {
+        __approveSpendAssets(_trades);
+
+        // Execute order
+        IThreeOneThird(THREE_ONE_THIRD_BATCH_TRADE).batchTrade({_trades: _trades, _batchTradeConfig: _batchTradeConfig});
+    }
+
+    function __approveSpendAssets(IThreeOneThird.Trade[] memory _trades) private {
         uint256 tradesLength = _trades.length;
         address[] memory assets_ = new address[](tradesLength);
         uint256[] memory amounts_ = new uint256[](tradesLength);
@@ -52,11 +59,6 @@ abstract contract ThreeOneThirdActionsMixin is AssetHelpers {
                 _neededAmount: amounts_[i]
             });
         }
-
-        // Execute order
-        IThreeOneThird(THREE_ONE_THIRD_BATCH_TRADE).batchTrade({_trades: _trades, _batchTradeConfig: _batchTradeConfig});
-
-        // TODO: if it fails we should reset approval
     }
 
     /// @dev Helper to get batchTrade feeBasisPoints
