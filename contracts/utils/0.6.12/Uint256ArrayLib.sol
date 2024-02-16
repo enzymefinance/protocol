@@ -173,4 +173,25 @@ library Uint256ArrayLib {
 
         return nextArray_;
     }
+
+    /// @dev Helper to remove an item from an array at an index.
+    function removeAt(uint256[] memory _self, uint256 _index)
+        internal
+        pure
+        returns(uint256[] memory nextArray_)
+    {
+        if (_index >= _self.length) {
+            return _self;
+        }
+
+        nextArray_ = new uint256[](_self.length - 1);
+        for (uint256 i = 0; i < _index; i++){
+            nextArray_[i] = _self[i];
+        }
+        for (uint256 i = _index + 1; i < _self.length; i++){
+            nextArray_[i - 1] = _self[i];
+        }
+
+        return nextArray_;
+    }
 }

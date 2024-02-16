@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 import {IUniswapV3Pool} from "uniswap-v3-core-0.8/contracts/interfaces/IUniswapV3Pool.sol";
+import {IUniswapV3Factory} from "uniswap-v3-core-0.8/contracts/interfaces/IUniswapV3Factory.sol";
 import {FullMath} from "uniswap-v3-core-0.8/contracts/libraries/FullMath.sol";
 import {TickMath} from "uniswap-v3-core-0.8/contracts/libraries/TickMath.sol";
 
@@ -52,6 +53,10 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
         return abi.encodeWithSelector(IUniswapV3SwapRouter.exactInput.selector, exactInputParams);
     }
 
+    function getPool(address _token0, address _token1, uint24 _fee) internal view returns (address poolAddress_) {
+        return IUniswapV3Factory(ETHEREUM_FACTORY_ADDRESS).getPool(_token0, _token1, _fee);
+    }
+
     function uniswapV3CalcPoolPrice(address _poolAddress) internal view returns (uint256 token1AmountForToken0Unit_) {
         IUniswapV3Pool pool = IUniswapV3Pool(_poolAddress);
         (, int24 tickCurrent,,,,,) = pool.slot0();
@@ -66,6 +71,17 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
             baseToken: baseToken,
             quoteToken: quoteToken
         });
+    }
+
+    function uniswapV3CalcPoolPriceInvertIfNeeded(address _poolAddress, address _sellToken) internal view returns (uint256 token1AmountForToken0Unit_) {
+        uint256 price = uniswapV3CalcPoolPrice(_poolAddress);
+
+        IUniswapV3Pool pool = IUniswapV3Pool(_poolAddress);
+        if (_sellToken == pool.token0()) {
+            price = assetUnit(IERC20(pool.token0())) * assetUnit(IERC20(pool.token1())) / price;
+        }
+
+        return price;
     }
 
     function uniswapV3DoNRoundTripSwaps(IUniswapV3Pool _pool, uint256 _nSwaps) internal {

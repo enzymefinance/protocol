@@ -89,20 +89,42 @@ contract ThreeOneThirdAdapter is AdapterBase, MathHelpers, ThreeOneThirdActionsM
         minIncomingAssetAmounts_ = new uint256[](0);
 
         for (uint256 i; i < tradesLength; i++) {
-            uint256 spendAssetsIndex = spendAssets_.findIndex(trades[i].from);
-            if (spendAssetsIndex == type(uint256).max) {
+            uint256 spendAssetIndex = spendAssets_.findIndex(trades[i].from);
+            if (spendAssetIndex == type(uint256).max) {
                 spendAssets_ = spendAssets_.addItem(trades[i].from);
                 spendAssetAmounts_ = spendAssetAmounts_.addItem(trades[i].fromAmount);
             } else {
-                spendAssetAmounts_[spendAssetsIndex] += trades[i].fromAmount;
+                spendAssetAmounts_[spendAssetIndex] += trades[i].fromAmount;
             }
 
-            uint256 incomingAssetsIndex = incomingAssets_.findIndex(trades[i].to);
-            if (incomingAssetsIndex == type(uint256).max) {
+            uint256 incomingAssetIndex = incomingAssets_.findIndex(trades[i].to);
+            if (incomingAssetIndex == type(uint256).max) {
                 incomingAssets_ = incomingAssets_.addItem(trades[i].to);
                 minIncomingAssetAmounts_ = minIncomingAssetAmounts_.addItem(trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000));
             } else {
-                minIncomingAssetAmounts_[incomingAssetsIndex] += trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000);
+                minIncomingAssetAmounts_[incomingAssetIndex] += trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000);
+            }
+        }
+
+        // Deduct incoming amounts from spend amounts
+        // This has to be done after all spend amounts have been calculated -> extra loop
+        for (uint256 i; i < tradesLength; i++) {
+            uint256 spendAssetIndex = spendAssets_.findIndex(trades[i].to);
+
+            // just if incoming asset is also spend asset
+            if (spendAssetIndex != type(uint256).max) {
+                spendAssetAmounts_[spendAssetIndex] -= trades[i].minToReceiveBeforeFees;
+            }
+
+        }
+
+        // TODO: check if this can be optimized
+        // Remove incoming asset if it has a dependent spend asset, where spend amount >= min incoming amount
+        for (uint256 i; i < spendAssets_.length; i++) {
+            uint256 incomingAssetIndex = incomingAssets_.findIndex(spendAssets_[i]);
+            if (incomingAssetIndex != type(uint256).max && spendAssetAmounts_[i] >= minIncomingAssetAmounts_[incomingAssetIndex]) {
+                incomingAssets_ = incomingAssets_.removeAt(incomingAssetIndex);
+                minIncomingAssetAmounts_ = minIncomingAssetAmounts_.removeAt(incomingAssetIndex);
             }
         }
 
