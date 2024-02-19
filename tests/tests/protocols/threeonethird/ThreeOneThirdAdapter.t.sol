@@ -15,8 +15,7 @@ import {IThreeOneThirdAdapter} from "tests/interfaces/internal/IThreeOneThirdAda
 address constant ETHEREUM_THREE_ONE_THIRD_BATCH_TRADE = 0x1Ee8b39F09C5299526Db65428ab2a8a23ebf08a7;
 address constant ETHEREUM_THREE_ONE_THIRD_BATCH_TRADE_OWNER = 0xEC0905eC85e9C8BFD70fd4bB4988488a3c92aB93;
 address constant ETHEREUM_ZERO_EX_V4_EXCHANGE = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-address constant ETHEREUM_UNISWAP_V3_LINK_USDT_POOL = 0xac5A2c404EbBa22a869998089AC7893ff4E1F0a7;
-uint24 constant ETHEREUM_UNISWAP_V3_LINK_USDT_POOL_FEES = 3000;
+uint24 constant ETHEREUM_UNISWAP_V3_FEES_3000 = 3000;
 
 abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Utils {
     address internal fundOwner;
@@ -158,9 +157,14 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
         view
         returns (IThreeOneThird.Trade memory)
     {
-        bytes memory encodedPath = abi.encodePacked(address(_sellAsset), ETHEREUM_UNISWAP_V3_LINK_USDT_POOL_FEES, address(_buyAsset));
-        uint256 price = uniswapV3CalcPoolPrice(ETHEREUM_UNISWAP_V3_LINK_USDT_POOL);
-        uint256 minBuyAmount = price * _sellAmount;
+        bytes memory encodedPath = abi.encodePacked(address(_sellAsset), ETHEREUM_UNISWAP_V3_FEES_3000, address(_buyAsset));
+
+        address poolAddress = getPool(address(_sellAsset), address(_buyAsset), ETHEREUM_UNISWAP_V3_FEES_3000);
+        uint256 price = uniswapV3CalcPoolPriceInvertIfNeeded(poolAddress, address(_sellAsset));
+
+        // normalize sellAmount; add 1% slippage
+        uint256 minBuyAmount = price * _sellAmount / assetUnit(_sellAsset) * 99 / 100;
+
         bytes memory zeroExCalldata =
             abi.encodeWithSelector(zeroExV4Exchange.sellTokenForTokenToUniswapV3.selector, encodedPath, _sellAmount, minBuyAmount, address(0));
 
@@ -393,6 +397,73 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
             externalAsset3.balanceOf(vaultProxyAddress) - externalAsset3BalancePre,
             toAmount3 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
             "Mismatch between received and expected maker asset amount (Trade 3)"
+        );
+    }
+
+    function test_takeBatchTradeDependentTrades_success() public {
+        // Dependent trades
+        // 1: asset1 -> asset2
+        // 2: asset2 -> asset3
+        //      sell amount of asset 2 is bigger then vault holdings pre batch trade
+
+        uint256 vaultAsset1BalancePre = vaultAsset1.balanceOf(vaultProxyAddress);
+        uint256 fromAmount1 = vaultAsset1BalancePre / 5;
+        uint256 vaultAsset2BalancePre = vaultAsset2.balanceOf(vaultProxyAddress);
+        uint256 fromAmount2 = vaultAsset2BalancePre + 1;
+        assertNotEq(fromAmount1, 0, "From amount 1 is 0");
+        assertNotEq(fromAmount2, 0, "From amount 2 is 0");
+
+//        uint256 externalAsset1BalancePre = externalAsset1.balanceOf(vaultProxyAddress);
+        uint256 toAmount1; // use minToReceiveBeforeFees from trade1
+        uint256 externalAsset2BalancePre = externalAsset2.balanceOf(vaultProxyAddress);
+        uint256 toAmount2; // use minToReceiveBeforeFees from trade2
+
+        IThreeOneThird.Trade[] memory trades_ = new IThreeOneThird.Trade[](2);
+
+        // Scope trade creation to avoid "stack too deep" issue (max 16 local vars)
+        {
+            IThreeOneThird.Trade memory trade1 =
+                            __createZeroExV4UniswapV3BatchTrade({_sellAsset: vaultAsset1, _sellAmount: uint128(fromAmount1), _buyAsset: vaultAsset2});
+            IThreeOneThird.Trade memory trade2 =
+                            __createZeroExV4UniswapV3BatchTrade({_sellAsset: vaultAsset2, _sellAmount: uint128(fromAmount2), _buyAsset: externalAsset2});
+
+            trades_[0] = trade1;
+            trades_[1] = trade2;
+            toAmount1 = trade1.minToReceiveBeforeFees;
+            toAmount2 = trade2.minToReceiveBeforeFees;
+        }
+
+        vm.recordLogs();
+
+        __takeOrder({_trades: trades_});
+
+        // Test parseAssetsForAction encoding
+        assertAdapterAssetsForAction({
+            _logs: vm.getRecordedLogs(),
+            _spendAssetsHandleType: SpendAssetsHandleType.Transfer,
+            _spendAssets: toArray(address(vaultAsset1), address(vaultAsset2)),
+            _maxSpendAssetAmounts: toArray(fromAmount1, fromAmount2 - toAmount1 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000)),
+            _incomingAssets: toArray(address(externalAsset2)),
+            _minIncomingAssetAmounts: toArray(toAmount2 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000))
+        });
+
+        assertEq(
+            vaultAsset1BalancePre - vaultAsset1.balanceOf(vaultProxyAddress),
+            fromAmount1,
+            "Mismatch between sent and expected taker asset amount (Trade 1)"
+        );
+
+        // asset2 is bought in trade 1; the pre trade vault balance of asset2 + 1 is sold in trade 2
+        assertEq(
+            vaultAsset2.balanceOf(vaultProxyAddress),
+            toAmount1 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000) - 1,
+            "Mismatch between received and expected asset amount (Trade 1 incoming; Trade 2 spend)"
+        );
+
+        assertGt(
+            externalAsset2.balanceOf(vaultProxyAddress) - externalAsset2BalancePre,
+            toAmount2 * (10000 - threeOneThirdBatchTrade.feeBasisPoints()) / (10000),
+            "Mismatch between received and expected maker asset amount (Trade 2)"
         );
     }
 }

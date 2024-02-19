@@ -20,12 +20,14 @@ import {ThreeOneThirdActionsMixin} from "../utils/0.6.12/actions/ThreeOneThirdAc
 import {AdapterBase} from "../utils/0.6.12/AdapterBase.sol";
 import "../../../../../utils/0.6.12/AddressArrayLib.sol";
 import "../../../../../utils/0.6.12/Uint256ArrayLib.sol";
+import "../../../../../utils/0.6.12/Int256ArrayLib.sol";
 
 /// @title ThreeOneThirdAdapter Contract
 /// @author 31Third <dev@31third.com>, Enzyme Council <security@enzyme.finance>
 /// @notice Adapter to 31Third BatchTrade Contract
 contract ThreeOneThirdAdapter is AdapterBase, MathHelpers, ThreeOneThirdActionsMixin {
     using AddressArrayLib for address[];
+    using Int256ArrayLib for int256[];
     using Uint256ArrayLib for uint256[];
 
     constructor(address _integrationManager, address _batchTrade)
@@ -81,50 +83,41 @@ contract ThreeOneThirdAdapter is AdapterBase, MathHelpers, ThreeOneThirdActionsM
 
         (IThreeOneThird.Trade[] memory trades,) = __decodeTakeOrderCallArgs(_actionData);
 
+        // Pre calc if an asset has a positive or negative change in the vault
         uint256 tradesLength = trades.length;
+        address[] memory assets = new address[](0);
+        int256[] memory assetChanges = new int256[](0);
+        for (uint256 i; i < tradesLength; i++) {
+            uint256 fromAssetIndex = assets.findIndex(trades[i].from);
+            if (fromAssetIndex == type(uint256).max) {
+                assets = assets.addItem(trades[i].from);
+                assetChanges = assetChanges.addItem(-int256(trades[i].fromAmount));
+            } else {
+                assetChanges[fromAssetIndex] -= int256(trades[i].fromAmount);
+            }
 
+            uint256 toAssetIndex = assets.findIndex(trades[i].to);
+            if (toAssetIndex == type(uint256).max) {
+                assets = assets.addItem(trades[i].to);
+                assetChanges = assetChanges.addItem(int256(trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000)));
+            } else {
+                assetChanges[toAssetIndex] += int256(trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000));
+            }
+        }
+
+        // If change is negative its a spend asset, otherwise an incoming asset
+        uint256 assetsLength = assets.length;
         spendAssets_ = new address[](0);
         spendAssetAmounts_ = new uint256[](0);
         incomingAssets_ = new address[](0);
         minIncomingAssetAmounts_ = new uint256[](0);
-
-        for (uint256 i; i < tradesLength; i++) {
-            uint256 spendAssetIndex = spendAssets_.findIndex(trades[i].from);
-            if (spendAssetIndex == type(uint256).max) {
-                spendAssets_ = spendAssets_.addItem(trades[i].from);
-                spendAssetAmounts_ = spendAssetAmounts_.addItem(trades[i].fromAmount);
+        for (uint256 i; i < assetsLength; i++) {
+            if (assetChanges[i] < 0) {
+                spendAssets_ = spendAssets_.addItem(assets[i]);
+                spendAssetAmounts_ = spendAssetAmounts_.addItem(uint256(-assetChanges[i]));
             } else {
-                spendAssetAmounts_[spendAssetIndex] += trades[i].fromAmount;
-            }
-
-            uint256 incomingAssetIndex = incomingAssets_.findIndex(trades[i].to);
-            if (incomingAssetIndex == type(uint256).max) {
-                incomingAssets_ = incomingAssets_.addItem(trades[i].to);
-                minIncomingAssetAmounts_ = minIncomingAssetAmounts_.addItem(trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000));
-            } else {
-                minIncomingAssetAmounts_[incomingAssetIndex] += trades[i].minToReceiveBeforeFees.mul(10000 - feeBasisPoints).div(10000);
-            }
-        }
-
-        // Deduct incoming amounts from spend amounts
-        // This has to be done after all spend amounts have been calculated -> extra loop
-        for (uint256 i; i < tradesLength; i++) {
-            uint256 spendAssetIndex = spendAssets_.findIndex(trades[i].to);
-
-            // just if incoming asset is also spend asset
-            if (spendAssetIndex != type(uint256).max) {
-                spendAssetAmounts_[spendAssetIndex] -= trades[i].minToReceiveBeforeFees;
-            }
-
-        }
-
-        // TODO: check if this can be optimized
-        // Remove incoming asset if it has a dependent spend asset, where spend amount >= min incoming amount
-        for (uint256 i; i < spendAssets_.length; i++) {
-            uint256 incomingAssetIndex = incomingAssets_.findIndex(spendAssets_[i]);
-            if (incomingAssetIndex != type(uint256).max && spendAssetAmounts_[i] >= minIncomingAssetAmounts_[incomingAssetIndex]) {
-                incomingAssets_ = incomingAssets_.removeAt(incomingAssetIndex);
-                minIncomingAssetAmounts_ = minIncomingAssetAmounts_.removeAt(incomingAssetIndex);
+                incomingAssets_ = incomingAssets_.addItem(assets[i]);
+                minIncomingAssetAmounts_ = minIncomingAssetAmounts_.addItem(uint256(assetChanges[i]));
             }
         }
 
