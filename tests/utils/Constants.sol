@@ -20,8 +20,10 @@ abstract contract Constants {
     uint256 internal constant POLYGON_CHAIN_ID = 137;
 
     // Miscellaneous
-    uint256 internal constant CHAINLINK_AGGREGATOR_PRECISION_ETH = 10 ** 18;
-    uint256 internal constant CHAINLINK_AGGREGATOR_PRECISION_USD = 10 ** 8;
+    uint8 internal constant CHAINLINK_AGGREGATOR_DECIMALS_ETH = 18;
+    uint8 internal constant CHAINLINK_AGGREGATOR_DECIMALS_USD = 8;
+    uint256 internal constant CHAINLINK_AGGREGATOR_PRECISION_ETH = 10 ** CHAINLINK_AGGREGATOR_DECIMALS_ETH;
+    uint256 internal constant CHAINLINK_AGGREGATOR_PRECISION_USD = 10 ** CHAINLINK_AGGREGATOR_DECIMALS_USD;
 
     // Network blocks (for fork tests)
     // Some tests may require specific blocks to guarantee a required setup,

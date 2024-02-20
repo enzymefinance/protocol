@@ -5,7 +5,7 @@ import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
     "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {CoreUtils} from "tests/utils/CoreUtils.sol";
-import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
+import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {
     Contracts as PersistentContracts,
@@ -252,9 +252,11 @@ abstract contract IntegrationTest is CoreUtils {
         uint256 chainlinkStaleRateThreshold = 3650 days;
         skip(chainlinkStaleRateThreshold);
 
-        // Deploy mock Chainlink ETH-USD aggregator with arbitrary price
-        address chainlinkEthUsdAggregatorAddress =
-            address(createTestAggregator({_price: 2222 * CHAINLINK_AGGREGATOR_PRECISION_USD}));
+        // Deploy mock Chainlink ETH-USD aggregator with an arbitrary rate
+        TestChainlinkAggregator testChainlinkEthUsdAggregator =
+            createTestAggregator({_decimals: CHAINLINK_AGGREGATOR_DECIMALS_USD});
+        testChainlinkEthUsdAggregator.setPrice(2000 * CHAINLINK_AGGREGATOR_PRECISION_USD);
+        address chainlinkEthUsdAggregatorAddress = address(testChainlinkEthUsdAggregator);
 
         // Deploy mocks for core tokens
         address wethTokenAddress = address(createTestToken({_name: "Wrapped Ether", _symbol: "WETH", _decimals: 18}));
@@ -293,9 +295,9 @@ abstract contract IntegrationTest is CoreUtils {
 
         // Create missing aggregators for corePrimitives
         address chainlinkMlnEthAggregator =
-            address(createTestAggregator({_price: CHAINLINK_AGGREGATOR_PRECISION_ETH / 100}));
+            address(createTestAggregator({_decimals: CHAINLINK_AGGREGATOR_DECIMALS_ETH}));
         address chainlinkWrappedNativeTokenEthAggregator =
-            address(createTestAggregator({_price: CHAINLINK_AGGREGATOR_PRECISION_ETH / 100}));
+            address(createTestAggregator({_decimals: CHAINLINK_AGGREGATOR_DECIMALS_ETH}));
 
         address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(chainlinkEthUsdAggregatorAddress));
 
@@ -650,7 +652,7 @@ abstract contract IntegrationTest is CoreUtils {
 
     function v4AddPrimitiveWithTestAggregator(address _tokenAddress, bool _skipIfRegistered)
         internal
-        returns (TestAggregator aggregator_)
+        returns (TestChainlinkAggregator aggregator_)
     {
         return addPrimitiveWithTestAggregator({
             _valueInterpreter: IValueInterpreter(address(v4ReleaseContracts.valueInterpreter)),
@@ -661,9 +663,9 @@ abstract contract IntegrationTest is CoreUtils {
 
     function v4AddPrimitivesWithTestAggregator(address[] memory _tokenAddresses, bool _skipIfRegistered)
         internal
-        returns (TestAggregator[] memory aggregators_)
+        returns (TestChainlinkAggregator[] memory aggregators_)
     {
-        aggregators_ = new TestAggregator[](_tokenAddresses.length);
+        aggregators_ = new TestChainlinkAggregator[](_tokenAddresses.length);
         for (uint256 i; i < _tokenAddresses.length; i++) {
             aggregators_[i] = v4AddPrimitiveWithTestAggregator(_tokenAddresses[i], _skipIfRegistered);
         }

@@ -13,8 +13,12 @@ import {IValueInterpreter} from "tests/interfaces/internal/IValueInterpreter.sol
 abstract contract AssetUniverseUtils is CoreUtilsBase {
     // AGGREGATORS
 
-    function createTestAggregator(uint256 _price) internal returns (IChainlinkAggregator aggregator_) {
-        return IChainlinkAggregator(address(new TestAggregator(_price)));
+    function createTestAggregator() internal returns (TestChainlinkAggregator aggregator_) {
+        return new TestChainlinkAggregator(CHAINLINK_AGGREGATOR_DECIMALS_ETH);
+    }
+
+    function createTestAggregator(uint8 _decimals) internal returns (TestChainlinkAggregator aggregator_) {
+        return new TestChainlinkAggregator(_decimals);
     }
 
     function deployUsdEthSimulatedAggregator(address _ethUsdAggregatorAddress)
@@ -98,8 +102,8 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         IValueInterpreter _valueInterpreter,
         address _tokenAddress,
         bool _skipIfRegistered
-    ) internal returns (TestAggregator aggregator_) {
-        aggregator_ = TestAggregator(address(createTestAggregator(1 ether)));
+    ) internal returns (TestChainlinkAggregator aggregator_) {
+        aggregator_ = createTestAggregator();
 
         addPrimitive(
             _valueInterpreter,
@@ -116,8 +120,8 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         IValueInterpreter _valueInterpreter,
         address[] memory _tokenAddresses,
         bool _skipIfRegistered
-    ) internal returns (TestAggregator[] memory aggregators_) {
-        aggregators_ = new TestAggregator[](_tokenAddresses.length);
+    ) internal returns (TestChainlinkAggregator[] memory aggregators_) {
+        aggregators_ = new TestChainlinkAggregator[](_tokenAddresses.length);
         for (uint256 i; i < _tokenAddresses.length; i++) {
             aggregators_[i] = addPrimitiveWithTestAggregator(_valueInterpreter, _tokenAddresses[i], _skipIfRegistered);
         }
@@ -134,7 +138,7 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         addPrimitive({
             _valueInterpreter: _valueInterpreter,
             _tokenAddress: address(token_),
-            _aggregatorAddress: address(createTestAggregator(1 ether)),
+            _aggregatorAddress: address(createTestAggregator()),
             _rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH,
             _skipIfRegistered: false
         });
@@ -162,7 +166,8 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         }
 
         // TODO: need to include asset unit?
-        TestAggregator assetAAggregator = TestAggregator(address(createTestAggregator(_assetBAmountPerUnitA)));
+        TestChainlinkAggregator assetAAggregator = createTestAggregator();
+        assetAAggregator.setPrice(_assetBAmountPerUnitA);
         addPrimitive({
             _valueInterpreter: _valueInterpreter,
             _tokenAddress: address(_assetA),
@@ -172,9 +177,9 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
         });
 
         if (address(_assetB) != wethAddress) {
-            // feed1 is 1:1 with WETH
+            TestChainlinkAggregator assetBAggregator = createTestAggregator();
             uint256 assetBAmount = assetUnit(_assetB);
-            TestAggregator assetBAggregator = TestAggregator(address(createTestAggregator(assetBAmount)));
+            assetBAggregator.setPrice(assetBAmount);
             addPrimitive({
                 _valueInterpreter: _valueInterpreter,
                 _tokenAddress: address(_assetB),
@@ -221,18 +226,36 @@ abstract contract AssetUniverseUtils is CoreUtilsBase {
     }
 }
 
-contract TestAggregator is IChainlinkAggregator {
-    uint256 internal price;
+contract TestChainlinkAggregator is IChainlinkAggregator {
+    uint8 public immutable decimals;
+    int256 internal price;
+    uint256 internal timestamp;
 
-    constructor(uint256 _price) {
-        setPrice(_price);
+    /// @dev Starting price is 1:1 with rate asset
+    constructor(uint8 _decimals) {
+        decimals = _decimals;
+        price = int256(10 ** _decimals);
+    }
+
+    function getTimestamp() public view returns (uint256) {
+        return timestamp > 0 ? timestamp : block.timestamp;
     }
 
     function setPrice(uint256 _price) public {
+        price = int256(_price);
+    }
+
+    function setPriceInt(int256 _price) public {
         price = _price;
     }
 
+    function setTimestamp(uint256 _timestamp) public {
+        timestamp = _timestamp;
+    }
+
+    // Chainlink functions
+
     function latestRoundData() external view virtual returns (uint80, int256, uint256, uint256, uint80) {
-        return (0, int256(price), 0, block.timestamp, 0);
+        return (0, price, 0, getTimestamp(), 0);
     }
 }

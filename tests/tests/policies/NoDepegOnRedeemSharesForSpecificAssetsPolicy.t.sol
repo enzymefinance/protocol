@@ -6,7 +6,7 @@ import {IChainlinkPriceFeedMixin as IChainlinkPriceFeedMixinProd} from
     "contracts/release/infrastructure/price-feeds/primitives/IChainlinkPriceFeedMixin.sol";
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
-import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
+import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
@@ -26,8 +26,8 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
     IERC20 internal simulatedUsd;
     IERC20 internal ethPeggedAsset;
     IERC20 internal usdPeggedAsset;
-    TestAggregator internal ethPeggedAssetAggregator;
-    TestAggregator internal usdPeggedAssetAggregator;
+    TestChainlinkAggregator internal ethPeggedAssetAggregator;
+    TestChainlinkAggregator internal usdPeggedAssetAggregator;
     address internal comptrollerProxyAddress = makeAddr("ComptrollerProxyAddress");
 
     function setUp() public override {
@@ -45,8 +45,8 @@ contract NoDepegOnRedeemSharesForSpecificAssetsPolicyTest is IntegrationTest {
         usdPeggedAsset = createTestToken({_decimals: 12});
 
         // Create mock aggregators for the assets (starting at 1:1 with their pegged assets)
-        ethPeggedAssetAggregator = TestAggregator(address(createTestAggregator(CHAINLINK_AGGREGATOR_PRECISION_ETH)));
-        usdPeggedAssetAggregator = TestAggregator(address(createTestAggregator(CHAINLINK_AGGREGATOR_PRECISION_USD)));
+        ethPeggedAssetAggregator = createTestAggregator({_decimals: CHAINLINK_AGGREGATOR_DECIMALS_ETH});
+        usdPeggedAssetAggregator = createTestAggregator({_decimals: CHAINLINK_AGGREGATOR_DECIMALS_USD});
 
         // Register mock assets as primitives
         addPrimitive({

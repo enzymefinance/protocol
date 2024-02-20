@@ -8,7 +8,7 @@ import {IIntegrationManager as IIntegrationManagerProd} from
 
 import {IntegrationTest} from "tests/bases/IntegrationTest.sol";
 import {MockedAdapter} from "tests/utils/core/AdapterUtils.sol";
-import {TestAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
+import {TestChainlinkAggregator} from "tests/utils/core/AssetUniverseUtils.sol";
 import {CumulativeSlippageTolerancePolicyUtils} from "tests/utils/policies/CumulativeSlippageTolerancePolicyUtils.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -33,8 +33,8 @@ contract CumulativeSlippageTolerancePolicyTest is IntegrationTest, CumulativeSli
     IERC20 internal fakeToken0;
     IERC20 internal fakeToken1;
     uint256 internal vaultInitialBalance = 1 ether;
-    TestAggregator internal fakeToken0Aggregator;
-    TestAggregator internal fakeToken1Aggregator;
+    TestChainlinkAggregator internal fakeToken0Aggregator;
+    TestChainlinkAggregator internal fakeToken1Aggregator;
 
     function setUp() public override {
         super.setUp();
