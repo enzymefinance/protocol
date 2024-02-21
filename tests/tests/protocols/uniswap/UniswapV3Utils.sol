@@ -73,7 +73,11 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
         });
     }
 
-    function uniswapV3CalcPoolPriceInvertIfNeeded(address _poolAddress, address _sellToken) internal view returns (uint256 token1AmountForToken0Unit_) {
+    function uniswapV3CalcPoolPriceInvertIfNeeded(address _poolAddress, address _sellToken)
+        internal
+        view
+        returns (uint256 token1AmountForToken0Unit_)
+    {
         uint256 price = uniswapV3CalcPoolPrice(_poolAddress);
 
         IUniswapV3Pool pool = IUniswapV3Pool(_poolAddress);

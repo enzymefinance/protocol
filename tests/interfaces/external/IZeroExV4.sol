@@ -66,7 +66,10 @@ interface IZeroExV4 {
         external
         returns (uint128 makerTokenFilledAmount_);
 
-    function sellTokenForTokenToUniswapV3(bytes memory _encodedPath, uint256 _sellAmount, uint256 _minBuyAmount, address _recipient)
-        external
-        returns (uint256 buyAmount_);
+    function sellTokenForTokenToUniswapV3(
+        bytes memory _encodedPath,
+        uint256 _sellAmount,
+        uint256 _minBuyAmount,
+        address _recipient
+    ) external returns (uint256 buyAmount_);
 }
