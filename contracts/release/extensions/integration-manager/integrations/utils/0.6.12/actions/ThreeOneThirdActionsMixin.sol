@@ -38,31 +38,31 @@ abstract contract ThreeOneThirdActionsMixin is AssetHelpers {
 
     function __approveSpendAssets(IThreeOneThird.Trade[] memory _trades) private {
         uint256 tradesLength = _trades.length;
-        address[] memory assets_ = new address[](tradesLength);
-        uint256[] memory amounts_ = new uint256[](tradesLength);
+        address[] memory assets = new address[](tradesLength);
+        uint256[] memory amounts = new uint256[](tradesLength);
 
         for (uint256 i; i < tradesLength; i++) {
-            assets_[i] = _trades[i].from;
-            amounts_[i] = _trades[i].fromAmount;
+            assets[i] = _trades[i].from;
+            amounts[i] = _trades[i].fromAmount;
         }
 
-        if (assets_.length > 1) {
-            (assets_, amounts_) = __aggregateAssetAmounts(assets_, amounts_);
+        if (assets.length > 1) {
+            (assets, amounts) = __aggregateAssetAmounts(assets, amounts);
         }
 
         // Approve spend assets as needed
-        uint256 approvalsCount = assets_.length;
+        uint256 approvalsCount = assets.length;
         for (uint256 i; i < approvalsCount; i++) {
             __approveAssetMaxAsNeeded({
-                _asset: assets_[i],
+                _asset: assets[i],
                 _target: THREE_ONE_THIRD_BATCH_TRADE,
-                _neededAmount: amounts_[i]
+                _neededAmount: amounts[i]
             });
         }
     }
 
     /// @dev Helper to get batchTrade feeBasisPoints
-    function __getThreeOneThirdFeeBasisPoints() internal view returns (uint16) {
+    function __getThreeOneThirdFeeBasisPoints() internal view returns (uint16 feeBasisPoints_) {
         return IThreeOneThird(THREE_ONE_THIRD_BATCH_TRADE).feeBasisPoints();
     }
 }

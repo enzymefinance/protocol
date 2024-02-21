@@ -86,13 +86,14 @@ library AddressArrayLib {
     }
 
     /// @dev Helper to find index of particular value in array; uint256 max if not present
-    function findIndex(address[] memory _self, address _target) internal pure returns (uint256) {
-        for (uint256 i; i < _self.length; i++) {
-            if (_target == _self[i]) {
-                return i;
+    function findIndex(address[] memory _self, address _target) internal pure returns (uint256 index_) {
+        for (index_ = 0; index_ < _self.length; index_++) {
+            if (_target == _self[index_]) {
+                return index_;
             }
         }
-        return type(uint256).max;
+        index_ = type(uint256).max;
+        return index_;
     }
 
     /// @dev Helper to merge the unique items of a second array.

@@ -106,7 +106,7 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
         uint128 _makerAmount,
         IERC20 _takerAsset,
         uint128 _takerAmount
-    ) private view returns (IThreeOneThird.Trade memory) {
+    ) private view returns (IThreeOneThird.Trade memory trade_) {
         (IZeroExV4.RfqOrder memory order, IZeroExV4.Signature memory signature) = __createZeroExV4RfqOrder({
             _makerAsset: _makerAsset,
             _makerAmount: uint128(_makerAmount),
@@ -117,7 +117,7 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
         bytes memory zeroExCalldata =
             abi.encodeWithSelector(zeroExV4Exchange.fillOrKillRfqOrder.selector, order, signature, _takerAmount);
 
-        IThreeOneThird.Trade memory trade_ = IThreeOneThird.Trade({
+        trade_ = IThreeOneThird.Trade({
             exchangeName: "ZeroExExchangeV4",
             from: address(_takerAsset),
             fromAmount: _takerAmount,
@@ -161,7 +161,7 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
     function __createZeroExV4UniswapV3BatchTrade(IERC20 _sellAsset, uint128 _sellAmount, IERC20 _buyAsset)
         private
         view
-        returns (IThreeOneThird.Trade memory)
+        returns (IThreeOneThird.Trade memory trade_)
     {
         bytes memory encodedPath =
             abi.encodePacked(address(_sellAsset), ETHEREUM_UNISWAP_V3_FEES_3000, address(_buyAsset));
@@ -176,7 +176,7 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
             zeroExV4Exchange.sellTokenForTokenToUniswapV3.selector, encodedPath, _sellAmount, minBuyAmount, address(0)
         );
 
-        IThreeOneThird.Trade memory trade_ = IThreeOneThird.Trade({
+        trade_ = IThreeOneThird.Trade({
             exchangeName: "ZeroExExchangeV4",
             from: address(_sellAsset),
             fromAmount: _sellAmount,
@@ -192,7 +192,7 @@ abstract contract ThreeOneThirdAdapterTestBase is IntegrationTest, UniswapV3Util
     function addSignatureToTrade(IThreeOneThird.Trade memory _trade)
         internal
         view
-        returns (IThreeOneThird.Trade memory)
+        returns (IThreeOneThird.Trade memory trade_)
     {
         bytes32 tradeHash = keccak256(
             abi.encodePacked(

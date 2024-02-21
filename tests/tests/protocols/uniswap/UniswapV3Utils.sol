@@ -78,14 +78,15 @@ abstract contract UniswapV3Utils is AddOnUtilsBase {
         view
         returns (uint256 token1AmountForToken0Unit_)
     {
-        uint256 price = uniswapV3CalcPoolPrice(_poolAddress);
+        token1AmountForToken0Unit_ = uniswapV3CalcPoolPrice(_poolAddress);
 
         IUniswapV3Pool pool = IUniswapV3Pool(_poolAddress);
         if (_sellToken == pool.token0()) {
-            price = assetUnit(IERC20(pool.token0())) * assetUnit(IERC20(pool.token1())) / price;
+            token1AmountForToken0Unit_ =
+                assetUnit(IERC20(pool.token0())) * assetUnit(IERC20(pool.token1())) / token1AmountForToken0Unit_;
         }
 
-        return price;
+        return token1AmountForToken0Unit_;
     }
 
     function uniswapV3DoNRoundTripSwaps(IUniswapV3Pool _pool, uint256 _nSwaps) internal {
