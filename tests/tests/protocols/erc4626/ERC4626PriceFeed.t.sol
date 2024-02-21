@@ -49,9 +49,9 @@ abstract contract ERC4626PriceFeedTestBase is IntegrationTest {
         assertTrue(erc4626PriceFeed.isSupportedAsset({_asset: address(erc4626Vault)}), "Unsupported erc4626 token");
     }
 
-    function test_isSupportedAsset_failWithUnsupportedAsset() public {
+    function test_isSupportedAsset_failWithoutExpectedInterface() public {
         vm.expectRevert();
-        assertFalse(erc4626PriceFeed.isSupportedAsset({_asset: address(underlying)}), "Supported non-erc4626 token");
+        erc4626PriceFeed.isSupportedAsset({_asset: address(underlying)});
     }
 }
 
