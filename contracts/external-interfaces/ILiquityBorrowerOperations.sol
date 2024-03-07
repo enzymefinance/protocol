@@ -17,6 +17,8 @@ pragma solidity >=0.6.0 <0.9.0;
 interface ILiquityBorrowerOperations {
     function addColl(address, address) external payable;
 
+    function claimCollateral() external;
+
     function closeTrove() external;
 
     function openTrove(uint256, uint256, address, address) external payable;

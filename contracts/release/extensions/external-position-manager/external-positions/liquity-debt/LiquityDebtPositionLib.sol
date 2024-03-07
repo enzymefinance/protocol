@@ -11,6 +11,7 @@ pragma solidity 0.6.12;
 
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
 import {ILiquityBorrowerOperations} from "../../../../../external-interfaces/ILiquityBorrowerOperations.sol";
+import {ILiquityColSurplusPool} from "../../../../../external-interfaces/ILiquityColSurplusPool.sol";
 import {ILiquityTroveManager} from "../../../../../external-interfaces/ILiquityTroveManager.sol";
 import {IWETH} from "../../../../../external-interfaces/IWETH.sol";
 import {WrappedSafeERC20 as SafeERC20} from "../../../../../utils/0.6.12/open-zeppelin/WrappedSafeERC20.sol";
@@ -24,15 +25,21 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     using SafeERC20 for IERC20;
 
     address private immutable LIQUITY_BORROWER_OPERATIONS;
+    address private immutable LIQUITY_COL_SURPLUS_POOL;
     address private immutable LIQUITY_TROVE_MANAGER;
 
     address private immutable LUSD_TOKEN;
     address private immutable WETH_TOKEN;
 
-    constructor(address _liquityBorrowerOperations, address _liquityTroveManager, address _lusd, address _weth)
-        public
-    {
+    constructor(
+        address _liquityBorrowerOperations,
+        address _liquityColSurplusPool,
+        address _liquityTroveManager,
+        address _lusd,
+        address _weth
+    ) public {
         LIQUITY_BORROWER_OPERATIONS = _liquityBorrowerOperations;
+        LIQUITY_COL_SURPLUS_POOL = _liquityColSurplusPool;
         LIQUITY_TROVE_MANAGER = _liquityTroveManager;
         LUSD_TOKEN = _lusd;
         WETH_TOKEN = _weth;
@@ -73,6 +80,8 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
             __repayBorrow(lusdAmount, upperHint, lowerHint);
         } else if (actionId == uint256(Actions.CloseTrove)) {
             __closeTrove();
+        } else if (actionId == uint256(Actions.ClaimCollateral)) {
+            __claimCollateral();
         } else {
             revert("receiveCallFromVault: Invalid actionId");
         }
@@ -92,6 +101,16 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
         );
 
         IERC20(LUSD_TOKEN).safeTransfer(msg.sender, _amount);
+    }
+
+    /// @dev Claims collateral from the collateral surplus pool
+    function __claimCollateral() private {
+        ILiquityBorrowerOperations(LIQUITY_BORROWER_OPERATIONS).claimCollateral();
+
+        uint256 ethBalance = address(this).balance;
+
+        IWETH(WETH_TOKEN).deposit{value: ethBalance}();
+        IERC20(WETH_TOKEN).safeTransfer(msg.sender, ethBalance);
     }
 
     /// @dev Closes a trove
@@ -169,7 +188,8 @@ contract LiquityDebtPositionLib is ILiquityDebtPosition, LiquityDebtPositionData
     /// @return amounts_ Managed asset amounts
     function getManagedAssets() external override returns (address[] memory assets_, uint256[] memory amounts_) {
         amounts_ = new uint256[](1);
-        amounts_[0] = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveColl(address(this));
+        amounts_[0] = ILiquityTroveManager(LIQUITY_TROVE_MANAGER).getTroveColl(address(this))
+            + ILiquityColSurplusPool(LIQUITY_COL_SURPLUS_POOL).getCollateral(address(this));
 
         // If there's no collateral balance, return empty arrays
         if (amounts_[0] == 0) {

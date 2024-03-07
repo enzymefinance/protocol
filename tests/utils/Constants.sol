@@ -54,6 +54,7 @@ abstract contract Constants {
     address internal constant ETHEREUM_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address internal constant ETHEREUM_LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address internal constant ETHEREUM_LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    address internal constant ETHEREUM_LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
     address internal constant ETHEREUM_MLN = 0xec67005c4E498Ec7f55E092bd1d35cbC47C91892;
     address internal constant ETHEREUM_STETH = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
     address internal constant ETHEREUM_STKAAVE = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;

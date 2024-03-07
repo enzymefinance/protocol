@@ -86,6 +86,9 @@ contract LiquityDebtPositionParser is IExternalPositionParser, LiquityDebtPositi
             assetsToTransfer_[0] = LUSD_TOKEN;
             amountsToTransfer_[0] = lusdAmount;
             assetsToReceive_[0] = WETH_TOKEN;
+        } else if (_actionId == uint256(ILiquityDebtPosition.Actions.ClaimCollateral)) {
+            assetsToReceive_ = new address[](1);
+            assetsToReceive_[0] = WETH_TOKEN;
         }
 
         return (assetsToTransfer_, amountsToTransfer_, assetsToReceive_);
