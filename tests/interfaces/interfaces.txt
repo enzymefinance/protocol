@@ -158,6 +158,7 @@ IYearnVaultV2PriceFeed.sol: YearnVaultV2PriceFeed.abi.json
 IChainlinkPriceFeedMixin.sol: ChainlinkPriceFeedMixin.abi.json
 IERC4626PriceFeed.sol: ERC4626PriceFeed.abi.json
 IArrakisV2PriceFeed.sol: ArrakisV2PriceFeed.abi.json
+IEtherFiEthPriceFeed.sol: EtherFiEthPriceFeed.abi.json
 
 # Protocol fee
 IProtocolFeeTracker.sol: ProtocolFeeTracker.abi.json
