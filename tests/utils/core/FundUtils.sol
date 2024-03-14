@@ -74,6 +74,20 @@ abstract contract FundUtils is CoreUtilsBase {
         return createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: config});
     }
 
+    function createFundWithPolicy(
+        IFundDeployer _fundDeployer,
+        IERC20 _denominationAsset,
+        address _policyAddress,
+        bytes memory _policySettings
+    ) internal returns (IComptrollerLib comptrollerProxy_, IVaultLib vaultProxy_, address fundOwner_) {
+        IFundDeployer.ConfigInput memory comptrollerConfig;
+        comptrollerConfig.denominationAsset = address(_denominationAsset);
+        comptrollerConfig.policyManagerConfigData = abi.encode(toArray(_policyAddress), toArray(_policySettings));
+
+        (comptrollerProxy_, vaultProxy_, fundOwner_) =
+            createFund({_fundDeployer: _fundDeployer, _comptrollerConfig: comptrollerConfig});
+    }
+
     function createVaultFromMockFundDeployer(IDispatcher _dispatcher, address _vaultLibAddress)
         internal
         returns (address vaultProxyAddress_)
@@ -140,6 +154,21 @@ abstract contract FundUtils is CoreUtilsBase {
             _minSharesQuantity: 1
         });
         vm.stopPrank();
+    }
+
+    function redeemSharesForAsset(
+        address _redeemer,
+        IComptrollerLib _comptrollerProxy,
+        uint256 _sharesQuantity,
+        IERC20 _asset
+    ) internal returns (uint256[] memory payoutAmounts_) {
+        vm.prank(_redeemer);
+        return _comptrollerProxy.redeemSharesForSpecificAssets({
+            _recipient: _redeemer,
+            _sharesQuantity: _sharesQuantity,
+            _payoutAssets: toArray(address(_asset)),
+            _payoutAssetPercentages: toArray(BPS_ONE_HUNDRED_PERCENT)
+        });
     }
 
     function redeemSharesInKind(address _redeemer, IComptrollerLib _comptrollerProxy, uint256 _sharesQuantity)
