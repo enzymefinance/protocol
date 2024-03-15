@@ -47,6 +47,9 @@ IExternalPositionFactory.sol: ExternalPositionFactory.abi.json
 IExternalPositionProxy.sol: ExternalPositionProxy.abi.json
 IExternalPositionVault.sol: IExternalPositionVault.abi.json
 
+# Peripheral
+INonStandardPrecisionSimulatedAggregator.sol: NonStandardPrecisionSimulatedAggregator.abi.json
+
 #######################################################################################################################
 # RELEASE
 #######################################################################################################################

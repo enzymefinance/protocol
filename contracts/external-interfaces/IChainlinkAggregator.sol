@@ -14,5 +14,7 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @title IChainlinkAggregator Interface
 /// @author Enzyme Council <security@enzyme.finance>
 interface IChainlinkAggregator {
+    function decimals() external view returns (uint8);
+
     function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80);
 }
