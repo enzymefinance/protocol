@@ -7,6 +7,7 @@ import {AssetUniverseUtils} from "tests/utils/core/AssetUniverseUtils.sol";
 import {ExternalPositionUtils} from "tests/utils/core/ExternalPositionUtils.sol";
 import {FeeUtils} from "tests/utils/core/FeeUtils.sol";
 import {FundUtils} from "tests/utils/core/FundUtils.sol";
+import {ListRegistryUtils} from "tests/utils/core/ListRegistryUtils.sol";
 import {PolicyUtils} from "tests/utils/core/PolicyUtils.sol";
 
 abstract contract CoreUtils is
@@ -15,6 +16,7 @@ abstract contract CoreUtils is
     AssetUniverseUtils,
     ExternalPositionUtils,
     FeeUtils,
-    PolicyUtils,
-    FundUtils
+    FundUtils,
+    ListRegistryUtils,
+    PolicyUtils
 {}
