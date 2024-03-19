@@ -52,6 +52,12 @@ INonStandardPrecisionSimulatedAggregator.sol: NonStandardPrecisionSimulatedAggre
 ISingleAssetRedemptionQueueFactory.sol: SingleAssetRedemptionQueueFactory.abi.json
 ISingleAssetRedemptionQueueLib.sol: SingleAssetRedemptionQueueLib.abi.json
 
+# Smart accounts
+IMultiCallAccountMixin.sol: MultiCallAccountMixin.abi.json
+IMultiCallAccountMixinHarness.sol: MultiCallAccountMixinHarness.abi.json
+ISharePriceThrottledAssetManagerLib.sol: SharePriceThrottledAssetManagerLib.abi.json
+ISharePriceThrottledAssetManagerFactory.sol: SharePriceThrottledAssetManagerFactory.abi.json
+
 # Utils
 IGSNRecipientMixinHarness.sol: GSNRecipientMixinHarness.abi.json
 
@@ -184,5 +190,5 @@ IArbitraryTokenPhasedSharesWrapperProxy.sol: ArbitraryTokenPhasedSharesWrapperPr
 IArbitraryTokenPhasedSharesWrapperLib.sol: ArbitraryTokenPhasedSharesWrapperLib.abi.json
 
 # Off-chain
-IFundValueCalculator.sol: FundValueCalculator.abi.json
+IFundValueCalculator.sol: IFundValueCalculator.abi.json
 IAssetValueCalculator.sol: AssetValueCalculator.abi.json

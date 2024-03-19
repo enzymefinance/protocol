@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {IExtension} from "tests/interfaces/internal/IExtension.sol";
 import {IFee} from "tests/interfaces/internal/IFee.sol";
+import {IFundValueCalculator} from "tests/interfaces/internal/IFundValueCalculator.sol";
 import {IMigrationHookHandler} from "tests/interfaces/internal/IMigrationHookHandler.sol";
 import {IPolicy} from "tests/interfaces/internal/IPolicy.sol";
 
@@ -80,6 +81,78 @@ contract MockDefaultMigrationHookHandler is IMigrationHookHandler {
         address _nextVaultAccessor,
         address _nextVaultLib
     ) external override {}
+}
+
+contract MockDefaultFundValueCalculator is IFundValueCalculator {
+    function calcGav(address _vaultProxy)
+        external
+        virtual
+        override
+        returns (address denominationAsset_, uint256 gav_)
+    {}
+
+    function calcGavInAsset(address _vaultProxy, address _quoteAsset)
+        external
+        virtual
+        override
+        returns (uint256 gav_)
+    {}
+
+    function calcGrossShareValue(address _vaultProxy)
+        external
+        virtual
+        override
+        returns (address denominationAsset_, uint256 grossShareValue_)
+    {}
+
+    function calcGrossShareValueInAsset(address _vaultProxy, address _quoteAsset)
+        external
+        virtual
+        override
+        returns (uint256 grossShareValue_)
+    {}
+
+    function calcNav(address _vaultProxy)
+        external
+        virtual
+        override
+        returns (address denominationAsset_, uint256 nav_)
+    {}
+
+    function calcNavInAsset(address _vaultProxy, address _quoteAsset)
+        external
+        virtual
+        override
+        returns (uint256 nav_)
+    {}
+
+    function calcNetShareValue(address _vaultProxy)
+        external
+        virtual
+        override
+        returns (address denominationAsset_, uint256 netShareValue_)
+    {}
+
+    function calcNetShareValueInAsset(address _vaultProxy, address _quoteAsset)
+        external
+        virtual
+        override
+        returns (uint256 netShareValue_)
+    {}
+
+    function calcNetValueForSharesHolder(address _vaultProxy, address _sharesHolder)
+        external
+        virtual
+        override
+        returns (address denominationAsset_, uint256 netValue_)
+    {}
+
+    function calcNetValueForSharesHolderInAsset(address _vaultProxy, address _sharesHolder, address _quoteAsset)
+        external
+        virtual
+        override
+        returns (uint256 netValue_)
+    {}
 }
 
 contract MockDefaultPolicy is IPolicy {
