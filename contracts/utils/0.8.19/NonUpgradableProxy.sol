@@ -18,7 +18,7 @@ pragma solidity 0.8.19;
 /// and using an immutable lib value to save on gas (since not upgradable).
 /// The EIP-1967 storage slot for the lib is still assigned,
 /// for ease of referring to UIs that understand the pattern, i.e., Etherscan.
-abstract contract NonUpgradableProxy {
+contract NonUpgradableProxy {
     address private immutable CONTRACT_LOGIC;
 
     constructor(bytes memory _constructData, address _contractLogic) {

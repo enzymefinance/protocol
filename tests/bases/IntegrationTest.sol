@@ -76,14 +76,20 @@ abstract contract IntegrationTest is CoreUtils {
         vm.createSelectFork("mainnet", _forkBlock);
 
         core.persistent = getMainnetPersistentContracts();
-        core.release = getMainnetReleaseContracts();
+        v4ReleaseContracts = getV4MainnetReleaseContracts();
+
+        // No v5 release live
+        // core.release = getMainnetReleaseContracts();
     }
 
     function setUpLivePolygonEnvironment(uint256 _forkBlock) internal {
         vm.createSelectFork("polygon", _forkBlock);
 
         core.persistent = getPolygonPersistentContracts();
-        core.release = getPolygonReleaseContracts();
+        v4ReleaseContracts = getV4PolygonReleaseContracts();
+
+        // No v5 release live
+        // core.release = getPolygonReleaseContracts();
     }
 
     // Partially-live deployments (persistent layer only)
@@ -498,6 +504,31 @@ abstract contract IntegrationTest is CoreUtils {
         }
     }
 
+    // Versioned routers: fund participation
+
+    function buySharesForVersion(
+        EnzymeVersion _version,
+        address _sharesBuyer,
+        address _comptrollerProxyAddress,
+        uint256 _amountToDeposit
+    ) internal returns (uint256 sharesReceived_) {
+        if (_version == EnzymeVersion.V4) {
+            return v4BuyShares({
+                _sharesBuyer: _sharesBuyer,
+                _comptrollerProxy: IV4ComptrollerLib(_comptrollerProxyAddress),
+                _amountToDeposit: _amountToDeposit
+            });
+        } else if (_version == EnzymeVersion.Current) {
+            return buyShares({
+                _sharesBuyer: _sharesBuyer,
+                _comptrollerProxy: IComptrollerLib(_comptrollerProxyAddress),
+                _amountToDeposit: _amountToDeposit
+            });
+        } else {
+            revert("buySharesForVersion: Unsupported version");
+        }
+    }
+
     // Versioned routers: integrations
 
     function callOnIntegrationForVersion(
@@ -643,6 +674,21 @@ abstract contract IntegrationTest is CoreUtils {
             _feeManagerConfigData: "",
             _policyManagerConfigData: ""
         });
+    }
+
+    // v4 actions: fund participation
+
+    function v4BuyShares(address _sharesBuyer, IV4ComptrollerLib _comptrollerProxy, uint256 _amountToDeposit)
+        internal
+        returns (uint256 sharesReceived_)
+    {
+        IERC20 denominationAsset = IERC20(_comptrollerProxy.getDenominationAsset());
+        increaseTokenBalance({_token: denominationAsset, _to: _sharesBuyer, _amount: _amountToDeposit});
+
+        vm.startPrank(_sharesBuyer);
+        denominationAsset.approve(address(_comptrollerProxy), _amountToDeposit);
+        sharesReceived_ = _comptrollerProxy.buyShares({_investmentAmount: _amountToDeposit, _minSharesQuantity: 1});
+        vm.stopPrank();
     }
 
     // v4 actions: system
