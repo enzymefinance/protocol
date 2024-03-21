@@ -8,7 +8,6 @@ import {IFundDeployer} from "tests/interfaces/internal/IFundDeployer.sol";
 
 abstract contract CurveUtils is AddOnUtilsBase {
     address internal constant ADDRESS_PROVIDER_ADDRESS = 0x0000000022D53366457F9d5E68Ec105046FC4383;
-    address internal constant NATIVE_ASSET_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     address internal constant ETHEREUM_GAUGE_CONTROLLER_ADDRESS = 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB;
     // ETHEREUM_GAUGE_CONTROLLER_ADMIN can change and can also be queried from ETHEREUM_GAUGE_CONTROLLER.admin()

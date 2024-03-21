@@ -31,6 +31,7 @@ abstract contract Constants {
     // `ETHEREUM_BLOCK_LATEST` can be increased as-needed, and should be used in all tests
     // that should generally continue to pass regardless of block.
     uint256 internal constant ETHEREUM_BLOCK_LATEST = 18040000; // Sept 1st, 2023
+    uint256 internal constant ETHEREUM_BLOCK_PENDLE_TIME_SENSITIVE = 19300000; // Feb 3rd, 2024
     uint256 internal constant ETHEREUM_BLOCK_TERM_FINANCE_TIME_SENSITIVE = 18554000; // Nov 12th, 2023
     uint256 internal constant ETHEREUM_BLOCK_TEMP_TIME_SENSITIVE = 17500000; // June 17th, 2023
     uint256 internal constant ETHEREUM_BLOCK_LATEST_TIME_SENSITIVE = 17345000; // May 26, 2023
@@ -40,6 +41,8 @@ abstract contract Constants {
     uint256 internal constant POLYGON_BLOCK_LATEST_TIME_SENSITIVE = 43179000; // May 26, 2023
 
     // Network assets
+    address internal constant NATIVE_ASSET_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     address internal constant ETHEREUM_AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
     address internal constant ETHEREUM_BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
     address internal constant ETHEREUM_COMP = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
@@ -52,6 +55,8 @@ abstract contract Constants {
     address internal constant ETHEREUM_CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address internal constant ETHEREUM_CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
     address internal constant ETHEREUM_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address internal constant ETHEREUM_EETH = 0x35fA164735182de50811E8e2E824cFb9B6118ac2;
+    address internal constant ETHEREUM_ETHERFI_LIQUIDITY_POOL = 0x308861A430be4cce5502d0A12724771Fc6DaF216;
     address internal constant ETHEREUM_LDO = 0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32;
     address internal constant ETHEREUM_LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     address internal constant ETHEREUM_LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;

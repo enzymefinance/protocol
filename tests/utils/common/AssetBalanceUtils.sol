@@ -24,6 +24,7 @@ import {IAaveV3Pool} from "tests/interfaces/external/IAaveV3Pool.sol";
 import {ICompoundV3Configurator} from "tests/interfaces/external/ICompoundV3Configurator.sol";
 import {ICompoundV3Comet} from "tests/interfaces/external/ICompoundV3Comet.sol";
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
+import {IEtherFiLiquidityPool} from "tests/interfaces/external/IEtherFiLiquidityPool.sol";
 import {ILidoSteth} from "tests/interfaces/external/ILidoSteth.sol";
 
 abstract contract AssetBalanceUtils is CommonUtilsBase {
@@ -47,6 +48,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             increaseAaveV3TokenBalance(_token, _to, _amount);
         } else if (isCompoundV3Token(_token)) {
             increaseCompoundV3TokenBalance(_token, _to, _amount);
+        } else if (isEeth(_token)) {
+            increaseEethBalance(_to, _amount);
         } else {
             uint256 balance = _token.balanceOf(_to);
 
@@ -199,6 +202,24 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
         cToken.supplyTo({_dst: _to, _asset: address(underlyingToken), _amount: _amount});
         vm.stopPrank();
     }
+
+    // Ether.fi eeth
+
+    function increaseEethBalance(address _to, uint256 _amount) internal {
+        increaseNativeAssetBalance(_to, _amount);
+        vm.prank(_to);
+        IEtherFiLiquidityPool(ETHEREUM_ETHERFI_LIQUIDITY_POOL).deposit{value: _amount}();
+    }
+
+    function isEeth(IERC20 _token) internal view returns (bool isEeth_) {
+        // Ethereum only
+        if (block.chainid != ETHEREUM_CHAIN_ID) {
+            return false;
+        }
+
+        return address(_token) == ETHEREUM_EETH;
+    }
+
     // Lido stETH
 
     function increaseStethBalance(address _to, uint256 _amount) internal {
