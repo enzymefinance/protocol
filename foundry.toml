@@ -10,6 +10,9 @@ cbor_metadata = false
 verbosity = 3
 fs_permissions = [{ access = "read", path = "./artifacts"}]
 
+# Ignore compiler warnings that should be intentionally-skipped
+ignored_warnings_from = ["contracts/release/extensions/integration-manager/integrations/utils/0.8.19/bases/GenericWrappingAdapterBase.sol"]
+
 # NOTE: Specifying shanghai as the evm_version seems required for the Goerli tests to pass
 evm_version = "shanghai"
 

@@ -35,4 +35,8 @@ abstract contract IntegrationSelectors {
     // Combined
     bytes4 internal constant LEND_AND_STAKE_SELECTOR = bytes4(keccak256("lendAndStake(address,bytes,bytes)"));
     bytes4 internal constant UNSTAKE_AND_REDEEM_SELECTOR = bytes4(keccak256("unstakeAndRedeem(address,bytes,bytes)"));
+
+    // Wrapping
+    bytes4 internal constant WRAP_SELECTOR = bytes4(keccak256("wrap(address,bytes,bytes)"));
+    bytes4 internal constant UNWRAP_SELECTOR = bytes4(keccak256("unwrap(address,bytes,bytes)"));
 }
