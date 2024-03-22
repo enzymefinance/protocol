@@ -260,6 +260,14 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         });
     }
 
+    function test_requestRedeem_failsWithZeroShares() public {
+        FundWithRedemptionQueueTestVars memory testVars = __setup_fundWithRedemptionQueue({_fillQueue: false});
+
+        vm.expectRevert(ISingleAssetRedemptionQueueLib.ZeroShares.selector);
+        vm.prank(testVars.holder1);
+        testVars.redemptionQueue.requestRedeem({_sharesAmount: 0});
+    }
+
     function test_requestRedeem_failsWithShutdown() public {
         FundWithRedemptionQueueTestVars memory testVars = __setup_fundWithRedemptionQueue({_fillQueue: false});
 

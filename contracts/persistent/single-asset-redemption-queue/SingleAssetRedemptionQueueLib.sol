@@ -63,6 +63,8 @@ contract SingleAssetRedemptionQueueLib is ISingleAssetRedemptionQueue, GSNRecipi
 
     error UndefinedVaultProxy();
 
+    error ZeroShares();
+
     IGlobalConfig2 private immutable GLOBAL_CONFIG_CONTRACT;
 
     bool private isShutdown;
@@ -152,6 +154,10 @@ contract SingleAssetRedemptionQueueLib is ISingleAssetRedemptionQueue, GSNRecipi
     /// @return id_ The id of the redemption request
     /// @dev Not gas-relayable
     function requestRedeem(uint256 _sharesAmount) external override notShutdown returns (uint256 id_) {
+        if (_sharesAmount == 0) {
+            revert ZeroShares();
+        }
+
         address user = msg.sender;
         id_ = nextNewId++;
 
