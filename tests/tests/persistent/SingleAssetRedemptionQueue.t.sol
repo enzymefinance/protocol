@@ -152,6 +152,15 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         address holder2;
     }
 
+    struct Snapshot {
+        uint256 sharesTotalSupply;
+        uint256 redemptionQueueSharesBalance;
+        uint256 vaultRedemptionAssetBalance;
+        uint256 holder1Balance;
+        uint256 holder2Balance;
+        uint256 redeemableShares;
+    }
+
     function __setup_fundWithRedemptionQueue(bool _fillQueue)
         public
         returns (FundWithRedemptionQueueTestVars memory testVars_)
@@ -226,6 +235,28 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
             redemptionAsset: redemptionAsset,
             holder1: holder1,
             holder2: holder2
+        });
+    }
+
+    function __getSnapshot(FundWithRedemptionQueueTestVars memory _testVars) internal view returns (Snapshot memory) {
+        uint256 redeemableShares = 0;
+
+        uint256 startId = _testVars.redemptionQueue.getNextQueuedId();
+        uint256 endId = _testVars.redemptionQueue.getNextNewId() - 1;
+        for (uint256 id = startId; id <= endId; id++) {
+            redeemableShares += _testVars.redemptionQueue.getSharesForRequest(id);
+        }
+
+        IERC20 sharesToken = IERC20(_testVars.vaultProxyAddress);
+        IERC20 redemptionAsset = IERC20(_testVars.redemptionAsset);
+
+        return Snapshot({
+            sharesTotalSupply: sharesToken.totalSupply(),
+            redemptionQueueSharesBalance: sharesToken.balanceOf(address(_testVars.redemptionQueue)),
+            vaultRedemptionAssetBalance: redemptionAsset.balanceOf(_testVars.vaultProxyAddress),
+            holder1Balance: redemptionAsset.balanceOf(_testVars.holder1),
+            holder2Balance: redemptionAsset.balanceOf(_testVars.holder2),
+            redeemableShares: redeemableShares
         });
     }
 
@@ -395,25 +426,54 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
 
     function test_redeemFromQueue_successWithFullQueueAndBypass() public {
         FundWithRedemptionQueueTestVars memory testVars = __setup_fundWithRedemptionQueue({_fillQueue: true});
+
+        __test_redeemFromQueue_successWithFullQueueAndBypass(testVars);
+    }
+
+    function test_requestAndRedeemMultipleTimesFromQueue_successWithFullQueueAndBypass() public {
+        FundWithRedemptionQueueTestVars memory testVars = __setup_fundWithRedemptionQueue({_fillQueue: true});
+
+        __test_redeemFromQueue_successWithFullQueueAndBypass(testVars);
+
         IERC20 sharesToken = IERC20(testVars.vaultProxyAddress);
-        uint256 endId = testVars.redemptionQueue.getNextNewId() - 1;
+        uint256 holder1SharesBalance = sharesToken.balanceOf(testVars.holder1);
+        uint256 holder2SharesBalance = sharesToken.balanceOf(testVars.holder2);
+
+        vm.prank(testVars.holder1);
+        testVars.redemptionQueue.requestRedeem({_sharesAmount: holder1SharesBalance / 3});
+
+        vm.prank(testVars.holder2);
+        testVars.redemptionQueue.requestRedeem({_sharesAmount: holder2SharesBalance / 6});
+
+        vm.prank(testVars.holder1);
+        testVars.redemptionQueue.requestRedeem({_sharesAmount: holder1SharesBalance / 4});
+
+        __test_redeemFromQueue_successWithFullQueueAndBypass(testVars);
+    }
+
+    function __test_redeemFromQueue_successWithFullQueueAndBypass(FundWithRedemptionQueueTestVars memory _testVars)
+        internal
+    {
+        IERC20 sharesToken = IERC20(_testVars.vaultProxyAddress);
+        uint256 startId = _testVars.redemptionQueue.getNextQueuedId();
+        uint256 endId = _testVars.redemptionQueue.getNextNewId() - 1;
         uint256 idToBypass = endId - 1;
-        uint256 bypassedSharesAmount = testVars.redemptionQueue.getSharesForRequest(idToBypass);
+        uint256 bypassedSharesAmount = _testVars.redemptionQueue.getSharesForRequest(idToBypass);
 
         // Update the bypassable threshold to be above the request amount to skip
-        vm.prank(testVars.fundOwner);
-        testVars.redemptionQueue.setBypassableSharesThreshold(bypassedSharesAmount);
+        vm.prank(_testVars.fundOwner);
+        _testVars.redemptionQueue.setBypassableSharesThreshold(bypassedSharesAmount);
 
-        uint256 preTxSharesSupply = sharesToken.totalSupply();
-        uint256 preTxVaultRedemptionAssetBalance = testVars.redemptionAsset.balanceOf(testVars.vaultProxyAddress);
+        Snapshot memory beforeRedemptionSnapshot = __getSnapshot(_testVars);
+
         uint256 holder1RedeemedShares;
         uint256 holder2RedeemedShares;
-        for (uint256 id; id <= endId; id++) {
+        for (uint256 id = startId; id <= endId; id++) {
             if (id != idToBypass) {
-                address user = testVars.redemptionQueue.getUserForRequest(id);
-                uint256 sharesAmount = testVars.redemptionQueue.getSharesForRequest(id);
+                address user = _testVars.redemptionQueue.getUserForRequest(id);
+                uint256 sharesAmount = _testVars.redemptionQueue.getSharesForRequest(id);
 
-                if (user == testVars.holder1) {
+                if (user == _testVars.holder1) {
                     holder1RedeemedShares += sharesAmount;
                 } else {
                     holder2RedeemedShares += sharesAmount;
@@ -422,45 +482,52 @@ contract SingleAssetRedemptionQueueTest is IntegrationTest {
         }
 
         // TODO: pre-assert other events
-        for (uint256 id; id <= endId; id++) {
+        for (uint256 id = startId; id <= endId; id++) {
             if (id == idToBypass) {
-                expectEmit(address(testVars.redemptionQueue));
+                expectEmit(address(_testVars.redemptionQueue));
                 emit RequestBypassed(idToBypass);
             }
         }
 
-        vm.prank(testVars.manager);
-        testVars.redemptionQueue.redeemFromQueue({_endId: endId, _idsToBypass: toArray(idToBypass)});
+        vm.prank(_testVars.manager);
+        _testVars.redemptionQueue.redeemFromQueue({_endId: endId, _idsToBypass: toArray(idToBypass)});
 
         // Assert expected balances
-        uint256 expectedHolder1Balance = preTxVaultRedemptionAssetBalance * holder1RedeemedShares / preTxSharesSupply;
-        uint256 expectedHolder2Balance = preTxVaultRedemptionAssetBalance * holder2RedeemedShares / preTxSharesSupply;
         assertApproxEqAbs(
-            testVars.redemptionAsset.balanceOf(testVars.holder1), expectedHolder1Balance, 1, "incorrect holder1 balance"
+            _testVars.redemptionAsset.balanceOf(_testVars.holder1) - beforeRedemptionSnapshot.holder1Balance,
+            beforeRedemptionSnapshot.vaultRedemptionAssetBalance * holder1RedeemedShares
+                / beforeRedemptionSnapshot.sharesTotalSupply,
+            1,
+            "incorrect holder1 balance"
         );
         assertApproxEqAbs(
-            testVars.redemptionAsset.balanceOf(testVars.holder2), expectedHolder2Balance, 1, "incorrect holder2 balance"
+            _testVars.redemptionAsset.balanceOf(_testVars.holder2) - beforeRedemptionSnapshot.holder2Balance,
+            beforeRedemptionSnapshot.vaultRedemptionAssetBalance * holder2RedeemedShares
+                / beforeRedemptionSnapshot.sharesTotalSupply,
+            1,
+            "incorrect holder2 balance"
         );
 
         // Assert remaining shares balance
         assertEq(
-            sharesToken.balanceOf(address(testVars.redemptionQueue)),
-            bypassedSharesAmount,
+            beforeRedemptionSnapshot.redemptionQueueSharesBalance - beforeRedemptionSnapshot.redeemableShares
+                + bypassedSharesAmount,
+            sharesToken.balanceOf(address(_testVars.redemptionQueue)),
             "incorrect remaining shares balance"
         );
 
         // Assert storage
-        assertEq(testVars.redemptionQueue.getNextQueuedId(), endId + 1, "incorrect nextQueuedId");
-        for (uint256 id; id <= endId; id++) {
+        assertEq(_testVars.redemptionQueue.getNextQueuedId(), endId + 1, "incorrect nextQueuedId");
+        for (uint256 id = startId; id <= endId; id++) {
             if (id == idToBypass) {
                 // bypassed request remains
                 assertEq(
-                    testVars.redemptionQueue.getSharesForRequest(id), bypassedSharesAmount, "bypassed request removed"
+                    _testVars.redemptionQueue.getSharesForRequest(id), bypassedSharesAmount, "bypassed request removed"
                 );
             } else {
                 // executed request removed
-                assertEq(testVars.redemptionQueue.getSharesForRequest(id), 0, "non-zero shares in request");
-                assertEq(testVars.redemptionQueue.getUserForRequest(id), address(0), "non-zero user in request");
+                assertEq(_testVars.redemptionQueue.getSharesForRequest(id), 0, "non-zero shares in request");
+                assertEq(_testVars.redemptionQueue.getUserForRequest(id), address(0), "non-zero user in request");
             }
         }
     }

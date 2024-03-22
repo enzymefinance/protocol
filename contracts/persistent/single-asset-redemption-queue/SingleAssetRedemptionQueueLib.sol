@@ -226,6 +226,8 @@ contract SingleAssetRedemptionQueueLib is ISingleAssetRedemptionQueue, GSNRecipi
         uint256[] memory sharesRedeemed = new uint256[](usersToRedeemCount);
         uint256 totalSharesRedeemed;
         for (uint256 id = startId; id <= _endId; id++) {
+            uint256 index = id - startId; // Index for memory arrays
+
             uint256 sharesAmount = getSharesForRequest(id);
 
             if (_idsToBypass.contains(id)) {
@@ -241,8 +243,8 @@ contract SingleAssetRedemptionQueueLib is ISingleAssetRedemptionQueue, GSNRecipi
             address user = getUserForRequest(id);
 
             // Add request to redemption
-            usersRedeemed[id] = user;
-            sharesRedeemed[id] = sharesAmount;
+            usersRedeemed[index] = user;
+            sharesRedeemed[index] = sharesAmount;
             totalSharesRedeemed += sharesAmount;
 
             // Remove request from queue
@@ -263,13 +265,15 @@ contract SingleAssetRedemptionQueueLib is ISingleAssetRedemptionQueue, GSNRecipi
         // Disperse the redemption asset to the users pro-rata
         uint256 balanceToDisperse = redemptionAssetCopy.balanceOf(address(this));
         for (uint256 id = startId; id <= _endId; id++) {
-            uint256 sharesAmount = sharesRedeemed[id];
+            uint256 index = id - startId; // Index for memory arrays
+
+            uint256 sharesAmount = sharesRedeemed[index];
             if (sharesAmount == 0) {
                 // Skip bypassed request
                 continue;
             }
 
-            address user = usersRedeemed[id];
+            address user = usersRedeemed[index];
             uint256 userAmountToDisperse = balanceToDisperse * sharesAmount / totalSharesRedeemed;
 
             redemptionAssetCopy.safeTransfer(user, userAmountToDisperse);
