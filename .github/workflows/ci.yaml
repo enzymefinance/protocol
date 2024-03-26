@@ -34,7 +34,7 @@ jobs:
       - name: Install foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly-1a4960d0d888200d696ea97b2e38f83db8eaee02
+          version: nightly-563e0624ba5a4a317202b4c9bc1d0120ed7c49f0
 
       - name: Display config
         run: forge config
