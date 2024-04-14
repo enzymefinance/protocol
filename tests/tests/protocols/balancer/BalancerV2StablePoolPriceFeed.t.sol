@@ -50,7 +50,7 @@ abstract contract TestBase is IntegrationTest, BalancerV2Utils {
 }
 
 abstract contract ValueTest is TestBase {
-    // Also acts as a a success case for calcUnderlyingValues
+    // Also acts as a success case for calcUnderlyingValues
     function test_successViaValueInterpreter() public {
         // Register the bpt:
         // 1. register the pool factory on the price feed

@@ -438,7 +438,7 @@ abstract contract PendleTestBase is IntegrationTest {
 
     // Test that a principal token can be bought through the native asset.
     function test_buyPrincipalToken_nativeAsset_success() public {
-        // Run the test conditionally if the token supports depositing in the the native asset.
+        // Run the test conditionally if the token supports depositing in the native asset.
         if (syToken.isValidTokenIn(PENDLE_NATIVE_ASSET_ADDRESS)) {
             __test_buyPrincipalToken_success({_depositTokenAddress: NATIVE_ASSET_ADDRESS});
         }
