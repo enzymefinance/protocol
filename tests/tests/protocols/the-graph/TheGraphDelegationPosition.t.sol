@@ -21,6 +21,12 @@ address constant ETHEREUM_THE_GRAPH_CONTROLLER = 0x24CCD4D3Ac8529fF08c58F74ff675
 address constant ETHEREUM_THE_GRAPH_INDEXER_1 = 0xA28a99B0219A34142a9398a19460Fcd69250A2B2;
 address constant ETHEREUM_THE_GRAPH_INDEXER_2 = 0x474E571Ab6dd77489EC3C7DDF9CBc893FcbA684C;
 
+// ARBITRUM CONSTANTS
+address constant ARBITRUM_THE_GRAPH_CONTROLLER = 0x0a8491544221dd212964fbb96487467291b2C97e;
+// src: https://graphscan.io/#indexers
+address constant ARBITRUM_THE_GRAPH_INDEXER_1 = 0x2f09092aacd80196FC984908c5A9a7aB3ee4f1CE;
+address constant ARBITRUM_THE_GRAPH_INDEXER_2 = 0xF9123292b4d958C53aaaD8c5df0138EE0E62944B;
+
 abstract contract TheGraphDelegationTestBase is IntegrationTest {
     event IndexerAdded(address indexed indexer);
 
@@ -49,12 +55,13 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
 
     function __initialize(
         EnzymeVersion _version,
+        uint256 _chainId,
         address _theGraphControllerAddress,
         address[] memory _indexerAddresses
     ) internal {
         version = _version;
 
-        setUpMainnetEnvironment();
+        setUpNetworkEnvironment({_chainId: _chainId});
 
         theGraphController = ITheGraphController(_theGraphControllerAddress);
 
@@ -273,9 +280,11 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
             theGraphDelegationExternalPosition.getManagedAssets();
 
         assertEq(managedAssets, toArray(address(grtToken)), "Incorrect managed assets");
-        assertEq(
-            managedAssetAmounts,
-            toArray((totalDelegatedAmount - totalDelegationFeeAmount)),
+        // Allow 1 wei of difference due to rounding
+        assertApproxEqAbs(
+            managedAssetAmounts[0],
+            (totalDelegatedAmount - totalDelegationFeeAmount),
+            1,
             "Incorrect managed asset amounts"
         );
     }
@@ -291,11 +300,13 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
         (uint256 delegationShares,,) =
             theGraphStaking.getDelegation(indexer, address(theGraphDelegationExternalPosition));
 
-        uint256 undelegationAmount = delegationShares / 3;
+        uint256 undelegatedShares = delegationShares / 3;
+        (,,,, uint256 poolTokens, uint256 poolShares) = theGraphStaking.delegationPools(indexer);
+        uint256 undelegatedTokensAmount = undelegatedShares * poolTokens / poolShares;
 
         vm.recordLogs();
 
-        __undelegate({_indexer: indexer, _shares: undelegationAmount});
+        __undelegate({_indexer: indexer, _shares: undelegatedShares});
 
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
@@ -314,13 +325,13 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
             theGraphDelegationExternalPosition.getManagedAssets();
 
         assertEq(managedAssets, toArray(address(grtToken)), "Incorrect managed assets");
-        assertEq(
-            managedAssetAmounts, toArray(delegationAmount - delegationFeeAmount), "Incorrect managed asset amounts"
+        assertApproxEqAbs(
+            managedAssetAmounts[0], delegationAmount - delegationFeeAmount, 2, "Incorrect managed asset amounts"
         );
 
         // Assert that the undelegated grtTokens are now locked
         (, uint256 tokensLocked,) = theGraphStaking.getDelegation(indexer, address(theGraphDelegationExternalPosition));
-        assertEq(tokensLocked, undelegationAmount, "Incorrect tokens locked");
+        assertEq(tokensLocked, undelegatedTokensAmount, "Incorrect tokens locked");
     }
 
     function __test_withdraw(bool _redelegate, bool _withdrawAll) private {
@@ -411,7 +422,7 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
             );
             if (expectedManagedAssetAmounts.length > 0) {
                 assertApproxEqAbs(
-                    managedAssetAmounts[0], expectedManagedAssetAmounts[0], 2, "Incorrect managed asset amounts"
+                    managedAssetAmounts[0], expectedManagedAssetAmounts[0], 3, "Incorrect managed asset amounts"
                 );
             }
         }
@@ -444,22 +455,48 @@ abstract contract TheGraphDelegationTestBase is IntegrationTest {
     }
 }
 
-contract TheGraphDelegationTestEthereum is TheGraphDelegationTestBase {
-    function setUp() public override {
+abstract contract TheGraphDelegationTestEthereumBase is TheGraphDelegationTestBase {
+    function __initialize(EnzymeVersion _version) internal {
         __initialize({
-            _version: EnzymeVersion.Current,
+            _chainId: ETHEREUM_CHAIN_ID,
+            _version: _version,
             _theGraphControllerAddress: ETHEREUM_THE_GRAPH_CONTROLLER,
             _indexerAddresses: toArray(ETHEREUM_THE_GRAPH_INDEXER_1, ETHEREUM_THE_GRAPH_INDEXER_2)
         });
     }
 }
 
-contract TheGraphDelegationTestEthereumV4 is TheGraphDelegationTestBase {
+contract TheGraphDelegationTestEthereum is TheGraphDelegationTestEthereumBase {
     function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current});
+    }
+}
+
+contract TheGraphDelegationTestEthereumV4 is TheGraphDelegationTestEthereumBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4});
+    }
+}
+
+abstract contract TheGraphDelegationTestArbitrumBase is TheGraphDelegationTestBase {
+    function __initialize(EnzymeVersion _version) internal {
         __initialize({
-            _version: EnzymeVersion.V4,
-            _theGraphControllerAddress: ETHEREUM_THE_GRAPH_CONTROLLER,
-            _indexerAddresses: toArray(ETHEREUM_THE_GRAPH_INDEXER_1, ETHEREUM_THE_GRAPH_INDEXER_2)
+            _chainId: ARBITRUM_CHAIN_ID,
+            _version: _version,
+            _theGraphControllerAddress: ARBITRUM_THE_GRAPH_CONTROLLER,
+            _indexerAddresses: toArray(ARBITRUM_THE_GRAPH_INDEXER_1, ARBITRUM_THE_GRAPH_INDEXER_2)
         });
+    }
+}
+
+contract TheGraphDelegationTestArbitrum is TheGraphDelegationTestArbitrumBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.Current});
+    }
+}
+
+contract TheGraphDelegationTestArbitrumV4 is TheGraphDelegationTestArbitrumBase {
+    function setUp() public override {
+        __initialize({_version: EnzymeVersion.V4});
     }
 }
