@@ -20,6 +20,8 @@ import {
     ETHEREUM_FACTORY_ADDRESS,
     POLYGON_NON_FUNGIBLE_TOKEN_MANAGER,
     POLYGON_FACTORY_ADDRESS,
+    ARBITRUM_NON_FUNGIBLE_TOKEN_MANAGER,
+    ARBITRUM_FACTORY_ADDRESS,
     UniswapV3Utils
 } from "./UniswapV3Utils.sol";
 
@@ -909,6 +911,70 @@ contract UniswapV3LiquidityPositionTestPolygon is UniswapV3LiquidityPositionTest
     }
 }
 
+contract UniswapV3LiquidityPositionTestArbitrum is UniswapV3LiquidityPositionTest {
+    function setUp() public virtual override {
+        setUpArbitrumEnvironment();
+
+        nonFungibleTokenManagerAddress = ARBITRUM_NON_FUNGIBLE_TOKEN_MANAGER;
+        factoryAddress = ARBITRUM_FACTORY_ADDRESS;
+
+        super.setUp();
+    }
+
+    // MINT
+    function test_mint_success() public {
+        __test_mint_success({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+        __test_mint_success({_tokenA: ARBITRUM_USDC, _tokenB: ARBITRUM_DAI, _fee: FEE_LOWEST});
+    }
+
+    // ADD LIQUIDITY
+    function test_addLiquidity_success() public {
+        __test_addLiquidity_success({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    // COLLECT
+    function test_collect_success() public {
+        __test_collect_success({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    // REMOVE LIQUIDITY
+    function test_removeLiquidity_success() public {
+        __test_removeLiquidity_success({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    // PURGE
+    function test_purge_liquidityKnownSuccess() public {
+        __test_purge_liquidityKnownUpfrontSuccess({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    function test_purge_liquidityUnknownSuccess() public {
+        __test_purge_liquidityUnknownUpfrontSuccess({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    function test_purge_noLiquidityRemovedSuccess() public {
+        __test_purge_noLiquidityRemovedSuccess({_tokenA: ARBITRUM_DAI, _tokenB: ARBITRUM_USDC, _fee: FEE_LOWEST});
+    }
+
+    // MANAGED ASSETS
+    function test_managedAssets_sameNftsAndRelatedNftSuccess() public {
+        __test_managedAssets_sameNftsAndRelatedNftSuccess({
+            _tokenA: ARBITRUM_USDC,
+            _tokenB: ARBITRUM_DAI,
+            _feeFirstPool: FEE_LOWEST,
+            _tokenC: ARBITRUM_USDT,
+            _feeSecondPool: FEE_LOWEST
+        });
+    }
+
+    function test_managedAssets_aboveRangeSuccess() public {
+        __test_managedAssets_aboveRangeSuccess({_tokenA: ARBITRUM_USDC, _tokenB: ARBITRUM_DAI, _fee: FEE_LOWEST});
+    }
+
+    function test_managedAssets_belowRangeSuccess() public {
+        __test_managedAssets_belowRangeSuccess({_tokenA: ARBITRUM_USDC, _tokenB: ARBITRUM_DAI, _fee: FEE_LOWEST});
+    }
+}
+
 contract UniswapV3LiquidityPositionTestEthereumV4 is UniswapV3LiquidityPositionTestEthereum {
     function setUp() public override {
         version = EnzymeVersion.V4;
@@ -918,6 +984,14 @@ contract UniswapV3LiquidityPositionTestEthereumV4 is UniswapV3LiquidityPositionT
 }
 
 contract UniswapV3LiquidityPositionTestPolygonV4 is UniswapV3LiquidityPositionTestPolygon {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract UniswapV3LiquidityPositionTestArbitrumV4 is UniswapV3LiquidityPositionTestArbitrum {
     function setUp() public override {
         version = EnzymeVersion.V4;
 

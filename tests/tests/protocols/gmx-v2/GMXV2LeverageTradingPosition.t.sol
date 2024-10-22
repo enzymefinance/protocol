@@ -2183,9 +2183,8 @@ contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositio
     }
 }
 
-// TODO: uncomment once arbitrum v4 is deployed
-// contract GMXV2LeverageTradingPositionArbitrumV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
-//     function setUp() public override {
-//         __initialize(EnzymeVersion.V4);
-//     }
-// }
+contract GMXV2LeverageTradingPositionArbitrumV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
+    function setUp() public override {
+        __initialize(EnzymeVersion.V4);
+    }
+}

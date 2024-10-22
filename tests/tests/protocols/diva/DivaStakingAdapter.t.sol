@@ -35,7 +35,6 @@ abstract contract DivaStakingAdapterTestBase is TestBase {
         });
     }
 }
-
 // TODO: Uncomment once Diva is deployed
 // contract DivaStakingAdapterTest is DivaStakingAdapterTestBase {
 //     function setUp() public override {

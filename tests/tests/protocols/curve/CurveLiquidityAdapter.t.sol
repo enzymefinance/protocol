@@ -577,6 +577,27 @@ abstract contract PolygonCurvePoolTest is CurvePoolTest {
     }
 }
 
+abstract contract ArbitrumCurvePoolTest is CurvePoolTest {
+    function setUp() public virtual override {
+        setUpArbitrumEnvironment();
+
+        crvToken = IERC20(ARBITRUM_CRV);
+
+        // Deploy the price feed
+        priceFeed = deployPriceFeed({
+            _fundDeployer: IFundDeployer(getFundDeployerAddressForVersion(version)),
+            _addressProviderAddress: ADDRESS_PROVIDER_ADDRESS,
+            _poolOwnerAddress: ARBITRUM_POOL_OWNER_ADDRESS,
+            _virtualPriceDeviationThreshold: BPS_ONE_PERCENT
+        });
+
+        // Deploy the adapter
+        adapter = IIntegrationAdapter(__deployAdapter(address(0)));
+
+        super.setUp();
+    }
+}
+
 // ACTUAL TESTS, RUN PER-POOL
 
 contract EthereumAavePoolTest is EthereumCurvePoolTest {
@@ -616,6 +637,21 @@ contract PolygonAavePoolTest is PolygonCurvePoolTest {
     }
 }
 
+// TODO: These tests assume that Curve pools have staking tokens, and only test the corresponding actions.
+// There is no Arbitrum Curve pool that has a staking token, so these tests are not applicable.
+// contract Arbitrum2PoolTest is ArbitrumCurvePoolTest {
+//     using SafeERC20 for IERC20;
+
+//     function setUp() public virtual override {
+//         // Define pool before all other setup
+//         poolAddress = ARBITRUM_2POOL_ADDRESS;
+//         lpToken = IERC20(ARBITRUM_2POOL_LP_TOKEN_ADDRESS);
+//         stakingToken = IERC20(address(0));
+
+//         super.setUp();
+//     }
+// }
+
 contract EthereumAavePoolTestV4 is EthereumAavePoolTest {
     function setUp() public override {
         version = EnzymeVersion.V4;
@@ -639,3 +675,11 @@ contract PolygonAavePoolTestV4 is PolygonAavePoolTest {
         super.setUp();
     }
 }
+
+// contract Arbitrum2PoolTestV4 is Arbitrum2PoolTest {
+//     function setUp() public override {
+//         version = EnzymeVersion.V4;
+
+//         super.setUp();
+//     }
+// }

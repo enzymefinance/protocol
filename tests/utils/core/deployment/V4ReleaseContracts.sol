@@ -66,7 +66,21 @@ function getPolygonDeployment() pure returns (Contracts memory) {
     });
 }
 
-// TODO: Replace with actual values
 function getArbitrumDeployment() pure returns (Contracts memory contracts_) {
-    return contracts_;
+    return Contracts({
+        // Core
+        comptrollerLibAddress: 0x3868C0FC34B6ecE124c6ab122f6f29E978Be6661,
+        fundDeployer: IFundDeployer(0xa2B4c827dE13D4e9801eA1Ca837524a1A148Dec3),
+        vaultLibAddress: 0xE1A147b3FB8a7bE78bf3A061F176bC718D897695,
+        // Extensions
+        externalPositionManager: IExternalPositionManager(0x90B53aefdbD2Ba3573d965d2D98951F2aA00507d),
+        feeManager: IFeeManager(0x2C46503D4a0313c7161a5593B6865BaA194b466f),
+        integrationManager: IIntegrationManager(0x55dF97AcA98c2a708721f28eA1Ca42A2bE7FF934),
+        policyManager: IPolicyManager(0xbDe1E8C4A061cd28F4871860dDf22200B85ee9Ec),
+        // Infrastructure
+        gasRelayPaymasterFactory: IGasRelayPaymasterFactory(0xe922362AA3426bd683B63a8e5d13903A9cFC4Cbb),
+        protocolFeeTracker: IProtocolFeeTracker(0xE71227D6D846e0fb3367D020683327031c4c4A3D),
+        valueInterpreter: IValueInterpreter(0xDd5F18a52A63eCECF502A165A459D33BE5C0a06C),
+        usdEthSimulatedAggregator: IUsdEthSimulatedAggregator(address(0)) // Not deployed on Arbitrum
+    });
 }

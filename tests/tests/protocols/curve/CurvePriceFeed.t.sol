@@ -687,7 +687,7 @@ abstract contract CurvePriceFeedTestArbitrumBase is CurvePriceFeedTestBase {
     function test_calcUnderlyingValues2Pool_success() public {
         __test_calcUnderlyingValues_success({
             _pool: ARBITRUM_2POOL_ADDRESS,
-            _invariantProxyAsset: getUsdEthSimulatedAggregatorForVersion(version),
+            _invariantProxyAsset: ARBITRUM_USDC, // TODO: Update to `getUsdEthSimulatedAggregatorForVersion(version)` if we deploy a UsdEthSimualtedAggregator on Arbitrum
             _lpToken: ARBITRUM_2POOL_LP_TOKEN_ADDRESS,
             _gaugeToken: address(0),
             _poolCreationTimestamp: 1631449040,
@@ -746,9 +746,8 @@ contract CurvePriceFeedTestArbitrum is CurvePriceFeedTestArbitrumBase {
     }
 }
 
-// TODO: Uncomment once Enzyme Arbitrum deployment is live
-// contract CurvePriceFeedTestArbitrumV4 is CurvePriceFeedTestArbitrumBase {
-//     function setUp() public override {
-//         __initialize(EnzymeVersion.V4);
-//     }
-// }
+contract CurvePriceFeedTestArbitrumV4 is CurvePriceFeedTestArbitrumBase {
+    function setUp() public override {
+        __initialize(EnzymeVersion.V4);
+    }
+}

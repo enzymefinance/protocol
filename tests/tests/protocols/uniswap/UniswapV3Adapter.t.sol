@@ -9,7 +9,7 @@ import {IERC20} from "tests/interfaces/external/IERC20.sol";
 
 import {IUniswapV3Adapter} from "tests/interfaces/internal/IUniswapV3Adapter.sol";
 
-import {ETHEREUM_SWAP_ROUTER, POLYGON_SWAP_ROUTER} from "./UniswapV3Utils.sol";
+import {ETHEREUM_SWAP_ROUTER, POLYGON_SWAP_ROUTER, ARBITRUM_SWAP_ROUTER} from "./UniswapV3Utils.sol";
 
 abstract contract TestBase is IntegrationTest {
     address internal fundOwner;
@@ -182,6 +182,35 @@ abstract contract TestBasePolygon is TestBase {
     }
 }
 
+abstract contract TestBaseArbitrum is TestBase {
+    function __initialize(EnzymeVersion _version) internal {
+        __initialize({_chainId: ARBITRUM_CHAIN_ID, _version: _version, _routerAddress: ARBITRUM_SWAP_ROUTER});
+    }
+
+    function test_takeOrder_success() public {
+        uint24[] memory pathFees = new uint24[](1);
+        pathFees[0] = 3000;
+
+        __test_takeOrder_success({
+            _pathAddresses: toArray(ARBITRUM_WETH, ARBITRUM_USDC),
+            _pathFees: pathFees,
+            _outgoingAssetAmount: 11 * assetUnit(IERC20(ARBITRUM_WETH))
+        });
+    }
+
+    function test_takeOrder_multiplePaths_success() public {
+        uint24[] memory pathFees = new uint24[](2);
+        pathFees[0] = 100;
+        pathFees[1] = 3000;
+
+        __test_takeOrder_success({
+            _pathAddresses: toArray(ARBITRUM_DAI, ARBITRUM_USDT, ARBITRUM_WETH),
+            _pathFees: pathFees,
+            _outgoingAssetAmount: 13 * assetUnit(IERC20(ARBITRUM_WETH))
+        });
+    }
+}
+
 contract UniswapV3AdapterEthereumTest is TestBaseEthereum {
     function setUp() public override {
         __initialize(EnzymeVersion.Current);
@@ -201,6 +230,18 @@ contract UniswapV3AdapterPolygonTest is TestBasePolygon {
 }
 
 contract UniswapV3AdapterPolygonTestV4 is TestBasePolygon {
+    function setUp() public override {
+        __initialize(EnzymeVersion.V4);
+    }
+}
+
+contract UniswapV3AdapterArbitrumTest is TestBaseArbitrum {
+    function setUp() public override {
+        __initialize(EnzymeVersion.Current);
+    }
+}
+
+contract UniswapV3AdapterArbitrumTestV4 is TestBaseArbitrum {
     function setUp() public override {
         __initialize(EnzymeVersion.V4);
     }

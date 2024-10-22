@@ -39,7 +39,13 @@ function getPolygonDeployment() pure returns (Contracts memory) {
     });
 }
 
-// TODO: Replace with actual values
 function getArbitrumDeployment() pure returns (Contracts memory contracts_) {
-    return contracts_;
+    return Contracts({
+        addressListRegistry: IAddressListRegistry(0x2C6bef68DAbf0494bB5F727E63c8FB54f7D2c287),
+        dispatcher: IDispatcher(0x8da28441a4c594fD2fac72726C1412d8Cf9E4A19),
+        externalPositionFactory: IExternalPositionFactory(0xD44256aCea2193D4A50a9Ad879a531666729962c),
+        globalConfigProxy: IGlobalConfigLib(0xf9315B421904eADF2f8FCe776958c147Ee9bC880),
+        protocolFeeReserveProxy: IProtocolFeeReserveLib(0x9Eb802e7696C9951fdCbA90699e5000D7A39205c),
+        uintListRegistry: IUintListRegistry(0xC438E48F5D2F99eb4a2b9865F8cccfC9915f227A)
+    });
 }

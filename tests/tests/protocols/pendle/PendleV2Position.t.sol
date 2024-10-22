@@ -35,6 +35,7 @@ address constant ETHEREUM_FUSDC_26DEC2024_MARKET_ADDRESS = 0xcB71c2A73fd7588E159
 address constant ARBITRUM_MARKET_FACTORY_V3 = 0x2FCb47B58350cD377f94d3821e7373Df60bD9Ced;
 address constant ARBITRUM_PY_YT_LP_ORACLE = 0x9a9Fa8338dd5E5B2188006f1Cd2Ef26d921650C2;
 address constant ARBITRUM_ROUTER = 0x888888888889758F76e7103c6CbF23ABbF58F946;
+address constant ARBITRUM_EETH_25SEPT2024_MARKET_ADDRESS = 0xf9F9779d8fF604732EBA9AD345E6A27EF5c2a9d6;
 address constant ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS = 0x35f3dB08a6e9cB4391348b0B404F493E7ae264c0;
 
 uint256 constant ORACLE_RATE_PRECISION = 1e18;
@@ -902,13 +903,12 @@ contract PendleEzethTestArbitrum is PendleTestArbitrum {
     }
 }
 
-// TODO: Uncomment once the v4 Arbitrum deployment is live
-// contract PendleEEthTestArbitrumV4 is PendleTestArbitrum {
-//     function setUp() public override {
-//         __initializeArbitrum({
-//             _version: EnzymeVersion.V4,
-//             _pendleMarketAddress: ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS,
-//             _pricingDuration: 900 // 15 minutes
-//         });
-//     }
-// }
+contract PendleEEthTestArbitrumV4 is PendleTestArbitrum {
+    function setUp() public override {
+        __initializeArbitrum({
+            _version: EnzymeVersion.V4,
+            _pendleMarketAddress: ARBITRUM_EZETH_25SEPT2024_MARKET_ADDRESS,
+            _pricingDuration: 900 // 15 minutes
+        });
+    }
+}

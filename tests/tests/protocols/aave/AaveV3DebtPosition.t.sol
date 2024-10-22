@@ -29,7 +29,10 @@ import {
     ETHEREUM_REWARDS_CONTROLLER,
     POLYGON_POOL_ADDRESS_PROVIDER,
     POLYGON_PROTOCOL_DATA_PROVIDER,
-    POLYGON_REWARDS_CONTROLLER
+    POLYGON_REWARDS_CONTROLLER,
+    ARBITRUM_POOL_ADDRESS_PROVIDER,
+    ARBITRUM_PROTOCOL_DATA_PROVIDER,
+    ARBITRUM_REWARDS_CONTROLLER
 } from "./AaveV3Constants.sol";
 import {AaveV3Utils} from "./AaveV3Utils.sol";
 
@@ -994,6 +997,153 @@ contract AaveV3DebtPositionTestPolygon is AaveV3DebtPositionTest {
     }
 }
 
+contract AaveV3DebtPositionTestArbitrum is AaveV3DebtPositionTest {
+    function setUp() public virtual override {
+        setUpArbitrumEnvironment();
+
+        poolAddressProvider = IAaveV3PoolAddressProvider(ARBITRUM_POOL_ADDRESS_PROVIDER);
+        protocolDataProvider = IAaveV3ProtocolDataProvider(ARBITRUM_PROTOCOL_DATA_PROVIDER);
+        rewardsController = IAaveV3RewardsController(ARBITRUM_REWARDS_CONTROLLER);
+
+        super.setUp();
+
+        // set up all underlyings used in test cases
+        __registerUnderlyingsAndATokensForThem(
+            toArray(ARBITRUM_WBTC, ARBITRUM_LINK, ARBITRUM_DAI, ARBITRUM_USDC, ARBITRUM_USDT)
+        );
+    }
+
+    function test_addCollateral_success() public {
+        address[] memory underlyings = toArray(ARBITRUM_LINK, ARBITRUM_DAI, ARBITRUM_DAI);
+
+        uint256[] memory amounts = new uint256[](underlyings.length);
+        for (uint256 i = 0; i < underlyings.length; i++) {
+            amounts[i] = (i + 1) * assetUnit(IERC20(underlyings[i]));
+        }
+
+        __test_addCollateral_success({
+            _aTokens: __getATokensAddresses(underlyings),
+            _amounts: amounts,
+            _fromUnderlying: false
+        });
+    }
+
+    function test_addCollateralFromUnderlying_success() public {
+        address[] memory underlyings = toArray(ARBITRUM_LINK, ARBITRUM_DAI, ARBITRUM_DAI);
+
+        uint256[] memory amounts = new uint256[](underlyings.length);
+        for (uint256 i = 0; i < underlyings.length; i++) {
+            amounts[i] = (i + 1) * assetUnit(IERC20(underlyings[i]));
+        }
+
+        __test_addCollateral_success({
+            _aTokens: __getATokensAddresses(underlyings),
+            _amounts: amounts,
+            _fromUnderlying: true
+        });
+    }
+
+    function test_removeCollateralToATokens_success() public {
+        __test_removeCollateral_success({_toUnderlying: true});
+    }
+
+    function test_removeCollateralToUnderlyings_success() public {
+        __test_removeCollateral_success({_toUnderlying: false});
+    }
+
+    function test_borrow_success() public {
+        address[] memory aTokensCollateral = toArray(__getATokenAddress(ARBITRUM_WBTC));
+
+        uint256[] memory aTokensCollateralAmounts = toArray(1 * assetUnit(IERC20(aTokensCollateral[0])));
+
+        address[] memory underlyingsToBorrow = new address[](3);
+        underlyingsToBorrow[0] = ARBITRUM_USDC;
+        underlyingsToBorrow[1] = ARBITRUM_LINK;
+        underlyingsToBorrow[2] = ARBITRUM_LINK;
+
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(underlyingsToBorrow[0]));
+        underlyingsToBorrowAmounts[1] = 1 * assetUnit(IERC20(underlyingsToBorrow[1]));
+        underlyingsToBorrowAmounts[2] = 2 * assetUnit(IERC20(underlyingsToBorrow[2]));
+
+        __test_borrow_success({
+            _aTokensCollateral: aTokensCollateral,
+            _aTokensCollateralAmounts: aTokensCollateralAmounts,
+            _underlyingsToBorrow: underlyingsToBorrow,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts
+        });
+    }
+
+    function test_repayBorrow_success() public {
+        address[] memory aTokensCollateral = toArray(__getATokenAddress(ARBITRUM_WBTC));
+
+        uint256[] memory aTokensCollateralAmounts = toArray(4 * assetUnit(IERC20(aTokensCollateral[0])));
+
+        address[] memory underlyingsToBorrowAndRepay = new address[](3);
+        underlyingsToBorrowAndRepay[0] = ARBITRUM_USDC;
+        underlyingsToBorrowAndRepay[1] = ARBITRUM_LINK;
+        underlyingsToBorrowAndRepay[2] = ARBITRUM_WBTC;
+
+        uint256[] memory underlyingsToBorrowAmounts = new uint256[](3);
+        underlyingsToBorrowAmounts[0] = 10_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToBorrowAmounts[1] = 2 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsToBorrowAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
+
+        uint256[] memory underlyingsVaultAmounts = new uint256[](3);
+        underlyingsVaultAmounts[0] = 5_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsVaultAmounts[1] = 3 * assetUnit(IERC20(underlyingsToBorrowAndRepay[1]));
+        underlyingsVaultAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
+
+        uint256[] memory underlyingsToRepayAmounts = new uint256[](3);
+        underlyingsToRepayAmounts[0] = 5_000 * assetUnit(IERC20(underlyingsToBorrowAndRepay[0]));
+        underlyingsToRepayAmounts[1] = type(uint256).max;
+        underlyingsToRepayAmounts[2] = 1 * assetUnit(IERC20(underlyingsToBorrowAndRepay[2]));
+
+        __test_repayBorrow_success({
+            _aTokensCollateral: aTokensCollateral,
+            _aTokensCollateralAmounts: aTokensCollateralAmounts,
+            _underlyingsToBorrowAndRepay: underlyingsToBorrowAndRepay,
+            _underlyingsToBorrowAmounts: underlyingsToBorrowAmounts,
+            _underlyingsVaultAmounts: underlyingsVaultAmounts,
+            _underlyingsToRepayAmounts: underlyingsToRepayAmounts
+        });
+    }
+
+    function test_setUseReserveAsCollateral_success() public {
+        __test_setUseReserveAsCollateral_success({_underlying: ARBITRUM_USDT});
+    }
+
+    function __test_removeCollateral_success(bool _toUnderlying) internal {
+        address[] memory aTokens = new address[](5);
+        aTokens[0] = __getATokenAddress(ARBITRUM_WBTC);
+        aTokens[1] = __getATokenAddress(ARBITRUM_LINK);
+        aTokens[2] = __getATokenAddress(ARBITRUM_LINK);
+        aTokens[3] = __getATokenAddress(ARBITRUM_DAI);
+        aTokens[4] = __getATokenAddress(ARBITRUM_USDC);
+
+        uint256[] memory amountsToAdd = new uint256[](5);
+        amountsToAdd[0] = 3 * assetUnit(IERC20(aTokens[0]));
+        amountsToAdd[1] = 3 * assetUnit(IERC20(aTokens[1]));
+        amountsToAdd[2] = 3 * assetUnit(IERC20(aTokens[2]));
+        amountsToAdd[3] = 10_000 * assetUnit(IERC20(aTokens[3]));
+        amountsToAdd[4] = 15_000 * assetUnit(IERC20(aTokens[4]));
+
+        uint256[] memory amountsToRemove = new uint256[](5);
+        amountsToRemove[0] = 3 * assetUnit(IERC20(aTokens[0]));
+        amountsToRemove[1] = 3 * assetUnit(IERC20(aTokens[1]));
+        amountsToRemove[2] = 3 * assetUnit(IERC20(aTokens[2]));
+        amountsToRemove[3] = type(uint256).max;
+        amountsToRemove[4] = 10_000 * assetUnit(IERC20(aTokens[4]));
+
+        __test_removeCollateral_success({
+            _aTokens: aTokens,
+            _amountsToAdd: amountsToAdd,
+            _amountsToRemove: amountsToRemove,
+            _toUnderlying: _toUnderlying
+        });
+    }
+}
+
 contract AaveV3DebtPositionTestEthereumV4 is AaveV3DebtPositionTestEthereum {
     function setUp() public override {
         version = EnzymeVersion.V4;
@@ -1003,6 +1153,14 @@ contract AaveV3DebtPositionTestEthereumV4 is AaveV3DebtPositionTestEthereum {
 }
 
 contract AaveV3DebtPositionTestPolygonV4 is AaveV3DebtPositionTestPolygon {
+    function setUp() public override {
+        version = EnzymeVersion.V4;
+
+        super.setUp();
+    }
+}
+
+contract AaveV3DebtPositionTestArbitrumV4 is AaveV3DebtPositionTestArbitrum {
     function setUp() public override {
         version = EnzymeVersion.V4;
 

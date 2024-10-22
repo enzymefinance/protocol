@@ -14,6 +14,9 @@ import {
     POLYGON_UNISWAP_V2_POOL_WMATIC_USDT,
     POLYGON_UNISWAP_V2_FACTORY,
     POLYGON_UNISWAP_V2_ROUTER,
+    ARBITRUM_UNISWAP_V2_POOL_WETH_USDC,
+    ARBITRUM_UNISWAP_V2_FACTORY,
+    ARBITRUM_UNISWAP_V2_ROUTER,
     UniswapV2Utils
 } from "./UniswapV2Utils.sol";
 
@@ -156,6 +159,30 @@ contract PolygonWmaticUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
             _uniswapV2FactoryAddress: POLYGON_UNISWAP_V2_FACTORY,
             _uniswapV2PoolAddress: POLYGON_UNISWAP_V2_POOL_WMATIC_USDT,
             _forkBlock: POLYGON_BLOCK_TIME_SENSITIVE
+        });
+    }
+}
+
+contract ArbitrumWethUsdcTestV4 is UniswapV2PoolPriceFeedTestBase {
+    function setUp() public override {
+        __initialize({
+            _version: EnzymeVersion.V4,
+            _chainId: ARBITRUM_CHAIN_ID,
+            _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
+            _uniswapV2PoolAddress: ARBITRUM_UNISWAP_V2_POOL_WETH_USDC,
+            _forkBlock: ARBITRUM_BLOCK_LATEST
+        });
+    }
+}
+
+contract ArbitrumWethUsdcTest is UniswapV2PoolPriceFeedTestBase {
+    function setUp() public override {
+        __initialize({
+            _version: EnzymeVersion.Current,
+            _chainId: ARBITRUM_CHAIN_ID,
+            _uniswapV2FactoryAddress: ARBITRUM_UNISWAP_V2_FACTORY,
+            _uniswapV2PoolAddress: ARBITRUM_UNISWAP_V2_POOL_WETH_USDC,
+            _forkBlock: ARBITRUM_BLOCK_LATEST
         });
     }
 }
