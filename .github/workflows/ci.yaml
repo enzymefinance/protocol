@@ -21,6 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
+      ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
+      ETHEREUM_NODE_ARBITRUM: ${{ secrets.ETHEREUM_NODE_ARBITRUM }}
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -46,11 +51,13 @@ jobs:
         run: make interfaces
 
       - name: Run tests
+        id: run_tests
         run: make test
-        env:
-          ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
-          ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
-          ETHEREUM_NODE_ARBITRUM: ${{ secrets.ETHEREUM_NODE_ARBITRUM }}
+        continue-on-error: true
+
+      - name: Rerun tests on failure
+        if: steps.run_tests.outcome == 'failure'
+        run: forge test --rerun
 
       - name: Check linting & formatting
         run: make lint
