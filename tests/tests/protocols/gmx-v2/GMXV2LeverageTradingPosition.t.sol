@@ -102,17 +102,19 @@ abstract contract TestBase is IntegrationTest {
         setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
         executionFee = assetUnit(wrappedNativeToken) / 5;
 
-        uint256 typeId = __deployPositionType({
-            _wrappedNativeTokenAddress: address(wrappedNativeToken),
-            _dataStoreAddress: _dataStoreAddress,
-            _reader: _reader,
-            _roleStore: _roleStore,
-            _callbackGasLimit: _callbackGasLimit,
-            _referralCode: "",
-            _referralStorageAddress: _referralStorageAddress,
-            _uiFeeReceiverAddress: _uiFeeReceiverAddress,
-            _chainlinkPriceFeedProvider: _chainlinkPriceFeedProvider
-        });
+        uint256 typeId = __deployPositionType(
+            DeployPositionTypeArgs({
+                wrappedNativeTokenAddress: address(wrappedNativeToken),
+                dataStoreAddress: _dataStoreAddress,
+                reader: _reader,
+                roleStore: _roleStore,
+                callbackGasLimit: _callbackGasLimit,
+                referralCode: "",
+                referralStorageAddress: _referralStorageAddress,
+                uiFeeReceiverAddress: _uiFeeReceiverAddress,
+                chainlinkPriceFeedProvider: _chainlinkPriceFeedProvider
+            })
+        );
 
         (comptrollerProxyAddress, vaultProxyAddress, fundOwner) = createTradingFundForVersion(version);
 
@@ -131,67 +133,73 @@ abstract contract TestBase is IntegrationTest {
 
     // DEPLOYMENT HELPERS
 
-    function __deployPositionType(
-        address _wrappedNativeTokenAddress,
-        address _dataStoreAddress,
-        IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
-        IGMXV2Reader _reader,
-        IGMXV2RoleStore _roleStore,
-        uint256 _callbackGasLimit,
-        bytes32 _referralCode,
-        address _referralStorageAddress,
-        address _uiFeeReceiverAddress
-    ) public returns (uint256 typeId_) {
-        address libAddress = __deployLib({
-            _wrappedNativeTokenAddress: _wrappedNativeTokenAddress,
-            _dataStoreAddress: _dataStoreAddress,
-            _chainlinkPriceFeedProvider: _chainlinkPriceFeedProvider,
-            _reader: _reader,
-            _roleStore: _roleStore,
-            _callbackGasLimit: _callbackGasLimit,
-            _referralCode: _referralCode,
-            _referralStorageAddress: _referralStorageAddress,
-            _uiFeeReceiverAddress: _uiFeeReceiverAddress
-        });
-        address parserAddress = __deployParser({
-            _wrappedNativeTokenAddress: _wrappedNativeTokenAddress,
-            _dataStoreAddress: _dataStoreAddress,
-            _reader: _reader
-        });
+    struct DeployPositionTypeArgs {
+        address wrappedNativeTokenAddress;
+        address dataStoreAddress;
+        IGMXV2ChainlinkPriceFeedProvider chainlinkPriceFeedProvider;
+        IGMXV2Reader reader;
+        IGMXV2RoleStore roleStore;
+        uint256 callbackGasLimit;
+        bytes32 referralCode;
+        address referralStorageAddress;
+        address uiFeeReceiverAddress;
+    }
 
+    function __deployPositionType(DeployPositionTypeArgs memory _args) public returns (uint256 typeId_) {
         typeId_ = registerExternalPositionTypeForVersion({
             _version: version,
             _label: "GMXV2_V2_LEVERAGE_TRADING",
-            _lib: libAddress,
-            _parser: parserAddress
+            _lib: __deployLib(_args),
+            _parser: __deployParser({
+                _wrappedNativeTokenAddress: _args.wrappedNativeTokenAddress,
+                _dataStoreAddress: _args.dataStoreAddress,
+                _reader: _args.reader
+            })
         });
 
         return typeId_;
     }
 
-    function __deployLib(
-        address _wrappedNativeTokenAddress,
-        address _dataStoreAddress,
-        IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
-        IGMXV2Reader _reader,
-        IGMXV2RoleStore _roleStore,
-        uint256 _callbackGasLimit,
-        bytes32 _referralCode,
-        address _referralStorageAddress,
-        address _uiFeeReceiverAddress
-    ) internal returns (address lib_) {
+    function __deployLib(DeployPositionTypeArgs memory _args) internal returns (address lib_) {
         bytes memory args = abi.encode(
-            _wrappedNativeTokenAddress,
-            _dataStoreAddress,
-            _chainlinkPriceFeedProvider,
-            _reader,
-            _roleStore,
-            _callbackGasLimit,
-            _referralCode,
-            _referralStorageAddress,
-            _uiFeeReceiverAddress
+            _args.callbackGasLimit,
+            _args.chainlinkPriceFeedProvider,
+            _args.dataStoreAddress,
+            __deployManagedAssetsLib({
+                _dataStoreAddress: _args.dataStoreAddress,
+                _reader: _args.reader,
+                _wrappedNativeTokenAddress: _args.wrappedNativeTokenAddress,
+                _chainlinkPriceFeedProvider: _args.chainlinkPriceFeedProvider,
+                _referralStorageAddress: _args.referralStorageAddress,
+                _uiFeeReceiverAddress: _args.uiFeeReceiverAddress
+            }),
+            _args.reader,
+            _args.referralCode,
+            _args.referralStorageAddress,
+            _args.roleStore,
+            _args.uiFeeReceiverAddress,
+            _args.wrappedNativeTokenAddress
         );
         return deployCode("GMXV2LeverageTradingPositionLib.sol", args);
+    }
+
+    function __deployManagedAssetsLib(
+        IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
+        address _dataStoreAddress,
+        IGMXV2Reader _reader,
+        address _referralStorageAddress,
+        address _uiFeeReceiverAddress,
+        address _wrappedNativeTokenAddress
+    ) internal returns (address lib_) {
+        bytes memory args = abi.encode(
+            _chainlinkPriceFeedProvider,
+            _dataStoreAddress,
+            _reader,
+            _referralStorageAddress,
+            _uiFeeReceiverAddress,
+            _wrappedNativeTokenAddress
+        );
+        return deployCode("GMXV2LeverageTradingPositionLibManagedAssets.sol", args);
     }
 
     function __deployParser(address _wrappedNativeTokenAddress, address _dataStoreAddress, IGMXV2Reader _reader)
