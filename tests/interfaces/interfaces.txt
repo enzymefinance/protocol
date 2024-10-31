@@ -173,7 +173,6 @@ IDerivativePriceFeed.sol: IDerivativePriceFeed.abi.json
 ICurvePriceFeed.sol: CurvePriceFeed.abi.json
 IBalancerV2WeightedPoolPriceFeed.sol: BalancerV2WeightedPoolPriceFeed.abi.json
 IBalancerV2StablePoolPriceFeed.sol: BalancerV2StablePoolPriceFeed.abi.json
-IWstethPriceFeed.sol: WstethPriceFeed.abi.json
 ICompoundPriceFeed.sol: CompoundPriceFeed.abi.json
 IUniswapV2PoolPriceFeed.sol: UniswapV2PoolPriceFeed.abi.json
 IBalancerV2GaugeTokenPriceFeed.sol: BalancerV2GaugeTokenPriceFeed.abi.json
