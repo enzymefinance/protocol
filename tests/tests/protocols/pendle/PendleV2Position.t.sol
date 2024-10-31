@@ -815,7 +815,7 @@ abstract contract PendleTestArbitrum is PendleTestBase {
     function __initializeArbitrum(EnzymeVersion _version, address _pendleMarketAddress, uint32 _pricingDuration)
         internal
     {
-        setUpArbitrumEnvironment();
+        setUpArbitrumEnvironment(ARBITRUM_BLOCK_TIME_SENSITIVE);
 
         __initialize({
             _version: _version,

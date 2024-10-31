@@ -80,18 +80,14 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
     /// 5. Funding fees that can be claimed from the GMX protocol
     function getManagedAssets() external view returns (address[] memory assets_, uint256[] memory amounts_) {
         // 1. Get the value of the collateral in active GMX positions, taking into account price impact and profit/loss
-
-        bytes32[] memory positionsKeys = DATA_STORE.getBytes32ValuesAt({
-            _setKey: keccak256(abi.encode(ACCOUNT_POSITION_LIST_DATA_STORE_KEY, address(this))),
-            _start: 0,
-            _end: type(uint256).max
-        });
-
         IGMXV2Position.Props[] memory positions = __getAccountPositions();
 
+        address[] memory markets = new address[](positions.length);
         IGMXV2Market.MarketPrices[] memory marketPrices = new IGMXV2Market.MarketPrices[](positions.length);
         for (uint256 i; i < marketPrices.length; i++) {
-            IGMXV2Market.Props memory market = __getMarketInfo(positions[i].addresses.market);
+            address marketAddress = positions[i].addresses.market;
+            IGMXV2Market.Props memory market = __getMarketInfo(marketAddress);
+            markets[i] = marketAddress;
 
             marketPrices[i] = IGMXV2Market.MarketPrices({
                 indexTokenPrice: __getTokenPrice(market.indexToken),
@@ -103,9 +99,12 @@ contract GMXV2LeverageTradingPositionLibManagedAssets is
         IGMXV2Position.PositionInfo[] memory positionInfos = READER.getAccountPositionInfoList({
             _dataStore: DATA_STORE,
             _referralStorage: REFERRAL_STORAGE_ADDRESS,
-            _positionKeys: positionsKeys,
+            _account: address(this),
+            _markets: markets,
             _prices: marketPrices,
-            _uiFeeReceiver: UI_FEE_RECEIVER_ADDRESS
+            _uiFeeReceiver: UI_FEE_RECEIVER_ADDRESS,
+            _start: 0,
+            _end: type(uint256).max
         });
 
         for (uint256 i; i < positionInfos.length; i++) {

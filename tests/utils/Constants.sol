@@ -41,7 +41,7 @@ abstract contract Constants {
     uint256 internal constant POLYGON_BLOCK_LATEST = 61606585; // Sep 9th, 2024
     uint256 internal constant POLYGON_BLOCK_TIME_SENSITIVE = 54900000; // March 21st, 2024
 
-    uint256 internal constant ARBITRUM_BLOCK_LATEST = 251655669; // Sep 9th, 2024
+    uint256 internal constant ARBITRUM_BLOCK_LATEST = 269157580; // Oct 30th, 2024
     uint256 internal constant ARBITRUM_BLOCK_TIME_SENSITIVE = 231099000; // July 11th, 2024
 
     // Network assets

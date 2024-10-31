@@ -22,7 +22,8 @@ interface IGMXV2Order {
         MarketDecrease,
         LimitDecrease,
         StopLossDecrease,
-        Liquidation
+        Liquidation,
+        StopIncrease
     }
 
     enum SecondaryOrderType {
@@ -63,8 +64,8 @@ interface IGMXV2Order {
         uint256 executionFee;
         uint256 callbackGasLimit;
         uint256 minOutputAmount;
-        uint256 updatedAtBlock;
         uint256 updatedAtTime;
+        uint256 validFromTime;
     }
 
     struct Flags {

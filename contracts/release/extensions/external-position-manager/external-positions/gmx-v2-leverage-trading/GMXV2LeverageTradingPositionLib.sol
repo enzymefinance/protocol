@@ -250,6 +250,7 @@ contract GMXV2LeverageTradingPositionLib is
             _acceptablePrice: updateOrderArgs.acceptablePrice,
             _triggerPrice: updateOrderArgs.triggerPrice,
             _minOutputAmount: updateOrderArgs.minOutputAmount,
+            _validFromTime: updateOrderArgs.validFromTime,
             _autoCancel: updateOrderArgs.autoCancel
         });
     }
@@ -535,7 +536,8 @@ contract GMXV2LeverageTradingPositionLib is
                 acceptablePrice: _createOrderArgs.numbers.acceptablePrice,
                 executionFee: _createOrderArgs.numbers.executionFee,
                 callbackGasLimit: _createOrderArgs.orderType == IGMXV2Order.OrderType.MarketIncrease ? 0 : CALLBACK_GAS_LIMIT,
-                minOutputAmount: _createOrderArgs.numbers.minOutputAmount
+                minOutputAmount: _createOrderArgs.numbers.minOutputAmount,
+                validFromTime: _createOrderArgs.numbers.validFromTime
             }),
             orderType: _createOrderArgs.orderType,
             decreasePositionSwapType: _createOrderArgs.decreasePositionSwapType,

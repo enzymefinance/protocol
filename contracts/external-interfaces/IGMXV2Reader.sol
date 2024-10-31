@@ -42,8 +42,11 @@ interface IGMXV2Reader {
     function getAccountPositionInfoList(
         IGMXV2DataStore _dataStore,
         address _referralStorage,
-        bytes32[] memory _positionKeys,
+        address _account,
+        address[] memory _markets,
         IGMXV2Market.MarketPrices[] memory _prices,
-        address _uiFeeReceiver
+        address _uiFeeReceiver,
+        uint256 _start,
+        uint256 _end
     ) external view returns (IGMXV2Position.PositionInfo[] memory positionInfos_);
 }

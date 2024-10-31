@@ -46,6 +46,7 @@ interface IGMXV2ExchangeRouter {
         uint256 executionFee;
         uint256 callbackGasLimit;
         uint256 minOutputAmount;
+        uint256 validFromTime;
     }
 
     function createOrder(CreateOrderParams calldata _params) external payable returns (bytes32 key_);

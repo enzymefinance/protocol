@@ -36,8 +36,6 @@ interface IGMXV2Position {
         uint256 fundingFeeAmountPerSize;
         uint256 longTokenClaimableFundingAmountPerSize;
         uint256 shortTokenClaimableFundingAmountPerSize;
-        uint256 increasedAtBlock;
-        uint256 decreasedAtBlock;
         uint256 increasedAtTime;
         uint256 decreasedAtTime;
     }
@@ -51,6 +49,8 @@ interface IGMXV2Position {
         address affiliate;
         address trader;
         uint256 totalRebateFactor;
+        uint256 affiliateRewardFactor;
+        uint256 adjustedAffiliateRewardFactor;
         uint256 traderDiscountFactor;
         uint256 totalRebateAmount;
         uint256 traderDiscountAmount;
@@ -81,9 +81,11 @@ interface IGMXV2Position {
 
     struct PositionFees {
         PositionReferralFees referral;
+        PositionProFees pro;
         PositionFundingFees funding;
         PositionBorrowingFees borrowing;
         PositionUiFees ui;
+        PositionLiquidationFees liquidation;
         IGMXV2Price.Price collateralTokenPrice;
         uint256 positionFeeFactor;
         uint256 protocolFeeAmount;
@@ -94,6 +96,20 @@ interface IGMXV2Position {
         uint256 positionFeeAmount;
         uint256 totalCostAmountExcludingFunding;
         uint256 totalCostAmount;
+        uint256 totalDiscountAmount;
+    }
+
+    struct PositionProFees {
+        uint256 traderTier;
+        uint256 traderDiscountFactor;
+        uint256 traderDiscountAmount;
+    }
+
+    struct PositionLiquidationFees {
+        uint256 liquidationFeeUsd;
+        uint256 liquidationFeeAmount;
+        uint256 liquidationFeeReceiverFactor;
+        uint256 liquidationFeeAmountForFeeReceiver;
     }
 
     struct ExecutionPriceResult {

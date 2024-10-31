@@ -34,11 +34,11 @@ IGMXV2ChainlinkPriceFeedProvider constant ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PR
     IGMXV2ChainlinkPriceFeedProvider(0x527FB0bCfF63C47761039bB386cFE181A92a4701);
 address constant ARBITRUM_GMXV2_DATA_STORE_ADDRESS = 0xFD70de6b91282D8017aA4E741e9Ae325CAb992d8;
 IGMXV2ExchangeRouter constant ARBITRUM_GMXV2_EXCHANGE_ROUTER =
-    IGMXV2ExchangeRouter(0x69C527fC77291722b52649E45c838e41be8Bf5d5);
+    IGMXV2ExchangeRouter(0x674Ee2FFe588c4b1Fde6D5481c55Ef6133004cbA);
 IGMXV2LiquidationHandler constant ARBITRUM_GMXV2_LIQUIDATION_HANDLER =
-    IGMXV2LiquidationHandler(0x08A902113F7F41a8658eBB1175f9c847bf4fB9D8);
+    IGMXV2LiquidationHandler(0xdAb9bA9e3a301CCb353f18B4C8542BA2149E4010);
 address constant ARBITRUM_GMXV2_REFERRAL_STORAGE_ADDRESS = 0xe6fab3F0c7199b0d34d7FbE83394fc0e0D06e99d;
-IGMXV2Reader constant ARBITRUM_GMXV2_READER = IGMXV2Reader(0x5Ca84c34a381434786738735265b9f3FD814b824);
+IGMXV2Reader constant ARBITRUM_GMXV2_READER = IGMXV2Reader(0x0537C767cDAC0726c76Bb89e92904fe28fd02fE1);
 IGMXV2RoleStore constant ARBITRUM_GMXV2_ROLE_STORE = IGMXV2RoleStore(0x3c3d99FD298f679DBC2CEcd132b4eC4d0F5e6e72);
 
 address constant ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC = 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336; // ETH/USD market, with WETH (Long) and USDC (Short) as collateral
@@ -89,8 +89,7 @@ abstract contract TestBase is IntegrationTest {
         uint256 _callbackGasLimit,
         IGMXV2ExchangeRouter _exchangerRouter,
         address _referralStorageAddress,
-        address _uiFeeReceiverAddress,
-        uint256 _forkBlock
+        address _uiFeeReceiverAddress
     ) internal {
         version = _version;
         exchangeRouter = _exchangerRouter;
@@ -99,7 +98,7 @@ abstract contract TestBase is IntegrationTest {
         reader = _reader;
         chainlinkPriceFeedProvider = _chainlinkPriceFeedProvider;
 
-        setUpNetworkEnvironment({_chainId: _chainId, _forkBlock: _forkBlock});
+        setUpNetworkEnvironment({_chainId: _chainId});
         executionFee = assetUnit(wrappedNativeToken) / 5;
 
         uint256 typeId = __deployPositionType(
@@ -470,7 +469,8 @@ abstract contract TestBase is IntegrationTest {
                     acceptablePrice: _isLong ? type(uint256).max : 0,
                     executionFee: executionFee,
                     callbackGasLimit: 0,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2Order.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2Order.DecreasePositionSwapType.NoSwap,
@@ -511,7 +511,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: _isLong ? type(uint256).max : 0,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -549,6 +550,7 @@ abstract contract TestBase is IntegrationTest {
         bool _isLong,
         uint256 _triggerPrice,
         uint256 _acceptablePrice,
+        uint256 _validFromTime,
         IGMXV2OrderProd.OrderType _orderType
     ) internal returns (uint256 depositedCollateralAmount_) {
         depositedCollateralAmount_ = _decreaseInitialCollateralDeltaAmount * 5;
@@ -577,7 +579,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: _triggerPrice,
                     acceptablePrice: _acceptablePrice,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: _validFromTime
                 }),
                 orderType: _orderType,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -603,6 +606,7 @@ abstract contract TestBase is IntegrationTest {
         uint256 _increaseOrderSizeDeltaUsd,
         bool _isLong,
         uint256 _triggerPrice,
+        uint256 _validFromTime,
         IGMXV2OrderProd.OrderType _orderType
     ) internal {
         uint256 depositedCollateralAmount = __test_createAndExecuteMarketIncreaseOrderAndCreateDecreaseOrder_success({
@@ -613,7 +617,8 @@ abstract contract TestBase is IntegrationTest {
             _isLong: _isLong,
             _triggerPrice: _triggerPrice,
             _acceptablePrice: _isLong ? 0 : type(uint256).max,
-            _orderType: _orderType
+            _orderType: _orderType,
+            _validFromTime: _validFromTime
         });
 
         (address[] memory postCreateOrderManagedAssets, uint256[] memory postCreateOrderManagedAssetAmounts) =
@@ -731,7 +736,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: _isLong ? type(uint256).max : 0,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -823,6 +829,7 @@ abstract contract TestBase is IntegrationTest {
             _increaseOrderSizeDeltaUsd: _increaseOrderSizeDeltaUsd,
             _isLong: _isLong,
             _orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
+            _validFromTime: 0,
             _triggerPrice: 0
         });
     }
@@ -841,7 +848,8 @@ abstract contract TestBase is IntegrationTest {
             _increaseOrderSizeDeltaUsd: _increaseOrderSizeDeltaUsd,
             _isLong: _isLong,
             _orderType: IGMXV2OrderProd.OrderType.StopLossDecrease,
-            _triggerPrice: _isLong ? type(uint256).max : 0
+            _triggerPrice: _isLong ? type(uint256).max : 0,
+            _validFromTime: block.timestamp
         });
     }
 
@@ -859,7 +867,8 @@ abstract contract TestBase is IntegrationTest {
             _increaseOrderSizeDeltaUsd: _increaseOrderSizeDeltaUsd,
             _isLong: _isLong,
             _orderType: IGMXV2OrderProd.OrderType.LimitDecrease,
-            _triggerPrice: _isLong ? 0 : type(uint256).max
+            _triggerPrice: _isLong ? 0 : type(uint256).max,
+            _validFromTime: block.timestamp
         });
     }
 
@@ -884,7 +893,8 @@ abstract contract TestBase is IntegrationTest {
             _isLong: _isLong,
             _triggerPrice: oldTriggerPrice,
             _acceptablePrice: oldAcceptablePrice,
-            _orderType: IGMXV2OrderProd.OrderType.LimitDecrease
+            _orderType: IGMXV2OrderProd.OrderType.LimitDecrease,
+            _validFromTime: block.timestamp
         });
 
         increaseTokenBalance({_token: wrappedNativeToken, _to: vaultProxyAddress, _amount: executionFee});
@@ -902,7 +912,8 @@ abstract contract TestBase is IntegrationTest {
             minOutputAmount: oldMinOutputAmount + 1,
             exchangeRouter: address(exchangeRouter),
             autoCancel: !oldAutoCancel,
-            executionFeeIncrease: executionFee
+            executionFeeIncrease: executionFee,
+            validFromTime: block.timestamp + 10
         });
 
         vm.recordLogs();
@@ -953,7 +964,8 @@ abstract contract TestBase is IntegrationTest {
             _isLong: true,
             _triggerPrice: type(uint256).max,
             _acceptablePrice: type(uint256).max,
-            _orderType: IGMXV2OrderProd.OrderType.LimitDecrease
+            _orderType: IGMXV2OrderProd.OrderType.LimitDecrease,
+            _validFromTime: block.timestamp
         });
 
         uint256 vaultWrappedNativeTokenBalance = IERC20(wrappedNativeToken).balanceOf(vaultProxyAddress);
@@ -1037,7 +1049,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: type(uint256).max,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -1160,7 +1173,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: 0,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -1371,32 +1385,37 @@ abstract contract TestBase is IntegrationTest {
         vm.stopPrank();
     }
 
-    function __test_claimCollateral_success(
-        address _market,
-        address _initialCollateralToken,
-        uint256 _increaseInitialCollateralDeltaAmount,
-        uint256 _increaseOrderSizeDeltaUsd
-    ) internal {
+    struct ClaimCollateralSuccessArgs {
+        address market;
+        address initialCollateralLongToken;
+        uint256 increaseInitialCollateralDeltaAmount;
+        uint256 increaseOrderSizeDeltaUsd;
+        address userShortToken;
+        uint256 userShortTokenDeltaAmount;
+        uint256 userShortTokenSizeDeltaUsd;
+    }
+
+    function __test_claimCollateral_success(ClaimCollateralSuccessArgs memory _args) internal {
         // set negative impact factor to 1 wei so that negative price impact exceeds threshold.
-        // negative impact factor < negative price impact is necessary but claimable collateral to accrue
+        // negative impact factor < negative price impact is necessary for claimable collateral to accrue
         vm.startPrank(__getController());
-        IGMXV2DataStore(dataStoreAddress).setUint(__maxPositionImpactFactorKey(_market, false), 1);
+        IGMXV2DataStore(dataStoreAddress).setUint(__maxPositionImpactFactorKey(_args.market, false), 1);
         vm.stopPrank();
 
         __createAndExecuteMarketIncreaseOrder({
-            _market: _market,
-            _initialCollateralToken: _initialCollateralToken,
-            _initialCollateralDeltaAmount: _increaseInitialCollateralDeltaAmount,
-            _sizeDeltaUsd: _increaseOrderSizeDeltaUsd,
+            _market: _args.market,
+            _initialCollateralToken: _args.initialCollateralLongToken,
+            _initialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
+            _sizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
             _isLong: true
         });
 
         // disbalance the pool with by opening an opposite position (short)
         __increaseMarketForUser({
-            _market: _market,
-            _initialCollateralToken: _initialCollateralToken,
-            _initialCollateralDeltaAmount: _increaseInitialCollateralDeltaAmount,
-            _sizeDeltaUsd: _increaseOrderSizeDeltaUsd,
+            _market: _args.market,
+            _initialCollateralToken: _args.userShortToken,
+            _initialCollateralDeltaAmount: _args.userShortTokenDeltaAmount,
+            _sizeDeltaUsd: _args.userShortTokenSizeDeltaUsd,
             _user: makeAddr("user 1"),
             _isLong: false
         });
@@ -1406,16 +1425,17 @@ abstract contract TestBase is IntegrationTest {
         __createOrder(
             IGMXV2LeverageTradingPositionProd.CreateOrderActionArgs({
                 addresses: IGMXV2LeverageTradingPositionProd.CreateOrderParamsAddresses({
-                    market: _market,
-                    initialCollateralToken: _initialCollateralToken
+                    market: _args.market,
+                    initialCollateralToken: _args.initialCollateralLongToken
                 }),
                 numbers: IGMXV2LeverageTradingPositionProd.CreateOrderParamsNumbers({
-                    sizeDeltaUsd: _increaseOrderSizeDeltaUsd / 2,
-                    initialCollateralDeltaAmount: _increaseInitialCollateralDeltaAmount / 2,
+                    sizeDeltaUsd: _args.increaseOrderSizeDeltaUsd,
+                    initialCollateralDeltaAmount: _args.increaseInitialCollateralDeltaAmount,
                     triggerPrice: 0,
                     acceptablePrice: 0,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -1429,8 +1449,8 @@ abstract contract TestBase is IntegrationTest {
             block.timestamp / IGMXV2DataStore(dataStoreAddress).getUint(__claimableCollateralTimeDivisorKey());
 
         __executeOrderAndExpectClaimableCollateralAddedEmit({
-            _market: _market,
-            _initialCollateralToken: _initialCollateralToken,
+            _market: _args.market,
+            _initialCollateralToken: _args.initialCollateralLongToken,
             _timeKey: timeKey
         });
 
@@ -1444,7 +1464,7 @@ abstract contract TestBase is IntegrationTest {
 
         assertEq(
             externalPosition.getClaimableCollateralKeyToClaimableCollateralInfo(claimableCollateralKey).token,
-            _initialCollateralToken,
+            _args.initialCollateralLongToken,
             "Incorrect claimable collateral info token"
         );
 
@@ -1453,12 +1473,16 @@ abstract contract TestBase is IntegrationTest {
 
         assertEq(preClaimManagedAssets.length, 1, "Incorrect number of managed assets pre claim");
 
-        uint256 preClaimVaultTokenBalance = IERC20(_initialCollateralToken).balanceOf(vaultProxyAddress);
+        uint256 preClaimVaultTokenBalance = IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress);
 
         // allow claiming full collateral
         vm.startPrank(__getController());
         IGMXV2DataStore(dataStoreAddress).setUint(
-            __claimableCollateralFactorKey({_market: _market, _token: _initialCollateralToken, _timeKey: timeKey}),
+            __claimableCollateralFactorKey({
+                _market: _args.market,
+                _token: _args.initialCollateralLongToken,
+                _timeKey: timeKey
+            }),
             GMX_ONE_UNIT
         );
         vm.stopPrank();
@@ -1470,8 +1494,8 @@ abstract contract TestBase is IntegrationTest {
 
         __claimCollateral(
             IGMXV2LeverageTradingPositionProd.ClaimCollateralActionArgs({
-                markets: toArray(_market),
-                tokens: toArray(_initialCollateralToken),
+                markets: toArray(_args.market),
+                tokens: toArray(_args.initialCollateralLongToken),
                 timeKeys: toArray(timeKey),
                 exchangeRouter: address(exchangeRouter)
             })
@@ -1480,7 +1504,7 @@ abstract contract TestBase is IntegrationTest {
         assertExternalPositionAssetsToReceive({
             _logs: vm.getRecordedLogs(),
             _externalPositionManager: IExternalPositionManager(getExternalPositionManagerAddressForVersion(version)),
-            _assets: toArray(_initialCollateralToken)
+            _assets: toArray(_args.initialCollateralLongToken)
         });
 
         uint256 claimableCollateral = IGMXV2DataStore(dataStoreAddress).getUint(claimableCollateralKey);
@@ -1488,8 +1512,8 @@ abstract contract TestBase is IntegrationTest {
         assertEq(
             IGMXV2DataStore(dataStoreAddress).getUint(
                 __claimedCollateralAmountKey({
-                    _market: _market,
-                    _token: _initialCollateralToken,
+                    _market: _args.market,
+                    _token: _args.initialCollateralLongToken,
                     _timeKey: timeKey,
                     _account: address(externalPosition)
                 })
@@ -1500,14 +1524,15 @@ abstract contract TestBase is IntegrationTest {
 
         (, uint256[] memory postClaimManagedAssetAmounts) = externalPosition.getManagedAssets();
 
+        uint256 postExpectedClaimableCollateral = preClaimManagedAssetAmounts[0] - claimableCollateral;
         assertEq(
-            toArray(preClaimManagedAssetAmounts[0] - claimableCollateral),
+            postExpectedClaimableCollateral == 0 ? new uint256[](0) : toArray(postExpectedClaimableCollateral),
             postClaimManagedAssetAmounts,
             "Incorrect managed assets post claim"
         );
 
         assertEq(
-            IERC20(_initialCollateralToken).balanceOf(vaultProxyAddress),
+            IERC20(_args.initialCollateralLongToken).balanceOf(vaultProxyAddress),
             preClaimVaultTokenBalance + claimableCollateral,
             "Incorrect vault token balance post claim"
         );
@@ -1559,7 +1584,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: 0,
                     executionFee: 0,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: notSupportedOrderType,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -1587,7 +1613,8 @@ abstract contract TestBase is IntegrationTest {
                     triggerPrice: 0,
                     acceptablePrice: 0,
                     executionFee: 0,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -1624,8 +1651,8 @@ abstract contract TestBase is IntegrationTest {
                     executionFee: 0,
                     callbackGasLimit: 0,
                     minOutputAmount: 0,
-                    updatedAtBlock: 0,
-                    updatedAtTime: 0
+                    updatedAtTime: 0,
+                    validFromTime: 0
                 }),
                 flags: IGMXV2LeverageTradingPositionLib.Flags({
                     isLong: true,
@@ -1694,8 +1721,8 @@ abstract contract TestBase is IntegrationTest {
                     executionFee: 0,
                     callbackGasLimit: 0,
                     minOutputAmount: 0,
-                    updatedAtBlock: 0,
-                    updatedAtTime: 0
+                    updatedAtTime: 0,
+                    validFromTime: 0
                 }),
                 flags: IGMXV2LeverageTradingPositionLib.Flags({
                     isLong: true,
@@ -1750,15 +1777,8 @@ abstract contract GMXV2LeverageTradingPositionTestBaseArbitrum is TestBase {
             _referralStorageAddress: ARBITRUM_GMXV2_REFERRAL_STORAGE_ADDRESS,
             _uiFeeReceiverAddress: address(0),
             _chainlinkPriceFeedProvider: ARBITRUM_GMXV2_CHAINLINK_PRICE_FEED_PROVIDER,
-            _version: _version,
-            _forkBlock: ARBITRUM_BLOCK_TIME_SENSITIVE
+            _version: _version
         });
-    }
-}
-
-contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositionTestBaseArbitrum {
-    function setUp() public override {
-        __initialize(EnzymeVersion.Current);
     }
 
     // market increase
@@ -1999,7 +2019,8 @@ contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositio
                     triggerPrice: 0,
                     acceptablePrice: 0,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketDecrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -2038,7 +2059,8 @@ contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositio
                     triggerPrice: 0,
                     acceptablePrice: type(uint256).max,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -2072,7 +2094,8 @@ contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositio
                     triggerPrice: 0,
                     acceptablePrice: type(uint256).max,
                     executionFee: executionFee,
-                    minOutputAmount: 0
+                    minOutputAmount: 0,
+                    validFromTime: 0
                 }),
                 orderType: IGMXV2OrderProd.OrderType.MarketIncrease,
                 decreasePositionSwapType: IGMXV2OrderProd.DecreasePositionSwapType.NoSwap,
@@ -2182,16 +2205,27 @@ contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositio
     // claim collateral
 
     function test_claimCollateral_success() public {
-        __test_claimCollateral_success({
-            _initialCollateralToken: ARBITRUM_WETH,
-            _market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_WETH,
-            _increaseInitialCollateralDeltaAmount: 100 * assetUnit(IERC20(ARBITRUM_WETH)),
-            _increaseOrderSizeDeltaUsd: 1_000_000 * GMX_ONE_UNIT // 30k USD
-        });
+        __test_claimCollateral_success(
+            ClaimCollateralSuccessArgs({
+                market: ARBITRUM_GMXV2_MARKET_ETH_USD_WETH_USDC,
+                initialCollateralLongToken: ARBITRUM_WETH,
+                increaseInitialCollateralDeltaAmount: 1 * assetUnit(IERC20(ARBITRUM_WETH)),
+                increaseOrderSizeDeltaUsd: 8_000 * GMX_ONE_UNIT, // 8k USD
+                userShortToken: ARBITRUM_USDC,
+                userShortTokenDeltaAmount: 8_000_000 * assetUnit(IERC20(ARBITRUM_USDC)), // 8mln USD
+                userShortTokenSizeDeltaUsd: 8_000_000 * GMX_ONE_UNIT
+            })
+        );
     }
 }
 
-contract GMXV2LeverageTradingPositionArbitrumV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
+contract GMXV2LeverageTradingPositionArbitrumTest is GMXV2LeverageTradingPositionTestBaseArbitrum {
+    function setUp() public override {
+        __initialize(EnzymeVersion.Current);
+    }
+}
+
+contract GMXV2LeverageTradingPositionArbitrumTestV4 is GMXV2LeverageTradingPositionTestBaseArbitrum {
     function setUp() public override {
         __initialize(EnzymeVersion.V4);
     }

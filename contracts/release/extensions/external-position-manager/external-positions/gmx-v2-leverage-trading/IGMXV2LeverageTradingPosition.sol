@@ -38,6 +38,7 @@ interface IGMXV2LeverageTradingPosition is IExternalPosition {
         uint256 acceptablePrice;
         uint256 executionFee;
         uint256 minOutputAmount;
+        uint256 validFromTime;
     }
 
     struct CreateOrderActionArgs {
@@ -56,6 +57,7 @@ interface IGMXV2LeverageTradingPosition is IExternalPosition {
         uint256 acceptablePrice;
         uint256 triggerPrice;
         uint256 minOutputAmount;
+        uint256 validFromTime;
         bool autoCancel;
         uint256 executionFeeIncrease;
         address exchangeRouter;
