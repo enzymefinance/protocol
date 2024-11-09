@@ -14,6 +14,11 @@ interface IPendleV2StandardizedYield {
 
     function isValidTokenOut(address _token) external view returns (bool isValid_);
 
+    function previewDeposit(address _tokenIn, uint256 _amountTokenToDeposit)
+        external
+        view
+        returns (uint256 amountSharesOut_);
+
     function previewRedeem(address _tokenOut, uint256 _amountSharesToRedeem)
         external
         view

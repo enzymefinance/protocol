@@ -16,6 +16,9 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @notice Selectors for integration actions
 /// @dev Selectors are created from their signatures rather than hardcoded for easy verification
 abstract contract IntegrationSelectors {
+    // General action
+    bytes4 internal constant ACTION_SELECTOR = bytes4(keccak256("action(address,bytes,bytes)"));
+
     // Trading
     bytes4 internal constant TAKE_MULTIPLE_ORDERS_SELECTOR =
         bytes4(keccak256("takeMultipleOrders(address,bytes,bytes)"));
