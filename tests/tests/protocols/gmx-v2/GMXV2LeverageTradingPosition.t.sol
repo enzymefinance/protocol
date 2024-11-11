@@ -162,7 +162,6 @@ abstract contract TestBase is IntegrationTest {
     function __deployLib(DeployPositionTypeArgs memory _args) internal returns (address lib_) {
         bytes memory args = abi.encode(
             _args.callbackGasLimit,
-            _args.chainlinkPriceFeedProvider,
             _args.dataStoreAddress,
             __deployManagedAssetsLib({
                 _dataStoreAddress: _args.dataStoreAddress,

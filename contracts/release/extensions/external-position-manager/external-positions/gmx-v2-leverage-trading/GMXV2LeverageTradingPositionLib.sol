@@ -12,7 +12,6 @@ pragma solidity 0.8.19;
 import {Address} from "openzeppelin-solc-0.8/utils/Address.sol";
 
 import {IERC20} from "../../../../../external-interfaces/IERC20.sol";
-import {IGMXV2ChainlinkPriceFeedProvider} from "../../../../../external-interfaces/IGMXV2ChainlinkPriceFeedProvider.sol";
 import {IGMXV2DataStore} from "../../../../../external-interfaces/IGMXV2DataStore.sol";
 import {IGMXV2Event} from "../../../../../external-interfaces/IGMXV2Event.sol";
 import {IGMXV2ExchangeRouter} from "../../../../../external-interfaces/IGMXV2ExchangeRouter.sol";
@@ -55,7 +54,6 @@ contract GMXV2LeverageTradingPositionLib is
     bytes32 private constant CONTROLLER_ROLE_STORE_KEY = keccak256(abi.encode("CONTROLLER"));
 
     uint256 public immutable CALLBACK_GAS_LIMIT;
-    IGMXV2ChainlinkPriceFeedProvider public immutable CHAINLINK_PRICE_FEED_PROVIDER;
     GMXV2LeverageTradingPositionLibManagedAssets public immutable MANAGED_ASSETS_LIB;
     bytes32 public immutable REFERRAL_CODE;
     address public immutable REFERRAL_STORAGE_ADDRESS;
@@ -87,7 +85,6 @@ contract GMXV2LeverageTradingPositionLib is
 
     constructor(
         uint256 _callbackGasLimit,
-        IGMXV2ChainlinkPriceFeedProvider _chainlinkPriceFeedProvider,
         IGMXV2DataStore _dataStore,
         GMXV2LeverageTradingPositionLibManagedAssets _managedAssetsLib,
         IGMXV2Reader _reader,
@@ -98,7 +95,6 @@ contract GMXV2LeverageTradingPositionLib is
         IWETH _wrappedNativeToken
     ) GMXV2LeverageTradingPositionMixin(_dataStore, _reader) {
         CALLBACK_GAS_LIMIT = _callbackGasLimit;
-        CHAINLINK_PRICE_FEED_PROVIDER = _chainlinkPriceFeedProvider;
         MANAGED_ASSETS_LIB = _managedAssetsLib;
         REFERRAL_CODE = _referralCode;
         REFERRAL_STORAGE_ADDRESS = _referralStorageAddress;
