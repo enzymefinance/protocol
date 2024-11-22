@@ -36,6 +36,8 @@ interface IMorphoBlue {
         uint128 fee;
     }
 
+    function flashLoan(address _token, uint256 _assets, bytes calldata _data) external;
+
     function supply(
         MarketParams memory _marketParams,
         uint256 _assets,

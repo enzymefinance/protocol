@@ -54,6 +54,7 @@ ISingleAssetRedemptionQueueLib.sol: SingleAssetRedemptionQueueLib.abi.json
 
 # Smart accounts
 IAaveV3FlashLoanAssetManager.sol: AaveV3FlashLoanAssetManagerLib.abi.json
+IMorphoBlueFlashLoanAssetManager.sol: MorphoBlueFlashLoanAssetManagerLib.abi.json
 IMultiCallAccountMixin.sol: MultiCallAccountMixin.abi.json
 IMultiCallAccountMixinHarness.sol: MultiCallAccountMixinHarness.abi.json
 ISharePriceThrottledAssetManagerLib.sol: SharePriceThrottledAssetManagerLib.abi.json
