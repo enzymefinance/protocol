@@ -146,7 +146,7 @@ abstract contract AaveAdapterRedeemTest is AaveAdapterTestBase {
         // test underlying with decimals that are not 18
         __test_redeem_success({
             _aToken: __getATokenAddress(address(non18DecimalUnderlying)),
-            _amount: 10 * assetUnit(non18DecimalUnderlying)
+            _amount: 18 * assetUnit(non18DecimalUnderlying)
         });
     }
 

@@ -108,7 +108,7 @@ abstract contract TestBase is IntegrationTest {
                 reader: _reader,
                 roleStore: _roleStore,
                 callbackGasLimit: _callbackGasLimit,
-                referralCode: "",
+                referralCode: "Enzyme2024",
                 referralStorageAddress: _referralStorageAddress,
                 uiFeeReceiverAddress: _uiFeeReceiverAddress,
                 chainlinkPriceFeedProvider: _chainlinkPriceFeedProvider
