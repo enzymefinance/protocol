@@ -20,11 +20,12 @@ jobs:
     name: Verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
+    environment: staging
     env:
       ETHEREUM_NODE_MAINNET: ${{ secrets.ETHEREUM_NODE_MAINNET }}
       ETHEREUM_NODE_POLYGON: ${{ secrets.ETHEREUM_NODE_POLYGON }}
       ETHEREUM_NODE_ARBITRUM: ${{ secrets.ETHEREUM_NODE_ARBITRUM }}
+      ETHEREUM_NODE_BASE: ${{ secrets.ETHEREUM_NODE_BASE }}
 
     steps:
       - uses: actions/checkout@v3
