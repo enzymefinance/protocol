@@ -23,6 +23,10 @@ import {IMorphoBluePositionParser} from "tests/interfaces/internal/IMorphoBluePo
 address constant ETHEREUM_MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
 bytes32 constant ETHEREUM_MORPHO_USDC_WETH_MARKET = 0x7dde86a1e94561d9690ec678db673c1a6396365f7d1d65e129c5fff0990ff758;
 
+// BASE MAINNET CONSTANTS
+address constant BASE_MORPHO_BLUE = ETHEREUM_MORPHO_BLUE;
+bytes32 constant BASE_MORPHO_USDC_WETH_MARKET = 0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda;
+
 abstract contract MorphoBlueTestBase is IntegrationTest {
     event MarketIdAdded(bytes32 indexed marketId);
 
@@ -625,6 +629,28 @@ contract MorphoBlueUsdcWethTestEthereumV4 is MorphoBlueTestBase {
             _morphoBlueAddress: ETHEREUM_MORPHO_BLUE,
             _morphoBlueMarketId: ETHEREUM_MORPHO_USDC_WETH_MARKET,
             _chainId: ETHEREUM_CHAIN_ID
+        });
+    }
+}
+
+contract MorphoBlueUsdcWethTestBaseChain is MorphoBlueTestBase {
+    function setUp() public override {
+        __initialize({
+            _version: EnzymeVersion.Current,
+            _morphoBlueAddress: BASE_MORPHO_BLUE,
+            _morphoBlueMarketId: BASE_MORPHO_USDC_WETH_MARKET,
+            _chainId: BASE_CHAIN_ID
+        });
+    }
+}
+
+contract MorphoBlueUsdcWethTestBaseChainV4 is MorphoBlueTestBase {
+    function setUp() public override {
+        __initialize({
+            _version: EnzymeVersion.V4,
+            _morphoBlueAddress: BASE_MORPHO_BLUE,
+            _morphoBlueMarketId: BASE_MORPHO_USDC_WETH_MARKET,
+            _chainId: BASE_CHAIN_ID
         });
     }
 }

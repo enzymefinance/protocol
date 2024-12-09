@@ -84,3 +84,22 @@ function getArbitrumDeployment() pure returns (Contracts memory contracts_) {
         usdEthSimulatedAggregator: IUsdEthSimulatedAggregator(address(0)) // Not deployed on Arbitrum
     });
 }
+
+function getBaseChainDeployment() pure returns (Contracts memory contracts_) {
+    return Contracts({
+        // Core
+        comptrollerLibAddress: 0x67132b2D9B31fFcab67C9216f3FA937B259673B8,
+        fundDeployer: IFundDeployer(0xbB274DF654F71827cca120e0B916AEC1f2cEaaEb),
+        vaultLibAddress: 0x944d01bF533Ed041d9947826429F086bf56C5856,
+        // Extensions
+        externalPositionManager: IExternalPositionManager(0xE7E6db86B10E2CF1F409eb635998dE81C841330f),
+        feeManager: IFeeManager(0xa9928195a36ef1C238B1B8B5912B9fBCe7554F73),
+        integrationManager: IIntegrationManager(0x5D8703b4a08Fd3F698bAFD5389fa25463fb383dD),
+        policyManager: IPolicyManager(0x7d1a8314c6a56A8312053Bfd5A3b9e4C768E8D24),
+        // Infrastructure
+        gasRelayPaymasterFactory: IGasRelayPaymasterFactory(0xc6780E244Fd22f21F019fEC4b802019D17BD558D),
+        protocolFeeTracker: IProtocolFeeTracker(0x44ddf1831fb1f9CD62Bd07b4C351C826751594A6),
+        valueInterpreter: IValueInterpreter(0xA76BC052a4D200d851C27312B32c35502824E8e1),
+        usdEthSimulatedAggregator: IUsdEthSimulatedAggregator(address(0)) // Not deployed on Base
+    });
+}

@@ -11,20 +11,23 @@ import {
     Contracts as PersistentContracts,
     getMainnetDeployment as getMainnetPersistentContracts,
     getPolygonDeployment as getPolygonPersistentContracts,
-    getArbitrumDeployment as getArbitrumPersistentContracts
+    getArbitrumDeployment as getArbitrumPersistentContracts,
+    getBaseChainDeployment as getBaseChainPersistentContracts
 } from "tests/utils/core/deployment/PersistentContracts.sol";
 import {ReleaseConfig} from "tests/utils/core/deployment/DeploymentUtils.sol";
 import {
     Contracts as V4ReleaseContracts,
     getMainnetDeployment as getV4MainnetReleaseContracts,
     getPolygonDeployment as getV4PolygonReleaseContracts,
-    getArbitrumDeployment as getV4ArbitrumReleaseContracts
+    getArbitrumDeployment as getV4ArbitrumReleaseContracts,
+    getBaseChainDeployment as getV4BaseChainReleaseContracts
 } from "tests/utils/core/deployment/V4ReleaseContracts.sol";
 import {
     Contracts as ReleaseContracts,
     getMainnetDeployment as getMainnetReleaseContracts,
     getPolygonDeployment as getPolygonReleaseContracts,
-    getArbitrumDeployment as getArbitrumReleaseContracts
+    getArbitrumDeployment as getArbitrumReleaseContracts,
+    getBaseChainDeployment as getBaseReleaseContracts
 } from "tests/utils/core/deployment/V5ReleaseContracts.sol";
 
 import {IERC20} from "tests/interfaces/external/IERC20.sol";
@@ -96,13 +99,23 @@ abstract contract IntegrationTest is CoreUtils {
     }
 
     function setUpLiveArbitrumEnvironment(uint256 _forkBlock) internal {
-        vm.createSelectFork("polygon", _forkBlock);
+        vm.createSelectFork("arbitrum", _forkBlock);
 
         core.persistent = getArbitrumPersistentContracts();
         v4ReleaseContracts = getV4ArbitrumReleaseContracts();
 
         // No v5 release live
         // core.release = getArbitrumReleaseContracts();
+    }
+
+    function setUpLiveBaseChainEnvironment(uint256 _forkBlock) internal {
+        vm.createSelectFork("base", _forkBlock);
+
+        core.persistent = getBaseChainPersistentContracts();
+        v4ReleaseContracts = getV4BaseChainReleaseContracts();
+
+        // No v5 release live
+        // core.release = getBaseReleaseContracts();
     }
 
     // Partially-live deployments (persistent layer only)
@@ -131,6 +144,14 @@ abstract contract IntegrationTest is CoreUtils {
         __setUpEnvironment({_config: getDefaultArbitrumConfig(), _persistentContractsAlreadySet: true});
     }
 
+    function setUpLiveBaseChainEnvironmentWithNewRelease(uint256 _forkBlock) internal {
+        vm.createSelectFork("base", _forkBlock);
+
+        core.persistent = getBaseChainPersistentContracts();
+
+        __setUpEnvironment({_config: getDefaultBaseChainConfig(), _persistentContractsAlreadySet: true});
+    }
+
     // New deployments
     function setUpNetworkEnvironment(uint256 _chainId) internal {
         if (_chainId == ETHEREUM_CHAIN_ID) {
@@ -139,6 +160,8 @@ abstract contract IntegrationTest is CoreUtils {
             setUpPolygonEnvironment();
         } else if (_chainId == ARBITRUM_CHAIN_ID) {
             setUpArbitrumEnvironment();
+        } else if (_chainId == BASE_CHAIN_ID) {
+            setUpBaseChainEnvironment();
         } else {
             revert("setUpNetworkEnvironment: Unsupported network");
         }
@@ -151,6 +174,8 @@ abstract contract IntegrationTest is CoreUtils {
             setUpPolygonEnvironment(_forkBlock);
         } else if (_chainId == ARBITRUM_CHAIN_ID) {
             setUpArbitrumEnvironment(_forkBlock);
+        } else if (_chainId == BASE_CHAIN_ID) {
+            setUpBaseChainEnvironment(_forkBlock);
         } else {
             revert("setUpNetworkEnvironment: Unsupported network");
         }
@@ -166,6 +191,10 @@ abstract contract IntegrationTest is CoreUtils {
 
     function setUpArbitrumEnvironment() internal {
         setUpArbitrumEnvironment(ARBITRUM_BLOCK_LATEST);
+    }
+
+    function setUpBaseChainEnvironment() internal {
+        setUpBaseChainEnvironment(BASE_BLOCK_LATEST);
     }
 
     function setUpMainnetEnvironment(uint256 _forkBlock) internal {
@@ -361,6 +390,49 @@ abstract contract IntegrationTest is CoreUtils {
         __addCorePrimitives(corePrimitives);
     }
 
+    function setUpBaseChainEnvironment(uint256 _forkBlock) internal {
+        vm.createSelectFork("base", _forkBlock);
+
+        v4ReleaseContracts = getV4BaseChainReleaseContracts();
+
+        ReleaseConfig memory config = getDefaultBaseChainConfig();
+
+        __setUpEnvironment({_config: config, _persistentContractsAlreadySet: false});
+
+        // Deploy minimal asset universe
+
+        // Treat WETH specially and directly add to coreTokens storage (does not require an aggregator)
+        symbolToCoreToken["WETH"] = IERC20(wethToken);
+        tokenToIsCore[IERC20(wethToken)] = true;
+
+        address simulatedUsdAddress = address(deployUsdEthSimulatedAggregator(config.chainlinkEthUsdAggregatorAddress));
+
+        CorePrimitiveInput[] memory corePrimitives = new CorePrimitiveInput[](2);
+        // TODO: ucomment this when the real MLN aggregator address is available
+        // System primitives
+        // corePrimitives[0] = CorePrimitiveInput({
+        //     symbol: "MLN",
+        //     assetAddress: BASE_MLN,
+        //     aggregatorAddress: BASE_MLN_ETH_AGGREGATOR,
+        //     rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
+        // });
+        // Extra primitives
+        corePrimitives[0] = CorePrimitiveInput({
+            symbol: "USD",
+            assetAddress: simulatedUsdAddress,
+            aggregatorAddress: simulatedUsdAddress,
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.ETH
+        });
+        corePrimitives[1] = CorePrimitiveInput({
+            symbol: "USDC",
+            assetAddress: BASE_USDC,
+            aggregatorAddress: BASE_USDC_USD_AGGREGATOR,
+            rateAsset: IChainlinkPriceFeedMixinProd.RateAsset.USD
+        });
+
+        __addCorePrimitives(corePrimitives);
+    }
+
     function setUpStandaloneEnvironment() internal {
         // Warp beyond Chainlink aggregator staleness threshold
         uint256 chainlinkStaleRateThreshold = 3650 days;
@@ -533,6 +605,30 @@ abstract contract IntegrationTest is CoreUtils {
             mlnTokenAddress: ARBITRUM_MLN,
             wethTokenAddress: ARBITRUM_WETH,
             wrappedNativeTokenAddress: ARBITRUM_WETH,
+            // Gas relayer
+            gasRelayDepositCooldown: 1 days,
+            gasRelayDepositMaxTotal: 1 ether,
+            gasRelayFeeMaxPercent: 10,
+            gasRelayHubAddress: address(0), // TODO: lookup real value
+            gasRelayRelayFeeMaxBase: 0,
+            gasRelayTrustedForwarderAddress: address(0), // TODO: lookup real value
+            // Vault settings
+            vaultMlnBurner: mlnBurner,
+            vaultPositionsLimit: 20
+        });
+    }
+
+    function getDefaultBaseChainConfig() internal returns (ReleaseConfig memory) {
+        address mlnBurner = makeAddr("MlnBurner");
+
+        return ReleaseConfig({
+            // Chainlink
+            chainlinkEthUsdAggregatorAddress: BASE_ETH_USD_AGGREGATOR,
+            chainlinkStaleRateThreshold: 3650 days,
+            // Tokens
+            mlnTokenAddress: BASE_MLN,
+            wethTokenAddress: BASE_WETH,
+            wrappedNativeTokenAddress: BASE_WETH,
             // Gas relayer
             gasRelayDepositCooldown: 1 days,
             gasRelayDepositMaxTotal: 1 ether,

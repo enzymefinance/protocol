@@ -41,3 +41,8 @@ function getArbitrumDeployment() pure returns (Contracts memory contracts_) {
     // placeholder
     return contracts_;
 }
+
+function getBaseChainDeployment() pure returns (Contracts memory contracts_) {
+    // placeholder
+    return contracts_;
+}

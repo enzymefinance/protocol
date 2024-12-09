@@ -16,7 +16,9 @@ import {
     POLYGON_POOL_ADDRESS,
     POLYGON_POOL_ADDRESS_PROVIDER,
     ARBITRUM_POOL_ADDRESS,
-    ARBITRUM_POOL_ADDRESS_PROVIDER
+    ARBITRUM_POOL_ADDRESS_PROVIDER,
+    BASE_POOL_ADDRESS,
+    BASE_POOL_ADDRESS_PROVIDER
 } from "./AaveV3Constants.sol";
 
 abstract contract AaveV3AdapterTest is AaveAdapterTest, AaveV3Utils {
@@ -126,6 +128,22 @@ contract AaveV3AdapterTestArbitrum is AaveV3AdapterTest {
 
         regular18DecimalUnderlying = IERC20(ARBITRUM_WETH);
         non18DecimalUnderlying = IERC20(ARBITRUM_USDC);
+
+        __registerTokensAndATokensForThem(toArray(address(regular18DecimalUnderlying), address(non18DecimalUnderlying)));
+
+        super.setUp();
+    }
+}
+
+contract AaveV3AdapterTestBaseChain is AaveV3AdapterTest {
+    function setUp() public override {
+        lendingPool = BASE_POOL_ADDRESS;
+        lendingPoolAddressProvider = BASE_POOL_ADDRESS_PROVIDER;
+
+        setUpBaseChainEnvironment();
+
+        regular18DecimalUnderlying = IERC20(BASE_WETH);
+        non18DecimalUnderlying = IERC20(BASE_USDC);
 
         __registerTokensAndATokensForThem(toArray(address(regular18DecimalUnderlying), address(non18DecimalUnderlying)));
 

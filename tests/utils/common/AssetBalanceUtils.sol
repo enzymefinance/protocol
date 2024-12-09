@@ -11,7 +11,8 @@ import {
 import {
     ETHEREUM_POOL_ADDRESS as ETHEREUM_AAVE_V3_POOL_ADDRESS,
     POLYGON_POOL_ADDRESS as POLYGON_AAVE_V3_POOL_ADDRESS,
-    ARBITRUM_POOL_ADDRESS as ARBITRUM_AAVE_V3_POOL_ADDRESS
+    ARBITRUM_POOL_ADDRESS as ARBITRUM_AAVE_V3_POOL_ADDRESS,
+    BASE_POOL_ADDRESS as BASE_AAVE_V3_POOL_ADDRESS
 } from "tests/tests/protocols/aave/AaveV3Constants.sol";
 
 import {
@@ -125,6 +126,8 @@ abstract contract AssetBalanceUtils is CommonUtilsBase {
             return POLYGON_AAVE_V3_POOL_ADDRESS;
         } else if (block.chainid == ARBITRUM_CHAIN_ID) {
             return ARBITRUM_AAVE_V3_POOL_ADDRESS;
+        } else if (block.chainid == BASE_CHAIN_ID) {
+            return BASE_AAVE_V3_POOL_ADDRESS;
         }
     }
 
