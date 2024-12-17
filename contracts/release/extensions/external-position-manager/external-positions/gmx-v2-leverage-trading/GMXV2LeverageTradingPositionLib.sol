@@ -233,6 +233,8 @@ contract GMXV2LeverageTradingPositionLib is
         IGMXV2LeverageTradingPosition.UpdateOrderActionArgs memory updateOrderArgs =
             abi.decode(_actionArgs, (IGMXV2LeverageTradingPosition.UpdateOrderActionArgs));
 
+        __assertHandler(updateOrderArgs.exchangeRouter);
+
         if (updateOrderArgs.executionFeeIncrease != 0) {
             IERC20(address(WRAPPED_NATIVE_TOKEN)).safeTransfer({
                 _to: __getOrderVaultAddress(updateOrderArgs.exchangeRouter),

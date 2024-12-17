@@ -1595,7 +1595,7 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_invalidHandlerForCallingAnAction_failure() public {
+    function test_createOrder_failsInvalidHandlerForCallingAnAction() public {
         address fakeHandler = makeAddr("fake handler");
 
         vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
@@ -1620,6 +1620,63 @@ abstract contract TestBase is IntegrationTest {
                 isLong: true,
                 autoCancel: false,
                 exchangeRouter: fakeHandler
+            })
+        );
+    }
+
+    function test_updateOrder_failsInvalidHandlerForCallingAnAction() public {
+        address fakeHandler = makeAddr("fake handler");
+
+        vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
+
+        __updateOrder(
+            IGMXV2LeverageTradingPositionProd.UpdateOrderActionArgs({
+                key: 0,
+                sizeDeltaUsd: 0,
+                acceptablePrice: 0,
+                triggerPrice: 0,
+                minOutputAmount: 0,
+                exchangeRouter: fakeHandler,
+                autoCancel: false,
+                executionFeeIncrease: 0,
+                validFromTime: 0
+            })
+        );
+    }
+
+    function test_cancelOrder_failsInvalidHandlerForCallingAnAction() public {
+        address fakeHandler = makeAddr("fake handler");
+
+        vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
+
+        __cancelOrder(IGMXV2LeverageTradingPositionProd.CancelOrderActionArgs({key: 0, exchangeRouter: fakeHandler}));
+    }
+
+    function test_claimFundingFees_failsInvalidHandlerForCallingAnAction() public {
+        address fakeHandler = makeAddr("fake handler");
+
+        vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
+
+        __claimFundingFees(
+            IGMXV2LeverageTradingPositionProd.ClaimFundingFeesActionArgs({
+                exchangeRouter: fakeHandler,
+                markets: new address[](0),
+                tokens: new address[](0)
+            })
+        );
+    }
+
+    function test_claimCollateral_failsInvalidHandlerForCallingAnAction() public {
+        address fakeHandler = makeAddr("fake handler");
+
+        vm.expectRevert(abi.encodeWithSelector(IGMXV2LeverageTradingPositionLib.InvalidHandler.selector));
+
+        __claimCollateral(
+            IGMXV2LeverageTradingPositionProd.ClaimCollateralActionArgs({
+                exchangeRouter: fakeHandler,
+                markets: new address[](0),
+                tokens: new address[](0),
+                timeKeys: new uint256[](0)
             })
         );
     }
