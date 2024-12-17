@@ -15,4 +15,6 @@ pragma solidity >=0.6.0 <0.9.0;
 /// @author Enzyme Foundation <security@enzyme.finance>
 interface IStaderStakePoolsManager {
     function deposit(address _receiver) external payable returns (uint256 shares_);
+
+    function getExchangeRate() external view returns (uint256 rate_);
 }
