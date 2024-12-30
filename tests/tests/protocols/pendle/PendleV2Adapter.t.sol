@@ -149,13 +149,15 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __addLiquidity(address _depositTokenAddressInput, uint256 _depositTokenAmount, uint256 _minLpAmount)
-        internal
-    {
+    function __addLiquidityFromUnderlying(
+        address _depositTokenAddressInput,
+        uint256 _depositTokenAmount,
+        uint256 _minLpAmount
+    ) internal {
         __action({
-            _actionId: IPendleV2AdapterProd.Action.AddLiquidity,
+            _actionId: IPendleV2AdapterProd.Action.AddLiquidityFromUnderlying,
             _encodedActionArgs: abi.encode(
-                IPendleV2AdapterProd.AddLiquidityActionArgs({
+                IPendleV2AdapterProd.AddLiquidityFromUnderlyingActionArgs({
                     market: IPendleV2MarketProd(address(market)),
                     depositTokenAddress: _depositTokenAddressInput,
                     depositTokenAmount: _depositTokenAmount,
@@ -183,15 +185,15 @@ abstract contract TestBase is IntegrationTest {
         });
     }
 
-    function __removeLiquidity(
+    function __removeLiquidityToUnderlying(
         uint256 _lpAmount,
         address _withdrawalTokenAddressInput,
         uint256 _minWithdrawalTokenAmount
     ) internal {
         __action({
-            _actionId: IPendleV2AdapterProd.Action.RemoveLiquidity,
+            _actionId: IPendleV2AdapterProd.Action.RemoveLiquidityToUnderlying,
             _encodedActionArgs: abi.encode(
-                IPendleV2AdapterProd.RemoveLiquidityActionArgs({
+                IPendleV2AdapterProd.RemoveLiquidityToUnderlyingActionArgs({
                     market: IPendleV2MarketProd(address(market)),
                     withdrawalTokenAddress: _withdrawalTokenAddressInput,
                     lpAmount: _lpAmount,
@@ -375,7 +377,7 @@ abstract contract TestBase is IntegrationTest {
         }
     }
 
-    function __test_addLiquidity_success(address _depositTokenAddressInput) public {
+    function __test_addLiquidityFromUnderlying_success(address _depositTokenAddressInput) public {
         IERC20 depositToken = IERC20(__parseAssetInputForEnzyme(_depositTokenAddressInput));
         address pendleDepositAssetAddress = __parseAssetInputForPendle(_depositTokenAddressInput);
         uint256 depositTokenAmount = underlyingAsset.balanceOf(vaultProxyAddress) / 7;
@@ -391,7 +393,7 @@ abstract contract TestBase is IntegrationTest {
 
         vm.recordLogs();
 
-        __addLiquidity({
+        __addLiquidityFromUnderlying({
             _depositTokenAddressInput: _depositTokenAddressInput,
             _depositTokenAmount: depositTokenAmount,
             _minLpAmount: minLpAmount
@@ -417,18 +419,18 @@ abstract contract TestBase is IntegrationTest {
         assertApproxEqRel(postLpTokenBalance, expectedLpReceived, WEI_ONE_PERCENT / 2, "Incorrect LP token balance");
     }
 
-    function test_addLiquidity_underlyingAsset_success() public {
-        __test_addLiquidity_success({_depositTokenAddressInput: address(underlyingAsset)});
+    function test_addLiquidityFromUnderlying_underlyingAsset_success() public {
+        __test_addLiquidityFromUnderlying_success({_depositTokenAddressInput: address(underlyingAsset)});
     }
 
-    function test_addLiquidity_nativeAsset_success() public {
+    function test_addLiquidityFromUnderlying_nativeAsset_success() public {
         // Run the test conditionally if the token supports depositing in the the native asset
         if (syToken.isValidTokenIn(PENDLE_NATIVE_ASSET_ADDRESS)) {
-            __test_addLiquidity_success({_depositTokenAddressInput: NATIVE_ASSET_ADDRESS});
+            __test_addLiquidityFromUnderlying_success({_depositTokenAddressInput: NATIVE_ASSET_ADDRESS});
         }
     }
 
-    function __test_removeLiquidity_success(address _withdrawalTokenAddressInput) private {
+    function __test_removeLiquidityToUnderlying_success(address _withdrawalTokenAddressInput) private {
         IERC20 withdrawalToken = IERC20(__parseAssetInputForEnzyme(_withdrawalTokenAddressInput));
         address pendleWithdrawalAssetAddress = __parseAssetInputForPendle(_withdrawalTokenAddressInput);
 
@@ -449,7 +451,7 @@ abstract contract TestBase is IntegrationTest {
 
         vm.recordLogs();
 
-        __removeLiquidity({
+        __removeLiquidityToUnderlying({
             _lpAmount: lpAmountToRedeem,
             _withdrawalTokenAddressInput: _withdrawalTokenAddressInput,
             _minWithdrawalTokenAmount: minWithdrawalTokenAmount
@@ -478,14 +480,14 @@ abstract contract TestBase is IntegrationTest {
         );
     }
 
-    function test_removeLiquidity_nonExpiredPrincipalToken_success() public {
-        __test_removeLiquidity_success({_withdrawalTokenAddressInput: address(underlyingAsset)});
+    function test_removeLiquidityToUnderlying_nonExpiredPrincipalToken_success() public {
+        __test_removeLiquidityToUnderlying_success({_withdrawalTokenAddressInput: address(underlyingAsset)});
     }
 
-    function test_removeLiquidity_nativeAsset_success() public {
+    function test_removeLiquidityToUnderlying_nativeAsset_success() public {
         // If the native asset is a valid withdrawal token, run the test
         if (syToken.isValidTokenOut(PENDLE_NATIVE_ASSET_ADDRESS)) {
-            __test_removeLiquidity_success({_withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS});
+            __test_removeLiquidityToUnderlying_success({_withdrawalTokenAddressInput: NATIVE_ASSET_ADDRESS});
         }
     }
 }

@@ -20,11 +20,11 @@ interface IPendleV2Adapter {
     enum Action {
         BuyPrincipalToken,
         SellPrincipalToken,
-        AddLiquidity,
-        RemoveLiquidity
+        AddLiquidityFromUnderlying,
+        RemoveLiquidityToUnderlying
     }
 
-    struct AddLiquidityActionArgs {
+    struct AddLiquidityFromUnderlyingActionArgs {
         IPendleV2Market market;
         address depositTokenAddress;
         uint256 depositTokenAmount;
@@ -40,7 +40,7 @@ interface IPendleV2Adapter {
         uint256 minPtAmount;
     }
 
-    struct RemoveLiquidityActionArgs {
+    struct RemoveLiquidityToUnderlyingActionArgs {
         IPendleV2Market market;
         address withdrawalTokenAddress;
         uint256 lpAmount;

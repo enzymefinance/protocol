@@ -64,15 +64,15 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
                 _vaultProxyAddress: _vaultProxyAddress,
                 _actionArgs: abi.decode(encodedActionArgs, (SellPrincipalTokenActionArgs))
             });
-        } else if (actionId == Action.AddLiquidity) {
-            __addLiquidity({
+        } else if (actionId == Action.AddLiquidityFromUnderlying) {
+            __addLiquidityFromUnderlying({
                 _vaultProxyAddress: _vaultProxyAddress,
-                _actionArgs: abi.decode(encodedActionArgs, (AddLiquidityActionArgs))
+                _actionArgs: abi.decode(encodedActionArgs, (AddLiquidityFromUnderlyingActionArgs))
             });
-        } else if (actionId == Action.RemoveLiquidity) {
-            __removeLiquidity({
+        } else if (actionId == Action.RemoveLiquidityToUnderlying) {
+            __removeLiquidityToUnderlying({
                 _vaultProxyAddress: _vaultProxyAddress,
-                _actionArgs: abi.decode(encodedActionArgs, (RemoveLiquidityActionArgs))
+                _actionArgs: abi.decode(encodedActionArgs, (RemoveLiquidityToUnderlyingActionArgs))
             });
         } else {
             revert PendleV2Adapter__InvalidAction();
@@ -80,7 +80,10 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     }
 
     /// @dev Helper to add liquidity to a Pendle market from the underlying token of the SY
-    function __addLiquidity(address _vaultProxyAddress, AddLiquidityActionArgs memory _actionArgs) private {
+    function __addLiquidityFromUnderlying(
+        address _vaultProxyAddress,
+        AddLiquidityFromUnderlyingActionArgs memory _actionArgs
+    ) private {
         (IPendleV2StandardizedYield syToken,,) = _actionArgs.market.readTokens();
 
         // Mint SY token from its underlying.
@@ -150,7 +153,10 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
     }
 
     /// @dev Helper to redeem Pendle LP tokens for the underlying token of the SY
-    function __removeLiquidity(address _vaultProxyAddress, RemoveLiquidityActionArgs memory _actionArgs) private {
+    function __removeLiquidityToUnderlying(
+        address _vaultProxyAddress,
+        RemoveLiquidityToUnderlyingActionArgs memory _actionArgs
+    ) private {
         // Grant max LP token allowance to the Router
         __approveAssetMaxAsNeeded({
             _asset: address(_actionArgs.market),
@@ -283,15 +289,17 @@ contract PendleV2Adapter is IPendleV2Adapter, AdapterBase {
             spendAssetAmounts_[0] = actionArgs.ptAmount;
             incomingAssets_[0] = __parseAssetInputForEnzyme(actionArgs.withdrawalTokenAddress);
             minIncomingAssetAmounts_[0] = actionArgs.minWithdrawalTokenAmount;
-        } else if (actionId == Action.AddLiquidity) {
-            AddLiquidityActionArgs memory actionArgs = abi.decode(encodedActionArgs, (AddLiquidityActionArgs));
+        } else if (actionId == Action.AddLiquidityFromUnderlying) {
+            AddLiquidityFromUnderlyingActionArgs memory actionArgs =
+                abi.decode(encodedActionArgs, (AddLiquidityFromUnderlyingActionArgs));
 
             spendAssets_[0] = __parseAssetInputForEnzyme(actionArgs.depositTokenAddress);
             spendAssetAmounts_[0] = actionArgs.depositTokenAmount;
             incomingAssets_[0] = address(actionArgs.market);
             minIncomingAssetAmounts_[0] = actionArgs.minLpAmount;
-        } else if (actionId == Action.RemoveLiquidity) {
-            RemoveLiquidityActionArgs memory actionArgs = abi.decode(encodedActionArgs, (RemoveLiquidityActionArgs));
+        } else if (actionId == Action.RemoveLiquidityToUnderlying) {
+            RemoveLiquidityToUnderlyingActionArgs memory actionArgs =
+                abi.decode(encodedActionArgs, (RemoveLiquidityToUnderlyingActionArgs));
 
             spendAssets_[0] = address(actionArgs.market);
             spendAssetAmounts_[0] = actionArgs.lpAmount;
